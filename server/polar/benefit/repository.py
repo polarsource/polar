@@ -121,6 +121,14 @@ class BenefitRepository(
         )
         return await self.get_all(statement)
 
+    async def count_by_organization_id(
+        self, organization_id: UUID, *, include_deleted: bool = False
+    ) -> int:
+        statement = self.get_base_statement(include_deleted=include_deleted).where(
+            Benefit.organization_id == organization_id
+        )
+        return await self.count(statement)
+
     async def list_by_organization_and_type(
         self, organization_id: UUID, benefit_type: BenefitType
     ) -> Sequence[Benefit]:

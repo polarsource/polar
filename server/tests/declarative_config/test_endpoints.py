@@ -5,15 +5,20 @@ import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.meter.unit import MeterUnit
 from polar.models import Organization, UserOrganization
+from polar.organization.repository import OrganizationRepository
+from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_benefit,
     create_event,
     create_meter,
+    create_product,
 )
 
 METER = {
@@ -334,6 +339,98 @@ class TestApply:
                 "input": None,
             }
         ]
+
+
+@pytest.mark.anyio
+class TestInit:
+    @pytest.mark.auth
+    async def test_fresh(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/init", json={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "organization_id": str(organization.id),
+            "config_as_code_enabled": True,
+        }
+        updated = await OrganizationRepository.from_session(session).get_by_id(
+            organization.id
+        )
+        assert updated is not None
+        assert updated.is_config_as_code_enabled is True
+
+    @pytest.mark.parametrize(
+        ("resource", "counts"),
+        [
+            ("product", "1 product, 0 benefits and 0 meters"),
+            ("archived_product", "1 product, 0 benefits and 0 meters"),
+            ("deleted_benefit", "0 products, 1 benefit and 0 meters"),
+            ("archived_meter", "0 products, 0 benefits and 1 meter"),
+        ],
+    )
+    @pytest.mark.auth
+    async def test_not_fresh(
+        self,
+        resource: str,
+        counts: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        match resource:
+            case "product" | "archived_product":
+                await create_product(
+                    save_fixture,
+                    organization=organization,
+                    recurring_interval=None,
+                    is_archived=resource == "archived_product",
+                )
+            case "deleted_benefit":
+                benefit = await create_benefit(save_fixture, organization=organization)
+                benefit.deleted_at = utc_now()
+                await save_fixture(benefit)
+            case "archived_meter":
+                meter = await create_meter(save_fixture, organization=organization)
+                meter.archived_at = utc_now()
+                await save_fixture(meter)
+
+        response = await client.post(
+            "/v1/config/init", json={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 409
+        json = response.json()
+        assert json["error"] == "ConfigOrganizationNotFresh"
+        assert counts in json["detail"]
+        assert "isn't supported yet" in json["detail"]
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_already_enabled(
+        self, save_fixture: SaveFixture, client: AsyncClient, organization: Organization
+    ) -> None:
+        await create_meter(save_fixture, organization=organization)
+
+        response = await client.post("/v1/config/init", json={})
+
+        assert response.status_code == 200
+        assert response.json()["config_as_code_enabled"] is True
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
+    )
+    async def test_missing_organizations_write_scope(self, client: AsyncClient) -> None:
+        response = await client.post("/v1/config/init", json={})
+
+        assert response.status_code == 403
 
 
 @pytest.mark.anyio

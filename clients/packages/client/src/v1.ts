@@ -6353,6 +6353,34 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/config/init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Init Config
+     * @description Enable config as code for an organization without products, benefits or meters.
+     *
+     *     Archived and deleted resources count: adopting an existing catalog isn't
+     *     supported yet. Calling it again once enabled is a no-op. Once enabled,
+     *     config as code can't be turned off.
+     *
+     *     Requires the `organizations:write` scope.
+     *
+     *     **Scopes**: `benefits:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     */
+    post: operations['config:init']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/config/plan': {
     parameters: {
       query?: never
@@ -16650,6 +16678,27 @@ export interface components {
        */
       after: unknown | null
     }
+    /** ConfigInit */
+    ConfigInit: {
+      /**
+       * Organization Id
+       * @description The ID of the organization to enable config as code for. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
+    /** ConfigInitResult */
+    ConfigInitResult: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /**
+       * Config As Code Enabled
+       * @description If the organization manages its config as code.
+       */
+      config_as_code_enabled: boolean
+    }
     /** ConfigInvalid */
     ConfigInvalid: {
       /**
@@ -16796,6 +16845,17 @@ export interface components {
         | components['schemas']['PropertyAggregation']
         | components['schemas']['UniqueAggregation']
       metadata: components['schemas']['MetadataOutputType']
+    }
+    /** ConfigOrganizationNotFresh */
+    ConfigOrganizationNotFresh: {
+      /**
+       * Error
+       * @example ConfigOrganizationNotFresh
+       * @constant
+       */
+      error: 'ConfigOrganizationNotFresh'
+      /** Detail */
+      detail: string
     }
     /** ConfigPlan */
     ConfigPlan: {
@@ -63203,6 +63263,48 @@ export interface operations {
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
             | components['schemas']['ConfigWebhookConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigInit']
+      }
+    }
+    responses: {
+      /** @description Config as code is enabled. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigInitResult']
+        }
+      }
+      /** @description The organization already has products, benefits or meters. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigOrganizationNotFresh']
         }
       }
       /** @description Validation Error */

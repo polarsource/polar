@@ -319,13 +319,15 @@ class ProductRepository(
         organization_id: UUID,
         *,
         is_archived: bool | None = None,
+        include_deleted: bool = False,
     ) -> int:
         """Count products for an organization with optional archived filter."""
         statement = sql.select(sql.func.count(Product.id)).where(
-            Product.organization_id == organization_id,
-            ~Product.is_deleted,
+            Product.organization_id == organization_id
         )
 
+        if not include_deleted:
+            statement = statement.where(~Product.is_deleted)
         if is_archived is not None:
             statement = statement.where(Product.is_archived.is_(is_archived))
 

@@ -844,3 +844,22 @@ class DeclarativeConfigExportParams(QuerySchema):
             "**Required unless you use an organization token.**"
         ),
     )
+
+
+class ConfigInit(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization to enable config as code for. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
+class ConfigInitResult(Schema):
+    organization_id: UUID4
+    config_as_code_enabled: bool = Field(
+        description="If the organization manages its config as code."
+    )

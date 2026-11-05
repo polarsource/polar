@@ -35,7 +35,13 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    declared_attr,
+    mapped_column,
+    relationship,
+    validates,
+)
 
 from polar.config import settings
 from polar.enums import (
@@ -336,6 +342,14 @@ class InvalidStatusTransitionError(PolarError):
             f"Cannot transition organization status from "
             f"{current.get_display_name()} to {target.get_display_name()}.",
             400,
+        )
+
+
+class ConfigAsCodeIrreversible(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Config as code can't be turned off once it's enabled for an organization.",
+            409,
         )
 
 
@@ -747,6 +761,17 @@ class Organization(RateLimitGroupMixin, RecordModel):
     feature_settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
+
+    @validates("feature_settings")
+    def _validate_feature_settings(
+        self, key: str, value: dict[str, Any]
+    ) -> dict[str, Any]:
+        current = self.feature_settings or {}
+        if current.get("config_as_code_enabled", False) and not value.get(
+            "config_as_code_enabled", False
+        ):
+            raise ConfigAsCodeIrreversible()
+        return value
 
     @property
     def is_sso_enabled(self) -> bool:

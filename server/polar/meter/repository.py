@@ -65,6 +65,16 @@ class MeterRepository(
             .options(undefer(Meter.external_id))
         )
 
+    async def count_by_organization_id(
+        self, organization_id: UUID, *, include_deleted: bool = False
+    ) -> int:
+        statement = self.get_base_statement().where(
+            Meter.organization_id == organization_id
+        )
+        if not include_deleted:
+            statement = statement.where(Meter.deleted_at.is_(None))
+        return await self.count(statement)
+
     async def has_billable_subscriptions(self, meter_id: UUID) -> bool:
         statement = select(
             exists()

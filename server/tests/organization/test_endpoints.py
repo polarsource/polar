@@ -446,6 +446,7 @@ class TestUpdateOrganization:
     @pytest.mark.auth
     async def test_non_updatable_feature_flags_ignored(
         self,
+        session: AsyncSession,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -453,6 +454,7 @@ class TestUpdateOrganization:
     ) -> None:
         organization.feature_settings = {
             "preview_access_enabled": True,
+            "config_as_code_enabled": True,
         }
         await save_fixture(organization)
 
@@ -463,11 +465,17 @@ class TestUpdateOrganization:
                     "preview_access_enabled": False,
                     "off_session_charges_enabled": True,
                     "checkout_localization_enabled": True,
+                    "config_as_code_enabled": False,
                 },
             },
         )
 
         assert response.status_code == 200
+        updated = await OrganizationRepository.from_session(session).get_by_id(
+            organization.id
+        )
+        assert updated is not None
+        assert updated.is_config_as_code_enabled is True
         feature_settings = response.json()["feature_settings"]
         assert feature_settings["preview_access_enabled"] is True
         assert feature_settings["off_session_charges_enabled"] is False

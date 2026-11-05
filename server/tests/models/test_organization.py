@@ -3,7 +3,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationReview
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import ConfigAsCodeIrreversible, OrganizationStatus
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -35,6 +35,21 @@ class TestCanChangePlan:
     def test_blocked_statuses(self, status: OrganizationStatus) -> None:
         organization = Organization(status=status)
         assert organization.can_change_plan() is False
+
+
+class TestFeatureSettings:
+    def test_enable_config_as_code(self) -> None:
+        organization = Organization(feature_settings={})
+        organization.feature_settings = {"config_as_code_enabled": True}
+        assert organization.is_config_as_code_enabled is True
+
+    @pytest.mark.parametrize(
+        "feature_settings", [{}, {"config_as_code_enabled": False}]
+    )
+    def test_disable_config_as_code(self, feature_settings: dict[str, bool]) -> None:
+        organization = Organization(feature_settings={"config_as_code_enabled": True})
+        with pytest.raises(ConfigAsCodeIrreversible):
+            organization.feature_settings = feature_settings
 
 
 @pytest.mark.anyio

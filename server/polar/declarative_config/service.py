@@ -46,6 +46,8 @@ from .schemas import (
     ConfigCatalogPlan,
     ConfigChange,
     ConfigExport,
+    ConfigInit,
+    ConfigInitResult,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -132,6 +134,23 @@ class _OrganizationTarget:
 class ConfigAsCodeNotEnabled(PolarError):
     def __init__(self) -> None:
         super().__init__("Config as code is not enabled for this organization.", 403)
+
+
+def _count_label(count: int, noun: str) -> str:
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
+class ConfigOrganizationNotFresh(PolarError):
+    def __init__(self, products: int, benefits: int, meters: int) -> None:
+        super().__init__(
+            "Config as code can only be enabled for an organization without "
+            f"products, benefits or meters. This one has "
+            f"{_count_label(products, 'product')}, "
+            f"{_count_label(benefits, 'benefit')} and "
+            f"{_count_label(meters, 'meter')}, including archived and deleted ones. "
+            "Adopting an existing catalog isn't supported yet.",
+            409,
+        )
 
 
 class ConfigMeterConflict(PolarError):
@@ -534,6 +553,47 @@ class DeclarativeConfigService:
         )
         catalog = await catalog_service.resolve(session, organization, catalog_id)
         return await export_config(session, organization, catalog)
+
+    async def init(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        target: ConfigInit,
+    ) -> ConfigInitResult:
+        _assert_scopes(auth_subject, ["settings"], write=True)
+        organization = await get_payload_organization(session, auth_subject, target)
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.organization_manage,
+        )
+        if not organization.is_config_as_code_enabled:
+            await CatalogRepository.from_session(session).lock(organization.id)
+            products = await ProductRepository.from_session(
+                session
+            ).count_by_organization_id(organization.id, include_deleted=True)
+            benefits = await BenefitRepository.from_session(
+                session
+            ).count_by_organization_id(organization.id, include_deleted=True)
+            meters = await MeterRepository.from_session(
+                session
+            ).count_by_organization_id(organization.id, include_deleted=True)
+            if products or benefits or meters:
+                raise ConfigOrganizationNotFresh(products, benefits, meters)
+            organization = await OrganizationRepository.from_session(session).update(
+                organization,
+                update_dict={
+                    "feature_settings": {
+                        **organization.feature_settings,
+                        "config_as_code_enabled": True,
+                    }
+                },
+            )
+        return ConfigInitResult(
+            organization_id=organization.id,
+            config_as_code_enabled=organization.is_config_as_code_enabled,
+        )
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

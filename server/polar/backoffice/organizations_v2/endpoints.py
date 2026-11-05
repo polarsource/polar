@@ -3925,6 +3925,8 @@ async def edit_features(
             ) in OrganizationFeatureSettings.model_fields.items():
                 if field_info.annotation is bool:
                     feature_flags[field_name] = field_name in data
+            if organization.is_config_as_code_enabled:
+                feature_flags["config_as_code_enabled"] = True
 
             # Merge with existing feature_settings
             updated_feature_settings = {
@@ -3981,6 +3983,7 @@ async def edit_features(
                         continue
                     enabled = organization.feature_settings.get(field_name, False)
                     label = field_name.replace("_", " ").title()
+                    locked = field_name == "config_as_code_enabled" and enabled
 
                     with tag.div(classes="form-control"):
                         with tag.label(
@@ -3991,10 +3994,14 @@ async def edit_features(
                                 name=field_name,
                                 classes="checkbox checkbox-sm",
                                 **{"checked": ""} if enabled else {},
+                                **{"disabled": ""} if locked else {},
                             ):
                                 pass
                             with tag.span(classes="label-text"):
                                 text(label)
+                            if locked:
+                                with tag.span(classes="text-xs text-base-content/60"):
+                                    text("Can't be turned off")
 
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):

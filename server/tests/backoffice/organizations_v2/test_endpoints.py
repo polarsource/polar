@@ -620,6 +620,28 @@ class TestEditFeatures:
         assert organization.feature_settings["sso_enabled"] is True
         assert organization.sso_enforced is True
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_keeps_config_as_code_enabled(
+        self, backoffice_client: httpx.AsyncClient, organization: Organization
+    ) -> None:
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-features", data={}
+        )
+
+        assert response.status_code == 303
+        assert organization.is_config_as_code_enabled is True
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_toggle_disabled(
+        self, backoffice_client: httpx.AsyncClient, organization: Organization
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/edit-features"
+        )
+
+        assert response.status_code == 200
+        assert "Can't be turned off" in response.text
+
 
 @pytest.mark.anyio
 class TestEditOrganization:

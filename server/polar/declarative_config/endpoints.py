@@ -20,6 +20,8 @@ from .schemas import (
     Config,
     ConfigApplyResult,
     ConfigExport,
+    ConfigInit,
+    ConfigInitResult,
     ConfigPlan,
     ConfigPrune,
     DeclarativeConfigExportParams,
@@ -29,6 +31,7 @@ from .service import (
     ConfigBenefitConflict,
     ConfigInvalid,
     ConfigMeterConflict,
+    ConfigOrganizationNotFresh,
     ConfigProductConflict,
     ConfigWebhookConflict,
 )
@@ -158,6 +161,35 @@ async def apply(
     return await declarative_config_service.apply(
         session, redis, auth_subject, config, publish=publish
     )
+
+
+@router.post(
+    "/init",
+    response_model=ConfigInitResult,
+    summary="Init Config",
+    responses={
+        200: {"description": "Config as code is enabled."},
+        409: {
+            "description": "The organization already has products, benefits or meters.",
+            "model": ConfigOrganizationNotFresh.schema(),
+        },
+    },
+)
+async def init(
+    target: ConfigInit,
+    auth_subject: ConfigWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> ConfigInitResult:
+    """
+    Enable config as code for an organization without products, benefits or meters.
+
+    Archived and deleted resources count: adopting an existing catalog isn't
+    supported yet. Calling it again once enabled is a no-op. Once enabled,
+    config as code can't be turned off.
+
+    Requires the `organizations:write` scope.
+    """
+    return await declarative_config_service.init(session, auth_subject, target)
 
 
 @router.post(

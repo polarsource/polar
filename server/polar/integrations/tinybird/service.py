@@ -1056,8 +1056,16 @@ class TinybirdEventsQuery:
     ) -> list[TinybirdTimeseriesStats]:
         per_root = self._build_per_root_subquery(aggregate_fields)
 
-        bucket = func.date_trunc(
-            interval, per_root.c.root_timestamp, sqlalchemy.literal(timezone, String)
+        # date_trunc returns a Date for week, month and larger units, which would
+        # read back as UTC midnight. Converting it back to a DateTime in the
+        # requested timezone keeps every bucket aligned with the period starts.
+        bucket = func.toDateTime(
+            func.date_trunc(
+                interval,
+                per_root.c.root_timestamp,
+                sqlalchemy.literal(timezone, String),
+            ),
+            sqlalchemy.literal(timezone, String),
         ).label("bucket")
 
         statement = (

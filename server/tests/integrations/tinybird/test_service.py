@@ -3,6 +3,7 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -577,6 +578,39 @@ class TestTinybirdEventsQuery:
         assert timeseries[0].customers == 1
         assert customer_stats[0].occurrences == 4
         assert len(variance) >= 1
+
+    @pytest.mark.parametrize(
+        ("interval", "expected_start"),
+        [
+            ("day", datetime(2026, 1, 7, tzinfo=ZoneInfo("Europe/Stockholm"))),
+            ("week", datetime(2026, 1, 5, tzinfo=ZoneInfo("Europe/Stockholm"))),
+            ("month", datetime(2026, 1, 1, tzinfo=ZoneInfo("Europe/Stockholm"))),
+        ],
+    )
+    async def test_timeseries_buckets_start_at_local_midnight(
+        self, tinybird_client: TinybirdClient, interval: str, expected_start: datetime
+    ) -> None:
+        org_id = uuid.uuid4()
+        event = create_test_event(
+            organization_id=org_id,
+            name="llm.request",
+            source=EventSource.user,
+            user_metadata={"_cost": {"amount": 5.0, "currency": "usd"}},
+        )
+        event.timestamp = datetime(
+            2026, 1, 7, 12, 0, tzinfo=ZoneInfo("Europe/Stockholm")
+        )
+        await tinybird_client.ingest(
+            DATASOURCE_EVENTS, [_event_to_tinybird(event)], wait=True
+        )
+
+        timeseries = await TinybirdEventsQuery([org_id]).get_timeseries_stats(
+            interval, "Europe/Stockholm", ["_cost.amount"]
+        )
+
+        assert len(timeseries) == 1
+        assert timeseries[0].bucket == expected_start
+        assert timeseries[0].occurrences == 1
 
     async def test_property_group_stats_on_custom_metadata_key(
         self, tinybird_client: TinybirdClient

@@ -81,7 +81,13 @@ export const command = Command.make(
         confirm: false,
         organizationId: query.organization_id,
         fields: config.fields,
-        invoke: (client) => client.benefitGrants.list(query),
+        invoke: (client, _core, organizationIds) =>
+          client.benefitGrants.list({
+            ...query,
+            ...(organizationIds.length > 0
+              ? { organization_id: [...organizationIds] }
+              : {}),
+          }),
       })
     }),
 ).pipe(

@@ -1,6 +1,7 @@
 import { ApiCommandError, ApiRuntime } from '@polar-sh/cli-commands'
 import { Console, Effect, Layer, Option, Result, Stdio, Terminal } from 'effect'
 import { Prompt } from 'effect/cli'
+import { Auth } from '@/services/auth'
 import { Organizations } from '@/services/organizations'
 import { Polar } from '@/services/polar'
 import { formatRecordPreview } from '@/utils/api-preview'
@@ -8,11 +9,36 @@ import { selectFields } from '@/utils/fields'
 import { printJson } from '@/utils/json'
 import * as ui from '@/utils/ui'
 
+const operationsWithoutOrganization = new Set(['organizations:list'])
+
 export const layer = Layer.effect(
   ApiRuntime,
   Effect.gen(function* () {
     const polar = yield* Polar
     const organizations = yield* Organizations
+    const auth = yield* Auth
+
+    const environmentWithoutOrganization = Effect.gen(function* () {
+      const selection = yield* organizations.selected
+      if (selection) return selection.environment
+      const environments = yield* auth.environments
+      if (environments.length === 1) return environments[0]!
+      return yield* new ApiCommandError({
+        message:
+          environments.length === 0
+            ? 'Not logged in. Run polar auth login.'
+            : `Logged in to ${environments.join(' and ')}. Run polar auth org to pick one, or polar auth list to see every organization.`,
+      })
+    }).pipe(
+      Effect.mapError((error) =>
+        error instanceof ApiCommandError
+          ? error
+          : new ApiCommandError({
+              message: error.message,
+              statusCode: error.statusCode,
+            }),
+      ),
+    )
 
     return ApiRuntime.of({
       execute: (operation) =>
@@ -35,8 +61,11 @@ export const layer = Layer.effect(
               : typeof operation.organizationId === 'string'
                 ? [operation.organizationId]
                 : operation.organizationId
+          const withoutOrganization =
+            operationsWithoutOrganization.has(operation.operationId) &&
+            organizationIds.length === 0
           const organization =
-            operation.requiresAuthentication === false
+            operation.requiresAuthentication === false || withoutOrganization
               ? undefined
               : yield* organizations.resolve(organizationIds[0]).pipe(
                   Effect.mapError(
@@ -48,7 +77,12 @@ export const layer = Layer.effect(
                   ),
                 )
           const environment =
-            organization?.environment ?? operation.environment ?? 'production'
+            organization?.environment ??
+            (withoutOrganization
+              ? yield* environmentWithoutOrganization
+              : (operation.environment ?? 'production'))
+          const resolvedOrganizationIds =
+            organization && organizationIds.length > 0 ? [organization.id] : []
           for (const id of organizationIds.slice(1)) {
             const other = yield* organizations.resolve(id).pipe(
               Effect.mapError(
@@ -65,6 +99,7 @@ export const layer = Layer.effect(
                   'Organizations in --org must belong to the same environment.',
               })
             }
+            resolvedOrganizationIds.push(other.id)
           }
           const organizationId =
             organizationIds.length > 1 ? undefined : organization?.id
@@ -154,11 +189,16 @@ export const layer = Layer.effect(
           }
 
           const result = yield* polar
-            .use(operation.invoke, environment, {
-              authenticated: operation.requiresAuthentication !== false,
-              organizationId,
-              apiVersion: operation.apiVersion,
-            })
+            .use(
+              (client, core) =>
+                operation.invoke(client, core, resolvedOrganizationIds),
+              environment,
+              {
+                authenticated: operation.requiresAuthentication !== false,
+                organizationId,
+                apiVersion: operation.apiVersion,
+              },
+            )
             .pipe(
               Effect.mapError(
                 (error) =>

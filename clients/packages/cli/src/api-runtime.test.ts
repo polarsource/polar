@@ -574,9 +574,12 @@ describe('organization resolution', () => {
         (org) => org.environment === environment,
       )
       if (url.pathname === '/v1/organizations/') {
+        const slug = url.searchParams.get('slug')
         return Promise.resolve(
           Response.json({
-            items: available,
+            items: slug
+              ? available.filter((org) => org.slug === slug)
+              : available,
             pagination: { max_page: 1 },
           }),
         )
@@ -614,7 +617,7 @@ describe('organization resolution', () => {
       Layer.provide(Layer.mergeAll(polar, dependencies)),
     )
     const runtime = ApiRuntime.layer.pipe(
-      Layer.provide(Layer.mergeAll(polar, organizations)),
+      Layer.provide(Layer.mergeAll(polar, organizations, dependencies)),
     )
     return {
       ...cli,
@@ -770,13 +773,77 @@ describe('organization resolution', () => {
     expect(cli.output()).toContain('production')
   })
 
-  test('missing selection fails without silently using sandbox credentials', async () => {
+  test('missing selection with several organizations fails without picking one', async () => {
     config.state.activeOrganization = undefined
     await expect(run(['products', 'list']).promise).rejects.toThrow(
       'polar auth org',
     )
+    expect(requests.map((request) => new URL(request.url).pathname)).toEqual([
+      '/v1/organizations/',
+      '/v1/organizations/',
+    ])
+  })
+
+  test('missing selection uses the only accessible organization without saving it', async () => {
+    config.state.activeOrganization = undefined
+    organizations = [sandbox]
+    await run(['products', 'list']).promise
+    const request = requests.at(-1)!
+    expect(new URL(request.url).hostname).toBe('sandbox-api.polar.sh')
+    expect(scope(request)).toBe(sandbox.id)
+    expect(config.state.activeOrganization).toBeUndefined()
+  })
+
+  test('organizations list runs without an organization and lists every organization in the selected environment', async () => {
+    await run(['organizations', 'list']).promise
+    const request = requests.at(-1)!
+    const url = new URL(request.url)
+    expect(url.hostname).toBe('api.polar.sh')
+    expect(url.pathname).toBe('/v1/organizations/')
+    expect(scope(request)).toBeNull()
+    expect(requests).toHaveLength(1)
+  })
+
+  test('organizations list uses the only logged-in environment when nothing is selected', async () => {
+    config.state.activeOrganization = undefined
+    auth.state.sessions = ['sandbox']
+    await run(['organizations', 'list']).promise
+    const request = requests.at(-1)!
+    expect(new URL(request.url).hostname).toBe('sandbox-api.polar.sh')
+    expect(scope(request)).toBeNull()
+  })
+
+  test('organizations list asks for an environment when logged in to both with nothing selected', async () => {
+    config.state.activeOrganization = undefined
+    await expect(run(['organizations', 'list']).promise).rejects.toThrow(
+      'polar auth list',
+    )
     expect(requests).toEqual([])
-    expect(auth.state.resolutions).toEqual([])
+  })
+
+  test('a slug found in both environments fails instead of picking one', async () => {
+    organizations = [production, { ...sandbox, slug: production.slug }]
+    await expect(
+      run(['products', 'get', 'product-1', '--org', production.slug]).promise,
+    ).rejects.toThrow('Use its ID with --org instead')
+  })
+
+  test('a slug in --org reaches list queries as the organization ID', async () => {
+    await run(['products', 'list', '--org', 'sandbox']).promise
+    const url = new URL(requests.at(-1)!.url)
+    expect(url.hostname).toBe('sandbox-api.polar.sh')
+    expect(url.pathname).toBe('/v1/products/')
+    expect(url.searchParams.getAll('organization_id')).toEqual([sandbox.id])
+  })
+
+  test('--org picks the organization for a command without an organization input', async () => {
+    await run(['products', 'get', 'product-1', '--org', sandbox.id]).promise
+    const request = requests.at(-1)!
+    const url = new URL(request.url)
+    expect(url.hostname).toBe('sandbox-api.polar.sh')
+    expect(url.pathname).toBe('/v1/products/product-1')
+    expect(scope(request)).toBe(sandbox.id)
+    expect(config.state.activeOrganization).toEqual(production)
   })
 
   test('stale selection never falls back to another organization', async () => {

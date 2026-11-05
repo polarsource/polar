@@ -60,6 +60,7 @@ polar webhooks delete_webhook_endpoint [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 
 ## polar webhooks get_webhook_endpoint
 
@@ -79,6 +80,7 @@ polar webhooks get_webhook_endpoint [flags] <id>
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 
 ## polar webhooks list_webhook_deliveries
@@ -93,6 +95,7 @@ polar webhooks list_webhook_deliveries [flags]
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--endpoint-id` | `string` | Filter by webhook endpoint ID. |
@@ -141,6 +144,7 @@ polar webhooks redeliver_webhook_event [flags] <id>
 
 | Flag | Type | Description |
 | --- | --- | --- |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 
 ## polar webhooks reset_webhook_endpoint_secret
@@ -162,6 +166,7 @@ polar webhooks reset_webhook_endpoint_secret [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 
 ## polar webhooks update_webhook_endpoint
@@ -183,6 +188,7 @@ polar webhooks update_webhook_endpoint [flags] <id>
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--confirm`, `-c` | `boolean` | Skip the confirmation prompt for destructive requests |
+| `--org` | `string` | Organization ID or slug for this request. Defaults to the active organization. |
 | `--fields` | `string` | Only print these fields, comma-separated; use dots for nested ones, e.g. id,name,prices.price_amount |
 | `--data`, `-d` | `string` | JSON object; explicitly supplied flags override its top-level keys |
 | `--url` | `string` | url |

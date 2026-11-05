@@ -85,7 +85,13 @@ export const command = Command.make(
         confirm: false,
         organizationId: query.organization_id,
         fields: config.fields,
-        invoke: (client) => client.events.listNames(query),
+        invoke: (client, _core, organizationIds) =>
+          client.events.listNames({
+            ...query,
+            ...(organizationIds.length > 0
+              ? { organization_id: [...organizationIds] }
+              : {}),
+          }),
       })
     }),
 ).pipe(Command.withDescription('List event names.'))

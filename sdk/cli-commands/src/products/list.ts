@@ -110,7 +110,13 @@ export const command = Command.make(
         confirm: false,
         organizationId: query.organization_id,
         fields: config.fields,
-        invoke: (client) => client.products.list(query),
+        invoke: (client, _core, organizationIds) =>
+          client.products.list({
+            ...query,
+            ...(organizationIds.length > 0
+              ? { organization_id: [...organizationIds] }
+              : {}),
+          }),
       })
     }),
 ).pipe(Command.withDescription('List products.'))

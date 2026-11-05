@@ -2,10 +2,12 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime, executeRequest } from '../runtime'
+import { org } from '../inputs'
 
 export const command = Command.make(
   'receipt',
   {
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -18,6 +20,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         invoke: (_client, core) =>
           executeRequest(
             core,

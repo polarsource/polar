@@ -5,6 +5,7 @@ import { Argument, Command, Flag } from 'effect/cli'
 import { ApiRuntime } from '../runtime'
 import {
   fields,
+  org,
   data,
   mergeInput,
   jsonFlag,
@@ -16,6 +17,7 @@ type Body = NonNullable<Parameters<Polar['orders']['update']>[1]>
 export const command = Command.make(
   'update',
   {
+    org,
     fields,
     path: {
       id: Argument.String('id'),
@@ -48,6 +50,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.orders.update(config.path.id, body),
       })

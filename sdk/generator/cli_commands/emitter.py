@@ -344,6 +344,16 @@ class CLICommandsEmitter(EmitterBase):
                 )
             helpers.append("fields")
 
+        has_organization = any(field.name == "organization_id" for field in fields)
+        org_flag = method.requires_authentication and not has_organization
+        if org_flag:
+            if any(field.name == "org" for field in fields):
+                raise ValueError(
+                    f"{method.operation_id} has an input named 'org', "
+                    "which collides with the CLI's own --org flag."
+                )
+            helpers.append("org")
+
         if input_type:
             helpers.extend(["data", "mergeInput"])
 
@@ -363,9 +373,14 @@ class CLICommandsEmitter(EmitterBase):
         if is_next:
             description = f"{description} (preview, API {api.version})"
 
-        has_organization = any(field.name == "organization_id" for field in fields)
         arguments = [f"config.path.{p.name}" for p in method.path_params]
-        if input_type:
+        query_organization = has_organization and input_type == "Query"
+        if query_organization:
+            arguments.append(
+                "{ ...query, ...(organizationIds.length > 0 "
+                "? { organization_id: [...organizationIds] } : {}) }"
+            )
+        elif input_type:
             arguments.append(input_type.lower())
 
         return {
@@ -380,6 +395,8 @@ class CLICommandsEmitter(EmitterBase):
             "required": [field.name for field in required],
             "example": example,
             "has_organization": has_organization,
+            "org_flag": org_flag,
+            "query_organization": query_organization,
             "input_index": len(method.path_params),
             "fields": generated_fields,
             "helpers": helpers,

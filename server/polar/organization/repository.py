@@ -162,12 +162,18 @@ class OrganizationRepository(
 
         return await self.get_one_or_none(statement)
 
-    async def lock(self, organization_id: UUID) -> Organization:
-        """Lock the organization's row and reload it."""
+    async def lock(
+        self, organization_id: UUID, *, key_share: bool = False
+    ) -> Organization:
+        """Lock the organization's row and reload it.
+
+        A key-share lock doesn't block other writes to the organization, only
+        an exclusive `lock`.
+        """
         statement = (
             self.get_base_statement()
             .where(Organization.id == organization_id)
-            .with_for_update(of=Organization)
+            .with_for_update(of=Organization, read=key_share, key_share=key_share)
             .execution_options(populate_existing=True)
         )
         return await self.get_one(statement)

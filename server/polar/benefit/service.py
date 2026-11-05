@@ -12,8 +12,8 @@ from polar.authz.service import (
     get_accessible_org_ids,
 )
 from polar.declarative_config.guard import (
-    DeclarativeConfigManaged,
     assert_catalog_editable,
+    lock_catalog_editable,
 )
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
@@ -147,8 +147,8 @@ class BenefitService:
             organization.id,
             OrganizationPermission.products_manage,
         )
-        if not declarative_config and organization.is_config_as_code_enabled:
-            raise DeclarativeConfigManaged()
+        if not declarative_config:
+            await lock_catalog_editable(session, organization.id)
 
         if (
             create_schema.type == BenefitType.slack_shared_channel

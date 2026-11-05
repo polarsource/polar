@@ -34,8 +34,8 @@ from polar.billing_entry.repository import BillingEntryRepository
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.declarative_config.guard import (
-    DeclarativeConfigManaged,
     assert_catalog_editable,
+    lock_catalog_editable,
 )
 from polar.event.repository import EventRepository
 from polar.event.tinybird_repository import TinybirdEventRepository
@@ -199,8 +199,7 @@ class MeterService:
             organization.id,
             OrganizationPermission.products_manage,
         )
-        if organization.is_config_as_code_enabled:
-            raise DeclarativeConfigManaged()
+        await lock_catalog_editable(session, organization.id)
 
         repository = MeterRepository.from_session(session)
         if (

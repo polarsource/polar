@@ -19,8 +19,8 @@ from polar.benefit.service import benefit as benefit_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.declarative_config.guard import (
-    DeclarativeConfigManaged,
     assert_catalog_editable,
+    lock_catalog_editable,
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
@@ -302,8 +302,8 @@ class ProductService:
             organization.id,
             OrganizationPermission.products_manage,
         )
-        if not declarative_config and organization.is_config_as_code_enabled:
-            raise DeclarativeConfigManaged()
+        if not declarative_config:
+            await lock_catalog_editable(session, organization.id)
 
         if (
             create_schema.external_id is not None

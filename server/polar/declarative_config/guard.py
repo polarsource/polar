@@ -2,7 +2,7 @@ from uuid import UUID
 
 from polar.exceptions import PolarError
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncReadSession
+from polar.postgres import AsyncReadSession, AsyncSession
 
 
 class DeclarativeConfigManaged(PolarError):
@@ -20,4 +20,11 @@ async def assert_catalog_editable(
     repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(organization_id)
     if organization is not None and organization.is_config_as_code_enabled:
+        raise DeclarativeConfigManaged()
+
+
+async def lock_catalog_editable(session: AsyncSession, organization_id: UUID) -> None:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.lock(organization_id, key_share=True)
+    if organization.is_config_as_code_enabled:
         raise DeclarativeConfigManaged()

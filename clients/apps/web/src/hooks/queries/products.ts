@@ -34,6 +34,24 @@ export const useProducts = (
     placeholderData: keepPreviousData,
   })
 
+// One product per external_id, preferring the current version, then the newest.
+export const latestVersions = (products: schemas['Product'][]) => {
+  const byKey = new Map<string, schemas['Product']>()
+  for (const product of products) {
+    const key = product.external_id ?? product.id
+    const kept = byKey.get(key)
+    if (
+      !kept ||
+      (product.is_current === kept.is_current
+        ? product.created_at > kept.created_at
+        : product.is_current)
+    ) {
+      byKey.set(key, product)
+    }
+  }
+  return [...byKey.values()]
+}
+
 type ProductSelector =
   | { id: string[] }
   | { organization_id: string; external_id: string[] }
@@ -41,9 +59,10 @@ type ProductSelector =
 export const useSelectedProducts = (
   selector: ProductSelector,
   includeArchived = false,
+  allVersions = false,
 ) =>
   useQuery({
-    queryKey: ['products', selector, includeArchived],
+    queryKey: ['products', selector, includeArchived, allVersions],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1
@@ -53,7 +72,7 @@ export const useSelectedProducts = (
             params: {
               query: {
                 ...selector,
-                ...('id' in selector
+                ...('id' in selector || allVersions
                   ? {}
                   : { catalog_status: 'live' as const }),
                 is_archived: includeArchived ? null : false,

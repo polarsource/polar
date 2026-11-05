@@ -1,4 +1,8 @@
-import { useProducts, useSelectedProducts } from '@/hooks/queries'
+import {
+  latestVersions,
+  useProducts,
+  useSelectedProducts,
+} from '@/hooks/queries'
 import { Check as CheckIcon, ExpandMoreOutlined } from '@polar-sh/orbit/icons'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -118,6 +122,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       ? { organization_id: organization.id, external_id: value }
       : { id: value },
     includeArchived,
+    includeArchived,
   )
 
   // Queried products, show a selection of products based on the query
@@ -129,6 +134,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   >(
     () => ({
       is_archived: includeArchived ? null : false,
+      ...(includeArchived ? { catalog_status: null } : {}),
       ...(query ? { query } : {}),
       sorting: ['name'],
       limit: 50,
@@ -152,7 +158,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       }
     }
     return filterByExternalId
-      ? products.filter((product) => product.external_id)
+      ? latestVersions(products.filter((product) => product.external_id))
       : products
   }, [queriedProducts, selectedProducts, query, filterByExternalId])
 

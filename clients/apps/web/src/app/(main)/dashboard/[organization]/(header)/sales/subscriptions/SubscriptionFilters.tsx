@@ -19,7 +19,11 @@ import SubscriptionsProductSelect, {
   type ProductFilter,
 } from '@/components/Subscriptions/SubscriptionsProductSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
-import { useProducts, useSelectedProducts } from '@/hooks/queries'
+import {
+  latestVersions,
+  useProducts,
+  useSelectedProducts,
+} from '@/hooks/queries'
 import {
   AutorenewOutlined,
   CalendarMonthOutlined,
@@ -87,6 +91,7 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     organization.id,
     {
       is_recurring: true,
+      catalog_status: null,
       ...(productQuery ? { query: productQuery } : {}),
       sorting: ['name'],
       limit: 100,
@@ -97,6 +102,7 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     filterByExternalId
       ? { organization_id: organization.id, external_id: selectedValues }
       : { id: selectedValues },
+    true,
     true,
   )
 
@@ -109,8 +115,8 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
         }
       }
     }
-    return items
-  }, [queriedProducts, selectedProducts, productQuery])
+    return filterByExternalId ? latestVersions(items) : items
+  }, [queriedProducts, selectedProducts, productQuery, filterByExternalId])
 
   const productOptions = useMemo<FilterOption[]>(
     () =>

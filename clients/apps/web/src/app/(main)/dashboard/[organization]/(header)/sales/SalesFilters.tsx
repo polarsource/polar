@@ -12,7 +12,11 @@ import DateRangePicker, {
 import { OrderStatusDisplayTitle } from '@/components/Orders/OrderStatus'
 import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { useProducts, useSelectedProducts } from '@/hooks/queries'
+import {
+  latestVersions,
+  useProducts,
+  useSelectedProducts,
+} from '@/hooks/queries'
 import {
   CalendarMonthOutlined,
   DonutLargeOutlined,
@@ -73,6 +77,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     organization.id,
     {
       is_archived: null,
+      catalog_status: null,
       ...(productQuery ? { query: productQuery } : {}),
       sorting: ['name'],
       limit: 50,
@@ -82,6 +87,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     filterByExternalId
       ? { organization_id: organization.id, external_id: productFilter ?? [] }
       : { id: productFilter ?? [] },
+    true,
     true,
   )
 
@@ -94,17 +100,19 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         }
       }
     }
-    return items.flatMap((product) => {
-      const value = filterByExternalId ? product.external_id : product.id
-      return value
-        ? [
-            {
-              value,
-              label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
-            },
-          ]
-        : []
-    })
+    return (filterByExternalId ? latestVersions(items) : items).flatMap(
+      (product) => {
+        const value = filterByExternalId ? product.external_id : product.id
+        return value
+          ? [
+              {
+                value,
+                label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
+              },
+            ]
+          : []
+      },
+    )
   }, [products, selectedProducts, productQuery, filterByExternalId])
 
   const intervals = dateRangeIntervals(organization)

@@ -11,6 +11,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.catalog.repository import CatalogRepository
 from polar.declarative_config.guard import (
     DeclarativeConfigManaged,
     assert_catalog_editable,
@@ -166,6 +167,15 @@ class BenefitService:
             )
 
         repository = BenefitRepository.from_session(session)
+        await CatalogRepository.from_session(session).lock(organization.id)
+        if (
+            await repository.count_by_organization_id(organization.id)
+            >= organization.benefits_limit
+        ):
+            raise NotPermitted(
+                f"Organization has reached its limit of {organization.benefits_limit} benefits."
+            )
+
         if (
             create_schema.external_id is not None
             and await repository.get_by_external_id_and_organization(

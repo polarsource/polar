@@ -172,7 +172,13 @@ async def grants(
     summary="Create Benefit",
     response_model=BenefitSchema,
     status_code=201,
-    responses={201: {"description": "Benefit created."}},
+    responses={
+        201: {"description": "Benefit created."},
+        403: {
+            "model": NotPermitted.schema(),
+            "description": "Organization benefit limit reached.",
+        },
+    },
 )
 async def create(
     auth_subject: auth.BenefitsWrite,

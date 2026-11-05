@@ -30,6 +30,11 @@ class BenefitRepository(
 ):
     model = Benefit
 
+    async def count_by_organization_id(self, organization_id: UUID) -> int:
+        return await self.count(
+            self.get_base_statement().where(Benefit.organization_id == organization_id)
+        )
+
     async def get_by_id_and_product(
         self,
         id: UUID,

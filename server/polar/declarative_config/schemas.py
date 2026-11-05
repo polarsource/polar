@@ -540,7 +540,10 @@ class Config(Schema):
             "Custom fields to create or update, matched by `slug`. "
             "Changes apply to every product using the field, earlier "
             "versions included. Omitted `metadata` is left untouched. "
-            "Changing a slug creates a new field."
+            "Changing a slug creates a new field. "
+            "Existing custom fields that aren't listed are deleted: products "
+            "stop asking for them, and their answers are kept. "
+            "All custom fields are left untouched when `custom_fields` is omitted."
         ),
     )
     webhooks: list[ConfigWebhookEndpoint] = Field(
@@ -666,7 +669,10 @@ class ConfigRemoval(Schema):
 class ConfigApplyResult(Schema):
     changes: list[ConfigResult]
     removed: list[ConfigRemoval] = Field(
-        description="Resources left out of the published catalog."
+        description=(
+            "Resources left out of the published catalog, "
+            "and custom fields that were deleted."
+        )
     )
     catalog: ConfigCatalogChange | None = Field(
         description="The published catalog, if applying published a new one."
@@ -700,7 +706,10 @@ class ConfigSettingsChange(ConfigSettingsResult):
 class ConfigPlan(Schema):
     changes: list[ConfigChange]
     removed: list[ConfigRemoval] = Field(
-        description="Resources that applying leaves out of the next catalog."
+        description=(
+            "Resources that applying leaves out of the next catalog, "
+            "and custom fields it deletes."
+        )
     )
     catalog: ConfigCatalogPlan | None = Field(
         description="The catalog that applying publishes, if any."

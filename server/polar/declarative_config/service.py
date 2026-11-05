@@ -16,6 +16,7 @@ from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
 from polar.custom_field.repository import CustomFieldRepository
+from polar.custom_field.service import custom_field as custom_field_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
@@ -287,6 +288,9 @@ class DeclarativeConfigService:
         removed, removal_issues = await removals.products(session, organization, config)
         issues.extend(removal_issues)
         removed += await removals.benefits(session, organization, config)
+        removed_custom_fields = await removals.custom_fields(
+            session, organization, config, for_update=True
+        )
         issues.extend(
             await catalogs.cascade_benefit_changes(
                 session, organization, changes, removed
@@ -368,6 +372,10 @@ class DeclarativeConfigService:
             # The config describes the catalog and matches live: no draft left.
             await catalog_service.discard_draft(session, draft)
 
+        # After publishing: the bulk detach marks loaded attachments as deleted.
+        for custom_field in removed_custom_fields:
+            await custom_field_service.delete_and_detach(session, custom_field)
+
         if (
             changes.settings is not None
             and changes.settings.action == ConfigAction.updated
@@ -388,7 +396,10 @@ class DeclarativeConfigService:
                 *benefit_results,
                 *product_results,
             ],
-            removed=removed,
+            removed=[
+                *removed,
+                *removals.custom_field_removals(removed_custom_fields),
+            ],
             catalog=catalog,
             settings=settings_result,
         )
@@ -468,7 +479,12 @@ class DeclarativeConfigService:
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
             ],
-            removed=removed,
+            removed=[
+                *removed,
+                *removals.custom_field_removals(
+                    await removals.custom_fields(session, organization, config)
+                ),
+            ],
             catalog=catalog,
             settings=None
             if changes.settings is None

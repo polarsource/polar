@@ -25,6 +25,16 @@ class CustomFieldRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_all_by_organization(
+        self, organization_id: UUID, *, for_update: bool = False
+    ) -> Sequence[CustomField]:
+        statement = self.get_base_statement().where(
+            CustomField.organization_id == organization_id
+        )
+        if for_update:
+            statement = statement.with_for_update(of=CustomField, key_share=True)
+        return await self.get_all(statement)
+
     async def get_all_by_slugs(
         self,
         organization_id: UUID,

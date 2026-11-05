@@ -229,6 +229,11 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        return await self.delete_and_detach(session, custom_field)
+
+    async def delete_and_detach(
+        self, session: AsyncSession, custom_field: CustomField
+    ) -> CustomField:
         custom_field.set_deleted_at()
         session.add(custom_field)
 

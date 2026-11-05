@@ -1547,6 +1547,90 @@ class TestApply:
         assert await _attached_custom_fields(session, product.id) == []
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unlisted_custom_field_deleted(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product_repository = ProductRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [COMPANY_FIELD, SEATS_FIELD],
+                    "products": [
+                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+                    ],
+                }
+            ),
+        )
+        [first] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"custom_fields": [SEATS_FIELD], "products": [PACK_PRODUCT]}
+            ),
+        )
+
+        assert result.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.custom_field,
+                external_id="company",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        repository = CustomFieldRepository.from_session(session)
+        assert (
+            await repository.get_by_organization_and_slug(organization.id, "company")
+            is None
+        )
+        assert (
+            await repository.get_by_organization_and_slug(organization.id, "team-size")
+            is not None
+        )
+        assert await _attached_custom_fields(session, first.id) == []
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_omitted_custom_fields_untouched(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [BETA_BENEFIT]}),
+        )
+
+        assert result.removed == []
+        assert (
+            await CustomFieldRepository.from_session(
+                session
+            ).get_by_organization_and_slug(organization.id, "company")
+            is not None
+        )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_with_new_products(
         self,
         session: AsyncSession,
@@ -2047,6 +2131,42 @@ class TestPlan:
                 ["medium"],
             )
         ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unlisted_custom_field_removal(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="vat",
+            organization=organization,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+        )
+
+        assert plan.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.custom_field,
+                external_id="vat",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        assert plan.catalog is None
+        assert (
+            await CustomFieldRepository.from_session(
+                session
+            ).get_by_organization_and_slug(organization.id, "vat")
+            is not None
+        )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_custom_field_references(

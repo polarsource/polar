@@ -1,3 +1,13 @@
+import {
+  to = module.planetscale.planetscale_postgres_dedicated_read_replica.this["analytics"]
+  id = jsonencode({
+    organization = var.planetscale_organization
+    database     = "polar-production"
+    branch       = "main"
+    name         = "analytics"
+  })
+}
+
 module "planetscale" {
   source = "../modules/planetscale_postgres"
 

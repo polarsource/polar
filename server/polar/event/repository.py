@@ -103,8 +103,30 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         for event in events:
             if event.get("id") is None:
                 event["id"] = generate_uuid()
-            if event.get("pending_parent_external_id") is None:
-                event["root_id"] = event["id"]
+
+        # A top-level event is its own root. A child whose parent is in this
+        # batch shares the parent's root; any other child gets its root from
+        # the propagation step once its parent is known.
+        events_by_id = {event["id"]: event for event in events}
+
+        def _root_id(event: dict[str, Any]) -> UUID | None:
+            seen: set[UUID] = set()
+            while event["id"] not in seen:
+                seen.add(event["id"])
+                if event.get("pending_parent_external_id") is not None:
+                    return None
+                parent_id = event.get("parent_id")
+                if parent_id is None:
+                    return event["id"]
+                parent = events_by_id.get(parent_id)
+                if parent is None:
+                    return None
+                event = parent
+            return None
+
+        for event in events:
+            if event.get("root_id") is None:
+                event["root_id"] = _root_id(event)
 
         # Ensure all event dicts have the same keys; add left out keys with None values.
         # We do this so SQLAlchemy bulk inserts these rows instead of doing separate

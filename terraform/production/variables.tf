@@ -19,6 +19,12 @@ variable "planetscale_app_password" {
   }
 }
 
+variable "planetscale_metrics_token" {
+  description = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string

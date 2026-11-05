@@ -30,6 +30,18 @@ resource "tfe_variable" "planetscale_organization" {
   }
 }
 
+resource "tfe_variable" "planetscale_metrics_token" {
+  key             = "planetscale_metrics_token"
+  category        = "terraform"
+  description     = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.global.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "apple_client_id" {
   key             = "apple_client_id"
   category        = "terraform"

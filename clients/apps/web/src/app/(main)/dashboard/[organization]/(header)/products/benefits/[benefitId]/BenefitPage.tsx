@@ -4,6 +4,7 @@ import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
 import { BenefitVersionBanner } from '@/components/Benefit/BenefitVersionBanner'
+import { BenefitVersionSelect } from '@/components/Benefit/BenefitVersionSelect'
 import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
@@ -174,6 +175,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </Box>
 
           <Box alignItems="center" gap="l">
+            <BenefitVersionSelect
+              organization={organization}
+              benefit={benefit}
+            />
             {!managedAsCode && (
               <Button onClick={toggleEdit}>Edit Benefit</Button>
             )}

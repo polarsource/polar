@@ -86,3 +86,23 @@ export const useCatalog = (id: string | null | undefined) =>
     retry: defaultRetry,
     enabled: !!id,
   })
+
+export const useCatalogConfig = (
+  organizationId: string,
+  catalogId: string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ['catalogs', 'config', { id: catalogId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/config/', {
+          params: {
+            query: { organization_id: organizationId, catalog_id: catalogId },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    // Published versions don't change
+    staleTime: Infinity,
+    enabled: !!catalogId,
+  })

@@ -32,7 +32,6 @@ export const CustomerSubnav = ({
         : `${base}/events`,
       external: canReadAnalytics,
     },
-    { label: 'Costs', href: `${base}/costs` },
     ...(customer.type === 'team'
       ? [{ label: 'Members', href: `${base}/members` }]
       : []),

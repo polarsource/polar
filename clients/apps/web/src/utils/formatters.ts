@@ -1,3 +1,4 @@
+import { formatCurrency } from '@polar-sh/currency'
 const stripTrailingZeros = (value: string): string => {
   return value.replace(/\.0+([^0-9]*)$/g, '$1')
 }
@@ -38,6 +39,12 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
+
+// Sub-cent precision only matters below a dollar; larger costs read as money.
+export const formatCostAmount = (cents: number): string =>
+  Math.abs(cents) >= 100
+    ? formatCurrency('statistics')(cents, 'usd')
+    : formatCurrency('subcent')(cents, 'usd')
 
 export const formatPercentage = (value: number): string =>
   stripTrailingZeros(percentageFormatter.format(value))

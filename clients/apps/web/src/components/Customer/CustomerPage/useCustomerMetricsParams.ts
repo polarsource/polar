@@ -3,6 +3,7 @@
 import { getNextValidInterval } from '@/components/Metrics/IntervalPicker'
 import { getCustomerActivityStart } from '@/utils/customer'
 import { useDateRange } from '@/utils/date'
+import { dateRangeToInterval } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { endOfToday, startOfDay } from 'date-fns'
 import { parseAsStringLiteral, useQueryState } from 'nuqs'
@@ -36,7 +37,7 @@ export const useCustomerMetricsParams = (customer: schemas['Customer']) => {
   )
 
   const interval: schemas['TimeInterval'] = getNextValidInterval(
-    intervalParam ?? 'day',
+    intervalParam ?? dateRangeToInterval(startDate, endDate),
     startDate,
     endDate,
   )

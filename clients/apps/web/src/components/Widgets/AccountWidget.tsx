@@ -70,7 +70,7 @@ const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
       className={className}
     >
       {allPayouts.length > 0 ? (
-        <Box flexDirection="column" paddingBottom="xl">
+        <Box flexDirection="column" paddingBottom="m">
           {allPayouts.map((payout) => (
             <Box
               key={payout.id}

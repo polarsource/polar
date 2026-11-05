@@ -66,7 +66,7 @@ const CustomerRiskWidgetContent = ({ className }: CustomerRiskWidgetProps) => {
           </Text>
         </Box>
       ) : (
-        <Box flexDirection="column" paddingBottom="xl">
+        <Box flexDirection="column" paddingBottom="m">
           {items.slice(0, VISIBLE_ROWS).map(({ subscription, reason }) => (
             <Link
               key={subscription.id}

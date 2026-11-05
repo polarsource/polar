@@ -3,14 +3,15 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfMonth, format, startOfMonth, subDays, subMonths } from 'date-fns'
+import { toISODate } from '@/utils/metrics'
 import { useContext, useState } from 'react'
-import { SegmentedBars } from './SegmentedBars'
+import { MonthlyBars } from './MonthlyBars'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetGuard } from './WidgetGuard'
 import { WidgetLink } from './WidgetLink'
 
 const WIDGET_TITLE = 'Gross margin'
-const MONTHS = 6
+const MONTHS = 5
 const TRAILING_DAYS = 30
 
 interface GrossMarginWidgetProps {
@@ -75,25 +76,23 @@ const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
       }
       className={className}
     >
-      <Box
-        flexDirection="column"
-        flex={1}
-        justifyContent="end"
-        paddingBottom="xl"
-      >
-        <SegmentedBars
+      <Box flexDirection="column" paddingBottom="m">
+        <MonthlyBars
           loading={isLoading}
           max={100}
           bars={periods.map((period, index) => ({
             key: period.timestamp,
             label: format(period.timestamp, 'MMM'),
-            value: Math.max(0, period.percentage ?? 0),
-            negative: period.percentage != null && period.percentage < 0,
-            tooltip:
-              period.percentage != null
-                ? `${period.percentage}% in ${format(period.timestamp, 'MMMM')}`
-                : `No revenue in ${format(period.timestamp, 'MMMM')}`,
+            value: period.percentage,
+            formatted:
+              period.percentage != null ? `${period.percentage}%` : '–',
             highlighted: index === periods.length - 1,
+            href: `/dashboard/${organization.slug}/analytics/costs?${new URLSearchParams(
+              {
+                startDate: toISODate(startOfMonth(period.timestamp)),
+                endDate: toISODate(endOfMonth(period.timestamp)),
+              },
+            )}`,
           }))}
         />
       </Box>

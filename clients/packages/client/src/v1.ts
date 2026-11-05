@@ -3736,6 +3736,9 @@ export interface paths {
      * @description Publish the draft catalog. Its new products and benefits replace the live
      *     ones for new sales. Existing customers stay on their versions until moved.
      *
+     *     Requires `products:write`, and `benefits:write` when the draft changes
+     *     benefits.
+     *
      *     **Scopes**: `products:write`
      */
     post: operations['catalogs:publish']

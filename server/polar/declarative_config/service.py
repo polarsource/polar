@@ -46,6 +46,7 @@ from .schemas import (
     ConfigCatalogPlan,
     ConfigChange,
     ConfigExport,
+    ConfigInit,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -197,6 +198,34 @@ def _removed_external_ids(
 
 
 class DeclarativeConfigService:
+    async def init(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        config_init: ConfigInit,
+    ) -> None:
+        organization = await get_payload_organization(
+            session, auth_subject, config_init
+        )
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.organization_manage,
+        )
+        if organization.is_config_as_code_enabled:
+            return
+        repository = OrganizationRepository.from_session(session)
+        await repository.update(
+            organization,
+            update_dict={
+                "feature_settings": {
+                    **organization.feature_settings,
+                    "config_as_code_enabled": True,
+                }
+            },
+        )
+
     async def apply(
         self,
         session: AsyncSession,

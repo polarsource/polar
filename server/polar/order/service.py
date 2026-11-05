@@ -410,7 +410,9 @@ class OrderService:
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),
-                    product_load=contains_eager(Order.product),
+                    product_load=contains_eager(Order.product).defer(
+                        Product.is_deletable, raiseload=True
+                    ),
                     discount_load=contains_eager(Order.discount),
                 )
             )

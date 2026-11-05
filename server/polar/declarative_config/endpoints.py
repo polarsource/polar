@@ -170,7 +170,10 @@ async def apply(
     responses={
         200: {"description": "Config as code is enabled."},
         403: {
-            "description": "Not allowed to manage this organization.",
+            "description": (
+                "Not allowed to manage this organization, "
+                "or missing the `organizations:write` scope."
+            ),
             "model": NotPermitted.schema(),
         },
         409: {

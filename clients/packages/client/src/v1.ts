@@ -63298,7 +63298,7 @@ export interface operations {
           'application/json': components['schemas']['ConfigInitResult']
         }
       }
-      /** @description Not allowed to manage this organization. */
+      /** @description Not allowed to manage this organization, or missing the `organizations:write` scope. */
       403: {
         headers: {
           [name: string]: unknown

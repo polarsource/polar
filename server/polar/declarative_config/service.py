@@ -569,8 +569,6 @@ class DeclarativeConfigService:
             OrganizationPermission.organization_manage,
         )
         organization_repository = OrganizationRepository.from_session(session)
-        # The row lock conflicts with the key-share lock that inserting a
-        # product, benefit or meter takes on its organization.
         organization = await organization_repository.lock(organization.id)
         if not organization.is_config_as_code_enabled:
             products = await ProductRepository.from_session(

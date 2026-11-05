@@ -369,7 +369,7 @@ class TestInit:
     @pytest.mark.parametrize(
         ("resource", "counts"),
         [
-            ("product", "1 product, 0 benefits and 0 meters"),
+            ("deleted_product", "1 product, 0 benefits and 0 meters"),
             ("archived_product", "1 product, 0 benefits and 0 meters"),
             ("deleted_benefit", "0 products, 1 benefit and 0 meters"),
             ("archived_meter", "0 products, 0 benefits and 1 meter"),
@@ -386,13 +386,16 @@ class TestInit:
         user_organization: UserOrganization,
     ) -> None:
         match resource:
-            case "product" | "archived_product":
-                await create_product(
+            case "deleted_product" | "archived_product":
+                product = await create_product(
                     save_fixture,
                     organization=organization,
                     recurring_interval=None,
                     is_archived=resource == "archived_product",
                 )
+                if resource == "deleted_product":
+                    product.deleted_at = utc_now()
+                    await save_fixture(product)
             case "deleted_benefit":
                 benefit = await create_benefit(save_fixture, organization=organization)
                 benefit.deleted_at = utc_now()

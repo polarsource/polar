@@ -2636,16 +2636,19 @@ class TestBulkUpdate:
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
-        current_product: Product,
     ) -> None:
-        organization.feature_settings = {}
-        await save_fixture(organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+        )
 
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
                 "product_external_id": "pro",
-                "target_product_id": str(current_product.id),
+                "target_product_id": str(product.id),
             },
         )
 

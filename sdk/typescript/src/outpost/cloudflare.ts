@@ -2,7 +2,6 @@ import type {
   DurableObjectNamespace,
   DurableObjectState,
   DurableObjectStub,
-  ExecutionContext,
 } from "@cloudflare/workers-types";
 
 import { DurableObject } from "cloudflare:workers";
@@ -415,16 +414,15 @@ export interface CloudflareOutpostOptions {
   organizationId: string;
 }
 
-/** Outpost from a Worker: the customers' Durable Objects answer, Polar gets the events. */
+/**
+ * Outpost from a Worker: the customers' Durable Objects count the events and answer the reads.
+ * Delivering the events to Polar is the buffered strategy's job, as with the Redis Outpost.
+ */
 export class CloudflareOutpost {
-  private readonly polar: ClientBase;
-
   constructor(
     private readonly env: OutpostEnv,
     private readonly options: CloudflareOutpostOptions,
-  ) {
-    this.polar = polarClient(env, options.organizationId);
-  }
+  ) {}
 
   /**
    * Reject an event Outpost cannot reconcile with Polar.
@@ -435,18 +433,10 @@ export class CloudflareOutpost {
     if (!event.external_id) throw new MissingExternalIdError();
   }
 
-  /**
-   * Count the event in its customer's Durable Object, then send it to Polar: after the response
-   * when given the request's context, before it otherwise.
-   */
-  async track(event: EventInput, context?: ExecutionContext): Promise<void> {
+  /** Count the event in its customer's Durable Object. */
+  async track(event: EventInput): Promise<void> {
     this.validate(event);
-    const dated =
-      event.timestamp === undefined ? { ...event, timestamp: new Date().toISOString() } : event;
-    await this.customer(customerKey(dated)).track(dated);
-    const ingest = request(this.polar, "POST", "/v1/events/ingest", { body: { events: [dated] } });
-    if (context) context.waitUntil(ingest);
-    else await ingest;
+    await this.customer(customerKey(event)).track(event);
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {

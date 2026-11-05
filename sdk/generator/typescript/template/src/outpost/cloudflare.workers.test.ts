@@ -1,9 +1,4 @@
-import {
-  createExecutionContext,
-  env,
-  runDurableObjectAlarm,
-  waitOnExecutionContext,
-} from "cloudflare:test";
+import { env, runDurableObjectAlarm } from "cloudflare:test";
 import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { CloudflareOutpost, MissingExternalIdError } from "./cloudflare";
@@ -117,8 +112,6 @@ const answer = (method: string, path: string, body: Record<string, any> | undefi
       resetChanges = false;
       return page;
     }
-    case "POST /v1/events/ingest":
-      return { inserted: body!.events.length };
   }
   return undefined;
 };
@@ -212,15 +205,12 @@ it("reads null for a customer Polar does not know", async () => {
   expect(await outpost().meter(meter)).toBeNull();
 });
 
-it("counts a tracked event once on top of the snapshot and sends it to Polar", async () => {
+it("counts a tracked event once on top of the snapshot", async () => {
   seed();
   const tracked = event(3);
-  const context = createExecutionContext();
-  await outpost().track(tracked, context);
-  await outpost().track(tracked, context);
+  await outpost().track(tracked);
+  await outpost().track(tracked);
   expect((await outpost().meter(meter))?.consumed_units).toBe(13);
-  await waitOnExecutionContext(context);
-  expect(requested("/v1/events/ingest")).toEqual([{ events: [tracked] }, { events: [tracked] }]);
 });
 
 it("rejects an event without an external_id", async () => {

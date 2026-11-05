@@ -3,7 +3,6 @@ from uuid import UUID
 
 from sqlalchemy import Select, select
 
-from polar.auth.models import User
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
     Options,
@@ -20,17 +19,6 @@ class AccountRepository(
     RepositoryBase[Account],
 ):
     model = Account
-
-    async def get_by_user(
-        self, user: uuid.UUID, *, options: Options = (), include_deleted: bool = False
-    ) -> Account | None:
-        statement = (
-            self.get_base_statement(include_deleted=include_deleted)
-            .join(User, onclause=User.account_id == Account.id)
-            .where(User.id == user)
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
 
     async def get_by_organization(
         self,

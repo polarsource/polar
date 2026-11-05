@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from alembic_utils.pg_extension import PGExtension
@@ -9,13 +10,16 @@ from sqlalchemy import (
     TIMESTAMP,
     Boolean,
     ColumnElement,
+    Index,
     MetaData,
+    Table,
     Uuid,
+    event,
     inspect,
     type_coerce,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, Mapper, mapped_column
 
 from polar.enums import RateLimitGroup
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -105,6 +109,25 @@ class RateLimitGroupMixin:
         StringEnum(RateLimitGroup, length=16),
         nullable=False,
         default=RateLimitGroup.default,
+    )
+
+
+class OrganizationCreatedAtIndexMixin:
+    """Adds ix_<table>_organization_id_created_at, whatever __table_args__ the model sets."""
+
+
+@event.listens_for(
+    OrganizationCreatedAtIndexMixin, "after_mapper_constructed", propagate=True
+)
+def _add_organization_created_at_index(mapper: Mapper[Any], class_: type) -> None:
+    if mapper.single:
+        return
+    table = mapper.local_table
+    assert isinstance(table, Table)
+    Index(
+        f"ix_{table.name}_organization_id_created_at",
+        table.c.organization_id,
+        table.c.created_at,
     )
 
 

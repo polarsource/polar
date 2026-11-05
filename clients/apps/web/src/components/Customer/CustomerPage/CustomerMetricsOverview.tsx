@@ -1,17 +1,11 @@
 'use client'
 
 import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
-import { StatisticCard } from '@/components/Shared/StatisticCard'
-import { getNextValidInterval } from '@/components/Metrics/IntervalPicker'
 import { ParsedMetricsResponse, useMetrics } from '@/hooks/queries'
-import { getCustomerActivityStart } from '@/utils/customer'
-import { formatCostAmount, formatPercentage } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { endOfToday, startOfDay } from 'date-fns'
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { CustomerMetricsRangeControl } from './CustomerMetricsRangeControl'
 
 const RELEVANT_METRIC_KEYS: (keyof schemas['Metrics'])[] = [
@@ -46,12 +40,17 @@ const RELEVANT_METRIC_KEYS: (keyof schemas['Metrics'])[] = [
 ]
 
 const CHART_METRICS: (keyof schemas['Metrics'])[] = [
-  'cashflow',
   'revenue',
-  'net_revenue',
   'costs',
+  'gross_margin',
+  'gross_margin_percentage',
   'orders',
 ]
+
+const DISPLAY_NAMES: Record<string, string> = {
+  gross_margin: 'Profit',
+  gross_margin_percentage: 'Profit Margin',
+}
 
 interface CustomerMetricsOverviewProps {
   organization: schemas['Organization']
@@ -74,32 +73,21 @@ export const CustomerMetricsOverview = ({
     customer_id: [customer.id],
   })
 
-  const [allTimeRange] = React.useState(() => {
-    const startDate = startOfDay(getCustomerActivityStart(customer))
-    const endDate = endOfToday()
-    return {
-      startDate,
-      endDate,
-      interval: getNextValidInterval('month', startDate, endDate),
-    }
-  })
-
-  const { data: allTimeData } = useMetrics({
-    ...allTimeRange,
-    organization_id: organization.id,
-    customer_id: [customer.id],
-  })
-  const totals = allTimeData?.totals
-
   const relevantMetricsData = useMemo(() => {
     if (!metricsData) {
       return metricsData
     }
 
     const metrics = Object.fromEntries(
-      Object.entries(metricsData.metrics).filter(([key]) =>
-        RELEVANT_METRIC_KEYS.includes(key as keyof schemas['Metrics']),
-      ),
+      Object.entries(metricsData.metrics)
+        .filter(([key]) =>
+          RELEVANT_METRIC_KEYS.includes(key as keyof schemas['Metrics']),
+        )
+        .map(([key, metric]) =>
+          key in DISPLAY_NAMES && metric
+            ? [key, { ...metric, display_name: DISPLAY_NAMES[key] }]
+            : [key, metric],
+        ),
     ) as ParsedMetricsResponse['metrics']
 
     return {
@@ -109,54 +97,25 @@ export const CustomerMetricsOverview = ({
   }, [metricsData])
 
   return (
-    <>
+    <Box flexDirection="column" rowGap="xl">
       <Box
-        display="grid"
-        gridTemplateColumns="repeat(auto-fit, minmax(140px, 1fr))"
-        gap={{ base: 'l', md: 'xl' }}
+        flexDirection={{ base: 'column', md: 'row' }}
+        alignItems={{ base: 'start', md: 'center' }}
+        justifyContent="between"
+        gap="l"
       >
-        <StatisticCard title="Revenue" size="lg">
-          {typeof totals?.revenue === 'number'
-            ? formatCurrency('statistics')(totals.revenue, 'usd')
-            : '—'}
-        </StatisticCard>
-        <StatisticCard title="Cost" size="lg">
-          {typeof totals?.costs === 'number'
-            ? formatCostAmount(totals.costs)
-            : '—'}
-        </StatisticCard>
-        <StatisticCard title="Profit" size="lg">
-          {typeof totals?.gross_margin === 'number'
-            ? formatCurrency('statistics')(totals.gross_margin, 'usd')
-            : '—'}
-        </StatisticCard>
-        <StatisticCard title="Profit Margin" size="lg">
-          {typeof totals?.gross_margin_percentage === 'number'
-            ? formatPercentage(totals.gross_margin_percentage)
-            : '—'}
-        </StatisticCard>
+        <Text as="h2" variant="heading-xxs">
+          Metrics
+        </Text>
+        <CustomerMetricsRangeControl customer={customer} />
       </Box>
-
-      <Box flexDirection="column" rowGap="xl">
-        <Box
-          flexDirection={{ base: 'column', md: 'row' }}
-          alignItems={{ base: 'start', md: 'center' }}
-          justifyContent="between"
-          gap="l"
-        >
-          <Text as="h2" variant="heading-xxs">
-            Metrics
-          </Text>
-          <CustomerMetricsRangeControl customer={customer} />
-        </Box>
-        <MetricGroup
-          metricKeys={CHART_METRICS}
-          data={relevantMetricsData}
-          interval={interval}
-          loading={metricsLoading}
-          context={customer.name ?? customer.email ?? undefined}
-        />
-      </Box>
-    </>
+      <MetricGroup
+        metricKeys={CHART_METRICS}
+        data={relevantMetricsData}
+        interval={interval}
+        loading={metricsLoading}
+        context={customer.name ?? customer.email ?? undefined}
+      />
+    </Box>
   )
 }

@@ -13,6 +13,7 @@ from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
 from polar.catalog.repository import (
     CatalogBenefitRepository,
+    CatalogMeterRepository,
     CatalogProductRepository,
     CatalogRepository,
 )
@@ -59,10 +60,12 @@ from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
+from polar.meter.aggregation import AggregationFunction
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
     Agent,
+    Catalog,
     Customer,
     Organization,
     ProductPriceFixed,
@@ -779,11 +782,13 @@ class TestApply:
             ),
         )
 
-        assert result.changes[0].action == ConfigAction.created
-        [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
-            organization.id, ["sdk-tool-calls"]
+        assert result.changes == []
+        assert (
+            await MeterRepository.from_session(session).get_all_by_external_ids(
+                organization.id, ["sdk-tool-calls"]
+            )
+            == []
         )
-        assert meter.archived_at is None
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unchanged(
@@ -813,6 +818,7 @@ class TestApply:
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_update(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
@@ -820,8 +826,12 @@ class TestApply:
         organization: Organization,
     ) -> None:
         meter = await create_meter(
-            save_fixture, organization=organization, external_id="sdk-tool-calls"
+            save_fixture,
+            organization=organization,
+            external_id="sdk-tool-calls",
+            user_metadata={"team": "sdk"},
         )
+        mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
             session,
@@ -831,10 +841,20 @@ class TestApply:
         )
 
         assert result.changes[0].action == ConfigAction.updated
-        assert meter.name == "SDK - Tool Calls"
-        assert meter.unit == MeterUnit.custom
-        assert meter.custom_label == "call"
-        assert meter.filter.model_dump() == TOOL_CALLS_METER["filter"]
+        assert result.catalog is not None
+        assert meter.is_current is False
+        assert meter.name == "My Meter"
+        version = await MeterRepository.from_session(
+            session
+        ).get_by_external_id_and_organization("sdk-tool-calls", organization.id)
+        assert version is not None
+        assert version.id != meter.id
+        assert version.name == "SDK - Tool Calls"
+        assert version.unit == MeterUnit.custom
+        assert version.custom_label == "call"
+        assert version.filter.model_dump() == TOOL_CALLS_METER["filter"]
+        assert version.user_metadata == {"team": "sdk"}
+        assert version.catalog_id == result.catalog.after.id
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_ignores_other_organization_meter(
@@ -862,45 +882,9 @@ class TestApply:
         assert other_meter.name == "My Meter"
 
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_aggregating_meter_aggregation_change(
+    async def test_billed_meter_aggregation_change(
         self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        event = await create_event(save_fixture, organization=organization)
-        await create_meter(
-            save_fixture,
-            organization=organization,
-            external_id="my-meter",
-            last_billed_event=event,
-        )
-
-        with pytest.raises(ConfigInvalid) as exc_info:
-            await declarative_config_service.apply(
-                session,
-                redis,
-                auth_subject,
-                Config.model_validate(
-                    {
-                        "meters": [
-                            {
-                                **FIXTURE_METER,
-                                "aggregation": {"func": "sum", "property": "tokens"},
-                            }
-                        ]
-                    }
-                ),
-            )
-
-        [error] = exc_info.value.errors
-        assert error.loc == ["body", "meters", 0, "aggregation"]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_aggregating_meter_name_change(
-        self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
@@ -914,16 +898,33 @@ class TestApply:
             external_id="my-meter",
             last_billed_event=event,
         )
+        mocker.patch("polar.meter.service.enqueue_job")
 
         result = await declarative_config_service.apply(
             session,
             redis,
             auth_subject,
-            Config.model_validate({"meters": [{**FIXTURE_METER, "name": "Renamed"}]}),
+            Config.model_validate(
+                {
+                    "meters": [
+                        {
+                            **FIXTURE_METER,
+                            "aggregation": {"func": "sum", "property": "tokens"},
+                        }
+                    ]
+                }
+            ),
         )
 
         assert result.changes[0].action == ConfigAction.updated
-        assert meter.name == "Renamed"
+        assert meter.is_current is False
+        assert meter.aggregation.func == AggregationFunction.cnt
+        assert meter.last_billed_event == event
+        version = await MeterRepository.from_session(
+            session
+        ).get_by_external_id_and_organization("my-meter", organization.id)
+        assert version is not None
+        assert version.aggregation.func == AggregationFunction.sum
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_omitted_metadata_keeps_existing(
@@ -954,6 +955,7 @@ class TestApply:
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_metadata_update(
         self,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
@@ -967,6 +969,8 @@ class TestApply:
             user_metadata={"team": "sdk"},
         )
 
+        mocker.patch("polar.meter.service.enqueue_job")
+
         result = await declarative_config_service.apply(
             session,
             redis,
@@ -977,7 +981,12 @@ class TestApply:
         )
 
         assert result.changes[0].action == ConfigAction.updated
-        assert meter.user_metadata == {"team": "billing"}
+        assert meter.user_metadata == {"team": "sdk"}
+        version = await MeterRepository.from_session(
+            session
+        ).get_by_external_id_and_organization("my-meter", organization.id)
+        assert version is not None
+        assert version.user_metadata == {"team": "billing"}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_create(
@@ -4031,6 +4040,9 @@ class TestBenefitVersioning:
             )
 
 
+RENAMED_TOOL_CALLS_METER = {**TOOL_CALLS_METER, "name": "Tool calls"}
+
+
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 @pytest.mark.usefixtures("config_as_code_enabled")
@@ -4897,6 +4909,107 @@ class TestCatalogDrafts:
         [product] = exported.config.products
         [price] = product.prices
         assert price.model_dump(include={"price_amount"}) == {"price_amount": 2500}
+
+    async def test_draft_meter_goes_live_on_publish(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.meter.service.enqueue_job")
+        meters_repo = MeterRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+        )
+        [live_meter] = await meters_repo.get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        enqueue_job_mock.reset_mock()
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [RENAMED_TOOL_CALLS_METER]}),
+            publish=False,
+        )
+
+        assert result.catalog is not None
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        [member] = await CatalogMeterRepository.from_session(
+            session
+        ).get_all_by_catalog(draft.id)
+        drafted = member.meter
+        assert (drafted.is_current, drafted.catalog_id) == (False, draft.id)
+        assert [
+            meter.id
+            for meter in await meters_repo.get_all(meters_repo.get_active_statement())
+        ] == [live_meter.id]
+        enqueue_job_mock.assert_not_called()
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        await session.refresh(live_meter)
+        assert (live_meter.is_current, drafted.is_current) == (False, True)
+        assert mocker.call("meter.backfill_events", drafted.id) in (
+            enqueue_job_mock.call_args_list
+        )
+
+    async def test_discarded_draft_keeps_live_meters(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        # Published before meters were versioned, so it lists none.
+        await save_fixture(
+            Catalog(
+                organization=organization,
+                status=CatalogStatus.live,
+                published_at=utc_now(),
+            )
+        )
+        legacy = await create_meter(
+            save_fixture, organization=organization, external_id="my-meter"
+        )
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [FIXTURE_METER, TOOL_CALLS_METER]}),
+            publish=False,
+        )
+        assert result.catalog is not None
+        [drafted] = [
+            member.meter
+            for member in await CatalogMeterRepository.from_session(
+                session
+            ).get_all_by_catalog(result.catalog.after.id)
+            if member.meter_id != legacy.id
+        ]
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        await catalog_service.discard_draft(session, draft)
+
+        await session.refresh(legacy)
+        await session.refresh(drafted)
+        assert (legacy.deleted_at, legacy.is_current, legacy.catalog_id) == (
+            None,
+            True,
+            None,
+        )
+        assert drafted.deleted_at is not None
 
     async def test_apply_without_catalog_sections_keeps_the_draft(
         self,

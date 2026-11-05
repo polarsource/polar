@@ -1,4 +1,9 @@
-import { createExecutionContext, env, waitOnExecutionContext } from "cloudflare:test";
+import {
+  createExecutionContext,
+  env,
+  runDurableObjectAlarm,
+  waitOnExecutionContext,
+} from "cloudflare:test";
 import { beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { CloudflareOutpost, MissingExternalIdError } from "./cloudflare";
@@ -54,18 +59,23 @@ let snapshot: Record<string, unknown> | undefined;
 let credited = 100;
 let ingested = new Set<string>();
 let changes: Record<string, unknown>[] = [];
-let hasMore = false;
+let pageSize = Infinity;
 let resetChanges = false;
 let cursor = 0;
 const requests: { method: string; path: string; body?: unknown }[] = [];
 const requested = (path: string) =>
   requests.filter((request) => request.path.startsWith(path)).map((request) => request.body);
 
-const identity = (reducerId: string, payload: Record<string, unknown>) => {
+const identity = (
+  reducerId: string,
+  who: Record<string, unknown>,
+  payload: Record<string, unknown>,
+) => {
   const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
   return {
     customer_id: null,
-    ...customer,
+    external_customer_id: null,
+    ...who,
     customer_exists: true,
     ...snapshot,
     ...(kind === "credit" && creditSnapshot(credited, snapshot!.version as number)),
@@ -74,30 +84,36 @@ const identity = (reducerId: string, payload: Record<string, unknown>) => {
   };
 };
 
+const who = ({ customer_id, external_customer_id }: Record<string, unknown>) => ({
+  customer_id: customer_id ?? null,
+  external_customer_id: external_customer_id ?? null,
+});
+
 const answer = (method: string, path: string, body: Record<string, any> | undefined) => {
   switch (`${method} ${path}`) {
     case "GET /v1/outpost/configuration":
       return { organization_id: organization, reducers };
     case "POST /v1/outpost/meter-usage":
-      return snapshot ? [identity(body!.reducer_id, {})] : [];
+      return snapshot ? [identity(body!.reducer_id, who(body!), {})] : [];
     case "POST /v1/outpost/confirm": {
       const { ids, ...payload } = body!;
       return {
         ...payload,
         ids: ids.filter((id: string) => ingested.has(id)),
-        snapshot: identity(payload.reducer_id, {}),
+        snapshot: identity(payload.reducer_id, who(payload), {}),
       };
     }
     case "GET /v1/outpost/changes": {
       const page = {
-        changes: changes.splice(0).map((change) => ({ customer_exists: true, ...change })),
+        changes: changes
+          .splice(0, pageSize)
+          .map((change) => ({ customer_exists: true, ...change })),
         cursor: `${++cursor}-0`,
-        has_more: hasMore,
+        has_more: changes.length > 0,
         reset: resetChanges,
         configuration_changed: false,
         next_poll_in: 30,
       };
-      hasMore = false;
       resetChanges = false;
       return page;
     }
@@ -131,7 +147,7 @@ beforeEach(() => {
   credited = 100;
   ingested = new Set();
   changes = [];
-  hasMore = false;
+  pageSize = Infinity;
   resetChanges = false;
   cursor = 0;
   requests.length = 0;
@@ -149,6 +165,22 @@ const seed = (cold = 10): void => {
     max: cold,
   };
 };
+const sync = () => env.OUTPOST_SYNC.get(env.OUTPOST_SYNC.idFromName(organization));
+const customerObject = (key = "external:alice") =>
+  env.OUTPOST_CUSTOMER.get(env.OUTPOST_CUSTOMER.idFromName(`${organization}:${key}`));
+// A change of the usage reducer: Polar's new total of the cold buckets.
+const change = (version: number, sum: number, external = "alice") => ({
+  customer_id: null,
+  external_customer_id: external,
+  customer_exists: true,
+  reducer_id: "tokens",
+  cold_until: bucket,
+  version,
+  count: 1,
+  sum,
+  min: sum,
+  max: sum,
+});
 const event = (tokens: number) => ({
   ...customer,
   name: "api_call",
@@ -191,4 +223,59 @@ it("rejects an event without an external_id", async () => {
   await expect(outpost().track({ ...customer, name: "api_call", timestamp })).rejects.toThrow(
     MissingExternalIdError,
   );
+});
+
+it("applies a pulled snapshot to a registered customer, not to an unregistered one", async () => {
+  seed();
+  expect((await outpost().meter(meter))?.consumed_units).toBe(10);
+  changes.push(change(1791807000000002, 20), change(1791807000000002, 20, "bob"));
+  expect(await runDurableObjectAlarm(sync())).toBe(true);
+  expect(requested("/v1/outpost/meter-usage")).toHaveLength(2);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(20);
+  expect(requested("/v1/outpost/meter-usage")).toHaveLength(2);
+  expect(
+    (await outpost().meter({ external_customer_id: "bob", meter_id: "meter" }))?.consumed_units,
+  ).toBe(10);
+  expect(requested("/v1/outpost/meter-usage")).toHaveLength(4);
+});
+
+it("pulls a full page again right away", async () => {
+  seed();
+  await outpost().actor(customer);
+  changes.push(change(1791807000000002, 20), change(1791807000000003, 30));
+  pageSize = 1;
+  await runDurableObjectAlarm(sync());
+  expect((await outpost().meter(meter))?.consumed_units).toBe(30);
+  expect(
+    requests
+      .filter((request) => request.path.startsWith("/v1/outpost/changes"))
+      .map((request) => request.path),
+  ).toEqual([
+    "/v1/outpost/changes?limit=500",
+    "/v1/outpost/changes?cursor=1-0&limit=500",
+    "/v1/outpost/changes?cursor=2-0&limit=500",
+  ]);
+});
+
+it("fetches every snapshot again after Polar reset the changes", async () => {
+  seed();
+  expect((await outpost().meter(meter))?.consumed_units).toBe(10);
+  seed(20);
+  resetChanges = true;
+  await runDurableObjectAlarm(sync());
+  expect((await outpost().meter(meter))?.consumed_units).toBe(20);
+  expect(requested("/v1/outpost/meter-usage")).toHaveLength(4);
+});
+
+it("ignores a snapshot applied already, or older, when a pull is replayed", async () => {
+  seed();
+  expect((await outpost().meter(meter))?.consumed_units).toBe(10);
+  const pulled = { pulledAt: Date.now(), interval: 30_000 };
+  await customerObject().apply([change(1791807000000002, 20)], pulled);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(20);
+  await customerObject().apply(
+    [change(1791807000000002, 20), change(1791807000000001, 10)],
+    pulled,
+  );
+  expect((await outpost().meter(meter))?.consumed_units).toBe(20);
 });

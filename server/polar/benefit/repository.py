@@ -108,6 +108,23 @@ class BenefitRepository(
         )
         return await self.get_all(statement)
 
+    async def get_current_meter_credits_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> Sequence[Benefit]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.type == BenefitType.meter_credit,
+                Benefit.properties["meter_id"]
+                .as_string()
+                .in_([str(meter_id) for meter_id in meter_ids]),
+                Benefit.is_current,
+            )
+            .options(undefer(Benefit.external_id))
+        )
+        return await self.get_all(statement)
+
     def get_organization_statement(self, organization_id: UUID) -> Select[Benefit]:
         return (
             self.get_base_statement()

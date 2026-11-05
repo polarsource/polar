@@ -2,7 +2,7 @@ import uuid
 from collections import Counter
 from collections.abc import Awaitable, Callable
 from decimal import Decimal
-from typing import Any, get_args
+from typing import Any, cast, get_args
 from uuid import UUID
 
 import pytest
@@ -11,6 +11,9 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditProperties,
+)
 from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogMeterRepository,
@@ -89,6 +92,7 @@ from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.postgres import AsyncSession
+from polar.product.guard import is_metered_price
 from polar.product.repository import ProductRepository
 from polar.product.tiers import Tiers
 from polar.redis import Redis
@@ -2833,7 +2837,7 @@ class TestPlan:
             auth_subject,
             Config.model_validate(
                 {
-                    "meters": [TOOL_CALLS_METER],
+                    "meters": [{**FIXTURE_METER, "external_id": "sdk-tool-calls"}],
                     "products": [{**USAGE_PRODUCT, "prices": [price]}],
                 }
             ),
@@ -4102,7 +4106,171 @@ class TestBenefitVersioning:
             )
 
 
+USAGE_WITH_CREDITS = {**USAGE_PRODUCT, "benefits": ["tool-call-credits"]}
 RENAMED_TOOL_CALLS_METER = {**TOOL_CALLS_METER, "name": "Tool calls"}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestMeterVersioning:
+    async def test_change_cascades_to_benefits_and_products(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        meters_repo = MeterRepository.from_session(session)
+        products_repo = ProductRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT],
+                    "products": [USAGE_WITH_CREDITS, PACK_PRODUCT],
+                }
+            ),
+        )
+        [old_meter] = await meters_repo.get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        [old_usage] = await products_repo.get_all_by_external_ids(
+            organization.id, ["usage"]
+        )
+        changed = Config.model_validate(
+            {
+                "meters": [RENAMED_TOOL_CALLS_METER],
+                "benefits": [CREDITS_BENEFIT],
+                "products": [USAGE_WITH_CREDITS, PACK_PRODUCT],
+            }
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, changed)
+        assert {
+            change.external_id: [field.field for field in change.diff]
+            for change in plan.changes
+        } == {
+            "sdk-tool-calls": ["name"],
+            "tool-call-credits": ["properties"],
+            "usage": ["prices", "benefits"],
+            "pack": [],
+        }
+
+        await declarative_config_service.apply(session, redis, auth_subject, changed)
+        [new_meter] = await meters_repo.get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        [new_usage] = await products_repo.get_all_by_external_ids(
+            organization.id, ["usage"]
+        )
+        await session.refresh(old_usage, ["product_benefits"])
+        assert (old_meter.is_current, new_meter.name) == (False, "Tool calls")
+        assert [
+            (
+                [price.meter_id for price in product.prices if is_metered_price(price)],
+                [
+                    cast(BenefitMeterCreditProperties, benefit.properties)["meter_id"]
+                    for benefit in product.benefits
+                ],
+            )
+            for product in (old_usage, new_usage)
+        ] == [
+            ([old_meter.id], [str(old_meter.id)]),
+            ([new_meter.id], [str(new_meter.id)]),
+        ]
+
+    async def test_unlisted_products_and_benefits_block_changed_meters(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT],
+                    "products": [USAGE_PRODUCT],
+                }
+            ),
+        )
+        meters_only = Config.model_validate({"meters": [RENAMED_TOOL_CALLS_METER]})
+
+        plan = await declarative_config_service.plan(session, auth_subject, meters_only)
+
+        errors = [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
+        assert [(issue.input, issue.loc) for issue in errors] == [
+            ("sdk-tool-calls", ["body", "meters", 0]),
+            ("sdk-tool-calls", ["body", "meters", 0]),
+        ]
+        assert sorted(issue.msg.split(" uses")[0] for issue in errors) == [
+            "The benefit 'tool-call-credits'",
+            "The product 'usage'",
+        ]
+        with pytest.raises(ConfigInvalid):
+            await declarative_config_service.apply(
+                session, redis, auth_subject, meters_only
+            )
+
+    async def test_removes_meters_left_out(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        meters_repo = MeterRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER, FIXTURE_METER]}),
+        )
+        [fixture_meter] = await meters_repo.get_all_by_external_ids(
+            organization.id, ["my-meter"]
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+        )
+
+        assert result.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.meter,
+                external_id="my-meter",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        await session.refresh(fixture_meter)
+        assert fixture_meter.is_current is False
+        assert fixture_meter.archived_at is None
+        assert result.catalog is not None
+        assert [
+            member.external_id
+            for member in await CatalogMeterRepository.from_session(
+                session
+            ).get_all_by_catalog(result.catalog.after.id)
+        ] == ["sdk-tool-calls"]
 
 
 @pytest.mark.anyio

@@ -3,6 +3,7 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { endOfMonth, format, startOfMonth, subDays, subMonths } from 'date-fns'
+import { toISODate } from '@/utils/metrics'
 import { useContext, useState } from 'react'
 import { MonthlyBars } from './MonthlyBars'
 import { WidgetContainer } from './WidgetContainer'
@@ -86,6 +87,12 @@ const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
             formatted:
               period.percentage != null ? `${period.percentage}%` : '–',
             highlighted: index === periods.length - 1,
+            href: `/dashboard/${organization.slug}/analytics/costs?${new URLSearchParams(
+              {
+                startDate: toISODate(startOfMonth(period.timestamp)),
+                endDate: toISODate(endOfMonth(period.timestamp)),
+              },
+            )}`,
           }))}
         />
       </Box>

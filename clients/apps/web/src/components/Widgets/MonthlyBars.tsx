@@ -1,6 +1,7 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ComponentProps, Fragment } from 'react'
+import Link from 'next/link'
+import { ComponentProps, ReactNode } from 'react'
 
 const BAR_STAGGER_MS = 40
 
@@ -10,6 +11,7 @@ export interface MonthlyBar {
   value: number | null
   formatted: string
   highlighted?: boolean
+  href?: string
 }
 
 // A flex-grow below 1 takes only that share of the free space, so each bar's
@@ -57,6 +59,20 @@ const Row = (props: ComponentProps<typeof Box>) => (
   />
 )
 
+// Each month spans the three columns as a subgrid, so a whole row can be one
+// link while its cells still line up with the other months.
+const MonthRow = ({ href, children }: { href?: string; children: ReactNode }) =>
+  href ? (
+    <Link
+      href={href}
+      className="col-span-3 grid grid-cols-subgrid hover:opacity-60"
+    >
+      {children}
+    </Link>
+  ) : (
+    <div className="col-span-3 grid grid-cols-subgrid">{children}</div>
+  )
+
 export const MonthlyBars = ({
   bars,
   loading,
@@ -78,7 +94,7 @@ export const MonthlyBars = ({
         const labelColor = highlighted ? 'default' : 'muted'
 
         return (
-          <Fragment key={bar.key}>
+          <MonthRow key={bar.key} href={bar.href}>
             <Row>
               <Text color={labelColor}>{bar.label}</Text>
             </Row>
@@ -121,7 +137,7 @@ export const MonthlyBars = ({
                 {loading ? '–' : bar.formatted}
               </Text>
             </Row>
-          </Fragment>
+          </MonthRow>
         )
       })}
     </Grid>

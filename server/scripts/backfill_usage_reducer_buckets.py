@@ -1,6 +1,6 @@
-from bisect import bisect_right
-from collections.abc import AsyncIterator, Collection, Sequence
-from dataclasses import dataclass
+from bisect import bisect_left, bisect_right
+from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -57,8 +57,7 @@ type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
 type Boundaries = dict[tuple[UUID | str, UUID], list[datetime]]
 """Per customer id or external id and reducer, the sorted timestamps buckets
 are split at, like live seals and bills split them: each billing interval's start
-and end, and each meter reset. What each order billed is a sealed generation,
-what's pending an open one."""
+and end, and each meter reset."""
 
 
 @dataclass
@@ -77,9 +76,17 @@ class Summary:
 
 type Billing = tuple[datetime, UUID]
 """created_at and id of the order that billed some usage"""
-type Totals = dict[BucketKey, dict[Billing | None, Summary]]
-"""Per bucket, the summary of its usage per order that billed it, with the
-unbilled usage under None."""
+
+
+@dataclass
+class Usage:
+    billings: set[Billing] = field(default_factory=set)
+    """The orders that billed some of the bucket's usage."""
+    values: list[tuple[datetime, Decimal]] = field(default_factory=list)
+    """ingested_at and value of each of the bucket's events."""
+
+
+type Totals = dict[BucketKey, Usage]
 
 
 async def backfill_organization(
@@ -252,11 +259,13 @@ async def _get_events_page(
 ) -> Sequence[Row[*tuple[Any, ...]]]:
     """Up to `page_size` of the organization's user events with a timestamp in
     [start, end) and (timestamp, id) after `after`, in that order: the event's
-    id, timestamp and customer identity, then its value for each reducer."""
+    id, timestamp, ingestion time and customer identity, then its value for each
+    reducer."""
     statement = (
         select(
             Event.id,
             Event.timestamp,
+            Event.ingested_at,
             Event.customer_id,
             Event.external_customer_id,
             *(_value_column(reducer) for reducer in reducers),
@@ -327,7 +336,7 @@ def _matched_event_ids(rows: Sequence[Row[*tuple[Any, ...]]]) -> list[UUID]:
     """The events with a value for at least one reducer."""
     return [
         id
-        for id, _, _, _, *values in rows
+        for id, _, _, _, _, *values in rows
         if any(value is not None for value in values)
     ]
 
@@ -339,10 +348,10 @@ def _add_to_totals(
     billed_at: dict[tuple[UUID, UUID], Billing],
     boundaries: Boundaries,
 ) -> None:
-    """Adds each event's value to the bucket of every reducer it matches, under
-    the order that billed it for that reducer, or None."""
+    """Adds each event's value to the bucket of every reducer it matches, and the
+    order that billed it for that reducer to the bucket's billings."""
     for row in rows:
-        id, timestamp, customer_id, external_customer_id, *values = row
+        id, timestamp, ingested_at, customer_id, external_customer_id, *values = row
         bucket_start = get_reducer_bucket_start(timestamp)
         customer_key = customer_id if customer_id is not None else external_customer_id
         for reducer, value in zip(reducers, values, strict=True):
@@ -352,10 +361,11 @@ def _add_to_totals(
                 boundaries.get((customer_key, reducer.id), []), bucket_start, timestamp
             )
             key = (reducer.id, start, end, customer_id, external_customer_id)
+            usage = totals.setdefault(key, Usage())
+            usage.values.append((ingested_at, Decimal(str(value))))
             billing = billed_at.get((id, reducer.id))
-            totals.setdefault(key, {}).setdefault(billing, Summary()).add(
-                Decimal(str(value))
-            )
+            if billing is not None:
+                usage.billings.add(billing)
 
 
 def _pop_totals_before(totals: Totals, end: datetime) -> Totals:
@@ -367,9 +377,11 @@ def _pop_totals_before(totals: Totals, end: datetime) -> Totals:
 def _to_buckets(
     organization_id: UUID, totals: Totals, synced_at: datetime
 ) -> list[BucketValues]:
-    """Bucket rows to insert: each bucket gets one generation per billing order
-    in order of billing, sealed and billed at the order's created_at, then the
-    unbilled usage last, unsealed."""
+    """Bucket rows to insert: each order that billed some of a bucket's usage
+    sealed it at the order's created_at, and each seal starts a new generation,
+    like `reducer_bucket.sync` splits them: by ingestion time. A generation holds
+    the events ingested since the previous seal until its own, sealed and billed
+    by its order; the last one, unsealed, those ingested after the last seal."""
     buckets: list[BucketValues] = []
     for (
         reducer_id,
@@ -377,9 +389,8 @@ def _to_buckets(
         bucket_end,
         customer_id,
         external_customer_id,
-    ), summaries in totals.items():
-        for generation, billing in enumerate(_generation_order(summaries), 1):
-            summary = summaries[billing]
+    ), usage in totals.items():
+        for generation, (billing, summary) in enumerate(_get_generations(usage), 1):
             sealed_at, order_id = billing if billing is not None else (None, None)
             buckets.append(
                 {
@@ -403,9 +414,19 @@ def _to_buckets(
     return buckets
 
 
-def _generation_order(billings: Collection[Billing | None]) -> list[Billing | None]:
-    billed = sorted(billing for billing in billings if billing is not None)
-    return [*billed, None] if None in billings else [*billed]
+def _get_generations(usage: Usage) -> list[tuple[Billing | None, Summary]]:
+    """The bucket's non-empty generations in order, each with the order that
+    sealed it, or None for the unsealed one."""
+    seals: list[Billing | None] = [*sorted(usage.billings), None]
+    sealed_at = [created_at for created_at, _ in sorted(usage.billings)]
+    summaries = [Summary() for _ in seals]
+    for ingested_at, value in usage.values:
+        summaries[bisect_left(sealed_at, ingested_at)].add(value)
+    return [
+        (billing, summary)
+        for billing, summary in zip(seals, summaries, strict=True)
+        if summary.count
+    ]
 
 
 async def _delete_buckets(

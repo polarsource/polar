@@ -116,6 +116,7 @@ class TestBackfillBuckets:
             tokens: int,
             billing: Literal["ordered", "pending"] | None,
             name: str = "TEST_EVENT",
+            ingested_at: datetime | None = None,
         ) -> None:
             event = await create_event(
                 save_fixture,
@@ -124,7 +125,7 @@ class TestBackfillBuckets:
                 meter=meter if name == "TEST_EVENT" else None,
                 name=name,
                 timestamp=timestamp,
-                ingested_at=timestamp,
+                ingested_at=ingested_at or timestamp,
                 metadata={"tokens": tokens},
             )
             if billing is not None:
@@ -145,10 +146,16 @@ class TestBackfillBuckets:
                 )
 
         await usage(START + timedelta(seconds=30), 2, None)
+        await usage(START + timedelta(minutes=3), 4, None)
         await usage(START + timedelta(minutes=4), 8, "ordered")
-        await usage(START + timedelta(minutes=4, seconds=30), 1, "pending")
+        late = order.created_at + timedelta(minutes=5)
+        await usage(
+            START + timedelta(minutes=4, seconds=30), 1, "pending", ingested_at=late
+        )
         await usage(START + BUCKET + timedelta(minutes=1), 3, "ordered")
-        await usage(START + BUCKET + timedelta(minutes=3), 5, "pending")
+        await usage(
+            START + BUCKET + timedelta(minutes=3), 5, "pending", ingested_at=late
+        )
         await usage(START + 2 * BUCKET, 7, None)
         await usage(START - timedelta(seconds=1), 100, "ordered")
         await usage(END, 100, None)
@@ -195,15 +202,16 @@ class TestBackfillBuckets:
                     Decimal(2),
                     Decimal(2),
                 ),
-                # Billed, plus a late event that missed that billing.
+                # Billed, with the unbilled event ingested before the order like
+                # sync counts it, plus a late event that missed that billing.
                 (
                     SUBSCRIPTION_START,
                     START + BUCKET,
                     1,
                     order.created_at,
-                    1,
-                    Decimal(8),
-                    Decimal(8),
+                    2,
+                    Decimal(12),
+                    Decimal(4),
                     Decimal(8),
                 ),
                 (
@@ -257,8 +265,37 @@ class TestBackfillBuckets:
                     )
                 )
             ).all()
-            assert sum(b.count for b in count_buckets) == 6
+            assert sum(b.count for b in count_buckets) == 7
             assert all(b.sealed_at is None for b in count_buckets)
+
+        # Sync agrees: syncing each slot again leaves its buckets as they are.
+        def snapshot() -> list[tuple[object, ...]]:
+            return [
+                (
+                    b.bucket_start,
+                    b.bucket_end,
+                    b.generation,
+                    b.sealed_at,
+                    b.count,
+                    b.sum,
+                )
+                for b in buckets
+            ]
+
+        backfilled = snapshot()
+        for slot in (START, START + BUCKET, START + 2 * BUCKET):
+            await reducer_service.sync_bucket(
+                session, reducer.id, slot, customer.id, None
+            )
+        buckets = (
+            await session.scalars(
+                select(ReducerBucket)
+                .where(ReducerBucket.reducer_id == reducer.id)
+                .order_by(ReducerBucket.bucket_start, ReducerBucket.generation)
+                .execution_options(populate_existing=True)
+            )
+        ).all()
+        assert snapshot() == backfilled
 
         # The next billing bills everything still open since the interval
         # started: the late event, the pending one and the unbilled one. Usage

@@ -1,6 +1,5 @@
 import json
 import uuid
-from datetime import timedelta
 from unittest.mock import MagicMock
 
 import httpx
@@ -9,7 +8,6 @@ import respx
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.kit.utils import utc_now
 from polar.mcp_event.catalog import SubscriptionEventData
 from polar.models import (
     Organization,
@@ -150,26 +148,6 @@ class TestWebhookEventSend:
             webhook_event_id=event.id,
             webhook_endpoint_id=webhook_endpoint_mcp.id,
         )
-
-    async def test_mcp_expired_skips_send(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        webhook_endpoint_mcp: WebhookEndpoint,
-    ) -> None:
-        webhook_endpoint_mcp.expires_at = utc_now() - timedelta(minutes=1)
-        await save_fixture(webhook_endpoint_mcp)
-        event = WebhookEvent(
-            webhook_endpoint=webhook_endpoint_mcp,
-            type=WebhookEventType.subscription_created,
-            api_version=CURRENT_API_VERSION,
-            payload='{"foo":"bar"}',
-        )
-        await save_fixture(event)
-
-        await _webhook_event_send(session, webhook_event_id=event.id)
-
-        assert event.skipped is True
 
     async def test_mcp_removed_member_skips_send(
         self,

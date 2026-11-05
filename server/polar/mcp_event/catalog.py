@@ -45,27 +45,29 @@ class CustomerEventData(Schema):
     type: CustomerType
 
 
-class MCPEvent(NamedTuple):
+class MCPEventDefinition(NamedTuple):
     description: str
     data_schema: type[Schema]
 
 
-MCP_EVENTS: dict[WebhookEventType, MCPEvent] = {
-    WebhookEventType.order_paid: MCPEvent("An order was paid.", OrderEventData),
-    WebhookEventType.order_refunded: MCPEvent(
+MCP_EVENTS: dict[WebhookEventType, MCPEventDefinition] = {
+    WebhookEventType.order_paid: MCPEventDefinition(
+        "An order was paid.", OrderEventData
+    ),
+    WebhookEventType.order_refunded: MCPEventDefinition(
         "An order was fully or partially refunded.", OrderEventData
     ),
-    WebhookEventType.subscription_created: MCPEvent(
+    WebhookEventType.subscription_created: MCPEventDefinition(
         "A subscription was created.", SubscriptionEventData
     ),
-    WebhookEventType.subscription_canceled: MCPEvent(
+    WebhookEventType.subscription_canceled: MCPEventDefinition(
         "A subscription was canceled.", SubscriptionEventData
     ),
-    WebhookEventType.subscription_past_due: MCPEvent(
+    WebhookEventType.subscription_past_due: MCPEventDefinition(
         "A subscription payment failed and the subscription is past due.",
         SubscriptionEventData,
     ),
-    WebhookEventType.customer_created: MCPEvent(
+    WebhookEventType.customer_created: MCPEventDefinition(
         "A customer was created.", CustomerEventData
     ),
 }

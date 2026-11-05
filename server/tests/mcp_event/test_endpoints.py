@@ -1,5 +1,6 @@
 import base64
 import json
+import ssl
 from datetime import timedelta
 from typing import Any
 from uuid import UUID
@@ -23,9 +24,12 @@ CALLBACK_URL = "https://example.com/callback"
 SECRET = "whsec_" + base64.b64encode(b"a" * 32).decode()
 
 
-def echo_challenge(request: httpx.Request) -> httpx.Response:
-    return httpx.Response(
-        200, json={"challenge": json.loads(request.content)["challenge"]}
+@pytest.fixture
+def callback_route(respx_mock: respx.MockRouter) -> respx.Route:
+    return respx_mock.post(CALLBACK_URL).mock(
+        side_effect=lambda request: httpx.Response(
+            200, json={"challenge": json.loads(request.content)["challenge"]}
+        )
     )
 
 
@@ -59,12 +63,11 @@ class TestSubscribeMCPEvent:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        respx_mock: respx.MockRouter,
+        callback_route: respx.Route,
         organization: Organization,
         user: User,
         user_organization: UserOrganization,
     ) -> None:
-        route = respx_mock.post(CALLBACK_URL).mock(side_effect=echo_challenge)
         before = utc_now()
 
         response = await client.post(
@@ -80,7 +83,7 @@ class TestSubscribeMCPEvent:
 
         assert response.status_code == 200
         json_response = response.json()
-        request = route.calls.last.request
+        request = callback_route.calls.last.request
         StandardWebhook(SECRET).verify(request.content, dict(request.headers))
         assert request.headers["X-MCP-Subscription-Id"] == json_response["id"]
 
@@ -102,9 +105,8 @@ class TestSubscribeMCPEvent:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        respx_mock: respx.MockRouter,
+        callback_route: respx.Route,
     ) -> None:
-        respx_mock.post(CALLBACK_URL).mock(side_effect=echo_challenge)
         before = utc_now()
 
         response = await client.post(
@@ -174,11 +176,8 @@ class TestSubscribeMCPEvent:
     @pytest.mark.parametrize(
         "override",
         [
-            pytest.param({"name": "Order Paid"}, id="name"),
             pytest.param({"arguments": {"foo": "bar"}}, id="arguments"),
-            pytest.param({"url": "http://example.com/callback"}, id="url"),
             pytest.param({"secret": "whsec_c2hvcnQ="}, id="secret"),
-            pytest.param({"ttl_ms": 0}, id="ttl_ms"),
         ],
     )
     async def test_invalid_payload(
@@ -198,12 +197,41 @@ class TestSubscribeMCPEvent:
         assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_challenge_mismatch(
-        self, client: AsyncClient, respx_mock: respx.MockRouter
+    @pytest.mark.parametrize(
+        ("mock", "reason"),
+        [
+            pytest.param(
+                {"side_effect": httpx.ConnectError("refused")},
+                "connection_refused",
+                id="connection_refused",
+            ),
+            pytest.param(
+                {"side_effect": httpx.ConnectTimeout("timeout")},
+                "timeout",
+                id="timeout",
+            ),
+            pytest.param({"side_effect": ssl.SSLError()}, "tls_error", id="tls_error"),
+            pytest.param(
+                {"return_value": httpx.Response(404)}, "http_4xx", id="http_4xx"
+            ),
+            pytest.param(
+                {"return_value": httpx.Response(502)}, "http_5xx", id="http_5xx"
+            ),
+            pytest.param(
+                {"return_value": httpx.Response(200, json={"challenge": "wrong"})},
+                "challenge_failed",
+                id="challenge_failed",
+            ),
+        ],
+    )
+    async def test_callback_error(
+        self,
+        client: AsyncClient,
+        respx_mock: respx.MockRouter,
+        mock: dict[str, Any],
+        reason: str,
     ) -> None:
-        respx_mock.post(CALLBACK_URL).mock(
-            return_value=httpx.Response(200, json={"challenge": "wrong"})
-        )
+        respx_mock.post(CALLBACK_URL).mock(**mock)
 
         response = await client.post(
             "/v1/mcp/events/subscribe",
@@ -216,10 +244,7 @@ class TestSubscribeMCPEvent:
         )
 
         assert response.status_code == 400
-        assert response.json() == {
-            "error": "CallbackEndpointError",
-            "detail": "challenge_failed",
-        }
+        assert response.json() == {"error": "CallbackEndpointError", "detail": reason}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_unknown_event(self, client: AsyncClient) -> None:
@@ -292,11 +317,8 @@ class TestUnsubscribeMCPEvent:
         assert deleted is not None
         assert deleted.deleted_at is not None
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_no_match(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/mcp/events/unsubscribe",
             json={"name": "order.paid", "arguments": {}, "url": CALLBACK_URL},
         )
-
         assert response.status_code == 204

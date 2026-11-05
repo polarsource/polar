@@ -87,14 +87,6 @@ class WebhookEndpoint(ExternalIDMixin, RecordModel):
             unique=True,
             postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
         ),
-        Index(
-            "ix_webhook_endpoints_mcp_subscription",
-            "organization_id",
-            "url",
-            "events",
-            unique=True,
-            postgresql_where=text("format = 'mcp' AND deleted_at IS NULL"),
-        ),
     )
 
     url: Mapped[str] = mapped_column(String, nullable=False)

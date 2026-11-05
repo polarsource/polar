@@ -18,7 +18,7 @@ from polar.models import (
     WebhookEndpoint,
     WebhookEvent,
 )
-from polar.models.webhook_endpoint import WebhookFormat
+from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 
 
 class WebhookEventRepository(
@@ -216,6 +216,17 @@ class WebhookEndpointRepository(
         if for_update:
             statement = statement.with_for_update(of=WebhookEndpoint, key_share=True)
         return await self.get_all(statement)
+
+    async def get_mcp_subscription(
+        self, organization_id: UUID, url: str, event: WebhookEventType
+    ) -> WebhookEndpoint | None:
+        statement = self.get_base_statement().where(
+            WebhookEndpoint.format == WebhookFormat.mcp,
+            WebhookEndpoint.organization_id == organization_id,
+            WebhookEndpoint.url == url,
+            WebhookEndpoint.events == [event],
+        )
+        return await self.get_one_or_none(statement)
 
     async def has_by_organization_id(self, organization_id: UUID) -> bool:
         """Whether the organization has any active webhook endpoint."""

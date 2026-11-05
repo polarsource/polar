@@ -86,8 +86,6 @@ async def webhook_event_send(
 async def _is_mcp_subscription_inactive(
     session: AsyncSession, endpoint: WebhookEndpoint
 ) -> bool:
-    if endpoint.expires_at is not None and endpoint.expires_at <= utc_now():
-        return True
     if endpoint.user_id is None:
         return False
     repository = UserOrganizationRepository.from_session(session)

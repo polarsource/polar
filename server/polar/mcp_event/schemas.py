@@ -51,7 +51,7 @@ class MCPEventList(Schema):
 
 
 class MCPEventUnsubscribe(Schema):
-    name: str = Field(pattern=r"^[a-z_]+\.[a-z_]+$")
+    name: str
     arguments: MCPEventArguments
     url: EndpointURL
 

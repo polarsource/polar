@@ -44,7 +44,7 @@ const identityFields = new Set([
   'product_id',
 ])
 
-export const priceSignature = ({
+const priceSignature = ({
   prices,
   recurring_interval,
   recurring_interval_count,
@@ -82,4 +82,44 @@ export const diffBenefits = (
       .filter((benefit) => !afterKeys.has(benefitKey(benefit)))
       .map((benefit): BenefitChange => ({ type: 'removed', before: benefit })),
   ]
+}
+
+const detailFields = ['description', 'visibility', 'metadata'] as const
+
+export type ProductChanges = {
+  name: boolean
+  price: boolean
+  benefits: BenefitChange[]
+  details: string[]
+}
+
+export const diffProduct = (
+  previous: Product,
+  product: Product,
+): ProductChanges => ({
+  name: previous.name !== product.name,
+  price: priceSignature(previous) !== priceSignature(product),
+  benefits: diffBenefits(previous.benefits, product.benefits),
+  details: detailFields.filter(
+    (field) =>
+      JSON.stringify(previous[field]) !== JSON.stringify(product[field]),
+  ),
+})
+
+export const summarizeChanges = ({
+  name,
+  price,
+  benefits,
+  details,
+}: ProductChanges) => {
+  const parts = [
+    ...(name ? ['name'] : []),
+    ...(price ? ['price'] : []),
+    ...(benefits.length
+      ? [`${benefits.length} ${benefits.length === 1 ? 'benefit' : 'benefits'}`]
+      : []),
+  ]
+  return (parts.length ? parts : details.length ? details : ['details']).join(
+    ', ',
+  )
 }

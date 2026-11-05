@@ -58,6 +58,7 @@ const run = async (
   )
   return {
     output: stripAnsi(cli.output()),
+    terminal: stripAnsi(cli.terminal()),
     published: published.mock.calls.map(([, draft]) => draft.id),
     message: Exit.isFailure(exit)
       ? (Cause.squash(exit.cause) as BillingConfigError).message
@@ -93,11 +94,12 @@ describe('polar config publish', () => {
   })
 
   test('stops when declined', async () => {
-    const { published, message } = await run(withDraft, [], {
+    const { terminal, published, message } = await run(withDraft, [], {
       interactive: true,
       input: [...keys.type('n'), keys.enter],
     })
     expect(published).toEqual([])
+    expect(terminal).toContain('y to publish  n to cancel')
     expect(message).toBe('Publish cancelled, nothing changed')
   })
 

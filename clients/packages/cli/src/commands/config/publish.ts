@@ -9,7 +9,7 @@ import {
 } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { next, section, target } from '@/utils/billing-config/review'
+import { next, nextOpen, section, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
@@ -32,27 +32,60 @@ const summary = (organization: ActiveOrganization, { live, draft }: Catalogs) =>
     ]),
   )
 
+const interactive = Effect.gen(function* () {
+  const stdio = yield* Stdio.Stdio
+  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
+})
+
+const keypress = (frame: string) =>
+  Prompt.Custom<boolean, boolean>(false, {
+    render: (_, action) =>
+      Effect.succeed(
+        action._tag === 'NextFrame'
+          ? frame
+          : action._tag === 'Submit'
+            ? `${frame}\n`
+            : '',
+      ),
+    process: (input) =>
+      Effect.succeed(
+        input.key.name === 'y'
+          ? { _tag: 'Submit', value: true }
+          : input.key.name === 'n' || input.key.name === 'escape'
+            ? { _tag: 'Submit', value: false }
+            : { _tag: 'Beep' },
+      ),
+    clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
+  })
+
 const approve = (
   organization: ActiveOrganization,
   json: boolean,
   confirmed: boolean,
+  say: Say['say'],
 ) =>
   Effect.gen(function* () {
     if (confirmed) return
-    const stdio = yield* Stdio.Stdio
-    const interactive =
-      (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-    if (json || !interactive) {
+    if (json || !(yield* interactive)) {
       return yield* new BillingConfigError({
         message: `Confirmation needed to publish to ${target(organization)}`,
         hint: 'Pass --confirm to publish without asking.',
       })
     }
+    yield* say(nextOpen())
     const accepted = yield* Prompt.run(
-      Prompt.Confirm({
-        message: `Publish the draft to ${target(organization)}? New checkouts sell its products right away.`,
-      }),
-    ).pipe(Effect.orElseSucceed(() => false))
+      keypress(
+        [
+          ...ui.boxRows(
+            `${ui.INDENT}${ui.bold(ui.yellow('Warning:'))} Publishing makes the draft live for new checkouts`,
+          ),
+          ...ui.boxRows(
+            `${ui.INDENT}${ui.green('y')} to publish  ${ui.red('n')} to cancel`,
+          ),
+          ui.boxBottom(),
+        ].join('\n'),
+      ),
+    ).pipe(Effect.catch(() => say([ui.blank]).pipe(Effect.as(false))))
     if (!accepted) {
       return yield* new BillingConfigError({
         message: 'Publish cancelled, nothing changed',
@@ -127,7 +160,7 @@ export const publish = Command.make('publish', { org, confirmed }).pipe(
           return { organization, catalogs, published: false }
         }
         yield* say(summary(organization, catalogs))
-        yield* approve(organization, json, confirmed)
+        yield* approve(organization, json, confirmed, say)
         const live = yield* billing.publish(organization, catalogs.draft)
         return {
           organization,

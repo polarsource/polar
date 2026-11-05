@@ -48,7 +48,8 @@ class BenefitService:
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
-        catalog: CatalogStatus | uuid.UUID | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -72,8 +73,10 @@ class BenefitService:
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
 
-        if catalog is not None:
-            statement = repository.apply_catalog_filter(statement, catalog)
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, catalog_id, catalog_status
+            )
         elif id_in is None:
             statement = statement.where(Benefit.is_current)
 

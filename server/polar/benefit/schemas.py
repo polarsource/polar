@@ -280,13 +280,17 @@ class BenefitListParams(QuerySchema):
     exclude_id: MultipleQueryFilter[BenefitID] | None = Field(
         None, title="Exclude IDs", description="Exclude benefits with these IDs."
     )
-    catalog: Annotated[
-        CatalogStatus | UUID4 | None, Version(starting_from=V2027_01)
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
     ] = Field(
         None,
+        title="CatalogStatus Filter",
         description=(
-            "Filter by catalog status (`live`, `draft`, `archived`) or catalog ID. "
-            "Defaults to `live` unless filtering by ID."
+            "Filter by catalog status. "
+            "Defaults to `live` unless filtering by ID or catalog ID."
         ),
     )
     query: str | None = Field(None, title="Query", description="Filter by description.")

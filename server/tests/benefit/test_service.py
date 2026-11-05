@@ -259,20 +259,33 @@ class TestList:
             catalogs[status] = catalog
         session.expunge_all()
 
-        async def ids(catalog: CatalogStatus | uuid.UUID | None) -> set[uuid.UUID]:
+        async def ids(
+            catalog_id: list[uuid.UUID] | None = None,
+            catalog_status: list[CatalogStatus] | None = None,
+        ) -> set[uuid.UUID]:
             results, _ = await benefit_service.list(
                 session,
                 auth_subject,
-                catalog=catalog,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 pagination=PaginationParams(1, 10),
             )
             return {benefit.id for benefit in results}
 
-        assert await ids(None) == {a2.id, b.id}
-        assert await ids(CatalogStatus.live) == {a2.id, b.id}
-        assert await ids(CatalogStatus.draft) == {a3.id, b.id}
-        assert await ids(CatalogStatus.archived) == {a1.id}
-        assert await ids(catalogs[CatalogStatus.archived].id) == {a1.id, b.id}
+        archived_id = catalogs[CatalogStatus.archived].id
+        draft_id = catalogs[CatalogStatus.draft].id
+        assert await ids() == {a2.id, b.id}
+        assert await ids(catalog_status=[CatalogStatus.live]) == {a2.id, b.id}
+        assert await ids(catalog_status=[CatalogStatus.draft]) == {a3.id, b.id}
+        assert await ids(catalog_status=[CatalogStatus.archived]) == {a1.id}
+        assert await ids(
+            catalog_status=[CatalogStatus.draft, CatalogStatus.archived]
+        ) == {a1.id, a3.id, b.id}
+        assert await ids(catalog_id=[archived_id]) == {a1.id, b.id}
+        assert await ids(catalog_id=[archived_id, draft_id]) == {a1.id, a3.id, b.id}
+        assert await ids(
+            catalog_id=[draft_id], catalog_status=[CatalogStatus.live]
+        ) == {b.id}
 
 
 @pytest.mark.anyio

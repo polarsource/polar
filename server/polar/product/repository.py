@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, case, func, select, union
+from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select, union
 from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -311,22 +311,36 @@ class ProductRepository(
         )
 
     def apply_catalog_filter(
-        self, statement: Select[Product], catalog: CatalogStatus | UUID
+        self,
+        statement: Select[Product],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
     ) -> Select[Product]:
-        if catalog == CatalogStatus.live:
-            return statement.where(Product.is_current)
-        members = (
-            select(CatalogProduct.product_id)
-            .join(CatalogProduct.catalog)
-            .where(CatalogProduct.deleted_at.is_(None), Catalog.deleted_at.is_(None))
-        )
-        if isinstance(catalog, CatalogStatus):
-            members = members.where(Catalog.status == catalog)
-        else:
-            members = members.where(Catalog.id == catalog)
-        statement = statement.where(Product.id.in_(members))
-        if catalog == CatalogStatus.archived:
-            statement = statement.where(~Product.is_current)
+        def in_catalog(*clauses: ColumnElement[bool]) -> ColumnElement[bool]:
+            return Product.id.in_(
+                select(CatalogProduct.product_id)
+                .join(CatalogProduct.catalog)
+                .where(
+                    CatalogProduct.deleted_at.is_(None),
+                    Catalog.deleted_at.is_(None),
+                    *clauses,
+                )
+            )
+
+        if catalog_id is not None:
+            statement = statement.where(in_catalog(Catalog.id.in_(catalog_id)))
+        if catalog_status is not None:
+            status_clauses = {
+                CatalogStatus.live: Product.is_current,
+                CatalogStatus.draft: in_catalog(Catalog.status == CatalogStatus.draft),
+                CatalogStatus.archived: and_(
+                    in_catalog(Catalog.status == CatalogStatus.archived),
+                    ~Product.is_current,
+                ),
+            }
+            statement = statement.where(
+                or_(*(status_clauses[status] for status in catalog_status))
+            )
         return statement
 
     def get_statement_by_org_ids(

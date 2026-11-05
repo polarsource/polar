@@ -1251,13 +1251,17 @@ class ProductListParams(QuerySchema):
     organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     )
-    catalog: Annotated[
-        CatalogStatus | UUID4 | None, Version(starting_from=V2027_01)
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
     ] = Field(
         None,
+        title="CatalogStatus Filter",
         description=(
-            "Filter by catalog status (`live`, `draft`, `archived`) or catalog ID. "
-            "Defaults to `live` unless filtering by ID."
+            "Filter by catalog status. "
+            "Defaults to `live` unless filtering by ID or catalog ID."
         ),
     )
     query: str | None = Field(None, description="Filter by product name.")

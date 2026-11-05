@@ -3,6 +3,7 @@ from datetime import timedelta
 
 import pytest
 
+from polar.auth.models import AuthSubject
 from polar.catalog.service import (
     CatalogNotDraft,
     CatalogNotFound,
@@ -12,6 +13,7 @@ from polar.kit.utils import utc_now
 from polar.models import Catalog, CatalogBenefit, CatalogProduct, Organization
 from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit, create_product
 
@@ -137,9 +139,11 @@ class TestGetCatalogBenefits:
 
 @pytest.mark.anyio
 class TestPublishDraft:
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_discarded_meanwhile(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
         organization: Organization,
         catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
     ) -> None:
@@ -147,7 +151,9 @@ class TestPublishDraft:
         await catalog_service.discard_draft(session, draft)
 
         with pytest.raises(CatalogNotDraft):
-            await catalog_service.publish_draft(session, organization, draft)
+            await catalog_service.publish_draft(
+                session, auth_subject, organization, draft
+            )
 
 
 @pytest.mark.anyio

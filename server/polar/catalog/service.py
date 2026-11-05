@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
+from polar.auth.scope import Scope
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.repository import BenefitRepository
@@ -28,6 +29,7 @@ from polar.models import (
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
+from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
@@ -85,6 +87,10 @@ def compute_version_hash(
 
 def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
     return compute_version_hash(parent_hash, entries.products, entries.benefits)
+
+
+def _benefit_ids(benefits: Mapping[str, Benefit]) -> dict[str, uuid.UUID]:
+    return {external_id: benefit.id for external_id, benefit in benefits.items()}
 
 
 class CatalogNotFound(PolarError):
@@ -148,7 +154,7 @@ class CatalogService:
     async def get_draft_for_write(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
     ) -> Catalog:
         org_ids = await get_accessible_org_ids(
@@ -476,11 +482,18 @@ class CatalogService:
         await repository.soft_delete(draft, flush=True)
 
     async def publish_draft(
-        self, session: AsyncSession, organization: Organization, draft: Catalog
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        organization: Organization,
+        draft: Catalog,
     ) -> Catalog:
         """Make the draft live: its new rows become current, the live rows it
         replaces or leaves out stop being current, and checkout links follow
-        the new product rows."""
+        the new product rows.
+
+        A draft that changes benefits also needs `benefits:write`, as applying
+        them does."""
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)
@@ -493,6 +506,12 @@ class CatalogService:
             ).get_all_by_catalog(draft.id)
         }
         benefits = await self.get_catalog_benefits(session, organization, draft)
+        live_benefits = await self.get_catalog_benefits(session, organization, live)
+        if (
+            _benefit_ids(benefits) != _benefit_ids(live_benefits)
+            and Scope.benefits_write not in auth_subject.scopes
+        ):
+            raise InsufficientScopeError({str(Scope.benefits_write)})
         await self._replace_live(session, organization, live, products, benefits)
         product_repository = ProductRepository.from_session(session)
         for product in products.values():

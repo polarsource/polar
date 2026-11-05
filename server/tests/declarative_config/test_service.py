@@ -4359,7 +4359,9 @@ class TestCatalogDrafts:
         )
         assert [b.description for b in members["pro"].benefits] == ["Early access"]
 
-        published = await catalog_service.publish_draft(session, organization, draft)
+        published = await catalog_service.publish_draft(
+            session, auth_subject, organization, draft
+        )
 
         await session.refresh(live_pro)
         [current_pro] = await products_repo.get_all_by_external_ids(

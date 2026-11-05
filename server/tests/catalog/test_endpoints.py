@@ -222,3 +222,18 @@ class TestGet:
         assert json["products"] == [
             {"external_id": "pro", "product_id": str(product_second.id)}
         ]
+
+
+@pytest.mark.anyio
+class TestPublish:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_not_draft(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.post(f"/v1/catalogs/{live.id}/publish")
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "CatalogNotDraft"

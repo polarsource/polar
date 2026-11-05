@@ -102,7 +102,5 @@ export const useCatalogConfig = (
         }),
       ),
     retry: defaultRetry,
-    // Published versions don't change
-    staleTime: Infinity,
     enabled: !!catalogId,
   })

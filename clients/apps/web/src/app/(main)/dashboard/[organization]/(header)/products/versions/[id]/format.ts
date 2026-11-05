@@ -1,9 +1,11 @@
+import { getUnitLabels } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 
 type Config = schemas['ConfigExportDocument']
 type Product = schemas['ConfigProductRead']
 type Price = schemas['ConfigProductPriceRead']
+type Tiers = schemas['ConfigTiersRead']
 
 export const plural = (count: number, noun: string) =>
   `${count} ${count === 1 ? noun : `${noun}s`}`
@@ -75,6 +77,22 @@ export const valueFormatter = (configs: Config[]) => {
   const meterName = (externalId: string) => meters.get(externalId) ?? externalId
 
   const formatPrice = (price: Price) => {
+    const rate = (amount: number | string, unit: string) =>
+      `${formatCurrency('subcent')(Number(amount), price.price_currency)} / ${unit}`
+    // Every tier is listed so a change to any one of them shows in the diff
+    const tiered = ({ type, tiers }: Tiers, unit: string) =>
+      tiers.length === 1
+        ? rate(tiers[0].unit_amount, unit)
+        : `${capitalize(type)}: ${tiers
+            .map(({ bound, unit_amount }) =>
+              bound === null
+                ? rate(unit_amount, unit)
+                : `${rate(unit_amount, unit)} up to ${bound.toLocaleString('en-US')}`,
+            )
+            .join(', then ')}`
+    const minimum = (count: number, unit: string) =>
+      count > 1 ? `, minimum ${plural(count, unit)}` : ''
+
     switch (price.amount_type) {
       case 'fixed':
         return formatCurrency('standard')(
@@ -82,9 +100,19 @@ export const valueFormatter = (configs: Config[]) => {
           price.price_currency,
         )
       case 'metered_unit':
-        return `${formatCurrency('subcent')(Number(price.unit_amount), price.price_currency)} / ${meterName(price.meter)}`
-      default:
-        return JSON.stringify(price)
+        return rate(price.unit_amount, meterName(price.meter))
+      case 'metered_tiers': {
+        const cap = price.cap_amount
+          ? `, capped at ${formatCurrency('standard')(price.cap_amount, price.price_currency)}`
+          : ''
+        return `${tiered(price.tiers, meterName(price.meter))}${cap}`
+      }
+      case 'seat_based':
+        return `${tiered(price.tiers, 'seat')}${minimum(price.minimum_units, 'seat')}`
+      case 'unit_based': {
+        const unit = getUnitLabels(price).unitLabel
+        return `${tiered(price.tiers, unit)}${minimum(price.minimum_units, unit)}`
+      }
     }
   }
 

@@ -8,11 +8,19 @@ from sqlalchemy import select
 
 from polar.kit.db.postgres import AsyncSession
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
-from polar.models import Customer, OrderItem, Organization, Product, ReducerBucket
+from polar.models import (
+    Customer,
+    Meter,
+    OrderItem,
+    Organization,
+    Product,
+    ReducerBucket,
+)
 from polar.models.billing_entry import BillingEntryType
+from polar.models.reducer import ReducerKind
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
-from scripts.backfill_reducer_buckets import backfill_organization
+from scripts.backfill_usage_reducer_buckets import backfill_organization
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_billing_entry,
@@ -266,3 +274,33 @@ class TestBackfillBuckets:
             next_order.id,
             next_order.id,
         ]
+
+    async def test_keeps_credit_buckets(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await create_reducer(save_fixture, organization=organization, meters=[meter])
+        credit_reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        credit = ReducerBucket(
+            organization=organization,
+            reducer=credit_reducer,
+            customer_id=customer.id,
+            bucket_start=START,
+            bucket_end=START + BUCKET,
+            count=1,
+            sum=Decimal(10),
+        )
+        await save_fixture(credit)
+
+        await backfill_organization(session, organization.id, START, END)
+
+        assert await session.get(ReducerBucket, credit.id) is not None

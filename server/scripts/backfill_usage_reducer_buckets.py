@@ -88,7 +88,7 @@ async def backfill_organization(
     *,
     page_size: int = PAGE_SIZE,
 ) -> int:
-    """Rebuilds the buckets of all the organization's reducers starting in
+    """Rebuilds the buckets of all the organization's usage reducers starting in
     [start, end) from one pass over its events, and returns how many were written."""
     reducers = await _get_reducers(session, organization_id)
     boundaries = await _get_boundaries(session, organization_id)
@@ -104,7 +104,7 @@ async def backfill_organization(
         # The page may end inside a bucket: only the buckets before it are complete.
         flush_until = get_reducer_bucket_start(rows[-1].timestamp)
         written += await _flush(
-            session, organization_id, totals, flushed_until, flush_until, end
+            session, organization_id, reducers, totals, flushed_until, flush_until, end
         )
         flushed_until = flush_until
         await session.commit()
@@ -113,7 +113,9 @@ async def backfill_organization(
             f"{utc_now():%H:%M:%S}  {seen:,} events, {written:,} buckets, "
             f"flushed until {flushed_until.isoformat()}"
         )
-    written += await _flush(session, organization_id, totals, flushed_until, end, end)
+    written += await _flush(
+        session, organization_id, reducers, totals, flushed_until, end, end
+    )
     await session.commit()
     return written
 
@@ -142,16 +144,17 @@ async def _iter_events(
 async def _flush(
     session: AsyncSession,
     organization_id: UUID,
+    reducers: Sequence[Reducer],
     totals: Totals,
     start: datetime,
     end: datetime,
     synced_at: datetime,
 ) -> int:
-    """Replaces the organization's buckets starting in [start, end) with the
-    totals of those buckets, which it drops from `totals`."""
+    """Replaces the reducers' buckets starting in [start, end) with the totals of
+    those buckets, which it drops from `totals`."""
     completed = _pop_totals_before(totals, end)
     buckets = _to_buckets(organization_id, completed, synced_at)
-    await _delete_buckets(session, organization_id, start, end)
+    await _delete_buckets(session, organization_id, reducers, start, end)
     await _insert_buckets(session, buckets)
     return len(buckets)
 
@@ -159,7 +162,7 @@ async def _flush(
 async def _get_organization_ids(
     session: AsyncSession, organization_id: UUID | None, after: UUID | None
 ) -> Sequence[UUID]:
-    """The organizations with active reducers, or the given one."""
+    """The organizations with active usage reducers, or the given one."""
     if organization_id is not None:
         return [organization_id]
     statement = (
@@ -177,7 +180,7 @@ async def _get_organization_ids(
 async def _get_reducers(
     session: AsyncSession, organization_id: UUID
 ) -> Sequence[Reducer]:
-    """The organization's active reducers with a mergeable aggregation."""
+    """The organization's active usage reducers with a mergeable aggregation."""
     reducers = await ReducerRepository.from_session(
         session
     ).get_all_active_by_organization_and_kinds(organization_id, (ReducerKind.usage,))
@@ -397,11 +400,16 @@ def _generation_order(billings: Collection[Billing | None]) -> list[Billing | No
 
 
 async def _delete_buckets(
-    session: AsyncSession, organization_id: UUID, start: datetime, end: datetime
+    session: AsyncSession,
+    organization_id: UUID,
+    reducers: Sequence[Reducer],
+    start: datetime,
+    end: datetime,
 ) -> None:
     await session.execute(
         delete(ReducerBucket).where(
             ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id.in_([reducer.id for reducer in reducers]),
             ReducerBucket.bucket_start >= start,
             ReducerBucket.bucket_start < end,
         )
@@ -465,7 +473,7 @@ async def backfill(
     after_organization_id: UUID | None = None,
     page_size: int = typer.Option(PAGE_SIZE, min=1),
 ) -> None:
-    """Rebuild usage and billing buckets, excluding the latest ten minutes."""
+    """Rebuild usage reducer buckets, excluding the latest ten minutes."""
     # Whole buckets only: a window ending inside a bucket would rebuild it from
     # part of its events.
     start = get_reducer_bucket_start(start.replace(tzinfo=UTC))

@@ -6,10 +6,11 @@ import { useEvents, useEventTypeStats } from '@/hooks/queries/events'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { startOfDay } from 'date-fns'
-import { useContext, useState } from 'react'
+import { addDays, startOfDay } from 'date-fns'
+import { useContext, useEffect, useState } from 'react'
 import { ListRow } from './ListRow'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetError } from './WidgetError'
 import { WidgetGuard } from './WidgetGuard'
 import { WidgetLink } from './WidgetLink'
 
@@ -34,9 +35,22 @@ export const ActivityWidget = ({ className }: ActivityWidgetProps) => (
 
 const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
-  const [today] = useState(() => startOfDay(new Date()))
+  const [today, setToday] = useState(() => startOfDay(new Date()))
+  // Roll the count over at local midnight while the dashboard stays open.
+  useEffect(() => {
+    const timeout = setTimeout(
+      () => setToday(startOfDay(new Date())),
+      addDays(today, 1).getTime() - Date.now(),
+    )
+    return () => clearTimeout(timeout)
+  }, [today])
 
-  const { data: recent, isLoading } = useEvents(organization.id, {
+  const {
+    data: recent,
+    isLoading,
+    isError,
+    refetch,
+  } = useEvents(organization.id, {
     limit: FETCHED_EVENTS,
     sorting: ['-timestamp'],
     depth: 0,
@@ -74,7 +88,9 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
       }
       className={className}
     >
-      {!isLoading && rows.length === 0 ? (
+      {isError ? (
+        <WidgetError title="Couldn't load activity" onRetry={() => refetch()} />
+      ) : !isLoading && rows.length === 0 ? (
         <Box
           flex={1}
           flexDirection="column"

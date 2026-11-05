@@ -17,17 +17,19 @@ interface RevenueWidgetProps {
 const WIDGET_TITLE = 'Revenue'
 const MONTHS = 5
 
-// Whole dollars, then compact from $10K so six months of labels stay narrow.
-const formatBarValue = (cents: number) =>
-  Math.abs(cents) >= 1_000_000
+// Whole dollars, then compact from $10K so the month labels stay narrow.
+const formatBarValue = (cents: number) => {
+  const dollars = Math.round(cents / 100)
+  return Math.abs(dollars) >= 10_000
     ? new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'usd',
         currencyDisplay: 'narrowSymbol',
         notation: 'compact',
         maximumFractionDigits: 1,
-      }).format(cents / 100)
-    : formatCurrency('statistics')(Math.round(cents / 100) * 100, 'usd')
+      }).format(dollars)
+    : formatCurrency('statistics')(dollars * 100, 'usd')
+}
 
 const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   <WidgetGuard

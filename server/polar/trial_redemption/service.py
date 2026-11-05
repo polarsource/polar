@@ -18,13 +18,13 @@ class TrialRedemptionService:
             return False
 
         repository = TrialRedemptionRepository.from_session(session)
-        trial_redemptions = await repository.get_all_by_organization_and_hints(
+        trial_redemption = await repository.get_first_by_organization_and_hints(
             organization.id,
             customer_email=normalize_email(customer.email),
             product=product.id if product else None,
             payment_method_fingerprint=payment_method_fingerprint,
         )
-        return len(trial_redemptions) > 0
+        return trial_redemption is not None
 
     async def create_trial_redemption(
         self,

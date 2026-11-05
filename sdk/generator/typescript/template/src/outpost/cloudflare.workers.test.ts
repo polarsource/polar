@@ -4,10 +4,10 @@ import {
   runDurableObjectAlarm,
   waitOnExecutionContext,
 } from "cloudflare:test";
-import { beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { CloudflareOutpost, MissingExternalIdError } from "./cloudflare";
-import { getBucketStart, type Reducer } from "./reducer";
+import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 
 const timestamp = "2026-10-12T12:00:00Z";
 const bucket = getBucketStart(Date.parse(timestamp) * 1000);
@@ -122,6 +122,10 @@ const answer = (method: string, path: string, body: Record<string, any> | undefi
   }
   return undefined;
 };
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 const polar = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   const request = new Request(input, init);
@@ -278,4 +282,57 @@ it("ignores a snapshot applied already, or older, when a pull is replayed", asyn
     pulled,
   );
   expect((await outpost().meter(meter))?.consumed_units).toBe(20);
+});
+
+it("pulls before a read without news for two intervals", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  seed();
+  expect((await outpost().meter(meter))?.consumed_units).toBe(10);
+  changes.push(change(1791807000000002, 20));
+  vi.setSystemTime(Date.now() + 45_000);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(10);
+  vi.setSystemTime(Date.now() + 16_000);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(20);
+  expect(requested("/v1/outpost/changes")).toHaveLength(2);
+});
+
+it("confirms the pending events of a sealed bucket from its alarm", async () => {
+  seed();
+  const tracked = event(3);
+  await outpost().track(tracked);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(13);
+  // Polar seals the bucket, counting the event: the local copy is pending until confirmed.
+  snapshot = {
+    cold_until: bucket + BUCKET_SIZE,
+    version: 1791807000000002,
+    count: 2,
+    sum: 13,
+    min: 3,
+    max: 10,
+  };
+  changes.push({
+    ...change(1791807000000002, 13),
+    cold_until: bucket + BUCKET_SIZE,
+    count: 2,
+    min: 3,
+  });
+  await runDurableObjectAlarm(sync());
+  expect((await outpost().meter(meter))?.consumed_units).toBe(16);
+  // Polar has not ingested it yet: it stays pending, the alarm asks again.
+  await vi.waitFor(() => expect(requested("/v1/outpost/confirm")).not.toHaveLength(0));
+  expect(await runDurableObjectAlarm(customerObject())).toBe(true);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(16);
+  ingested.add(tracked.external_id);
+  expect(await runDurableObjectAlarm(customerObject())).toBe(true);
+  expect((await outpost().meter(meter))?.consumed_units).toBe(13);
+  const confirms = requested("/v1/outpost/confirm");
+  expect(confirms.length).toBeGreaterThanOrEqual(2);
+  for (const confirm of confirms)
+    expect(confirm).toEqual({
+      ...customer,
+      reducer_id: "tokens",
+      bucket_start: bucket,
+      ids: [tracked.external_id],
+    });
+  expect(await runDurableObjectAlarm(customerObject())).toBe(false);
 });

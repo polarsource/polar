@@ -14,6 +14,7 @@ import { CopyButton } from './CopyButton'
 import { Field } from './EventDetailField'
 import { useEventDetailFields } from './EventDetailFields'
 import { EventCostComparison, useEventCostSamples } from './EventCostComparison'
+import { EventCostsLink } from './EventCostsLink'
 import { EventDetailSkeleton, SkeletonBar } from './EventDetailSkeleton'
 import { EventLLMFields } from './EventLLMFields'
 import {
@@ -209,7 +210,15 @@ const EventDetails = ({
       )}
 
       {cost && (
-        <Section title="Cost" action={<Text>{cost}</Text>}>
+        <Section
+          title="Cost"
+          action={
+            <Box alignItems="center" gap="xs">
+              <Text>{cost}</Text>
+              <EventCostsLink event={event} organization={organization} />
+            </Box>
+          }
+        >
           <EventCostComparison
             event={event}
             samples={costSamples?.items ?? []}

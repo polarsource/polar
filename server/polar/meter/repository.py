@@ -12,6 +12,7 @@ from polar.kit.repository import (
 )
 from polar.models import (
     Catalog,
+    CatalogMeter,
     CustomerSeat,
     Meter,
     ProductPrice,
@@ -59,6 +60,37 @@ class MeterRepository(
             Meter.is_current,
         )
         return await self.get_one_or_none(statement)
+
+    def apply_catalog_filter(
+        self,
+        statement: Select[Meter],
+        org_ids: set[AccessibleOrganizationID],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
+    ) -> Select[Meter]:
+        catalog_members = (
+            select(CatalogMeter.meter_id)
+            .join(CatalogMeter.catalog)
+            .where(
+                Catalog.organization_id.in_(org_ids),
+                CatalogMeter.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+            )
+        )
+        if catalog_id is not None:
+            statement = statement.where(
+                Meter.id.in_(catalog_members.where(Catalog.id.in_(catalog_id)))
+            )
+        if catalog_status is not None:
+            in_status = Meter.id.in_(
+                catalog_members.where(Catalog.status.in_(catalog_status))
+            )
+            statement = statement.where(
+                or_(Meter.is_current, in_status)
+                if CatalogStatus.live in catalog_status
+                else in_status
+            )
+        return statement
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

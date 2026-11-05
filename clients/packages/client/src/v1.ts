@@ -27556,6 +27556,16 @@ export interface components {
        * @description Whether the meter is archived and the time it was archived.
        */
       archived_at?: string | null
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the meter. None for meters not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the meter's current version. Previous versions keep billing the subscriptions that use them.
+       */
+      is_current: boolean
     }
     /** MeterCreate */
     MeterCreate: {
@@ -62898,6 +62908,13 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by meter external ID. */
         external_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by name. */
         query?: string | null
         /** @description Filter on archived meters. */

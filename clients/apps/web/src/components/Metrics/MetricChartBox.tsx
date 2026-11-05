@@ -231,7 +231,7 @@ const MetricChartBox = ({
           >
             {metricValue}
           </Text>
-          {!compact && previousData && (
+          {!compact && (
             <div className="flex flex-col gap-x-6 gap-y-2 md:flex-row md:items-center">
               <div className="flex flex-row items-center gap-x-2 text-sm">
                 <span className="h-0.5 w-3 bg-blue-600" />
@@ -252,25 +252,27 @@ const MetricChartBox = ({
                   </span>
                 )}
               </div>
-              <div className="flex flex-row items-center gap-x-2 text-sm">
-                <span className="dark:bg-polar-600 h-0.5 w-3 bg-gray-300" />
-                {hoveredPreviousPeriod ? (
-                  <FormattedDateTime
-                    datetime={hoveredPreviousPeriod.timestamp}
-                    dateStyle="medium"
-                  />
-                ) : (
-                  <span className="dark:text-polar-500 text-gray-500">
-                    {previousStartDate && previousEndDate && (
-                      <FormattedInterval
-                        startDatetime={previousStartDate}
-                        endDatetime={previousEndDate}
-                        hideCurrentYear={false}
-                      />
-                    )}
-                  </span>
-                )}
-              </div>
+              {previousData && (
+                <div className="flex flex-row items-center gap-x-2 text-sm">
+                  <span className="dark:bg-polar-600 h-0.5 w-3 bg-gray-300" />
+                  {hoveredPreviousPeriod ? (
+                    <FormattedDateTime
+                      datetime={hoveredPreviousPeriod.timestamp}
+                      dateStyle="medium"
+                    />
+                  ) : (
+                    <span className="dark:text-polar-500 text-gray-500">
+                      {previousStartDate && previousEndDate && (
+                        <FormattedInterval
+                          startDatetime={previousStartDate}
+                          endDatetime={previousEndDate}
+                          hideCurrentYear={false}
+                        />
+                      )}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

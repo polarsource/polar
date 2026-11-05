@@ -571,8 +571,7 @@ class OrderRepository(
             joinedload(Order.subscription).joinedload(Subscription.customer),
             selectinload(Order.items)
             .joinedload(OrderItem.product_price)
-            .joinedload(ProductPrice.product)
-            .defer(Product.is_deletable, raiseload=True),
+            .joinedload(ProductPrice.product),
         )
 
     def get_sorting_clause(self, property: OrderSortProperty) -> SortingClause:

@@ -410,9 +410,7 @@ class OrderService:
             .options(
                 *repository.get_eager_options(
                     customer_load=contains_eager(Order.customer),
-                    product_load=contains_eager(Order.product).defer(
-                        Product.is_deletable, raiseload=True
-                    ),
+                    product_load=contains_eager(Order.product),
                     discount_load=contains_eager(Order.discount),
                 )
             )
@@ -483,9 +481,7 @@ class OrderService:
             auth_subject,
             id,
             options=repository.get_eager_options(
-                product_load=joinedload(Order.product).defer(
-                    Product.is_deletable, raiseload=True
-                ),
+                product_load=joinedload(Order.product),
             ),
         )
 

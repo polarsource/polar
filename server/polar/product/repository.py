@@ -301,6 +301,7 @@ class ProductRepository(
 
     def get_eager_options(self) -> Options:
         return (
+            undefer(Product.is_deletable),
             joinedload(Product.organization),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),

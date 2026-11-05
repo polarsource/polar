@@ -6,7 +6,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select
-from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm import contains_eager, undefer
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
 
@@ -445,6 +445,7 @@ class SubscriptionRepository(
             joinedload(Subscription.customer).joinedload(Customer.organization),
             joinedload(Subscription.organization),
             product_load.options(
+                undefer(Product.is_deletable),
                 joinedload(Product.organization),
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),

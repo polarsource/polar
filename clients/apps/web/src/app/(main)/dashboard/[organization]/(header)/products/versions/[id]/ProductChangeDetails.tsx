@@ -13,33 +13,40 @@ const BeforeAfter = ({
   before,
   after,
 }: {
-  before?: ReactNode
-  after?: ReactNode
+  before: ReactNode
+  after: ReactNode
 }) => (
   <Box alignItems="baseline" gap="s" minWidth={0} flexWrap="wrap">
-    {before ? (
-      <Text color="muted" lineThrough={!after}>
-        {before}
-      </Text>
-    ) : null}
-    {before && after ? <Text color="muted">→</Text> : null}
-    {after ? <Text>{after}</Text> : null}
+    <Text color="muted">{before}</Text>
+    <Text color="muted">→</Text>
+    <Text>{after}</Text>
   </Box>
 )
 
-const BenefitField = ({ change }: { change: BenefitChange }) => (
-  <Field label="Benefit">
-    <Box alignItems="baseline" gap="s" minWidth={0}>
-      <BeforeAfter
-        before={change.type === 'added' ? undefined : change.before.description}
-        after={change.type === 'removed' ? undefined : change.after.description}
-      />
-      {change.type === 'updated' ? null : (
+const BenefitField = ({ change }: { change: BenefitChange }) => {
+  if (
+    change.type === 'updated' &&
+    change.before.description !== change.after.description
+  ) {
+    return (
+      <Field label="Benefit">
+        <BeforeAfter
+          before={change.before.description}
+          after={change.after.description}
+        />
+      </Field>
+    )
+  }
+  const benefit = change.type === 'removed' ? change.before : change.after
+  return (
+    <Field label="Benefit">
+      <Box alignItems="baseline" gap="s" minWidth={0}>
+        <Text>{benefit.description}</Text>
         <Text color="muted">· {change.type}</Text>
-      )}
-    </Box>
-  </Field>
-)
+      </Box>
+    </Field>
+  )
+}
 
 export const ProductChangeDetails = ({
   changes,

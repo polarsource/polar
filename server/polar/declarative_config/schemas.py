@@ -493,7 +493,10 @@ class ConfigIssue(Schema):
     )
     type: ConfigIssueType = Field(description="Machine-readable reason.")
     loc: list[str | int] = Field(
-        description="Location of the issue in the request body."
+        description=(
+            "Location of the issue in the request body. "
+            "Empty when the issue is about the whole request."
+        )
     )
     msg: str = Field(description="Human-readable description of the issue.")
     input: Any | None = Field(description="The value at `loc`, if relevant.")

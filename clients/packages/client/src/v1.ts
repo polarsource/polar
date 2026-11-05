@@ -16675,7 +16675,7 @@ export interface components {
       type: components['schemas']['ConfigIssueType']
       /**
        * Loc
-       * @description Location of the issue in the request body.
+       * @description Location of the issue in the request body. Empty when the issue is about the whole request.
        */
       loc: (string | number)[]
       /**

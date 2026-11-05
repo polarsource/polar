@@ -4449,10 +4449,7 @@ class TestCatalogDrafts:
             for issue in plan.issues
             if issue.type == ConfigIssueType.draft_discarded
         ]
-        assert (issue.severity, issue.type) == (
-            ConfigIssueSeverity.warning,
-            ConfigIssueType.draft_discarded,
-        )
+        assert issue.severity == ConfigIssueSeverity.warning
         assert issue.msg.endswith(
             "Applying with publish=true discards it; "
             f"publish catalog {draft.catalog.after.id} first to keep it."

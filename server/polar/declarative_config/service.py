@@ -201,7 +201,7 @@ def _draft_discarded_issue(draft: Catalog, *, applied: bool) -> ConfigIssue:
     return ConfigIssue(
         severity=ConfigIssueSeverity.warning,
         type=ConfigIssueType.draft_discarded,
-        loc=["query", "publish"],
+        loc=[],
         msg=(
             f"The draft catalog saved on {saved_at} was discarded "
             "because this apply published."

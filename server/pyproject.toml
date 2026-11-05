@@ -205,6 +205,26 @@ init_typed = true
 warn_required_dynamic_aliases = false
 
 [tool.uv]
+# SQLAlchemy 2.1 support is unreleased (opentelemetry-python-contrib#5120).
+# Matching OpenTelemetry Git versions also override Logfire's released-version bounds.
+# Remove these pins once SQLAlchemy 2.1 support ships on PyPI.
+override-dependencies = [
+  "opentelemetry-api @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-api",
+  "opentelemetry-sdk @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-sdk",
+  "opentelemetry-semantic-conventions @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-semantic-conventions",
+  "opentelemetry-proto @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-proto",
+  "opentelemetry-exporter-http-transport @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-http-transport",
+  "opentelemetry-exporter-otlp-common @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-otlp-common",
+  "opentelemetry-exporter-otlp-proto-common @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-otlp-proto-common",
+  "opentelemetry-exporter-otlp-proto-http @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-otlp-proto-http",
+  "opentelemetry-instrumentation @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=opentelemetry-instrumentation",
+  "opentelemetry-util-http @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=util/opentelemetry-util-http",
+  "opentelemetry-instrumentation-asgi @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-asgi",
+  "opentelemetry-instrumentation-fastapi @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-fastapi",
+  "opentelemetry-instrumentation-httpx @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-httpx",
+  "opentelemetry-instrumentation-redis @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-redis",
+  "opentelemetry-instrumentation-sqlalchemy @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-sqlalchemy",
+]
 exclude-newer = "1 week"
 exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false }
 

@@ -14,6 +14,7 @@ from polar.catalog.repository import (
     CatalogProductRepository,
 )
 from polar.catalog.service import catalog as catalog_service
+from polar.custom_field.repository import CustomFieldRepository
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.kit.currency import PresentmentCurrency
@@ -24,6 +25,7 @@ from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
 from polar.models import (
     Benefit,
     Catalog,
+    CustomField,
     Meter,
     Organization,
     Product,
@@ -36,6 +38,7 @@ from polar.models import (
     WebhookEndpoint,
 )
 from polar.models.benefit import BenefitType
+from polar.models.custom_field import CustomFieldSelectProperties, CustomFieldType
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.webhook.repository import WebhookEndpointRepository
@@ -45,6 +48,8 @@ from .schemas import (
     ConfigAction,
     ConfigBenefit,
     ConfigBenefitMeterCredit,
+    ConfigCustomField,
+    ConfigCustomFieldSelect,
     ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
@@ -159,6 +164,7 @@ MeterChange = ResourceChange[ConfigMeter, Meter]
 BenefitChange = ResourceChange[ConfigBenefit, Benefit]
 ProductChange = ResourceChange[ConfigProduct, Product]
 WebhookChange = ResourceChange[ConfigWebhookEndpoint, WebhookEndpoint]
+CustomFieldChange = ResourceChange[ConfigCustomField, CustomField]
 
 
 @dataclass
@@ -168,6 +174,7 @@ class ConfigChanges:
     meters: list[MeterChange]
     benefits: list[BenefitChange]
     products: list[ProductChange]
+    custom_fields: list[CustomFieldChange]
 
 
 def _loc(resource: ConfigResource, index: int, *path: str | int) -> Loc:
@@ -179,7 +186,7 @@ def _meter_loc(index: int, *path: str | int) -> Loc:
 
 
 def unique_external_ids(
-    resource: ConfigResource, external_ids: Sequence[str]
+    resource: ConfigResource, external_ids: Sequence[str], key: str = "external_id"
 ) -> list[ConfigIssue]:
     seen: set[str] = set()
     issues: list[ConfigIssue] = []
@@ -189,8 +196,8 @@ def unique_external_ids(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
                     type=ConfigIssueType.duplicate_external_id,
-                    loc=_loc(resource, index, "external_id"),
-                    msg=f"Another {resource} in this config has the same external_id.",
+                    loc=_loc(resource, index, key),
+                    msg=f"Another {resource} in this config has the same {key}.",
                     input=external_id,
                 )
             )
@@ -961,6 +968,105 @@ async def diff_webhooks(
     return changes
 
 
+def _get_custom_field_update_dict(
+    custom_field: CustomField | None, custom_field_config: ConfigCustomField
+) -> dict[str, Any]:
+    update_dict: dict[str, Any] = {}
+    if custom_field is None:
+        update_dict["type"] = custom_field_config.type
+    for name in ("name", "properties"):
+        value = getattr(custom_field_config, name)
+        if getattr(custom_field, name, None) != value:
+            update_dict[name] = value
+    if "metadata" in custom_field_config.model_fields_set and (
+        getattr(custom_field, "user_metadata", None) != custom_field_config.metadata
+    ):
+        update_dict["user_metadata"] = custom_field_config.metadata
+    return update_dict
+
+
+async def diff_custom_fields(
+    session: AsyncSession,
+    organization: Organization,
+    custom_field_configs: Sequence[ConfigCustomField],
+    *,
+    for_update: bool,
+) -> list[CustomFieldChange]:
+    repository = CustomFieldRepository.from_session(session)
+    existing_fields = {
+        custom_field.slug: custom_field
+        for custom_field in await repository.get_all_by_slugs(
+            organization.id,
+            [config.slug for config in custom_field_configs],
+            for_update=for_update,
+        )
+    }
+    return [
+        CustomFieldChange(
+            index,
+            config,
+            existing_fields.get(config.slug),
+            _get_custom_field_update_dict(existing_fields.get(config.slug), config),
+        )
+        for index, config in enumerate(custom_field_configs)
+    ]
+
+
+def custom_field_type_changes(
+    changes: Sequence[CustomFieldChange],
+) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.type_changed,
+            loc=_loc(ConfigResource.custom_field, change.index, "type"),
+            msg="The type of an existing custom field can't be changed.",
+            input=change.config.type,
+        )
+        for change in changes
+        if change.existing is not None and change.existing.type != change.config.type
+    ]
+
+
+def removed_select_options(changes: Sequence[CustomFieldChange]) -> list[ConfigIssue]:
+    issues: list[ConfigIssue] = []
+    for change in changes:
+        existing = change.existing
+        if (
+            existing is None
+            or existing.type != CustomFieldType.select
+            or not isinstance(change.config, ConfigCustomFieldSelect)
+        ):
+            continue
+        kept = {option["value"] for option in change.config.properties["options"]}
+        removed = [
+            option["value"]
+            for option in cast(CustomFieldSelectProperties, existing.properties)[
+                "options"
+            ]
+            if option["value"] not in kept
+        ]
+        if removed:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.warning,
+                    type=ConfigIssueType.select_option_removed,
+                    loc=_loc(
+                        ConfigResource.custom_field,
+                        change.index,
+                        "properties",
+                        "options",
+                    ),
+                    msg=(
+                        "New checkouts can't pick these options. "
+                        "Answers that already use them keep their value."
+                    ),
+                    input=removed,
+                )
+            )
+    return issues
+
+
 def _external_ids_by_id(
     changes: Sequence[ResourceChange[Any, Any]],
 ) -> dict[str, str]:
@@ -981,6 +1087,9 @@ async def check(
 ) -> tuple[ConfigChanges, list[ConfigIssue]]:
     webhooks = await diff_webhooks(
         session, organization, config.webhooks, for_update=for_update
+    )
+    custom_fields = await diff_custom_fields(
+        session, organization, config.custom_fields, for_update=for_update
     )
     meters = await diff_meters(
         session, organization, config.meters, for_update=for_update
@@ -1010,6 +1119,11 @@ async def check(
             ConfigResource.meter, [meter.external_id for meter in config.meters]
         ),
         *unique_external_ids(
+            ConfigResource.custom_field,
+            [custom_field.slug for custom_field in config.custom_fields],
+            key="slug",
+        ),
+        *unique_external_ids(
             ConfigResource.benefit, [benefit.external_id for benefit in config.benefits]
         ),
         *unique_external_ids(
@@ -1017,6 +1131,8 @@ async def check(
         ),
         *invalid_references(config),
         *locked_meter_fields(meters),
+        *custom_field_type_changes(custom_fields),
+        *removed_select_options(custom_fields),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),
@@ -1041,6 +1157,6 @@ async def check(
         )
         issues.append(changed_currency(new_currency))
     return (
-        ConfigChanges(settings, webhooks, meters, benefits, products),
+        ConfigChanges(settings, webhooks, meters, benefits, products, custom_fields),
         issues,
     )

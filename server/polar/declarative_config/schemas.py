@@ -17,6 +17,15 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
+from polar.custom_field.schemas import (
+    CheckboxPropertiesInput,
+    DatePropertiesInput,
+    Name,
+    NumberPropertiesInput,
+    SelectPropertiesInput,
+    Slug,
+    TextPropertiesInput,
+)
 from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
@@ -30,6 +39,7 @@ from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.catalog import CatalogStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -56,6 +66,7 @@ MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
+MAXIMUM_CUSTOM_FIELDS = 100
 
 
 class ConfigDeprecationMixin(BaseModel):
@@ -367,6 +378,54 @@ class ConfigWebhookEndpoint(Schema):
     )
 
 
+class ConfigCustomFieldBase(MetadataInputMixin, Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: Slug
+    name: Name
+
+    # Custom fields are matched by slug, other resources by external_id.
+    @property
+    def external_id(self) -> str:
+        return self.slug
+
+
+class ConfigCustomFieldText(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.text]
+    properties: TextPropertiesInput
+
+
+class ConfigCustomFieldNumber(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.number]
+    properties: NumberPropertiesInput
+
+
+class ConfigCustomFieldDate(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.date]
+    properties: DatePropertiesInput
+
+
+class ConfigCustomFieldCheckbox(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CheckboxPropertiesInput
+
+
+class ConfigCustomFieldSelect(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.select]
+    properties: SelectPropertiesInput
+
+
+ConfigCustomField = Annotated[
+    ConfigCustomFieldText
+    | ConfigCustomFieldNumber
+    | ConfigCustomFieldDate
+    | ConfigCustomFieldCheckbox
+    | ConfigCustomFieldSelect,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomField"),
+]
+
+
 class ConfigSettingsPayments(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -449,6 +508,16 @@ class Config(Schema):
             "omitted, are left untouched."
         ),
     )
+    custom_fields: list[ConfigCustomField] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_CUSTOM_FIELDS,
+        description=(
+            "Custom fields to create or update, matched by `slug`. "
+            "Changes apply to every product using the field, earlier "
+            "versions included. Omitted `metadata` is left untouched. "
+            "Changing a slug creates a new field."
+        ),
+    )
     webhooks: list[ConfigWebhookEndpoint] = Field(
         default_factory=list,
         max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
@@ -481,6 +550,7 @@ class ConfigIssueType(StrEnum):
     missing_currency = "missing_currency"
     not_supported = "not_supported"
     removed_in_use = "removed_in_use"
+    select_option_removed = "select_option_removed"
     type_changed = "type_changed"
     unknown_event = "unknown_event"
     unknown_reference = "unknown_reference"
@@ -505,6 +575,7 @@ class ConfigAction(StrEnum):
 
 
 class ConfigResource(StrEnum):
+    custom_field = "custom_field"
     meter = "meter"
     benefit = "benefit"
     product = "product"
@@ -513,7 +584,9 @@ class ConfigResource(StrEnum):
 
 class ConfigResult(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    external_id: str = Field(description="The resource's `external_id`.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
     action: ConfigAction = Field(description="What applying the config does.")
 
 

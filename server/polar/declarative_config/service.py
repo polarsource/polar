@@ -15,6 +15,7 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
+from polar.custom_field.repository import CustomFieldRepository
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
@@ -64,6 +65,7 @@ from .schemas import (
 )
 from .validation import (
     BenefitChange,
+    CustomFieldChange,
     MeterChange,
     ProductChange,
     ResourceChange,
@@ -75,6 +77,7 @@ _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
+_CUSTOM_FIELD_SLUG_INDEX = "custom_fields_slug_organization_id_active_key"
 
 
 def _assert_scopes(
@@ -120,6 +123,19 @@ async def _assert_webhooks_permission(
         )
 
 
+async def _assert_custom_fields_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization | Agent],
+    config: Config,
+    organization: Organization,
+    permission: OrganizationPermission,
+) -> None:
+    if "custom_fields" in config.model_fields_set:
+        await assert_organization_permission(
+            session, auth_subject, organization.id, permission
+        )
+
+
 def _constraint_name(error: IntegrityError) -> str | None:
     database_error = getattr(error.orig, "__cause__", None)
     return getattr(database_error, "constraint_name", None)
@@ -161,6 +177,14 @@ class ConfigWebhookConflict(PolarError):
         super().__init__(
             "A webhook endpoint in this config was created by a concurrent request. "
             "Retry.",
+            409,
+        )
+
+
+class ConfigCustomFieldConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A custom field in this config was created by a concurrent request. Retry.",
             409,
         )
 
@@ -247,6 +271,13 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_manage,
+        )
         catalog_repository = CatalogRepository.from_session(session)
         await catalog_repository.lock(organization.id)
         draft = await catalog_repository.get_draft(organization.id)
@@ -287,6 +318,9 @@ class DeclarativeConfigService:
         )
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
+        )
+        custom_field_results = await self._apply_custom_fields(
+            session, organization, changes.custom_fields
         )
         benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
             session,
@@ -349,6 +383,7 @@ class DeclarativeConfigService:
             changes=[
                 *webhook_results,
                 *meter_results,
+                *custom_field_results,
                 *benefit_results,
                 *product_results,
             ],
@@ -369,6 +404,13 @@ class DeclarativeConfigService:
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_read,
+        )
         base = await catalog_service.resolve(session, organization, catalog_id)
         archived_base = (
             base if base is not None and base.status != CatalogStatus.live else None
@@ -421,6 +463,7 @@ class DeclarativeConfigService:
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
+                *self._plan_changes(ConfigResource.custom_field, changes.custom_fields),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
             ],
@@ -724,6 +767,41 @@ class DeclarativeConfigService:
                 )
             )
         return results, meter_ids
+
+    async def _apply_custom_fields(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        changes: Sequence[CustomFieldChange],
+    ) -> list[ConfigResult]:
+        repository = CustomFieldRepository.from_session(session)
+        results: list[ConfigResult] = []
+        for change in changes:
+            if change.existing is None:
+                try:
+                    async with session.begin_nested():
+                        await repository.create(
+                            change.config.type.get_model()(
+                                **change.update_dict,
+                                slug=change.config.slug,
+                                organization=organization,
+                            ),
+                            flush=True,
+                        )
+                except IntegrityError as e:
+                    if _constraint_name(e) != _CUSTOM_FIELD_SLUG_INDEX:
+                        raise
+                    raise ConfigCustomFieldConflict() from e
+            elif change.update_dict:
+                await repository.update(change.existing, update_dict=change.update_dict)
+            results.append(
+                ConfigResult(
+                    resource=ConfigResource.custom_field,
+                    external_id=change.config.slug,
+                    action=change.action,
+                )
+            )
+        return results
 
     async def _apply_benefits(
         self,

@@ -16,6 +16,7 @@ from polar.catalog.repository import (
 )
 from polar.catalog.service import catalog as catalog_service
 from polar.catalog.service import compute_version_hash
+from polar.custom_field.repository import CustomFieldRepository
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
@@ -69,6 +70,7 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
+from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
@@ -89,6 +91,7 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
     create_checkout_link,
+    create_custom_field,
     create_discount,
     create_event,
     create_meter,
@@ -253,6 +256,25 @@ ORDERS_WEBHOOK = {
     "format": "raw",
     "events": ["order.created", "order.paid"],
     "api_version": str(CURRENT_API_VERSION),
+}
+
+COMPANY_FIELD = {
+    "type": "text",
+    "slug": "company",
+    "name": "Company",
+    "properties": {"form_label": "Company name"},
+}
+
+SEATS_FIELD = {
+    "type": "select",
+    "slug": "team-size",
+    "name": "Team size",
+    "properties": {
+        "options": [
+            {"value": "small", "label": "1-10"},
+            {"value": "large", "label": "50+"},
+        ]
+    },
 }
 
 
@@ -1274,6 +1296,97 @@ class TestApply:
         assert endpoint.secret == "SECRET"
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_custom_field(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate({"custom_fields": [COMPANY_FIELD]})
+
+        created = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        reapplied = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert [(c.resource, c.external_id, c.action) for c in created.changes] == [
+            (ConfigResource.custom_field, "company", ConfigAction.created)
+        ]
+        assert created.catalog is None
+        custom_field = await CustomFieldRepository.from_session(
+            session
+        ).get_by_organization_and_slug(organization.id, "company")
+        assert isinstance(custom_field, CustomFieldText)
+        assert custom_field.name == "Company"
+        assert custom_field.properties == {"form_label": "Company name"}
+        assert [change.action for change in reapplied.changes] == [
+            ConfigAction.unchanged
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_update_custom_field_in_place(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        custom_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+        )
+
+        assert [change.action for change in result.changes] == [ConfigAction.updated]
+        assert result.catalog is None
+        [updated] = await CustomFieldRepository.from_session(session).get_all_by_slugs(
+            organization.id, ["company"]
+        )
+        assert updated.id == custom_field.id
+        assert updated.name == "Company"
+        assert updated.properties == {"form_label": "Company name"}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_field_type_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.checkbox,
+            slug="company",
+            organization=organization,
+        )
+
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+            )
+
+        assert [(issue.type, issue.loc) for issue in exc_info.value.errors] == [
+            (ConfigIssueType.type_changed, ["body", "custom_fields", 0, "type"])
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_with_new_products(
         self,
         session: AsyncSession,
@@ -1718,6 +1831,61 @@ class TestPlan:
                 ["order.created", "order.paid"],
                 ["order.paid", "order.refunded"],
             ),
+        ]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read}),
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_fields_require_custom_fields_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.plan(
+                session,
+                auth_subject,
+                Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_field_diff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.select,
+            slug="team-size",
+            organization=organization,
+            name="Team size",
+            properties={
+                "options": [
+                    {"value": "small", "label": "1-10"},
+                    {"value": "medium", "label": "11-49"},
+                ]
+            },
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"custom_fields": [SEATS_FIELD, COMPANY_FIELD]}),
+        )
+
+        assert [(change.external_id, change.action) for change in plan.changes] == [
+            ("team-size", ConfigAction.updated),
+            ("company", ConfigAction.created),
+        ]
+        assert [change.field for change in plan.changes[0].diff] == ["properties"]
+        assert [(issue.severity, issue.type, issue.input) for issue in plan.issues] == [
+            (
+                ConfigIssueSeverity.warning,
+                ConfigIssueType.select_option_removed,
+                ["medium"],
+            )
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2733,6 +2901,7 @@ class TestPlan:
             Config.model_validate(
                 {
                     "webhooks": [ORDERS_WEBHOOK, ORDERS_WEBHOOK],
+                    "custom_fields": [COMPANY_FIELD, COMPANY_FIELD],
                     "benefits": [BETA_BENEFIT, BETA_BENEFIT],
                     "products": [
                         {
@@ -2751,6 +2920,7 @@ class TestPlan:
             if issue.type == ConfigIssueType.duplicate_external_id
         ] == [
             ["body", "webhooks", 1, "external_id"],
+            ["body", "custom_fields", 1, "slug"],
             ["body", "benefits", 1, "external_id"],
         ]
 
@@ -4102,6 +4272,7 @@ class TestExport:
             "organization_id",
             "webhooks",
             "catalog_name",
+            "custom_fields",
         }
         assert {type(benefit) for benefit in config.benefits} == set(
             get_args(get_args(ConfigBenefit)[0])

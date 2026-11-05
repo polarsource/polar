@@ -3,50 +3,31 @@ title: "Connecting to the Database"
 description: "Query PlanetScale Postgres over Tailscale on the private network"
 ---
 
-Query the database over Tailscale. Do not add a laptop IP under **Access Control** on the Render database. Engineer access stays on Tailscale. An allowlist entry publishes the database on the public internet.
-
-All environments run on PlanetScale. Every instance on the account uses the same private-network suffix.
+All environments run on PlanetScale. Engineer access uses Tailscale.
 
 <Warning>
   These instances hold live data. Confirm the database name before running anything that writes. Use a read replica when you only need to inspect rows.
 </Warning>
 
-## Render 
-### Prerequisites
+## Prerequisites
 
-- Tailscale is connected to the company tailnet, with Tailscale DNS enabled. The hostname below resolves only through that DNS.
-- Access to the database in the [Render Dashboard](https://dashboard.render.com/).
+- Tailscale is connected to the company tailnet.
+- Access to the database credentials in the Engineering Team vault in 1Password.
 
-### 1. Copy the internal credentials
+## Connect
 
-On the instance's **Connect** or **Info** page, copy the **internal** user, password, port, and database name.
+Use the hostname for the target environment:
 
-The internal host is a bare id such as `dpg-xxxxxxxx-c`. The trailing letter is part of the id and differs per instance, so copy the whole thing from the page you are on. Do not use the external hostname (`*.render.com`).
+| Environment | Hostname |
+| --- | --- |
+| Production | `db.internal.polar.sh` |
+| Sandbox | `db.internal.sandbox.polar.sh` |
+| Test | `db.internal.test.polar.sh` |
 
-### 2. Build the Tailscale hostname
-
-Append `.usr-cgvspcgdh87jokuesjfg.svc.cluster.local` to that id:
-
-```text
-dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local
-```
-
-Each read replica has its own `dpg-` id. Use that id with the same `.usr-...svc.cluster.local` suffix.
-
-### 3. Connect
-
-Use the internal port, `5432`. Leave SSH tunneling off.
+Use the user, database name, and port from the matching 1Password entry, with `sslmode=require`. For example:
 
 ```bash
-psql "host=dpg-xxxxxxxx-c.usr-cgvspcgdh87jokuesjfg.svc.cluster.local port=5432 user=USER dbname=DATABASE"
+psql "host=db.internal.polar.sh port=PORT user=USER dbname=DATABASE sslmode=require"
 ```
 
-`psql` prompts for the password. TablePlus and Postico take the same host, port, user, and database.
-
-Production application data is the database name in the production service's internal URL.
-
-## PlanetScale
-
-Credentials are in 1Password in the Engineering Team. 
-
-Connect over Tailscale to `db.internal.polar.sh`, `db.internal.sandbox.polar.sh` or `db.internal.test.polar.sh` with `sslmode=require`.
+`psql` prompts for the password. TablePlus and Postico take the same connection details; enable SSL and leave SSH tunneling off.

@@ -16,6 +16,7 @@ from polar.authz.service import (
 )
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
+from polar.catalog.repository import CatalogRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.declarative_config.guard import (
@@ -24,6 +25,7 @@ from polar.declarative_config.guard import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
+    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -312,6 +314,15 @@ class ProductService:
         )
         if not declarative_config and organization.is_config_as_code_enabled:
             raise DeclarativeConfigManaged()
+
+        await CatalogRepository.from_session(session).lock(organization.id)
+        if (
+            await repository.count_by_organization_id(organization.id)
+            >= organization.products_limit
+        ):
+            raise NotPermitted(
+                f"Organization has reached its limit of {organization.products_limit} products."
+            )
 
         if (
             create_schema.external_id is not None

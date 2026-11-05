@@ -370,6 +370,40 @@ class TestGetProduct:
 
 @pytest.mark.anyio
 class TestCreateProduct:
+    @pytest.mark.auth
+    async def test_organization_limit(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.products_limit = 1
+        product.deleted_at = utc_now()
+        await save_fixture(organization)
+        await save_fixture(product)
+        payload = {
+            "organization_id": str(organization.id),
+            "name": "Product",
+            "recurring_interval": None,
+            "prices": [{"amount_type": "free", "price_currency": "usd"}],
+        }
+
+        response = await client.post("/v1/products/", json=payload)
+        assert response.status_code == 201
+        response = await client.patch(
+            f"/v1/products/{response.json()['id']}", json={"is_archived": True}
+        )
+        assert response.status_code == 200
+
+        response = await client.post("/v1/products/", json=payload)
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == "Organization has reached its limit of 1 products."
+        )
+
     @pytest.mark.api_version(V2026_10, V2027_01)
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -377,6 +411,7 @@ class TestCreateProduct:
         self,
         client: AsyncClient,
         organization: Organization,
+        product: Product,
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(

@@ -48322,6 +48322,15 @@ export interface operations {
           'application/json': components['schemas']['Benefit']
         }
       }
+      /** @description Organization benefit limit reached. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -49108,6 +49117,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Product']
+        }
+      }
+      /** @description Organization product limit reached. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */

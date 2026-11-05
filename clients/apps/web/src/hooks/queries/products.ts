@@ -61,19 +61,20 @@ export const useProductVersions = (
     queryKey: ['products', 'versions', { organizationId, externalId }],
     queryFn: async () => {
       const [current, previous] = await Promise.all(
-        [true, false].map((is_current) =>
-          unwrap(
-            api.GET('/v1/products/', {
-              params: {
-                query: {
-                  organization_id: organizationId,
-                  external_id: externalId!,
-                  is_current,
-                  limit: 100,
+        (['live', 'archived'] satisfies schemas['CatalogStatus'][]).map(
+          (catalog) =>
+            unwrap(
+              api.GET('/v1/products/', {
+                params: {
+                  query: {
+                    organization_id: organizationId,
+                    external_id: externalId!,
+                    catalog,
+                    limit: 100,
+                  },
                 },
-              },
-            }),
-          ),
+              }),
+            ),
         ),
       )
       return [

@@ -4,6 +4,7 @@ import { Effect, type FileSystem } from 'effect'
 import {
   BillingConfigError,
   DEFAULT_CONFIG_FILES,
+  NO_CONFIG_FILE,
   type LoadedConfig,
 } from '@/schemas/BillingConfig'
 
@@ -120,7 +121,7 @@ export const loader = (fs: FileSystem.FileSystem) => {
       if (yield* exists(name)) return name
     }
     return yield* new BillingConfigError({
-      message: 'No billing config file found in the current directory',
+      message: NO_CONFIG_FILE,
       hint: `Looked for ${DEFAULT_CONFIG_FILES.join(', ')}. Pass a path to use another file.`,
     })
   })

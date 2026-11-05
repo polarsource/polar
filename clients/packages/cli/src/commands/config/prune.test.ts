@@ -74,6 +74,8 @@ const run = async (
                   Effect.as({ entries, removed: true }),
                 )
               : Effect.succeed({ entries, removed: false }),
+          catalogs: () => Effect.die('unused'),
+          publish: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

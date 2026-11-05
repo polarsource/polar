@@ -12,7 +12,7 @@ import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
-const applyUrl = 'https://sandbox-api.polar.sh/v1/config/apply'
+const applyUrl = 'https://sandbox-api.polar.sh/v1/config/apply?publish=false'
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -96,6 +96,26 @@ describe('apply', () => {
         { section: 'meters', id: 'tool-calls', action: 'created', diff: [] },
         { section: 'products', id: 'pro', action: 'updated', diff: [] },
       ],
+    })
+  })
+
+  test('saves product and benefit changes to the draft catalog', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({
+      changes: [{ resource: 'product', external_id: 'pro', action: 'created' }],
+      catalog: {
+        before: { id: 'cat-live', name: 'v3' },
+        after: { id: 'cat-draft', name: null },
+      },
+    })
+
+    const result = await run(await write(source))
+
+    expect(result).toEqual({
+      status: 'applied',
+      entries: [
+        { section: 'products', id: 'pro', action: 'created', diff: [] },
+      ],
+      draft: { id: 'cat-draft', name: null },
     })
   })
 

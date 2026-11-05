@@ -64,6 +64,8 @@ const run = async (result: PlanResult, args: string[] = []) => {
           plan: () => Effect.succeed(result),
           apply: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
+          catalogs: () => Effect.die('unused'),
+          publish: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),
@@ -138,7 +140,7 @@ describe('polar config plan', () => {
       issues: [],
     })
     expect(output).toMatch(
-      /│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Catalog {7}v1 → v2 *│\n *│ {2}Issues/,
+      /│ {2}Changes {7}0 to change, 1 to add, 0 unchanged *│\n *│ {2}Catalog {7}v1 → v2 \(draft\) *│\n *│ {2}Issues/,
     )
     expect(output.match(/v1 → v2/g)).toHaveLength(1)
   })
@@ -149,7 +151,7 @@ describe('polar config plan', () => {
       catalog: { before: null, name: 'v1' },
       issues: [],
     })
-    expect(output).toContain('Catalog       none → v1')
+    expect(output).toContain('Catalog       none → v1 (draft)')
   })
 
   test('fails on errors but still shows the changes and warnings', async () => {

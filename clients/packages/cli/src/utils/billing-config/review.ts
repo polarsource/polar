@@ -32,7 +32,7 @@ export const catalogChange = (
   { before, name }: CatalogPlan,
   dim: (text: string) => string = ui.dim,
 ) =>
-  `${before === null ? dim('none') : (before.name ?? dim('unnamed'))} ${dim('→')} ${name}`
+  `${before === null ? dim('none') : (before.name ?? dim('unnamed'))} ${dim('→')} ${name} ${dim('(draft)')}`
 
 export const fixErrors = (issues: ReadonlyArray<ConfigIssue>) =>
   `${ui.INDENT}Fix the ${errors(issues) === 1 ? 'error' : `${errors(issues)} errors`} above, then run ${ui.command('polar config plan')} again.`

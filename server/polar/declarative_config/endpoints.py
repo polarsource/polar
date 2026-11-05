@@ -85,9 +85,10 @@ async def export(
     Resources without an `external_id`, archived ones, ones config can't express
     (or that reference a skipped resource), and ones beyond the config limit are
     listed in `skipped`, up to the config limit per section. Webhook endpoints
-    are not exported.
+    are not exported, and custom fields only with the `custom_fields:read` or
+    `custom_fields:write` scope.
 
-    Requires the read or write scope of every exported section.
+    Requires the read or write scope of every other exported section.
     """
     return await declarative_config_service.export(
         session, auth_subject, filters.organization_id, catalog_id

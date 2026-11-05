@@ -1,6 +1,8 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from sqlalchemy import Select
+
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -25,12 +27,17 @@ class CustomFieldRepository(
         )
         return await self.get_one_or_none(statement)
 
+    def get_organization_statement(self, organization_id: UUID) -> Select[CustomField]:
+        return (
+            self.get_base_statement()
+            .where(CustomField.organization_id == organization_id)
+            .order_by(CustomField.created_at, CustomField.id)
+        )
+
     async def get_all_by_organization(
         self, organization_id: UUID, *, for_update: bool = False
     ) -> Sequence[CustomField]:
-        statement = self.get_base_statement().where(
-            CustomField.organization_id == organization_id
-        )
+        statement = self.get_organization_statement(organization_id)
         if for_update:
             statement = statement.with_for_update(of=CustomField, key_share=True)
         return await self.get_all(statement)

@@ -39,7 +39,14 @@ from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.catalog import CatalogStatus
-from polar.models.custom_field import CustomFieldType
+from polar.models.custom_field import (
+    CustomFieldCheckboxProperties,
+    CustomFieldDateProperties,
+    CustomFieldNumberProperties,
+    CustomFieldSelectProperties,
+    CustomFieldTextProperties,
+    CustomFieldType,
+)
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -863,6 +870,48 @@ ConfigProductPriceRead = Annotated[
 ]
 
 
+class _ConfigCustomFieldReadBase(_ConfigRead):
+    slug: str
+    name: str
+    metadata: MetadataOutputType
+
+
+class ConfigCustomFieldTextRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.text]
+    properties: CustomFieldTextProperties
+
+
+class ConfigCustomFieldNumberRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.number]
+    properties: CustomFieldNumberProperties
+
+
+class ConfigCustomFieldDateRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.date]
+    properties: CustomFieldDateProperties
+
+
+class ConfigCustomFieldCheckboxRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CustomFieldCheckboxProperties
+
+
+class ConfigCustomFieldSelectRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.select]
+    properties: CustomFieldSelectProperties
+
+
+ConfigCustomFieldRead = Annotated[
+    ConfigCustomFieldTextRead
+    | ConfigCustomFieldNumberRead
+    | ConfigCustomFieldDateRead
+    | ConfigCustomFieldCheckboxRead
+    | ConfigCustomFieldSelectRead,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomFieldRead"),
+]
+
+
 class ConfigProductCustomFieldRead(_ConfigRead):
     field: str
     required: bool
@@ -903,6 +952,11 @@ class ConfigSettingsRead(_ConfigRead):
 class ConfigExportDocument(_ConfigRead):
     settings: ConfigSettingsRead
     meters: list[ConfigMeterRead]
+    custom_fields: list[ConfigCustomFieldRead] | None = Field(
+        default=None,
+        exclude_if=lambda custom_fields: custom_fields is None,
+        description="Left out without the `custom_fields:read` scope.",
+    )
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]
 

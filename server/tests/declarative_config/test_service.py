@@ -25,6 +25,7 @@ from polar.declarative_config.schemas import (
     ConfigCatalog,
     ConfigCatalogChange,
     ConfigCatalogPlan,
+    ConfigCustomField,
     ConfigExportDocument,
     ConfigIssueSeverity,
     ConfigIssueType,
@@ -4508,6 +4509,23 @@ class TestCatalogSelector:
 ROUND_TRIP_CONFIG: dict[str, Any] = {
     "settings": {"payments": {"currency": "usd", "tax": "inclusive"}},
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
+    "custom_fields": [
+        {**COMPANY_FIELD, "metadata": {"source": "crm"}},
+        SEATS_FIELD,
+        {
+            "type": "number",
+            "slug": "employees",
+            "name": "Employees",
+            "properties": {"ge": 1, "le": 100000},
+        },
+        {"type": "date", "slug": "start", "name": "Start date", "properties": {}},
+        {
+            "type": "checkbox",
+            "slug": "terms",
+            "name": "Terms",
+            "properties": {"form_label": "I accept the terms"},
+        },
+    ],
     "benefits": [
         {
             **CREDITS_BENEFIT,
@@ -4553,6 +4571,10 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "name": "Lifetime",
             "prices": [{"amount_type": "fixed", "price_amount": 0}],
             "benefits": ["beta"],
+            "custom_fields": [
+                {"field": "terms", "required": True},
+                {"field": "company"},
+            ],
         },
     ],
 }
@@ -4587,10 +4609,12 @@ class TestExport:
             "organization_id",
             "webhooks",
             "catalog_name",
-            "custom_fields",
         }
         assert {type(benefit) for benefit in config.benefits} == set(
             get_args(get_args(ConfigBenefit)[0])
+        )
+        assert {type(custom_field) for custom_field in config.custom_fields} == set(
+            get_args(get_args(ConfigCustomField)[0])
         )
         assert {
             type(price) for product in config.products for price in product.prices
@@ -4607,6 +4631,29 @@ class TestExport:
         assert plan.settings.action == ConfigAction.unchanged
         assert {change.action for change in applied.changes} == {ConfigAction.unchanged}
         assert again.config == exported.config
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_fields_need_their_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Agent],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, organization.id
+        )
+
+        assert "custom_fields" not in exported.config.model_dump()
+        assert exported.skipped == []
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_exports_only_current_versions(

@@ -970,7 +970,7 @@ test('products ask for declared custom fields in order', () => {
       pro: product('Pro')
         .prices(fixed().amount(usd(10)))
         .once()
-        .asks({ terms: 'required', company: 'optional' }),
+        .customFields({ terms: 'required', company: 'optional' }),
       plain: product('Plain')
         .prices(fixed().amount(usd(5)))
         .once(),
@@ -993,7 +993,7 @@ test('products ask for declared custom fields in order', () => {
       customFields: ({ text }) => ({ company: text() }),
       products: ({ product, free }) => ({
         // @ts-expect-error undeclared custom field
-        pro: product().prices(free()).once().asks({ vat: 'required' }),
+        pro: product().prices(free()).once().customFields({ vat: 'required' }),
       }),
     }),
   ).toThrow('Product "pro" references unknown custom field "vat".')

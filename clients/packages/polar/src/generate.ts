@@ -464,7 +464,7 @@ const renderProduct =
       product.custom_fields.length === 0
         ? []
         : [
-            `.asks(${renderPairs(
+            `.customFields(${renderPairs(
               product.custom_fields.map(({ field, required }) => [
                 field,
                 required ? 'required' : 'optional',

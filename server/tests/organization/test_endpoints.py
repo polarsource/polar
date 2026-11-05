@@ -181,6 +181,27 @@ class TestGetOrganization:
         json = response.json()
         assert json["id"] == str(organization.id)
 
+    @pytest.mark.auth
+    async def test_auto_proration_behavior(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "proration_behavior": "auto",
+        }
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["proration_behavior"] == "auto"
+        assert json["subscription_settings"]["proration_behavior"] == "auto"
+
 
 @pytest.mark.anyio
 class TestCreateOrganization:

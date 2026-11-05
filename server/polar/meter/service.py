@@ -176,7 +176,7 @@ class MeterService:
         )
         statement = (
             repository.get_statement_by_org_ids(org_ids)
-            .where(Meter.external_id == external_id)
+            .where(Meter.external_id == external_id, Meter.is_current)
             .options(joinedload(Meter.last_billed_event))
         )
         try:
@@ -636,11 +636,11 @@ class MeterService:
             has_events_after_last_billed,
         )
         base_statement = (
-            repository.get_base_statement()
+            repository.get_active_statement()
             .outerjoin(
                 last_billed_event, last_billed_event.id == Meter.last_billed_event_id
             )
-            .where(Meter.archived_at.is_(None), has_unbilled_events)
+            .where(has_unbilled_events)
         )
         count_result = await session.execute(
             base_statement.with_only_columns(func.count())

@@ -6,6 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from polar.kit.repository import RepositoryBase
 from polar.kit.repository.base import Options
+from polar.meter.repository import MeterRepository
 from polar.models import Meter, MeterReducer, Reducer
 from polar.models.reducer import ReducerKind
 
@@ -79,7 +80,7 @@ class ReducerRepository(RepositoryBase[Reducer]):
         active_reducer_ids = (
             select(MeterReducer.reducer_id)
             .join(MeterReducer.meter)
-            .where(Meter.archived_at.is_(None), Meter.deleted_at.is_(None))
+            .where(MeterRepository.get_active_clause())
         )
         return self.get_base_statement().where(
             Reducer.kind.in_(kinds), Reducer.id.in_(active_reducer_ids)

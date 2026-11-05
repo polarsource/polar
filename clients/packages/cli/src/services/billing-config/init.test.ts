@@ -60,7 +60,6 @@ const run = (target: Partial<InitTarget> = {}) =>
         directory,
         file: undefined,
         format: undefined,
-        template: 'empty',
         ...target,
       })
     }).pipe(
@@ -91,7 +90,6 @@ describe('init', () => {
     expect(result).toEqual({
       file: 'polar.config.ts',
       format: 'ts',
-      template: 'empty',
       install: ['npm', 'install', '@polar-sh/polar'],
       installDirectory: directory,
     })
@@ -112,25 +110,20 @@ describe('init', () => {
     expect(await read('polar.config.ts')).toContain('defineConfig')
   })
 
-  test('writes a JSON demo to the given path with nothing to install', async () => {
-    const result = await run({
-      file: 'billing/polar.config.json',
-      template: 'demo',
-    })
+  test('writes an empty JSON config with nothing to install without a package.json', async () => {
+    const result = await run()
 
     expect(result).toEqual({
-      file: 'billing/polar.config.json',
+      file: 'polar.config.json',
       format: 'json',
-      template: 'demo',
       install: undefined,
       installDirectory: undefined,
     })
-    const written = JSON.parse(await read('billing/polar.config.json'))
-    expect(
-      written.products.map(
-        (product: { external_id: string }) => product.external_id,
-      ),
-    ).toEqual(['free', 'pro'])
+    expect(JSON.parse(await read('polar.config.json'))).toEqual({
+      meters: [],
+      benefits: [],
+      products: [],
+    })
   })
 
   test('picks the package manager from the lockfile, then from package.json', async () => {

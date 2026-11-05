@@ -199,7 +199,6 @@ export const PublishOutput = Schema.Struct({
 export const InitResult = Schema.Struct({
   file: Schema.String,
   format: Schema.Literals(['ts', 'json']),
-  template: Schema.Literals(['empty', 'demo']),
   install: Schema.optionalKey(
     Schema.Struct({
       command: Schema.String,

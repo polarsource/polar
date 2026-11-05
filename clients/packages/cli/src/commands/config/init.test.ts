@@ -85,7 +85,6 @@ const run = async (
             return Effect.succeed({
               file: target.file ?? `polar.config.${format}`,
               format,
-              template: target.template,
               install: setup.install ? INSTALL : undefined,
               installDirectory: setup.install ? target.directory : undefined,
             } satisfies Prepared)
@@ -147,8 +146,7 @@ describe('polar config init', () => {
         target: {
           directory,
           file: undefined,
-          format: 'ts',
-          template: 'empty',
+          format: undefined,
         },
       },
     ])
@@ -182,69 +180,39 @@ describe('polar config init', () => {
     )
   })
 
-  test('targets the project root from a subdirectory, and asks in a terminal', async () => {
+  test('targets the project root from a subdirectory without asking', async () => {
     await writeFile(join(directory, 'package.json'), '{}')
     await mkdir(join(directory, 'src'))
     process.chdir(join(directory, 'src'))
 
-    const quiet = await run([])
-    expect(quiet.calls[0]!.target.directory).toBe(directory)
+    const { calls, terminal } = await run([], { interactive: true })
 
-    const asked = await run([], {
-      interactive: true,
-      input: [keys.down, keys.enter, keys.enter, keys.enter],
-    })
-    expect(asked.terminal).toContain('Where should the config live?')
-    expect(asked.calls[0]!.target.directory).toBe(join(directory, 'src'))
+    expect(terminal).not.toContain('Where should the config live?')
+    expect(calls[0]!.target.directory).toBe(directory)
   })
 
-  test('passes the file, format and template flags through', async () => {
-    const { calls, output } = await run([
-      'billing/polar.json',
-      '--template',
-      'demo',
-    ])
+  test('passes the file and format flags through', async () => {
+    const { calls } = await run(['billing/polar.json', '--format', 'json'])
 
     expect(calls[0]!.target).toEqual({
       directory,
       file: 'billing/polar.json',
       format: 'json',
-      template: 'demo',
     })
-    expect(output).toContain('Adjust the demo in billing/polar.json')
   })
 
-  test('asks for the format, the template and the install in a terminal', async () => {
-    const { calls, installed, output, terminal } = await run(
+  test('only asks before installing in a terminal', async () => {
+    const { installed, output, terminal } = await run(
       [],
-      {
-        interactive: true,
-        input: [keys.down, keys.enter, keys.down, keys.enter, keys.enter],
-      },
+      { interactive: true, input: [keys.enter] },
       { install: true },
     )
 
-    expect(terminal).toContain('Which format do you want?')
-    expect(terminal).toContain('Where do you want to start?')
-    expect(terminal).toContain('Install @polar-sh/polar with')
-    const answered = output.replace(/\r/g, '')
-    expect(answered).toContain(
-      '  ✔ Which format do you want?\n    JSON\n  ✔ Where do you want to start?\n    Demo\n',
-    )
-    expect(answered).toContain('now?\n    Yes\n')
-    expect(calls[0]!.target).toMatchObject({ format: 'json', template: 'demo' })
-    expect(installed).toHaveLength(1)
-  })
-
-  test('does not ask for the format when the file name settles it', async () => {
-    const { calls, terminal } = await run(['polar.config.json'], {
-      interactive: true,
-      input: [keys.enter],
-    })
-
     expect(terminal).not.toContain('Which format do you want?')
-    expect(calls[0]!.target.format).toBe('json')
-    expect(calls[0]!.target.template).toBe('empty')
+    expect(terminal).not.toContain('Where do you want to start?')
+    expect(terminal).toContain('Install @polar-sh/polar with')
+    expect(output.replace(/\r/g, '')).toContain('now?\n    Yes\n')
+    expect(installed).toHaveLength(1)
   })
 
   test('uses the only organization in the environment flag', async () => {
@@ -261,7 +229,7 @@ describe('polar config init', () => {
 
   test('asks which organization when the environment has several', async () => {
     const { calls, terminal } = await run(
-      ['--sandbox', '--format', 'ts', '--template', 'empty'],
+      ['--sandbox'],
       { interactive: true, input: [keys.down, keys.enter] },
       { organizations: [acme, beta], selected: false },
     )
@@ -330,7 +298,6 @@ describe('polar config init', () => {
     expect(JSON.parse(output)).toEqual({
       file: 'polar.config.ts',
       format: 'ts',
-      template: 'empty',
       install: { command: 'pnpm add @polar-sh/polar', status: 'installed' },
       organization: acme,
       next: [

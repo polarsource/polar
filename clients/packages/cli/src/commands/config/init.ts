@@ -1,4 +1,3 @@
-import { relative } from 'node:path'
 import { Effect, FileSystem, Option, Schema, Stdio } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { announceAuthorization } from '@/commands/auth'
@@ -20,13 +19,7 @@ import { findProjectRoot, PACKAGE } from '@/utils/billing-config/project'
 import { banner } from '@/utils/logo'
 import { confirm, select } from '@/utils/prompt'
 import { section, target } from '@/utils/billing-config/review'
-import {
-  type Format,
-  FORMATS,
-  formatOf,
-  type Template,
-  TEMPLATES,
-} from '@/utils/billing-config/templates'
+import { FORMATS } from '@/utils/billing-config/templates'
 import { output } from '@/utils/command'
 import { local, org, production, sandbox } from '@/utils/flags'
 import { Output } from '@/utils/output'
@@ -35,7 +28,7 @@ import * as ui from '@/utils/ui'
 
 const file = Argument.String('file').pipe(
   Argument.withDescription(
-    'Where to write the config. Defaults to polar.config.ts at the root of your project, or polar.config.json with --format json',
+    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar.config.json otherwise',
   ),
   Argument.optional,
 )
@@ -43,14 +36,7 @@ const file = Argument.String('file').pipe(
 const format = Flag.Literals('format', FORMATS).pipe(
   Flag.optional,
   Flag.withDescription(
-    'Write TypeScript (ts) or JSON (json). Asked interactively when omitted, ts otherwise',
-  ),
-)
-
-const template = Flag.Literals('template', TEMPLATES).pipe(
-  Flag.optional,
-  Flag.withDescription(
-    'Start empty, or from a demo with a meter, a benefit and two products. Asked interactively when omitted, empty otherwise',
+    'Write TypeScript (ts) or JSON (json). Detected from your project when omitted: ts when there is a package.json, json otherwise',
   ),
 )
 
@@ -178,85 +164,11 @@ const resolveOrganization = (
     return yield* organizations.resolve()
   })
 
-const choose = <A extends string, E, R>(
-  prompt: boolean,
-  given: Option.Option<A>,
-  fallback: A,
-  ask: Effect.Effect<A, E, R>,
-) =>
-  Option.isSome(given)
-    ? Effect.succeed(given.value)
-    : prompt
-      ? ask
-      : Effect.succeed(fallback)
-
-const FORMAT_TITLES: Record<Format, string> = { ts: 'TypeScript', json: 'JSON' }
-
-const formatPrompt = select<Format>(
-  {
-    message: 'Which format do you want?',
-    choices: [
-      {
-        title: FORMAT_TITLES.ts,
-        value: 'ts',
-        description: `polar.config.ts, typed with ${PACKAGE}`,
-      },
-      {
-        title: FORMAT_TITLES.json,
-        value: 'json',
-        description: 'polar.config.json',
-      },
-    ],
-  },
-  (format) => FORMAT_TITLES[format],
-)
-
-const TEMPLATE_TITLES: Record<Template, string> = {
-  empty: 'Empty',
-  demo: 'Demo',
-}
-
-const templatePrompt = select<Template>(
-  {
-    message: 'Where do you want to start?',
-    choices: [
-      {
-        title: TEMPLATE_TITLES.empty,
-        value: 'empty',
-        description: 'Just the sections',
-      },
-      {
-        title: TEMPLATE_TITLES.demo,
-        value: 'demo',
-        description: 'A usage meter, a credits benefit, and Free and Pro plans',
-      },
-    ],
-  },
-  (template) => TEMPLATE_TITLES[template],
-)
-
-const chooseDirectory = (fs: FileSystem.FileSystem, prompt: boolean) =>
-  Effect.gen(function* () {
-    const cwd = process.cwd()
-    const root = yield* findProjectRoot(fs, cwd)
-    if (root === undefined || root === cwd) return cwd
-    if (!prompt) return root
-    return yield* select<string>(
-      {
-        message: 'Where should the config live?',
-        choices: [
-          {
-            title: `Project root ${ui.dim('(recommended)')}`,
-            value: root,
-            description: relative(cwd, root),
-          },
-          { title: 'This directory', value: cwd, description: '.' },
-        ],
-      },
-      (directory) =>
-        directory === cwd ? 'This directory' : relative(cwd, directory),
-    )
-  })
+const projectDirectory = (fs: FileSystem.FileSystem) =>
+  Effect.map(
+    findProjectRoot(fs, process.cwd()),
+    (root) => root ?? process.cwd(),
+  )
 
 const confirmInstall = (command: string, prompt: boolean, skip: boolean) =>
   skip
@@ -274,9 +186,7 @@ const nextSteps = (result: Omit<Init, 'next'>) => [
   ...(result.install && result.install.status !== 'installed'
     ? [result.install.command]
     : []),
-  result.template === 'empty'
-    ? `Describe your meters, benefits and products in ${result.file}`
-    : `Adjust the demo in ${result.file} to your own pricing`,
+  `Describe your meters, benefits and products in ${result.file}`,
   configCommand('plan', result.file),
   configCommand('apply', result.file),
 ]
@@ -296,7 +206,6 @@ const render = (result: Init) => [
       ['Organization', result.organization.name],
       ['Environment', result.organization.environment],
       ['File', result.file],
-      ['Template', result.template],
       ...installLines(result.install),
     ]),
   ),
@@ -308,20 +217,13 @@ const render = (result: Init) => [
             `${ui.INDENT}Install the config package: ${ui.command(result.install.command)}`,
           ]
         : []),
-      `${ui.INDENT}${
-        result.template === 'empty'
-          ? `Describe your meters, benefits and products in ${ui.bold(result.file)}`
-          : `Adjust the demo in ${ui.bold(result.file)} to your own pricing`
-      }`,
+      `${ui.INDENT}Describe your meters, benefits and products in ${ui.bold(result.file)}`,
       `${ui.INDENT}Preview what would be created with ${ui.command(configCommand('plan', result.file))}`,
       `${ui.INDENT}Create it on Polar with ${ui.command(configCommand('apply', result.file))}`,
     ].join('\n'),
   ),
   ui.blank,
 ]
-
-const fileFormat = (path: string | undefined) =>
-  Option.fromUndefinedOr(path === undefined ? undefined : formatOf(path))
 
 export const init = Command.make('init', {
   file,
@@ -330,7 +232,6 @@ export const init = Command.make('init', {
   production,
   local,
   format,
-  template,
   skipInstall,
 }).pipe(
   Command.withDescription(
@@ -340,7 +241,7 @@ export const init = Command.make('init', {
     {
       command: 'polar config init',
       description:
-        'Write polar.config.ts for the active organization, asking about format and template',
+        'Write a config for the active organization at the root of your project',
     },
     {
       command: 'polar config init --sandbox',
@@ -348,9 +249,8 @@ export const init = Command.make('init', {
         'Set up your sandbox organization, logging in first if needed',
     },
     {
-      command: 'polar config init --org acme --format json --template demo',
-      description:
-        'Write a JSON demo config for another organization, without asking',
+      command: 'polar config init --org acme --format json',
+      description: 'Write a JSON config for another organization',
     },
     {
       command: 'polar config init billing/polar.config.ts --json',
@@ -361,7 +261,7 @@ export const init = Command.make('init', {
   output({
     result: Init,
     run: (
-      { file, org, sandbox, production, local, format, template, skipInstall },
+      { file, org, sandbox, production, local, format, skipInstall },
       { say },
     ) =>
       Effect.gen(function* () {
@@ -388,27 +288,12 @@ export const init = Command.make('init', {
             yield* progress.finish(target(organization))
             const path = Option.getOrUndefined(file)
             const directory =
-              path === undefined
-                ? yield* chooseDirectory(fs, prompt)
-                : process.cwd()
-            const chosenFormat = yield* choose(
-              prompt && Option.isNone(fileFormat(path)),
-              Option.isSome(format) ? format : fileFormat(path),
-              'ts',
-              formatPrompt,
-            )
-            const chosenTemplate = yield* choose(
-              prompt,
-              template,
-              'empty',
-              templatePrompt,
-            )
+              path === undefined ? yield* projectDirectory(fs) : process.cwd()
             yield* progress.start('Writing config')
             const prepared: Prepared = yield* billing.init(organization, {
               directory,
               file: path,
-              format: chosenFormat,
-              template: chosenTemplate,
+              format: Option.getOrUndefined(format),
             })
             yield* progress.finish(prepared.file)
             const install = yield* installPackage(
@@ -423,7 +308,6 @@ export const init = Command.make('init', {
             const result = {
               file: prepared.file,
               format: prepared.format,
-              template: prepared.template,
               ...(install ? { install } : {}),
               organization,
             }

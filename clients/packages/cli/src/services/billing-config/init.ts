@@ -24,8 +24,7 @@ import {
   DEFAULT_FILES,
   type Format,
   formatOf,
-  renderTemplate,
-  type Template,
+  renderConfig,
 } from '@/utils/billing-config/templates'
 
 const ProductCount = Schema.Struct({
@@ -36,13 +35,11 @@ export interface InitTarget {
   readonly directory: string
   readonly file: string | undefined
   readonly format: Format | undefined
-  readonly template: Template
 }
 
 export interface Prepared {
   readonly file: string
   readonly format: Format
-  readonly template: Template
   readonly install: ReadonlyArray<string> | undefined
   readonly installDirectory: string | undefined
 }
@@ -135,7 +132,11 @@ const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
         })
       }
     }
-    const format = target.format ?? 'ts'
+    const format =
+      target.format ??
+      ((yield* exists(fs, join(target.directory, 'package.json')))
+        ? 'ts'
+        : 'json')
     return { path: join(target.directory, DEFAULT_FILES[format]), format }
   })
 
@@ -186,11 +187,10 @@ export const init =
           hint: 'polar config init only sets up organizations without products yet. Start from a new organization, or wait for migration support.',
         })
       }
-      yield* write(fs, path, yield* renderTemplate(format, target.template))
+      yield* write(fs, path, yield* renderConfig(format))
       return {
         file: display(path),
         format,
-        template: target.template,
         ...(yield* packageToInstall(fs, format, path)),
       } satisfies Prepared
     })

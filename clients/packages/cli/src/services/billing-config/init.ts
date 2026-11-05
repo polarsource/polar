@@ -229,7 +229,7 @@ const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
       const path = join(target.directory, existing)
       if (yield* exists(fs, path)) {
         return yield* new BillingConfigError({
-          message: `${display(target.directory)} already has ${existing}`,
+          message: `${display(path)} already exists`,
           hint: 'Run polar config plan to check it, or pass another path to init.',
         })
       }
@@ -287,7 +287,7 @@ export const init =
       const { path, format } = yield* resolveTarget(fs, target)
       if (yield* exists(fs, path)) {
         return yield* new BillingConfigError({
-          message: `${display(target.directory)} already has ${existing}`,
+          message: `${display(path)} already exists`,
           hint: 'Run polar config plan to check it, or pass another path to init.',
         })
       }

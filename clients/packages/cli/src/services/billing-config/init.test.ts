@@ -262,7 +262,7 @@ describe('init', () => {
 
     const error = await failure(run())
 
-    expect(error.message).toBe('. already has polar.json')
+    expect(error.message).toBe('polar.json already exists')
     expect(error.hint).toContain('polar config plan')
     expect(api.requests).toHaveLength(0)
   })

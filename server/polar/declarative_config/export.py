@@ -89,10 +89,10 @@ async def _export_section[ModelT: _Exportable, EntryT](
     skipped_count = 0
     async for model in models:
         reason: ConfigSkippedReason | None = None
-        if model.external_id is None:
-            reason = ConfigSkippedReason.missing_external_id
-        elif archived(model):
+        if archived(model):
             reason = ConfigSkippedReason.archived
+        elif model.external_id is None:
+            reason = ConfigSkippedReason.missing_external_id
         elif len(entries) >= maximum:
             reason = ConfigSkippedReason.over_limit
         else:
@@ -307,7 +307,11 @@ async def export_config(
         skipped,
         name=lambda product: product.name,
         archived=lambda product: (
-            product.is_archived and product.external_id in catalog_external_ids
+            product.is_archived
+            and (
+                product.external_id is None
+                or product.external_id in catalog_external_ids
+            )
         ),
         entry=lambda product: _product_entry(
             product,

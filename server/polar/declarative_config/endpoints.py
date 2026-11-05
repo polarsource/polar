@@ -104,6 +104,12 @@ async def export(
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),
         },
+        409: {
+            "description": "Another request gave a resource the same external ID.",
+            "model": ConfigMeterConflict.schema()
+            | ConfigBenefitConflict.schema()
+            | ConfigProductConflict.schema(),
+        },
     },
 )
 async def init(
@@ -111,6 +117,14 @@ async def init(
     auth_subject: ConfigOrganizationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
+    """
+    Enable config as code for the organization.
+
+    With `external_ids`, also give existing meters, benefits and products
+    without an `external_id` the requested one, so export includes them and
+    apply updates them instead of creating new ones. Requires the write scope
+    of each section the assignments touch.
+    """
     await declarative_config_service.init(session, auth_subject, config_init)
 
 

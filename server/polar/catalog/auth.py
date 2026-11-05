@@ -14,6 +14,8 @@ CatalogRead = Annotated[AuthSubject[User | Organization | Agent], Depends(_Catal
 
 _CatalogWrite = Authenticator(
     required_scopes={Scope.products_write},
-    allowed_subjects={User, Organization},
+    allowed_subjects={User, Organization, Agent},
 )
-CatalogWrite = Annotated[AuthSubject[User | Organization], Depends(_CatalogWrite)]
+CatalogWrite = Annotated[
+    AuthSubject[User | Organization | Agent], Depends(_CatalogWrite)
+]

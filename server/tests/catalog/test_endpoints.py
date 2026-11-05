@@ -3,9 +3,11 @@ from datetime import timedelta
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.models import (
     Catalog,
+    CatalogBenefit,
     CatalogProduct,
     Organization,
     Product,
@@ -14,6 +16,7 @@ from polar.models import (
 from polar.models.catalog import CatalogStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_benefit, create_product
 
 
 @pytest.fixture
@@ -224,10 +227,124 @@ class TestGet:
         ]
 
 
+@pytest.fixture
+async def products_only_draft(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    catalogs: tuple[Catalog, Catalog, Catalog],
+) -> Catalog:
+    draft, _, _ = catalogs
+    product = await create_product(
+        save_fixture,
+        organization=organization,
+        recurring_interval=None,
+        is_current=False,
+        catalog=draft,
+    )
+    await save_fixture(
+        CatalogProduct(catalog=draft, product=product, external_id="pro")
+    )
+    return draft
+
+
+@pytest.fixture
+async def benefits_draft(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    products_only_draft: Catalog,
+) -> Catalog:
+    benefit = await create_benefit(
+        save_fixture,
+        organization=organization,
+        is_current=False,
+        catalog=products_only_draft,
+    )
+    await save_fixture(
+        CatalogBenefit(catalog=products_only_draft, benefit=benefit, external_id="beta")
+    )
+    return products_only_draft
+
+
+PUBLISHERS = (
+    AuthSubjectFixture(subject="user"),
+    AuthSubjectFixture(subject="organization"),
+    AuthSubjectFixture(subject="agent"),
+)
+
+
+def _with_scopes(*scopes: Scope) -> tuple[AuthSubjectFixture, ...]:
+    return tuple(
+        AuthSubjectFixture(subject=fixture.subject, scopes=set(scopes))
+        for fixture in PUBLISHERS
+    )
+
+
 @pytest.mark.anyio
+@pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
 class TestPublish:
+    async def test_anonymous(
+        self, client: AsyncClient, products_only_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(*_with_scopes(Scope.benefits_write))
+    async def test_without_products_write(
+        self, client: AsyncClient, products_only_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write))
+    async def test_products_only(
+        self, client: AsyncClient, products_only_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == CatalogStatus.live
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write))
+    async def test_benefit_changes_without_benefits_write(
+        self, client: AsyncClient, benefits_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{benefits_draft.id}/publish")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write))
+    async def test_removes_live_benefit_without_benefits_write(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog],
+        products_only_draft: Catalog,
+    ) -> None:
+        _, live, _ = catalogs
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await save_fixture(
+            CatalogBenefit(catalog=live, benefit=benefit, external_id="beta")
+        )
+
+        response = await client.post(f"/v1/catalogs/{products_only_draft.id}/publish")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
+    async def test_benefit_changes(
+        self, client: AsyncClient, benefits_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{benefits_draft.id}/publish")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == CatalogStatus.live
+
     @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
     async def test_not_draft(
         self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
     ) -> None:

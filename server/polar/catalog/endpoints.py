@@ -97,6 +97,11 @@ async def publish(
     session: AsyncSession = Depends(get_db_session),
 ) -> Catalog:
     """Publish the draft catalog. Its new products and benefits replace the live
-    ones for new sales. Existing customers stay on their versions until moved."""
+    ones for new sales. Existing customers stay on their versions until moved.
+
+    Requires `products:write`, and `benefits:write` when the draft changes
+    benefits."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
-    return await catalog_service.publish_draft(session, draft.organization, draft)
+    return await catalog_service.publish_draft(
+        session, auth_subject, draft.organization, draft
+    )

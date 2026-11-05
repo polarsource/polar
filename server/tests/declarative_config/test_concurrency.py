@@ -165,7 +165,12 @@ class TestApplyAndPublishDraft:
         async def publish_draft(session: AsyncSession) -> None:
             organization = await session.get_one(Organization, organization_id)
             draft = await session.get_one(Catalog, draft_id)
-            await catalog_service.publish_draft(session, organization, draft)
+            await catalog_service.publish_draft(
+                session,
+                await _auth_subject(session, organization_id),
+                organization,
+                draft,
+            )
 
         async def apply(session: AsyncSession) -> None:
             await declarative_config_service.apply(

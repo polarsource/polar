@@ -103,6 +103,14 @@ const grants = (
   ]
 }
 
+// The config may leave out a price's currency; the API's prices always carry one
+const withPlannedPrices = (document: unknown, entry: AppliedEntry) => {
+  const prices = entry.diff.find(({ field }) => field === 'prices')
+  return prices === undefined
+    ? document
+    : { ...record(document), prices: prices.after }
+}
+
 type Block = { readonly head: string; readonly body: ReadonlyArray<string> }
 
 const REASONS: Record<RemovalReason, string> = {
@@ -199,15 +207,16 @@ export const formatTree = (
     const regranted = granted.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'
+    const planned = withPlannedPrices(document, entry)
     const own = describe(
       MARKS[entry.action],
       entry.id,
-      productSentence(document),
+      productSentence(planned),
       fresh,
     )
     const children = [
       ...(fresh
-        ? productMeters(document, (id) => meterUnit(docs.meters.get(id))).map(
+        ? productMeters(planned, (id) => meterUnit(docs.meters.get(id))).map(
             meterUse,
           )
         : []),

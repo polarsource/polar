@@ -31,6 +31,7 @@ from .service import (
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigUnsupportedResources,
     ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
@@ -105,8 +106,12 @@ async def export(
             "model": NotPermitted.schema(),
         },
         409: {
-            "description": "Another request gave a resource the same external ID.",
-            "model": ConfigMeterConflict.schema()
+            "description": (
+                "The organization has benefits or products config can't manage yet, "
+                "or another request gave a resource the same external ID."
+            ),
+            "model": ConfigUnsupportedResources.schema()
+            | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
             | ConfigProductConflict.schema(),
         },

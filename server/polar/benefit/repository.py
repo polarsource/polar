@@ -85,6 +85,17 @@ class BenefitRepository(
             .order_by(Benefit.created_at, Benefit.id)
         )
 
+    async def get_descriptions_excluding_types(
+        self, organization_id: UUID, types: Sequence[BenefitType]
+    ) -> Sequence[str]:
+        statement = (
+            self.get_organization_statement(organization_id)
+            .where(Benefit.type.not_in(types))
+            .with_only_columns(Benefit.description)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def get_by_external_id_and_organization(
         self, external_id: str, organization_id: UUID
     ) -> Benefit | None:

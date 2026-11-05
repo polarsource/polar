@@ -21,7 +21,6 @@ from polar.models import (
     Meter,
     Organization,
     Product,
-    ProductPriceMeteredTiers,
 )
 from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
@@ -47,7 +46,7 @@ from .schemas import (
     ConfigSkippedReason,
     ConfigSkippedResource,
 )
-from .validation import benefit_properties, price_config
+from .validation import benefit_properties, is_expressible_product, price_config
 
 # Webhook endpoints stay out: they need a permission and scope that
 # unclaimed agents don't have. Apply leaves unlisted endpoints untouched.
@@ -157,16 +156,13 @@ def _product_entry(
     *,
     deprecated: bool,
 ) -> ConfigProductRead | None:
-    if any(
-        isinstance(price, ProductPriceMeteredTiers) and price.tiers is None
-        for price in product.prices
-    ):
+    if not is_expressible_product(product):
         return None
     prices = [price_config(price, meter_external_ids) for price in product.prices]
     benefits = [
         benefit_external_ids.get(str(benefit.id)) for benefit in product.benefits
     ]
-    if product.meter_interval is not None or None in prices or None in benefits:
+    if None in prices or None in benefits:
         return None
     config = ConfigProduct.model_validate(
         {

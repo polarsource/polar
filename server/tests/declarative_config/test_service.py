@@ -40,6 +40,7 @@ from polar.declarative_config.service import (
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigUnsupportedResources,
 )
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
@@ -314,6 +315,68 @@ class TestInit:
         assert [p.external_id for p in exported.config.products] == ["pro"]
         assert exported.config.products[0].benefits == ["credits"]
         assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_refuses_benefits_config_cannot_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            description="Beta",
+            properties={},
+        )
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        with pytest.raises(ConfigUnsupportedResources, match="Priority support"):
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert not organization.is_config_as_code_enabled
+
+    async def test_refuses_products_config_cannot_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Hobby",
+            prices=[(0, "usd")],
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Tip jar",
+            prices=[(500, None, None, "usd")],
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Old tip jar",
+            prices=[(500, None, None, "usd")],
+            is_archived=True,
+        )
+
+        with pytest.raises(ConfigUnsupportedResources) as raised:
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert raised.value.message.endswith("Unsupported: product Tip jar.")
 
     async def test_rejects_taken_and_existing_external_ids(
         self,

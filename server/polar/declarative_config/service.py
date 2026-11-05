@@ -37,6 +37,7 @@ from . import benefits, catalogs, external_ids, products, removals, validation
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
+    CONFIG_BENEFIT_TYPES,
     Config,
     ConfigAction,
     ConfigApplyResult,
@@ -69,6 +70,7 @@ from .validation import (
     ResourceChange,
     SettingsChange,
     WebhookChange,
+    is_expressible_product,
 )
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
@@ -133,6 +135,20 @@ class _OrganizationTarget:
 class ConfigAsCodeNotEnabled(PolarError):
     def __init__(self) -> None:
         super().__init__("Config as code is not enabled for this organization.", 403)
+
+
+class ConfigUnsupportedResources(PolarError):
+    def __init__(self, benefits: Sequence[str], products: Sequence[str]) -> None:
+        unsupported = [
+            *(f"benefit {name}" for name in benefits),
+            *(f"product {name}" for name in products),
+        ]
+        super().__init__(
+            "Config can only manage feature flag and meter credit benefits, and "
+            "products with fixed, metered, seat-based or unit-based prices. "
+            f"Unsupported: {', '.join(unsupported)}.",
+            409,
+        )
 
 
 class ConfigMeterConflict(PolarError):
@@ -234,6 +250,7 @@ class DeclarativeConfigService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
+        await self._assert_expressible(session, organization)
         if config_init.external_ids:
             _assert_scopes(
                 auth_subject,
@@ -264,6 +281,25 @@ class DeclarativeConfigService:
                 }
             },
         )
+
+    async def _assert_expressible(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        benefit_names = await BenefitRepository.from_session(
+            session
+        ).get_descriptions_excluding_types(organization.id, CONFIG_BENEFIT_TYPES)
+        product_repository = ProductRepository.from_session(session)
+        product_names = [
+            product.name
+            for product in await product_repository.get_all(
+                product_repository.get_organization_statement(organization.id).where(
+                    Product.is_archived.is_(False)
+                )
+            )
+            if not is_expressible_product(product)
+        ]
+        if benefit_names or product_names:
+            raise ConfigUnsupportedResources(benefit_names, product_names)
 
     async def apply(
         self,

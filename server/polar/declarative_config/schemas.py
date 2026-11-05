@@ -159,6 +159,8 @@ ConfigBenefit = Annotated[
     SetSchemaReference("ConfigBenefit"),
 ]
 
+CONFIG_BENEFIT_TYPES = (BenefitType.feature_flag, BenefitType.meter_credit)
+
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
     model_config = ConfigDict(extra="forbid")

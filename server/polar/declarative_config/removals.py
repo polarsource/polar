@@ -136,3 +136,49 @@ async def benefits(
         )
         for external_id in missing
     ]
+
+
+async def meters(
+    session: AsyncReadSession,
+    organization: Organization,
+    config: Config,
+    *,
+    catalog: Catalog | None = None,
+) -> list[ConfigRemoval]:
+    """Meters of the live catalog, or of `catalog` when given, that the config
+    deprecates or doesn't list.
+
+    Meters that pull doesn't export are left untouched. A meter that leaves
+    the catalog keeps billing the subscriptions whose prices use it.
+    """
+    if "meters" not in config.model_fields_set:
+        return []
+    if catalog is None:
+        catalog = await CatalogRepository.from_session(session).get_live(
+            organization.id
+        )
+    live_meters = await catalog_service.get_catalog_meters(
+        session, organization, catalog
+    )
+    listed = {meter.external_id for meter in config.meters}
+    deprecated = {meter.external_id for meter in config.meters if meter.deprecated}
+    missing = sorted(live_meters.keys() - listed)
+    if missing:
+        exported = await export_config(session, organization, catalog)
+        describable = {meter.external_id for meter in exported.config.meters}
+        missing = [external_id for external_id in missing if external_id in describable]
+    return [
+        ConfigRemoval(
+            resource=ConfigResource.meter,
+            external_id=external_id,
+            reason=ConfigRemovalReason.deprecated,
+        )
+        for external_id in sorted(live_meters.keys() & deprecated)
+    ] + [
+        ConfigRemoval(
+            resource=ConfigResource.meter,
+            external_id=external_id,
+            reason=ConfigRemovalReason.missing,
+        )
+        for external_id in missing
+    ]

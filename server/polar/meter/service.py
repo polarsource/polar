@@ -1,5 +1,7 @@
 import uuid
+from collections import defaultdict
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -60,7 +62,10 @@ from polar.models.catalog import CatalogStatus
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
-from polar.subscription.repository import SubscriptionProductPriceRepository
+from polar.subscription.repository import (
+    CustomerSubscriptionProductPrice,
+    SubscriptionProductPriceRepository,
+)
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import MeterRepository
@@ -91,6 +96,22 @@ class AmbiguousExternalMeterID(PolarError):
             "or a unique external ID to disambiguate.",
             409,
         )
+
+
+@dataclass
+class _VersionBilling:
+    billed_event_ids: set[uuid.UUID]
+    prices: dict[uuid.UUID, list[tuple[uuid.UUID, CustomerSubscriptionProductPrice]]]
+    matched: set[tuple[uuid.UUID, uuid.UUID]]
+
+    def get_price(
+        self, customer_id: uuid.UUID, event_id: uuid.UUID
+    ) -> CustomerSubscriptionProductPrice | None:
+        """The customer's price on another version that matched the event."""
+        for meter_id, price in self.prices.get(customer_id, []):
+            if (meter_id, event_id) in self.matched:
+                return price
+        return None
 
 
 class MeterService:
@@ -713,6 +734,12 @@ class MeterService:
                     list(customer_ids), meter.id
                 )
             )
+            versions = await self._get_version_billing(
+                session,
+                meter,
+                [event.id for event, customer in page if customer is not None],
+                [id for id, price in customer_price_map.items() if price is None],
+            )
 
             for event, customer in page:
                 if customer is None:
@@ -726,6 +753,12 @@ class MeterService:
                     )
                     customer_price = concurrent_customer_prices[customer.id]
                     customer_price_map[customer.id] = customer_price
+
+                if versions is not None:
+                    if event.id in versions.billed_event_ids:
+                        continue
+                    if customer_price is None:
+                        customer_price = versions.get_price(customer.id, event.id)
 
                 if customer_price is None:
                     continue
@@ -760,6 +793,52 @@ class MeterService:
             enqueue_job("meter.billing_entries", meter.id)
 
         return entries
+
+    async def _get_version_billing(
+        self,
+        session: AsyncSession,
+        meter: Meter,
+        event_ids: Sequence[uuid.UUID],
+        customer_ids_without_price: Sequence[uuid.UUID],
+    ) -> "_VersionBilling | None":
+        """Each version of a meter bills with its own cursor, so an event
+        matching two versions could be billed by both, or by neither when the
+        customer moves between them. Bill it once: skip the events another
+        version billed, and bill the customer's price on another version that
+        matched the event when they have none on this one."""
+        repository = MeterRepository.from_session(session)
+        versions = await repository.get_other_versions(meter)
+        if not versions:
+            return None
+        await repository.lock_versions(meter)
+        billed_event_ids = await BillingEntryRepository.from_session(
+            session
+        ).get_event_ids_billed_on_meters(
+            event_ids, [meter.id, *(version.id for version in versions)]
+        )
+        version_ids = [
+            version.id
+            for version in versions
+            if version.archived_at is None and version.deleted_at is None
+        ]
+        version_prices: dict[
+            uuid.UUID, list[tuple[uuid.UUID, CustomerSubscriptionProductPrice]]
+        ] = defaultdict(list)
+        matched: set[tuple[uuid.UUID, uuid.UUID]] = set()
+        if customer_ids_without_price:
+            subscription_product_price_repository = (
+                SubscriptionProductPriceRepository.from_session(session)
+            )
+            for version_id in version_ids:
+                for customer_id, price in (
+                    await subscription_product_price_repository.get_by_customers_and_meter(
+                        customer_ids_without_price, version_id
+                    )
+                ).items():
+                    if price is not None:
+                        version_prices[customer_id].append((version_id, price))
+            matched = await repository.get_matched_events(version_ids, event_ids)
+        return _VersionBilling(billed_event_ids, version_prices, matched)
 
     async def get_quantity(
         self,

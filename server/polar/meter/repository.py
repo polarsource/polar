@@ -5,6 +5,7 @@ from sqlalchemy import ColumnElement, Select, case, exists, or_, select
 from sqlalchemy.orm import undefer
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     RepositoryBase,
     RepositoryExternalIDMixin,
@@ -15,6 +16,7 @@ from polar.models import (
     CatalogMeter,
     CustomerSeat,
     Meter,
+    MeterEvent,
     ProductPrice,
     Subscription,
     SubscriptionProductPrice,
@@ -164,6 +166,35 @@ class MeterRepository(
             .order_by(Meter.created_at, Meter.id)
             .options(undefer(Meter.external_id))
         )
+
+    async def get_other_versions(self, meter: Meter) -> Sequence[Meter]:
+        """The meter's other versions, archived and deleted ones included: rows
+        sharing its `external_id`."""
+        if meter.external_id is None:
+            return []
+        statement = self.get_base_statement().where(
+            Meter.organization_id == meter.organization_id,
+            Meter.external_id == meter.external_id,
+            Meter.id != meter.id,
+        )
+        return await self.get_all(statement)
+
+    async def lock_versions(self, meter: Meter) -> None:
+        """Serialize billing across the versions of a meter."""
+        await pg_advisory_xact_lock(
+            self.session,
+            "meter_versions",
+            f"{meter.organization_id}:{meter.external_id}",
+        )
+
+    async def get_matched_events(
+        self, meter_ids: Sequence[UUID], event_ids: Sequence[UUID]
+    ) -> set[tuple[UUID, UUID]]:
+        statement = select(MeterEvent.meter_id, MeterEvent.event_id).where(
+            MeterEvent.meter_id.in_(meter_ids), MeterEvent.event_id.in_(event_ids)
+        )
+        result = await self.session.execute(statement)
+        return {(meter_id, event_id) for meter_id, event_id in result.tuples()}
 
     async def get_billed_by_external_id(
         self, organization_id: UUID, external_id: str, customer_id: UUID

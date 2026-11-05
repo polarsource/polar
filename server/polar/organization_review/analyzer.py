@@ -811,7 +811,7 @@ class ReviewAnalyzer:
             else:
                 parts.append(f"Website: {org.website}")
         if org.email:
-            parts.append(f"Org Support Email: {org.email}")
+            parts.append(f"Org Support Email Domain: {org.email.rpartition('@')[2]}")
         if org.about:
             parts.append(f"About: {org.about}")
         if org.product_description:
@@ -1005,8 +1005,6 @@ class ReviewAnalyzer:
             parts.append(
                 f"Verified Address Country: {identity.verified_address_country}"
             )
-        if identity.verified_dob:
-            parts.append(f"Verified Date of Birth: {identity.verified_dob}")
 
         # Stripe Connect Account (payout account)
         parts.append("\n## Payout Account")

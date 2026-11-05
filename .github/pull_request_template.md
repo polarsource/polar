@@ -25,3 +25,4 @@
 - [ ] New functionality is covered by tests
 - [ ] Linting and type checking pass (`uv run task lint && uv run task lint_types`)
 - [ ] No unrelated changes or drive-by fixes are included
+- [ ] AI prompts send only the fields the feature needs ([ADR-0012](../handbook/engineering/decisions/0012-minimize-data-in-ai-api-calls.mdx))

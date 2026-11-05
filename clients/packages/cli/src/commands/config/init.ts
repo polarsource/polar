@@ -8,7 +8,7 @@ import {
   loginCommand,
   PolarEnvironment,
 } from '@/schemas/Auth'
-import { InitResult } from '@/schemas/BillingConfig'
+import { DEFAULT_CONFIG_FILES, InitResult } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
 import {
   BillingConfig,
@@ -125,20 +125,31 @@ const pickOrganization = (environment: PolarEnvironment, prompt: boolean) =>
     )
   })
 
-const login = (prompt: boolean) =>
+const notLoggedIn = (environment?: PolarEnvironment) =>
+  new AuthError({
+    message:
+      environment === undefined
+        ? `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')} first.`
+        : `Not logged in to ${environment}. Run ${loginCommand(environment)} first.`,
+  })
+
+const login = (environment: PolarEnvironment) =>
   Effect.gen(function* () {
-    if (!prompt) {
-      return yield* new AuthError({
-        message: `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')} first.`,
-      })
-    }
-    const environment = yield* pickEnvironment
     yield* (yield* Auth).login(
       environment,
       false,
       announceAuthorization(environment),
     )
     return environment
+  })
+
+const ensureSession = (environment: PolarEnvironment, prompt: boolean) =>
+  Effect.gen(function* () {
+    const auth = yield* Auth
+    if (yield* auth.override) return
+    if ((yield* auth.environments).includes(environment)) return
+    if (!prompt) return yield* notLoggedIn(environment)
+    yield* login(environment)
   })
 
 const resolveOrganization = (
@@ -149,24 +160,20 @@ const resolveOrganization = (
   Effect.gen(function* () {
     const organizations = yield* Organizations
     const environment = yield* chosenEnvironment(flags)
-    if (reference !== undefined) {
-      const organization = yield* organizations.resolve(reference)
-      if (
-        environment !== undefined &&
-        organization.environment !== environment
-      ) {
-        return yield* new AuthError({
-          message: `${organization.slug} is in ${organization.environment}, not ${environment}.`,
-        })
-      }
-      return organization
-    }
     if (environment !== undefined) {
-      return yield* pickOrganization(environment, prompt)
+      yield* ensureSession(environment, prompt)
+      return reference === undefined
+        ? yield* pickOrganization(environment, prompt)
+        : yield* organizations.resolve(reference, environment)
     }
+    if (reference !== undefined) return yield* organizations.resolve(reference)
     const auth = yield* Auth
     if ((yield* auth.environments).length === 0 && !(yield* auth.override)) {
-      return yield* pickOrganization(yield* login(prompt), prompt)
+      if (!prompt) return yield* notLoggedIn()
+      return yield* pickOrganization(
+        yield* login(yield* pickEnvironment),
+        prompt,
+      )
     }
     return yield* organizations.resolve()
   })
@@ -258,6 +265,11 @@ const confirmInstall = (command: string, prompt: boolean, skip: boolean) =>
       ? confirm(`Install ${PACKAGE} with ${ui.command(command)} now?`)
       : Effect.succeed(true)
 
+const configCommand = (command: 'plan' | 'apply', file: string) =>
+  (DEFAULT_CONFIG_FILES as ReadonlyArray<string>).includes(file)
+    ? `polar config ${command}`
+    : `polar config ${command} ${file}`
+
 const nextSteps = (result: Omit<Init, 'next'>) => [
   ...(result.install && result.install.status !== 'installed'
     ? [result.install.command]
@@ -265,8 +277,8 @@ const nextSteps = (result: Omit<Init, 'next'>) => [
   result.template === 'empty'
     ? `Describe your meters, benefits and products in ${result.file}`
     : `Adjust the demo in ${result.file} to your own pricing`,
-  'polar config plan',
-  'polar config apply',
+  configCommand('plan', result.file),
+  configCommand('apply', result.file),
 ]
 
 const installLines = (install: Init['install']) =>
@@ -301,8 +313,8 @@ const render = (result: Init) => [
           ? `Describe your meters, benefits and products in ${ui.bold(result.file)}`
           : `Adjust the demo in ${ui.bold(result.file)} to your own pricing`
       }`,
-      `${ui.INDENT}Preview what would be created with ${ui.command('polar config plan')}`,
-      `${ui.INDENT}Create it on Polar with ${ui.command('polar config apply')}`,
+      `${ui.INDENT}Preview what would be created with ${ui.command(configCommand('plan', result.file))}`,
+      `${ui.INDENT}Create it on Polar with ${ui.command(configCommand('apply', result.file))}`,
     ].join('\n'),
   ),
   ui.blank,
@@ -402,7 +414,7 @@ export const init = Command.make('init', {
             const install = yield* installPackage(
               billing.install,
               prepared.install,
-              directory,
+              prepared.installDirectory ?? directory,
               prompt,
               skipInstall,
               progress,

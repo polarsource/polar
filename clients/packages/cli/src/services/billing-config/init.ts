@@ -16,6 +16,7 @@ import { plural } from '@/utils/billing-config/problems'
 import {
   detectPackageManager,
   exists,
+  findProjectRoot,
   installCommand,
   isInstalled,
 } from '@/utils/billing-config/project'
@@ -43,6 +44,7 @@ export interface Prepared {
   readonly format: Format
   readonly template: Template
   readonly install: ReadonlyArray<string> | undefined
+  readonly installDirectory: string | undefined
 }
 
 export interface Ran {
@@ -153,13 +155,17 @@ const write = (fs: FileSystem.FileSystem, path: string, content: string) =>
 const packageToInstall = (
   fs: FileSystem.FileSystem,
   format: Format,
-  directory: string,
+  path: string,
 ) =>
   Effect.gen(function* () {
-    if (format !== 'ts') return undefined
-    if (!(yield* exists(fs, join(directory, 'package.json')))) return undefined
-    if (yield* isInstalled(fs, directory)) return undefined
-    return installCommand(yield* detectPackageManager(fs, directory))
+    const none = { install: undefined, installDirectory: undefined }
+    if (format !== 'ts') return none
+    const root = yield* findProjectRoot(fs, dirname(path))
+    if (root === undefined || (yield* isInstalled(fs, root))) return none
+    return {
+      install: installCommand(yield* detectPackageManager(fs, root)),
+      installDirectory: root,
+    }
   })
 
 export const init =
@@ -185,6 +191,6 @@ export const init =
         file: display(path),
         format,
         template: target.template,
-        install: yield* packageToInstall(fs, format, target.directory),
+        ...(yield* packageToInstall(fs, format, path)),
       } satisfies Prepared
     })

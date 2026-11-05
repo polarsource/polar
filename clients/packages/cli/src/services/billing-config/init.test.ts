@@ -93,6 +93,7 @@ describe('init', () => {
       format: 'ts',
       template: 'empty',
       install: ['npm', 'install', '@polar-sh/polar'],
+      installDirectory: directory,
     })
     expect(await read('polar.config.ts')).toContain(
       "import { defineConfig } from '@polar-sh/polar'",
@@ -122,6 +123,7 @@ describe('init', () => {
       format: 'json',
       template: 'demo',
       install: undefined,
+      installDirectory: undefined,
     })
     const written = JSON.parse(await read('billing/polar.config.json'))
     expect(
@@ -159,6 +161,38 @@ describe('init', () => {
       '{}',
     )
     expect((await run({ file: 'b.ts' })).install).toBeUndefined()
+  })
+
+  test('installs into the project root for a path given from a subdirectory', async () => {
+    await project()
+    await mkdir(join(directory, 'src'))
+    process.chdir(join(directory, 'src'))
+
+    const result = await run({ directory: process.cwd(), file: 'a.ts' })
+
+    expect(result.install).toEqual(['npm', 'install', '@polar-sh/polar'])
+    expect(result.installDirectory).toBe(directory)
+  })
+
+  test('reads the workspace package manager and hoisted packages from a workspace package', async () => {
+    await project('{"packageManager":"pnpm@10.0.0"}')
+    const workspacePackage = join(directory, 'packages/app')
+    await mkdir(workspacePackage, { recursive: true })
+    await writeFile(join(workspacePackage, 'package.json'), '{}')
+
+    const missing = await run({ directory: workspacePackage })
+    expect(missing.install).toEqual(['pnpm', 'add', '@polar-sh/polar'])
+    expect(missing.installDirectory).toBe(workspacePackage)
+
+    await mkdir(join(directory, 'node_modules/@polar-sh/polar'), {
+      recursive: true,
+    })
+    await writeFile(
+      join(directory, 'node_modules/@polar-sh/polar/package.json'),
+      '{}',
+    )
+    const hoisted = await run({ directory: workspacePackage, file: 'b.ts' })
+    expect(hoisted.install).toBeUndefined()
   })
 
   test('uses --format for the default file name', async () => {

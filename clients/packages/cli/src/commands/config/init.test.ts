@@ -87,6 +87,7 @@ const run = async (
               format,
               template: target.template,
               install: setup.install ? INSTALL : undefined,
+              installDirectory: setup.install ? target.directory : undefined,
             } satisfies Prepared)
           },
           install: (command, cwd) => {
@@ -285,10 +286,25 @@ describe('polar config init', () => {
     expect(message(exit)).toBe('Pass --org <slug> to choose one of acme, beta.')
   })
 
-  test('rejects an organization outside the environment flag', async () => {
+  test('looks up --org only in the environment flag', async () => {
     const { exit } = await run(['--org', 'org-1', '--production'])
 
-    expect(message(exit)).toBe('acme is in sandbox, not production.')
+    expect(message(exit)).toBe('No organization org-1 in production.')
+  })
+
+  test('asks to log in to the environment flag without a session for it', async () => {
+    const { exit, calls } = await run(
+      ['--production'],
+      {},
+      {
+        sessions: ['sandbox'],
+      },
+    )
+
+    expect(calls).toEqual([])
+    expect(message(exit)).toBe(
+      'Not logged in to production. Run polar auth login --production first.',
+    )
   })
 
   test('explains how to log in when there is no session', async () => {
@@ -297,6 +313,15 @@ describe('polar config init', () => {
     expect(message(exit)).toBe(
       'Not logged in. Run polar auth login --sandbox or polar auth login --production first.',
     )
+  })
+
+  test('passes the config path to plan and apply outside the current directory', async () => {
+    const { output } = await run(['billing/polar.config.ts', '--json'])
+
+    expect(JSON.parse(output).next.slice(-2)).toEqual([
+      'polar config plan billing/polar.config.ts',
+      'polar config apply billing/polar.config.ts',
+    ])
   })
 
   test('prints the result and the next steps as JSON', async () => {

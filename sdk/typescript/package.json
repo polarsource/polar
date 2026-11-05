@@ -56,6 +56,16 @@
         "default": "./dist/outpost/index.cjs"
       }
     },
+    "./outpost/cloudflare": {
+      "import": {
+        "types": "./dist/outpost/cloudflare.d.mts",
+        "default": "./dist/outpost/cloudflare.mjs"
+      },
+      "require": {
+        "types": "./dist/outpost/cloudflare.d.cts",
+        "default": "./dist/outpost/cloudflare.cjs"
+      }
+    },
     "./2026-04": {
       "import": {
         "types": "./dist/2026-04/index.d.mts",
@@ -216,9 +226,12 @@
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:workers": "vitest run --config vitest.workers.config.mts",
     "bench": "vitest bench --run"
   },
   "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.10",
+    "@cloudflare/workers-types": "^5.20261028.1",
     "@codspeed/vitest-plugin": "^6.1.0",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/otlp-transformer": "^0.223.0",
@@ -237,6 +250,7 @@
     "ws": "^8.21.0"
   },
   "peerDependencies": {
+    "@cloudflare/workers-types": "^5.20261028.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/otlp-transformer": "^0.223.0",
     "@opentelemetry/resources": "^2.12.0",
@@ -265,6 +279,9 @@
       "optional": true
     },
     "ws": {
+      "optional": true
+    },
+    "@cloudflare/workers-types": {
       "optional": true
     }
   },

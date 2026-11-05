@@ -8,7 +8,6 @@ export default defineConfig({
       main: "./src/outpost/cloudflare.ts",
       miniflare: {
         compatibilityDate: "2026-10-01",
-        compatibilityFlags: ["nodejs_compat"],
         durableObjects: {
           OUTPOST_CUSTOMER: "CustomerDO",
           OUTPOST_SYNC: "SyncDO",

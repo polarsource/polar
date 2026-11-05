@@ -31,7 +31,13 @@ const Action = Data.taggedEnum<Prompt.ActionDefinition>()
 
 const HINT =
   '↑↓ move · type to edit · esc reset row · ctrl+f filter · enter save'
-const FILTER_HINT = 'type to filter · ↑↓ move · esc stop filtering'
+const FILTERED_HINT =
+  '↑↓ move · type to edit · esc reset row · enter back to filter'
+const FILTER_HINT =
+  'type to filter · ↑↓ move · enter edit row · esc stop filtering'
+
+const hint = (state: State) =>
+  state.filtering ? FILTER_HINT : state.query === '' ? HINT : FILTERED_HINT
 
 const visibleRows = (options: TableOptions, state: State) => {
   const query = state.query.trim().toLowerCase()
@@ -127,7 +133,7 @@ const frame = (options: TableOptions, state: State) => {
       : errors[visible[state.cursor]!]
   return [
     `${ui.INDENT}${ui.cyan('?')} ${ui.bold(options.message)}`,
-    ui.step(state.filtering ? FILTER_HINT : HINT),
+    ui.step(hint(state)),
     state.filtering || state.query !== ''
       ? `${ui.INDENT}  ${ui.dim('filter')} ${state.query}${state.filtering ? ui.inverse(' ') : ''}`
       : '',
@@ -188,9 +194,14 @@ const process =
       case 'return':
       case 'enter': {
         if (state.filtering) return next({ filtering: false })
-        const valid = options
-          .validate(state.values)
-          .every((error) => error === undefined)
+        const errors = options.validate(state.values)
+        if (state.query !== '') {
+          const index = visibleRows(options, state)[state.cursor]
+          return index !== undefined && errors[index] !== undefined
+            ? beep
+            : next({ filtering: true })
+        }
+        const valid = errors.every((error) => error === undefined)
         return valid
           ? Effect.succeed(Action.Submit({ value: state.values }))
           : beep

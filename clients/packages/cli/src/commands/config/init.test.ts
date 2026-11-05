@@ -460,6 +460,8 @@ describe('polar config init', () => {
             keys.enter,
             ...keys.type('-yearly'),
             keys.enter,
+            keys.escape,
+            keys.enter,
             accept,
           ],
         },
@@ -467,6 +469,7 @@ describe('polar config init', () => {
       )
 
       expect(terminal).toContain('filtered from 2')
+      expect(terminal).toContain('enter back to filter')
       expect(externalIds(keyed)).toEqual(['pro-plan', 'team-yearly'])
     })
 

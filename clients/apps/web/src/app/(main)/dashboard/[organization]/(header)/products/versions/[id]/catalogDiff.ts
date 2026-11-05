@@ -6,7 +6,7 @@ type Product = schemas['Product']
 
 export const changes = ['added', 'changed', 'removed'] as const
 
-export type Change = (typeof changes)[number]
+type Change = (typeof changes)[number]
 
 export type Entry = {
   row: CatalogProduct

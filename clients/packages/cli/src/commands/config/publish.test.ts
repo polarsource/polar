@@ -104,8 +104,8 @@ describe('polar config publish', () => {
   test('prints the catalogs as JSON', async () => {
     const { output } = await run(withDraft, ['--confirm', '--json'])
     expect(JSON.parse(output)).toEqual({
-      live: { id: 'cat-live', name: 'v3' },
-      draft: { id: 'cat-draft', name: 'v4' },
+      live: { id: 'cat-draft', name: 'v4' },
+      draft: null,
       published: true,
     })
   })

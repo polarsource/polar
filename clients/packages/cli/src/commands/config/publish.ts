@@ -62,14 +62,14 @@ const approve = (
 
 const render = (
   organization: ActiveOrganization,
-  { draft }: Catalogs,
+  { live }: Catalogs,
   published: boolean,
 ) =>
-  published && draft
+  published && live
     ? [
         ui.blank,
         ui.success(
-          `${draft.name ?? 'The draft'} is live for ${target(organization)}. Existing customers stay on their current versions.`,
+          `${live.name ?? 'The draft'} is live for ${target(organization)}. Existing customers stay on their current versions.`,
         ),
         ui.blank,
       ]
@@ -128,10 +128,10 @@ export const publish = Command.make('publish', { org, confirmed }).pipe(
         }
         yield* say(summary(organization, catalogs))
         yield* approve(organization, json, confirmed)
-        const draft = yield* billing.publish(organization, catalogs.draft)
+        const live = yield* billing.publish(organization, catalogs.draft)
         return {
           organization,
-          catalogs: { ...catalogs, draft },
+          catalogs: { live, draft: null },
           published: true,
         }
       }),

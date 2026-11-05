@@ -6,7 +6,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronDown, ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useState } from 'react'
-import { diffProduct, Entry, summarizeChanges } from './catalogDiff'
+import { diffProduct, Entry, plural, summarizeChanges } from './catalogDiff'
 import { ProductChangeDetails } from './ProductChangeDetails'
 
 type Organization = schemas['Organization']
@@ -17,9 +17,6 @@ const changeText = {
   changed: { label: 'Changed', color: 'muted' },
   removed: { label: 'Removed', color: 'danger' },
 } as const
-
-export const plural = (count: number, noun: string) =>
-  `${count} ${count === 1 ? noun : `${noun}s`}`
 
 const Subscribers = ({
   organizationId,
@@ -87,7 +84,7 @@ export const ProductRow = ({
         {product?.name}
       </Text>
       <Box justifyContent="end" alignItems="center" columnGap="m" minWidth={0}>
-        {showStatus && change && changes ? (
+        {showStatus && changes ? (
           <button
             type="button"
             aria-expanded={expanded}

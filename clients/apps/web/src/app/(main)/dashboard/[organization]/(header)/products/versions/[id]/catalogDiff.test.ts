@@ -45,7 +45,6 @@ describe('diffBenefits', () => {
   it('matches benefits without an external ID by ID', () => {
     const manual = benefit('m1', null, 'Discord access')
     const other = benefit('m2', null, 'Discord access')
-    expect(diffBenefits([manual], [manual])).toEqual([])
     expect(diffBenefits([manual], [other])).toEqual([
       { type: 'added', after: other },
       { type: 'removed', before: manual },

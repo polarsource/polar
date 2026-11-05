@@ -6,6 +6,9 @@ type Product = schemas['Product']
 
 export const changes = ['added', 'changed', 'removed'] as const
 
+export const plural = (count: number, noun: string) =>
+  `${count} ${count === 1 ? noun : `${noun}s`}`
+
 type Change = (typeof changes)[number]
 
 export type Entry = {
@@ -115,9 +118,7 @@ export const summarizeChanges = ({
   const parts = [
     ...(name ? ['name'] : []),
     ...(price ? ['price'] : []),
-    ...(benefits.length
-      ? [`${benefits.length} ${benefits.length === 1 ? 'benefit' : 'benefits'}`]
-      : []),
+    ...(benefits.length ? [plural(benefits.length, 'benefit')] : []),
   ]
   return (parts.length ? parts : details.length ? details : ['details']).join(
     ', ',

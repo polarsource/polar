@@ -11,8 +11,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ReactNode } from 'react'
 import { PublishedAt } from '../VersionsPage'
-import { changes, diffCatalog } from './catalogDiff'
-import { plural, ProductRow } from './ProductRow'
+import { changes, diffCatalog, plural } from './catalogDiff'
+import { ProductRow } from './ProductRow'
 
 type Organization = schemas['Organization']
 

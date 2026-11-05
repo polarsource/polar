@@ -91,7 +91,7 @@ resource "render_postgres" "db" {
   environment_id = render_project.polar.environments["Production"].id
   name           = "db"
   database_name  = "polar_cpit"
-  plan           = "pro_64gb"
+  plan           = "pro_4gb"
   region         = "ohio"
   version        = "15"
   disk_size_gb   = 750

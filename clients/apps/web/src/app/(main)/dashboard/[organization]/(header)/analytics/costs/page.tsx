@@ -1,23 +1,16 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Metadata } from 'next'
-import CostsPage from './CostsPage'
+import { redirect } from 'next/navigation'
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Costs', // " | Polar is added by the template"
-  }
-}
-
+// Costs now lives next to Events, as a mode of the same explorer.
 export default async function Page(props: {
   params: Promise<{ organization: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  return <CostsPage organization={organization} />
+  const { organization } = await props.params
+  const searchParams = await props.searchParams
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === 'string') query.set(key, value)
+  }
+  const search = query.size > 0 ? `?${query}` : ''
+  redirect(`/dashboard/${organization}/analytics/events/costs${search}`)
 }

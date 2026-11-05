@@ -334,8 +334,9 @@ export async function proxy(request: NextRequest) {
   }
 
   // Events: /dashboard/{org}/analytics/events/{id} -> /dashboard/{org}/analytics/events?event={id}
+  // `costs` is the Costs mode of the explorer, not an event ID.
   const eventDetailMatch = request.nextUrl.pathname.match(
-    /^\/dashboard\/([^/]+)\/analytics\/events\/([^/]+)$/,
+    /^\/dashboard\/([^/]+)\/analytics\/events\/(?!costs$)([^/]+)$/,
   )
   if (eventDetailMatch) {
     const redirectURL = request.nextUrl.clone()

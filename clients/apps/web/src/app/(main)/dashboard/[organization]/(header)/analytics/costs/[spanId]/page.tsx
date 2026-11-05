@@ -1,23 +1,16 @@
-import { getServerSideAPI } from '@/utils/client/serverside'
-import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
-import { Metadata } from 'next'
-import CostsSpanPage from './CostsSpanPage'
+import { redirect } from 'next/navigation'
 
-export async function generateMetadata(): Promise<Metadata> {
-  return {
-    title: 'Costs', // " | Polar is added by the template"
-  }
-}
-
+// The span page is now the event type panel on the costs explorer.
 export default async function Page(props: {
   params: Promise<{ organization: string; spanId: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const params = await props.params
-  const api = await getServerSideAPI()
-  const organization = await getOrganizationBySlugOrNotFound(
-    api,
-    params.organization,
-  )
-
-  return <CostsSpanPage organization={organization} spanId={params.spanId} />
+  const { organization, spanId } = await props.params
+  const searchParams = await props.searchParams
+  const query = new URLSearchParams({ type: spanId })
+  for (const key of ['startDate', 'endDate', 'customerIds']) {
+    const value = searchParams[key]
+    if (typeof value === 'string') query.set(key, value)
+  }
+  redirect(`/dashboard/${organization}/analytics/events/costs?${query}`)
 }

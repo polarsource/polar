@@ -15,6 +15,7 @@ export const ALLOWED_DASHBOARD_PATHS = [
   'analytics',
   'analytics/costs',
   'analytics/events',
+  'analytics/events/costs',
   'analytics/metrics',
   'customers',
   'finance/account',

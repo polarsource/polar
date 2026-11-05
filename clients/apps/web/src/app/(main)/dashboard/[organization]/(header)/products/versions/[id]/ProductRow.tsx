@@ -84,7 +84,7 @@ export const ProductRow = ({
         {product?.name}
       </Text>
       <Box justifyContent="end" alignItems="center" columnGap="m" minWidth={0}>
-        {showStatus && changes ? (
+        {changes ? (
           <button
             type="button"
             aria-expanded={expanded}

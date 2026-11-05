@@ -3,6 +3,7 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.custom_field.schemas import CustomFieldCreateText, CustomFieldUpdateText
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.declarative_config.guard import DeclarativeConfigManaged
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.custom_field import CustomFieldText, CustomFieldType
@@ -151,3 +152,37 @@ class TestUpdate:
         await session.flush()
 
         assert updated_field.slug == deleted_field.slug
+
+
+@pytest.mark.anyio
+class TestDelete:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        deleted_field = await custom_field_service.delete(
+            session, text_field, auth_subject
+        )
+
+        assert deleted_field.deleted_at is not None
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.delete(session, text_field, auth_subject)
+
+        deleted_field = await custom_field_service.delete(
+            session, text_field, auth_subject, declarative_config=True
+        )
+        assert deleted_field.deleted_at is not None

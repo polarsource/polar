@@ -374,7 +374,9 @@ class DeclarativeConfigService:
 
         # After publishing: the bulk detach marks loaded attachments as deleted.
         for custom_field in removed_custom_fields:
-            await custom_field_service.delete_and_detach(session, custom_field)
+            await custom_field_service.delete(
+                session, custom_field, auth_subject, declarative_config=True
+            )
 
         if (
             changes.settings is not None

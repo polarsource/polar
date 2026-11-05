@@ -24,11 +24,12 @@ from polar.authz.service import (
     assert_resource_permission,
 )
 from polar.custom_field.sorting import CustomFieldSortProperty
+from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
-from polar.models import CustomField, Organization, User
+from polar.models import Agent, CustomField, Organization, User
 from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -221,7 +222,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         self,
         session: AsyncSession,
         custom_field: CustomField,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> CustomField:
         await assert_resource_permission(
             session,
@@ -229,11 +232,8 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
-        return await self.delete_and_detach(session, custom_field)
-
-    async def delete_and_detach(
-        self, session: AsyncSession, custom_field: CustomField
-    ) -> CustomField:
+        if not declarative_config:
+            await assert_catalog_editable(session, custom_field.organization_id)
         custom_field.set_deleted_at()
         session.add(custom_field)
 

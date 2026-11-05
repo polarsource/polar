@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy import Select
+from sqlalchemy.orm import selectinload
 
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
@@ -180,6 +181,10 @@ def _product_entry(
             "trial_interval_count": product.trial_interval_count,
             "prices": prices,
             "benefits": benefits,
+            "custom_fields": [
+                {"field": attached.custom_field.slug, "required": attached.required}
+                for attached in product.attached_custom_fields
+            ],
             "metadata": product.user_metadata,
         }
     )
@@ -298,8 +303,14 @@ async def export_config(
     products, _ = await _export_section(
         ConfigResource.product,
         _chain(
-            product_repository.stream(products_statement),
-            product_repository.stream(deprecated_statement),
+            product_repository.stream(
+                products_statement.options(selectinload(Product.attached_custom_fields))
+            ),
+            product_repository.stream(
+                deprecated_statement.options(
+                    selectinload(Product.attached_custom_fields)
+                )
+            ),
         ),
         MAXIMUM_PRODUCTS,
         skipped,

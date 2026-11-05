@@ -206,13 +206,13 @@ def unique_external_ids(
 
 
 def _unknown_reference(
-    resource: ConfigResource, external_id: str, loc: Loc
+    resource: ConfigResource, external_id: str, loc: Loc, key: str = "external_id"
 ) -> ConfigIssue:
     return ConfigIssue(
         severity=ConfigIssueSeverity.error,
         type=ConfigIssueType.unknown_reference,
         loc=loc,
-        msg=f"No {resource} in this config has this external_id.",
+        msg=f"No {resource} in this config has this {key}.",
         input=external_id,
     )
 
@@ -252,6 +252,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
         meter.external_id for meter in config.meters if meter.deprecated
     }
     benefits = {benefit.external_id for benefit in config.benefits}
+    custom_fields = {custom_field.slug for custom_field in config.custom_fields}
     deprecated_benefits = {
         benefit.external_id for benefit in config.benefits if benefit.deprecated
     }
@@ -315,6 +316,28 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                     )
                 )
             listed.add(benefit_external_id)
+        listed_fields: set[str] = set()
+        for field_index, attached in enumerate(product.custom_fields):
+            loc = _loc(
+                ConfigResource.product, index, "custom_fields", field_index, "field"
+            )
+            if attached.field in listed_fields:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.duplicate_external_id,
+                        loc=loc,
+                        msg="This custom field is already listed on the product.",
+                        input=attached.field,
+                    )
+                )
+            elif attached.field not in custom_fields:
+                issues.append(
+                    _unknown_reference(
+                        ConfigResource.custom_field, attached.field, loc, key="slug"
+                    )
+                )
+            listed_fields.add(attached.field)
     return issues
 
 
@@ -821,6 +844,7 @@ def _get_product_update_dict(
     product_config: ConfigProduct,
     prices: list[dict[str, Any] | None],
     benefits: list[str],
+    custom_fields: list[dict[str, Any]],
 ) -> dict[str, Any]:
     update_dict: dict[str, Any] = {}
     for name in (*_PRODUCT_FIELDS, *_TRIAL_FIELDS):
@@ -834,6 +858,11 @@ def _get_product_update_dict(
         update_dict["prices"] = config_prices
     if benefits != product_config.benefits:
         update_dict["benefits"] = product_config.benefits
+    config_custom_fields = [
+        field.model_dump() for field in product_config.custom_fields
+    ]
+    if custom_fields != config_custom_fields:
+        update_dict["custom_fields"] = config_custom_fields
     if (
         "metadata" in product_config.model_fields_set
         and product.user_metadata != product_config.metadata
@@ -877,6 +906,10 @@ async def diff_products(
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]
+            if "custom_fields" in create_dict:
+                create_dict["custom_fields"] = [
+                    field.model_dump() for field in product_config.custom_fields
+                ]
             changes.append(ProductChange(index, product_config, None, create_dict))
             continue
         prices = [price_config(price, meter_external_ids) for price in product.prices]
@@ -884,17 +917,26 @@ async def diff_products(
             benefit_external_ids.get(str(benefit.id), str(benefit.id))
             for benefit in product.benefits
         ]
+        product_custom_fields = [
+            {"field": attached.custom_field.slug, "required": attached.required}
+            for attached in product.attached_custom_fields
+        ]
         changes.append(
             ProductChange(
                 index,
                 product_config,
                 product,
                 _get_product_update_dict(
-                    product, product_config, prices, product_benefits
+                    product,
+                    product_config,
+                    prices,
+                    product_benefits,
+                    product_custom_fields,
                 ),
                 {
                     "prices": [price for price in prices if price is not None],
                     "benefits": product_benefits,
+                    "custom_fields": product_custom_fields,
                 },
             )
         )

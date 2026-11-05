@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from polar.custom_field.schemas import AttachedCustomFieldCreate
 from polar.exceptions import PolarRequestValidationError
 from polar.exceptions import ValidationError as RequestValidationError
 from polar.product.schemas import (
@@ -92,6 +93,7 @@ def product_create(
     config: ConfigProduct,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
+    custom_field_ids: dict[str, UUID],
 ) -> ProductCreateRecurring | ProductCreateOneTime:
     fields = config.model_dump(
         include={"name", "description", "visibility", "metadata"}
@@ -99,9 +101,19 @@ def product_create(
     prices: list[ProductPriceCreate] = [
         price_create(price, meter_ids) for price in config.prices
     ]
+    attached_custom_fields = [
+        AttachedCustomFieldCreate(
+            custom_field_id=custom_field_ids[attached.field],
+            required=attached.required,
+        )
+        for attached in config.custom_fields
+    ]
     if config.recurring_interval is None:
         return ProductCreateOneTime(
-            **fields, prices=prices, organization_id=organization_id
+            **fields,
+            prices=prices,
+            attached_custom_fields=attached_custom_fields,
+            organization_id=organization_id,
         )
     return ProductCreateRecurring(
         **fields,
@@ -112,5 +124,6 @@ def product_create(
         meter_interval=config.meter_interval,
         meter_interval_count=config.meter_interval_count,
         prices=prices,
+        attached_custom_fields=attached_custom_fields,
         organization_id=organization_id,
     )

@@ -319,7 +319,7 @@ class DeclarativeConfigService:
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
-        custom_field_results = await self._apply_custom_fields(
+        custom_field_results, custom_field_ids = await self._apply_custom_fields(
             session, organization, changes.custom_fields
         )
         benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
@@ -338,6 +338,7 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
+            custom_field_ids,
             draft=not publish,
         )
         catalog: ConfigCatalogChange | None = None
@@ -773,14 +774,16 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         changes: Sequence[CustomFieldChange],
-    ) -> list[ConfigResult]:
+    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
         repository = CustomFieldRepository.from_session(session)
         results: list[ConfigResult] = []
+        custom_field_ids: dict[str, UUID] = {}
         for change in changes:
-            if change.existing is None:
+            custom_field = change.existing
+            if custom_field is None:
                 try:
                     async with session.begin_nested():
-                        await repository.create(
+                        custom_field = await repository.create(
                             change.config.type.get_model()(
                                 **change.update_dict,
                                 slug=change.config.slug,
@@ -793,7 +796,8 @@ class DeclarativeConfigService:
                         raise
                     raise ConfigCustomFieldConflict() from e
             elif change.update_dict:
-                await repository.update(change.existing, update_dict=change.update_dict)
+                await repository.update(custom_field, update_dict=change.update_dict)
+            custom_field_ids[change.config.slug] = custom_field.id
             results.append(
                 ConfigResult(
                     resource=ConfigResource.custom_field,
@@ -801,7 +805,7 @@ class DeclarativeConfigService:
                     action=change.action,
                 )
             )
-        return results
+        return results, custom_field_ids
 
     async def _apply_benefits(
         self,
@@ -880,6 +884,7 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
+        custom_field_ids: dict[str, UUID],
         *,
         draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
@@ -913,6 +918,7 @@ class DeclarativeConfigService:
                                     if is_organization(auth_subject)
                                     else organization.id,
                                     meter_ids,
+                                    custom_field_ids,
                                 ),
                                 auth_subject,
                                 declarative_config=True,

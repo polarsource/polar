@@ -110,6 +110,14 @@ ProductReference = Annotated[
     ),
 ]
 
+CustomFieldReference = Annotated[
+    str,
+    Field(
+        min_length=1,
+        description="The `slug` of a custom field declared in the same config.",
+    ),
+]
+
 BenefitReference = Annotated[
     str,
     Field(
@@ -253,6 +261,16 @@ ConfigProductPrice = Annotated[
 ]
 
 
+class ConfigProductCustomField(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    field: CustomFieldReference
+    required: bool = Field(
+        default=False,
+        description="Whether customers must fill in the field at checkout.",
+    )
+
+
 class ConfigProduct(
     ConfigDeprecationMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
 ):
@@ -304,6 +322,13 @@ class ConfigProduct(
     benefits: list[BenefitReference] = Field(
         default_factory=list,
         description="The benefits granted by the product.",
+    )
+    custom_fields: list[ConfigProductCustomField] = Field(
+        default_factory=list,
+        description=(
+            "Custom fields asked at checkout, in this order. "
+            "Leaving it empty removes them from the product."
+        ),
     )
 
     @model_validator(mode="after")
@@ -829,6 +854,11 @@ ConfigProductPriceRead = Annotated[
 ]
 
 
+class ConfigProductCustomFieldRead(_ConfigRead):
+    field: str
+    required: bool
+
+
 class ConfigProductRead(_ConfigRead):
     external_id: str
     name: str
@@ -842,6 +872,7 @@ class ConfigProductRead(_ConfigRead):
     meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
+    custom_fields: list[ConfigProductCustomFieldRead]
     metadata: MetadataOutputType
     deprecated: Literal[True] | None = Field(
         description=(

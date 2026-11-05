@@ -8,6 +8,12 @@ module "planetscale" {
   region            = "aws-us-east-2"
   cluster_size      = "M8_640_AWS_ARM_D_METAL_1875"
 
+  dedicated_read_replicas = {
+    analytics = {
+      cluster_size = "PS_40_AWS_ARM"
+    }
+  }
+
   bouncers = {
     app = {
       parameters = {

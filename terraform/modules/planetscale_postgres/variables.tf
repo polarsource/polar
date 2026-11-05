@@ -79,3 +79,13 @@ variable "bouncers" {
     error_message = "Bouncer names must be at most 12 characters."
   }
 }
+
+variable "dedicated_read_replicas" {
+  description = "Dedicated read replicas keyed by name. Region defaults to the primary's region."
+  type = map(object({
+    cluster_size = string
+    region       = optional(string)
+    replicas     = optional(number, 1)
+  }))
+  default = {}
+}

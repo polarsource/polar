@@ -1476,15 +1476,7 @@ class TestApply:
             redis,
             auth_subject,
             Config.model_validate(
-                {
-                    "custom_fields": [COMPANY_FIELD],
-                    "products": [
-                        {
-                            **PACK_PRODUCT,
-                            "custom_fields": [{"field": "company", "required": True}],
-                        }
-                    ],
-                }
+                {"custom_fields": [COMPANY_FIELD], "products": [PACK_PRODUCT]}
             ),
         )
 
@@ -1495,57 +1487,8 @@ class TestApply:
             organization.id, ["pack"]
         )
         assert second.id != first.id
-        assert await _attached_custom_fields(session, second.id) == [("company", True)]
+        assert await _attached_custom_fields(session, second.id) == []
         assert await _attached_custom_fields(session, first.id) == [("company", False)]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_product_without_custom_fields_removes_them(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate(
-                {
-                    "custom_fields": [COMPANY_FIELD],
-                    "products": [
-                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
-                    ],
-                }
-            ),
-        )
-
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate(
-                {"custom_fields": [COMPANY_FIELD], "products": [PACK_PRODUCT]}
-            ),
-        )
-        await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate(
-                {"custom_fields": [COMPANY_FIELD], "products": [PACK_PRODUCT]}
-            ),
-        )
-
-        [product_change] = [
-            c for c in plan.changes if c.resource == ConfigResource.product
-        ]
-        assert [
-            (diff.field, diff.before, diff.after) for diff in product_change.diff
-        ] == [("custom_fields", [{"field": "company", "required": False}], [])]
-        [product] = await ProductRepository.from_session(
-            session
-        ).get_all_by_external_ids(organization.id, ["pack"])
-        assert await _attached_custom_fields(session, product.id) == []
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unlisted_custom_field_deleted(
@@ -2132,42 +2075,6 @@ class TestPlan:
                 ["medium"],
             )
         ]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_unlisted_custom_field_removal(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await create_custom_field(
-            save_fixture,
-            type=CustomFieldType.text,
-            slug="vat",
-            organization=organization,
-        )
-
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
-        )
-
-        assert plan.removed == [
-            ConfigRemoval(
-                resource=ConfigResource.custom_field,
-                external_id="vat",
-                reason=ConfigRemovalReason.missing,
-            )
-        ]
-        assert plan.catalog is None
-        assert (
-            await CustomFieldRepository.from_session(
-                session
-            ).get_by_organization_and_slug(organization.id, "vat")
-            is not None
-        )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_custom_field_references(

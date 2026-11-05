@@ -114,6 +114,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             organization.id,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, organization.id)
 
         repository = CustomFieldRepository.from_session(session)
         existing_field = await repository.get_by_organization_and_slug(
@@ -154,6 +155,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, custom_field.organization_id)
 
         if custom_field.type != custom_field_update.type:
             raise PolarRequestValidationError(

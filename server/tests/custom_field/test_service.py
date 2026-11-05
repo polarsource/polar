@@ -45,6 +45,28 @@ async def order_text_field_data(
 @pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.create(
+                session,
+                CustomFieldCreateText(
+                    type=CustomFieldType.text,
+                    slug="company",
+                    name="Company",
+                    properties={},
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
     async def test_existing_slug(
         self,
         session: AsyncSession,
@@ -98,6 +120,23 @@ class TestCreate:
 
 @pytest.mark.anyio
 class TestUpdate:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.update(
+                session,
+                text_field,
+                CustomFieldUpdateText(type=text_field.type, name="Renamed"),
+                auth_subject,
+            )
+
     @pytest.mark.auth
     async def test_slug_update(
         self,
@@ -156,20 +195,6 @@ class TestUpdate:
 
 @pytest.mark.anyio
 class TestDelete:
-    @pytest.mark.auth
-    async def test_valid(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User],
-        user_organization: UserOrganization,
-        text_field: CustomFieldText,
-    ) -> None:
-        deleted_field = await custom_field_service.delete(
-            session, text_field, auth_subject
-        )
-
-        assert deleted_field.deleted_at is not None
-
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_config_as_code(

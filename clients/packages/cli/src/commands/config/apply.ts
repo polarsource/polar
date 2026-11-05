@@ -35,7 +35,7 @@ const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
 const name = Flag.String('name').pipe(
   Flag.optional,
   Flag.withDescription(
-    'Name of the catalog version this apply publishes. Defaults to v{n}',
+    'Name of the draft catalog version this apply saves. Defaults to v{n} when published',
   ),
 )
 
@@ -58,6 +58,11 @@ const render = (
     : [
         ...(unchanged(result.entries) ? [ui.blank] : []),
         applied(config, organization, result.entries),
+        ...(result.draft
+          ? next(
+              `${ui.INDENT}Products and benefits are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
+            )
+          : []),
         ui.blank,
       ]
 
@@ -124,13 +129,13 @@ const approve = (
 
 export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   Command.withDescription(
-    'Create or update everything in a billing config file for your organization',
+    'Save a billing config file to your organization. Products and benefits go to the draft catalog until you publish it; meters, settings and webhooks apply right away',
   ),
   Command.withExamples([
     {
       command: 'polar config apply',
       description:
-        'Show what applying polar.config.ts would change, then apply after confirmation',
+        'Show what applying polar.config.ts would change, then save it to the draft after confirmation',
     },
     {
       command: 'polar config apply billing/polar.json',
@@ -146,7 +151,7 @@ export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
     },
     {
       command: "polar config apply --name 'Spring launch'",
-      description: 'Name the catalog version this apply publishes',
+      description: 'Name the draft catalog version',
     },
     {
       command: 'polar config apply --confirm --json',

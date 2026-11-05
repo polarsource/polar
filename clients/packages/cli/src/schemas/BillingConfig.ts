@@ -67,10 +67,26 @@ export const Removal = Schema.Struct({
   reason: RemovalReason,
 })
 
+export const Catalog = Schema.Struct({
+  id: Schema.String,
+  name: Schema.NullOr(Schema.String),
+})
+export type Catalog = typeof Catalog.Type
+
 export const ApplyResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
   removed: Schema.optional(Schema.Array(Removal)),
+  catalog: Schema.optional(Schema.NullOr(Schema.Struct({ after: Catalog }))),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
+})
+
+export const CatalogList = Schema.Struct({
+  items: Schema.Array(
+    Schema.Struct({
+      ...Catalog.fields,
+      status: Schema.Literals(['draft', 'live', 'archived']),
+    }),
+  ),
 })
 
 export const AppliedEntry = Schema.Struct({
@@ -144,6 +160,7 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    draft: Schema.optionalKey(Catalog),
     issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({
@@ -163,6 +180,17 @@ export const ApplyOutput = Schema.Union(
     Schema.Struct({ file: Schema.String, ...member.fields }),
   ),
 )
+
+export const Catalogs = Schema.Struct({
+  live: Schema.NullOr(Catalog),
+  draft: Schema.NullOr(Catalog),
+})
+export type Catalogs = typeof Catalogs.Type
+
+export const PublishOutput = Schema.Struct({
+  ...Catalogs.fields,
+  published: Schema.Boolean,
+})
 
 export interface LoadedConfig {
   readonly file: string

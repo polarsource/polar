@@ -154,6 +154,8 @@ const run = async (
           plan: planned,
           apply: applied,
           prune: () => Effect.die('unused'),
+          catalogs: () => Effect.die('unused'),
+          publish: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),
@@ -206,6 +208,31 @@ describe('polar config apply', () => {
     expect(output).toMatch(
       /╯\n\n {2}Apply\n {2}╭─+╮\n {2}│ {2}Applying 1 change \(\d+ms\) *│\n {2}╰─+╯\n {2}polar\.json applied to Acme/,
     )
+  })
+
+  test('points at publish when products or benefits went to the draft', async () => {
+    const { output } = await run(
+      { entries: [created], issues: [] },
+      {
+        status: 'applied',
+        entries: [created],
+        draft: { id: 'cat-draft', name: null },
+      },
+      ['--confirm'],
+    )
+    expect(output).toContain(
+      'Products and benefits are saved to the draft catalog.',
+    )
+    expect(output).toContain('Run polar config publish to make it live.')
+  })
+
+  test('does not point at publish when only meters changed', async () => {
+    const { output } = await run(
+      { entries: [created], issues: [] },
+      { status: 'applied', entries: [created] },
+      ['--confirm'],
+    )
+    expect(output).not.toContain('polar config publish')
   })
 
   test('plans and applies with --name as the catalog version name', async () => {

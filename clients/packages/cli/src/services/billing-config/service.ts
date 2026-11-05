@@ -3,6 +3,8 @@ import type { ActiveOrganization, AuthError } from '@/schemas/Auth'
 import type {
   ApplyResult,
   BillingConfigError,
+  Catalog,
+  Catalogs,
   LoadedConfig,
   PlanResult,
   PruneEntry,
@@ -12,6 +14,7 @@ import { apply } from '@/services/billing-config/apply'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { prune } from '@/services/billing-config/prune'
+import { catalogs, publish } from '@/services/billing-config/publish'
 import { authenticatedClient } from '@/services/client'
 
 export class BillingConfig extends Context.Service<
@@ -39,6 +42,13 @@ export class BillingConfig extends Context.Service<
       AuthError | BillingConfigError,
       R
     >
+    catalogs: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<Catalogs, AuthError | BillingConfigError>
+    publish: (
+      organization: ActiveOrganization,
+      draft: Catalog,
+    ) => Effect.Effect<Catalog, AuthError | BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -55,6 +65,8 @@ const make = Effect.gen(function* () {
     plan: plan(clients),
     apply: apply(clients),
     prune: prune(fs, load, clients),
+    catalogs: catalogs(clients),
+    publish: publish(clients),
   })
 })
 

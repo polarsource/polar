@@ -29,7 +29,7 @@ export const apply =
     Effect.gen(function* () {
       const response = yield* post(
         clients,
-        '/config/apply',
+        '/config/apply?publish=false',
         config,
         organization,
         options,
@@ -40,6 +40,7 @@ export const apply =
         return {
           status: 'applied',
           entries: entries(body.changes, body.settings, body.removed),
+          ...(body.catalog && { draft: body.catalog.after }),
         } satisfies ApplyResult
       }
       const invalid =

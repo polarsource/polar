@@ -64,6 +64,8 @@ const run = async (result: PlanResult, args: string[] = []) => {
           plan: () => Effect.succeed(result),
           apply: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
+          catalogs: () => Effect.die('unused'),
+          publish: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

@@ -101,7 +101,8 @@ from polar.product.guard import (
 )
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.product.tiers import Tiers, TierType
-from polar.subscription.service import SubscriptionService
+from polar.subscription.service import MeterVersionConflict, SubscriptionService
+from polar.subscription.service import subscription as real_subscription_service
 from polar.tax.calculation import (
     TaxabilityReason,
     TaxCalculationLogicalError,
@@ -122,6 +123,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_discount_redemption,
     create_member,
+    create_meter,
     create_order,
     create_payment,
     create_product,
@@ -4272,6 +4274,56 @@ class TestUpdate:
         )
 
         assert checkout.customer_email == customer.email
+
+    async def test_subscription_on_another_meter_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        subscription_service_mock: MagicMock,
+    ) -> None:
+        subscription_service_mock.validate_meter_versions.side_effect = (
+            real_subscription_service.validate_meter_versions
+        )
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": True,
+        }
+        await save_fixture(organization)
+        previous = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tool-calls",
+            is_current=False,
+        )
+        current = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tool-calls",
+        )
+        previous_product, current_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        await create_active_subscription(
+            save_fixture, product=previous_product, customer=customer
+        )
+        checkout = await create_checkout(save_fixture, products=[current_product])
+
+        with pytest.raises(MeterVersionConflict) as error:
+            await checkout_service.update(
+                session, checkout, CheckoutUpdate(customer_email=customer.email)
+            )
+
+        assert error.value.external_ids == ["tool-calls"]
 
     @pytest.mark.parametrize(
         "subscription_status",

@@ -1,7 +1,7 @@
 import contextlib
 import json
 import uuid
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Iterable, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import TracebackType
@@ -99,6 +99,7 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductBenefit,
+    ProductPrice,
     Subscription,
     SubscriptionMeter,
     SubscriptionProductPrice,
@@ -216,6 +217,17 @@ class AlreadyCanceledSubscription(SubscriptionError):
         self.subscription = subscription
         message = (
             "This subscription is already canceled or will be at the end of the period."
+        )
+        super().__init__(message, 403)
+
+
+class MeterVersionConflict(SubscriptionError):
+    def __init__(self, external_ids: Sequence[str]) -> None:
+        self.external_ids = external_ids
+        meters = ", ".join(repr(external_id) for external_id in sorted(external_ids))
+        message = (
+            "The customer has another subscription billing a different version of "
+            f"the meter {meters}. Move that subscription to this version instead."
         )
         super().__init__(message, 403)
 
@@ -1900,6 +1912,7 @@ class SubscriptionService:
         *,
         product_id: uuid.UUID,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
+        check_meter_versions: bool = True,
     ) -> tuple[Product, PriceSet]:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
@@ -2031,7 +2044,40 @@ class SubscriptionService:
                 ]
             )
 
+        if check_meter_versions:
+            await self.validate_meter_versions(
+                session,
+                product.organization_id,
+                currency_prices,
+                customer_id=subscription.customer_id,
+                exclude_subscription_id=subscription.id,
+            )
+
         return product, currency_prices
+
+    async def validate_meter_versions(
+        self,
+        session: AsyncReadSession,
+        organization_id: uuid.UUID,
+        prices: Iterable[ProductPrice],
+        *,
+        customer_id: uuid.UUID | None = None,
+        customer_email: str | None = None,
+        exclude_subscription_id: uuid.UUID | None = None,
+    ) -> None:
+        """Reject prices billing a meter that another subscription of the customer
+        bills in another version: both would bill the same events."""
+        conflicts = await SubscriptionRepository.from_session(
+            session
+        ).get_other_meter_versions(
+            organization_id,
+            [price.meter_id for price in prices if is_metered_price(price)],
+            customer_id=customer_id,
+            customer_email=customer_email,
+            exclude_subscription_id=exclude_subscription_id,
+        )
+        if conflicts:
+            raise MeterVersionConflict(conflicts)
 
     async def validate_units_change(
         self,
@@ -2125,7 +2171,11 @@ class SubscriptionService:
         discount: uuid.UUID | Literal["unset"] | None = None,
         trial_end: datetime | Literal["now"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
+        check_meter_versions: bool = True,
     ) -> Subscription:
+        """With `check_meter_versions` off, the customer may briefly have
+        subscriptions on two versions of a meter: a bulk update moves all their
+        subscriptions on a version, each at its own renewal."""
         previous_product = subscription.product
         previous_prices = [*subscription.prices]
 
@@ -2134,6 +2184,7 @@ class SubscriptionService:
             subscription,
             product_id=product_id,
             allowed_visibilities=allowed_visibilities,
+            check_meter_versions=check_meter_versions,
         )
 
         old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)

@@ -1,4 +1,6 @@
+import uuid
 from collections.abc import Awaitable, Callable
+from decimal import Decimal
 
 import pytest
 from pytest_mock import MockerFixture
@@ -19,7 +21,11 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_active_subscription, create_product
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_meter,
+    create_product,
+)
 
 
 @pytest.fixture
@@ -113,6 +119,49 @@ class TestRunBatch:
             await subscription_bulk_update_service.run_batch(session, bulk_update.id)
             is False
         )
+
+    async def test_moves_all_subscriptions_on_a_meter_version(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        mocker.patch("polar.subscription.bulk_update.enqueue_job")
+        mocker.patch("polar.subscription.service.enqueue_job")
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="tool-calls",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        old_usage, new_usage = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                external_id="usage",
+                is_current=meter.is_current,
+                prices=[(2000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        for _ in range(2):
+            await create_active_subscription(
+                save_fixture, product=old_usage, customer=customer
+            )
+        bulk_update = await subscription_bulk_update_service.start(
+            session, organization, source_external_id="usage", target_product=new_usage
+        )
+
+        await subscription_bulk_update_service.run_batch(session, bulk_update.id)
+
+        assert (bulk_update.subscriptions_count, bulk_update.skipped_count) == (2, 0)
 
     async def test_skips_subscription_that_cannot_move(
         self,

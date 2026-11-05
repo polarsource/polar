@@ -260,6 +260,12 @@ class DeclarativeConfigService:
         removed, removal_issues = await removals.products(session, organization, config)
         issues.extend(removal_issues)
         removed += await removals.benefits(session, organization, config)
+        removed += await removals.meters(session, organization, config)
+        issues.extend(
+            await catalogs.cascade_meter_changes(
+                session, organization, changes, removed
+            )
+        )
         issues.extend(
             await catalogs.cascade_benefit_changes(
                 session, organization, changes, removed
@@ -389,6 +395,14 @@ class DeclarativeConfigService:
         issues.extend(removal_issues)
         removed += await removals.benefits(
             session, organization, config, catalog=archived_base
+        )
+        removed += await removals.meters(
+            session, organization, config, catalog=archived_base
+        )
+        issues.extend(
+            await catalogs.cascade_meter_changes(
+                session, organization, changes, removed, catalog=archived_base
+            )
         )
         issues.extend(
             await catalogs.cascade_benefit_changes(

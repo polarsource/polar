@@ -768,6 +768,17 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_staged_events_ingest_enabled(self) -> bool:
         return self.feature_settings.get("staged_events_ingest_enabled", False)
 
+    products_limit: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=lambda: settings.ORGANIZATION_DEFAULT_PRODUCTS_LIMIT,
+    )
+    benefits_limit: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=lambda: settings.ORGANIZATION_DEFAULT_BENEFITS_LIMIT,
+    )
+
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     #

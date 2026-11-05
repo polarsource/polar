@@ -1871,7 +1871,10 @@ class SubscriptionService:
         product = await product_repository.get_by_id_and_organization(
             product_id,
             subscription.product.organization_id,
-            options=product_repository.get_eager_options(),
+            options=(
+                undefer(Product.is_deletable),
+                *product_repository.get_eager_options(),
+            ),
         )
 
         if product is None:

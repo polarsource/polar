@@ -988,12 +988,6 @@ describe('CheckoutForm', () => {
 
       expect(lastElementsOptions()).toMatchObject({
         mode: 'subscription',
-        excludedPaymentMethodTypes: [
-          'bancontact',
-          'ideal',
-          'sepa_debit',
-          'sofort',
-        ],
         setupFutureUsage: 'off_session',
         amount: 1500,
         currency: 'usd',
@@ -1019,13 +1013,12 @@ describe('CheckoutForm', () => {
 
       expect(lastElementsOptions()).toMatchObject({
         mode: 'payment',
-        excludedPaymentMethodTypes: undefined,
         amount: 999,
         currency: 'eur',
       })
     })
 
-    it('excludes SEPA methods during a free trial with no payment due now', () => {
+    it('uses setup mode during a free trial with no payment due now', () => {
       const checkout = stripeCheckout({
         is_payment_setup_required: true,
         is_payment_required: false,
@@ -1044,14 +1037,32 @@ describe('CheckoutForm', () => {
 
       expect(lastElementsOptions()).toMatchObject({
         mode: 'setup',
-        excludedPaymentMethodTypes: [
-          'bancontact',
-          'ideal',
-          'sepa_debit',
-          'sofort',
-        ],
         setupFutureUsage: 'off_session',
         currency: 'usd',
+      })
+    })
+
+    it('passes the checkout payment method types to Elements', () => {
+      const checkout = stripeCheckout({
+        is_payment_setup_required: false,
+        is_payment_required: true,
+        total_amount: 999,
+        currency: 'eur',
+        payment_method_types: ['card', 'bancontact'],
+      })
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+
+      expect(lastElementsOptions()).toMatchObject({
+        mode: 'payment',
+        paymentMethodTypes: ['card', 'bancontact'],
       })
     })
 

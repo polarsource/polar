@@ -345,7 +345,7 @@ const nextConfig = {
       // Fallback blog redirect
       {
         source: '/:path*',
-        destination: 'https://polar.sh/polarsource',
+        destination: 'https://polar.sh/blog',
         has: [
           {
             type: 'host',

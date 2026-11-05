@@ -2096,11 +2096,11 @@ class TestImportCatalog:
         migration = await _staged_migration(
             mocker, session, save_fixture, auth_subject, organization
         )
-        after_created = mocker.spy(product_service, "_after_product_created")
+        notify_created = mocker.spy(product_service, "notify_created")
 
         await _import_catalog(session, auth_subject, migration.id)
 
-        after_created.assert_not_called()
+        notify_created.assert_not_called()
 
     @pytest.mark.auth
     async def test_empty_selection_imports_nothing_and_advances(

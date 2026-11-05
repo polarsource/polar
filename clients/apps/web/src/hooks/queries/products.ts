@@ -20,6 +20,7 @@ export const useProducts = (
           params: {
             query: {
               organization_id: organizationId,
+              ...(parameters?.id ? {} : { catalog_status: 'live' as const }),
               is_archived:
                 parameters?.is_archived === undefined
                   ? false
@@ -52,6 +53,9 @@ export const useSelectedProducts = (
             params: {
               query: {
                 ...selector,
+                ...('id' in selector
+                  ? {}
+                  : { catalog_status: 'live' as const }),
                 is_archived: includeArchived ? null : false,
                 page,
                 limit: 100,

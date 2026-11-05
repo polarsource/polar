@@ -1,5 +1,7 @@
 locals {
   backend_config = {
+    database_statement_cache_size             = 0
+    database_prepared_statement_cache_size    = 0
     linear_team_id                            = var.linear_team_id
     linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
 

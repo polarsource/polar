@@ -3,7 +3,6 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowDownRight, ArrowUpRight } from '@polar-sh/orbit/icons'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
 import { useContext } from 'react'
 import { MonthlyBars } from './MonthlyBars'
@@ -40,33 +39,6 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   </WidgetGuard>
 )
 
-const Change = ({
-  current,
-  previous,
-}: {
-  current: number
-  previous: number
-}) => {
-  if (previous === 0) return null
-  const change = ((current - previous) / Math.abs(previous)) * 100
-  if (!Number.isFinite(change) || Math.round(change) === 0) return null
-  const Arrow = change > 0 ? ArrowUpRight : ArrowDownRight
-
-  return (
-    <Text>
-      <Box
-        as="span"
-        display="inline-block"
-        marginRight="xs"
-        color={change > 0 ? 'text-success' : 'text-danger'}
-      >
-        <Arrow className="inline h-4 w-4 align-[-2px]" />
-      </Box>
-      {Math.abs(change).toFixed(0)}%
-    </Text>
-  )
-}
-
 const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
 
@@ -78,19 +50,9 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
     metrics: ['revenue'],
   })
 
-  const today = new Date()
-  const { data: previousToDate } = useMetrics({
-    startDate: startOfMonth(subMonths(today, 1)),
-    endDate: subMonths(today, 1),
-    organization_id: organization.id,
-    interval: 'month',
-    metrics: ['revenue'],
-  })
-
   const periods = data?.periods ?? []
   const currentMonth = periods.at(-1)
   const current = currentMonth?.revenue ?? 0
-  const previous = previousToDate?.totals.revenue ?? 0
 
   return (
     <WidgetContainer
@@ -100,9 +62,6 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
           <Text variant="heading-m" weight="book">
             {formatCurrency('statistics')(current, 'usd')}
           </Text>
-          {data && previousToDate && (
-            <Change current={current} previous={previous} />
-          )}
           {currentMonth && (
             <Text color="muted">{format(currentMonth.timestamp, 'MMMM')}</Text>
           )}

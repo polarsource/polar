@@ -86,3 +86,23 @@ resource "cloudflare_dns_record" "planetscale_private_link" {
   proxied = false
   ttl     = 300
 }
+
+module "planetscale_metrics" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/planetscale_metrics"
+
+  environment              = "test"
+  organization             = var.planetscale_organization
+  database                 = "polar-test"
+  token                    = var.planetscale_metrics_token
+  cluster_arn              = module.ecs_cluster[0].cluster_arn
+  vpc_id                   = module.vpc[0].vpc_id
+  subnet_ids               = module.vpc[0].secondary_private_subnet_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  prometheus = {
+    url      = var.grafana_cloud_prometheus_url
+    username = var.grafana_cloud_prometheus_username
+    password = var.grafana_cloud_prometheus_password
+  }
+}

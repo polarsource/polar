@@ -5,6 +5,7 @@ import { CHART_RANGES, ChartRange, dateRangeToInterval } from '@/utils/metrics'
 import { getMetricsRangeDates, schemas } from '@polar-sh/client'
 import { SegmentedControl } from '@polar-sh/orbit'
 import { endOfToday, isSameDay, startOfDay } from 'date-fns'
+import { useState } from 'react'
 import { useCustomerMetricsParams } from './useCustomerMetricsParams'
 
 const RANGE_OPTIONS = (
@@ -26,17 +27,25 @@ export const CustomerMetricsRangeControl = ({
   const { startDate, endDate, setStartDate, setEndDate, setInterval } =
     useCustomerMetricsParams(customer)
 
+  const [selectedRange, setSelectedRange] = useState<ChartRange | null>(null)
+
+  const matchesDates = (range: ChartRange) => {
+    const dates = getRangeDates(range, customer)
+    return (
+      isSameDay(dates.startDate, startDate) && isSameDay(dates.endDate, endDate)
+    )
+  }
+
+  // All Time and Today can resolve to the same dates, so prefer the last pick.
   const activeRange =
-    RANGE_OPTIONS.find(({ value }) => {
-      const range = getRangeDates(value, customer)
-      return (
-        isSameDay(range.startDate, startDate) &&
-        isSameDay(range.endDate, endDate)
-      )
-    })?.value ?? 'custom'
+    selectedRange && matchesDates(selectedRange)
+      ? selectedRange
+      : (RANGE_OPTIONS.find(({ value }) => matchesDates(value))?.value ??
+        'custom')
 
   const selectRange = (range: ChartRange | 'custom') => {
     if (range === 'custom') return
+    setSelectedRange(range)
     const { startDate, endDate } = getRangeDates(range, customer)
     setStartDate(startDate)
     setEndDate(endDate)

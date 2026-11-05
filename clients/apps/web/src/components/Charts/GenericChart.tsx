@@ -109,8 +109,8 @@ const EdgeAlignedTick = ({
   payload,
   fill,
   format,
-}: EdgeTickProps & { format?: (value: string) => string }) => {
-  const value = String(payload?.value ?? '')
+}: EdgeTickProps & { format?: (value: unknown) => string }) => {
+  const value = payload?.value
   const anchor =
     index === 0 ? 'start' : index === visibleTicksCount - 1 ? 'end' : 'middle'
   return (
@@ -122,7 +122,7 @@ const EdgeAlignedTick = ({
       fill={fill}
       className="dark:fill-polar-500 fill-gray-500 text-xs"
     >
-      {format ? format(value) : value}
+      {format ? format(value) : String(value ?? '')}
     </text>
   )
 }

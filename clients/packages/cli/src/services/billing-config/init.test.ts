@@ -149,6 +149,21 @@ describe('init', () => {
     await expect(read('polar.config.json')).rejects.toThrow()
   })
 
+  test('writes nothing when the organization has benefits or products config cannot manage', async () => {
+    const detail =
+      'Config can only manage feature flag and meter credit benefits, and products with fixed, metered, seat-based or unit-based prices. Unsupported: benefit Priority support, product Tip jar.'
+    api.routes[`POST ${initUrl}`] = Response.json(
+      { error: 'ConfigUnsupportedResources', detail },
+      { status: 409 },
+    )
+
+    const error = await failure(run())
+
+    expect(error.message).toBe('Config cannot manage everything in Acme yet')
+    expect(error.hint).toBe(detail)
+    await expect(read('polar.config.json')).rejects.toThrow()
+  })
+
   test('writes into the project directory and shows the path from the current one', async () => {
     await project()
     await mkdir(join(directory, 'src'))

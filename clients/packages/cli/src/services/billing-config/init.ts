@@ -1,5 +1,5 @@
 import { dirname, join, relative, resolve } from 'node:path'
-import { Effect, type FileSystem } from 'effect'
+import { Effect, type FileSystem, Schema } from 'effect'
 import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -140,6 +140,26 @@ const rejected = (
     ),
   )
 
+const UnsupportedResources = Schema.Struct({
+  error: Schema.Literal('ConfigUnsupportedResources'),
+  detail: Schema.String,
+})
+
+const unsupportedResources = (
+  response: HttpClientResponse.HttpClientResponse,
+  organization: ActiveOrganization,
+) =>
+  HttpClientResponse.schemaBodyJson(UnsupportedResources)(response).pipe(
+    Effect.map(
+      ({ detail }) =>
+        new BillingConfigError({
+          message: `Config cannot manage everything in ${organization.name} yet`,
+          hint: detail,
+        }),
+    ),
+    Effect.option,
+  )
+
 const enableConfig = (
   clients: Clients,
   organization: ActiveOrganization,
@@ -161,6 +181,10 @@ const enableConfig = (
     const response = yield* clients[organization.environment].execute(request)
     if (response.status === 422) {
       return yield* yield* rejected(response, assignments)
+    }
+    if (response.status === 409) {
+      const unsupported = yield* unsupportedResources(response, organization)
+      if (unsupported._tag === 'Some') return yield* unsupported.value
     }
     if (response.status !== 204) {
       return yield* unexpected(response, organization, [
@@ -263,7 +287,7 @@ export const init =
       const { path, format } = yield* resolveTarget(fs, target)
       if (yield* exists(fs, path)) {
         return yield* new BillingConfigError({
-          message: `${display(path)} already exists`,
+          message: `${display(target.directory)} already has ${existing}`,
           hint: 'Run polar config plan to check it, or pass another path to init.',
         })
       }

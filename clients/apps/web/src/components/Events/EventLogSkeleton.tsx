@@ -20,7 +20,24 @@ export const EventLogSkeleton = () => (
   <Box flexDirection="column" aria-busy="true">
     {ROWS.map(([eventWidth, customerWidth], index) => (
       <Box
+        key={`mobile-${index}`}
+        display={{ base: 'flex', md: 'none' }}
+        flexDirection="column"
+        gap="s"
+        paddingHorizontal="m"
+        paddingVertical="s"
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-secondary"
+      >
+        <SkeletonBar width={eventWidth} height={14} />
+        <SkeletonBar width={customerWidth + 60} height={12} />
+      </Box>
+    ))}
+    {ROWS.map(([eventWidth, customerWidth], index) => (
+      <Box
         key={index}
+        display={{ base: 'none', md: 'flex' }}
         alignItems="center"
         gap="l"
         paddingHorizontal="m"

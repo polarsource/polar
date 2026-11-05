@@ -307,8 +307,24 @@ const ClientPage = ({
 
   return (
     <DashboardBody
-      title={null}
-      wrapperClassName="pt-4 md:gap-0 md:pt-6"
+      title={
+        <Box
+          flexGrow={1}
+          alignItems="baseline"
+          justifyContent="between"
+          gap="s"
+        >
+          <Text as="h1" variant="heading-xxs">
+            Events
+          </Text>
+          {totalCount !== null && (
+            <Text variant="heading-xxs" color="muted" tabularNums>
+              {formatEventCount(totalCount)}
+            </Text>
+          )}
+        </Box>
+      }
+      wrapperClassName="gap-6 pt-4 md:pt-6"
       className="min-h-0 flex-1 md:pb-0"
       contextViewPlacement="left"
       contextViewTitle="Filters"
@@ -361,16 +377,6 @@ const ClientPage = ({
       wide
     >
       <Box flexDirection="column" gap="xl" flexGrow={1} minHeight={0}>
-        <Box alignItems="baseline" justifyContent="between" gap="s">
-          <Text as="h1" variant="heading-xxs">
-            Events
-          </Text>
-          {totalCount !== null && (
-            <Text variant="heading-xxs" color="muted" tabularNums>
-              {formatEventCount(totalCount)}
-            </Text>
-          )}
-        </Box>
         <EventsHistogram
           organizationId={organization.id}
           startDate={startDate}

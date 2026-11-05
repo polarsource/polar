@@ -26,24 +26,6 @@ locals {
 }
 
 # =============================================================================
-# Redis
-# =============================================================================
-
-resource "render_redis" "redis" {
-  count             = local.test_enabled ? 1 : 0
-  environment_id    = local.environment_id
-  name              = "redis-test"
-  plan              = "standard"
-  region            = "ohio"
-  max_memory_policy = "noeviction"
-
-  # Empty IP allow list means only private network connections
-  ip_allow_list = []
-
-  depends_on = [render_registry_credential.ghcr]
-}
-
-# =============================================================================
 # Cloudflare IP Ranges
 # =============================================================================
 
@@ -119,7 +101,7 @@ module "test" {
   environment_groups = module.backend_environment[0].environment_groups
   email_from_domain  = local.backend_config.email_from_domain
 
-  depends_on = [render_registry_credential.ghcr, render_redis.redis]
+  depends_on = [render_registry_credential.ghcr]
 }
 
 # =============================================================================

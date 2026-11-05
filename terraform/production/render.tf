@@ -117,23 +117,6 @@ resource "render_postgres" "db" {
 }
 
 # =============================================================================
-# Redis
-# =============================================================================
-
-resource "render_redis" "redis" {
-  environment_id    = render_project.polar.environments["Production"].id
-  name              = "redis"
-  plan              = "standard"
-  region            = "ohio"
-  max_memory_policy = "noeviction"
-
-  # Empty IP allow list means only private network connections
-  ip_allow_list = []
-
-  depends_on = [render_registry_credential.ghcr, render_project.polar]
-}
-
-# =============================================================================
 # Cloudflare IP Ranges
 # =============================================================================
 
@@ -231,7 +214,7 @@ module "production" {
     s3_bucket_name = local.diagnostics_bucket_name
   }
 
-  depends_on = [render_registry_credential.ghcr, render_project.polar, render_redis.redis]
+  depends_on = [render_registry_credential.ghcr, render_project.polar]
 }
 
 # =============================================================================

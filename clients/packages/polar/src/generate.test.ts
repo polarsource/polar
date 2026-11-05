@@ -296,18 +296,15 @@ const cases: [string, PolarConfig][] = [
             ['10', 'Ten'],
           ]),
         }),
-        products: ({ product, free }) => ({
+        products: ({ product, free, required }) => ({
           pro: product('Pro')
             .prices(free())
             .recurring('monthly')
-            .customFields({ terms: 'required', 'team-size': 'optional' }),
+            .customFields([required('terms'), 'team-size']),
           tens: product('Tens')
             .prices(free())
             .once()
-            .customFields([
-              ['team-size', 'optional'],
-              ['10', 'required'],
-            ]),
+            .customFields(['team-size', required('10')]),
         }),
       })
       .toJSON(),

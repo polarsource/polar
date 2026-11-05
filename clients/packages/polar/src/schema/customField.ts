@@ -149,4 +149,12 @@ export const customFieldHelpers = {
 
 export type CustomFieldHelpers = typeof customFieldHelpers
 
-export type FieldRequirement = 'required' | 'optional'
+export type RequiredField<Slug extends string = string> = {
+  readonly field: Slug
+  readonly required: true
+}
+
+/** Marks a custom field in `.customFields([...])` as required at checkout. */
+export const required = <const Slug extends string>(
+  field: Slug,
+): RequiredField<Slug> => ({ field, required: true })

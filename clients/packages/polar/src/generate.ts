@@ -464,12 +464,13 @@ const renderProduct =
       product.custom_fields.length === 0
         ? []
         : [
-            `.customFields(${renderPairs(
-              product.custom_fields.map(({ field, required }) => [
-                field,
-                required ? 'required' : 'optional',
-              ]),
-            )})`,
+            `.customFields([${product.custom_fields
+              .map(({ field, required }) => {
+                if (!required) return literal(field)
+                helpers.add('required')
+                return `required(${literal(field)})`
+              })
+              .join(', ')}])`,
           ]),
       ...renderMetadata(product.metadata),
       ...(product.description === undefined

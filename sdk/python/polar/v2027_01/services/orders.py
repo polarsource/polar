@@ -552,7 +552,7 @@ class OrdersSync(SyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> OrderReceipt:
+    ) -> OrderReceipt | None:
         """
         Get a presigned URL to download an order's receipt PDF.
 
@@ -563,6 +563,9 @@ class OrdersSync(SyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
+
+        Returns:
+            OrderReceipt. None means the receipt is still being generated.
 
         Raises:
             ResourceNotFound: Order not found.
@@ -1103,7 +1106,7 @@ class OrdersAsync(AsyncServiceBase):
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> OrderReceipt:
+    ) -> OrderReceipt | None:
         """
         Get a presigned URL to download an order's receipt PDF.
 
@@ -1114,6 +1117,9 @@ class OrdersAsync(AsyncServiceBase):
             request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
             request_access_token: Access token override for this request.
 
+
+        Returns:
+            OrderReceipt. None means the receipt is still being generated.
 
         Raises:
             ResourceNotFound: Order not found.

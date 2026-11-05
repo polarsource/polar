@@ -8,7 +8,7 @@ const OPACITY = { active: 0.8, idle: 0.35, dimmed: 0.15 } as const
 export type HistogramBarState = keyof typeof OPACITY
 
 export const HistogramBar = ({
-  count,
+  value,
   max,
   index,
   total,
@@ -16,7 +16,7 @@ export const HistogramBar = ({
   highlighted,
   width,
 }: {
-  count: number
+  value: number
   max: number
   index: number
   total: number
@@ -33,11 +33,11 @@ export const HistogramBar = ({
     alignItems="end"
     backgroundColor={highlighted ? 'background-card' : undefined}
   >
-    {count > 0 && (
+    {value > 0 && (
       <div
         className="motion-safe:animate-bar-grow w-full origin-bottom"
         style={{
-          height: `${(count / max) * 100}%`,
+          height: `${(value / max) * 100}%`,
           minHeight: 2,
           animationDelay: `${(index / total) * BAR_STAGGER_MS}ms`,
           transition: 'height 200ms cubic-bezier(0, 0, 0, 1)',

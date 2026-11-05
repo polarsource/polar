@@ -142,11 +142,7 @@ class BenefitRepository(
         members = (
             select(CatalogBenefit.benefit_id)
             .join(CatalogBenefit.catalog)
-            .where(
-                CatalogBenefit.deleted_at.is_(None),
-                Catalog.deleted_at.is_(None),
-                Catalog.organization_id == Benefit.organization_id,
-            )
+            .where(CatalogBenefit.deleted_at.is_(None), Catalog.deleted_at.is_(None))
         )
         if isinstance(catalog, CatalogStatus):
             members = members.where(Catalog.status == catalog)

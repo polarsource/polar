@@ -339,8 +339,8 @@ describe('init', () => {
                 ...EMPTY,
                 products: [
                   pro,
-                  { ...pro, external_id: 'pro-2' },
-                  { ...pro, external_id: 'cafe-plan' },
+                  { ...pro, external_id: 'pro_2' },
+                  { ...pro, external_id: 'cafe_plan' },
                 ],
               },
               unkeyed.slice(2),
@@ -356,31 +356,31 @@ describe('init', () => {
       })
 
       expect(offered).toEqual([
-        { resource: 'product', id: 'p-1', name: 'Pro', suggestion: 'pro-2' },
+        { resource: 'product', id: 'p-1', name: 'Pro', suggestion: 'pro_2' },
         {
           resource: 'product',
           id: 'p-2',
           name: 'Café Plan!',
-          suggestion: 'cafe-plan',
+          suggestion: 'cafe_plan',
         },
       ])
       const saves = api.requests.filter((request) => request.url === initUrl)
       expect(await saves[1]!.json()).toEqual({
         external_ids: [
-          { resource: 'product', id: 'p-1', external_id: 'pro-2' },
-          { resource: 'product', id: 'p-2', external_id: 'cafe-plan' },
+          { resource: 'product', id: 'p-1', external_id: 'pro_2' },
+          { resource: 'product', id: 'p-2', external_id: 'cafe_plan' },
         ],
       })
       expect(result.imported).toEqual({ meters: 0, benefits: 0, products: 3 })
       expect(result.keyed.map(({ external_id }) => external_id)).toEqual([
-        'pro-2',
-        'cafe-plan',
+        'pro_2',
+        'cafe_plan',
       ])
       expect(result.skipped).toEqual([unkeyed[3]])
       const written = JSON.parse(await read('polar.config.json'))
       expect(
         written.products.map((p: { external_id: string }) => p.external_id),
-      ).toEqual(['pro', 'pro-2', 'cafe-plan'])
+      ).toEqual(['pro', 'pro_2', 'cafe_plan'])
       expect(written.products[0]).not.toHaveProperty('description')
       expect(written.products[0]).not.toHaveProperty('deprecated')
     })
@@ -388,7 +388,7 @@ describe('init', () => {
     test('renders the imported products as TypeScript', async () => {
       await run({ format: 'ts' })
 
-      expect(await read('polar.config.ts')).toContain("'cafe-plan'")
+      expect(await read('polar.config.ts')).toContain('cafe_plan: product(')
     })
 
     test('reports why the external IDs were rejected and writes nothing', async () => {
@@ -413,7 +413,7 @@ describe('init', () => {
 
       expect(error.message).toBe('Could not save the external IDs')
       expect(error.hint).toBe(
-        'cafe-plan (product Café Plan!): Another product already has this external ID.',
+        'cafe_plan (product Café Plan!): Another product already has this external ID.',
       )
       await expect(read('polar.config.json')).rejects.toThrow()
     })

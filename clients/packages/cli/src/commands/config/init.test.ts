@@ -374,7 +374,7 @@ describe('polar config init', () => {
       expect(externalIds(keyed)).toEqual(['pro-plan', 'team'])
     })
 
-    test('flags suggestions that got a number to stay unique', async () => {
+    test('flags suggestions suffixed because of a duplicate name', async () => {
       const { output } = await run(
         [],
         { interactive: true, input: [accept] },
@@ -390,8 +390,10 @@ describe('polar config init', () => {
         },
       )
 
-      expect(output).toContain('pro-2  Pro name taken, check this one')
-      expect(output).toContain('1 suggestion got a number')
+      expect(output).toContain('pro-2  Pro duplicate name, suffix added')
+      expect(output).toContain(
+        '1 suggestion has a numbered suffix because of a duplicate name. Double-check it before continuing.',
+      )
     })
 
     test('edits external IDs in a table, then asks again', async () => {

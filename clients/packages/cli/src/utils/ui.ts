@@ -133,6 +133,27 @@ export const boxRows = (line: string) => {
 export const box = (text: string) =>
   [boxTop(), ...text.split('\n').flatMap(boxRows), boxBottom()].join('\n')
 
+export const truncate = (text: string, width: number) => {
+  if (width <= 0) return ''
+  if (Bun.stringWidth(text) <= width) return text
+  let result = ''
+  let used = 0
+  for (const { segment } of GRAPHEMES.segment(text)) {
+    const size = Bun.stringWidth(segment)
+    if (used + size > width - 1) break
+    result += segment
+    used += size
+  }
+  return `${result}…`
+}
+
+export const pad = (text: string, width: number) =>
+  text + ' '.repeat(Math.max(width - Bun.stringWidth(text), 0))
+
+export const hideCursor = '\x1b[?25l'
+
+export const inverse = pc.inverse
+
 const clearLine = '\r\x1b[2K'
 export const clearLines = (rows: number) =>
   rows > 0 ? clearLine + `\x1b[1A${clearLine}`.repeat(rows - 1) : ''

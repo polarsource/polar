@@ -12,6 +12,8 @@ export default defineConfig({
 {% endfor %}
   ],
   format: ["esm", "cjs"],
+  // The Workers runtime provides its modules; its types come with the merchant's workers-types.
+  external: [/^cloudflare:/, "@cloudflare/workers-types"],
   dts: true,
   sourcemap: true,
   clean: true,

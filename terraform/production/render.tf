@@ -88,10 +88,7 @@ resource "render_postgres" "db" {
 
   high_availability_enabled = false
 
-  read_replicas = [
-    { name = "polar-read" },
-    { name = "polar-replica" }
-  ]
+  read_replicas = []
 
   ip_allow_list = local.db_ip_allow_list
 

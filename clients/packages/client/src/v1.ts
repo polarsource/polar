@@ -48256,6 +48256,13 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Exclude benefits with these IDs. */
         exclude_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by description. */
         query?: string | null
         /** @description Page number, defaults to 1. */
@@ -49029,6 +49036,13 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by product name. */
         query?: string | null
         /** @description Filter on archived products. */

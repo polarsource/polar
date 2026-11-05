@@ -23,6 +23,7 @@ from polar.kit.sorting import Sorting
 from polar.kit.visibility import Visibility
 from polar.models import Benefit, Organization, ProductBenefit, User
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.redis import Redis
@@ -47,6 +48,8 @@ class BenefitService:
         id_in: Sequence[uuid.UUID] | None = None,
         id_not_in: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         visibility: Sequence[Visibility] | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
@@ -69,7 +72,12 @@ class BenefitService:
 
         if id_in is not None:
             statement = statement.where(Benefit.id.in_(id_in))
-        else:
+
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
+        elif id_in is None:
             statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:

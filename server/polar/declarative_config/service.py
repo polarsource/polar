@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
@@ -33,7 +33,7 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, products, removals, validation
+from . import benefits, catalogs, external_ids, products, removals, validation
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
@@ -188,6 +188,27 @@ class ConfigInvalid(PolarError):
         return cls._schema
 
 
+_SECTIONS = {
+    ConfigResource.meter: "meters",
+    ConfigResource.benefit: "benefits",
+    ConfigResource.product: "products",
+}
+
+
+_CONFLICTS: dict[str | None, Callable[[], PolarError]] = {
+    _METER_EXTERNAL_ID_INDEX: ConfigMeterConflict,
+    _BENEFIT_EXTERNAL_ID_INDEX: ConfigBenefitConflict,
+    _PRODUCT_EXTERNAL_ID_INDEX: ConfigProductConflict,
+}
+
+
+def _conflict(error: IntegrityError) -> PolarError:
+    conflict = _CONFLICTS.get(_constraint_name(error))
+    if conflict is None:
+        raise error
+    return conflict()
+
+
 def _removed_external_ids(
     removed: Sequence[ConfigRemoval],
 ) -> tuple[list[str], list[str]]:
@@ -213,6 +234,24 @@ class DeclarativeConfigService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
+        if config_init.external_ids:
+            _assert_scopes(
+                auth_subject,
+                {_SECTIONS[a.resource] for a in config_init.external_ids},
+                write=True,
+            )
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.products_manage,
+            )
+            try:
+                await external_ids.assign(
+                    session, organization, config_init.external_ids
+                )
+            except IntegrityError as e:
+                raise _conflict(e) from e
         if organization.is_config_as_code_enabled:
             return
         repository = OrganizationRepository.from_session(session)

@@ -24,6 +24,7 @@ from polar.declarative_config.schemas import (
     ConfigCatalogChange,
     ConfigCatalogPlan,
     ConfigExportDocument,
+    ConfigInit,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigProductPrice,
@@ -97,6 +98,7 @@ from tests.fixtures.random_objects import (
     create_product_price_unit_based,
     create_subscription,
     create_webhook_endpoint,
+    set_product_benefits,
 )
 
 TOOL_CALLS_METER = {
@@ -254,6 +256,139 @@ ORDERS_WEBHOOK = {
     "events": ["order.created", "order.paid"],
     "api_version": str(CURRENT_API_VERSION),
 }
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestInit:
+    async def test_assigned_external_ids_round_trip(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="Monthly credits",
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro",
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[credits])
+
+        await declarative_config_service.init(
+            session,
+            auth_subject,
+            ConfigInit.model_validate(
+                {
+                    "external_ids": [
+                        {"resource": "meter", "id": meter.id, "external_id": "calls"},
+                        {
+                            "resource": "benefit",
+                            "id": credits.id,
+                            "external_id": "credits",
+                        },
+                        {"resource": "product", "id": product.id, "external_id": "pro"},
+                    ]
+                }
+            ),
+        )
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(exported.config.model_dump(mode="json")),
+        )
+
+        assert exported.skipped == []
+        assert [m.external_id for m in exported.config.meters] == ["calls"]
+        assert [b.external_id for b in exported.config.benefits] == ["credits"]
+        assert [p.external_id for p in exported.config.products] == ["pro"]
+        assert exported.config.products[0].benefits == ["credits"]
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_rejects_taken_and_existing_external_ids(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        keyed = await create_meter(
+            save_fixture, organization=organization, external_id="calls"
+        )
+        unkeyed = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {
+                                "resource": "product",
+                                "id": product.id,
+                                "external_id": "pack",
+                            },
+                            {
+                                "resource": "meter",
+                                "id": unkeyed.id,
+                                "external_id": "calls",
+                            },
+                            {
+                                "resource": "meter",
+                                "id": keyed.id,
+                                "external_id": "other",
+                            },
+                        ]
+                    }
+                ),
+            )
+
+        assert [e["loc"] for e in error.value.errors()] == [
+            ("body", "external_ids", 1, "external_id"),
+            ("body", "external_ids", 2, "external_id"),
+        ]
+        assert unkeyed.external_id is None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.organizations_write})
+    )
+    async def test_requires_section_write_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {"resource": "meter", "id": meter.id, "external_id": "m"}
+                        ]
+                    }
+                ),
+            )
 
 
 @pytest.mark.anyio
@@ -4247,6 +4382,12 @@ class TestExport:
             is_archived=True,
             external_id="archived",
         )
+        archived_unkeyed = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+        )
         separate_cycle = await create_product(
             save_fixture,
             organization=organization,
@@ -4265,6 +4406,7 @@ class TestExport:
             (credits.id, ConfigSkippedReason.invalid),
             (custom_price.id, ConfigSkippedReason.invalid),
             (archived.id, ConfigSkippedReason.archived),
+            (archived_unkeyed.id, ConfigSkippedReason.archived),
             (separate_cycle.id, ConfigSkippedReason.invalid),
         ]
 

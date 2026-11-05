@@ -846,11 +846,29 @@ class DeclarativeConfigExportParams(QuerySchema):
     )
 
 
+class ConfigExternalIDAssignment(Schema):
+    resource: Literal[
+        ConfigResource.meter, ConfigResource.benefit, ConfigResource.product
+    ] = Field(description="The type of resource.")
+    id: UUID4 = Field(description="The ID of a resource without an `external_id`.")
+    external_id: str = Field(
+        min_length=1, description="The `external_id` to give the resource."
+    )
+
+
 class ConfigInit(Schema):
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
             "The ID of the organization to opt in. "
             "**Required unless you use an organization token.**"
+        ),
+    )
+    external_ids: list[ConfigExternalIDAssignment] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_METERS + MAXIMUM_BENEFITS + MAXIMUM_PRODUCTS,
+        description=(
+            "External IDs to give existing resources that don't have one yet, "
+            "so the config can manage them."
         ),
     )

@@ -474,6 +474,7 @@ class ConfigIssueSeverity(StrEnum):
 class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
     deprecated_reference = "deprecated_reference"
+    draft_discarded = "draft_discarded"
     duplicate_external_id = "duplicate_external_id"
     interval_changed = "interval_changed"
     meter_cycle_unused = "meter_cycle_unused"
@@ -575,6 +576,9 @@ class ConfigApplyResult(Schema):
     )
     settings: ConfigSettingsResult | None = Field(
         description="Result for `settings`, if in the config."
+    )
+    issues: list[ConfigIssue] = Field(
+        description="Warnings about the applied config. Errors make apply fail."
     )
 
 

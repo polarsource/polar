@@ -4415,7 +4415,54 @@ class TestCatalogDrafts:
         )
 
         assert result.catalog is not None
+        assert [issue.type for issue in result.issues] == [
+            ConfigIssueType.draft_discarded
+        ]
+        assert result.issues[0].msg.endswith(
+            "was discarded because this apply published."
+        )
         assert (
             await CatalogRepository.from_session(session).get_draft(organization.id)
             is None
         )
+
+    async def test_plan_warns_about_the_pending_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+        draft = await declarative_config_service.apply(
+            session, redis, auth_subject, config, publish=False
+        )
+        assert draft.catalog is not None
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+        )
+
+        [issue] = [
+            issue
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.draft_discarded
+        ]
+        assert (issue.severity, issue.type) == (
+            ConfigIssueSeverity.warning,
+            ConfigIssueType.draft_discarded,
+        )
+        assert issue.msg.endswith(
+            "Applying with publish=true discards it; "
+            f"publish catalog {draft.catalog.after.id} first to keep it."
+        )
+
+    async def test_plan_without_draft_has_no_warning(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
+        )
+
+        assert plan.issues == []

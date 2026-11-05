@@ -85,6 +85,15 @@ class TestApply:
             "removed": [],
             "catalog": None,
             "settings": None,
+            "issues": [
+                {
+                    "severity": "warning",
+                    "type": "unknown_event",
+                    "loc": ["body", "meters", 0, "filter", "clauses", 0, "value"],
+                    "msg": "No events with this name have been received yet.",
+                    "input": "tool_call",
+                }
+            ],
         }
 
     @pytest.mark.auth(

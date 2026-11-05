@@ -18,7 +18,7 @@ from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Benefit, Organization, Product, User
+from polar.models import Agent, Benefit, Catalog, Organization, Product, User
 from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -196,6 +196,24 @@ def _removed_external_ids(
     )
 
 
+def _draft_discarded_issue(draft: Catalog, *, applied: bool) -> ConfigIssue:
+    saved_at = f"{draft.modified_at or draft.created_at:%Y-%m-%d %H:%M} UTC"
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.warning,
+        type=ConfigIssueType.draft_discarded,
+        loc=["query", "publish"],
+        msg=(
+            f"The draft catalog saved on {saved_at} was discarded "
+            "because this apply published."
+            if applied
+            else f"A draft catalog saved on {saved_at} is pending. "
+            "Applying with publish=true discards it; "
+            f"publish catalog {draft.id} first to keep it."
+        ),
+        input=None,
+    )
+
+
 class DeclarativeConfigService:
     async def apply(
         self,
@@ -240,6 +258,7 @@ class DeclarativeConfigService:
 
         removed_products, removed_benefits = _removed_external_ids(removed)
         if draft is not None and publish:
+            issues.append(_draft_discarded_issue(draft, applied=True))
             await catalog_service.discard_draft(session, draft)
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
@@ -326,6 +345,7 @@ class DeclarativeConfigService:
             removed=removed,
             catalog=catalog,
             settings=settings_result,
+            issues=issues,
         )
 
     async def plan(
@@ -363,6 +383,9 @@ class DeclarativeConfigService:
                 session, organization, changes, removed
             )
         )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        if draft is not None:
+            issues.append(_draft_discarded_issue(draft, applied=False))
         catalog: ConfigCatalogPlan | None = None
         # Apply publishes on top of live, so planning against an archived
         # catalog has no next catalog.

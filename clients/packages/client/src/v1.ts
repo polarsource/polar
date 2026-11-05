@@ -6367,7 +6367,8 @@ export interface paths {
      * @description Preview what applying a declarative config document would do, without applying it.
      *
      *     Returns the action for each resource, and every issue: `error` issues make
-     *     apply fail, `warning` issues don't.
+     *     apply fail, `warning` issues don't. A pending draft catalog, which a
+     *     publishing apply discards, is reported as a `draft_discarded` warning.
      *
      *     With the ID of an archived catalog, products are compared to that version
      *     instead of the live one. The plan then shows the changes from that version,
@@ -16363,6 +16364,11 @@ export interface components {
       catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsResult'] | null
+      /**
+       * Issues
+       * @description Warnings about the applied config. Errors make apply fail.
+       */
+      issues: components['schemas']['ConfigIssue'][]
     }
     /** ConfigAsCodeNotEnabled */
     ConfigAsCodeNotEnabled: {
@@ -16695,6 +16701,7 @@ export interface components {
     ConfigIssueType:
       | 'currency_changed'
       | 'deprecated_reference'
+      | 'draft_discarded'
       | 'duplicate_external_id'
       | 'interval_changed'
       | 'meter_cycle_unused'
@@ -63149,7 +63156,7 @@ export interface operations {
   'config:apply': {
     parameters: {
       query?: {
-        /** @description Publish the product and benefit changes. With `false`, they're saved in the organization's draft catalog, to publish later. With `true`, a pending draft is discarded. Meters, settings and webhooks aren't versioned, so they apply right away. */
+        /** @description Publish the product and benefit changes. With `false`, they're saved in the organization's draft catalog, to publish later. With `true`, a pending draft is discarded, with a `draft_discarded` warning in `issues`. Meters, settings and webhooks aren't versioned, so they apply right away. */
         publish?: boolean
       }
       header?: never
@@ -71736,6 +71743,7 @@ export const configIssueTypeValues: ReadonlyArray<
 > = [
   'currency_changed',
   'deprecated_reference',
+  'draft_discarded',
   'duplicate_external_id',
   'interval_changed',
   'meter_cycle_unused',

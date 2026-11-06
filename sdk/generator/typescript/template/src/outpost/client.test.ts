@@ -185,7 +185,7 @@ const respond = (response: ServerResponse, body: unknown, status = 200): void =>
 const answer = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
   // Each organization's token: organizations can share a Redis.
   const token = request.headers.authorization;
-  expect(["Bearer test-token", "Bearer org-2-token"]).toContain(token);
+  expect(["Bearer test-token", "Bearer other-token", "Bearer org-2-token"]).toContain(token);
   expect(request.headers["polar-organization"]).toBe("org");
   let data = "";
   for await (const chunk of request) data += chunk;
@@ -588,8 +588,10 @@ it("reloads a configuration another instance pulled while this one started", asy
     if (args.length) return configured;
     // Another instance pulls a new configuration before this one reads the pull hash.
     reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+    const pulled = JSON.stringify({ organization_id: organization, reducers });
     const [stored] = await redis.keys("outpost:v1:configuration:*");
-    await redis.set(stored, JSON.stringify({ organization_id: organization, reducers }));
+    await redis.set(stored, pulled);
+    await redis.set(`outpost:v1:${organization}:configuration`, pulled);
     await redis.hincrby(`outpost:v1:${organization}:pull`, "configuration", 1);
     return configured;
   };
@@ -603,11 +605,24 @@ it("keeps its configuration while the stored one is gone, without asking Polar",
   await seed();
   const outpost = await start();
   const [stored] = await redis.keys("outpost:v1:configuration:*");
-  await redis.del(stored);
+  await redis.del(stored, `outpost:v1:${organization}:configuration`);
   await redis.hincrby(`outpost:v1:${organization}:pull`, "configuration", 1);
   configurationStatus = 503;
   vi.advanceTimersByTime(30_000);
   expect((await outpost.meter(meter))?.consumed_units).toBe(10);
+  expect(configurationRequests).toBe(1);
+});
+
+it("reloads a configuration another token of the organization pulled", async () => {
+  const puller = await start();
+  const other = await start({
+    client: new ClientBase({ ...core["options"], accessToken: "other-token" }),
+  });
+  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+  configurationChanged = true;
+  await puller["pull"]();
+  snapshot = aliceSnapshot;
+  expect(await other.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
 });
 
 it("pulls in the background once due, and waits for it once stale", async () => {

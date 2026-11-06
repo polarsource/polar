@@ -65,6 +65,7 @@ const run = async (result: PlanResult, args: string[] = []) => {
           apply: () => Effect.die('unused'),
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
+          disable: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),

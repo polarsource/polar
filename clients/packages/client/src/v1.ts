@@ -6329,7 +6329,14 @@ export interface paths {
     put?: never
     /**
      * Init Config
-     * @description **Scopes**: `organizations:write`
+     * @description Enable config as code for the organization.
+     *
+     *     With `external_ids`, also give existing meters, benefits and products
+     *     without an `external_id` the requested one, so export includes them and
+     *     apply updates them instead of creating new ones. Requires the write scope
+     *     of each section the assignments touch.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['config:init']
     delete?: never
@@ -16700,6 +16707,26 @@ export interface components {
       /** Products */
       products: components['schemas']['ConfigProductRead'][]
     }
+    /** ConfigExternalIDAssignment */
+    ConfigExternalIDAssignment: {
+      /**
+       * Resource
+       * @description The type of resource.
+       * @enum {string}
+       */
+      resource: 'meter' | 'benefit' | 'product'
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of a resource without an `external_id`.
+       */
+      id: string
+      /**
+       * External Id
+       * @description The `external_id` to give the resource.
+       */
+      external_id: string
+    }
     /** ConfigFieldChange */
     ConfigFieldChange: {
       /**
@@ -16725,6 +16752,11 @@ export interface components {
        * @description The ID of the organization to opt in. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /**
+       * External Ids
+       * @description External IDs to give existing resources that don't have one yet, so the config can manage them.
+       */
+      external_ids?: components['schemas']['ConfigExternalIDAssignment'][]
     }
     /** ConfigInvalid */
     ConfigInvalid: {
@@ -17358,6 +17390,13 @@ export interface components {
       name: string
       /** @description Why the resource isn't in the exported config. */
       reason: components['schemas']['ConfigSkippedReason']
+      /** @description The billing interval of a skipped product. None for one-time products and other resources. */
+      recurring_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Recurring Interval Count
+       * @description The number of intervals between charges of a skipped product.
+       */
+      recurring_interval_count?: number | null
     }
     /** ConfigTierRead */
     ConfigTierRead: {
@@ -17371,6 +17410,17 @@ export interface components {
       type: components['schemas']['TierType']
       /** Tiers */
       tiers: components['schemas']['ConfigTierRead'][]
+    }
+    /** ConfigUnsupportedResources */
+    ConfigUnsupportedResources: {
+      /**
+       * Error
+       * @example ConfigUnsupportedResources
+       * @constant
+       */
+      error: 'ConfigUnsupportedResources'
+      /** Detail */
+      detail: string
     }
     /** ConfigWebhookConflict */
     ConfigWebhookConflict: {
@@ -63284,6 +63334,19 @@ export interface operations {
           'application/json': components['schemas']['NotPermitted']
         }
       }
+      /** @description The organization has benefits or products config can't manage yet, or another request gave a resource the same external ID. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['ConfigUnsupportedResources']
+            | components['schemas']['ConfigMeterConflict']
+            | components['schemas']['ConfigBenefitConflict']
+            | components['schemas']['ConfigProductConflict']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -71877,6 +71940,9 @@ export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
 export const configExportCatalogStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigExportCatalog']['status']
 > = ['live', 'archived']
+export const configExternalIDAssignmentResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExternalIDAssignment']['resource']
+> = ['meter', 'benefit', 'product']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']

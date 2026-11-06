@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 import { once } from "node:events";
-import { afterAll, beforeAll, bench, describe, vi } from "vitest";
+import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import benchmark from "./benchmark.json";
@@ -45,7 +45,7 @@ const SCENARIOS: Scenario[] = [
 
 const newestBucketStart = (scenario: Scenario) => COLD_UNTIL + (scenario.buckets - 1) * BUCKET_SIZE;
 const stateKey = (scenario: Scenario, reducer: string) =>
-  `outpost:v1:state:external:${scenario.customer}:${reducer}`;
+  `outpost:v1:org:state:external:${scenario.customer}:${reducer}`;
 
 let redisServer: RedisServer;
 let redis: Redis;
@@ -53,14 +53,13 @@ let polar: PolarServer;
 let outpost: Outpost;
 
 beforeAll(async () => {
-  // Telemetry records as in production; only its export to Polar stays on the machine.
-  vi.stubGlobal("fetch", async () => new Response(null, { status: 200 }));
   redisServer = await startRedisServer();
   redis = new Redis(redisServer.socket);
   await once(redis, "ready");
+  // A warm customer has a state for every reducer: ingesting fetches none.
   for (const scenario of SCENARIOS)
-    for (const reducer of scenario.reducers)
-      await redis.hset(stateKey(scenario, reducer), ...encodeState(scenario.buckets));
+    for (const reducer of REDUCERS)
+      await redis.hset(stateKey(scenario, reducer.id), ...encodeState(scenario.buckets));
   polar = await startPolarServer(REDUCERS);
   outpost = await new Outpost(redisServer.socket, { client: polar.client }).start();
 });
@@ -81,7 +80,6 @@ afterAll(async () => {
     await polar?.stop();
     redis?.disconnect();
     await redisServer?.stop();
-    vi.unstubAllGlobals();
   }
 });
 

@@ -52,40 +52,6 @@ export const latestVersions = (products: schemas['Product'][]) => {
   return [...byKey.values()]
 }
 
-export const useProductVersions = (
-  organizationId: string,
-  externalId: string | null | undefined,
-  enabled: boolean,
-) =>
-  useQuery({
-    queryKey: ['products', 'versions', { organizationId, externalId }],
-    queryFn: async () => {
-      const [current, previous] = await Promise.all(
-        (['live', 'archived'] satisfies schemas['CatalogStatus'][]).map(
-          (catalog) =>
-            unwrap(
-              api.GET('/v1/products/', {
-                params: {
-                  query: {
-                    organization_id: organizationId,
-                    external_id: externalId!,
-                    catalog,
-                    limit: 100,
-                  },
-                },
-              }),
-            ),
-        ),
-      )
-      return [
-        ...current.items.map((product) => ({ product, isCurrent: true })),
-        ...previous.items.map((product) => ({ product, isCurrent: false })),
-      ]
-    },
-    retry: defaultRetry,
-    enabled: enabled && !!externalId,
-  })
-
 type ProductSelector =
   | { id: string[] }
   | { organization_id: string; external_id: string[] }

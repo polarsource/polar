@@ -1,6 +1,6 @@
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
-import { useProductVersions } from '@/hooks/queries/products'
+import { useSelectedProducts } from '@/hooks/queries/products'
 import { schemas } from '@polar-sh/client'
 import { Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -32,14 +32,17 @@ export const ProductVersionSelect = ({
   const [open, setOpen] = useState(false)
   const managedAsCode = useIsManagedAsCode(organization.id)
   const { data: catalogs } = useCatalogVersionLabels(organization)
-  const { data: products } = useProductVersions(
-    organization.id,
-    product.external_id,
-    managedAsCode,
+  const { data: products } = useSelectedProducts(
+    {
+      organization_id: organization.id,
+      external_id:
+        managedAsCode && product.external_id ? [product.external_id] : [],
+    },
+    { includeAllVersions: true },
   )
 
   const versions = (products ?? [])
-    .flatMap(({ product: version, isCurrent }) => {
+    .flatMap((version) => {
       const catalog = version.catalog_id && catalogs?.get(version.catalog_id)
       if (!catalog) return []
       return [
@@ -47,7 +50,7 @@ export const ProductVersionSelect = ({
           id: version.id,
           name: catalog.name ?? 'Untitled',
           publishedAt: catalog.published_at,
-          isCurrent,
+          isCurrent: version.is_current,
         },
       ]
     })

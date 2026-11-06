@@ -159,7 +159,7 @@ class Settings(BaseSettings):
     BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_backoffice_auth_session"
     BACKOFFICE_AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
     BACKOFFICE_USER_SESSION_COOKIE_KEY: str = "polar_backoffice_session"
-    BACKOFFICE_USER_SESSION_TTL: timedelta = timedelta(hours=1)
+    BACKOFFICE_USER_SESSION_TTL: timedelta = timedelta(hours=12)
     CHECKOUT_LINK_HOST: str | None = None  # e.g., "buy.polar.sh" in production
 
     # URL to frontend app.

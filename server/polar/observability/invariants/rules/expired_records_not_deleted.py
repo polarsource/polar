@@ -22,6 +22,7 @@ from polar.models import (
     ExternalEvent,
     MemberSession,
     MerchantMigration,
+    OAuth2Client,
     OAuth2State,
     OAuth2Token,
     UserSession,
@@ -29,6 +30,7 @@ from polar.models import (
     WebhookEvent,
 )
 from polar.models.merchant_migration import MERCHANT_MIGRATION_FINISHED_STEPS
+from polar.oauth2.repository import stale_oauth2_client
 
 from .base import Invariant, InvariantError
 
@@ -101,6 +103,11 @@ CLEANUP_TASKS: tuple[CleanupTask, ...] = (
                 ),
             ),
         ),
+    ),
+    CleanupTask(
+        "oauth2_client.delete_stale",
+        OAuth2Client,
+        stale_oauth2_client,
     ),
     CleanupTask(
         "auth.delete_expired",

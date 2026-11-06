@@ -143,8 +143,11 @@ class BenefitService:
         create_schema: BenefitCreate,
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
+        notify: bool = True,
         declarative_config: bool = False,
     ) -> Benefit:
+        """``notify=False`` skips the ``benefit.created`` webhook, for a benefit
+        that isn't final yet."""
         organization = await get_payload_organization(
             session, auth_subject, create_schema
         )
@@ -249,9 +252,10 @@ class BenefitService:
         session.add(benefit)
         await session.flush()
 
-        await webhook_service.send(
-            session, organization, WebhookEventType.benefit_created, benefit
-        )
+        if notify:
+            await webhook_service.send(
+                session, organization, WebhookEventType.benefit_created, benefit
+            )
 
         return benefit
 

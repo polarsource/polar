@@ -29,10 +29,13 @@ from polar.models import (
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
+from polar.webhook.service import webhook as webhook_service
 
 from .repository import (
     CatalogBenefitRepository,
@@ -560,7 +563,10 @@ class CatalogService:
         benefits: Mapping[str, Benefit],
     ) -> Sequence[tuple[Product, Product]]:
         """Stop selling the live rows the next catalog replaces or leaves out.
-        Return the replaced products with their replacement."""
+        Return the replaced products with their replacement.
+
+        Send `product.updated` and `benefit.updated` for the rows this retires.
+        Apply already retired, and announced, the rows it replaced."""
         if live is None:
             return ()
         replaced: builtins.list[tuple[Product, Product]] = []
@@ -571,9 +577,12 @@ class CatalogService:
             product = products.get(member.external_id)
             if product is not None and product.id == member.product_id:
                 continue
+            was_current = member.product.is_current
             await product_repository.update(
                 member.product, update_dict={"is_current": False}, flush=True
             )
+            if was_current:
+                await product_service.notify_retired(session, member.product)
             if product is not None:
                 replaced.append((member.product, product))
         benefit_repository = BenefitRepository.from_session(session)
@@ -583,9 +592,14 @@ class CatalogService:
             next_benefit = benefits.get(external_id)
             if next_benefit is not None and next_benefit.id == benefit.id:
                 continue
+            was_current = benefit.is_current
             await benefit_repository.update(
                 benefit, update_dict={"is_current": False}, flush=True
             )
+            if was_current:
+                await webhook_service.send(
+                    session, organization, WebhookEventType.benefit_updated, benefit
+                )
         return replaced
 
     async def _repoint_checkout_links(

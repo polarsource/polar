@@ -421,7 +421,7 @@ class ProductService:
         await session.flush()
 
         if notify:
-            await self._after_product_created(session, auth_subject, product)
+            await self.notify_created(session, product)
 
         return product
 
@@ -677,7 +677,7 @@ class ProductService:
 
         await session.refresh(product, {"prices", "all_prices"})
 
-        await self._after_product_updated(session, product)
+        await self.notify_updated(session, product)
         self._enqueue_organization_review(product)
 
         return product
@@ -689,8 +689,11 @@ class ProductService:
         benefits: Sequence[uuid.UUID],
         auth_subject: AuthSubject[User | Organization | Agent],
         *,
+        notify: bool = True,
         declarative_config: bool = False,
     ) -> tuple[Product, set[Benefit], set[Benefit]]:
+        """``notify=False`` skips the ``product.updated`` webhook, for a product
+        whose ``product.created`` is still to be sent."""
         await assert_resource_permission(
             session, auth_subject, product, OrganizationPermission.products_manage
         )
@@ -778,7 +781,8 @@ class ProductService:
             # risk profile, so it does not warrant a review.
             self._enqueue_organization_review(product)
 
-        await self._after_product_updated(session, product)
+        if notify:
+            await self.notify_updated(session, product)
 
         return product, added_benefits, deleted_benefits
 
@@ -1055,19 +1059,23 @@ class ProductService:
         product.is_archived = False
         return product
 
-    async def _after_product_created(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
-        product: Product,
-    ) -> None:
+    async def notify_created(self, session: AsyncSession, product: Product) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
         self._enqueue_organization_review(product)
 
-    async def _after_product_updated(
-        self, session: AsyncSession, product: Product
-    ) -> None:
+    async def notify_updated(self, session: AsyncSession, product: Product) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_updated)
+
+    async def notify_retired(self, session: AsyncSession, product: Product) -> None:
+        """Send `product.updated` for a version that stopped being current,
+        loaded however its caller loaded it."""
+        repository = ProductRepository.from_session(session)
+        retired = await repository.get_by_id(
+            product.id,
+            options=(undefer(Product.is_deletable), *repository.get_eager_options()),
+        )
+        assert retired is not None
+        await self.notify_updated(session, retired)
 
     def _enqueue_organization_review(self, product: Product) -> None:
         """Re-review an active organization when one of its products changes.

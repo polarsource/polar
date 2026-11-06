@@ -761,6 +761,7 @@ class DeclarativeConfigService:
                                 meter_ids,
                             ),
                             auth_subject,
+                            notify=False,
                             declarative_config=True,
                         )
                         update_dict: dict[str, Any] = {
@@ -784,6 +785,16 @@ class DeclarativeConfigService:
                         raise
                     raise ConfigBenefitConflict() from e
                 new_benefits[change.config.external_id] = benefit
+                await webhook_service.send(
+                    session, organization, WebhookEventType.benefit_created, benefit
+                )
+                if change.existing is not None and not draft:
+                    await webhook_service.send(
+                        session,
+                        organization,
+                        WebhookEventType.benefit_updated,
+                        change.existing,
+                    )
             benefit_ids[change.config.external_id] = benefit.id
             results.append(
                 ConfigResult(
@@ -837,6 +848,7 @@ class DeclarativeConfigService:
                                     meter_ids,
                                 ),
                                 auth_subject,
+                                notify=False,
                                 declarative_config=True,
                             )
                             update_dict: dict[str, Any] = {
@@ -867,10 +879,15 @@ class DeclarativeConfigService:
                         product,
                         [benefit_ids[benefit] for benefit in config.benefits],
                         auth_subject,
+                        notify=False,
                         declarative_config=True,
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
+            if change.existing is None or copy_on_write:
+                await product_service.notify_created(session, product)
+                if change.existing is not None and not draft:
+                    await product_service.notify_retired(session, change.existing)
             if (change.existing is None or copy_on_write) and not product.is_archived:
                 new_products[config.external_id] = product
             results.append(

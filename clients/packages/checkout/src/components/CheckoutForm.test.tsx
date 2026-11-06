@@ -576,6 +576,122 @@ describe('CheckoutForm', () => {
     expect(screen.getByText('Invalid US state')).toBeInTheDocument()
   })
 
+  describe('billing address fields', () => {
+    const countryOnlyFields = {
+      country: 'required',
+      state: 'disabled',
+      city: 'disabled',
+      postal_code: 'disabled',
+      line1: 'disabled',
+      line2: 'disabled',
+    } as const
+
+    const renderCountryOnly = (country: string) => {
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      const confirm = vi.fn(defaultProps.confirm)
+      render(
+        <FormWrapper
+          checkout={createCheckout({
+            billing_address_fields: countryOnlyFields,
+          })}
+          {...defaultProps}
+          confirm={confirm}
+          onForm={(f) => {
+            form = f
+          }}
+          defaultValues={{
+            customer_email: 'buyer@example.com',
+            customer_name: 'Buyer Example',
+            customer_billing_address: { country: country as never },
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+      fireEvent.click(screen.getByText('mock ready'))
+      return { form, confirm }
+    }
+
+    const addressInput = (field: string) =>
+      document.querySelector(`[name="customer_billing_address.${field}"]`)
+
+    it('shows the full address as soon as the buyer picks the US, before the checkout updates', async () => {
+      const { form } = renderCountryOnly('GB')
+      expect(addressInput('line1')).toBeNull()
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+
+      for (const field of ['line1', 'line2', 'postal_code', 'city', 'state']) {
+        expect(addressInput(field)).not.toBeNull()
+      }
+    })
+
+    it('shows only the province for Canada', async () => {
+      const { form } = renderCountryOnly('GB')
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'CA')
+      })
+
+      expect(addressInput('state')).not.toBeNull()
+      expect(addressInput('line1')).toBeNull()
+    })
+
+    it('blocks paying with only a US country while the checkout is still updating', async () => {
+      const { form, confirm } = renderCountryOnly('GB')
+
+      await act(async () => {
+        form.setValue('customer_billing_address.country', 'US')
+      })
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Pay now' }))
+      })
+
+      expect(confirm).not.toHaveBeenCalled()
+      expect(screen.getAllByText('This field is required').length).toBe(4)
+    })
+
+    it('shows a field the server reported an error on, and keeps it while the buyer types', async () => {
+      const { form } = renderCountryOnly('FR')
+      expect(addressInput('postal_code')).toBeNull()
+
+      await act(async () => {
+        form.setError('customer_billing_address.postal_code', {
+          type: 'value_error',
+          message: 'Field is required.',
+        })
+      })
+
+      expect(addressInput('postal_code')).not.toBeNull()
+      expect(screen.getByText('Field is required.')).toBeInTheDocument()
+
+      await act(async () => {
+        form.clearErrors('customer_billing_address')
+      })
+
+      expect(addressInput('postal_code')).not.toBeNull()
+    })
+
+    it('forgets fields revealed by an error once the country changes', async () => {
+      const { form } = renderCountryOnly('FR')
+
+      await act(async () => {
+        form.setError('customer_billing_address.postal_code', {
+          type: 'value_error',
+          message: 'Field is required.',
+        })
+      })
+      await act(async () => {
+        form.clearErrors('customer_billing_address')
+        form.setValue('customer_billing_address.country', 'DE')
+      })
+
+      expect(addressInput('postal_code')).toBeNull()
+    })
+  })
+
   it('picks the state from a native select on touch devices, which in-app browsers cannot close mid-scroll', async () => {
     const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
       (media) =>
@@ -1175,11 +1291,11 @@ describe('CheckoutForm', () => {
       const checkout = createCheckout({
         customer_billing_address: {
           country: 'US',
-          line1: null,
+          line1: '1 Main St',
           line2: null,
-          postal_code: null,
-          city: null,
-          state: null,
+          postal_code: '10001',
+          city: 'New York',
+          state: 'US-NY',
         },
       })
       const confirm = vi.fn(defaultProps.confirm)

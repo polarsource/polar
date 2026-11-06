@@ -48,6 +48,7 @@ import {
   flattenFormErrors,
   useCheckoutWebMCP,
 } from '../hooks/webmcp'
+import { useBillingAddressFields } from '../hooks/useBillingAddressFields'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { isTemporaryDiscount } from '../utils/discount'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
@@ -120,6 +121,7 @@ const BaseCheckoutForm = ({
     : null
   const { control, handleSubmit, watch, clearErrors, resetField } = form
   const { errors } = useFormState({ control })
+  const billingAddressFields = useBillingAddressFields(checkout, control)
 
   const { trialUnavailable } = useCheckoutForm()
 
@@ -430,16 +432,14 @@ const BaseCheckoutForm = ({
                     <FormLabel>
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
-                    {isDisplayedField(
-                      checkout.billing_address_fields.line1,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.line1) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customer_billing_address.line1"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.line1,
+                              billingAddressFields.line1,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -461,16 +461,14 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {isDisplayedField(
-                      checkout.billing_address_fields.line2,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.line2) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customer_billing_address.line2"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.line2,
+                              billingAddressFields.line2,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -492,23 +490,17 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {(isDisplayedField(
-                      checkout.billing_address_fields.postal_code,
-                    ) ||
-                      isDisplayedField(
-                        checkout.billing_address_fields.city,
-                      )) && (
+                    {(isDisplayedField(billingAddressFields.postal_code) ||
+                      isDisplayedField(billingAddressFields.city)) && (
                       <div className="grid grid-cols-2 gap-x-2">
-                        {isDisplayedField(
-                          checkout.billing_address_fields.postal_code,
-                        ) && (
+                        {isDisplayedField(billingAddressFields.postal_code) && (
                           <FormControl>
                             <FormField
                               control={control}
                               name="customer_billing_address.postal_code"
                               rules={{
                                 required: isRequiredField(
-                                  checkout.billing_address_fields.postal_code,
+                                  billingAddressFields.postal_code,
                                 )
                                   ? t('checkout.form.fieldRequired')
                                   : false,
@@ -530,16 +522,14 @@ const BaseCheckoutForm = ({
                             />
                           </FormControl>
                         )}
-                        {isDisplayedField(
-                          checkout.billing_address_fields.city,
-                        ) && (
+                        {isDisplayedField(billingAddressFields.city) && (
                           <FormControl>
                             <FormField
                               control={control}
                               name="customer_billing_address.city"
                               rules={{
                                 required: isRequiredField(
-                                  checkout.billing_address_fields.city,
+                                  billingAddressFields.city,
                                 )
                                   ? t('checkout.form.fieldRequired')
                                   : false,
@@ -563,16 +553,14 @@ const BaseCheckoutForm = ({
                         )}
                       </div>
                     )}
-                    {isDisplayedField(
-                      checkout.billing_address_fields.state,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.state) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customer_billing_address.state"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.state,
+                              billingAddressFields.state,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -601,16 +589,14 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {isDisplayedField(
-                      checkout.billing_address_fields.country,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.country) && (
                       <FormControl>
                         <FormField
                           control={control}
                           name="customer_billing_address.country"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.country,
+                              billingAddressFields.country,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,

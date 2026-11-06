@@ -1,35 +1,15 @@
 export const READ_STATE_SCRIPT = `
-if not redis.call('HGET', KEYS[1], 'epoch') then
-    redis.call('HSET', KEYS[1], 'epoch', ARGV[1], 'revision', '0')
-end
 redis.call('EXPIRE', KEYS[1], 86400)
 return redis.call('HGETALL', KEYS[1])
 `;
 
 export const WRITE_BUCKET_SCRIPT = `
-local bucket = 'bucket:' .. ARGV[4] .. ':'
-local pending = 'pending:' .. ARGV[4] .. ':'
-local fields = {'epoch', 'revision'}
-for _, prefix in ipairs({bucket, pending}) do
-    for _, statistic in ipairs({'count', 'sum', 'min', 'max'}) do
-        table.insert(fields, prefix .. statistic)
-    end
-end
-local function reply()
-    local values = redis.call('HMGET', KEYS[1], unpack(fields))
-    local update = {}
-    for i, field in ipairs(fields) do
-        if values[i] then
-            table.insert(update, field)
-            table.insert(update, values[i])
-        end
-    end
-    return update
-end
-local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[6])
+local bucket = 'bucket:' .. ARGV[1] .. ':'
+local pending = 'pending:' .. ARGV[1] .. ':'
+local total = tonumber(redis.call('HGET', KEYS[1], bucket .. 'sum') or '0') + tonumber(ARGV[3])
 assert(total == total and math.abs(total) ~= math.huge, 'Aggregation values must be finite')
 for i, func in ipairs({'min', 'max'}) do
-    local raw = ARGV[6 + i]
+    local raw = ARGV[3 + i]
     if raw ~= '' then
         local value = tonumber(raw)
         assert(value and value == value and math.abs(value) ~= math.huge, 'Invalid value')
@@ -37,17 +17,17 @@ for i, func in ipairs({'min', 'max'}) do
 end
 -- One event pending: its value, or nothing when it only counts. An external_id Polar has not
 -- confirmed yet: tracking it again changes nothing.
-assert(ARGV[5] == '1', 'One event per write')
-local entry = ARGV[7] ~= '' and ARGV[6] or ''
-if redis.call('HSETNX', KEYS[2], ARGV[9], entry) == 0 then
-    return reply()
+assert(ARGV[2] == '1', 'One event per write')
+local entry = ARGV[4] ~= '' and ARGV[3] or ''
+if redis.call('HSETNX', KEYS[2], ARGV[6], entry) == 0 then
+    return 0
 end
 -- Every local event counts in its bucket; the pending part is what Polar has not confirmed.
 for _, prefix in ipairs({bucket, pending}) do
-    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[6])
-    redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[5])
+    redis.call('HINCRBYFLOAT', KEYS[1], prefix .. 'sum', ARGV[3])
+    redis.call('HINCRBY', KEYS[1], prefix .. 'count', ARGV[2])
     for i, func in ipairs({'min', 'max'}) do
-        local raw = ARGV[6 + i]
+        local raw = ARGV[3 + i]
         if raw ~= '' then
             local value = tonumber(raw)
             local stored = redis.call('HGET', KEYS[1], prefix .. func)
@@ -63,31 +43,24 @@ end
 -- nobody reads, writes or snapshots for a day is forgotten too: the next read rebuilds it from
 -- Polar's snapshot.
 redis.call('EXPIRE', KEYS[2], 3900)
-
-if not redis.call('HGET', KEYS[1], 'epoch') then
-    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
-end
-redis.call('HINCRBY', KEYS[1], 'revision', 1)
 redis.call('EXPIRE', KEYS[1], 86400)
-local update = reply()
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], bucket = update}))
-return update
+return 1
 `;
 
 export const CONFIRM_SCRIPT = `
-local bucket = 'bucket:' .. ARGV[4] .. ':'
-local pending = 'pending:' .. ARGV[4] .. ':'
+local bucket = 'bucket:' .. ARGV[1] .. ':'
+local pending = 'pending:' .. ARGV[1] .. ':'
 local BATCH = 1000
 -- Polar received the events but no snapshot counts them yet: a cold bucket keeps them
 -- pending for the snapshot that will, a hot one counts them whole either way.
-if ARGV[5] == '1' then
+if ARGV[2] == '1' then
     local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
-    if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
-        return {}
+    if cutoff and tonumber(ARGV[1]) < tonumber(cutoff) then
+        return 0
     end
 end
 local ids = {}
-for i = 6, #ARGV do table.insert(ids, ARGV[i]) end
+for i = 3, #ARGV do table.insert(ids, ARGV[i]) end
 local gone, seen = {}, {}
 local removed, sum = 0, 0
 local current = redis.call('HMGET', KEYS[1], pending .. 'min', pending .. 'max')
@@ -120,7 +93,7 @@ for offset = 1, #ids, BATCH do
     end
 end
 if removed == 0 then
-    return {}
+    return 0
 end
 for offset = 1, #gone, BATCH do
     redis.call('HDEL', KEYS[2], unpack(gone, offset, math.min(offset + BATCH - 1, #gone)))
@@ -131,7 +104,7 @@ if count <= 0 then
     redis.call('HDEL', KEYS[1], pending .. 'count', pending .. 'sum', pending .. 'min', pending .. 'max')
     local cutoff = redis.call('HGET', KEYS[1], 'cold_until')
     -- Polar counts the whole bucket once it is cold: the local copy has nothing left to add.
-    if cutoff and tonumber(ARGV[4]) < tonumber(cutoff) then
+    if cutoff and tonumber(ARGV[1]) < tonumber(cutoff) then
         redis.call('HDEL', KEYS[1], bucket .. 'count', bucket .. 'sum', bucket .. 'min', bucket .. 'max')
     end
 elseif extremum then
@@ -150,16 +123,8 @@ elseif extremum then
     if not min then redis.call('HDEL', KEYS[1], pending .. 'min') end
     if not max then redis.call('HDEL', KEYS[1], pending .. 'max') end
 end
-
-if not redis.call('HGET', KEYS[1], 'epoch') then
-    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
-end
-redis.call('HINCRBY', KEYS[1], 'revision', 1)
 redis.call('EXPIRE', KEYS[1], 86400)
--- A confirmation can drop a bucket, which a bucket update cannot express: send the whole state.
-local state = redis.call('HGETALL', KEYS[1])
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
-return state
+return removed
 `;
 
 export const RELEASE_LOCK_SCRIPT = `
@@ -195,9 +160,8 @@ local token = ARGV[1]
 local cursor = ARGV[2]
 local pulled_at = ARGV[3]
 local next_poll_in = ARGV[4]
-local channel = ARGV[5]
 -- '1' on the last page: the pull is over and the lock goes.
-local last_page = ARGV[6] == '1'
+local last_page = ARGV[5] == '1'
 
 if redis.call('GET', lock) ~= token then
     return 0
@@ -208,9 +172,6 @@ redis.call('HDEL', pull, 'failures', 'retry_at')
 if last_page then
     redis.call('DEL', lock)
 end
--- Every instance learns when the next pull is due.
-redis.call('PUBLISH', channel,
-    cjson.encode({pulled = {at = tonumber(pulled_at), next = tonumber(next_poll_in)}}))
 return 1
 `;
 
@@ -221,9 +182,8 @@ local key = KEYS[1]
 local now = tonumber(ARGV[1])
 local first_delay = tonumber(ARGV[2])
 local max_delay = tonumber(ARGV[3])
-local channel = ARGV[4]
 -- Optional: the key expires this many milliseconds later, and its failures with it.
-local forget_after = ARGV[5]
+local forget_after = ARGV[4]
 
 local failures = redis.call('HINCRBY', key, 'failures', 1)
 local delay = math.min(max_delay, first_delay * 2 ^ math.min(failures - 1, 16))
@@ -232,13 +192,11 @@ redis.call('HSET', key, 'retry_at', retry_at)
 if forget_after then
     redis.call('PEXPIRE', key, forget_after)
 end
--- Every instance learns when it may try again.
-redis.call('PUBLISH', channel, cjson.encode({failed = {key = key, retry = retry_at}}))
 return retry_at
 `;
 
 export const APPLY_SNAPSHOT_SCRIPT = `
-local cutoff = tonumber(ARGV[4])
+local cutoff = tonumber(ARGV[1])
 local state = redis.call('HGETALL', KEYS[1])
 local fields = {}
 for i = 1, #state, 2 do fields[state[i]] = state[i + 1] end
@@ -246,8 +204,8 @@ local current = fields['cold_until']
 local previous = fields['snapshot_version']
 -- Polar sends each snapshot to every instance: an older one changes nothing.
 if (current and tonumber(current) > cutoff)
-    or (previous and tonumber(ARGV[5]) < tonumber(previous)) then
-    return {state, {}}
+    or (previous and tonumber(ARGV[2]) < tonumber(previous)) then
+    return {}
 end
 local replaced = {}
 if current then replaced = {'cold_until', current} end
@@ -283,27 +241,21 @@ local function stored(field, value)
     if value == '' then return fields[field] == nil end
     return fields[field] ~= nil and tonumber(fields[field]) == tonumber(value)
 end
--- The snapshot another instance applied: nothing to write, nobody to tell.
-if not seals and stored('cold_until', ARGV[4]) and stored('cold:count', ARGV[6])
-    and stored('cold:sum', ARGV[7]) and stored('cold:min', ARGV[8])
-    and stored('cold:max', ARGV[9]) then
-    redis.call('HSET', KEYS[1], 'snapshot_version', ARGV[5])
+-- The snapshot another instance applied: nothing to write.
+if not seals and stored('cold_until', ARGV[1]) and stored('cold:count', ARGV[3])
+    and stored('cold:sum', ARGV[4]) and stored('cold:min', ARGV[5])
+    and stored('cold:max', ARGV[6]) then
+    redis.call('HSET', KEYS[1], 'snapshot_version', ARGV[2])
     redis.call('EXPIRE', KEYS[1], 86400)
-    return {state, {}}
+    return {}
 end
 for i = 1, #dropped, 1000 do
     redis.call('HDEL', KEYS[1], unpack(dropped, i, math.min(i + 999, #dropped)))
 end
-redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
-    'cold:count', ARGV[6], 'cold:sum', ARGV[7])
-if ARGV[8] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[8]) end
-if ARGV[9] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[9]) end
-if not fields['epoch'] then
-    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
-end
-redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('HSET', KEYS[1], 'cold_until', ARGV[1], 'snapshot_version', ARGV[2],
+    'cold:count', ARGV[3], 'cold:sum', ARGV[4])
+if ARGV[5] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[5]) end
+if ARGV[6] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[6]) end
 redis.call('EXPIRE', KEYS[1], 86400)
-state = redis.call('HGETALL', KEYS[1])
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
-return {state, replaced}
+return replaced
 `;

@@ -575,6 +575,47 @@ it("pulls in the background once due, and waits for it once stale", async () => 
   expect(outpost["pulling"]).toBeUndefined();
 });
 
+it("applies a pulled page's customers side by side", async () => {
+  const outpost = await start();
+  const customers = Array.from({ length: 10 }, (_, index) => `customer-${index}`);
+  const stateKey = (id: string) => `outpost:v1:${organization}:state:external:${id}:tokens`;
+  for (const id of customers) await redis.hset(stateKey(id), "cold:sum", 0);
+  const receive = outpost["receiveSnapshot"].bind(outpost);
+  outpost["receiveSnapshot"] = async (...args: Parameters<typeof receive>) => {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return receive(...args);
+  };
+  const started = performance.now();
+  await deliver(
+    outpost,
+    ...customers.map((id) => ({
+      external_customer_id: id,
+      customer_id: null,
+      reducer_id: "tokens",
+      cold_until: bucket,
+      version: 1791807000000001,
+      count: 1,
+      sum: 1,
+      min: 1,
+      max: 1,
+    })),
+  );
+  expect(performance.now() - started).toBeLessThan(250);
+  for (const id of customers) expect(await redis.hget(stateKey(id), "cold:sum")).toBe("1");
+});
+
+it("waits for a stale pull at most its snapshot timeout, then reads Redis", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.meter(meter);
+  outpost["pullChanges"] = () => new Promise<void>((resolve) => setTimeout(resolve, 2_000));
+  vi.advanceTimersByTime(60_000);
+  const started = performance.now();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  expect(performance.now() - started).toBeLessThan(1_000);
+});
+
 it("backs off after a failed pull, and serves reads meanwhile", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   snapshot = aliceSnapshot;
@@ -1319,6 +1360,19 @@ it.each([
 it("fails to start when Polar refuses Outpost", async () => {
   refuseConnections = true;
   await expect(start()).rejects.toThrow("refused");
+});
+
+it("starts once Redis accepts the connection it first closed", async () => {
+  const connect = Redis.prototype.connect;
+  const attempts = vi
+    .spyOn(Redis.prototype, "connect")
+    .mockRejectedValueOnce(new Error("Connection is closed."))
+    .mockImplementation(function (this: Redis, ...args: Parameters<typeof connect>) {
+      return connect.apply(this, args);
+    });
+  const outpost = await start();
+  expect(outpost.connected).toBe(true);
+  expect(attempts).toHaveBeenCalledTimes(2);
 });
 
 it("fails to start without Redis instead of hanging", async () => {

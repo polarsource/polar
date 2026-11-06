@@ -369,6 +369,39 @@ describe('CheckoutFormProvider', () => {
       expect(update).toHaveBeenCalledTimes(2)
       expect(getCtx().isUpdatePending).toBe(false)
     })
+
+    it('keeps submit enabled during a contact update and confirms once it lands', async () => {
+      const pending = createDeferred<UpdateResult>()
+      const update = vi.fn<CheckoutContextProps['update']>(
+        () => pending.promise,
+      )
+      const confirm = vi.fn<CheckoutContextProps['confirm']>(
+        async () =>
+          ({
+            ok: true,
+            value: { id: 'ch_confirmed', status: 'confirmed' },
+          }) as ConfirmResult,
+      )
+      const getCtx = renderWithCheckout({
+        checkout: { is_payment_form_required: false },
+        update,
+        confirm,
+      })
+
+      await act(async () => {
+        void getCtx().update({ customer_name: 'Buyer' })
+        await vi.advanceTimersByTimeAsync(100)
+        void getCtx().confirm({ customer_email: 'a@b.com' }, null, null)
+      })
+      expect(getCtx().isUpdatePending).toBe(false)
+      expect(update).toHaveBeenCalledTimes(1)
+      expect(confirm).not.toHaveBeenCalled()
+
+      await act(async () => {
+        pending.resolve({ ok: true, value: { id: 'ch_1' } } as UpdateResult)
+      })
+      expect(confirm).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('confirm (free checkout path)', () => {

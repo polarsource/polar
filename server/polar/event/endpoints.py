@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query
 from fastapi.exceptions import RequestValidationError
-from pydantic import UUID4, ValidationError
+from pydantic import UUID4
 
 from polar.exceptions import (
     NotPermitted,
@@ -19,7 +19,6 @@ from polar.kit.pagination import (
 )
 from polar.kit.time_queries import is_under_limits
 from polar.kit.versioning import version
-from polar.meter.filter import Filter
 from polar.models import Event
 from polar.openapi import APITag
 from polar.postgres import (
@@ -35,6 +34,8 @@ from polar.version import V2027_01
 from . import auth, sorting
 from .schemas import (
     AggregateField,
+    EventHistogram,
+    EventHistogramParams,
     EventID,
     EventListNamesParams,
     EventListParams,
@@ -46,7 +47,9 @@ from .schemas import (
     EventStatisticsByVarianceParams,
     EventStatisticsParams,
     EventTypeAdapter,
+    EventTypeStatisticsParams,
     ListCustomerStats,
+    ListEventTypeStatistics,
     ListPropertyGroupStats,
     ListStatisticsTimeseries,
     ListVarianceEvents,
@@ -94,43 +97,10 @@ async def list(
 ) -> ListResource[EventSchema] | ListResourceWithCursorPagination[EventSchema]:
     """List events."""
 
-    # Manually parse the filter string to a Filter object as FastAPI does not
-    # support complex schemas in query parameters.
-    parsed_filter: Filter | None = None
-    if filters.filter is not None:
-        try:
-            parsed_filter = Filter.model_validate_json(filters.filter)
-        except ValidationError as e:
-            raise RequestValidationError(e.errors()) from e
-
-    if filters.query is not None and filters.organization_id is None:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "msg": "Query is only supported when organization_id is provided.",
-                    "loc": ("query", "query"),
-                    "input": filters.query,
-                }
-            ]
-        )
-
-    if filters.query is not None and len(filters.query) < 3:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "query",
-                    "msg": "Query must be at least 3 characters.",
-                    "loc": ("query", "query"),
-                    "input": filters.query,
-                }
-            ]
-        )
-
     result = await event_service.list(
         session,
         auth_subject,
-        filter=parsed_filter,
+        filter=filters.filter,
         start_timestamp=filters.start_timestamp,
         end_timestamp=filters.end_timestamp,
         organization_id=filters.organization_id,
@@ -162,6 +132,89 @@ async def list(
         [EventTypeAdapter.validate_python(r) for r in results],
         count,
         pagination,
+    )
+
+
+@router.get(
+    "/statistics/by-type",
+    summary="Get statistics grouped by event type",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    tags=[APITag.private],
+    response_model=ListEventTypeStatistics,
+)
+async def get_statistics_by_type(
+    filters: Annotated[EventTypeStatisticsParams, Query()],
+    auth_subject: auth.EventRead,
+    metadata: MetadataQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListEventTypeStatistics:
+    """
+    Count matching events per event type.
+
+    Accepts the same filters as the event list, except the event name, so every
+    event type gets a count under the other filters.
+    """
+
+    items = await event_service.list_event_type_stats(
+        session,
+        auth_subject,
+        filter=filters.filter,
+        start_timestamp=filters.start_timestamp,
+        end_timestamp=filters.end_timestamp,
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        source=filters.source,
+        metadata=metadata,
+        query=filters.query,
+    )
+    return ListEventTypeStatistics(items=items)
+
+
+@router.get(
+    "/statistics/histogram",
+    summary="Get event histogram",
+    openapi_extra={"parameters": [get_metadata_query_openapi_schema()]},
+    tags=[APITag.private],
+    response_model=EventHistogram,
+)
+async def get_histogram(
+    filters: Annotated[EventHistogramParams, Query()],
+    auth_subject: auth.EventRead,
+    metadata: MetadataQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> EventHistogram:
+    """
+    Count matching events in evenly sized buckets across a time range.
+
+    The bucket size is picked so the range is covered by at most 150 buckets,
+    starting at one minute.
+    """
+    if filters.end_timestamp <= filters.start_timestamp:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "value_error",
+                    "msg": "end_timestamp must be after start_timestamp.",
+                    "loc": ("query", "end_timestamp"),
+                    "input": filters.end_timestamp,
+                }
+            ]
+        )
+
+    return await event_service.get_histogram(
+        session,
+        auth_subject,
+        start_timestamp=filters.start_timestamp,
+        end_timestamp=filters.end_timestamp,
+        filter=filters.filter,
+        organization_id=filters.organization_id,
+        customer_id=filters.customer_id,
+        external_customer_id=filters.external_customer_id,
+        name=filters.name,
+        source=filters.source,
+        metadata=metadata,
+        query=filters.query,
     )
 
 
@@ -296,38 +349,6 @@ async def list_statistics_timeseries(
             ]
         )
 
-    # Parse filter if provided
-    parsed_filter: Filter | None = None
-    if filters.filter is not None:
-        try:
-            parsed_filter = Filter.model_validate_json(filters.filter)
-        except ValidationError as e:
-            raise RequestValidationError(e.errors()) from e
-
-    if filters.query is not None and filters.organization_id is None:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "value_error",
-                    "msg": "Query is only supported when organization_id is provided.",
-                    "loc": ("query", "query"),
-                    "input": filters.query,
-                }
-            ]
-        )
-
-    if filters.query is not None and len(filters.query) < 3:
-        raise RequestValidationError(
-            [
-                {
-                    "type": "query",
-                    "msg": "Query must be at least 3 characters.",
-                    "loc": ("query", "query"),
-                    "input": filters.query,
-                }
-            ]
-        )
-
     return await event_service.list_statistics_timeseries(
         session,
         auth_subject,
@@ -335,7 +356,7 @@ async def list_statistics_timeseries(
         end_date=filters.end_date,
         timezone=ZoneInfo(filters.timezone),
         interval=filters.interval,
-        filter=parsed_filter,
+        filter=filters.filter,
         organization_id=filters.organization_id,
         customer_id=filters.customer_id,
         external_customer_id=filters.external_customer_id,

@@ -6,15 +6,24 @@ import { EventLogHeader } from '@/components/Events/EventLogRow'
 import { EventLogSkeleton } from '@/components/Events/EventLogSkeleton'
 import { EventSearch } from '@/components/Events/EventSearch'
 import { EventsHistogram } from '@/components/Events/EventsHistogram'
+import {
+  formatTimeRange,
+  isHourlyRange,
+  TimeRange,
+} from '@/components/Events/EventsHistogramControls'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import {
   DateRangeInterval,
   dateRangeIntervals,
 } from '@/components/Metrics/DateRangePicker'
-import { useEvent, useInfiniteEvents } from '@/hooks/queries/events'
+import {
+  useEarliestEvent,
+  useEvent,
+  useInfiniteEvents,
+} from '@/hooks/queries/events'
 import { useInViewport } from '@/hooks/utils'
-import { buildEventsFilter } from '@/utils/event'
+import { buildEventsFilter, formatEventCount } from '@/utils/event'
 import useDebounce from '@/utils/useDebounce'
 import { schemas } from '@polar-sh/client'
 import { Spinner, Text } from '@polar-sh/orbit'
@@ -29,6 +38,7 @@ import {
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
+import { min, startOfDay } from 'date-fns'
 import { useEffect, useState } from 'react'
 import z from 'zod'
 import { EventsSidebar } from './EventsSidebar'
@@ -37,12 +47,6 @@ import { DEFAULT_RANGE, recentRangeIntervals } from './rangePresets'
 const PAGE_SIZE = 100
 
 const PUSH_HISTORY = { history: 'push' } as const
-
-const formatEventCount = (count: number) =>
-  new Intl.NumberFormat('en-US', {
-    notation: count < 100_000 ? 'standard' : 'compact',
-    maximumFractionDigits: 1,
-  }).format(count)
 
 const ClientPage = ({
   organization,
@@ -84,6 +88,18 @@ const ClientPage = ({
     'endDate',
     parseAsIsoDateTime.withOptions(PUSH_HISTORY),
   )
+  const [selectionStart, setSelectionStart] = useQueryState(
+    'selectionStart',
+    parseAsIsoDateTime.withOptions(PUSH_HISTORY),
+  )
+  const [selectionEnd, setSelectionEnd] = useQueryState(
+    'selectionEnd',
+    parseAsIsoDateTime.withOptions(PUSH_HISTORY),
+  )
+  const setSelection = (selection: TimeRange | null) => {
+    setSelectionStart(selection?.from ?? null)
+    setSelectionEnd(selection?.to ?? null)
+  }
   const [rangeAnchor, setRangeAnchor] = useState(() => new Date())
   const rangeIntervals = recentRangeIntervals(rangeAnchor)
   const isCustomRange = customStartDate !== null && customEndDate !== null
@@ -94,6 +110,14 @@ const ClientPage = ({
     ) ?? rangeIntervals[0]
   const startDate = isCustomRange ? customStartDate : preset.value[0]
   const endDate = isCustomRange ? customEndDate : preset.value[1]
+  const selection =
+    selectionStart !== null && selectionEnd !== null
+      ? { from: selectionStart, to: selectionEnd }
+      : null
+  const isDefaultTimeRange =
+    range === null && !isCustomRange && selection === null
+  const listStartDate = selection?.from ?? startDate
+  const listEndDate = selection?.to ?? endDate
   const [selectedCustomerIds, setSelectedCustomerIds] = useQueryState(
     'customerIds',
     parseAsArrayOf(parseAsString).withOptions(PUSH_HISTORY),
@@ -123,6 +147,16 @@ const ClientPage = ({
   const searchQuery =
     debouncedQuery && debouncedQuery.length >= 3 ? debouncedQuery : null
 
+  const listFilters = {
+    customer_id: selectedCustomerIds ?? null,
+    source: source ?? null,
+    filter: eventsFilter,
+    start_timestamp: listStartDate.toISOString(),
+    end_timestamp: listEndDate.toISOString(),
+    query: searchQuery,
+    metadata: debouncedMetadata ?? null,
+  }
+
   const {
     data: events,
     isFetching,
@@ -131,19 +165,13 @@ const ClientPage = ({
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteEvents(organization.id, {
+    ...listFilters,
     name:
       selectedEventTypes && selectedEventTypes.length > 0
         ? selectedEventTypes
         : null,
-    customer_id: selectedCustomerIds ?? null,
-    source: source ?? null,
-    filter: eventsFilter,
     limit: PAGE_SIZE,
     sorting: [sorting],
-    start_timestamp: startDate.toISOString(),
-    end_timestamp: endDate.toISOString(),
-    query: searchQuery,
-    metadata: debouncedMetadata ?? null,
   })
 
   const { ref: loadMoreRef, inViewport } = useInViewport<HTMLDivElement>()
@@ -165,6 +193,7 @@ const ClientPage = ({
     dateRange: { from: Date; to: Date },
     interval?: DateRangeInterval,
   ) => {
+    setSelection(null)
     if (interval) {
       setRange(interval.slug === DEFAULT_RANGE ? null : interval.slug)
       setStartDate(null)
@@ -177,6 +206,20 @@ const ClientPage = ({
     setEndDate(dateRange.to)
   }
 
+  const resetDateRange = () => {
+    setRange(null)
+    setStartDate(null)
+    setEndDate(null)
+    setRangeAnchor(new Date())
+  }
+
+  const onZoom = (dateRange: TimeRange, nextSelection: TimeRange | null) => {
+    setRange(null)
+    setStartDate(dateRange.from)
+    setEndDate(dateRange.to)
+    setSelection(nextSelection)
+  }
+
   const hasActiveFilters =
     sorting !== '-timestamp' ||
     [
@@ -187,6 +230,8 @@ const ClientPage = ({
       range,
       customStartDate,
       customEndDate,
+      selectionStart,
+      selectionEnd,
       selectedCustomerIds,
       metadata,
       source,
@@ -201,11 +246,21 @@ const ClientPage = ({
     setRange(null)
     setStartDate(null)
     setEndDate(null)
+    setSelection(null)
     setSelectedCustomerIds(null)
     setMetadata(null)
     setSource(null)
     setRangeAnchor(new Date())
   }
+
+  const { data: earliestEvent } = useEarliestEvent(organization.id)
+  const firstEventTimestamp = earliestEvent?.timestamp
+  const earliest = startOfDay(
+    min([
+      new Date(organization.created_at),
+      ...(firstEventTimestamp ? [new Date(firstEventTimestamp)] : []),
+    ]),
+  )
 
   const items = events?.pages.flatMap((page) => page.items) ?? []
   const firstPagination = events?.pages[0]?.pagination
@@ -236,8 +291,8 @@ const ClientPage = ({
       : lastLoadedTime <= selectedTime)
   const isSelectedInRange =
     selectedTime !== null &&
-    selectedTime >= startDate.getTime() &&
-    selectedTime <= endDate.getTime()
+    selectedTime >= listStartDate.getTime() &&
+    selectedTime <= listEndDate.getTime()
   const shouldLoadUntilSelected =
     selectedIndex < 0 &&
     isSelectedInRange &&
@@ -252,8 +307,24 @@ const ClientPage = ({
 
   return (
     <DashboardBody
-      title={null}
-      wrapperClassName="pt-4 md:gap-0 md:pt-6"
+      title={
+        <Box
+          flexGrow={1}
+          alignItems="baseline"
+          justifyContent="between"
+          gap="s"
+        >
+          <Text as="h1" variant="heading-xxs">
+            Events
+          </Text>
+          {totalCount !== null && (
+            <Text variant="heading-xxs" color="muted" tabularNums>
+              {formatEventCount(totalCount)}
+            </Text>
+          )}
+        </Box>
+      }
+      wrapperClassName="gap-6 pt-4 md:pt-6"
       className="min-h-0 flex-1 md:pb-0"
       contextViewPlacement="left"
       contextViewTitle="Filters"
@@ -267,6 +338,7 @@ const ClientPage = ({
           onDateRangeChange={onDateRangeChange}
           sorting={sorting}
           onSortingChange={setSorting}
+          eventTypeFilters={listFilters}
           selectedEventTypes={selectedEventTypes ?? []}
           onToggleEventType={toggleEventType}
           costOnly={costOnly ?? false}
@@ -305,16 +377,6 @@ const ClientPage = ({
       wide
     >
       <Box flexDirection="column" gap="xl" flexGrow={1} minHeight={0}>
-        <Box alignItems="baseline" justifyContent="between" gap="s">
-          <Text as="h1" variant="heading-xxs">
-            Events
-          </Text>
-          {totalCount !== null && (
-            <Text variant="heading-xxs" color="muted" tabularNums>
-              {formatEventCount(totalCount)}
-            </Text>
-          )}
-        </Box>
         <EventsHistogram
           organizationId={organization.id}
           startDate={startDate}
@@ -325,7 +387,11 @@ const ClientPage = ({
           filter={eventsFilter}
           query={searchQuery}
           metadata={debouncedMetadata}
-          onSelectRange={onDateRangeChange}
+          selection={selection}
+          onSelectionChange={setSelection}
+          onZoom={onZoom}
+          earliest={earliest}
+          latest={rangeAnchor}
         />
         <Box alignItems="start" gap="s">
           <div className="min-w-0 flex-1">
@@ -351,6 +417,27 @@ const ClientPage = ({
               onMetadataChange={(value) => {
                 setMetadata(value)
               }}
+              timeRangeLabel={
+                isDefaultTimeRange
+                  ? null
+                  : formatTimeRange(
+                      selection ?? { from: startDate, to: endDate },
+                      isHourlyRange(startDate, endDate),
+                    )
+              }
+              onClearTimeRange={
+                selection ? () => setSelection(null) : resetDateRange
+              }
+              timeRanges={[
+                ...rangeIntervals,
+                ...dateRangeIntervals(organization),
+              ]}
+              onTimeRangeChange={(interval) =>
+                onDateRangeChange(
+                  { from: interval.value[0], to: interval.value[1] },
+                  interval,
+                )
+              }
               onOpenEvent={setSelectedEventId}
             />
           </div>

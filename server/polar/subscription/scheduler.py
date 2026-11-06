@@ -177,6 +177,9 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
         Returns an engine-agnostic ``Select`` — safe to execute via either
         a sync ``Session`` (production APScheduler) or an async ``AsyncSession``
         (E2E tests).
+
+        Served by ``ix_subscriptions_cycle_schedule``: when the ordering or the
+        subscription filters change, update the index expression and predicate.
         """
         return (
             select(Subscription)

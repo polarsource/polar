@@ -5,6 +5,7 @@ from fastapi import Depends, Query
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.versioning import version
 from polar.models import Benefit
 from polar.models.benefit import BenefitType
 from polar.openapi import APITag, cli_preview, destructive
@@ -16,6 +17,7 @@ from polar.postgres import (
 )
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.version import V2027_01
 
 from . import auth, sorting
 from .grant.service import benefit_grant as benefit_grant_service
@@ -68,6 +70,8 @@ async def list(
         id_in=filters.id,
         id_not_in=filters.exclude_id,
         external_id=filters.external_id,
+        catalog_id=filters.catalog_id,
+        catalog_status=filters.catalog_status,
         metadata=metadata,
         query=filters.query,
         pagination=pagination,
@@ -175,6 +179,37 @@ async def grants(
     responses={201: {"description": "Benefit created."}},
 )
 async def create(
+    auth_subject: auth.BenefitsWrite,
+    benefit_create: BenefitCreate,
+    session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
+) -> Benefit:
+    """
+    Create a benefit, for example license keys, file downloads or Discord access.
+    """
+    benefit = await benefit_service.user_create(
+        session, redis, benefit_create, auth_subject
+    )
+
+    return benefit
+
+
+@router.post(
+    "/",
+    summary="Create Benefit",
+    name="create",
+    response_model=BenefitSchema,
+    status_code=201,
+    responses={
+        201: {"description": "Benefit created."},
+        403: {
+            "model": NotPermitted.schema(),
+            "description": "Organization benefit limit reached.",
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
     auth_subject: auth.BenefitsWrite,
     benefit_create: BenefitCreate,
     session: AsyncSession = Depends(get_db_session),

@@ -215,7 +215,16 @@ class TestQueryWildcardsAreLiteral:
             assert (
                 f"positionCaseInsensitiveUTF8(`events_by_timestamp`.`{column}`," in sql
             )
-        assert list(params.values()).count("100%_x") == 3
+        assert "`events_by_timestamp`.`external_id` =" in sql
+        assert "`events_by_timestamp`.`id` =" not in sql
+        assert list(params.values()).count("100%_x") == 4
+
+    def test_filter_by_query_event_id(self) -> None:
+        event_id = uuid.uuid4()
+        query = TinybirdEventsQuery([uuid.uuid4()]).filter_by_query(str(event_id))
+        sql, params = compile_clause(query._filters[-1])
+        assert "`events_by_timestamp`.`id` =" in sql
+        assert str(event_id) in params.values()
 
     def test_like_operator(self) -> None:
         clause = FilterClause(

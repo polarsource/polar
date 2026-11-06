@@ -183,7 +183,7 @@ const CheckoutSeatSelector = ({
               type="button"
               onClick={() => handleUpdateSeats(displaySeats - 1)}
               disabled={displaySeats <= minimumSeats || isUpdating || isEditing}
-              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-l-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-s-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Decrease seats"
             >
               <MinusIcon className="h-3 w-3" />
@@ -221,7 +221,7 @@ const CheckoutSeatSelector = ({
                 isUpdating ||
                 isEditing
               }
-              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-r-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+              className="dark:text-polar-400 dark:hover:bg-polar-800 flex h-7 w-7 cursor-pointer items-center justify-center rounded-e-lg leading-none text-gray-500 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
               aria-label="Increase seats"
             >
               <PlusIcon className="h-3 w-3" />

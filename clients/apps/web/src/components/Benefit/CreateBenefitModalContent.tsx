@@ -81,7 +81,9 @@ const CreateBenefitModalContent = ({
           metadata: entriesToMetadata(subscriptionBenefitCreate.metadata),
         })
       if (error) {
-        if (error.detail) {
+        if (typeof error.detail === 'string') {
+          setError('root', { message: error.detail })
+        } else if (error.detail) {
           setValidationErrors(
             error.detail,
             setError,

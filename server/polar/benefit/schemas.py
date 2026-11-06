@@ -33,6 +33,7 @@ from polar.kit.schemas import (
 from polar.kit.versioning import QuerySchema, Version
 from polar.member.schemas import ExternalMemberID, Member
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
 
@@ -278,6 +279,19 @@ class BenefitListParams(QuerySchema):
     )
     exclude_id: MultipleQueryFilter[BenefitID] | None = Field(
         None, title="Exclude IDs", description="Exclude benefits with these IDs."
+    )
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="CatalogStatus Filter",
+        description=(
+            "Filter by catalog status. "
+            "Defaults to `live` unless filtering by ID or catalog ID."
+        ),
     )
     query: str | None = Field(None, title="Query", description="Filter by description.")
 

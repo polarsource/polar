@@ -529,7 +529,9 @@ class ConfigCatalogChange(Schema):
     before: ConfigCatalog | None = Field(
         description="The live catalog before applying. `None` if no catalog exists to replace."
     )
-    after: ConfigCatalog = Field(description="The catalog applying published.")
+    after: ConfigCatalog = Field(
+        description="The catalog applying published, or the draft it saved."
+    )
 
 
 class ConfigCatalogPlan(Schema):
@@ -839,6 +841,16 @@ class DeclarativeConfigExportParams(QuerySchema):
         None,
         description=(
             "The ID of the organization to export. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
+class ConfigInit(Schema):
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization to opt in. "
             "**Required unless you use an organization token.**"
         ),
     )

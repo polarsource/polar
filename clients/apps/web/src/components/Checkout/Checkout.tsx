@@ -350,7 +350,7 @@ const Checkout = ({
   return (
     <div className="md:grid md:min-h-screen md:grid-cols-2">
       <div className="md:flex md:justify-end">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-6 px-4 py-6 pb-0 md:mx-0 md:py-12 md:pr-12 md:pl-4">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-6 px-4 py-6 pb-0 md:mx-0 md:py-12 md:ps-4 md:pe-12">
           {orgHeader}
           {collapsedOrderSummary && hasProductCheckout(checkout) ? (
             <CheckoutCollapsibleOrderSummary
@@ -374,7 +374,7 @@ const Checkout = ({
         </div>
       </div>
       <div className="dark:md:bg-polar-900 md:bg-white">
-        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:pr-4 md:pl-12">
+        <div className="mx-auto flex w-full max-w-[480px] flex-col gap-y-8 px-4 py-6 md:mx-0 md:py-12 md:ps-12 md:pe-4">
           {shouldBlockCheckout && (
             <PaymentNotReadyBanner
               organizationId={checkout.organization.id}

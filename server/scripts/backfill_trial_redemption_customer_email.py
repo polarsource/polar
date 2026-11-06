@@ -8,7 +8,7 @@ and applies Google's addressing rules (`googlemail.com` is `gmail.com`, and
 Gmail ignores dots in the local part).
 
 Rows written before that change hold the old form, and the lookup in
-`TrialRedemptionRepository.get_all_by_organization_and_hints` compares against
+`TrialRedemptionRepository.get_first_by_organization_and_hints` compares against
 the new one, so `john.doe@gmail.com` stored yesterday no longer matches
 `johndoe@gmail.com` presented today. Run this right after deploying the new
 normalization to close that gap.

@@ -24,6 +24,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 from sqlalchemy.schema import Index, UniqueConstraint
 
+from polar.kit.concurrency import create_task_group
 from polar.kit.db.models import RecordModel
 from polar.kit.encryption import EncryptedString, EncryptedStringType
 from polar.kit.extensions.sqlalchemy.types import StringEnum
@@ -127,13 +128,16 @@ class OAuthAccount(RecordModel):
         return await self.refresh_token_encrypted.decrypt(id=str(self.id))
 
     async def to_dataclass(self, scope: list[str]) -> OAuth2EnrollmentDataclass:
+        async with create_task_group() as tg:
+            access_token = tg.create_task(self.get_access_token())
+            refresh_token = tg.create_task(self.get_refresh_token())
         return OAuth2EnrollmentDataclass(
             id=self.id,
             provider=self.platform,
             scope=scope,
-            access_token=await self.get_access_token(),
+            access_token=access_token.return_value,
             expires_at=self.expires_at,
-            refresh_token=await self.get_refresh_token(),
+            refresh_token=refresh_token.return_value,
             refresh_token_expires_at=self.refresh_token_expires_at,
             account_id=self.account_id,
             identity_id=self.user_id,
@@ -162,12 +166,15 @@ class OAuthAccount(RecordModel):
             self.id = self.generate_id()
         self.access_token = access_token
         self.refresh_token = refresh_token
-        self.access_token_encrypted = await self.encrypt_access_token(
-            self.id, access_token
-        )
-        self.refresh_token_encrypted = await self.encrypt_refresh_token(
-            self.id, refresh_token
-        )
+        async with create_task_group() as tg:
+            access_token_encrypted = tg.create_task(
+                self.encrypt_access_token(self.id, access_token)
+            )
+            refresh_token_encrypted = tg.create_task(
+                self.encrypt_refresh_token(self.id, refresh_token)
+            )
+        self.access_token_encrypted = access_token_encrypted.return_value
+        self.refresh_token_encrypted = refresh_token_encrypted.return_value
 
 
 class User(RecordModel):

@@ -91,10 +91,13 @@ services:
 
   tinybird:
     image: tinybirdco/tinybird-local:latest
-    platform: linux/amd64
     expose:
       - "7181"
       - "7182"
+    environment:
+      TB_LOCAL_CSV_WORKERS: "1"
+      TB_LOCAL_MCP: "false"
+      TB_LOCAL_KAFKA: "false"
     volumes:
       - ../../server/tinybird:/tinybird:ro
       - ./scripts/tinybird-setup.sh:/scripts/tinybird-setup.sh:ro
@@ -106,8 +109,6 @@ services:
       interval: 5s
       timeout: 10s
       retries: 30
-    profiles:
-      - tinybird
 
   prometheus:
     image: prom/prometheus:v3.7.3

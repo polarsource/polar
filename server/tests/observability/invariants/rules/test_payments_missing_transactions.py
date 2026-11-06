@@ -35,7 +35,9 @@ class TestCheck:
         await create_payment_transaction(save_fixture, charge_id=None)
 
         old_payment = await create_payment(save_fixture, organization)
-        old_payment.created_at = utc_now() - timedelta(days=31)
+        old_payment.created_at = utc_now() - (
+            PaymentsMissingTransactionsInvariant.AGE_LIMIT + timedelta(hours=1)
+        )
         await save_fixture(old_payment)
 
         payments = []

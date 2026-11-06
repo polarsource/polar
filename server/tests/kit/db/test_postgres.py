@@ -20,7 +20,7 @@ class TestCreateSyncEngine:
 
         assert (
             create_sync_engine(
-                dsn="postgresql+psycopg2://localhost/test",
+                dsn="postgresql+psycopg://localhost/test",
                 application_name="test.scheduler",
                 command_timeout=command_timeout,
                 connect_timeout=5.0,
@@ -29,6 +29,7 @@ class TestCreateSyncEngine:
             is engine
         )
         assert create_engine.call_args.kwargs["connect_args"] == {
+            "prepare_threshold": None,
             "application_name": "test.scheduler",
             "connect_timeout": 5,
             "sslmode": "require",
@@ -53,7 +54,7 @@ class TestCreateSyncEngine:
         engine = sqlalchemy_create_engine("sqlite://")
         mocker.patch("polar.kit.db.postgres._create_engine", return_value=engine)
         create_sync_engine(
-            dsn="postgresql+psycopg2://localhost/test",
+            dsn="postgresql+psycopg://localhost/test",
             command_timeout=command_timeout,
         )
 

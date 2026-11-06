@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, or_, select
 from sqlalchemy.orm import joinedload, undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -14,8 +14,9 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Benefit
+from polar.models import Benefit, Catalog, CatalogBenefit
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.product_benefit import ProductBenefit
 
 from .sorting import BenefitSortProperty
@@ -29,6 +30,11 @@ class BenefitRepository(
     RepositoryBase[Benefit],
 ):
     model = Benefit
+
+    async def count_by_organization_id(self, organization_id: UUID) -> int:
+        return await self.count(
+            self.get_base_statement().where(Benefit.organization_id == organization_id)
+        )
 
     async def get_by_id_and_product(
         self,
@@ -132,6 +138,37 @@ class BenefitRepository(
 
     def get_eager_options(self) -> Options:
         return (joinedload(Benefit.organization),)
+
+    def apply_catalog_filter(
+        self,
+        statement: Select[Benefit],
+        org_ids: set[AccessibleOrganizationID],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
+    ) -> Select[Benefit]:
+        catalog_members = (
+            select(CatalogBenefit.benefit_id)
+            .join(CatalogBenefit.catalog)
+            .where(
+                Catalog.organization_id.in_(org_ids),
+                CatalogBenefit.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+            )
+        )
+        if catalog_id is not None:
+            statement = statement.where(
+                Benefit.id.in_(catalog_members.where(Catalog.id.in_(catalog_id)))
+            )
+        if catalog_status is not None:
+            in_status = Benefit.id.in_(
+                catalog_members.where(Catalog.status.in_(catalog_status))
+            )
+            statement = statement.where(
+                or_(Benefit.is_current, in_status)
+                if CatalogStatus.live in catalog_status
+                else in_status
+            )
+        return statement
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

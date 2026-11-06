@@ -97,7 +97,7 @@ def create_sync_engine(
     debug: bool = False,
     sslmode: str | None = None,
 ) -> Engine:
-    connect_args: dict[str, Any] = {}
+    connect_args: dict[str, Any] = {"prepare_threshold": None}
     if application_name is not None:
         connect_args["application_name"] = application_name
     if connect_timeout is not None:

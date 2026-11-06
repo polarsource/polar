@@ -25,7 +25,7 @@ class PaymentsMissingTransactionsInvariantError(InvariantError):
 
 class PaymentsMissingTransactionsInvariant(Invariant):
     LIMIT = 10
-    AGE_LIMIT = timedelta(days=30)
+    AGE_LIMIT = timedelta(hours=24)
     LEEWAY = timedelta(minutes=5)
 
     async def check(self) -> None:

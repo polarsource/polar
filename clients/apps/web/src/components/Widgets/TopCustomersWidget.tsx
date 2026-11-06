@@ -95,7 +95,7 @@ const TopCustomersWidgetContent = ({ className }: TopCustomersWidgetProps) => {
           <Text color="muted">No paid orders in the last 12 months.</Text>
         </Box>
       ) : (
-        <Box flexDirection="column" paddingBottom="xl">
+        <Box flexDirection="column" paddingBottom="m">
           {(customers ?? []).map((customer) => (
             <Link
               key={customer.id}

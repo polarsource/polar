@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, status
 from pydantic import UUID4
 
 from polar.catalog.service import CatalogNotFound
@@ -15,11 +15,12 @@ from polar.postgres import (
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from .auth import ConfigRead, ConfigWrite
+from .auth import ConfigOrganizationWrite, ConfigRead, ConfigWrite
 from .schemas import (
     Config,
     ConfigApplyResult,
     ConfigExport,
+    ConfigInit,
     ConfigPlan,
     ConfigPrune,
     DeclarativeConfigExportParams,
@@ -37,13 +38,15 @@ from .service import declarative_config as declarative_config_service
 router = APIRouter(prefix="/config", tags=["config", APITag.private])
 
 CatalogNotFoundResponse = {
-    "description": "No published catalog has this ID.",
+    "description": "No catalog has this ID.",
     "model": CatalogNotFound.schema(),
 }
 
 CatalogQuery = Annotated[
     UUID4 | None,
-    Query(description="ID of a published catalog. Defaults to the live catalog."),
+    Query(
+        description="ID of a catalog, published or draft. Defaults to the live catalog."
+    ),
 ]
 
 
@@ -92,6 +95,26 @@ async def export(
 
 
 @router.post(
+    "/init",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Init Config",
+    responses={
+        204: {"description": "Config as code enabled."},
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+    },
+)
+async def init(
+    config_init: ConfigInit,
+    auth_subject: ConfigOrganizationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    await declarative_config_service.init(session, auth_subject, config_init)
+
+
+@router.post(
     "/apply",
     response_model=ConfigApplyResult,
     summary="Apply Config",
@@ -122,6 +145,15 @@ async def export(
 async def apply(
     config: Config,
     auth_subject: ConfigWrite,
+    publish: bool = Query(
+        True,
+        description=(
+            "Publish the product and benefit changes. With `false`, they're saved "
+            "in the organization's draft catalog, to publish later. With `true`, "
+            "a pending draft is discarded. Meters, settings and webhooks aren't "
+            "versioned, so they apply right away."
+        ),
+    ),
     session: AsyncSession = Depends(get_db_session),
     redis: Redis = Depends(get_redis),
 ) -> ConfigApplyResult:
@@ -144,7 +176,9 @@ async def apply(
 
     Each section requires the write scope for its resource.
     """
-    return await declarative_config_service.apply(session, redis, auth_subject, config)
+    return await declarative_config_service.apply(
+        session, redis, auth_subject, config, publish=publish
+    )
 
 
 @router.post(

@@ -44,14 +44,14 @@ dependencies = [
   "python-stdnum>=2.1",
   "ipinfo-db>=0.0.4",
   "taskipy>=1.10.3",
-  "psycopg2-binary>=2.9.12",
+  "psycopg[binary]>=3.3.6",
   "apscheduler>=3.11.3",
   "plain-client>=0.0.3",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
-  "dramatiq[redis,watch]>=1.17.1",
+  "dramatiq[redis]>=2.2.1",
   "prometheus-client>=0.25.0",
-  "python-snappy>=0.7.3",
+  "cramjam>=2.14.0",
   "fpdf2>=2.8.3",
   "arabic-reshaper>=3.0.1",
   "python-bidi>=0.6.11",
@@ -94,6 +94,7 @@ dev = [
   "pytest-xdist[psutil]>=3.8.0",
   "minio>=7.2.9",
   "locust>=2.44.1",
+  "dramatiq[watch]>=2.2.1",
   "pydantic-evals>=1.103.0",
   "gepa>=0.1.0",
   # Quarantined due to supply chain attack:
@@ -204,11 +205,28 @@ init_typed = true
 warn_required_dynamic_aliases = false
 
 [tool.uv]
+# SQLAlchemy 2.1 support is unreleased (opentelemetry-python-contrib#5120).
+# Matching OpenTelemetry Git versions also override Logfire's released-version bounds.
+# Remove these pins once SQLAlchemy 2.1 support ships on PyPI.
+override-dependencies = [
+  "opentelemetry-api @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-api",
+  "opentelemetry-sdk @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-sdk",
+  "opentelemetry-semantic-conventions @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-semantic-conventions",
+  "opentelemetry-proto @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=opentelemetry-proto",
+  "opentelemetry-exporter-http-transport @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-http-transport",
+  "opentelemetry-exporter-otlp-common @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-otlp-common",
+  "opentelemetry-exporter-otlp-proto-common @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-otlp-proto-common",
+  "opentelemetry-exporter-otlp-proto-http @ git+https://github.com/open-telemetry/opentelemetry-python@caedf13ec660d6b6924f18b6f2573b4c84e6b462#subdirectory=exporter/opentelemetry-exporter-otlp-proto-http",
+  "opentelemetry-instrumentation @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=opentelemetry-instrumentation",
+  "opentelemetry-util-http @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=util/opentelemetry-util-http",
+  "opentelemetry-instrumentation-asgi @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-asgi",
+  "opentelemetry-instrumentation-fastapi @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-fastapi",
+  "opentelemetry-instrumentation-httpx @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-httpx",
+  "opentelemetry-instrumentation-redis @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-redis",
+  "opentelemetry-instrumentation-sqlalchemy @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-sqlalchemy",
+]
 exclude-newer = "1 week"
 exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false }
-
-[tool.uv.sources]
-dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
 
 [tool.vercel]
 entrypoint = "polar.app:app"

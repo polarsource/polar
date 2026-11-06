@@ -128,6 +128,8 @@ class Settings(BaseSettings):
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
 
+    OUTPOST_PULL_INTERVAL: timedelta = timedelta(seconds=30)
+
     SECRET: str = "super secret jwt secret"
     HASH_SECRETS: dict[str, str] = {}
     CURRENT_HASH_SECRET_ID: str | None = None
@@ -528,6 +530,9 @@ class Settings(BaseSettings):
     PAYOUT_INVOICES_PREFIX: str = "POLAR-"
 
     # Application behaviours
+    ORGANIZATION_DEFAULT_PRODUCTS_LIMIT: int = 1000
+    ORGANIZATION_DEFAULT_BENEFITS_LIMIT: int = 1000
+
     API_PAGINATION_MAX_LIMIT: int = 100
     API_MAX_REQUEST_BODY_SIZE: int = 10 * 1024 * 1024
 
@@ -784,7 +789,7 @@ class Settings(BaseSettings):
 
     def _build_postgres_dsn(
         self,
-        driver: Literal["asyncpg", "psycopg2"],
+        driver: Literal["asyncpg", "psycopg"],
         *,
         username: str | None,
         password: str | None,
@@ -816,7 +821,7 @@ class Settings(BaseSettings):
             },
         ).render_as_string(hide_password=False)
 
-    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
         return self._build_postgres_dsn(
             driver,
             username=self.POSTGRES_USER,
@@ -840,7 +845,7 @@ class Settings(BaseSettings):
         )
 
     def get_postgres_read_dsn(
-        self, driver: Literal["asyncpg", "psycopg2"]
+        self, driver: Literal["asyncpg", "psycopg"]
     ) -> str | None:
         if not self.is_read_replica_configured():
             return None

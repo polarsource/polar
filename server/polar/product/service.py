@@ -16,6 +16,7 @@ from polar.authz.service import (
 )
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.service import benefit as benefit_service
+from polar.catalog.repository import CatalogRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
 from polar.declarative_config.guard import (
@@ -24,6 +25,7 @@ from polar.declarative_config.guard import (
 )
 from polar.enums import SubscriptionRecurringInterval
 from polar.exceptions import (
+    NotPermitted,
     PolarError,
     PolarRequestValidationError,
     ValidationError,
@@ -45,6 +47,7 @@ from polar.models import (
     ProductVisibility,
     User,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import ProductPriceSource
@@ -108,6 +111,8 @@ class ProductService:
         id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
         organization_id: Sequence[uuid.UUID] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         is_recurring: bool | None = None,
@@ -144,7 +149,12 @@ class ProductService:
 
         if id is not None:
             statement = statement.where(Product.id.in_(id))
-        else:
+
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
+        elif id is None:
             statement = statement.where(Product.is_current)
 
         if external_id is not None:
@@ -178,6 +188,7 @@ class ProductService:
         statement = repository.apply_sorting(statement, sorting)
 
         statement = statement.options(
+            undefer(Product.is_deletable),
             selectinload(Product.product_medias),
             selectinload(Product.attached_custom_fields),
         )
@@ -199,7 +210,7 @@ class ProductService:
         statement = (
             repository.get_statement_by_org_ids(org_ids)
             .where(Product.id == id)
-            .options(*repository.get_eager_options())
+            .options(undefer(Product.is_deletable), *repository.get_eager_options())
         )
         return await repository.get_one_or_none(statement)
 
@@ -303,6 +314,15 @@ class ProductService:
         )
         if not declarative_config and organization.is_config_as_code_enabled:
             raise DeclarativeConfigManaged()
+
+        await CatalogRepository.from_session(session).lock(organization.id)
+        if (
+            await repository.count_by_organization_id(organization.id)
+            >= organization.products_limit
+        ):
+            raise NotPermitted(
+                f"Organization has reached its limit of {organization.products_limit} products."
+            )
 
         if (
             create_schema.external_id is not None

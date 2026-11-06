@@ -3,10 +3,10 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowDownRight, ArrowUpRight } from '@polar-sh/orbit/icons'
-import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
-import { useContext } from 'react'
-import { SegmentedBars } from './SegmentedBars'
+import { endOfMonth, format, min, startOfMonth, subMonths } from 'date-fns'
+import { toISODate } from '@/utils/metrics'
+import { useContext, useState } from 'react'
+import { MonthlyBars } from './MonthlyBars'
 import { WidgetContainer } from './WidgetContainer'
 import { WidgetLink } from './WidgetLink'
 import { WidgetGuard } from './WidgetGuard'
@@ -16,7 +16,21 @@ interface RevenueWidgetProps {
 }
 
 const WIDGET_TITLE = 'Revenue'
-const MONTHS = 6
+const MONTHS = 5
+
+// Whole dollars, then compact from $10K so the month labels stay narrow.
+const formatBarValue = (cents: number) => {
+  const dollars = Math.round(cents / 100)
+  return Math.abs(dollars) >= 10_000
+    ? new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'usd',
+        currencyDisplay: 'narrowSymbol',
+        notation: 'compact',
+        maximumFractionDigits: 1,
+      }).format(dollars)
+    : formatCurrency('statistics')(dollars * 100, 'usd')
+}
 
 const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   <WidgetGuard
@@ -28,48 +42,13 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => (
   </WidgetGuard>
 )
 
-const Change = ({
-  current,
-  previous,
-}: {
-  current: number
-  previous: number
-}) => {
-  if (previous === 0) return null
-  const change = ((current - previous) / Math.abs(previous)) * 100
-  if (!Number.isFinite(change) || Math.round(change) === 0) return null
-  const Arrow = change > 0 ? ArrowUpRight : ArrowDownRight
-
-  return (
-    <Text>
-      <Box
-        as="span"
-        display="inline-block"
-        marginRight="xs"
-        color={change > 0 ? 'text-success' : 'text-danger'}
-      >
-        <Arrow className="inline h-4 w-4 align-[-2px]" />
-      </Box>
-      {Math.abs(change).toFixed(0)}%
-    </Text>
-  )
-}
-
 const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
+  const [today] = useState(() => new Date())
 
   const { data, isLoading } = useMetrics({
-    startDate: startOfMonth(subMonths(new Date(), MONTHS - 1)),
-    endDate: endOfMonth(new Date()),
-    organization_id: organization.id,
-    interval: 'month',
-    metrics: ['revenue'],
-  })
-
-  const today = new Date()
-  const { data: previousToDate } = useMetrics({
-    startDate: startOfMonth(subMonths(today, 1)),
-    endDate: subMonths(today, 1),
+    startDate: startOfMonth(subMonths(today, MONTHS - 1)),
+    endDate: endOfMonth(today),
     organization_id: organization.id,
     interval: 'month',
     metrics: ['revenue'],
@@ -78,7 +57,6 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   const periods = data?.periods ?? []
   const currentMonth = periods.at(-1)
   const current = currentMonth?.revenue ?? 0
-  const previous = previousToDate?.totals.revenue ?? 0
 
   return (
     <WidgetContainer
@@ -88,9 +66,6 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
           <Text variant="heading-m" weight="book">
             {formatCurrency('statistics')(current, 'usd')}
           </Text>
-          {data && previousToDate && (
-            <Change current={current} previous={previous} />
-          )}
           {currentMonth && (
             <Text color="muted">{format(currentMonth.timestamp, 'MMMM')}</Text>
           )}
@@ -103,20 +78,22 @@ const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
       }
       className={className}
     >
-      <Box
-        flexDirection="column"
-        flex={1}
-        justifyContent="end"
-        paddingBottom="xl"
-      >
-        <SegmentedBars
+      <Box flexDirection="column" paddingBottom="m">
+        <MonthlyBars
           loading={isLoading}
           bars={periods.map((period, index) => ({
             key: period.timestamp,
             label: format(period.timestamp, 'MMM'),
             value: period.revenue ?? 0,
-            tooltip: `${formatCurrency('compact')(period.revenue ?? 0, 'usd')} in ${format(period.timestamp, 'MMMM')}`,
+            formatted: formatBarValue(period.revenue ?? 0),
             highlighted: index === periods.length - 1,
+            href: `/dashboard/${organization.slug}/analytics/metrics?${new URLSearchParams(
+              {
+                start_date: toISODate(startOfMonth(period.timestamp)),
+                end_date: toISODate(min([endOfMonth(period.timestamp), today])),
+                interval: 'day',
+              },
+            )}`,
           }))}
         />
       </Box>

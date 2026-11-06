@@ -123,17 +123,12 @@ class TestGetSummary:
         summary = await transaction_service.get_summary(session, account)
 
         assert summary.balance.currency == "usd"
-        assert summary.balance.account_currency == account.currency
         assert summary.balance.amount == 0
-        assert summary.balance.account_amount == 0
 
         assert summary.payout.currency == "usd"
-        assert summary.payout.account_currency == account.currency
         assert summary.payout.amount == 0
-        assert summary.payout.account_amount == 0
 
         assert summary.held_balance.amount == 0
-        assert summary.held_balance.account_amount == 0
         assert summary.held_balance.next_release_at is None
         assert summary.held_balance.next_release_amount == 0
         assert summary.held_balance.fully_available_at is None
@@ -144,7 +139,6 @@ class TestGetSummary:
         now = utc_now()
 
         # Create an old balance transaction (8 days ago - should be available)
-        # Using account_currency="usd" so account_amount = amount
         await create_transaction(
             save_fixture,
             type=TransactionType.balance,
@@ -193,20 +187,16 @@ class TestGetSummary:
 
         # Total balance should include all transactions
         assert summary.balance.amount == 1000 + 500 - 2000 - 100
-        assert summary.balance.account_amount == 1000 + 500 - 2000 - 100
 
         # Available balance should exclude recent non-payout transactions
         # old_balance (1000) + payout (-2000) = -1000
         # recent_balance (500) is excluded because it's only 2 days old (< 7 days)
         assert summary.available_balance.amount == 1000 - 2000 - 100
-        assert summary.available_balance.account_amount == 1000 - 2000 - 100
 
         # Payout balance should include all payouts
         assert summary.payout.amount == -2000
-        assert summary.payout.account_amount == -2000
 
         assert summary.held_balance.amount == 500
-        assert summary.held_balance.account_amount == 500
         assert summary.held_balance.next_release_amount == 500
         assert summary.held_balance.next_release_at == now + timedelta(days=5)
         assert summary.held_balance.fully_available_at == now + timedelta(days=5)

@@ -199,6 +199,11 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/auth.md',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/auth.md`,
+        permanent: false,
+      },
 
       // Logged-in user redirections
       {
@@ -340,7 +345,7 @@ const nextConfig = {
       // Fallback blog redirect
       {
         source: '/:path*',
-        destination: 'https://polar.sh/polarsource',
+        destination: 'https://polar.sh/blog',
         has: [
           {
             type: 'host',

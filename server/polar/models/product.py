@@ -267,6 +267,8 @@ class Product(
             ),
             # References come from other flows, never from a product flush
             expire_on_flush=False,
+            deferred=True,
+            raiseload=True,
         )
 
     def get_price(

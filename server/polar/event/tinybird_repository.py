@@ -103,6 +103,70 @@ class TinybirdEventRepository:
 
         return await tinybird_query.get_event_type_stats()
 
+    async def get_filtered_event_type_stats(
+        self,
+        *,
+        organization_id: UUID | Sequence[UUID],
+        start_timestamp: datetime | None = None,
+        end_timestamp: datetime | None = None,
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
+        source: Sequence[EventSource] | None = None,
+        filters: Sequence[Filter] = (),
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+    ) -> list[TinybirdEventTypeStats]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return []
+
+        tinybird_query = self._build_filtered_query(
+            organization_ids,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            source=source,
+            filters=filters,
+            metadata=metadata,
+            query=query,
+        )
+        tinybird_query.order_by("occurrences", descending=True)
+        return await tinybird_query.get_event_type_stats()
+
+    async def get_filtered_bucket_counts(
+        self,
+        *,
+        organization_id: UUID | Sequence[UUID],
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        step_seconds: int,
+        customer_id: Sequence[UUID] = (),
+        external_customer_id: Sequence[str] = (),
+        name: Sequence[str] | None = None,
+        source: Sequence[EventSource] | None = None,
+        filters: Sequence[Filter] = (),
+        metadata: MetadataQuery | None = None,
+        query: str | None = None,
+    ) -> dict[int, int]:
+        organization_ids = self._normalize_organization_ids(organization_id)
+        if not organization_ids:
+            return {}
+
+        tinybird_query = self._build_filtered_query(
+            organization_ids,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            customer_id=customer_id,
+            external_customer_id=external_customer_id,
+            name=name,
+            source=source,
+            filters=filters,
+            metadata=metadata,
+            query=query,
+        )
+        return await tinybird_query.get_bucket_counts(start_timestamp, step_seconds)
+
     async def get_event_ids_and_count(
         self,
         *,
@@ -121,8 +185,6 @@ class TinybirdEventRepository:
         filters: Sequence[Filter] = (),
         metadata: MetadataQuery | None = None,
         query: str | None = None,
-        matching_customer_ids: Sequence[UUID] | None = None,
-        matching_external_customer_ids: Sequence[str] | None = None,
         numeric_metadata_property: str | None = None,
         depth: int | None = None,
         parent_id: UUID | None = None,
@@ -153,9 +215,7 @@ class TinybirdEventRepository:
         if metadata is not None:
             tinybird_query.filter_by_metadata(metadata)
         if query is not None:
-            tinybird_query.filter_by_query(
-                query, matching_customer_ids, matching_external_customer_ids
-            )
+            tinybird_query.filter_by_query(query)
         if numeric_metadata_property is not None:
             tinybird_query.filter_numeric_metadata_property(numeric_metadata_property)
         if depth is not None:
@@ -236,8 +296,6 @@ class TinybirdEventRepository:
         filters: Sequence[Filter] = (),
         metadata: MetadataQuery | None = None,
         query: str | None = None,
-        matching_customer_ids: Sequence[UUID] | None = None,
-        matching_external_customer_ids: Sequence[str] | None = None,
         numeric_metadata_property: str | None = None,
     ) -> list[TinybirdTimeseriesStats]:
         organization_ids = self._normalize_organization_ids(organization_id)
@@ -256,8 +314,6 @@ class TinybirdEventRepository:
             filters=filters,
             metadata=metadata,
             query=query,
-            matching_customer_ids=matching_customer_ids,
-            matching_external_customer_ids=matching_external_customer_ids,
             numeric_metadata_property=numeric_metadata_property,
         )
         return await tinybird_query.get_timeseries_stats(
@@ -279,8 +335,6 @@ class TinybirdEventRepository:
         filters: Sequence[Filter] = (),
         metadata: MetadataQuery | None = None,
         query: str | None = None,
-        matching_customer_ids: Sequence[UUID] | None = None,
-        matching_external_customer_ids: Sequence[str] | None = None,
         numeric_metadata_property: str | None = None,
     ) -> list[TinybirdTimeseriesStats]:
         organization_ids = self._normalize_organization_ids(organization_id)
@@ -299,8 +353,6 @@ class TinybirdEventRepository:
             filters=filters,
             metadata=metadata,
             query=query,
-            matching_customer_ids=matching_customer_ids,
-            matching_external_customer_ids=matching_external_customer_ids,
             numeric_metadata_property=numeric_metadata_property,
         )
         return await tinybird_query.get_totals_stats(aggregate_fields)
@@ -403,8 +455,6 @@ class TinybirdEventRepository:
         filters: Sequence[Filter] = (),
         metadata: MetadataQuery | None = None,
         query: str | None = None,
-        matching_customer_ids: Sequence[UUID] | None = None,
-        matching_external_customer_ids: Sequence[str] | None = None,
         numeric_metadata_property: str | None = None,
     ) -> TinybirdEventsQuery:
         tinybird_query = TinybirdEventsQuery(organization_ids)
@@ -426,9 +476,7 @@ class TinybirdEventRepository:
         if metadata is not None:
             tinybird_query.filter_by_metadata(metadata)
         if query is not None:
-            tinybird_query.filter_by_query(
-                query, matching_customer_ids, matching_external_customer_ids
-            )
+            tinybird_query.filter_by_query(query)
         if numeric_metadata_property is not None:
             tinybird_query.filter_numeric_metadata_property(numeric_metadata_property)
         return tinybird_query

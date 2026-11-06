@@ -3722,6 +3722,32 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/catalogs/{id}/publish': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Publish Draft Catalog
+     * @description Publish the draft catalog. Its new products and benefits replace the live
+     *     ones for new sales. Existing customers stay on their versions until moved.
+     *
+     *     Requires `products:write`, and `benefits:write` when the draft changes
+     *     benefits.
+     *
+     *     **Scopes**: `products:write`
+     */
+    post: operations['catalogs:publish']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/custom-fields/': {
     parameters: {
       query?: never
@@ -5898,6 +5924,56 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/statistics/by-type': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get statistics grouped by event type
+     * @description Count matching events per event type.
+     *
+     *     Accepts the same filters as the event list, except the event name, so every
+     *     event type gets a count under the other filters.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_statistics_by_type']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/events/statistics/histogram': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get event histogram
+     * @description Count matching events in evenly sized buckets across a time range.
+     *
+     *     The bucket size is picked so the range is covered by at most 150 buckets,
+     *     starting at one minute.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_histogram']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/statistics/by-property': {
     parameters: {
       query?: never
@@ -6236,6 +6312,26 @@ export interface paths {
     get: operations['config:export']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/config/init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Init Config
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['config:init']
     delete?: never
     options?: never
     head?: never
@@ -6793,6 +6889,96 @@ export interface paths {
     put?: never
     /** Submit */
     post: operations['feedbacks:submit']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/changes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Changes
+     * @description The snapshots that changed since the cursor.
+     *
+     *     When no cursor is provided, returns the cursor to start pulling from.
+     *
+     *     **Scopes**: `events:write`
+     */
+    get: operations['outpost:changes']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/configuration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Configuration
+     * @description The reducers Outpost runs.
+     *
+     *     **Scopes**: `events:write`
+     */
+    get: operations['outpost:configuration']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/meter-usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Meter Usage
+     * @description The snapshot of every identity of the customer.
+     *
+     *     **Scopes**: `events:write`
+     */
+    post: operations['outpost:meter_usage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm
+     * @description The pending ids Polar counts, with the snapshot that counts them.
+     *
+     *     **Scopes**: `events:write`
+     */
+    post: operations['outpost:confirm']
     delete?: never
     options?: never
     head?: never
@@ -13708,6 +13894,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** CatalogNotDraft */
+    CatalogNotDraft: {
+      /**
+       * Error
+       * @example CatalogNotDraft
+       * @constant
+       */
+      error: 'CatalogNotDraft'
+      /** Detail */
+      detail: string
+    }
     /** CatalogNotFound */
     CatalogNotFound: {
       /**
@@ -13795,6 +13992,40 @@ export interface components {
        * @description The benefits in this version, ordered by key. Empty for versions published before benefits were versioned.
        */
       benefits: components['schemas']['CatalogBenefit'][]
+    }
+    /** Changes */
+    Changes: {
+      /**
+       * Changes
+       * @description A snapshot of each customer and reducer that changed since the cursor.
+       */
+      changes: components['schemas']['MeterUsageOutgoingMessagePayload'][]
+      /**
+       * Cursor
+       * @description Pull the next changes after this one.
+       */
+      cursor: string
+      /**
+       * Has More
+       * @description The page is full: pull again from the cursor right away.
+       */
+      has_more: boolean
+      /**
+       * Reset
+       * @description Changes were missed: every snapshot the client holds may be stale. The client
+       *     drops them, and fetches each customer again at its next read.
+       */
+      reset: boolean
+      /**
+       * Configuration Changed
+       * @description The organization's reducers changed: fetch the configuration again.
+       */
+      configuration_changed: boolean
+      /**
+       * Next Poll In
+       * @description Seconds until the next pull.
+       */
+      next_poll_in: number
     }
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
@@ -16352,7 +16583,7 @@ export interface components {
     ConfigCatalogChange: {
       /** @description The live catalog before applying. `None` if no catalog exists to replace. */
       before: components['schemas']['ConfigCatalog'] | null
-      /** @description The catalog applying published. */
+      /** @description The catalog applying published, or the draft it saved. */
       after: components['schemas']['ConfigCatalog']
     }
     /** ConfigCatalogPlan */
@@ -16441,6 +16672,14 @@ export interface components {
        * @description Value after applying the config.
        */
       after: unknown | null
+    }
+    /** ConfigInit */
+    ConfigInit: {
+      /**
+       * Organization Id
+       * @description The ID of the organization to opt in. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
     }
     /** ConfigInvalid */
     ConfigInvalid: {
@@ -17126,6 +17365,79 @@ export interface components {
        * @enum {string}
        */
       api_version: '2026-04' | '2026-10' | '2027-01'
+    }
+    /** ConfigurationOutgoingMessagePayload */
+    ConfigurationOutgoingMessagePayload: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Reducers */
+      reducers: components['schemas']['ConfigurationReducer'][]
+    }
+    /** ConfigurationReducer */
+    ConfigurationReducer: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      kind: components['schemas']['ReducerKind']
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /** Aggregation */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      /** Meter Ids */
+      meter_ids: string[]
+    }
+    /** ConfirmIncomingMessageCustomerPayload */
+    ConfirmIncomingMessageCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
+    /** ConfirmIncomingMessageExternalCustomerPayload */
+    ConfirmIncomingMessageExternalCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    /** ConfirmedOutgoingMessagePayload */
+    ConfirmedOutgoingMessagePayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      bucket_start: components['schemas']['EpochMicroseconds-Output']
+      /** Ids */
+      ids: string[]
+      snapshot: components['schemas']['MeterUsageOutgoingMessagePayload']
     }
     /** CostMetadata */
     'CostMetadata-Input': {
@@ -23843,6 +24155,9 @@ export interface components {
       /** Return To */
       return_to?: string | null
     }
+    /** Format: date-time */
+    'EpochMicroseconds-Input': string
+    'EpochMicroseconds-Output': number
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
@@ -23954,6 +24269,41 @@ export interface components {
        * @description ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B.
        */
       external_member_id?: string | null
+    }
+    /** EventHistogram */
+    EventHistogram: {
+      /**
+       * Interval Seconds
+       * @description Length of each bucket in seconds.
+       */
+      interval_seconds: number
+      /**
+       * Buckets
+       * @description Consecutive buckets covering the requested range.
+       */
+      buckets: components['schemas']['EventHistogramBucket'][]
+    }
+    /** EventHistogramBucket */
+    EventHistogramBucket: {
+      /**
+       * Start
+       * Format: date-time
+       * @description Bucket start (inclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      start: string
+      /**
+       * End
+       * Format: date-time
+       * @description Bucket end (exclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      end: string
+      /**
+       * Count
+       * @description Number of matching events in the bucket.
+       */
+      count: number
     }
     /** EventMetadataInput */
     EventMetadataInput: {
@@ -25479,6 +25829,14 @@ export interface components {
        * @description Customers ordered by the primary aggregate field descending.
        */
       items: components['schemas']['CustomerStat'][]
+    }
+    /** ListEventTypeStatistics */
+    ListEventTypeStatistics: {
+      /**
+       * Items
+       * @description Event types with the number of matching events, most frequent first.
+       */
+      items: components['schemas']['EventTypeWithStats'][]
     }
     /**
      * ListPropertyGroupStats
@@ -27232,6 +27590,53 @@ export interface components {
        * @description Whether the meter is archived. Archived meters are no longer used for billing.
        */
       is_archived?: boolean | null
+    }
+    /** MeterUsageIncomingMessageCustomerPayload */
+    MeterUsageIncomingMessageCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
+    /** MeterUsageIncomingMessageExternalCustomerPayload */
+    MeterUsageIncomingMessageExternalCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    /** MeterUsageOutgoingMessagePayload */
+    MeterUsageOutgoingMessagePayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      /** Customer Exists */
+      customer_exists: boolean
+      version: components['schemas']['EpochMicroseconds-Output']
+      cold_until: components['schemas']['EpochMicroseconds-Output']
+      /** Count */
+      count: number
+      /** Sum */
+      sum: number
+      /** Min */
+      min: number | null
+      /** Max */
+      max: number | null
     }
     /**
      * Metric
@@ -35216,6 +35621,11 @@ export interface components {
      * @enum {string}
      */
     RecurringInterval: 'day' | 'week' | 'month' | 'year'
+    /**
+     * ReducerKind
+     * @enum {string}
+     */
+    ReducerKind: 'usage' | 'credit'
     /** Refund */
     Refund: {
       /**
@@ -36449,7 +36859,6 @@ export interface components {
       | 'MX'
       | 'MD'
       | 'MN'
-      | 'MA'
       | 'NA'
       | 'NL'
       | 'NZ'
@@ -39881,10 +40290,6 @@ export interface components {
       currency: string
       /** Amount */
       amount: number
-      /** Account Currency */
-      account_currency: string
-      /** Account Amount */
-      account_amount: number
     }
     /** TransactionsHeldBalance */
     TransactionsHeldBalance: {
@@ -39892,10 +40297,6 @@ export interface components {
       currency: string
       /** Amount */
       amount: number
-      /** Account Currency */
-      account_currency: string
-      /** Account Amount */
-      account_amount: number
       /**
        * Next Release At
        * @description When the next chunk of the held balance becomes available for payout.
@@ -47855,6 +48256,13 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Exclude benefits with these IDs. */
         exclude_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by description. */
         query?: string | null
         /** @description Page number, defaults to 1. */
@@ -47912,6 +48320,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Benefit']
+        }
+      }
+      /** @description Organization benefit limit reached. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */
@@ -48628,6 +49045,13 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by product name. */
         query?: string | null
         /** @description Filter on archived products. */
@@ -48693,6 +49117,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Product']
+        }
+      }
+      /** @description Organization product limit reached. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */
@@ -52878,6 +53311,55 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:publish': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Catalog']
+        }
+      }
+      /** @description No catalog with this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description The catalog isn't a draft. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotDraft']
         }
       }
       /** @description Validation Error */
@@ -58794,14 +59276,16 @@ export interface operations {
   'events:list': {
     parameters: {
       query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null
         /** @description Filter events before this timestamp. */
         end_timestamp?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -58815,8 +59299,6 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description When combined with depth, use this event as the anchor instead of root events. */
         parent_id?: string | null
         /** @description Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events. */
@@ -58845,6 +59327,110 @@ export interface operations {
           'application/json':
             | components['schemas']['ListResource_Event_']
             | components['schemas']['ListResourceWithCursorPagination_Event_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_statistics_by_type': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter events after this timestamp. */
+        start_timestamp?: string | null
+        /** @description Filter events before this timestamp. */
+        end_timestamp?: string | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListEventTypeStatistics']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_histogram': {
+    parameters: {
+      query: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Start of the histogram, inclusive. */
+        start_timestamp: string
+        /** @description End of the histogram, exclusive. */
+        end_timestamp: string
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventHistogram']
         }
       }
       /** @description Validation Error */
@@ -60794,6 +61380,10 @@ export interface operations {
   'events:list_statistics_timeseries': {
     parameters: {
       query: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -61402,8 +61992,6 @@ export interface operations {
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -61419,8 +62007,6 @@ export interface operations {
           | null
         /** @description Filter by event type ID. */
         event_type_id?: string | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
@@ -62556,7 +63142,7 @@ export interface operations {
       query?: {
         /** @description The ID of the organization to export. **Required unless you use an organization token.** */
         organization_id?: string | null
-        /** @description ID of a published catalog. Defaults to the live catalog. */
+        /** @description ID of a catalog, published or draft. Defaults to the live catalog. */
         catalog_id?: string | null
       }
       header?: never
@@ -62594,7 +63180,7 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description No published catalog has this ID. */
+      /** @description No catalog has this ID. */
       404: {
         headers: {
           [name: string]: unknown
@@ -62614,9 +63200,52 @@ export interface operations {
       }
     }
   }
-  'config:apply': {
+  'config:init': {
     parameters: {
       query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigInit']
+      }
+    }
+    responses: {
+      /** @description Config as code enabled. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:apply': {
+    parameters: {
+      query?: {
+        /** @description Publish the product and benefit changes. With `false`, they're saved in the organization's draft catalog, to publish later. With `true`, a pending draft is discarded. Meters, settings and webhooks aren't versioned, so they apply right away. */
+        publish?: boolean
+      }
       header?: never
       path?: never
       cookie?: never
@@ -62684,7 +63313,7 @@ export interface operations {
   'config:plan': {
     parameters: {
       query?: {
-        /** @description ID of a published catalog. Defaults to the live catalog. */
+        /** @description ID of a catalog, published or draft. Defaults to the live catalog. */
         catalog_id?: string | null
       }
       header?: never
@@ -62726,7 +63355,7 @@ export interface operations {
             | components['schemas']['ConfigAsCodeNotEnabled']
         }
       }
-      /** @description No published catalog has this ID. */
+      /** @description No catalog has this ID. */
       404: {
         headers: {
           [name: string]: unknown
@@ -63850,6 +64479,146 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:changes': {
+    parameters: {
+      query?: {
+        cursor?: string | null
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Changes']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:configuration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigurationOutgoingMessagePayload']
+        }
+      }
+    }
+  }
+  'outpost:meter_usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
+          | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterUsageOutgoingMessagePayload'][]
+        }
+      }
+      /** @description Reducer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['ConfirmIncomingMessageCustomerPayload']
+          | components['schemas']['ConfirmIncomingMessageExternalCustomerPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfirmedOutgoingMessagePayload']
+        }
+      }
+      /** @description Reducer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -73868,6 +74637,9 @@ export const propertyAggregationFuncValues: ReadonlyArray<
 export const recurringIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RecurringInterval']
 > = ['day', 'week', 'month', 'year']
+export const reducerKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReducerKind']
+> = ['usage', 'credit']
 export const refundCreateReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundCreate']['reason']
 > = [
@@ -74054,7 +74826,6 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'MX',
   'MD',
   'MN',
-  'MA',
   'NA',
   'NL',
   'NZ',

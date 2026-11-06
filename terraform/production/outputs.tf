@@ -18,11 +18,6 @@ output "postgres_id" {
   value       = render_postgres.db.id
 }
 
-output "redis_id" {
-  description = "The Redis ID. Used for the render_redis data source."
-  value       = render_redis.redis.id
-}
-
 output "redis_endpoint_service_name" {
   description = "VPC endpoint service name for the worker Redis. Provide to Render when creating the private link."
   value       = module.redis_private_link.service_name
@@ -36,9 +31,4 @@ output "grafana_cloudwatch_role_arn" {
 output "planetscale" {
   description = "PlanetScale production branch and application role."
   value       = module.planetscale
-}
-
-output "planetscale_migration" {
-  description = "Production pgcopydb migration instance."
-  value       = module.planetscale_migration
 }

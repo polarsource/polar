@@ -13,6 +13,7 @@ from pydantic import (
     TypeAdapter,
 )
 
+from polar.kit.schemas import Schema
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
 from polar.models.reducer import ReducerKind
@@ -61,7 +62,7 @@ class ConfigurationIncomingMessage(IncomingMessageBase):
     type: typing.Literal[IncomingMessageType.configuration]
 
 
-class MeterUsageIncomingMessagePayloadBase(MessageBase):
+class MeterUsageIncomingMessagePayloadBase(Schema):
     reducer_id: UUID4
 
 
@@ -86,7 +87,7 @@ class MeterUsageIncomingMessage(IncomingMessageBase):
     payload: MeterUsageIncomingMessagePayload
 
 
-class ConfirmIncomingMessagePayloadBase(MessageBase):
+class ConfirmIncomingMessagePayloadBase(Schema):
     reducer_id: UUID4
     bucket_start: EpochMicroseconds
     ids: list[str] = Field(max_length=CONFIRM_MAX_IDS)
@@ -142,7 +143,7 @@ class ConnectionOutgoingMessage(OutgoingMessageBase):
     payload: ConnectionOutgoingMessagePayload
 
 
-class ConfigurationReducer(MessageBase):
+class ConfigurationReducer(Schema):
     id: UUID4
     kind: ReducerKind
     filter: Filter
@@ -150,7 +151,8 @@ class ConfigurationReducer(MessageBase):
     meter_ids: list[UUID4]
 
 
-class ConfigurationOutgoingMessagePayload(MessageBase):
+class ConfigurationOutgoingMessagePayload(Schema):
+    organization_id: UUID4
     reducers: list[ConfigurationReducer]
 
 
@@ -159,7 +161,7 @@ class ConfigurationOutgoingMessage(OutgoingMessageBase):
     payload: ConfigurationOutgoingMessagePayload
 
 
-class MeterUsageOutgoingMessagePayload(MessageBase):
+class MeterUsageOutgoingMessagePayload(Schema):
     reducer_id: UUID4
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
@@ -180,7 +182,7 @@ class MeterUsageOutgoingMessage(OutgoingMessageBase):
     payload: MeterUsageOutgoingMessagePayload
 
 
-class ConfirmedOutgoingMessagePayload(MessageBase):
+class ConfirmedOutgoingMessagePayload(Schema):
     reducer_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
@@ -189,6 +191,24 @@ class ConfirmedOutgoingMessagePayload(MessageBase):
     ids: list[str]
     # Read in the same transaction as the ids, so the two agree.
     snapshot: MeterUsageOutgoingMessagePayload
+
+
+class Changes(Schema):
+    model_config = ConfigDict(use_attribute_docstrings=True)
+
+    changes: list[MeterUsageOutgoingMessagePayload]
+    """A snapshot of each customer and reducer that changed since the cursor."""
+    cursor: str
+    """Pull the next changes after this one."""
+    has_more: bool
+    """The page is full: pull again from the cursor right away."""
+    reset: bool
+    """Changes were missed: every snapshot the client holds may be stale. The client
+    drops them, and fetches each customer again at its next read."""
+    configuration_changed: bool
+    """The organization's reducers changed: fetch the configuration again."""
+    next_poll_in: int
+    """Seconds until the next pull."""
 
 
 class ConfirmedOutgoingMessage(OutgoingMessageBase):

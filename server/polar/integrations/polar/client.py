@@ -1,6 +1,8 @@
-from collections.abc import Mapping
+import asyncio
+from collections.abc import AsyncIterable, Awaitable, Callable, Mapping
 from datetime import datetime
 from decimal import Decimal
+from functools import partial
 from typing import Any, NoReturn, Unpack, cast, get_args
 from uuid import UUID
 
@@ -124,11 +126,29 @@ def _raise_network_error(span: Any, exc: PolarNetworkError, operation: str) -> N
     ) from exc
 
 
+REQUEST_TIMEOUT_SECONDS = 2.5
+EVENT_INGESTION_TIMEOUT_SECONDS = 5.0
+NETWORK_RETRY_DELAY_SECONDS = 0.1
+
+
+async def _retry_network_error[T](call: Callable[[], Awaitable[T]]) -> T:
+    try:
+        return await call()
+    except PolarNetworkError:
+        await asyncio.sleep(NETWORK_RETRY_DELAY_SECONDS)
+        return await call()
+
+
+async def _collect[T](items: AsyncIterable[T]) -> list[T]:
+    return [item async for item in items]
+
+
 class PolarSelfClient:
     def __init__(self, *, access_token: str, api_url: str) -> None:
         self._sdk = PolarSDK(
             access_token or "unconfigured",
             base_url=api_url,
+            timeout=REQUEST_TIMEOUT_SECONDS,
         )
         self._api_url = api_url
 
@@ -144,7 +164,9 @@ class PolarSelfClient:
     ) -> Customer:
         with logfire.span("polar.create_customer", external_id=external_id) as span:
             try:
-                return await self._sdk.customers.get_external(external_id)
+                return await _retry_network_error(
+                    lambda: self._sdk.customers.get_external(external_id)
+                )
             except ResourceNotFound:
                 pass
             except (PolarClientError, PolarServerError) as e:
@@ -204,7 +226,9 @@ class PolarSelfClient:
             "polar.get_customer_by_external_id", external_id=external_id
         ) as span:
             try:
-                return await self._sdk.customers.get_external(external_id)
+                return await _retry_network_error(
+                    lambda: self._sdk.customers.get_external(external_id)
+                )
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "get_customer_by_external_id")
 
@@ -232,11 +256,13 @@ class PolarSelfClient:
             limit=limit,
         ) as span:
             try:
-                response = await self._sdk.orders.list(
-                    external_customer_id=external_customer_id,
-                    page=page,
-                    limit=limit,
-                    sorting=["-created_at"],
+                response = await _retry_network_error(
+                    lambda: self._sdk.orders.list(
+                        external_customer_id=external_customer_id,
+                        page=page,
+                        limit=limit,
+                        sorting=["-created_at"],
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "list_customer_orders")
@@ -252,7 +278,9 @@ class PolarSelfClient:
     async def get_order(self, *, order_id: str) -> Order | None:
         with logfire.span("polar.get_order", order_id=order_id) as span:
             try:
-                return await self._sdk.orders.get(order_id)
+                return await _retry_network_error(
+                    lambda: self._sdk.orders.get(order_id)
+                )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
@@ -264,7 +292,9 @@ class PolarSelfClient:
     async def get_order_invoice(self, *, order_id: str) -> str | None:
         with logfire.span("polar.get_order_invoice", order_id=order_id) as span:
             try:
-                invoice = await self._sdk.orders.invoice(order_id)
+                invoice = await _retry_network_error(
+                    lambda: self._sdk.orders.invoice(order_id)
+                )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
@@ -286,7 +316,9 @@ class PolarSelfClient:
             "polar.trigger_order_invoice_generation", order_id=order_id
         ) as span:
             try:
-                await self._sdk.orders.generate_invoice(order_id)
+                await _retry_network_error(
+                    lambda: self._sdk.orders.generate_invoice(order_id)
+                )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409 and isinstance(e, OrderNotEligibleForInvoice):
                     span.set_attribute("order_not_eligible", True)
@@ -301,17 +333,19 @@ class PolarSelfClient:
         with logfire.span(
             "polar.list_recurring_products", organization_id=organization_id
         ) as span:
-            products: list[Product] = []
             try:
-                async for product in self._sdk.products.iter_list(
-                    organization_id=organization_id,
-                    is_recurring=True,
-                    is_archived=False,
-                    visibility=["public"],
-                    page=1,
-                    limit=100,
-                ):
-                    products.append(product)
+                products = await _retry_network_error(
+                    lambda: _collect(
+                        self._sdk.products.iter_list(
+                            organization_id=organization_id,
+                            is_recurring=True,
+                            is_archived=False,
+                            visibility=["public"],
+                            page=1,
+                            limit=100,
+                        )
+                    )
+                )
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "list_recurring_products")
             except PolarNetworkError as e:
@@ -328,11 +362,13 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
         ) as span:
             try:
-                response = await self._sdk.subscriptions.list(
-                    external_customer_id=external_customer_id,
-                    status=["trialing", "active", "past_due"],
-                    page=1,
-                    limit=1,
+                response = await _retry_network_error(
+                    lambda: self._sdk.subscriptions.list(
+                        external_customer_id=external_customer_id,
+                        status=["trialing", "active", "past_due"],
+                        page=1,
+                        limit=1,
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "get_active_subscription")
@@ -434,9 +470,11 @@ class PolarSelfClient:
             external_id=external_id,
         ) as span:
             try:
-                return await self._sdk.customers.members.get_external(
-                    external_customer_id,
-                    external_id,
+                return await _retry_network_error(
+                    lambda: self._sdk.customers.members.get_external(
+                        external_customer_id,
+                        external_id,
+                    )
                 )
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "get_member_by_external_id")
@@ -446,14 +484,21 @@ class PolarSelfClient:
         with logfire.span(
             "polar.list_billing_contacts", customer_id=customer_id
         ) as span:
-            for role in ("owner", "billing_manager"):
-                try:
-                    async for contact in self._sdk.customers.members.iter_list(
+
+            async def list_role(role: MemberRole) -> list[Member]:
+                return await _collect(
+                    self._sdk.customers.members.iter_list(
                         customer_id,
                         role=role,
                         limit=100,
-                    ):
-                        contacts.append(contact)
+                    )
+                )
+
+            for role in ("owner", "billing_manager"):
+                try:
+                    contacts.extend(
+                        await _retry_network_error(partial(list_role, role))
+                    )
                 except ResourceNotFound:
                     # No members for this role (or the customer is gone) — treat
                     # it as an empty result and move on, rather than failing the
@@ -482,12 +527,14 @@ class PolarSelfClient:
             role=role,
         ) as span:
             try:
-                await self._sdk.customers.members.create(
-                    customer_id,
-                    email=email,
-                    name=name,
-                    external_id=external_id,
-                    role=cast(MemberCreateRole, role),
+                await _retry_network_error(
+                    lambda: self._sdk.customers.members.create(
+                        customer_id,
+                        email=email,
+                        name=name,
+                        external_id=external_id,
+                        role=cast(MemberCreateRole, role),
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409:
@@ -515,10 +562,12 @@ class PolarSelfClient:
             if role is not None:
                 member_update["role"] = cast(MemberRole, role)
             try:
-                await self._sdk.customers.members.update_external(
-                    external_customer_id,
-                    external_id,
-                    **member_update,
+                await _retry_network_error(
+                    lambda: self._sdk.customers.members.update_external(
+                        external_customer_id,
+                        external_id,
+                        **member_update,
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
@@ -540,9 +589,11 @@ class PolarSelfClient:
             "polar.update_customer_metadata", external_id=external_id
         ) as span:
             try:
-                await self._sdk.customers.update_external(
-                    external_id,
-                    metadata=metadata,
+                await _retry_network_error(
+                    lambda: self._sdk.customers.update_external(
+                        external_id,
+                        metadata=metadata,
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
@@ -590,7 +641,9 @@ class PolarSelfClient:
     async def get_discount(self, *, discount_id: str) -> Discount | None:
         with logfire.span("polar.get_discount", discount_id=discount_id) as span:
             try:
-                return await self._sdk.discounts.get(discount_id)
+                return await _retry_network_error(
+                    lambda: self._sdk.discounts.get(discount_id)
+                )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
@@ -603,7 +656,9 @@ class PolarSelfClient:
         """Soft-delete a discount. Idempotent on 404 (already deleted)."""
         with logfire.span("polar.delete_discount", discount_id=discount_id) as span:
             try:
-                await self._sdk.discounts.delete(discount_id)
+                await _retry_network_error(
+                    lambda: self._sdk.discounts.delete(discount_id)
+                )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
@@ -621,9 +676,11 @@ class PolarSelfClient:
             external_id=external_id,
         ) as span:
             try:
-                await self._sdk.customers.members.delete_external(
-                    external_customer_id,
-                    external_id,
+                await _retry_network_error(
+                    lambda: self._sdk.customers.members.delete_external(
+                        external_customer_id,
+                        external_id,
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
@@ -639,15 +696,17 @@ class PolarSelfClient:
         with logfire.span(
             "polar.list_customer_benefit_grants", customer_id=customer_id
         ) as span:
-            grants: list[BenefitGrant] = []
             try:
-                async for grant in self._sdk.benefit_grants.iter_list(
-                    customer_id=customer_id,
-                    is_granted=True,
-                    page=1,
-                    limit=100,
-                ):
-                    grants.append(grant)
+                grants = await _retry_network_error(
+                    lambda: _collect(
+                        self._sdk.benefit_grants.iter_list(
+                            customer_id=customer_id,
+                            is_granted=True,
+                            page=1,
+                            limit=100,
+                        )
+                    )
+                )
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "list_customer_benefit_grants")
             except PolarNetworkError as e:
@@ -659,9 +718,11 @@ class PolarSelfClient:
     async def delete_customer(self, *, external_id: str) -> None:
         with logfire.span("polar.delete_customer", external_id=external_id) as span:
             try:
-                await self._sdk.customers.delete_external(
-                    external_id,
-                    anonymize=True,
+                await _retry_network_error(
+                    lambda: self._sdk.customers.delete_external(
+                        external_id,
+                        anonymize=True,
+                    )
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
@@ -692,7 +753,12 @@ class PolarSelfClient:
             cutoff=cutoff.isoformat(),
         ) as span:
             try:
-                await self._sdk.events.ingest(events=events)
+                await _retry_network_error(
+                    lambda: self._sdk.events.ingest(
+                        events=events,
+                        request_timeout=EVENT_INGESTION_TIMEOUT_SECONDS,
+                    )
+                )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
@@ -727,6 +793,33 @@ class PolarSelfClient:
         root_external_id = f"{root_name}-{external_customer_id}"
         child_external_id = f"{child_name}-{usage_id}" if usage_id else None
 
+        events: list[EventCreateCustomer | EventCreateExternalCustomer] = [
+            EventCreateExternalCustomer(
+                name=root_name,
+                external_customer_id=external_customer_id,
+                external_id=root_external_id,
+            ),
+            EventCreateExternalCustomer(
+                name=child_name,
+                external_customer_id=external_customer_id,
+                external_id=child_external_id,
+                parent_id=root_external_id,
+                metadata={
+                    "_llm": LLMMetadata(
+                        vendor=vendor,
+                        model=model,
+                        input_tokens=input_tokens,
+                        output_tokens=output_tokens,
+                        total_tokens=total_tokens,
+                    ),
+                    "_cost": CostMetadataInput(
+                        amount=str(cost_cents),
+                        currency="usd",
+                    ),
+                },
+            ),
+        ]
+
         with logfire.span(
             f"polar.{operation}",
             external_customer_id=external_customer_id,
@@ -737,34 +830,12 @@ class PolarSelfClient:
             cost_usd=str(cost_usd),
         ) as span:
             try:
-                await self._sdk.events.ingest(
-                    events=[
-                        EventCreateExternalCustomer(
-                            name=root_name,
-                            external_customer_id=external_customer_id,
-                            external_id=root_external_id,
-                        ),
-                        EventCreateExternalCustomer(
-                            name=child_name,
-                            external_customer_id=external_customer_id,
-                            external_id=child_external_id,
-                            parent_id=root_external_id,
-                            metadata={
-                                "_llm": LLMMetadata(
-                                    vendor=vendor,
-                                    model=model,
-                                    input_tokens=input_tokens,
-                                    output_tokens=output_tokens,
-                                    total_tokens=total_tokens,
-                                ),
-                                "_cost": CostMetadataInput(
-                                    amount=str(cost_cents),
-                                    currency="usd",
-                                ),
-                            },
-                        ),
-                    ]
-                )
+                if child_external_id is None:
+                    await self._sdk.events.ingest(events=events)
+                else:
+                    await _retry_network_error(
+                        lambda: self._sdk.events.ingest(events=events)
+                    )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
@@ -789,30 +860,6 @@ class PolarSelfClient:
             operation="track_organization_review_usage",
             root_name="organization_review",
             child_name=f"organization_review.{review_context}",
-            external_customer_id=external_customer_id,
-            vendor=vendor,
-            model=model,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            cost_usd=cost_usd,
-            usage_id=usage_id,
-        )
-
-    async def track_compass_assistant_usage(
-        self,
-        *,
-        external_customer_id: str,
-        vendor: str,
-        model: str,
-        input_tokens: int,
-        output_tokens: int,
-        cost_usd: Decimal,
-        usage_id: str,
-    ) -> None:
-        await self._track_llm_span_usage(
-            operation="track_compass_assistant_usage",
-            root_name="compass_assistant",
-            child_name="compass_assistant.chat",
             external_customer_id=external_customer_id,
             vendor=vendor,
             model=model,
@@ -854,7 +901,9 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
             external_member_id=external_member_id,
         )
-        return PolarSDK(session.token, base_url=self._api_url)
+        return PolarSDK(
+            session.token, base_url=self._api_url, timeout=REQUEST_TIMEOUT_SECONDS
+        )
 
     async def portal_get_customer(
         self,
@@ -867,13 +916,17 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
             external_member_id=external_member_id,
         ) as span:
-            try:
+
+            async def get_customer() -> CustomerPortalCustomer:
                 portal_sdk = await self._create_portal_sdk(
                     external_customer_id=external_customer_id,
                     external_member_id=external_member_id,
                 )
                 async with portal_sdk:
                     return await portal_sdk.customer_portal.customers.get()
+
+            try:
+                return await _retry_network_error(get_customer)
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.get_customer")
             except PolarNetworkError as e:
@@ -890,19 +943,20 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
             external_member_id=external_member_id,
         ) as span:
-            methods: list[CustomerPaymentMethod] = []
-            try:
+
+            async def list_payment_methods() -> list[CustomerPaymentMethod]:
                 portal_sdk = await self._create_portal_sdk(
                     external_customer_id=external_customer_id,
                     external_member_id=external_member_id,
                 )
                 async with portal_sdk:
                     customers = portal_sdk.customer_portal.customers
-                    async for method in customers.iter_list_payment_methods(
-                        page=1,
-                        limit=100,
-                    ):
-                        methods.append(method)
+                    return await _collect(
+                        customers.iter_list_payment_methods(page=1, limit=100)
+                    )
+
+            try:
+                methods = await _retry_network_error(list_payment_methods)
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.list_payment_methods")
             except PolarNetworkError as e:
@@ -959,9 +1013,11 @@ class PolarSelfClient:
             external_member_id=external_member_id,
         ) as span:
             try:
-                session = await self._create_customer_session(
-                    external_customer_id=external_customer_id,
-                    external_member_id=external_member_id,
+                session = await _retry_network_error(
+                    lambda: self._create_customer_session(
+                        external_customer_id=external_customer_id,
+                        external_member_id=external_member_id,
+                    )
                 )
                 return session.token
             except (PolarClientError, PolarServerError) as e:
@@ -981,13 +1037,17 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
             external_member_id=external_member_id,
         ) as span:
-            try:
+
+            async def update_customer() -> CustomerPortalCustomer:
                 portal_sdk = await self._create_portal_sdk(
                     external_customer_id=external_customer_id,
                     external_member_id=external_member_id,
                 )
                 async with portal_sdk:
                     return await portal_sdk.customer_portal.customers.update(**update)
+
+            try:
+                return await _retry_network_error(update_customer)
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 422:
                     _raise_validation_error(
@@ -1008,19 +1068,18 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
             external_member_id=external_member_id,
         ) as span:
-            grants: list[CustomerBenefitGrant] = []
-            try:
+
+            async def list_benefit_grants() -> list[CustomerBenefitGrant]:
                 portal_sdk = await self._create_portal_sdk(
                     external_customer_id=external_customer_id,
                     external_member_id=external_member_id,
                 )
                 async with portal_sdk:
                     benefit_grants = portal_sdk.customer_portal.benefit_grants
-                    async for grant in benefit_grants.iter_list(
-                        page=1,
-                        limit=100,
-                    ):
-                        grants.append(grant)
+                    return await _collect(benefit_grants.iter_list(page=1, limit=100))
+
+            try:
+                grants = await _retry_network_error(list_benefit_grants)
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.list_benefit_grants")
             except PolarNetworkError as e:

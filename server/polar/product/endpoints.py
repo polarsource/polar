@@ -74,6 +74,8 @@ async def list(
         id=filters.id,
         external_id=filters.external_id,
         organization_id=filters.organization_id,
+        catalog_id=filters.catalog_id,
+        catalog_status=filters.catalog_status,
         query=filters.query,
         is_archived=filters.is_archived,
         is_recurring=filters.is_recurring,
@@ -178,7 +180,13 @@ async def create(
     status_code=201,
     summary="Create Product",
     openapi_extra=open_world(),
-    responses={201: {"description": "Product created."}},
+    responses={
+        201: {"description": "Product created."},
+        403: {
+            "model": NotPermitted.schema(),
+            "description": "Organization product limit reached.",
+        },
+    },
 )
 @version(starting_from=V2027_01)
 async def create_v2027_01(

@@ -3,6 +3,7 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { twMerge } from 'tailwind-merge'
+import { EventTimestamp } from './EventTimestamp'
 
 export const formatEventTimestamp = (timestamp: string) =>
   new Date(timestamp).toLocaleString('en-US', {
@@ -64,6 +65,47 @@ export const EventLogRow = ({
       )}
     >
       <Box
+        display={{ base: 'flex', md: 'none' }}
+        flexDirection="column"
+        gap="xs"
+        paddingHorizontal="m"
+        paddingVertical="s"
+        borderBottomWidth={1}
+        borderStyle="solid"
+        borderColor="border-secondary"
+      >
+        <Box alignItems="center" justifyContent="between" gap="m">
+          <Box alignItems="center" gap="s" minWidth={0}>
+            <Text truncate>{event.label}</Text>
+            {event.child_count > 0 && (
+              <Text color="muted" tabularNums>
+                +{event.child_count}
+              </Text>
+            )}
+          </Box>
+          {cost && (
+            <Box flexShrink={0}>
+              <Text color="muted" tabularNums>
+                {cost}
+              </Text>
+            </Box>
+          )}
+        </Box>
+        <Box alignItems="center" gap="s" minWidth={0}>
+          <Box flexShrink={0}>
+            <Text variant="caption" color="muted" tabularNums>
+              {formatEventTimestamp(event.timestamp)}
+            </Text>
+          </Box>
+          {customer && (
+            <Text variant="caption" color="muted" truncate>
+              · {customer}
+            </Text>
+          )}
+        </Box>
+      </Box>
+      <Box
+        display={{ base: 'none', md: 'flex' }}
         alignItems="center"
         gap="l"
         paddingHorizontal="m"
@@ -73,9 +115,11 @@ export const EventLogRow = ({
         borderColor="border-secondary"
       >
         <Box width={128} flexShrink={0}>
-          <Text color="muted" tabularNums truncate>
-            {formatEventTimestamp(event.timestamp)}
-          </Text>
+          <EventTimestamp timestamp={event.timestamp} focusable={false}>
+            <Text color="muted" tabularNums truncate>
+              {formatEventTimestamp(event.timestamp)}
+            </Text>
+          </EventTimestamp>
         </Box>
         <Box
           flexGrow={2}
@@ -113,6 +157,7 @@ export const EventLogRow = ({
 
 export const EventLogHeader = () => (
   <Box
+    display={{ base: 'none', md: 'flex' }}
     gap="l"
     paddingHorizontal="m"
     paddingVertical="s"

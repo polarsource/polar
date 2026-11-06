@@ -44,7 +44,7 @@ finding. Always show what you searched for, so a false positive is cheap to dism
 | Home | Holds |
 |---|---|
 | `polar/kit/schemas.py` | `Schema`, `IDSchema`, `TimestampedSchema`, `EmptyStrToNone`, `SlugValidator`, `StripValidator`, `HttpsUrl`, `HttpUrlToStr`, `Int32`, `ClassName`, `MergeJSONSchema`, `SetSchemaReference`, `MultipleQueryFilter`, `*_ID_EXAMPLE` |
-| `polar/kit/http.py` | `get_safe_return_url` (open redirect), `get_ip_address`, `add_query_parameters`, `get_content_disposition`, `is_localhost`, SSRF-safe crawling (`SSRFBlockedError`, `UnsafeCrawlableUrl`, `UrlReachability`) |
+| `polar/kit/http.py` | `get_safe_return_url` (open redirect), `get_ip_address`, `add_query_parameters`, `get_content_disposition`, `is_localhost`, SSRF-safe HTTP (`SSRFBlockedError`, `SSRFSafeTransport`, `UrlReachability`) |
 | `polar/kit/currency.py`, `money.py`, `math.py` | `get_currency_decimal_factor` (zero-decimal currencies), `get_minimum_currency_amount`, `get_maximum_currency_amount`, `format_currency`, `get_presentment_currency`, `get_cents_in_dollar_string`, `polar_round`, `non_negative_running_sum` |
 | `polar/kit/pagination.py` | `ListResource`, `Pagination`, `PaginationParams`, `count_subquery` |
 | `polar/kit/repository/base.py` | `get_base_statement`, `get_one_or_none`, `get_all`, `paginate`, `create`, `update`, `from_session`, `stream` |

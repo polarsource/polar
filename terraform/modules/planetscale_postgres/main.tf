@@ -45,3 +45,15 @@ resource "planetscale_postgres_bouncer" "this" {
   replicas_per_cell = each.value.replicas_per_cell
   parameters        = each.value.parameters
 }
+
+resource "planetscale_postgres_dedicated_read_replica" "this" {
+  for_each = var.dedicated_read_replicas
+
+  organization = var.organization
+  database     = var.database
+  branch       = planetscale_postgres_branch.this.name
+  name         = each.key
+  region       = coalesce(each.value.region, var.region)
+  cluster_size = each.value.cluster_size
+  replicas     = each.value.replicas
+}

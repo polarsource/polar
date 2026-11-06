@@ -22,6 +22,7 @@ import {
   eventLLM,
   formatEventTimestamp,
 } from './EventLogRow'
+import { EventTimestamp } from './EventTimestamp'
 
 const IconButton = ({
   label,
@@ -159,7 +160,9 @@ const EventDetails = ({
           </Text>
         </Field>
         <Field label="Time">
-          <Text tabularNums>{formatEventTimestamp(event.timestamp)}</Text>
+          <EventTimestamp timestamp={event.timestamp}>
+            <Text tabularNums>{formatEventTimestamp(event.timestamp)}</Text>
+          </EventTimestamp>
         </Field>
         <Field label="Source">
           <Text>{event.source === 'system' ? 'System' : 'User'}</Text>
@@ -215,7 +218,7 @@ const EventDetails = ({
       )}
 
       {llm && (
-        <Section title="LLM" action={<Text truncate>{llm.model}</Text>}>
+        <Section title="LLM">
           <EventLLMFields llm={llm} />
         </Section>
       )}

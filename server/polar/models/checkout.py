@@ -27,7 +27,7 @@ from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor, TaxBehavior, TaxProcessor
 from polar.kit.address import Address, AddressType
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import OrganizationCreatedAtIndexMixin, RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataColumn, MetadataMixin
 from polar.kit.trial import TrialConfigurationMixin, TrialInterval
@@ -103,7 +103,11 @@ FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
 
 
 class Checkout(
-    TrialConfigurationMixin, CustomFieldDataMixin, MetadataMixin, RecordModel
+    TrialConfigurationMixin,
+    CustomFieldDataMixin,
+    MetadataMixin,
+    OrganizationCreatedAtIndexMixin,
+    RecordModel,
 ):
     __tablename__ = "checkouts"
     __table_args__ = (
@@ -113,7 +117,14 @@ class Checkout(
             postgresql_where="anonymized_at IS NULL AND status = 'expired'",
         ),
         Index(
-            "ix_checkouts_organization_id_created_at", "organization_id", "created_at"
+            "ix_checkouts_customer_id",
+            "customer_id",
+            postgresql_where="customer_id IS NOT NULL",
+        ),
+        Index(
+            "ix_checkouts_product_id",
+            "product_id",
+            postgresql_where="product_id IS NOT NULL",
         ),
         {
             "postgresql_with": {

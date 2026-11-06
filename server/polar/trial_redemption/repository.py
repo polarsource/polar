@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import ColumnExpressionArgument, func, or_, select
@@ -10,13 +9,13 @@ from polar.models import Customer, TrialRedemption
 class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
     model = TrialRedemption
 
-    async def get_all_by_organization_and_hints(
+    async def get_first_by_organization_and_hints(
         self,
         organization: UUID,
         customer_email: str | None = None,
         payment_method_fingerprint: str | None = None,
         product: UUID | None = None,
-    ) -> Sequence[TrialRedemption]:
+    ) -> TrialRedemption | None:
         statement = (
             select(TrialRedemption)
             .join(TrialRedemption.customer)
@@ -41,4 +40,4 @@ class TrialRedemptionRepository(RepositoryBase[TrialRedemption]):
         if clauses:
             statement = statement.where(or_(*clauses))
 
-        return await self.get_all(statement)
+        return await self.get_one_or_none(statement.limit(1))

@@ -479,6 +479,36 @@ class TestListBenefitFiles:
 
 @pytest.mark.anyio
 class TestCreateBenefit:
+    @pytest.mark.auth
+    async def test_organization_limit(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.benefits_limit = 1
+        benefit_organization.deleted_at = utc_now()
+        await save_fixture(organization)
+        await save_fixture(benefit_organization)
+        payload = {
+            "organization_id": str(organization.id),
+            "type": "custom",
+            "description": "Benefit",
+            "properties": {"note": None},
+        }
+
+        response = await client.post("/v1/benefits/", json=payload)
+        assert response.status_code == 201
+
+        response = await client.post("/v1/benefits/", json=payload)
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == "Organization has reached its limit of 1 benefits."
+        )
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/benefits/",

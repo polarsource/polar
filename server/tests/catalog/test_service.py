@@ -3,14 +3,19 @@ from datetime import timedelta
 
 import pytest
 
-from polar.catalog.service import CatalogNotFound
+from polar.auth.models import AuthSubject
+from polar.catalog.service import (
+    CatalogNotDraft,
+    CatalogNotFound,
+)
 from polar.catalog.service import catalog as catalog_service
 from polar.kit.utils import utc_now
-from polar.models import Catalog, CatalogBenefit, Organization
+from polar.models import Catalog, CatalogBenefit, CatalogProduct, Organization
 from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit
+from tests.fixtures.random_objects import create_benefit, create_product
 
 
 @pytest.fixture
@@ -89,8 +94,7 @@ class TestResolve:
     ) -> None:
         _, _, draft, _ = catalogs
 
-        with pytest.raises(CatalogNotFound):
-            await catalog_service.resolve(session, organization, draft.id)
+        assert await catalog_service.resolve(session, organization, draft.id) == draft
 
     async def test_other_organization(
         self,
@@ -131,3 +135,52 @@ class TestGetCatalogBenefits:
             await catalog_service.get_catalog_benefits(session, organization, catalog)
             for catalog in (archived, emptied)
         ] == [{"beta": current}, {}]
+
+
+@pytest.mark.anyio
+class TestPublishDraft:
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_discarded_meanwhile(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, _, draft, _ = catalogs
+        await catalog_service.discard_draft(session, draft)
+
+        with pytest.raises(CatalogNotDraft):
+            await catalog_service.publish_draft(
+                session, auth_subject, organization, draft
+            )
+
+
+@pytest.mark.anyio
+class TestDiscardDraft:
+    async def test_deletes_rows_only_the_draft_has(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, _, draft, _ = catalogs
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_current=False,
+            catalog=draft,
+        )
+        await save_fixture(
+            CatalogProduct(catalog=draft, product=product, external_id="pro")
+        )
+
+        await catalog_service.discard_draft(session, draft)
+
+        await session.refresh(product)
+        assert (draft.deleted_at is not None, product.deleted_at is not None) == (
+            True,
+            True,
+        )

@@ -62,6 +62,11 @@ output "bouncer_usernames" {
   value       = { for name, _ in planetscale_postgres_bouncer.this : name => "${planetscale_postgres_redacted_branch_role.app.username}|${name}" }
 }
 
+output "dedicated_read_replica_hosts" {
+  description = "Connection host for each dedicated read replica, keyed by name."
+  value       = { for name, replica in planetscale_postgres_dedicated_read_replica.this : name => replica.access_host_url }
+}
+
 output "private_connection_service_name" {
   description = "VPC endpoint service name for PrivateLink to this branch."
   value       = planetscale_postgres_redacted_branch_role.app.private_connection_service_name

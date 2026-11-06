@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from polar.base import PolarServerError, deserialize
+from polar.base import PolarNetworkError, PolarServerError, deserialize
 from polar.v2026_04.errors import HTTPValidationError as SDKHTTPValidationError
 from polar.v2026_04.errors import (
     MissingInvoiceBillingDetails as SDKMissingInvoiceBillingDetails,
@@ -280,3 +280,46 @@ class TestListBillingContacts:
 
         with pytest.raises(PolarSelfClientOperationalError):
             await client.list_billing_contacts(customer_id="cus_1")
+
+
+def _failing_iter() -> AsyncIterator[Any]:
+    async def _gen() -> AsyncIterator[Any]:
+        raise PolarNetworkError("ReadTimeout")
+        yield
+
+    return _gen()
+
+
+@pytest.mark.anyio
+class TestNetworkErrorRetry:
+    async def test_retries_once_then_succeeds(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.integrations.polar.client.NETWORK_RETRY_DELAY_SECONDS", 0)
+        client = _client()
+        grant = object()
+        iter_list = mocker.patch.object(
+            client._sdk.benefit_grants,
+            "iter_list",
+            side_effect=[_failing_iter(), _async_iter([grant])],
+        )
+
+        grants = await client.list_customer_benefit_grants(customer_id="cus_1")
+
+        assert grants == [grant]
+        assert iter_list.call_count == 2
+
+    async def test_repeated_network_errors_raise(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.integrations.polar.client.NETWORK_RETRY_DELAY_SECONDS", 0)
+        client = _client()
+        get = mocker.patch.object(
+            client._sdk.orders,
+            "get",
+            new=AsyncMock(side_effect=PolarNetworkError("ReadTimeout")),
+        )
+
+        with pytest.raises(
+            PolarSelfClientOperationalError,
+            match="get_order failed with network error: PolarNetworkError",
+        ):
+            await client.get_order(order_id="ord_1")
+
+        assert get.await_count == 2

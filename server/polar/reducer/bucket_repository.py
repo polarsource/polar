@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -47,6 +47,9 @@ from polar.models.reducer import ReducerKind
 from .redis_store import BucketId, get_reducer_bucket_key
 
 INGESTED_BEFORE_TIMESTAMP_MARGIN = timedelta(seconds=5)
+
+# count, sum, min and max.
+type Totals = tuple[Any, Any, Any, Any]
 
 
 def _is_customer(
@@ -253,23 +256,53 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return await self.get_one_or_none(statement)
 
-    async def get_unsealed_totals(
+    async def get_unsealed_totals_by_identity(
         self,
         organization_id: UUID,
         reducer_id: UUID,
-        identities: Sequence[tuple[UUID | None, str | None]],
-        *,
-        before: datetime | None = None,
-    ) -> Row[Any, Any, Any, Any]:
-        """count, sum, min and max of the identities' unsealed buckets, starting
-        before `before` if given."""
-        return await self._get_totals(
-            organization_id,
-            reducer_id,
-            identities,
-            ReducerBucket.sealed_at.is_(None),
-            ReducerBucket.bucket_start < before if before is not None else true(),
+        before: Mapping[tuple[UUID | None, str | None], datetime | None],
+    ) -> dict[tuple[UUID | None, str | None], Totals]:
+        """count, sum, min and max of each identity's unsealed buckets, starting
+        before the identity's datetime if given."""
+        if not before:
+            return {}
+        statement = (
+            select(
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+                func.coalesce(func.sum(ReducerBucket.count), 0),
+                func.coalesce(func.sum(ReducerBucket.sum), 0),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+            )
+            .where(
+                ReducerBucket.organization_id == organization_id,
+                ReducerBucket.reducer_id == reducer_id,
+                ReducerBucket.sealed_at.is_(None),
+                or_(
+                    *(
+                        and_(
+                            _is_customer(
+                                ReducerBucket, customer_id, external_customer_id
+                            ),
+                            ReducerBucket.bucket_start < end
+                            if end is not None
+                            else true(),
+                        )
+                        for (customer_id, external_customer_id), end in before.items()
+                    )
+                ),
+            )
+            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
         )
+        result = await self.session.execute(statement)
+        totals = {
+            (customer_id, external_customer_id): (count, total, minimum, maximum)
+            for customer_id, external_customer_id, count, total, minimum, maximum in result
+        }
+        return {
+            identity: totals.get(identity, (0, 0, None, None)) for identity in before
+        }
 
     async def get_customer_meter_totals(
         self,
@@ -362,47 +395,38 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .group_by(Reducer.id)
         )
 
-    async def _get_totals(
+    async def get_last_synced_ends(
         self,
         organization_id: UUID,
         reducer_id: UUID,
         identities: Sequence[tuple[UUID | None, str | None]],
-        *clauses: ColumnElement[bool],
-    ) -> Row[Any, Any, Any, Any]:
-        statement = select(
-            func.coalesce(func.sum(ReducerBucket.count), 0).label("count"),
-            func.coalesce(func.sum(ReducerBucket.sum), 0).label("sum"),
-            func.min(ReducerBucket.min).label("min"),
-            func.max(ReducerBucket.max).label("max"),
-        ).where(
-            ReducerBucket.organization_id == organization_id,
-            ReducerBucket.reducer_id == reducer_id,
-            _is_any_customer(identities),
-            *clauses,
-        )
-        result = await self.session.execute(statement)
-        return result.one()
-
-    async def get_last_synced_end(
-        self,
-        organization_id: UUID,
-        reducer_id: UUID,
-        customer_id: UUID | None,
-        external_customer_id: str | None,
         *,
         since: datetime,
-    ) -> datetime | None:
-        """End of the customer identity's latest bucket recomputed by sync, among
-        those starting from `since`."""
-        statement = select(func.max(ReducerBucket.bucket_end)).where(
-            ReducerBucket.organization_id == organization_id,
-            ReducerBucket.reducer_id == reducer_id,
-            _is_customer(ReducerBucket, customer_id, external_customer_id),
-            ReducerBucket.bucket_start >= since,
-            ReducerBucket.synced_at.is_not(None),
+    ) -> dict[tuple[UUID | None, str | None], datetime]:
+        """End of each customer identity's latest bucket recomputed by sync, among
+        those starting from `since`. Identities without one are left out."""
+        if not identities:
+            return {}
+        statement = (
+            select(
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+                func.max(ReducerBucket.bucket_end),
+            )
+            .where(
+                ReducerBucket.organization_id == organization_id,
+                ReducerBucket.reducer_id == reducer_id,
+                _is_any_customer(identities),
+                ReducerBucket.bucket_start >= since,
+                ReducerBucket.synced_at.is_not(None),
+            )
+            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
         )
         result = await self.session.execute(statement)
-        return result.scalar_one()
+        return {
+            (customer_id, external_customer_id): synced_end
+            for customer_id, external_customer_id, synced_end in result
+        }
 
     async def get_synced_end_within(
         self,

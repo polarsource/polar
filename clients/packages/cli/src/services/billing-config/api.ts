@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import {
   type HttpClientError,
   HttpClientRequest,
@@ -17,11 +17,13 @@ import {
 } from '@/schemas/BillingConfig'
 import { apiUrl, describeApiFailure, withOrganization } from '@/services/api'
 import type { ApiClient } from '@/services/client'
+import { isSet, record } from '@/utils/billing-config/describe'
 
 export type Clients = Record<PolarEnvironment, ApiClient>
 
 export interface CatalogOptions {
   readonly name?: string | undefined
+  readonly catalogId?: string | undefined
 }
 
 // Sections the config API doesn't accept yet
@@ -134,6 +136,80 @@ export const entries = (
     }),
   ),
 ]
+
+const OrganizationCurrency = Schema.Struct({
+  default_presentment_currency: Schema.String,
+})
+
+const lacksCurrency = (price: unknown) => {
+  const fields = record(price)
+  return fields !== undefined && !isSet(fields['price_currency'])
+}
+
+const priceChanges = (entry: AppliedEntry) =>
+  entry.section === 'products'
+    ? entry.diff.filter(({ field }) => field === 'prices')
+    : []
+
+const withCurrency = (prices: unknown, currency: string) =>
+  Array.isArray(prices)
+    ? prices.map((price) =>
+        lacksCurrency(price)
+          ? { ...record(price), price_currency: currency }
+          : price,
+      )
+    : prices
+
+const organizationCurrency = (
+  clients: Clients,
+  organization: ActiveOrganization,
+) =>
+  Effect.gen(function* () {
+    const response = yield* clients[organization.environment].get(
+      yield* apiUrl(
+        organization.environment,
+        `/organizations/${organization.id}`,
+      ),
+    )
+    const body =
+      yield* HttpClientResponse.schemaBodyJson(OrganizationCurrency)(response)
+    return body.default_presentment_currency
+  }).pipe(Effect.orElseSucceed(() => undefined))
+
+// A planned price without a currency is shown in the organization's default one
+export const withDefaultCurrency = (
+  clients: Clients,
+  organization: ActiveOrganization,
+  planned: ReadonlyArray<AppliedEntry>,
+) =>
+  Effect.gen(function* () {
+    const missing = planned.some((entry) =>
+      priceChanges(entry).some(({ before, after }) =>
+        [before, after].some(
+          (prices) => Array.isArray(prices) && prices.some(lacksCurrency),
+        ),
+      ),
+    )
+    if (!missing) return planned
+    const currency = yield* organizationCurrency(clients, organization)
+    if (currency === undefined) return planned
+    return planned.map((entry) =>
+      priceChanges(entry).length === 0
+        ? entry
+        : {
+            ...entry,
+            diff: entry.diff.map((change) =>
+              change.field === 'prices'
+                ? {
+                    ...change,
+                    before: withCurrency(change.before, currency),
+                    after: withCurrency(change.after, currency),
+                  }
+                : change,
+            ),
+          },
+    )
+  })
 
 // Settings, benefits, products and webhooks sections need their own scope on top of the meters one
 export const requiredScopes = (

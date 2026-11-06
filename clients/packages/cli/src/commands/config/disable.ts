@@ -4,7 +4,7 @@ import { ActiveOrganization } from '@/schemas/Auth'
 import { BillingConfigError } from '@/schemas/BillingConfig'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
-import { target } from '@/utils/billing-config/review'
+import { next, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
@@ -55,8 +55,13 @@ const approve = (
 
 const render = (organization: ActiveOrganization) => [
   ui.blank,
-  ui.success(
-    `Config is disabled for ${target(organization)}. Edit products and benefits in the dashboard, or run ${ui.command('polar config init')} to start again.`,
+  ui.success(`Config is disabled for ${target(organization)}`),
+  ...next(
+    [
+      `${ui.INDENT}Edit products and benefits in the dashboard.`,
+      `${ui.INDENT}Your config file was left untouched. Remove it if you no longer use config,`,
+      `${ui.INDENT}or before running ${ui.command('polar config init')} to start again.`,
+    ].join('\n'),
   ),
   ui.blank,
 ]

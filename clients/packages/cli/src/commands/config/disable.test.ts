@@ -66,6 +66,7 @@ describe('polar config disable', () => {
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(disabled).toBe(1)
     expect(output).toContain('Config is disabled for Acme (sandbox)')
+    expect(output).toContain('Your config file was left untouched')
   })
 
   test('disables config after confirmation', async () => {

@@ -1,4 +1,4 @@
-local cutoff = tonumber(ARGV[4])
+local cutoff = tonumber(ARGV[1])
 local state = redis.call('HGETALL', KEYS[1])
 local fields = {}
 for i = 1, #state, 2 do fields[state[i]] = state[i + 1] end
@@ -6,8 +6,8 @@ local current = fields['cold_until']
 local previous = fields['snapshot_version']
 -- Polar sends each snapshot to every instance: an older one changes nothing.
 if (current and tonumber(current) > cutoff)
-    or (previous and tonumber(ARGV[5]) < tonumber(previous)) then
-    return {state, {}}
+    or (previous and tonumber(ARGV[2]) < tonumber(previous)) then
+    return {}
 end
 local replaced = {}
 if current then replaced = {'cold_until', current} end
@@ -43,26 +43,20 @@ local function stored(field, value)
     if value == '' then return fields[field] == nil end
     return fields[field] ~= nil and tonumber(fields[field]) == tonumber(value)
 end
--- The snapshot another instance applied: nothing to write, nobody to tell.
-if not seals and stored('cold_until', ARGV[4]) and stored('cold:count', ARGV[6])
-    and stored('cold:sum', ARGV[7]) and stored('cold:min', ARGV[8])
-    and stored('cold:max', ARGV[9]) then
-    redis.call('HSET', KEYS[1], 'snapshot_version', ARGV[5])
+-- The snapshot another instance applied: nothing to write.
+if not seals and stored('cold_until', ARGV[1]) and stored('cold:count', ARGV[3])
+    and stored('cold:sum', ARGV[4]) and stored('cold:min', ARGV[5])
+    and stored('cold:max', ARGV[6]) then
+    redis.call('HSET', KEYS[1], 'snapshot_version', ARGV[2])
     redis.call('EXPIRE', KEYS[1], 86400)
-    return {state, {}}
+    return {}
 end
 for i = 1, #dropped, 1000 do
     redis.call('HDEL', KEYS[1], unpack(dropped, i, math.min(i + 999, #dropped)))
 end
-redis.call('HSET', KEYS[1], 'cold_until', ARGV[4], 'snapshot_version', ARGV[5],
-    'cold:count', ARGV[6], 'cold:sum', ARGV[7])
-if ARGV[8] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[8]) end
-if ARGV[9] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[9]) end
-if not fields['epoch'] then
-    redis.call('HSET', KEYS[1], 'epoch', ARGV[3], 'revision', '0')
-end
-redis.call('HINCRBY', KEYS[1], 'revision', 1)
+redis.call('HSET', KEYS[1], 'cold_until', ARGV[1], 'snapshot_version', ARGV[2],
+    'cold:count', ARGV[3], 'cold:sum', ARGV[4])
+if ARGV[5] ~= '' then redis.call('HSET', KEYS[1], 'cold:min', ARGV[5]) end
+if ARGV[6] ~= '' then redis.call('HSET', KEYS[1], 'cold:max', ARGV[6]) end
 redis.call('EXPIRE', KEYS[1], 86400)
-state = redis.call('HGETALL', KEYS[1])
-redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state}))
-return {state, replaced}
+return replaced

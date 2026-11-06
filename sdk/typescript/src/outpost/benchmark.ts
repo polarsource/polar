@@ -5,8 +5,6 @@ import { BUCKET_SIZE, type Reducer } from "./reducer";
 export const {
   cold_until: COLD_UNTIL,
   bucket_counts: BUCKET_COUNTS,
-  channel: CHANNEL,
-  epoch: EPOCH,
   snapshot: SNAPSHOT,
 } = benchmark;
 export const REDUCER = benchmark.reducer as Reducer;
@@ -37,10 +35,6 @@ export const pendingEntries = (ids: string[]): string[] => ids.flatMap((id) => [
 // The flat field list decodeState reads: one `bucket:<start>:<statistic>` entry per bucket.
 export const encodeState = (buckets: number): string[] => {
   const fields = [
-    "epoch",
-    EPOCH,
-    "revision",
-    "4242",
     "cold_until",
     String(COLD_UNTIL),
     "snapshot_version",

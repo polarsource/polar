@@ -1,4 +1,5 @@
 from bisect import bisect_left, bisect_right
+from collections import defaultdict
 from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -11,10 +12,8 @@ import typer
 from sqlalchemy import (
     ColumnElement,
     Row,
-    String,
     and_,
     case,
-    cast,
     delete,
     event,
     literal,
@@ -43,6 +42,7 @@ from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.postgres import create_async_engine
+from polar.reducer.bucket_repository import INGESTED_BEFORE_TIMESTAMP_MARGIN
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
 
@@ -103,7 +103,9 @@ async def backfill_organization(
     """Rebuilds the buckets of all the organization's usage reducers starting in
     [start, end) from one pass over its events, and returns how many were written."""
     reducers = await _get_reducers(session, organization_id)
-    boundaries, split_slots = await _get_boundaries(session, organization_id)
+    boundaries, split_slots = await _get_boundaries(
+        session, organization_id, reducers, start, end
+    )
     totals: Totals = {}
     flushed_until = start
     written = 0
@@ -223,52 +225,99 @@ async def _get_reducers(
 
 
 async def _get_boundaries(
-    session: AsyncSession, organization_id: UUID
+    session: AsyncSession,
+    organization_id: UUID,
+    reducers: Sequence[Reducer],
+    start: datetime,
+    end: datetime,
 ) -> tuple[Boundaries, set[Slot]]:
-    """The timestamps the organization's buckets are split at, per customer and
-    reducer, with the customer's external id as an alternate key, and the slots
-    they split for each of the customer's identities."""
-    interval_bounds = [
-        select(Customer.id, Customer.external_id, MeterReducer.reducer_id, bound)
-        .join(Customer, Customer.id == BillingInterval.customer_id)
-        .join(MeterReducer, MeterReducer.meter_id == BillingInterval.meter_id)
-        .where(BillingInterval.organization_id == organization_id, bound.is_not(None))
-        for bound in (BillingInterval.period_start, BillingInterval.period_end)
-    ]
-    resets = (
+    """The timestamps in [start, end) the reducers' buckets are split at, per
+    customer and reducer, with the customer's external id as an alternate key, and
+    the slots they split for each of the customer's identities. Only those can
+    split a bucket starting in [start, end)."""
+    reducer_ids_by_meter: dict[UUID, list[UUID]] = defaultdict(list)
+    for meter_id, reducer_id in await session.execute(
+        select(MeterReducer.meter_id, MeterReducer.reducer_id).where(
+            MeterReducer.reducer_id.in_([reducer.id for reducer in reducers])
+        )
+    ):
+        reducer_ids_by_meter[meter_id].append(reducer_id)
+    meter_ids = list(reducer_ids_by_meter)
+    resets = await session.execute(
         select(
-            Customer.id, Customer.external_id, MeterReducer.reducer_id, Event.timestamp
+            Customer.id,
+            Customer.external_id,
+            Event.user_metadata["meter_id"].as_string(),
+            Event.timestamp,
         )
         .join(Customer, Customer.id == Event.customer_id)
-        .join(
-            MeterReducer,
-            cast(MeterReducer.meter_id, String)
-            == Event.user_metadata["meter_id"].as_string(),
-        )
         .where(
             Event.organization_id == organization_id,
             Event.source == EventSource.system,
             Event.name == SystemEvent.meter_reset,
+            Event.user_metadata["meter_id"]
+            .as_string()
+            .in_([str(meter_id) for meter_id in meter_ids]),
+            Event.timestamp >= start,
+            Event.timestamp < end,
+            # A reset is never timestamped after its ingestion: this bound lets
+            # the name index skip the organization's older resets.
+            Event.ingested_at >= start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
+        )
+    )
+    intervals = await session.execute(
+        select(
+            Customer.id,
+            Customer.external_id,
+            BillingInterval.meter_id,
+            BillingInterval.period_start,
+            BillingInterval.period_end,
+        )
+        .join(Customer, Customer.id == BillingInterval.customer_id)
+        .where(
+            BillingInterval.organization_id == organization_id,
+            BillingInterval.meter_id.in_(meter_ids),
+            or_(
+                and_(
+                    BillingInterval.period_start >= start,
+                    BillingInterval.period_start < end,
+                ),
+                and_(
+                    BillingInterval.period_end >= start,
+                    BillingInterval.period_end < end,
+                ),
+            ),
         )
     )
     boundaries: Boundaries = {}
     split_slots: set[Slot] = set()
-    for customer_id, external_id, reducer_id, at in await session.execute(
-        resets.union_all(*interval_bounds)
-    ):
-        boundaries.setdefault((customer_id, reducer_id), []).append(at)
-        if external_id is not None:
-            boundaries.setdefault((external_id, reducer_id), []).append(at)
+
+    def add(
+        customer_id: UUID, external_id: str | None, meter_id: UUID, at: datetime
+    ) -> None:
+        if not start <= at < end:
+            return
         slot = get_reducer_bucket_start(at)
-        if at != slot:
-            # Like seals and bills, which split every identity of the customer.
-            identities: list[tuple[UUID | None, str | None]] = [(customer_id, None)]
+        # Like seals and bills, which split every identity of the customer.
+        identities: list[tuple[UUID | None, str | None]] = [(customer_id, None)]
+        if external_id is not None:
+            identities += [(None, external_id), (customer_id, external_id)]
+        for reducer_id in reducer_ids_by_meter[meter_id]:
+            boundaries.setdefault((customer_id, reducer_id), []).append(at)
             if external_id is not None:
-                identities += [(None, external_id), (customer_id, external_id)]
-            split_slots.update(
-                (reducer_id, slot, identity_customer_id, identity_external_id)
-                for identity_customer_id, identity_external_id in identities
-            )
+                boundaries.setdefault((external_id, reducer_id), []).append(at)
+            if at != slot:
+                split_slots.update(
+                    (reducer_id, slot, identity_customer_id, identity_external_id)
+                    for identity_customer_id, identity_external_id in identities
+                )
+
+    for customer_id, external_id, meter_id, at in resets:
+        add(customer_id, external_id, UUID(meter_id), at)
+    for customer_id, external_id, meter_id, period_start, period_end in intervals:
+        add(customer_id, external_id, meter_id, period_start)
+        if period_end is not None:
+            add(customer_id, external_id, meter_id, period_end)
     return {key: sorted(set(ats)) for key, ats in boundaries.items()}, split_slots
 
 

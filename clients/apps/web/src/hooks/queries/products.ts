@@ -20,6 +20,7 @@ export const useProducts = (
           params: {
             query: {
               organization_id: organizationId,
+              ...(parameters?.id ? {} : { catalog_status: 'live' as const }),
               is_archived:
                 parameters?.is_archived === undefined
                   ? false
@@ -33,16 +34,38 @@ export const useProducts = (
     placeholderData: keepPreviousData,
   })
 
+// One product per external_id, preferring the current version, then the newest.
+export const latestVersions = (products: schemas['Product'][]) => {
+  const byKey = new Map<string, schemas['Product']>()
+  for (const product of products) {
+    const key = product.external_id ?? product.id
+    const kept = byKey.get(key)
+    if (
+      !kept ||
+      (product.is_current === kept.is_current
+        ? product.created_at > kept.created_at
+        : product.is_current)
+    ) {
+      byKey.set(key, product)
+    }
+  }
+  return [...byKey.values()]
+}
+
 type ProductSelector =
   | { id: string[] }
   | { organization_id: string; external_id: string[] }
 
 export const useSelectedProducts = (
   selector: ProductSelector,
-  includeArchived = false,
+  {
+    includeArchived = false,
+    // Versions outside the live catalog, unlike the archived flag above.
+    includeAllVersions = false,
+  }: { includeArchived?: boolean; includeAllVersions?: boolean } = {},
 ) =>
   useQuery({
-    queryKey: ['products', selector, includeArchived],
+    queryKey: ['products', selector, includeArchived, includeAllVersions],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1
@@ -52,6 +75,9 @@ export const useSelectedProducts = (
             params: {
               query: {
                 ...selector,
+                ...('id' in selector || includeAllVersions
+                  ? {}
+                  : { catalog_status: 'live' as const }),
                 is_archived: includeArchived ? null : false,
                 page,
                 limit: 100,
@@ -215,13 +241,13 @@ export const useCurrentProductIds = (
   const enabled = !!organization.feature_settings?.config_as_code_enabled
   const savedQuery = useSelectedProducts(
     { id: enabled ? productIds : [] },
-    true,
+    { includeArchived: true },
   )
   const saved = savedQuery.data
   const externalIds = saved?.flatMap((product) => product.external_id ?? [])
   const currentQuery = useSelectedProducts(
     { organization_id: organization.id, external_id: externalIds ?? [] },
-    true,
+    { includeArchived: true },
   )
   const current = currentQuery.data
   if (savedQuery.isLoading || currentQuery.isLoading) {

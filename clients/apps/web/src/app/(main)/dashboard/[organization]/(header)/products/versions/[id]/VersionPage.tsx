@@ -254,7 +254,7 @@ export default function VersionPage({
   )
   const { data: products } = useSelectedProducts(
     { id: [...new Set(productIds)] },
-    true,
+    { includeArchived: true },
   )
   const productsById = new Map(
     products?.map((product) => [product.id, product]),

@@ -127,7 +127,9 @@ export default function VersionPage({
                         transitionProperty="colors"
                         transitionDuration="fast"
                       >
-                        {parent.name ?? 'Untitled'}
+                        <Text as="span" color="inherit">
+                          {parent.name ?? 'Untitled'}
+                        </Text>
                       </Box>
                     </Link>
                   </Box>

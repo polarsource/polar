@@ -60,11 +60,13 @@ const DiffLine = ({
   line,
   showLabel,
   showSign,
+  spaced,
   format,
 }: {
   line: Line
   showLabel: boolean
   showSign: boolean
+  spaced: boolean
   format: Format
 }) => {
   const sign = signs[line.sign]
@@ -75,6 +77,7 @@ const DiffLine = ({
       alignItems="baseline"
       px="xl"
       py="xs"
+      mt={spaced ? 's' : 'none'}
     >
       <Text monospace color={sign.color}>
         {showSign ? sign.glyph : null}
@@ -268,15 +271,19 @@ const DiffSection = <T extends { external_id: string }>({
                   borderStyle="solid"
                   borderColor="border-primary"
                 >
-                  {lines.map((line, index) => (
-                    <DiffLine
-                      key={index}
-                      line={line}
-                      showLabel={lines[index - 1]?.field !== line.field}
-                      showSign={changed}
-                      format={format}
-                    />
-                  ))}
+                  {lines.map((line, index) => {
+                    const showLabel = lines[index - 1]?.field !== line.field
+                    return (
+                      <DiffLine
+                        key={index}
+                        line={line}
+                        showLabel={showLabel}
+                        showSign={changed}
+                        spaced={showLabel && index > 0}
+                        format={format}
+                      />
+                    )
+                  })}
                 </Box>
               ) : null}
             </Box>

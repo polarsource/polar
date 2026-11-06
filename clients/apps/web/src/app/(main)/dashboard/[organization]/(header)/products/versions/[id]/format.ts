@@ -55,7 +55,6 @@ export const productFields = ({
 
 const fieldLabels: Record<string, string> = {
   prices: 'Price',
-  benefits: 'Benefit',
 }
 
 export const fieldLabel = (field: string) =>

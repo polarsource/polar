@@ -9,5 +9,5 @@ class BackofficeUser(RecordModel):
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     provider_id: Mapped[str | None] = mapped_column(
-        String, nullable=True, default=None, index=True
+        String, nullable=True, default=None, index=True, unique=True
     )

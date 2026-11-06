@@ -9,7 +9,7 @@ from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, unquote, urlparse
 
 from annotated_types import Ge
-from pydantic import AfterValidator, DirectoryPath, model_validator
+from pydantic import AfterValidator, DirectoryPath, SecretStr, model_validator
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -153,6 +153,13 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://127.0.0.1:8000"
     BACKOFFICE_ENABLED: bool = True
     BACKOFFICE_HOST: str | None = None
+    BACKOFFICE_GOOGLE_CLIENT_ID: str = ""
+    BACKOFFICE_GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
+    BACKOFFICE_GOOGLE_HOSTED_DOMAIN: str = ""
+    BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_backoffice_auth_session"
+    BACKOFFICE_AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
+    BACKOFFICE_USER_SESSION_COOKIE_KEY: str = "polar_backoffice_session"
+    BACKOFFICE_USER_SESSION_TTL: timedelta = timedelta(hours=1)
     CHECKOUT_LINK_HOST: str | None = None  # e.g., "buy.polar.sh" in production
 
     # URL to frontend app.

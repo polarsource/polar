@@ -1,11 +1,12 @@
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from tagflow import tag, text
 
 from polar.exceptions import PolarError
 from polar.observability.http_metrics import exclude_app_from_metrics
 
+from .auth.endpoints import router as auth_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
@@ -32,7 +33,6 @@ from .webhooks.endpoints import router as webhooks_router
 
 app = FastAPI(
     default_response_class=TagResponse,
-    dependencies=[Depends(get_admin)],
     docs_url=None,
     redoc_url=None,
     openapi_url=None,
@@ -51,30 +51,38 @@ app.mount(
     VersionedStaticFiles(directory=Path(__file__).parent / "static"),
     name="static",
 )
-app.include_router(users_router, prefix="/users")
-app.include_router(organizations_v2_router)  # Primary organizations interface
-app.include_router(customers_router, prefix="/customers")
-app.include_router(benefits_router, prefix="/benefits")
-app.include_router(products_router, prefix="/products")
-app.include_router(merchant_migrations_router, prefix="/merchant-migrations")
-app.include_router(email_logs_router, prefix="/email-logs")
-app.include_router(external_events_router, prefix="/external-events")
-app.include_router(tasks_router, prefix="/tasks")
-app.include_router(subscriptions_router, prefix="/subscriptions")
-app.include_router(orders_router, prefix="/orders")
-app.include_router(payouts_router, prefix="/payouts")
-app.include_router(payout_accounts_router, prefix="/payout-accounts")
-app.include_router(impersonation_router, prefix="/impersonation")
-app.include_router(webhooks_router, prefix="/webhooks")
-app.include_router(feedbacks_router, prefix="/feedbacks")
-app.include_router(support_cases_router, prefix="/support-cases")
+app.include_router(auth_router)
+protected_router = APIRouter(dependencies=[Depends(get_admin)])
+protected_router.include_router(users_router, prefix="/users")
+protected_router.include_router(
+    organizations_v2_router
+)  # Primary organizations interface
+protected_router.include_router(customers_router, prefix="/customers")
+protected_router.include_router(benefits_router, prefix="/benefits")
+protected_router.include_router(products_router, prefix="/products")
+protected_router.include_router(
+    merchant_migrations_router, prefix="/merchant-migrations"
+)
+protected_router.include_router(email_logs_router, prefix="/email-logs")
+protected_router.include_router(external_events_router, prefix="/external-events")
+protected_router.include_router(tasks_router, prefix="/tasks")
+protected_router.include_router(subscriptions_router, prefix="/subscriptions")
+protected_router.include_router(orders_router, prefix="/orders")
+protected_router.include_router(payouts_router, prefix="/payouts")
+protected_router.include_router(payout_accounts_router, prefix="/payout-accounts")
+protected_router.include_router(impersonation_router, prefix="/impersonation")
+protected_router.include_router(webhooks_router, prefix="/webhooks")
+protected_router.include_router(feedbacks_router, prefix="/feedbacks")
+protected_router.include_router(support_cases_router, prefix="/support-cases")
 
 
-@app.get("/", name="index")
+@protected_router.get("/", name="index")
 async def index(request: Request) -> None:
     with layout(request, [], "index"):
         with tag.h1():
             text("Backoffice Dashboard")
 
+
+app.include_router(protected_router)
 
 __all__ = ["app"]

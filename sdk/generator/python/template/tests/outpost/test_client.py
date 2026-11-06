@@ -249,6 +249,12 @@ def confirmations() -> dict[str, typing.Any]:
     return {"answer": True, "snapshot": None}
 
 
+# Polar's answer to a meter usage request, and the size of each request.
+@pytest.fixture
+def meter_usage() -> dict[str, typing.Any]:
+    return {"status": 200, "batches": []}
+
+
 # Polar's side of Outpost: the configuration, the snapshots, the confirmations and the changes.
 # A snapshot's "delay" holds its answer back, in seconds.
 @pytest.fixture
@@ -261,6 +267,7 @@ async def polar_client(
     ingested: set[str],
     confirmations: dict[str, typing.Any],
     configuration_status: dict[str, int],
+    meter_usage: dict[str, typing.Any],
 ) -> collections.abc.AsyncIterator[httpx.AsyncClient]:
     def identity(body: dict[str, typing.Any]) -> str:
         kind = "customer" if "customer_id" in body else "external"
@@ -306,21 +313,27 @@ async def polar_client(
                 return await respond({**configuration, "organization_id": "org-2"})
             return await respond(configuration)
         if route == "POST /v1/outpost/meter-usage":
-            polar_requests.append((route, body))
-            snapshot = snapshots.get(identity(body))
-            if snapshot is None:
-                return await respond([])
-            snapshot = dict(snapshot)
-            await anyio.sleep(snapshot.pop("delay", 0))
-            return await respond(
-                [
+            meter_usage["batches"].append(len(body["identities"]))
+            answers = []
+            delay = 0
+            for requested in body["identities"]:
+                polar_requests.append((route, requested))
+                snapshot = snapshots.get(identity(requested))
+                if snapshot is None:
+                    continue
+                snapshot = dict(snapshot)
+                delay = max(delay, snapshot.pop("delay", 0))
+                answers.append(
                     {
                         "customer_exists": True,
                         **snapshot,
-                        "reducer_id": body["reducer_id"],
+                        "reducer_id": requested["reducer_id"],
                     }
-                ]
-            )
+                )
+            if meter_usage["status"] != 200:
+                return await respond({}, meter_usage["status"])
+            await anyio.sleep(delay)
+            return await respond(answers)
         if route == "POST /v1/outpost/confirm":
             polar_requests.append((route, body))
             # Unanswered: the client gives up after its confirm timeout.
@@ -967,11 +980,12 @@ async def test_keeps_two_organizations_apart_on_one_redis(
 
 
 @pytest.mark.anyio
-async def test_drops_every_snapshot_once_polars_changes_went_past_their_retention(
+async def test_revalidates_every_state_in_one_request_once_polars_changes_went_past_their_retention(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     snapshots: dict[str, dict[str, typing.Any]],
     changes: dict[str, typing.Any],
+    meter_usage: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
@@ -979,9 +993,36 @@ async def test_drops_every_snapshot_once_polars_changes_went_past_their_retentio
     await _credit(redis, 100)
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.actor(external_customer_id="alice")
+        snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
+        snapshots["external:alice:credits"] = ALICE_CREDITS
+        changes["reset"] = True
+        await outpost._pull()
+        assert meter_usage["batches"] == [2]
+        assert await redis.hget(key, "snapshot_version") == str(
+            ALICE_SNAPSHOT["version"]
+        ).encode()
+        assert await _consumed(outpost) == 3
+
+
+@pytest.mark.anyio
+async def test_drops_the_snapshots_polar_could_not_revalidate_after_a_reset(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    meter_usage: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:v1:org-1:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+    await _credit(redis, 100)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        meter_usage["status"] = 503
         changes["reset"] = True
         await outpost._pull()
         assert await redis.hget(key, "cold_until") is None
+        meter_usage["status"] = 200
         snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
         snapshots["external:alice:credits"] = ALICE_CREDITS
         with anyio.fail_after(1):

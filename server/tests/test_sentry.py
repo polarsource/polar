@@ -2,6 +2,7 @@ import logging
 from typing import Any, cast
 
 import pytest
+from sqlalchemy.exc import DBAPIError
 
 from polar.sentry import before_breadcrumb, before_send
 
@@ -217,6 +218,109 @@ class TestBeforeSend:
         assert result is not None
         request = cast(dict[str, Any], result["request"])
         assert request["data"] == "raw-body"
+
+    def test_strips_dbapierror_parameters_and_mixed_case_tokens(self) -> None:
+        secret = "polar_cl_abcDEF123xyzBeLi"
+        with pytest.raises(DBAPIError) as tuple_params:
+            raise DBAPIError(
+                "SELECT checkout_links.id FROM checkout_links "
+                "WHERE checkout_links.client_secret = $1 AND scope = $2",
+                (secret, "api_access"),
+                Exception("current transaction is aborted"),
+            )
+        with pytest.raises(DBAPIError) as list_params:
+            raise DBAPIError(
+                "SELECT $1",
+                [secret, "api_access"],
+                Exception("boom"),
+            )
+
+        event = {
+            "exception": {
+                "values": [
+                    {
+                        "type": "DBAPIError",
+                        "module": "sqlalchemy.exc",
+                        "value": str(tuple_params.value),
+                    },
+                    {
+                        "type": "DBAPIError",
+                        "module": "sqlalchemy.exc",
+                        "value": str(list_params.value),
+                    },
+                    {
+                        "type": "DBAPIError",
+                        "module": "sqlalchemy.exc",
+                        "value": (
+                            "[SQL: INSERT]\n"
+                            "[parameters: ('polar_cl_abcDE ... (20 characters truncated) ... xyzBeLi', 'api_access')]"
+                        ),
+                    },
+                ]
+            }
+        }
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        serialized = str(result)
+        assert secret not in serialized
+        assert "BeLi" not in serialized
+        values = cast(dict[str, Any], result["exception"])["values"]
+        dbapi_value = cast(str, values[0]["value"])
+        assert "[parameters: [Filtered]]" in dbapi_value
+        assert "api_access" not in dbapi_value
+        assert "checkout_links.client_secret = $1" in dbapi_value
+        assert "https://sqlalche.me/" in dbapi_value
+        assert "api_access" not in cast(str, values[1]["value"])
+        assert "xyzBeLi" not in cast(str, values[2]["value"])
+
+    def test_redacts_polar_tokens_outside_sql_parameters(self) -> None:
+        secret = "polar_cl_abcDEF123xyzBeLi"
+        event = {
+            "request": {
+                "data": {
+                    "redirect_url": f"https://buy.polar.sh/{secret}/redirect",
+                    "product_id": "prod_123",
+                }
+            },
+            "breadcrumbs": {
+                "values": [
+                    {
+                        "message": "checkout_link.get",
+                        "data": {"note": secret, "checkout_link_id": "cl_123"},
+                    }
+                ]
+            },
+            "exception": {
+                "values": [
+                    {
+                        "type": "ResourceNotFound",
+                        "value": f"No checkout link {secret}",
+                    }
+                ]
+            },
+        }
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        assert secret not in str(result)
+        assert "BeLi" not in str(result)
+        request_data = cast(
+            dict[str, Any], cast(dict[str, Any], result["request"])["data"]
+        )
+        assert (
+            request_data["redirect_url"] == "https://buy.polar.sh/[Filtered]/redirect"
+        )
+        assert request_data["product_id"] == "prod_123"
+        breadcrumb = cast(dict[str, Any], result["breadcrumbs"])["values"][0]
+        assert breadcrumb["data"] == {
+            "note": "[Filtered]",
+            "checkout_link_id": "cl_123",
+        }
+        exception_value = cast(dict[str, Any], result["exception"])["values"][0]
+        assert exception_value["value"] == "No checkout link [Filtered]"
 
 
 def _log_record(msg: object) -> logging.LogRecord:

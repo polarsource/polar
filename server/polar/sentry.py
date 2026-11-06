@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import TYPE_CHECKING, cast
 
 import sentry_sdk
@@ -84,6 +85,13 @@ _PII_KEYS = frozenset(
 _LOG_EVENT_META_KEYS = frozenset(
     {"event", "level", "logger", "timestamp", "exc_info", "stack"}
 )
+# Credential bodies are base62, so this has to include uppercase. A lowercase
+# pattern leaves the tail of a checkout-link secret in the event.
+_POLAR_TOKEN = re.compile(r"polar_[A-Za-z0-9_]+")
+# StatementError puts bound values on their own line: [parameters: ...].
+# The repr can contain `]` and the line may be cut off before it closes.
+_SQL_BOUND_PARAMETERS = re.compile(r"\[parameters:[^\n]*")
+_FILTERED = "[Filtered]"
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -99,6 +107,28 @@ class DramatiqIntegration(_DramatiqIntegration):
         broker = get_broker()
         first_middleware = type(broker.middleware[0])
         broker.add_middleware(SentryMiddleware(), before=first_middleware)
+
+
+def _redact_text(value: str) -> str:
+    value = _SQL_BOUND_PARAMETERS.sub(f"[parameters: {_FILTERED}]", value)
+    return _POLAR_TOKEN.sub(_FILTERED, value)
+
+
+def _scrub_secrets(value: object) -> None:
+    if isinstance(value, dict):
+        mapping = cast(dict[object, object], value)
+        for key, item in mapping.items():
+            if isinstance(item, str):
+                mapping[key] = _redact_text(item)
+            else:
+                _scrub_secrets(item)
+    elif isinstance(value, list):
+        items = cast(list[object], value)
+        for index, item in enumerate(items):
+            if isinstance(item, str):
+                items[index] = _redact_text(item)
+            else:
+                _scrub_secrets(item)
 
 
 def _scrub_pii(value: object) -> None:
@@ -148,6 +178,8 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     if isinstance(breadcrumbs, dict):
         for breadcrumb in breadcrumbs.get("values", []):
             _scrub_pii(breadcrumb.get("data"))
+    # Bound parameters and credential strings are not under a denylisted key.
+    _scrub_secrets(event)
     return event
 
 

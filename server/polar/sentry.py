@@ -20,6 +20,7 @@ from sentry_sdk.integrations.threading import ThreadingIntegration
 from polar.auth.models import AuthSubject, Subject, is_user
 from polar.config import settings
 from polar.observability.http_telemetry import url_without_request_values
+from polar.observability.redaction import redact_text
 
 if TYPE_CHECKING:
     from sentry_sdk._types import Breadcrumb, BreadcrumbHint, Event, Hint
@@ -115,6 +116,19 @@ def _scrub_pii(value: object) -> None:
             _scrub_pii(item)
 
 
+def _redact_strings(value: object) -> object:
+    if isinstance(value, str):
+        return redact_text(value)
+    if isinstance(value, dict):
+        return {
+            key: _redact_strings(item)
+            for key, item in cast(dict[object, object], value).items()
+        }
+    if isinstance(value, list):
+        return [_redact_strings(item) for item in cast(list[object], value)]
+    return value
+
+
 def before_breadcrumb(crumb: Breadcrumb, hint: BreadcrumbHint) -> Breadcrumb:
     # structlog hands the event dict to stdlib logging as the record message,
     # which the SDK stringifies whole into the breadcrumb message, out of reach
@@ -148,7 +162,7 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     if isinstance(breadcrumbs, dict):
         for breadcrumb in breadcrumbs.get("values", []):
             _scrub_pii(breadcrumb.get("data"))
-    return event
+    return cast("Event", _redact_strings(event))
 
 
 def configure_sentry(*, aws_lambda: bool = False) -> None:

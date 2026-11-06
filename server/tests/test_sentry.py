@@ -218,6 +218,36 @@ class TestBeforeSend:
         request = cast(dict[str, Any], result["request"])
         assert request["data"] == "raw-body"
 
+    def test_redacts_emails_and_tokens_in_free_text(self) -> None:
+        event = {
+            "exception": {
+                "values": [
+                    {
+                        "type": "IntegrityError",
+                        "value": "DETAIL:  Key (lower(email::text))=(ada@example.com) already exists.",
+                    },
+                    {
+                        "type": "HTTPValidationError",
+                        "value": "msg='ada@example.com is not a valid email address'",
+                    },
+                ]
+            },
+            "breadcrumbs": {
+                "values": [{"message": "lookup polar_cl_abcDEF123xyzBeLi0123456789"}]
+            },
+        }
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        values = cast(dict[str, Any], result["exception"])["values"]
+        assert values[0]["value"] == (
+            "DETAIL:  Key (lower(email::text))=([redacted]) already exists."
+        )
+        assert values[1]["value"] == "msg='[redacted] is not a valid email address'"
+        breadcrumbs = cast(dict[str, Any], result["breadcrumbs"])["values"]
+        assert breadcrumbs[0]["message"] == "lookup [redacted]"
+
 
 def _log_record(msg: object) -> logging.LogRecord:
     return logging.LogRecord("polar.test", logging.INFO, __file__, 1, msg, (), None)

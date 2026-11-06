@@ -21,6 +21,7 @@ from polar.user.service import (
     IdentityAlreadyVerified,
     IdentityVerificationForUnknownUser,
     IdentityVerificationProcessing,
+    UserCannotAuthenticate,
 )
 from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
@@ -69,6 +70,24 @@ class TestGetByEmailOrCreate:
         mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, None])
 
         with pytest.raises(IntegrityError):
+            await user_service.get_by_email_or_create(session, user.email)
+
+    async def test_blocked_user(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        user.blocked_at = utc_now()
+        await save_fixture(user)
+
+        with pytest.raises(UserCannotAuthenticate):
+            await user_service.get_by_email_or_create(session, user.email)
+
+    async def test_deleted_user(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        user.deleted_at = utc_now()
+        await save_fixture(user)
+
+        with pytest.raises(UserCannotAuthenticate):
             await user_service.get_by_email_or_create(session, user.email)
 
 

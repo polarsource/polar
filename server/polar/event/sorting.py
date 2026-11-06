@@ -52,3 +52,29 @@ EventStatisticsSorting = Annotated[
         )
     ),
 ]
+
+
+class EventPropertyStatisticsSortProperty(StrEnum):
+    value = "value"
+    occurrences = "occurrences"
+    customers = "customers"
+    total = "total"
+    average = "average"
+
+
+EventPropertyStatisticsSorting = Annotated[
+    list[Sorting[EventPropertyStatisticsSortProperty]],
+    Depends(SortingGetter(EventPropertyStatisticsSortProperty, ["-total"])),
+]
+
+
+class EventCustomerStatisticsSortProperty(StrEnum):
+    occurrences = "occurrences"
+    total = "total"
+    average = "average"
+
+
+EventCustomerStatisticsSorting = Annotated[
+    list[Sorting[EventCustomerStatisticsSortProperty]],
+    Depends(SortingGetter(EventCustomerStatisticsSortProperty, ["-total"])),
+]

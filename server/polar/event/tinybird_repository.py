@@ -367,6 +367,7 @@ class TinybirdEventRepository:
         customer_id: Sequence[UUID] = (),
         external_customer_id: Sequence[str] = (),
         limit: int = 200,
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> list[TinybirdCustomerStat]:
         organization_ids = self._normalize_organization_ids(organization_id)
         if not organization_ids:
@@ -381,7 +382,7 @@ class TinybirdEventRepository:
                 external_customer_ids=external_customer_id,
             )
 
-        return await tinybird_query.get_customer_stats(aggregate_fields, limit)
+        return await tinybird_query.get_customer_stats(aggregate_fields, limit, sorting)
 
     async def get_variance_events(
         self,
@@ -423,6 +424,7 @@ class TinybirdEventRepository:
         customer_id: Sequence[UUID] = (),
         external_customer_id: Sequence[str] = (),
         limit: int = 200,
+        sorting: Sequence[tuple[str, bool]] = (("total", True),),
     ) -> list[TinybirdPropertyGroupStats]:
         organization_ids = self._normalize_organization_ids(organization_id)
         if not organization_ids:
@@ -438,7 +440,7 @@ class TinybirdEventRepository:
             )
 
         return await tinybird_query.get_property_group_stats(
-            property, aggregate_fields, limit
+            property, aggregate_fields, limit, sorting
         )
 
     @staticmethod

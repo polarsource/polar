@@ -3,6 +3,7 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 import pytest
@@ -577,6 +578,83 @@ class TestTinybirdEventsQuery:
         assert timeseries[0].customers == 1
         assert customer_stats[0].occurrences == 4
         assert len(variance) >= 1
+
+    @pytest.mark.parametrize(
+        ("interval", "expected_start"),
+        [
+            ("day", datetime(2026, 1, 7, tzinfo=ZoneInfo("Europe/Stockholm"))),
+            ("week", datetime(2026, 1, 5, tzinfo=ZoneInfo("Europe/Stockholm"))),
+            ("month", datetime(2026, 1, 1, tzinfo=ZoneInfo("Europe/Stockholm"))),
+        ],
+    )
+    async def test_timeseries_buckets_start_at_local_midnight(
+        self, tinybird_client: TinybirdClient, interval: str, expected_start: datetime
+    ) -> None:
+        org_id = uuid.uuid4()
+        event = create_test_event(
+            organization_id=org_id,
+            name="llm.request",
+            source=EventSource.user,
+            user_metadata={"_cost": {"amount": 5.0, "currency": "usd"}},
+        )
+        event.timestamp = datetime(
+            2026, 1, 7, 12, 0, tzinfo=ZoneInfo("Europe/Stockholm")
+        )
+        await tinybird_client.ingest(
+            DATASOURCE_EVENTS, [_event_to_tinybird(event)], wait=True
+        )
+
+        timeseries = await TinybirdEventsQuery([org_id]).get_timeseries_stats(
+            interval, "Europe/Stockholm", ["_cost.amount"]
+        )
+
+        assert len(timeseries) == 1
+        assert timeseries[0].bucket == expected_start
+        assert timeseries[0].occurrences == 1
+
+    async def test_stats_sorting(self, tinybird_client: TinybirdClient) -> None:
+        org_id = uuid.uuid4()
+        cheap_customer = uuid.uuid4()
+        busy_customer = uuid.uuid4()
+        events = []
+        # gpt-4: 1 event costing 10. claude: 3 events costing 1 each.
+        for model, customer_id, amount in [
+            ("gpt-4", cheap_customer, 10.0),
+            ("claude", busy_customer, 1.0),
+            ("claude", busy_customer, 1.0),
+            ("claude", busy_customer, 1.0),
+        ]:
+            event = create_test_event(
+                organization_id=org_id,
+                name="llm.request",
+                source=EventSource.user,
+                user_metadata={
+                    "_cost": {"amount": amount, "currency": "usd"},
+                    "_llm": {"model": model, "vendor": "openai"},
+                },
+            )
+            event.customer_id = customer_id
+            events.append(event)
+        await tinybird_client.ingest(
+            DATASOURCE_EVENTS, [_event_to_tinybird(e) for e in events], wait=True
+        )
+        query = TinybirdEventsQuery([org_id])
+
+        by_total = await query.get_property_group_stats("_llm.model", ["_cost.amount"])
+        by_occurrences = await query.get_property_group_stats(
+            "_llm.model", ["_cost.amount"], sorting=[("occurrences", True)]
+        )
+        by_value = await query.get_property_group_stats(
+            "_llm.model", ["_cost.amount"], sorting=[("value", False)]
+        )
+        customers_by_occurrences = await query.get_customer_stats(
+            ["_cost.amount"], sorting=[("occurrences", True)]
+        )
+
+        assert [s.value for s in by_total] == ["gpt-4", "claude"]
+        assert [s.value for s in by_occurrences] == ["claude", "gpt-4"]
+        assert [s.value for s in by_value] == ["claude", "gpt-4"]
+        assert customers_by_occurrences[0].customer_id == str(busy_customer)
 
     async def test_property_group_stats_on_custom_metadata_key(
         self, tinybird_client: TinybirdClient

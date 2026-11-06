@@ -3,6 +3,7 @@
 import { CustomerSelector } from '@/components/Customer/CustomerSelector'
 import { EventMetadataFields } from '@/components/Events/EventMetadataFields'
 import { EventTypeFilter } from '@/components/Events/EventTypeFilter'
+import { ExplorerModeSwitch } from '@/components/Events/ExplorerModeSwitch'
 import DateRangePicker, {
   DateRangeInterval,
   DateRangeIntervalSlug,
@@ -16,13 +17,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Text,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { FunnelX } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 
 type Metadata = Record<string, string | number | boolean>
@@ -118,34 +114,18 @@ export const EventsSidebar = ({
 
   return (
     <Box flexDirection="column" gap="l" height="100%">
-      <Box
-        alignItems="center"
-        justifyContent="between"
-        paddingHorizontal="l"
-        paddingTop="l"
-        minHeight={40}
-      >
-        <Text>Filters</Text>
-        {hasActiveFilters && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-6 w-6 [&_svg]:size-3!"
-                onClick={onReset}
-                aria-label="Reset filters"
-              >
-                <FunnelX />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Reset filters</TooltipContent>
-          </Tooltip>
-        )}
+      <Box paddingHorizontal="l" paddingTop="l">
+        <ExplorerModeSwitch
+          organizationSlug={organization.slug}
+          mode="events"
+          customerIds={selectedCustomerIds}
+        />
       </Box>
       <Box
         flexDirection="column"
         gap="xl"
+        flexGrow={1}
+        minHeight={0}
         overflowY="auto"
         paddingHorizontal="l"
         paddingTop="s"
@@ -250,6 +230,13 @@ export const EventsSidebar = ({
           </Select>
         </Box>
       </Box>
+      {hasActiveFilters && (
+        <Box flexDirection="column" paddingHorizontal="l" paddingBottom="l">
+          <Button variant="secondary" fullWidth onClick={onReset}>
+            Reset filters
+          </Button>
+        </Box>
+      )}
     </Box>
   )
 }

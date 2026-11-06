@@ -2,7 +2,6 @@ import { Text } from '@polar-sh/orbit'
 import { differenceInDays } from 'date-fns'
 import { Box } from '@polar-sh/orbit/Box'
 import { X, ZoomIn, ZoomOut } from '@polar-sh/orbit/icons'
-import { formatEventCount } from '@/utils/event'
 import { ReactNode } from 'react'
 
 export interface TimeRange {
@@ -75,16 +74,16 @@ const IconButton = ({
 
 const PILL_WIDTH = 320
 
+// Centered on the selection, but clamped so the pill never leaves the chart.
 const anchorProps = ({ start, end }: { start: number; end: number }) => ({
-  left: `${((start + end) / 2) * 100}%`,
-  transform: 'translateX(-50%)',
+  left: `clamp(0px, calc(${((start + end) / 2) * 100}% - ${PILL_WIDTH / 2}px), calc(100% - ${PILL_WIDTH}px))`,
 })
 
 export const EventsHistogramControls = ({
   anchor,
   dragging,
   range,
-  count,
+  summary,
   hourly,
   onZoomIn,
   onZoomOut,
@@ -93,7 +92,7 @@ export const EventsHistogramControls = ({
   anchor: { start: number; end: number }
   dragging: boolean
   range: TimeRange
-  count: number
+  summary: string
   hourly: boolean
   onZoomIn?: () => void
   onZoomOut?: () => void
@@ -129,7 +128,7 @@ export const EventsHistogramControls = ({
         </Box>
         <Box flexShrink={0}>
           <Text variant="caption" color="muted" tabularNums>
-            {formatEventCount(count)} {count === 1 ? 'event' : 'events'}
+            {summary}
           </Text>
         </Box>
         <Box

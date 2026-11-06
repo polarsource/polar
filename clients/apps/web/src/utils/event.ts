@@ -2,13 +2,13 @@ export const buildEventDashboardPath = (
   organizationSlug: string,
   eventId: string,
 ): string =>
-  `/dashboard/${organizationSlug}/analytics/events?${new URLSearchParams({ event: eventId })}`
+  `/dashboard/${organizationSlug}/events?${new URLSearchParams({ event: eventId })}`
 
 export const buildCustomerEventsPath = (
   organizationSlug: string,
   customerId: string,
 ): string =>
-  `/dashboard/${organizationSlug}/analytics/events?${new URLSearchParams({ customerIds: customerId, range: 'allTime' })}`
+  `/dashboard/${organizationSlug}/events?${new URLSearchParams({ customerIds: customerId, range: 'allTime' })}`
 
 const COST_EVENTS_FILTER = {
   conjunction: 'or',

@@ -1,0 +1,209 @@
+'use client'
+
+import { CostDistributionStrip } from '@/components/Events/CostDistributionStrip'
+import {
+  useEventHierarchyStats,
+  useEventPropertyGroupStats,
+  useEvents,
+} from '@/hooks/queries/events'
+import { formatCostAmount } from '@/utils/formatters'
+import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
+import {
+  CostFact,
+  CostMiniChart,
+  CostPanelSection,
+  CostPanelShell,
+  CostFactsSkeleton,
+  CostListSkeleton,
+  eventCostCents,
+} from './CostDetailParts'
+import { CostEventItem, CostEventList } from './CostEventList'
+import {
+  CostRange,
+  parseCost,
+  pickCostInterval,
+  toStatsDates,
+} from './costRanges'
+import { CostRow } from './useCostBreakdown'
+
+export type CostProperty = 'model' | 'vendor'
+
+type Facts = Pick<CostRow, 'total' | 'occurrences' | 'customers' | 'average'>
+
+const PROPERTY_LABELS: Record<CostProperty, string> = {
+  model: 'Model',
+  vendor: 'Vendor',
+}
+
+const propertyFilter = (
+  property: CostProperty,
+  value: string,
+  costOnly: boolean,
+) =>
+  JSON.stringify({
+    conjunction: 'and',
+    clauses: [
+      { property: `_llm.${property}`, operator: 'eq', value },
+      ...(costOnly
+        ? [
+            {
+              conjunction: 'or',
+              clauses: [
+                { property: '_cost.amount', operator: 'gte', value: 0 },
+                { property: '_cost.amount', operator: 'lt', value: 0 },
+              ],
+            },
+          ]
+        : []),
+    ],
+  })
+
+export const CostPropertyDetails = ({
+  organization,
+  property,
+  value,
+  row,
+  range,
+  customerIds,
+  onClose,
+}: {
+  organization: schemas['Organization']
+  property: CostProperty
+  value: string
+  row: CostRow | null
+  range: CostRange
+  customerIds: string[] | null
+  onClose: () => void
+}) => {
+  const customer_id = customerIds && customerIds.length > 0 ? customerIds : null
+  const { data } = useEventHierarchyStats(organization.id, {
+    ...toStatsDates(range),
+    interval: pickCostInterval(range),
+    aggregate_fields: ['_cost.amount'],
+    filter: propertyFilter(property, value, false),
+    customer_id,
+  })
+  // A deep link or a different grouping leaves no breakdown row to reuse, so
+  // fetch this property's groups and pick the value out of them.
+  const { data: groups } = useEventPropertyGroupStats(
+    organization.id,
+    `_llm.${property}`,
+    {
+      ...toStatsDates(range),
+      aggregate_fields: ['_cost.amount'],
+      customer_id,
+      limit: 1000,
+    },
+    row === null,
+  )
+  const groupStat = groups?.items.find((item) => item.value === value)
+  const facts: Facts | null = row
+    ? row
+    : groups
+      ? {
+          total: groupStat ? parseCost(groupStat.totals) : 0,
+          occurrences: groupStat?.occurrences ?? 0,
+          customers: groupStat?.customers ?? 0,
+          average:
+            groupStat && groupStat.occurrences > 0
+              ? parseCost(groupStat.totals) / groupStat.occurrences
+              : null,
+        }
+      : null
+  const { data: samples } = useEvents(organization.id, {
+    filter: propertyFilter(property, value, true),
+    customer_id,
+    start_timestamp: range.from.toISOString(),
+    end_timestamp: range.to.toISOString(),
+    limit: 100,
+    sorting: ['-timestamp'],
+  })
+
+  // The timeseries only matches top-level events, while models are often
+  // set on child events. The figures come from the by-property stats, as in
+  // the table, and the chart only shows when it covers every event.
+  const periods = data?.periods ?? []
+  const chartOccurrences = (data?.totals ?? []).reduce(
+    (sum, stat) => sum + stat.occurrences,
+    0,
+  )
+  const chartIsComplete =
+    facts !== null &&
+    periods.length > 0 &&
+    chartOccurrences === facts.occurrences
+
+  const costed = (samples?.items ?? []).flatMap((event) => {
+    const cost = eventCostCents(event.metadata)
+    return cost !== null ? [{ event, cost }] : []
+  })
+  const recentItems: CostEventItem[] = costed
+    .slice(0, 8)
+    .map(({ event, cost }) => ({
+      id: event.id,
+      timestamp: event.timestamp,
+      detail: event.customer?.name ?? event.customer?.email ?? null,
+      cost,
+    }))
+
+  return (
+    <CostPanelShell
+      title={value}
+      subtitle={PROPERTY_LABELS[property]}
+      onClose={onClose}
+    >
+      {!facts ? (
+        <CostFactsSkeleton rows={4} />
+      ) : (
+        <CostPanelSection>
+          {chartIsComplete && (
+            <CostMiniChart
+              values={periods.map((period) =>
+                period.stats.reduce((sum, s) => sum + parseCost(s.totals), 0),
+              )}
+            />
+          )}
+          <Box
+            flexDirection="column"
+            paddingTop={chartIsComplete ? 's' : 'none'}
+          >
+            <CostFact label="Total" value={formatCostAmount(facts.total)} />
+            <CostFact
+              label="Events"
+              value={facts.occurrences.toLocaleString('en-US')}
+            />
+            <CostFact
+              label="Customers"
+              value={facts.customers?.toLocaleString('en-US')}
+            />
+            <CostFact
+              label="Average"
+              value={
+                facts.average !== null ? formatCostAmount(facts.average) : null
+              }
+            />
+          </Box>
+        </CostPanelSection>
+      )}
+      {!samples && <CostListSkeleton />}
+      {costed.length >= 2 && (
+        <CostPanelSection
+          title="Distribution"
+          caption={`Last ${costed.length} events`}
+        >
+          <Box flexDirection="column" paddingTop="s">
+            <CostDistributionStrip costs={costed.map(({ cost }) => cost)} />
+          </Box>
+        </CostPanelSection>
+      )}
+      {recentItems.length > 0 && (
+        <CostPanelSection title="Recent events">
+          <CostEventList
+            organizationSlug={organization.slug}
+            items={recentItems}
+          />
+        </CostPanelSection>
+      )}
+    </CostPanelShell>
+  )
+}

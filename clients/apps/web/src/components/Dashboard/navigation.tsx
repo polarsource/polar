@@ -4,6 +4,7 @@ import { ManagedAsCodeNavIndicator } from './ManagedAsCodeNavIndicator'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
+  BoltOutlined,
   CodeOutlined,
   DiamondOutlined,
   DiscountOutlined,
@@ -226,22 +227,20 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     id: 'analytics',
     title: 'Analytics',
     icon: <TrendingUp fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/analytics`,
+    link: `/dashboard/${org?.slug}/analytics/metrics`,
+    checkIsActive: (currentRoute: string): boolean =>
+      currentRoute === `/dashboard/${org?.slug}/analytics` ||
+      currentRoute.startsWith(`/dashboard/${org?.slug}/analytics/metrics`),
     if: true,
-    subs: [
-      {
-        title: 'Metrics',
-        link: `/dashboard/${org?.slug}/analytics/metrics`,
-      },
-      {
-        title: 'Events',
-        link: `/dashboard/${org?.slug}/analytics/events`,
-      },
-      {
-        title: 'Costs',
-        link: `/dashboard/${org?.slug}/analytics/costs`,
-      },
-    ],
+  },
+  {
+    id: 'events',
+    title: 'Events',
+    icon: <BoltOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/events`,
+    checkIsActive: (currentRoute: string): boolean =>
+      currentRoute.startsWith(`/dashboard/${org?.slug}/events`),
+    if: true,
   },
   {
     id: 'org-sales',

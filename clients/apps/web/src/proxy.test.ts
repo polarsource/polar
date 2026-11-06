@@ -676,3 +676,50 @@ describe('payment method embed policy', () => {
     )
   })
 })
+
+describe('event explorer redirects', () => {
+  beforeEach(async () => {
+    const { createServerSideAPI } = await import('./utils/client')
+    vi.mocked(createServerSideAPI).mockResolvedValue({
+      GET: vi.fn().mockResolvedValue({
+        data: { id: '123', email: 'test@example.com' },
+        response: { ok: true, status: 200, headers: new Headers() },
+      }),
+    } as never)
+  })
+
+  const request = (path: string) => {
+    const request = new NextRequest(`https://example.com${path}`)
+    request.cookies.set('polar_session', 'valid-session-token')
+    return request
+  }
+
+  it('redirects the old events path to the top-level explorer', async () => {
+    const response = await proxy(
+      request('/dashboard/acme/analytics/events?range=today'),
+    )
+
+    expect(response.status).toBe(308)
+    expect(response.headers.get('location')).toBe(
+      'https://example.com/dashboard/acme/events?range=today',
+    )
+  })
+
+  it('redirects an old event detail path to the explorer with the event selected', async () => {
+    const response = await proxy(
+      request('/dashboard/acme/usage-billing/events/0f1b2c3d'),
+    )
+
+    expect(response.status).toBe(308)
+    expect(response.headers.get('location')).toBe(
+      'https://example.com/dashboard/acme/events?event=0f1b2c3d',
+    )
+  })
+
+  it('serves the costs mode of the explorer', async () => {
+    const response = await proxy(request('/dashboard/acme/events/costs'))
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+  })
+})

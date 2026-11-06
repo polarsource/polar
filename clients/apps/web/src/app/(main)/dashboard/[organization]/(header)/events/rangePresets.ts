@@ -1,7 +1,7 @@
 import { DateRangeInterval } from '@/components/Metrics/DateRangePicker'
 import { subDays, subHours, subMinutes } from 'date-fns'
 
-export const DEFAULT_RANGE = 'last30Minutes'
+export const DEFAULT_RANGE = 'last30Days'
 
 export const recentRangeIntervals = (now: Date): DateRangeInterval[] => [
   {
@@ -17,4 +17,6 @@ export const recentRangeIntervals = (now: Date): DateRangeInterval[] => [
   },
   { slug: 'lastDay', label: 'Last day', value: [subDays(now, 1), now] },
   { slug: 'last3Days', label: 'Last 3 days', value: [subDays(now, 3), now] },
+  { slug: 'last7Days', label: 'Last 7 days', value: [subDays(now, 7), now] },
+  { slug: 'last30Days', label: 'Last 30 days', value: [subDays(now, 30), now] },
 ]

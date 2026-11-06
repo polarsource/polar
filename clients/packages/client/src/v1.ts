@@ -24315,6 +24315,17 @@ export interface components {
        */
       external_member_id?: string | null
     }
+    /**
+     * EventCustomerStatisticsSortProperty
+     * @enum {string}
+     */
+    EventCustomerStatisticsSortProperty:
+      | 'occurrences'
+      | '-occurrences'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
     /** EventHistogram */
     EventHistogram: {
       /**
@@ -24411,6 +24422,21 @@ export interface components {
       | '-first_seen'
       | 'last_seen'
       | '-last_seen'
+    /**
+     * EventPropertyStatisticsSortProperty
+     * @enum {string}
+     */
+    EventPropertyStatisticsSortProperty:
+      | 'value'
+      | '-value'
+      | 'occurrences'
+      | '-occurrences'
+      | 'customers'
+      | '-customers'
+      | 'total'
+      | '-total'
+      | 'average'
+      | '-average'
     /**
      * EventSortProperty
      * @enum {string}
@@ -60117,6 +60143,10 @@ export interface operations {
         limit?: number
         /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
         property: components['schemas']['AggregateField']
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?:
+          | components['schemas']['EventPropertyStatisticsSortProperty'][]
+          | null
       }
       header?: never
       path?: never
@@ -60760,6 +60790,10 @@ export interface operations {
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?:
+          | components['schemas']['EventCustomerStatisticsSortProperty'][]
+          | null
       }
       header?: never
       path?: never
@@ -72719,6 +72753,9 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
+export const eventCustomerStatisticsSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['EventCustomerStatisticsSortProperty']
+> = ['occurrences', '-occurrences', 'total', '-total', 'average', '-average']
 export const eventNamesSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['EventNamesSortProperty']
 > = [
@@ -72730,6 +72767,20 @@ export const eventNamesSortPropertyValues: ReadonlyArray<
   '-first_seen',
   'last_seen',
   '-last_seen',
+]
+export const eventPropertyStatisticsSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['EventPropertyStatisticsSortProperty']
+> = [
+  'value',
+  '-value',
+  'occurrences',
+  '-occurrences',
+  'customers',
+  '-customers',
+  'total',
+  '-total',
+  'average',
+  '-average',
 ]
 export const eventSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['EventSortProperty']

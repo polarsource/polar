@@ -227,6 +227,7 @@ async def get_histogram(
 async def get_statistics_by_property(
     filters: Annotated[EventStatisticsByPropertyParams, Query()],
     auth_subject: auth.EventRead,
+    property_sorting: sorting.EventPropertyStatisticsSorting,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListPropertyGroupStats:
     """
@@ -246,6 +247,7 @@ async def get_statistics_by_property(
         external_customer_id=filters.external_customer_id,
         aggregate_fields=tuple(filters.aggregate_fields),
         limit=filters.limit,
+        sorting=property_sorting,
     )
 
 
@@ -258,6 +260,7 @@ async def get_statistics_by_property(
 async def get_statistics_by_customer(
     filters: Annotated[EventStatisticsParams, Query()],
     auth_subject: auth.EventRead,
+    customer_sorting: sorting.EventCustomerStatisticsSorting,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListCustomerStats:
     """
@@ -277,6 +280,7 @@ async def get_statistics_by_customer(
         external_customer_id=filters.external_customer_id,
         aggregate_fields=tuple(filters.aggregate_fields),
         limit=filters.limit,
+        sorting=customer_sorting,
     )
 
 

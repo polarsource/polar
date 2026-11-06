@@ -277,6 +277,9 @@ export const useEventCustomerStats = (
     aggregate_fields?: string[]
     customer_id?: string[] | null
     limit?: number
+    sorting?: NonNullable<
+      operations['events:get_statistics_by_customer']['parameters']['query']
+    >['sorting']
   },
   enabled: boolean = true,
 ) => {
@@ -308,6 +311,7 @@ export const useEventVarianceStats = (
     end_date: string
     aggregate_fields?: string[]
     customer_id?: string[] | null
+    name?: string[] | null
     limit?: number
   },
   enabled: boolean = true,

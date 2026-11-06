@@ -19,6 +19,7 @@ from opentelemetry.sdk.trace.sampling import (
 from starlette.routing import Host
 
 from polar.observability.http_telemetry import HttpURLSpanProcessor, server_request_hook
+from polar.observability.redaction import ExceptionRedactionSpanProcessor
 from polar.observability.s3_span_exporter import S3SpanExporter
 
 if TYPE_CHECKING:
@@ -173,6 +174,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         resource_attributes["service.instance.id"] = render_instance_id
 
     additional_span_processors: list[SpanProcessor] = [
+        ExceptionRedactionSpanProcessor(),
         HttpURLSpanProcessor(),
         PidSpanProcessor(),
     ]

@@ -44,6 +44,7 @@ module "redis" {
   name       = "polar-test-worker"
   vpc_id     = module.vpc[0].vpc_id
   subnet_ids = module.vpc[0].secondary_private_subnet_ids
+  tags       = local.lambda_worker_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {

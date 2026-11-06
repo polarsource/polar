@@ -41,6 +41,7 @@ module "redis" {
   subnet_ids = module.vpc.private_subnet_ids
   node_type  = "cache.t4g.small"
   node_count = 2
+  tags       = local.lambda_worker_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {

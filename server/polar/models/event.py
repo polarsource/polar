@@ -56,7 +56,10 @@ class EventSource(StrEnum):
 class CustomerComparator(Relationship.Comparator[Customer]):
     def __eq__(self, other: object) -> ColumnElement[bool]:  # type: ignore[override]
         if isinstance(other, Customer):
-            clause = Event.customer_id == other.id
+            clause = and_(
+                Event.customer_id == other.id,
+                Event.organization_id == other.organization_id,
+            )
             if other.external_id is not None:
                 clause = or_(
                     clause,
@@ -260,7 +263,10 @@ class Event(Model, MetadataMixin):
             Customer,
             primaryjoin=(
                 "or_("
+                "and_("
                 "Event.customer_id == Customer.id,"
+                "Event.organization_id == Customer.organization_id"
+                "),"
                 "and_("
                 "Event.external_customer_id == Customer.external_id,"
                 "Event.organization_id == Customer.organization_id"

@@ -44,6 +44,30 @@ class TestCustomerComparatorEq:
         assert result is not None
         assert result == event
 
+    async def test_customer_id_from_other_organization(
+        self,
+        save_fixture: SaveFixture,
+        repository: EventRepository,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        other_customer = await create_customer(
+            save_fixture, organization=organization_second
+        )
+        await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            customer=other_customer,
+        )
+
+        statement = repository.get_base_statement().where(
+            Event.customer == other_customer
+        )
+        result = await repository.get_one_or_none(statement)
+
+        assert result is None
+
     async def test_customer_external_id(
         self,
         save_fixture: SaveFixture,
@@ -175,6 +199,31 @@ class TestCustomerRelationship:
             timestamp=utc_now(),
             organization=organization,
             external_customer_id="EXTERNAL_ID_123",
+        )
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.customer),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.customer is None
+
+    async def test_customer_id_from_other_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        other_customer = await create_customer(
+            save_fixture, organization=organization_second
+        )
+        event = await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            customer=other_customer,
         )
 
         repository = EventRepository.from_session(session)

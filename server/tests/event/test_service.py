@@ -793,6 +793,40 @@ class TestIngest:
         errors = e.value.errors()
         assert len(errors) == 2
 
+    @pytest.mark.auth
+    async def test_customer_id_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer_organization_second.id,
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        [error] = e.value.errors()
+        assert error["loc"] == ("body", "events", 0, "customer_id")
+
     @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth
     async def test_valid_user(

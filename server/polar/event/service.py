@@ -1064,7 +1064,9 @@ class EventService:
                     index, event_create.organization_id
                 )
                 if isinstance(event_create, EventCreateCustomer):
-                    validate_customer_id(index, event_create.customer_id)
+                    validate_customer_id(
+                        index, event_create.customer_id, organization_id
+                    )
                     if event_create.member_id is not None:
                         validate_member_id(index, event_create.member_id)
 
@@ -1500,11 +1502,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         customer_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not customer_ids:
-            allowed_customers: set[uuid.UUID] = set()
+            allowed_customers: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Customer.id).where(
+            statement = select(Customer.id, Customer.organization_id).where(
                 ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
@@ -1519,10 +1521,15 @@ class EventService:
                     Customer.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_customers = set(result.scalars().all())
+            allowed_customers = {
+                customer_id: customer_organization_id
+                for customer_id, customer_organization_id in result.all()
+            }
 
-        def _validate_customer_id(index: int, customer_id: uuid.UUID) -> uuid.UUID:
-            if customer_id not in allowed_customers:
+        def _validate_customer_id(
+            index: int, customer_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_customers.get(customer_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {

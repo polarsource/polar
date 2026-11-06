@@ -1,6 +1,18 @@
 import { describe, expect, test } from 'vitest'
-import { slugify, unkeyed } from '@/utils/billing-config/keys'
+import { slugify, typedKey, unkeyed } from '@/utils/billing-config/keys'
 
+describe('typedKey', () => {
+  test.each([
+    ['a', 'a'],
+    ['Pro Plan', 'pro_plan'],
+    ['pro-2', 'pro-2'],
+    ['.', undefined],
+    ['é', undefined],
+    ['pro.plan', undefined],
+  ])('%s → %s', (text, key) => {
+    expect(typedKey(text)).toBe(key)
+  })
+})
 
 describe('slugify', () => {
   test.each([

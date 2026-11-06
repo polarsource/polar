@@ -1,5 +1,6 @@
-import { Data, Effect, Option, Terminal } from 'effect'
+import { Data, Effect, Terminal } from 'effect'
 import { Prompt } from 'effect/cli'
+import { editField, renderField } from '@/utils/text-input'
 import * as ui from '@/utils/ui'
 
 export interface TableRow {
@@ -15,11 +16,13 @@ export interface TableOptions {
   readonly validate: (
     values: ReadonlyArray<string>,
   ) => ReadonlyArray<string | undefined>
+  readonly accept?: (text: string) => string | undefined
 }
 
 interface State {
   readonly values: ReadonlyArray<string>
   readonly cursor: number
+  readonly back: number
   readonly top: number
   readonly query: string
   readonly filtering: boolean
@@ -29,10 +32,9 @@ interface State {
 
 const Action = Data.taggedEnum<Prompt.ActionDefinition>()
 
-const HINT =
-  '↑↓ move · type to edit · esc reset row · ctrl+f filter · enter save'
+const HINT = '↑↓ move · ←→ cursor · esc reset row · ctrl+f filter · enter save'
 const FILTERED_HINT =
-  '↑↓ move · type to edit · esc reset row · enter back to filter'
+  '↑↓ move · ←→ cursor · esc reset row · enter back to filter'
 const FILTER_HINT =
   'type to filter · ↑↓ move · enter edit row · esc stop filtering'
 
@@ -102,9 +104,11 @@ const rowLine = (
   )
   const used = 4 + sizes.reduce((sum, size) => sum + size + 2, 0)
   const value = state.values[index]!
-  const shown = ui.truncate(value, Math.max(state.columns - used - 4, 4))
-  const editing = focused && !state.filtering
-  const valueText = editing ? `${shown}${ui.inverse(' ')}` : shown
+  const room = Math.max(state.columns - used - 4, 4)
+  const valueText =
+    focused && !state.filtering
+      ? renderField({ text: value, back: state.back }, room)
+      : ui.truncate(value, room)
   const problem = error === undefined ? '' : ` ${ui.red('✗')}`
   const pointer = focused ? ui.cyan('❯') : ' '
   const label = cells.join('  ')
@@ -135,7 +139,7 @@ const frame = (options: TableOptions, state: State) => {
     `${ui.INDENT}${ui.cyan('?')} ${ui.bold(options.message)}`,
     ui.step(hint(state)),
     state.filtering || state.query !== ''
-      ? `${ui.INDENT}  ${ui.dim('filter')} ${state.query}${state.filtering ? ui.inverse(' ') : ''}`
+      ? `${ui.INDENT}  ${ui.dim('filter')} ${state.filtering ? renderField({ text: state.query, back: state.back }, state.columns) : state.query}`
       : '',
     ui.dim(header),
     ...page.map((index, position) =>
@@ -155,20 +159,6 @@ const frame = (options: TableOptions, state: State) => {
   ].map((text) => line(text, state.columns))
 }
 
-const typed = (input: Terminal.UserInput) =>
-  input.key.ctrl || input.key.meta
-    ? undefined
-    : Option.getOrUndefined(input.input)
-
-const edit = (text: string, input: Terminal.UserInput) => {
-  if (input.key.name === 'backspace') return text.slice(0, -1)
-  if (input.key.ctrl && input.key.name === 'u') return ''
-  const character = typed(input)
-  return character === undefined || /[\p{Cc}]/u.test(character)
-    ? undefined
-    : text + character
-}
-
 const process =
   (options: TableOptions) => (input: Terminal.UserInput, state: State) => {
     const count = visibleRows(options, state).length
@@ -182,24 +172,26 @@ const process =
         }),
       )
     const beep = Effect.succeed(Action.Beep())
+    const move = (cursor: number) =>
+      next(state.filtering ? { cursor } : { cursor, back: 0 })
     switch (input.key.name) {
       case 'up':
-        return next({ cursor: state.cursor - 1 })
+        return move(state.cursor - 1)
       case 'down':
-        return next({ cursor: state.cursor + 1 })
+        return move(state.cursor + 1)
       case 'pageup':
-        return next({ cursor: state.cursor - state.height })
+        return move(state.cursor - state.height)
       case 'pagedown':
-        return next({ cursor: state.cursor + state.height })
+        return move(state.cursor + state.height)
       case 'return':
       case 'enter': {
-        if (state.filtering) return next({ filtering: false })
+        if (state.filtering) return next({ filtering: false, back: 0 })
         const errors = options.validate(state.values)
         if (state.query !== '') {
           const index = visibleRows(options, state)[state.cursor]
           return index !== undefined && errors[index] !== undefined
             ? beep
-            : next({ filtering: true })
+            : next({ filtering: true, back: 0 })
         }
         const valid = errors.every((error) => error === undefined)
         return valid
@@ -208,29 +200,42 @@ const process =
       }
       case 'escape': {
         if (state.filtering) {
-          return next({ filtering: false, query: '', cursor: 0, top: 0 })
+          return next({
+            filtering: false,
+            query: '',
+            cursor: 0,
+            top: 0,
+            back: 0,
+          })
         }
         if (count === 0) return beep
         const index = visibleRows(options, state)[state.cursor]!
         const values = [...state.values]
         values[index] = options.rows[index]!.value
-        return next({ values })
+        return next({ values, back: 0 })
       }
     }
     if (input.key.ctrl && input.key.name === 'f') {
-      return next({ filtering: !state.filtering })
+      return next({ filtering: !state.filtering, back: 0 })
     }
     if (state.filtering) {
-      const query = edit(state.query, input)
-      return query === undefined ? beep : next({ query, cursor: 0, top: 0 })
+      const field = editField({ text: state.query, back: state.back }, input)
+      if (field === undefined) return beep
+      return field.text === state.query
+        ? next({ back: field.back })
+        : next({ query: field.text, back: field.back, cursor: 0, top: 0 })
     }
     if (count === 0) return beep
     const index = visibleRows(options, state)[state.cursor]!
-    const value = edit(state.values[index]!, input)
-    if (value === undefined) return beep
+    const field = editField(
+      { text: state.values[index]!, back: state.back },
+      input,
+      options.accept,
+    )
+    if (field === undefined) return beep
     const values = [...state.values]
-    values[index] = value
-    return next({ values })
+    values[index] = field.text
+    return next({ values, back: field.back })
   }
 
 const initial = (options: TableOptions) =>
@@ -241,6 +246,7 @@ const initial = (options: TableOptions) =>
     return {
       values: options.rows.map((row) => row.value),
       cursor: 0,
+      back: 0,
       top: 0,
       query: '',
       filtering: false,
@@ -254,9 +260,11 @@ export const editTable = (options: TableOptions) =>
     Prompt.Custom<State, ReadonlyArray<string>>(initial(options), {
       render: (state, action) =>
         Effect.succeed(
-          action._tag === 'Submit'
-            ? `${ui.success(options.message)}\n`
-            : ui.hideCursor + frame(options, state).join('\n'),
+          action._tag === 'Beep'
+            ? ''
+            : action._tag === 'Submit'
+              ? `${ui.success(options.message)}\n`
+              : ui.hideCursor + frame(options, state).join('\n'),
         ),
       process: process(options),
       clear: (state) =>

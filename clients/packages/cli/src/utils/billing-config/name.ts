@@ -12,6 +12,7 @@ import {
 import {
   displayName,
   takenKeys,
+  typedKey,
   type Unkeyed,
 } from '@/utils/billing-config/keys'
 import { plural } from '@/utils/billing-config/problems'
@@ -111,6 +112,7 @@ const edit = (
         value: current(resource),
       })),
       validate: problems(editable, fixed, catalog),
+      accept: typedKey,
     })
     return chosen.map((entry) => {
       const index = editable.findIndex(({ id }) => id === entry.id)

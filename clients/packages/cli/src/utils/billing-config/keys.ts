@@ -27,6 +27,11 @@ export const slugify = (name: string) =>
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
 
+export const typedKey = (text: string) => {
+  const key = text.toLowerCase().replace(/ /g, '_')
+  return /^[a-z0-9_-]+$/.test(key) ? key : undefined
+}
+
 const ADVERBS: Record<string, string> = {
   day: 'daily',
   week: 'weekly',

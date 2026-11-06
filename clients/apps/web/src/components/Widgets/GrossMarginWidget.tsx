@@ -73,7 +73,7 @@ const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
       }
       action={
         <WidgetLink
-          href={`/dashboard/${organization.slug}/analytics/events/costs`}
+          href={`/dashboard/${organization.slug}/events/costs`}
         />
       }
       className={className}
@@ -89,7 +89,7 @@ const GrossMarginWidgetContent = ({ className }: GrossMarginWidgetProps) => {
             formatted:
               period.percentage != null ? `${period.percentage}%` : '–',
             highlighted: index === periods.length - 1,
-            href: `/dashboard/${organization.slug}/analytics/events/costs?${new URLSearchParams(
+            href: `/dashboard/${organization.slug}/events/costs?${new URLSearchParams(
               {
                 startDate: toISODate(startOfMonth(period.timestamp)),
                 endDate: toISODate(endOfMonth(period.timestamp)),

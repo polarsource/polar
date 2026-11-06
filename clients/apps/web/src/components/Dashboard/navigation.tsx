@@ -237,10 +237,9 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     id: 'events',
     title: 'Events',
     icon: <BoltOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/analytics/events`,
+    link: `/dashboard/${org?.slug}/events`,
     checkIsActive: (currentRoute: string): boolean =>
-      currentRoute.startsWith(`/dashboard/${org?.slug}/analytics/events`) ||
-      currentRoute.startsWith(`/dashboard/${org?.slug}/analytics/costs`),
+      currentRoute.startsWith(`/dashboard/${org?.slug}/events`),
     if: true,
   },
   {

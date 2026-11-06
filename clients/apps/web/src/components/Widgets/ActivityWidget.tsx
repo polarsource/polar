@@ -83,7 +83,7 @@ const ActivityWidgetContent = ({ className }: ActivityWidgetProps) => {
       }
       action={
         <WidgetLink
-          href={`/dashboard/${organization.slug}/analytics/events?source=system&range=today`}
+          href={`/dashboard/${organization.slug}/events?source=system&range=today`}
         />
       }
       className={className}

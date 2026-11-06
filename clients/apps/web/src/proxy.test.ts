@@ -694,21 +694,30 @@ describe('event explorer redirects', () => {
     return request
   }
 
-  it('redirects an event detail path to the explorer with the event selected', async () => {
+  it('redirects the old events path to the top-level explorer', async () => {
     const response = await proxy(
-      request('/dashboard/acme/analytics/events/0f1b2c3d'),
+      request('/dashboard/acme/analytics/events?range=today'),
     )
 
     expect(response.status).toBe(308)
     expect(response.headers.get('location')).toBe(
-      'https://example.com/dashboard/acme/analytics/events?event=0f1b2c3d',
+      'https://example.com/dashboard/acme/events?range=today',
     )
   })
 
-  it('does not treat the costs mode as an event ID', async () => {
+  it('redirects an old event detail path to the explorer with the event selected', async () => {
     const response = await proxy(
-      request('/dashboard/acme/analytics/events/costs'),
+      request('/dashboard/acme/usage-billing/events/0f1b2c3d'),
     )
+
+    expect(response.status).toBe(308)
+    expect(response.headers.get('location')).toBe(
+      'https://example.com/dashboard/acme/events?event=0f1b2c3d',
+    )
+  })
+
+  it('serves the costs mode of the explorer', async () => {
+    const response = await proxy(request('/dashboard/acme/events/costs'))
 
     expect(response.status).toBe(200)
     expect(response.headers.get('location')).toBeNull()

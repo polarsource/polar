@@ -45,7 +45,7 @@ const eventsPath = (
   eventName: string,
   range: CostRange,
 ) =>
-  `/dashboard/${organizationSlug}/analytics/events?${new URLSearchParams({
+  `/dashboard/${organizationSlug}/events?${new URLSearchParams({
     eventTypes: eventName,
     costOnly: 'true',
     startDate: range.from.toISOString(),

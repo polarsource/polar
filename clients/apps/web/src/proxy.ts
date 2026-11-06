@@ -323,25 +323,16 @@ export async function proxy(request: NextRequest) {
   }
 
   // Redirect deprecated path-based URLs to new structure
-  // Events: /dashboard/{org}/usage-billing/events/* -> /dashboard/{org}/analytics/events/*
-  const eventsPathMatch = request.nextUrl.pathname.match(
-    /^\/dashboard\/([^/]+)\/usage-billing\/events(\/.*)?$/,
+  // Events: /dashboard/{org}/{usage-billing,analytics}/events -> /dashboard/{org}/events
+  // and /dashboard/{org}/{usage-billing,analytics}/events/{id} -> /dashboard/{org}/events?event={id}
+  const legacyEventsMatch = request.nextUrl.pathname.match(
+    /^\/dashboard\/([^/]+)\/(?:usage-billing|analytics)\/events(?:\/([^/]+))?\/?$/,
   )
-  if (eventsPathMatch) {
+  if (legacyEventsMatch) {
+    const [, organizationSlug, eventId] = legacyEventsMatch
     const redirectURL = request.nextUrl.clone()
-    redirectURL.pathname = `/dashboard/${eventsPathMatch[1]}/analytics/events${eventsPathMatch[2] || ''}`
-    return NextResponse.redirect(redirectURL, { status: 308 })
-  }
-
-  // Events: /dashboard/{org}/analytics/events/{id} -> /dashboard/{org}/analytics/events?event={id}
-  // `costs` is the Costs mode of the explorer, not an event ID.
-  const eventDetailMatch = request.nextUrl.pathname.match(
-    /^\/dashboard\/([^/]+)\/analytics\/events\/(?!costs$)([^/]+)$/,
-  )
-  if (eventDetailMatch) {
-    const redirectURL = request.nextUrl.clone()
-    redirectURL.pathname = `/dashboard/${eventDetailMatch[1]}/analytics/events`
-    redirectURL.searchParams.set('event', eventDetailMatch[2])
+    redirectURL.pathname = `/dashboard/${organizationSlug}/events`
+    if (eventId) redirectURL.searchParams.set('event', eventId)
     return NextResponse.redirect(redirectURL, { status: 308 })
   }
 

@@ -13,11 +13,10 @@
 export const ALLOWED_DASHBOARD_PATHS = [
   '', // dashboard home
   'analytics',
-  'analytics/costs',
-  'analytics/events',
-  'analytics/events/costs',
   'analytics/metrics',
   'customers',
+  'events',
+  'events/costs',
   'finance/account',
   'finance/income',
   'finance/payouts',

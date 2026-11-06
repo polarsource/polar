@@ -11,7 +11,7 @@ const OPTIONS: { value: ExplorerMode; label: string }[] = [
 ]
 
 export const explorerPath = (organizationSlug: string, mode: ExplorerMode) =>
-  `/dashboard/${organizationSlug}/analytics/events${mode === 'costs' ? '/costs' : ''}`
+  `/dashboard/${organizationSlug}/events${mode === 'costs' ? '/costs' : ''}`
 
 // Events and Costs are two modes of one explorer. Switching keeps the
 // customer filter, the only filter both modes share.

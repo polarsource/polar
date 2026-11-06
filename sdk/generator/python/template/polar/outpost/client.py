@@ -1279,7 +1279,7 @@ class Outpost:
     ) -> None:
         """Polar's changes went past its retention: no snapshot can be trusted any more.
         Polar snapshots every state again, a page at a time, while reads go on with the
-        state they find; a page Polar does not answer goes cold."""
+        state they find; a state Polar does not confirm goes cold."""
         redis = self._require_redis()
         prefix = f"{self._prefix}:state:"
         page: list[str] = []
@@ -1297,7 +1297,6 @@ class Outpost:
         prefix: str,
         renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
     ) -> None:
-        redis = self._require_redis()
         identities = []
         for key in page:
             customer, reducer_id = key.removeprefix(prefix).rsplit(":", 1)
@@ -1310,10 +1309,7 @@ class Outpost:
                 "POST", "/v1/outpost/meter-usage", json={"identities": identities}
             )
         except httpx.HTTPError:
-            async with redis.pipeline(transaction=False) as pipeline:
-                for key in page:
-                    pipeline.hdel(key, "cold_until", "snapshot_version")
-                await pipeline.execute()
+            await self._drop_snapshots(page)
             return
         limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
 
@@ -1325,6 +1321,21 @@ class Outpost:
         async with self._applying, anyio.create_task_group() as group:
             for snapshot in snapshots:
                 group.start_soon(apply, snapshot)
+        confirmed = {
+            f"{prefix}{self._customer_key(snapshot['customer_id'], snapshot['external_customer_id'])}"
+            f":{snapshot['reducer_id']}"
+            for snapshot in snapshots
+            if snapshot["customer_exists"]
+        }
+        await self._drop_snapshots([key for key in page if key not in confirmed])
+
+    async def _drop_snapshots(self, keys: list[str]) -> None:
+        if not keys:
+            return
+        async with self._require_redis().pipeline(transaction=False) as pipeline:
+            for key in keys:
+                pipeline.hdel(key, "cold_until", "snapshot_version")
+            await pipeline.execute()
 
     def _fail_unless_transient(self, error: Exception) -> None:
         if not _is_connection_error(error):

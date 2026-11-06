@@ -932,7 +932,7 @@ export class Outpost {
 
   // Polar's changes went past its retention: no snapshot can be trusted any more. Polar
   // snapshots every state again, a page at a time, while reads go on with the state they find; a
-  // page Polar does not answer goes cold.
+  // state Polar does not confirm goes cold.
   private async reset(renew: () => Promise<unknown>): Promise<void> {
     const redis = this.requireRedis();
     const prefix = `${this.prefix}:state:`;
@@ -956,9 +956,7 @@ export class Outpost {
           });
         } catch (error) {
           if (error instanceof RefusedError) throw error;
-          const pipeline = redis.pipeline();
-          for (const key of page) pipeline.hdel(key, "cold_until", "snapshot_version");
-          await pipeline.exec();
+          await this.dropSnapshots(page);
           continue;
         }
         await this.serial(() =>
@@ -966,8 +964,27 @@ export class Outpost {
             if (await this.receiveSnapshot(snapshot, true, renew)) await renew();
           }),
         );
+        const confirmed = new Set(
+          snapshots
+            .filter((snapshot) => snapshot.customer_exists)
+            .map(
+              (snapshot) =>
+                `${prefix}${customerKey({
+                  customer_id: snapshot.customer_id ?? undefined,
+                  external_customer_id: snapshot.external_customer_id ?? undefined,
+                })}:${snapshot.reducer_id}`,
+            ),
+        );
+        await this.dropSnapshots(page.filter((key) => !confirmed.has(key)));
       }
     }
+  }
+
+  private async dropSnapshots(keys: string[]): Promise<void> {
+    if (!keys.length) return;
+    const pipeline = this.requireRedis().pipeline();
+    for (const key of keys) pipeline.hdel(key, "cold_until", "snapshot_version");
+    await pipeline.exec();
   }
 
   // Snapshots and what they trigger run one at a time, in order.

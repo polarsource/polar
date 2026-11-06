@@ -78,8 +78,6 @@ class BenefitService:
             statement = repository.apply_catalog_filter(
                 statement, org_ids, catalog_id, catalog_status
             )
-        elif id_in is None:
-            statement = statement.where(Benefit.is_current)
 
         if id_not_in is not None:
             statement = statement.where(Benefit.id.notin_(id_not_in))

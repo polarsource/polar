@@ -139,6 +139,7 @@ const recurringProduct = {
   catalog_id: null,
   description: null,
   is_archived: false,
+  is_current: true,
   organization_id: 'org_1',
   created_at: new Date().toISOString(),
   modified_at: null,

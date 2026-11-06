@@ -1,13 +1,64 @@
 import time
+from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import delete, or_, select, update
+from sqlalchemy import ColumnElement, and_, delete, func, or_, select, update
 from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.enums import TokenType
 from polar.kit.crypto import get_token_hash_candidates
 from polar.kit.repository import RepositoryBase, RepositoryTokenHashMixin
-from polar.models import OAuth2AuthorizationCode, OAuth2Token, OAuth2TokenOrganization
+from polar.models import (
+    OAuth2AuthorizationCode,
+    OAuth2Client,
+    OAuth2Token,
+    OAuth2TokenOrganization,
+)
+
+
+def stale_oauth2_client(cutoff: datetime) -> ColumnElement[bool]:
+    has_tokens = (
+        select(OAuth2Token.id)
+        .where(OAuth2Token.client_id == OAuth2Client.client_id)
+        .exists()
+    )
+    return and_(
+        OAuth2Client.user_id.is_(None),
+        OAuth2Client.agent_id.is_(None),
+        OAuth2Client.created_at < cutoff - timedelta(days=7),
+        OAuth2Client.first_party.is_(False),
+        *(OAuth2Client.client_id != settings.MCP_OAUTH2_CLIENT_ID,)
+        if settings.MCP_OAUTH2_CLIENT_ID
+        else (),
+        ~has_tokens,
+    )
+
+
+class OAuth2ClientRepository(RepositoryBase[OAuth2Client]):
+    model = OAuth2Client
+
+    async def count_stale(self, cutoff: datetime) -> int:
+        statement = (
+            select(func.count())
+            .select_from(OAuth2Client)
+            .where(stale_oauth2_client(cutoff))
+        )
+        return (await self.session.scalar(statement)) or 0
+
+    async def delete_stale(self, cutoff: datetime) -> int:
+        client_ids = (
+            select(OAuth2Client.id)
+            .where(stale_oauth2_client(cutoff))
+            .order_by(OAuth2Client.created_at, OAuth2Client.id)
+            .limit(1000)
+        )
+        statement = (
+            delete(OAuth2Client)
+            .where(OAuth2Client.id.in_(client_ids))
+            .returning(OAuth2Client.id)
+        )
+        return len((await self.session.scalars(statement)).all())
 
 
 class OAuth2TokenRepository(

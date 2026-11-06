@@ -56,6 +56,7 @@ locals {
 
   backend_secrets = merge(
     {
+      POLAR_MCP_OAUTH2_CLIENT_ID  = var.backend_secrets.mcp_oauth2_client_id
       POLAR_DISCORD_BOT_TOKEN     = var.backend_secrets.discord_bot_token
       POLAR_DISCORD_CLIENT_ID     = var.backend_secrets.discord_client_id
       POLAR_DISCORD_CLIENT_SECRET = var.backend_secrets.discord_client_secret

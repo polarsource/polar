@@ -6,6 +6,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
+import { DraftVersionBanner } from '../DraftVersionBanner'
 
 export const formatPublishedAt = (datetime: string | null) => {
   if (!datetime) return ''
@@ -42,7 +43,21 @@ export const ProductVersionBanner = ({
     managedAsCode ? product.catalog_id : null,
   )
 
-  if (catalog?.status !== 'archived' || !product.external_id) {
+  if (!product.external_id) {
+    return null
+  }
+
+  if (catalog?.status === 'draft' && !product.is_current) {
+    return (
+      <DraftProductBanner
+        organization={organization}
+        externalId={product.external_id}
+        draftId={catalog.id}
+      />
+    )
+  }
+
+  if (catalog?.status !== 'archived') {
     return null
   }
 
@@ -52,6 +67,35 @@ export const ProductVersionBanner = ({
       externalId={product.external_id}
       productId={product.id}
       publishedAt={catalog.published_at}
+    />
+  )
+}
+
+const DraftProductBanner = ({
+  organization,
+  externalId,
+  draftId,
+}: {
+  organization: schemas['Organization']
+  externalId: string
+  draftId: string
+}) => {
+  const { data: currentProducts } = useProducts(organization.id, {
+    external_id: externalId,
+    catalog_status: 'live',
+    limit: 1,
+  })
+  const current = currentProducts?.items[0]
+
+  return (
+    <DraftVersionBanner
+      organization={organization}
+      draftId={draftId}
+      currentHref={
+        current
+          ? `/dashboard/${organization.slug}/products/${current.id}`
+          : null
+      }
     />
   )
 }

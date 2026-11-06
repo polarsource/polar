@@ -1,6 +1,7 @@
 import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
 import { useCatalog, useLiveCatalog } from '@/hooks/queries/catalogs'
+import { DraftVersionBanner } from '@/components/Products/DraftVersionBanner'
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -39,9 +40,26 @@ export const BenefitVersionBanner = ({
   const managedAsCode = useIsManagedAsCode(organization.id)
   const { data: liveCatalog } = useLiveCatalog(organization.id, managedAsCode)
   const { data: liveVersion } = useCatalog(liveCatalog?.id)
+  const { data: catalog } = useCatalog(
+    managedAsCode ? benefit.catalog_id : null,
+  )
   const current = liveVersion?.benefits.find(
     ({ external_id }) => external_id === benefit.external_id,
   )
+
+  if (managedAsCode && catalog?.status === 'draft' && !benefit.is_current) {
+    return (
+      <DraftVersionBanner
+        organization={organization}
+        draftId={catalog.id}
+        currentHref={
+          current
+            ? `/dashboard/${organization.slug}/products/benefits/${current.benefit_id}`
+            : null
+        }
+      />
+    )
+  }
 
   if (!managedAsCode || !current || current.benefit_id === benefit.id) {
     return null

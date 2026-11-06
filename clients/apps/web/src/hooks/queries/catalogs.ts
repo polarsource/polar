@@ -68,7 +68,6 @@ export const useCatalogs = (
           params: {
             query: {
               organization_id: organizationId,
-              status: ['live', 'archived'],
               page,
               limit,
             },

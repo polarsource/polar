@@ -166,7 +166,7 @@ def _product_entry(
     benefits = [
         benefit_external_ids.get(str(benefit.id)) for benefit in product.benefits
     ]
-    if product.meter_interval is not None or None in prices or None in benefits:
+    if None in prices or None in benefits:
         return None
     config = ConfigProduct.model_validate(
         {
@@ -178,6 +178,8 @@ def _product_entry(
             "recurring_interval_count": product.recurring_interval_count,
             "trial_interval": product.trial_interval,
             "trial_interval_count": product.trial_interval_count,
+            "meter_interval": product.meter_interval,
+            "meter_interval_count": product.meter_interval_count,
             "prices": prices,
             "benefits": benefits,
             "metadata": product.user_metadata,

@@ -4051,6 +4051,7 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
         },
         TEAM_PRODUCT,
         USAGE_PRODUCT,
+        ANNUAL_PRODUCT,
         {
             "external_id": "devices",
             "name": "Devices",
@@ -4076,7 +4077,7 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestExport:
-    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
     async def test_round_trips_through_apply(
         self,
         mocker: MockerFixture,
@@ -4247,13 +4248,6 @@ class TestExport:
             is_archived=True,
             external_id="archived",
         )
-        separate_cycle = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            meter_interval=SubscriptionRecurringInterval.month,
-            external_id="separate-cycle",
-        )
 
         exported = await declarative_config_service.export(session, auth_subject, None)
 
@@ -4265,7 +4259,6 @@ class TestExport:
             (credits.id, ConfigSkippedReason.invalid),
             (custom_price.id, ConfigSkippedReason.invalid),
             (archived.id, ConfigSkippedReason.archived),
-            (separate_cycle.id, ConfigSkippedReason.invalid),
         ]
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))

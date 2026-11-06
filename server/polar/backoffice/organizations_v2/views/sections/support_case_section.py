@@ -352,7 +352,11 @@ class SupportCaseSection:
         elif assignee_id == self.current_user_id:
             icon, label = "icon-user-check", "Assigned to you"
         else:
-            email = self.author_emails.get(assignee_id, "another agent")
+            email = (
+                self.author_emails.get(case.backoffice_assigned_user_id)
+                if case.backoffice_assigned_user_id is not None
+                else None
+            ) or self.author_emails.get(assignee_id, "another agent")
             icon, label = "icon-user-check", f"Assigned to {email}"
         with tag.div(classes="badge badge-ghost badge-sm gap-1"):
             with tag.span(classes=icon):
@@ -660,11 +664,8 @@ class SupportCaseSection:
         self, message: SupportCaseMessage, is_event: bool, internal: bool
     ) -> list[str]:
         when = message.created_at.strftime("%b %-d, %H:%M UTC")
-        email = (
-            self.author_emails.get(message.author_user_id)
-            if message.author_user_id
-            else None
-        )
+        author_id = message.backoffice_author_user_id or message.author_user_id
+        email = self.author_emails.get(author_id) if author_id is not None else None
         # The title carries the role for chat; events/notes name the actor. The
         # email is the concrete identity. One piece of metadata per line.
         if is_event or internal:

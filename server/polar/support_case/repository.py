@@ -197,7 +197,12 @@ class SupportCaseParticipantRepository(
     model = SupportCaseParticipant
 
     async def upsert_platform_read(
-        self, case_id: UUID, user_id: UUID, *, read_at: datetime
+        self,
+        case_id: UUID,
+        user_id: UUID,
+        backoffice_user_id: UUID,
+        *,
+        read_at: datetime,
     ) -> SupportCaseParticipant:
         """Atomically stamp a staff member's read state for a case.
 
@@ -212,12 +217,16 @@ class SupportCaseParticipantRepository(
                 case_id=case_id,
                 kind=SupportCaseParticipantKind.platform,
                 platform_user_id=user_id,
+                backoffice_platform_user_id=backoffice_user_id,
                 last_read_at=read_at,
             )
             .on_conflict_do_update(
                 index_elements=["case_id", "platform_user_id"],
                 index_where=text("platform_user_id IS NOT NULL AND deleted_at IS NULL"),
-                set_={"last_read_at": read_at},
+                set_={
+                    "last_read_at": read_at,
+                    "backoffice_platform_user_id": backoffice_user_id,
+                },
             )
             .returning(SupportCaseParticipant)
             .execution_options(populate_existing=True)

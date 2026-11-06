@@ -3,7 +3,6 @@ from uuid import UUID
 from reauth.authentication_session import AuthenticationSession
 from reauth.timestamp import get_current_timestamp
 from sqlalchemy import delete, select, update
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import contains_eager
 
 from polar.kit.crypto import get_token_hash_candidates
@@ -73,19 +72,6 @@ class BackofficeAuthenticationSessionRepository(
                 BackofficeAuthenticationSession.expires_at <= get_current_timestamp()
             )
         )
-
-
-class BackofficeUserRepository(RepositoryBase[BackofficeUser]):
-    model = BackofficeUser
-
-    async def provision(self, provider_id: str, email: str) -> BackofficeUser | None:
-        statement = insert(BackofficeUser).values(provider_id=provider_id, email=email)
-        upsert = statement.on_conflict_do_update(
-            index_elements=[BackofficeUser.provider_id],
-            set_={"email": statement.excluded.email},
-            where=BackofficeUser.deleted_at.is_(None),
-        ).returning(BackofficeUser)
-        return (await self.session.scalars(upsert)).one_or_none()
 
 
 class BackofficeUserSessionRepository(

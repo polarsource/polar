@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from reauth.authentication_session import AuthenticationSessionException
 from reauth.exceptions import ReauthException
 
+from polar.backoffice_user.repository import BackofficeUserRepository
 from polar.config import settings
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -21,7 +22,6 @@ from .factor import (
 )
 from .repository import (
     BackofficeAuthenticationSessionRepository,
-    BackofficeUserRepository,
     BackofficeUserSessionRepository,
 )
 from .service import (

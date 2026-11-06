@@ -166,6 +166,33 @@ class TestGoogleLogin:
         assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
         assert (await session.scalars(select(BackofficeUserSession))).first() is None
 
+    @pytest.mark.parametrize(
+        ("existing_provider_id", "expected_status"),
+        [(None, 303), ("other-subject", 409)],
+    )
+    async def test_links_preexisting_staff_by_email(
+        self,
+        client: httpx.AsyncClient,
+        session: AsyncSession,
+        claims: dict[str, object],
+        existing_provider_id: str | None,
+        expected_status: int,
+    ) -> None:
+        staff = BackofficeUser(email="STAFF@polar.sh", provider_id=existing_provider_id)
+        session.add(staff)
+        await session.flush()
+
+        state = await start_login(client, claims)
+        response = await client.get(
+            "/backoffice/auth/callback", params={"state": state, "code": "google-code"}
+        )
+        assert response.status_code == expected_status
+        assert (await session.scalars(select(BackofficeUser))).one() == staff
+        assert staff.provider_id == (existing_provider_id or "google-subject")
+        assert (settings.BACKOFFICE_USER_SESSION_COOKIE_KEY in client.cookies) == (
+            expected_status == 303
+        )
+
     async def test_callback_rejects_state_from_another_flow(
         self, client: httpx.AsyncClient, claims: dict[str, object]
     ) -> None:

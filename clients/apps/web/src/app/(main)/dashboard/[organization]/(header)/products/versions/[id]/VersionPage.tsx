@@ -7,7 +7,7 @@ import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { CurrentBadge, PublishedAt } from '../VersionsPage'
+import { PublishedAt, StatusBadge } from '../VersionsPage'
 import { VersionDiff } from './VersionDiff'
 
 type Organization = schemas['Organization']
@@ -73,7 +73,7 @@ export default function VersionPage({
             </Text>
             <Box flexShrink={0}>
               {catalog.status === 'live' ? (
-                <CurrentBadge />
+                <StatusBadge draft={false} />
               ) : (
                 <Status
                   status={statusLabel[catalog.status]}

@@ -361,8 +361,8 @@ export class Outpost {
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
   private pullRetryAt = 0;
-  // The configuration's revision in the pull hash: undefined until the first read.
-  private configurationRevision?: string | null;
+  // The configuration's revision in the pull hash, as of the configuration this instance runs.
+  private configurationRevision: string | null = null;
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
 
@@ -383,7 +383,7 @@ export class Outpost {
     if (this.redis) throw new PolarError("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;
-    this.configurationRevision = undefined;
+    this.configurationRevision = null;
     this.isConfigured = false;
     this.messages = Promise.resolve();
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
@@ -755,12 +755,15 @@ export class Outpost {
     return `${KEY_VERSION}:configuration:${identity}`;
   }
 
-  private async configure(fromPolar = false): Promise<void> {
+  // False when only Redis may answer and it holds no configuration.
+  private async configure(from: "redis" | "polar" | "either" = "either"): Promise<boolean> {
     const redis = this.requireRedis();
     const unavailable = (error: unknown) => {
       throw redisUnavailable(error);
     };
-    const stored = fromPolar ? null : await redis.get(this.configurationKey).catch(unavailable);
+    const stored =
+      from === "polar" ? null : await redis.get(this.configurationKey).catch(unavailable);
+    if (!stored && from === "redis") return false;
     const configuration: { organization_id: string; reducers: Reducer[] } = stored
       ? JSON.parse(stored)
       : await this.request("GET", "/v1/outpost/configuration");
@@ -771,6 +774,7 @@ export class Outpost {
     this.reducers = reducers;
     this.matchers = withMatchers(reducers);
     this.isConfigured = true;
+    return true;
   }
 
   // A read starts the pull once it is due, and waits for it once the Redis may be stale, no longer
@@ -796,10 +800,10 @@ export class Outpost {
       .catch((error: unknown) => {
         throw redisUnavailable(error);
       });
-    // Another instance pulled a new configuration.
-    if (this.configurationRevision !== undefined && revision !== this.configurationRevision)
-      await this.configure();
-    this.configurationRevision = revision;
+    // Another instance pulled a new configuration, maybe while this one started. Redis holds it;
+    // once Redis lost it, the next read tries again.
+    if (revision !== this.configurationRevision && (await this.configure("redis")))
+      this.configurationRevision = revision;
     this.pulledAt = Number(pulledAt ?? 0);
     this.pullInterval = Number(nextPoll ?? PULL_INTERVAL);
     this.pullRetryAt = Number(retryAt ?? 0);
@@ -874,7 +878,7 @@ export class Outpost {
         pages += 1;
         if (changes.reset) await this.reset();
         if (changes.configuration_changed) {
-          await this.configure(true);
+          await this.configure("polar");
           this.configurationRevision = String(
             await redis.hincrby(this.pullKey, "configuration", 1),
           );

@@ -96,6 +96,7 @@ let changes: Record<string, unknown>[] = [];
 let resetChanges = false;
 let configurationChanged = false;
 let configurationRequests = 0;
+let configurationStatus = 200;
 const changeRequests: (string | null)[] = [];
 let changesStatus = 200;
 let cursor = 0;
@@ -194,6 +195,7 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
   switch (`${request.method} ${url.pathname}`) {
     case "GET /v1/outpost/configuration":
       configurationRequests += 1;
+      if (configurationStatus !== 200) return respond(response, {}, configurationStatus);
       return respond(response, {
         organization_id: token === "Bearer org-2-token" ? "org-2" : organization,
         reducers,
@@ -271,6 +273,7 @@ beforeEach(async () => {
   resetChanges = false;
   configurationChanged = false;
   configurationRequests = 0;
+  configurationStatus = 200;
   changeRequests.length = 0;
   changesStatus = 200;
   meterUsageRequests.length = 0;
@@ -584,6 +587,38 @@ it("reloads the configuration another instance pulled", async () => {
   snapshot = aliceSnapshot;
   expect(await other.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
   expect(configurationRequests).toBe(2);
+});
+
+it("reloads a configuration another instance pulled while this one started", async () => {
+  await start();
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  outposts.push(outpost);
+  const configure = outpost["configure"].bind(outpost);
+  outpost["configure"] = async (...args: Parameters<typeof configure>) => {
+    const configured = await configure(...args);
+    if (args.length) return configured;
+    // Another instance pulls a new configuration before this one reads the pull hash.
+    reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+    const [stored] = await redis.keys("outpost:v1:configuration:*");
+    await redis.set(stored, JSON.stringify({ organization_id: organization, reducers }));
+    await redis.hincrby(`outpost:v1:${organization}:pull`, "configuration", 1);
+    return configured;
+  };
+  await outpost.start();
+  snapshot = aliceSnapshot;
+  expect(await outpost.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
+});
+
+it("keeps its configuration while the stored one is gone, without asking Polar", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  await seed();
+  const outpost = await start();
+  const [stored] = await redis.keys("outpost:v1:configuration:*");
+  await redis.del(stored);
+  await redis.hincrby(`outpost:v1:${organization}:pull`, "configuration", 1);
+  configurationStatus = 503;
+  vi.advanceTimersByTime(30_000);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
 });
 
 it("pulls in the background once due, and waits for it once stale", async () => {

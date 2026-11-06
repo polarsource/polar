@@ -632,9 +632,6 @@ class _Confirmation:
     confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
 
 
-_UNREAD = object()
-
-
 class Outpost:
     def __init__(
         self,
@@ -678,8 +675,9 @@ class Outpost:
         self._read_state: AsyncScript | None = None
         self._redis_available = False
         self._prefix = KEY_VERSION
-        # The configuration's revision in the pull hash: _UNREAD until the first read.
-        self._configuration_revision: bytes | None | object = _UNREAD
+        # The configuration's revision in the pull hash, as of the configuration this
+        # instance runs.
+        self._configuration_revision: bytes | str | None = None
 
     @classmethod
     def create(
@@ -695,7 +693,7 @@ class Outpost:
             raise RuntimeError("Outpost is already connected")
         self._configured = anyio.Event()
         self._pull_retry_at = 0.0
-        self._configuration_revision = _UNREAD
+        self._configuration_revision = None
         self._failure = None
         if self._telemetry:
             self._tracer_provider = create_tracer_provider(self._client)
@@ -1274,12 +1272,20 @@ class Outpost:
             headers.get("authorization"),
             headers.get("polar-organization"),
         ]
-        identity = hashlib.sha256(json.dumps(sent).encode()).hexdigest()
+        # Compact, as JSON.stringify writes it: both SDKs share the key.
+        identity = hashlib.sha256(
+            json.dumps(sent, separators=(",", ":")).encode()
+        ).hexdigest()
         return f"{KEY_VERSION}:configuration:{identity}"
 
-    async def _configure(self, *, from_polar: bool = False) -> None:
+    async def _configure(
+        self, source: typing.Literal["redis", "polar", "either"] = "either"
+    ) -> bool:
+        """False when only Redis may answer and it holds no configuration."""
         redis = self._require_redis()
-        stored = None if from_polar else await redis.get(self._configuration_key)
+        stored = None if source == "polar" else await redis.get(self._configuration_key)
+        if not stored and source == "redis":
+            return False
         configuration: Configuration
         if stored:
             configuration = json.loads(stored)
@@ -1290,6 +1296,7 @@ class Outpost:
         self._reducers = configuration["reducers"]
         self._matchers = with_matchers(self._reducers)
         self._configured.set()
+        return True
 
     async def _refresh(self) -> None:
         """A read starts the pull once it is due, and waits for it once the Redis may be
@@ -1317,13 +1324,10 @@ class Outpost:
         pulled_at, next_poll_in, retry_at, revision = await self._require_redis().hmget(
             self._pull_key, "pulled_at", "next_poll_in", "retry_at", "configuration"
         )
-        # Another instance pulled a new configuration.
-        if (
-            self._configuration_revision is not _UNREAD
-            and revision != self._configuration_revision
-        ):
-            await self._configure()
-        self._configuration_revision = revision
+        # Another instance pulled a new configuration, maybe while this one started.
+        # Redis holds it; once Redis lost it, the next read tries again.
+        if revision != self._configuration_revision and await self._configure("redis"):
+            self._configuration_revision = revision
         self._pulled_at = float(pulled_at) / 1000 if pulled_at else 0.0
         self._pull_interval = (
             float(next_poll_in) / 1000 if next_poll_in else PULL_INTERVAL
@@ -1443,7 +1447,7 @@ class Outpost:
                 if changes["reset"]:
                     await self._reset()
                 if changes["configuration_changed"]:
-                    await self._configure(from_polar=True)
+                    await self._configure("polar")
                     revision = await redis.hincrby(self._pull_key, "configuration", 1)
                     self._configuration_revision = str(revision).encode()
                 # Each customer's snapshots apply in order; customers apply side by side.

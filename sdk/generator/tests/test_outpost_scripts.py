@@ -11,6 +11,10 @@ def test_loads_every_outpost_script() -> None:
         "write_bucket",
         "confirm",
         "apply_snapshot",
+        "commit_pull",
+        "backoff",
+        "release_lock",
+        "extend_lock",
     }
 
 

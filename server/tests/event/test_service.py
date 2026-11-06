@@ -1565,6 +1565,46 @@ class TestIngest:
         with pytest.raises(PolarRequestValidationError):
             await event_service.ingest(session, auth_subject, ingest)
 
+    @pytest.mark.auth
+    async def test_ingest_with_member_id_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+        member_organization_second = await create_member(
+            save_fixture,
+            customer=customer_organization_second,
+            organization=organization_second,
+        )
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="api.request",
+                    customer_id=customer.id,
+                    member_id=member_organization_second.id,
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        [error] = e.value.errors()
+        assert error["loc"] == ("body", "events", 0, "member_id")
+
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_ingest_with_external_member_id(
         self,

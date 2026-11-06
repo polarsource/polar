@@ -16929,11 +16929,8 @@ export interface components {
       settings: components['schemas']['ConfigSettingsRead']
       /** Meters */
       meters: components['schemas']['ConfigMeterRead'][]
-      /**
-       * Custom Fields
-       * @description Left out without the `custom_fields:read` or `custom_fields:write` scope.
-       */
-      custom_fields?: components['schemas']['ConfigCustomFieldRead'][] | null
+      /** Custom Fields */
+      custom_fields: components['schemas']['ConfigCustomFieldRead'][]
       /** Benefits */
       benefits: components['schemas']['ConfigBenefitRead'][]
       /** Products */

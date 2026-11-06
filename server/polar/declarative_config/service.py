@@ -632,14 +632,7 @@ class DeclarativeConfigService:
             OrganizationPermission.products_read,
         )
         catalog = await catalog_service.resolve(session, organization, catalog_id)
-        return await export_config(
-            session,
-            organization,
-            catalog,
-            include_custom_fields=bool(
-                auth_subject.scopes & set(SECTION_SCOPES["custom_fields"])
-            ),
-        )
+        return await export_config(session, organization, catalog)
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

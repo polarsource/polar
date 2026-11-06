@@ -952,13 +952,7 @@ class ConfigSettingsRead(_ConfigRead):
 class ConfigExportDocument(_ConfigRead):
     settings: ConfigSettingsRead
     meters: list[ConfigMeterRead]
-    custom_fields: list[ConfigCustomFieldRead] | None = Field(
-        default=None,
-        exclude_if=lambda custom_fields: custom_fields is None,
-        description=(
-            "Left out without the `custom_fields:read` or `custom_fields:write` scope."
-        ),
-    )
+    custom_fields: list[ConfigCustomFieldRead]
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]
 

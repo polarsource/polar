@@ -4619,29 +4619,6 @@ class TestExport:
         assert {change.action for change in applied.changes} == {ConfigAction.unchanged}
         assert again.config == exported.config
 
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_custom_fields_need_their_scope(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Agent],
-        organization: Organization,
-    ) -> None:
-        await create_custom_field(
-            save_fixture,
-            type=CustomFieldType.text,
-            slug="company",
-            organization=organization,
-        )
-
-        exported = await declarative_config_service.export(
-            session, auth_subject, organization.id
-        )
-
-        assert "custom_fields" not in exported.config.model_dump()
-        assert exported.skipped == []
-
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_exports_only_current_versions(
         self,
@@ -4787,15 +4764,6 @@ class TestExport:
             (archived.id, ConfigSkippedReason.archived),
             (separate_cycle.id, ConfigSkippedReason.invalid),
         ]
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_agent(
-        self, session: AsyncSession, auth_subject: AuthSubject[Agent]
-    ) -> None:
-        exported = await declarative_config_service.export(session, auth_subject, None)
-
-        assert exported.skipped == []
 
     @pytest.mark.auth(
         AuthSubjectFixture(

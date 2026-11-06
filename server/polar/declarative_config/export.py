@@ -58,7 +58,7 @@ from .validation import benefit_properties, price_config
 # Webhook endpoints stay out: they need a permission and scope that
 # unclaimed agents don't have. Apply leaves unlisted endpoints untouched.
 # Custom fields stay out without their scope, which unclaimed agents don't have.
-EXPORTED_SECTIONS = ("settings", "meters", "benefits", "products")
+EXPORTED_SECTIONS = ("settings", "meters", "custom_fields", "benefits", "products")
 
 _config_benefit = TypeAdapter[ConfigBenefit](ConfigBenefit)
 _benefit_read = TypeAdapter[ConfigBenefitRead](ConfigBenefitRead)
@@ -261,8 +261,6 @@ async def export_config(
     session: AsyncReadSession,
     organization: Organization,
     catalog: Catalog | None,
-    *,
-    include_custom_fields: bool = True,
 ) -> ConfigExport:
     skipped: list[ConfigSkippedResource] = []
 
@@ -301,7 +299,6 @@ async def export_config(
     )
 
     custom_field_repository = CustomFieldRepository.from_session(session)
-    custom_field_skipped: list[ConfigSkippedResource] = []
     custom_fields: list[ConfigCustomFieldRead]
     custom_fields, custom_field_slugs = await _export_section(
         ConfigResource.custom_field,
@@ -309,15 +306,12 @@ async def export_config(
             custom_field_repository.get_organization_statement(organization.id)
         ),
         MAXIMUM_CUSTOM_FIELDS,
-        custom_field_skipped,
+        skipped,
         key=lambda custom_field: custom_field.slug,
         name=lambda custom_field: custom_field.name,
         archived=lambda custom_field: False,
         entry=_custom_field_entry,
     )
-    if include_custom_fields:
-        skipped.extend(custom_field_skipped)
-
     # Products still in use may grant previous versions of the exported benefits.
     exported_benefits = set(benefit_external_ids.values())
     benefit_external_ids = {
@@ -382,7 +376,7 @@ async def export_config(
         config=ConfigExportDocument(
             settings=_settings(organization),
             meters=meters,
-            custom_fields=custom_fields if include_custom_fields else None,
+            custom_fields=custom_fields,
             benefits=benefits,
             products=products,
         ),

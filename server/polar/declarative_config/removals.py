@@ -165,9 +165,7 @@ async def custom_fields(
     if not missing:
         return []
     exported = await export_config(session, organization, None)
-    describable = {
-        custom_field.slug for custom_field in exported.config.custom_fields or []
-    }
+    describable = {custom_field.slug for custom_field in exported.config.custom_fields}
     return [
         custom_field for custom_field in missing if custom_field.slug in describable
     ]

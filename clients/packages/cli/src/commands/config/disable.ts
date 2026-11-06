@@ -36,8 +36,8 @@ const approve = (
     }
     yield* say([
       ui.blank,
-      `${ui.INDENT}Disabling discards the draft catalog and removes the published one.`,
-      `${ui.INDENT}Products and benefits keep selling, and can be edited in the dashboard again.`,
+      `${ui.INDENT}Your products and benefits stay as they are, and can be edited in the dashboard again.`,
+      `${ui.INDENT}Changes in the draft that were not published are discarded.`,
       ui.blank,
     ])
     const accepted = yield* Prompt.run(

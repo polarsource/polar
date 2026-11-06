@@ -225,6 +225,12 @@ def changes() -> dict[str, typing.Any]:
     }
 
 
+# Polar's answer to a configuration request.
+@pytest.fixture
+def configuration_status() -> dict[str, int]:
+    return {"status": 200}
+
+
 # Polar's answer to every request when set: 401 refuses Outpost.
 @pytest.fixture
 def refusal() -> dict[str, int | None]:
@@ -254,6 +260,7 @@ async def polar_client(
     refusal: dict[str, int | None],
     ingested: set[str],
     confirmations: dict[str, typing.Any],
+    configuration_status: dict[str, int],
 ) -> collections.abc.AsyncIterator[httpx.AsyncClient]:
     def identity(body: dict[str, typing.Any]) -> str:
         kind = "customer" if "customer_id" in body else "external"
@@ -261,7 +268,13 @@ async def polar_client(
         return f"{kind}:{identifier}:{body['reducer_id']}"
 
     async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
-        assert (b"authorization", b"Bearer test-token") in scope["headers"]
+        # Each organization's token: organizations can share a Redis.
+        token = dict(scope["headers"])[b"authorization"]
+        assert token in (
+            b"Bearer test-token",
+            b"Bearer other-token",
+            b"Bearer org-2-token",
+        )
         data = b""
         while True:
             message = await receive()
@@ -287,6 +300,10 @@ async def polar_client(
         route = f"{scope['method']} {scope['path']}"
         if route == "GET /v1/outpost/configuration":
             polar_requests.append((route, None))
+            if configuration_status["status"] != 200:
+                return await respond({}, configuration_status["status"])
+            if token == b"Bearer org-2-token":
+                return await respond({**configuration, "organization_id": "org-2"})
             return await respond(configuration)
         if route == "POST /v1/outpost/meter-usage":
             polar_requests.append((route, body))
@@ -610,7 +627,7 @@ async def test_customer_meter_reads_at_once_on_the_writer_and_its_peers(
     assert meter.consumed_units == expected
     assert meter.credited_units == 20
     assert meter.balance == 20 - expected
-    assert len(_requested(polar_requests, "GET /v1/outpost/configuration")) == 2
+    assert len(_requested(polar_requests, "GET /v1/outpost/configuration")) == 1
     assert not polar_client.is_closed
 
 
@@ -924,17 +941,22 @@ async def test_skips_a_pulled_snapshot_of_a_customer_nobody_reads(
 async def test_keeps_two_organizations_apart_on_one_redis(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
-    configuration: dict[str, typing.Any],
     changes: dict[str, typing.Any],
 ) -> None:
     url, redis = redis_connection
     key = "outpost:v1:org-1:state:external:alice:tokens"
     await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
     await _credit(redis, 100)
-    async with Outpost(url, client=polar_client) as first:
+    async with (
+        Outpost(url, client=polar_client) as first,
+        httpx.AsyncClient(
+            base_url=polar_client.base_url,
+            headers={"Authorization": "Bearer org-2-token"},
+            transport=polar_client._transport,
+        ) as org_2_client,
+    ):
         await first.actor(external_customer_id="alice")
-        configuration["organization_id"] = "org-2"
-        async with Outpost(url, client=polar_client) as second:
+        async with Outpost(url, client=org_2_client) as second:
             changes["reset"] = True
             await second._pull()
         assert await redis.hget(key, "cold_until") == str(BUCKET).encode()
@@ -989,6 +1011,150 @@ async def test_fetches_the_configuration_again_when_polar_changed_it(
         snapshots["external:alice:requests"] = ALICE_SNAPSHOT
         assert (
             await outpost.meter(meter_id="requests", external_customer_id="alice")
+            is not None
+        )
+
+
+@pytest.mark.anyio
+async def test_reads_the_configuration_another_instance_kept_in_redis_without_asking_polar(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    polar_requests: list[tuple[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client), Outpost(url, client=polar_client):
+        pass
+    assert len(_requested(polar_requests, "GET /v1/outpost/configuration")) == 1
+
+
+@pytest.mark.anyio
+async def test_reloads_the_configuration_another_instance_pulled(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    polar_requests: list[tuple[str, typing.Any]],
+    clock: types.SimpleNamespace,
+) -> None:
+    url, _ = redis_connection
+    async with (
+        Outpost(url, client=polar_client) as puller,
+        Outpost(url, client=polar_client) as other,
+    ):
+        configuration["reducers"].append(
+            {
+                **configuration["reducers"][0],
+                "id": "requests",
+                "meter_ids": ["requests"],
+            }
+        )
+        changes["configuration_changed"] = True
+        await puller._pull()
+        clock.elapsed += 30
+        snapshots["external:alice:requests"] = ALICE_SNAPSHOT
+        assert (
+            await other.meter(meter_id="requests", external_customer_id="alice")
+            is not None
+        )
+    assert len(_requested(polar_requests, "GET /v1/outpost/configuration")) == 2
+
+
+@pytest.mark.anyio
+async def test_reloads_a_configuration_another_instance_pulled_while_this_one_started(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    outpost = Outpost(url, client=polar_client)
+    configure = outpost._configure
+
+    async def configure_then_publish(
+        source: typing.Literal["redis", "polar", "either"] = "either",
+    ) -> bool:
+        configured = await configure(source)
+        if source != "either":
+            return configured
+        # Another instance pulls a new configuration before this one reads the pull hash.
+        configuration["reducers"].append(
+            {
+                **configuration["reducers"][0],
+                "id": "requests",
+                "meter_ids": ["requests"],
+            }
+        )
+        [stored] = await redis.keys("outpost:v1:configuration:*")
+        await redis.set(stored, json.dumps(configuration))
+        await redis.set("outpost:v1:org-1:configuration", json.dumps(configuration))
+        await redis.hincrby("outpost:v1:org-1:pull", "configuration", 1)
+        return configured
+
+    monkeypatch.setattr(outpost, "_configure", configure_then_publish)
+    async with Outpost(url, client=polar_client), outpost:
+        snapshots["external:alice:requests"] = ALICE_SNAPSHOT
+        assert (
+            await outpost.meter(meter_id="requests", external_customer_id="alice")
+            is not None
+        )
+
+
+@pytest.mark.anyio
+async def test_keeps_its_configuration_while_the_stored_one_is_gone_without_asking_polar(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration_status: dict[str, int],
+    polar_requests: list[tuple[str, typing.Any]],
+    clock: types.SimpleNamespace,
+) -> None:
+    url, redis = redis_connection
+    await redis.hset(
+        "outpost:v1:org-1:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "cold:sum": 10},
+    )
+    await _credit(redis, 100)
+    async with Outpost(url, client=polar_client) as outpost:
+        [stored] = await redis.keys("outpost:v1:configuration:*")
+        await redis.delete(stored, "outpost:v1:org-1:configuration")
+        await redis.hincrby("outpost:v1:org-1:pull", "configuration", 1)
+        configuration_status["status"] = 503
+        clock.elapsed += 30
+        assert await _consumed(outpost) == 10
+    assert len(_requested(polar_requests, "GET /v1/outpost/configuration")) == 1
+
+
+@pytest.mark.anyio
+async def test_reloads_a_configuration_another_token_of_the_organization_pulled(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, _ = redis_connection
+    async with (
+        httpx.AsyncClient(
+            base_url=polar_client.base_url,
+            headers={"Authorization": "Bearer other-token"},
+            transport=polar_client._transport,
+        ) as other_client,
+        Outpost(url, client=polar_client) as puller,
+        Outpost(url, client=other_client) as other,
+    ):
+        configuration["reducers"].append(
+            {
+                **configuration["reducers"][0],
+                "id": "requests",
+                "meter_ids": ["requests"],
+            }
+        )
+        changes["configuration_changed"] = True
+        await puller._pull()
+        snapshots["external:alice:requests"] = ALICE_SNAPSHOT
+        assert (
+            await other.meter(meter_id="requests", external_customer_id="alice")
             is not None
         )
 

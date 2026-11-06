@@ -13,7 +13,7 @@ import {
   type Tracer,
 } from "@opentelemetry/api";
 import { Redis, type ChainableCommander } from "ioredis";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 
 import type { EventInput } from "../metering/event";
@@ -361,6 +361,8 @@ export class Outpost {
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
   private pullRetryAt = 0;
+  // The configuration's revision in the pull hash, as of the configuration this instance runs.
+  private configurationRevision: string | null = null;
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
 
@@ -381,6 +383,7 @@ export class Outpost {
     if (this.redis) throw new PolarError("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;
+    this.configurationRevision = null;
     this.isConfigured = false;
     this.messages = Promise.resolve();
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
@@ -741,15 +744,41 @@ export class Outpost {
     return client.parseResponse<T>(response, "json");
   }
 
-  private async configure(): Promise<void> {
-    const { organization_id, reducers } = await this.request<{
-      organization_id: string;
-      reducers: Reducer[];
-    }>("GET", "/v1/outpost/configuration");
+  // The instances of a token share its configuration in Redis, where a new instance reads it
+  // instead of asking Polar. The key hashes the token: Redis never sees it.
+  private get configurationKey(): string {
+    const [url, { headers }] = this.options.client.buildRequest("GET", "/v1/outpost/configuration");
+    const sent = new Headers(headers);
+    const identity = createHash("sha256")
+      .update(JSON.stringify([url, sent.get("authorization"), sent.get("polar-organization")]))
+      .digest("hex");
+    return `${KEY_VERSION}:configuration:${identity}`;
+  }
+
+  // From "redis", the organization's copy: every token of the organization reloads it once the
+  // pull hash says the configuration changed. False when Redis holds none.
+  private async configure(from: "redis" | "polar" | "either" = "either"): Promise<boolean> {
+    const redis = this.requireRedis();
+    const unavailable = (error: unknown) => {
+      throw redisUnavailable(error);
+    };
+    const key = from === "redis" ? `${this.prefix}:configuration` : this.configurationKey;
+    const stored = from === "polar" ? null : await redis.get(key).catch(unavailable);
+    if (!stored && from === "redis") return false;
+    const configuration: { organization_id: string; reducers: Reducer[] } = stored
+      ? JSON.parse(stored)
+      : await this.request("GET", "/v1/outpost/configuration");
+    const { organization_id, reducers } = configuration;
     this.prefix = `${KEY_VERSION}:${organization_id}`;
     this.reducers = reducers;
     this.matchers = withMatchers(reducers);
     this.isConfigured = true;
+    if (!stored) {
+      const json = JSON.stringify(configuration);
+      await redis.set(this.configurationKey, json).catch(unavailable);
+      await redis.set(`${this.prefix}:configuration`, json).catch(unavailable);
+    }
+    return true;
   }
 
   // A read starts the pull once it is due, and waits for it once the Redis may be stale, no longer
@@ -770,11 +799,15 @@ export class Outpost {
   }
 
   private async loadPull(): Promise<void> {
-    const [pulledAt, nextPoll, retryAt] = await this.requireRedis()
-      .hmget(this.pullKey, "pulled_at", "next_poll_in", "retry_at")
+    const [pulledAt, nextPoll, retryAt, revision] = await this.requireRedis()
+      .hmget(this.pullKey, "pulled_at", "next_poll_in", "retry_at", "configuration")
       .catch((error: unknown) => {
         throw redisUnavailable(error);
       });
+    // Another instance pulled a new configuration, maybe while this one started. Redis holds it;
+    // once Redis lost it, the next read tries again.
+    if (revision !== this.configurationRevision && (await this.configure("redis")))
+      this.configurationRevision = revision;
     this.pulledAt = Number(pulledAt ?? 0);
     this.pullInterval = Number(nextPoll ?? PULL_INTERVAL);
     this.pullRetryAt = Number(retryAt ?? 0);
@@ -848,7 +881,12 @@ export class Outpost {
         });
         pages += 1;
         if (changes.reset) await this.reset();
-        if (changes.configuration_changed) await this.configure();
+        if (changes.configuration_changed) {
+          await this.configure("polar");
+          this.configurationRevision = String(
+            await redis.hincrby(this.pullKey, "configuration", 1),
+          );
+        }
         // Each customer's snapshots apply in order; customers apply side by side.
         const customers = new Map<string, Snapshot[]>();
         for (const snapshot of changes.changes) {

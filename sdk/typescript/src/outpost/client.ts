@@ -13,7 +13,7 @@ import {
   type Tracer,
 } from "@opentelemetry/api";
 import { Redis, type ChainableCommander } from "ioredis";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 
 import type { EventInput } from "../metering/event";
@@ -361,6 +361,8 @@ export class Outpost {
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
   private pullRetryAt = 0;
+  // The configuration's revision in the pull hash: undefined until the first read.
+  private configurationRevision?: string | null;
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
 
@@ -381,6 +383,7 @@ export class Outpost {
     if (this.redis) throw new PolarError("Outpost is already connected");
     this.failure = undefined;
     this.pullRetryAt = 0;
+    this.configurationRevision = undefined;
     this.isConfigured = false;
     this.messages = Promise.resolve();
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
@@ -741,11 +744,29 @@ export class Outpost {
     return client.parseResponse<T>(response, "json");
   }
 
-  private async configure(): Promise<void> {
-    const { organization_id, reducers } = await this.request<{
-      organization_id: string;
-      reducers: Reducer[];
-    }>("GET", "/v1/outpost/configuration");
+  // The instances of a token share its configuration in Redis, where a new instance reads it
+  // instead of asking Polar. The key hashes the token: Redis never sees it.
+  private get configurationKey(): string {
+    const [url, { headers }] = this.options.client.buildRequest("GET", "/v1/outpost/configuration");
+    const sent = new Headers(headers);
+    const identity = createHash("sha256")
+      .update(JSON.stringify([url, sent.get("authorization"), sent.get("polar-organization")]))
+      .digest("hex");
+    return `${KEY_VERSION}:configuration:${identity}`;
+  }
+
+  private async configure(fromPolar = false): Promise<void> {
+    const redis = this.requireRedis();
+    const unavailable = (error: unknown) => {
+      throw redisUnavailable(error);
+    };
+    const stored = fromPolar ? null : await redis.get(this.configurationKey).catch(unavailable);
+    const configuration: { organization_id: string; reducers: Reducer[] } = stored
+      ? JSON.parse(stored)
+      : await this.request("GET", "/v1/outpost/configuration");
+    if (!stored)
+      await redis.set(this.configurationKey, JSON.stringify(configuration)).catch(unavailable);
+    const { organization_id, reducers } = configuration;
     this.prefix = `${KEY_VERSION}:${organization_id}`;
     this.reducers = reducers;
     this.matchers = withMatchers(reducers);
@@ -770,11 +791,15 @@ export class Outpost {
   }
 
   private async loadPull(): Promise<void> {
-    const [pulledAt, nextPoll, retryAt] = await this.requireRedis()
-      .hmget(this.pullKey, "pulled_at", "next_poll_in", "retry_at")
+    const [pulledAt, nextPoll, retryAt, revision] = await this.requireRedis()
+      .hmget(this.pullKey, "pulled_at", "next_poll_in", "retry_at", "configuration")
       .catch((error: unknown) => {
         throw redisUnavailable(error);
       });
+    // Another instance pulled a new configuration.
+    if (this.configurationRevision !== undefined && revision !== this.configurationRevision)
+      await this.configure();
+    this.configurationRevision = revision;
     this.pulledAt = Number(pulledAt ?? 0);
     this.pullInterval = Number(nextPoll ?? PULL_INTERVAL);
     this.pullRetryAt = Number(retryAt ?? 0);
@@ -848,7 +873,12 @@ export class Outpost {
         });
         pages += 1;
         if (changes.reset) await this.reset();
-        if (changes.configuration_changed) await this.configure();
+        if (changes.configuration_changed) {
+          await this.configure(true);
+          this.configurationRevision = String(
+            await redis.hincrby(this.pullKey, "configuration", 1),
+          );
+        }
         // Each customer's snapshots apply in order; customers apply side by side.
         const customers = new Map<string, Snapshot[]>();
         for (const snapshot of changes.changes) {

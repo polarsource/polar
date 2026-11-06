@@ -30,7 +30,7 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const publishedAt = (catalog: schemas['Catalog']) =>
   catalog.published_at ?? catalog.created_at
 
-const StatusBadge = ({ draft }: { draft: boolean }) => (
+export const StatusBadge = ({ draft }: { draft: boolean }) => (
   <Box
     as="span"
     display="inline-flex"

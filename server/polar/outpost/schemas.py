@@ -40,8 +40,8 @@ type EpochMicroseconds = typing.Annotated[
     PlainSerializer(to_epoch_microseconds, return_type=int),
 ]
 
-# Pending ids per confirmation request: the client splits a bigger bucket.
 CONFIRM_MAX_IDS = 1000
+METER_USAGE_MAX_IDENTITIES = 500
 
 
 class MessageBase(BaseModel):
@@ -80,6 +80,12 @@ type MeterUsageIncomingMessagePayload = (
     MeterUsageIncomingMessageCustomerPayload
     | MeterUsageIncomingMessageExternalCustomerPayload
 )
+
+
+class MeterUsageIncomingPayload(Schema):
+    identities: list[MeterUsageIncomingMessagePayload] = Field(
+        min_length=1, max_length=METER_USAGE_MAX_IDENTITIES
+    )
 
 
 class MeterUsageIncomingMessage(IncomingMessageBase):

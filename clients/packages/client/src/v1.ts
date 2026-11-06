@@ -6997,7 +6997,7 @@ export interface paths {
     put?: never
     /**
      * Meter Usage
-     * @description The snapshot of every identity of the customer.
+     * @description The snapshot of every identity of each requested customer.
      *
      *     **Scopes**: `events:write`
      */
@@ -27766,6 +27766,14 @@ export interface components {
       reducer_id: string
       /** External Customer Id */
       external_customer_id: string
+    }
+    MeterUsageIncomingMessagePayload:
+      | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
+      | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+    /** MeterUsageIncomingPayload */
+    MeterUsageIncomingPayload: {
+      /** Identities */
+      identities: components['schemas']['MeterUsageIncomingMessagePayload'][]
     }
     /** MeterUsageOutgoingMessagePayload */
     MeterUsageOutgoingMessagePayload: {
@@ -64787,9 +64795,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json':
-          | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
-          | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+        'application/json': components['schemas']['MeterUsageIncomingPayload']
       }
     }
     responses: {

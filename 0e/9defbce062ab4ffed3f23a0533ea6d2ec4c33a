@@ -5,6 +5,7 @@ server/scripts/backfill_usage_reducer_buckets.py
   s_d8ff38491769f9::t_c24f72b4de1ec5 6,62-63,119-127,137-145
   s_d8ff38491769f9::t_6d631e7fca9909 196,214,593
   s_d8ff38491769f9::t_af409143331eea 103
+  s_d8ff38491769f9::t_5b9b17b945341f 106
 server/tests/scripts/test_backfill_usage_reducer_buckets.py
   s_d8ff38491769f9::t_5379a083b276a2 342-344,349-352,354-359,363-379,381-383,386-394
   s_d8ff38491769f9::t_87c7f11d585209 395

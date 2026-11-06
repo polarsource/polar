@@ -110,7 +110,10 @@ let ingested = new Set<string>();
 let answerConfirm = true;
 let confirmSnapshot: Record<string, unknown> | undefined;
 const confirmRequests: Record<string, unknown>[] = [];
+// Each identity asked for, and the size of each meter usage request.
 const meterUsageRequests: Record<string, unknown>[] = [];
+const meterUsageBatches: number[] = [];
+let meterUsageStatus = 200;
 const outposts: Outpost[] = [];
 
 const creditReducer = (id: string, meterId: string): Reducer => ({
@@ -201,19 +204,26 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
         reducers,
       });
     case "POST /v1/outpost/meter-usage": {
-      meterUsageRequests.push(body);
+      const identities: Record<string, unknown>[] = body.identities;
+      meterUsageRequests.push(...identities);
+      meterUsageBatches.push(identities.length);
+      if (meterUsageStatus !== 200) return respond(response, {}, meterUsageStatus);
       if (!snapshot) return respond(response, []);
-      const reducerId: string = body.reducer_id;
-      const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
-      const { delay = 0, ...override } = reducerSnapshots[reducerId] ?? {};
-      const payload = {
-        customer_exists: true,
-        ...snapshot,
-        ...(kind === "credit" && creditSnapshot(credited, snapshot.version as number)),
-        reducer_id: reducerId,
-        ...override,
-      };
-      setTimeout(() => respond(response, [payload]), delay);
+      let delay = 0;
+      const payloads = identities.map(({ reducer_id }) => {
+        const reducerId = reducer_id as string;
+        const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
+        const { delay: wait = 0, ...override } = reducerSnapshots[reducerId] ?? {};
+        delay = Math.max(delay, wait);
+        return {
+          customer_exists: true,
+          ...snapshot,
+          ...(kind === "credit" && creditSnapshot(credited, snapshot!.version as number)),
+          reducer_id: reducerId,
+          ...override,
+        };
+      });
+      setTimeout(() => respond(response, payloads), delay);
       return;
     }
     case "POST /v1/outpost/confirm": {
@@ -277,6 +287,8 @@ beforeEach(async () => {
   changeRequests.length = 0;
   changesStatus = 200;
   meterUsageRequests.length = 0;
+  meterUsageBatches.length = 0;
+  meterUsageStatus = 200;
   credited = 100;
   reducerSnapshots = {};
   ingested = new Set();
@@ -550,13 +562,27 @@ it("skips a pulled snapshot of a customer nobody reads", async () => {
   expect(await redis.exists(key)).toBe(0);
 });
 
-it("drops every snapshot once Polar's changes went past their retention", async () => {
+it("revalidates every state in one request once Polar's changes went past their retention", async () => {
   await seed();
   const outpost = await start();
   await outpost.actor(customer);
+  snapshot = aliceSnapshot;
+  resetChanges = true;
+  await outpost["pull"]();
+  expect(meterUsageBatches).toEqual([2]);
+  expect(await redis.hget(key, "snapshot_version")).toBe(String(aliceSnapshot.version));
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+});
+
+it("drops the snapshots Polar could not revalidate after a reset", async () => {
+  await seed();
+  const outpost = await start();
+  await outpost.actor(customer);
+  meterUsageStatus = 503;
   resetChanges = true;
   await outpost["pull"]();
   expect(await redis.hget(key, "cold_until")).toBeNull();
+  meterUsageStatus = 200;
   snapshot = aliceSnapshot;
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(3));
 });

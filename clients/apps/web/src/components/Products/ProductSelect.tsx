@@ -132,8 +132,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
     filterByExternalId
       ? { organization_id: organization.id, external_id: value }
       : { id: value },
-    includeArchived,
-    includeArchived,
+    { includeArchived, includeAllVersions: includeArchived },
   )
 
   // Queried products, show a selection of products based on the query

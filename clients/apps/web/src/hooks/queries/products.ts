@@ -58,11 +58,14 @@ type ProductSelector =
 
 export const useSelectedProducts = (
   selector: ProductSelector,
-  includeArchived = false,
-  allVersions = false,
+  {
+    includeArchived = false,
+    // Versions outside the live catalog, unlike the archived flag above.
+    includeAllVersions = false,
+  }: { includeArchived?: boolean; includeAllVersions?: boolean } = {},
 ) =>
   useQuery({
-    queryKey: ['products', selector, includeArchived, allVersions],
+    queryKey: ['products', selector, includeArchived, includeAllVersions],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1
@@ -72,7 +75,7 @@ export const useSelectedProducts = (
             params: {
               query: {
                 ...selector,
-                ...('id' in selector || allVersions
+                ...('id' in selector || includeAllVersions
                   ? {}
                   : { catalog_status: 'live' as const }),
                 is_archived: includeArchived ? null : false,
@@ -238,13 +241,13 @@ export const useCurrentProductIds = (
   const enabled = !!organization.feature_settings?.config_as_code_enabled
   const savedQuery = useSelectedProducts(
     { id: enabled ? productIds : [] },
-    true,
+    { includeArchived: true },
   )
   const saved = savedQuery.data
   const externalIds = saved?.flatMap((product) => product.external_id ?? [])
   const currentQuery = useSelectedProducts(
     { organization_id: organization.id, external_id: externalIds ?? [] },
-    true,
+    { includeArchived: true },
   )
   const current = currentQuery.data
   if (savedQuery.isLoading || currentQuery.isLoading) {

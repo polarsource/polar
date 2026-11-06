@@ -101,8 +101,7 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     filterByExternalId
       ? { organization_id: organization.id, external_id: selectedValues }
       : { id: selectedValues },
-    true,
-    true,
+    { includeArchived: true, includeAllVersions: true },
   )
 
   const products = useMemo<schemas['Product'][]>(() => {

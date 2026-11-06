@@ -86,8 +86,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     filterByExternalId
       ? { organization_id: organization.id, external_id: productFilter ?? [] }
       : { id: productFilter ?? [] },
-    true,
-    true,
+    { includeArchived: true, includeAllVersions: true },
   )
 
   const productOptions = useMemo<FilterOption[]>(() => {

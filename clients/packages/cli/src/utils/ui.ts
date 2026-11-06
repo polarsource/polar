@@ -138,13 +138,21 @@ export const truncate = (text: string, width: number) => {
   if (Bun.stringWidth(text) <= width) return text
   let result = ''
   let used = 0
-  for (const { segment } of GRAPHEMES.segment(text)) {
-    const size = Bun.stringWidth(segment)
-    if (used + size > width - 1) break
-    result += segment
-    used += size
+  let styled = false
+  cut: for (const token of text.split(ANSI)) {
+    if (ANSI.test(token)) {
+      result += token
+      styled = true
+      continue
+    }
+    for (const { segment } of GRAPHEMES.segment(token)) {
+      const size = Bun.stringWidth(segment)
+      if (used + size > width - 1) break cut
+      result += segment
+      used += size
+    }
   }
-  return `${result}…`
+  return `${result}…${styled ? `${ESCAPE}[0m` : ''}`
 }
 
 export const pad = (text: string, width: number) =>

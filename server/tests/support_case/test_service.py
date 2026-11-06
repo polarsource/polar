@@ -217,11 +217,15 @@ class TestAssignment:
 
         assigned = await support_case_service.assign(session, case, assignee=user)
         assert case.assigned_user_id == user.id
+        assert case.backoffice_assigned_user_id is not None
+        assert assigned.backoffice_author_user_id == case.backoffice_assigned_user_id
         assert assigned.type == SupportCaseMessageType.assigned
         assert assigned.audience == []
 
         released = await support_case_service.unassign(session, case, actor=user)
         assert case.assigned_user_id is None
+        assert case.backoffice_assigned_user_id is None
+        assert released.backoffice_author_user_id == assigned.backoffice_author_user_id
         assert released.type == SupportCaseMessageType.released
         assert released.audience == []
 
@@ -240,6 +244,7 @@ class TestMarkRead:
         first = await support_case_service.mark_read(session, case, user=user)
         assert first.kind == SupportCaseParticipantKind.platform
         assert first.platform_user_id == user.id
+        assert first.backoffice_platform_user_id is not None
         assert first.last_read_at is not None
 
         second = await support_case_service.mark_read(session, case, user=user)

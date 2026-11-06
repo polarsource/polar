@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import NotNullable, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
+from polar.backoffice_user.repository import BackofficeUserRepository
 from polar.kit.repository.base import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -102,8 +103,9 @@ class OrganizationReviewRepository(
                 ~OrganizationAgentReview.is_deleted,
             )
             .options(
-                selectinload(OrganizationAgentReview.review_feedbacks).joinedload(
-                    OrganizationReviewFeedback.reviewer
+                selectinload(OrganizationAgentReview.review_feedbacks).options(
+                    joinedload(OrganizationReviewFeedback.reviewer),
+                    joinedload(OrganizationReviewFeedback.backoffice_reviewer),
                 ),
             )
             .order_by(OrganizationAgentReview.reviewed_at.desc())
@@ -284,7 +286,18 @@ class OrganizationReviewRepository(
         is_current: bool = True,
     ) -> OrganizationReviewFeedback:
         """Record a review decision (agent or human)."""
+        backoffice_reviewer = None
+        if reviewer_id is not None:
+            email = (
+                await self.session.execute(
+                    select(User.email).where(User.id == reviewer_id)
+                )
+            ).scalar_one()
+            backoffice_reviewer = await BackofficeUserRepository.from_session(
+                self.session
+            ).get_or_create_by_email(email)
         feedback = OrganizationReviewFeedback(
+            backoffice_reviewer=backoffice_reviewer,
             organization_id=organization_id,
             actor_type=actor_type,
             decision=decision,

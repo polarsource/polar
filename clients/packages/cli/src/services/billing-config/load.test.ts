@@ -4,7 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem } from 'effect'
-import { loadFailure, loader } from '@/services/billing-config/load'
+import { pathToFileURL } from 'node:url'
+import {
+  evaluateInSubprocess,
+  loadFailure,
+  loader,
+} from '@/services/billing-config/load'
 
 const source = [
   '{',
@@ -154,6 +159,35 @@ describe('load', () => {
     expect(error.message).toContain('Could not load')
     expect(error.hint).toBe(
       'It imports @polar-sh/nope, which is not installed. Run npm install @polar-sh/nope.',
+    )
+  })
+})
+
+describe('evaluateInSubprocess', () => {
+  const evaluate = async (content: string, name = 'polar.config.ts') =>
+    evaluateInSubprocess(pathToFileURL(await write(content, name)).href, {})
+
+  test('returns what the default export resolves to, whatever the config prints', async () => {
+    expect(
+      await evaluate(
+        "process.stdout.write('hello')\nexport default async () => ({ meters: ['async'] })",
+      ),
+    ).toEqual({ meters: ['async'] })
+  })
+
+  test('keeps the missing package and the syntax error position', async () => {
+    const missing = await evaluate(
+      "import { defineConfig } from '@polar-sh/nope'\nexport default defineConfig({})",
+    ).catch((error: unknown) => error)
+    expect(loadFailure('polar.config.ts', missing).hint).toBe(
+      'It imports @polar-sh/nope, which is not installed. Run npm install @polar-sh/nope.',
+    )
+
+    const broken = await evaluate('export default {\n  meters: (\n').catch(
+      (error: unknown) => error,
+    )
+    expect(loadFailure('broken.ts', broken).message).toMatch(
+      /^Could not parse broken\.ts:\d+:\d+$/,
     )
   })
 })

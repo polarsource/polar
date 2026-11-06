@@ -1,6 +1,6 @@
 import itertools
 
-from polar.outpost.client import Configuration, Snapshot
+from polar.outpost.client import Snapshot
 from polar.outpost.reducer import BUCKET_SIZE, Reducer
 
 from harness import (
@@ -15,6 +15,7 @@ from harness import (
     RedisStep,
     RestartStep,
     Scenario,
+    ScenarioConfiguration,
     SnapshotStep,
 )
 
@@ -45,7 +46,7 @@ TOKENS: Reducer = {
     "filter": {"conjunction": "and", "clauses": []},
     "aggregation": {"func": "sum", "property": "tokens"},
 }
-CONFIGURATION: Configuration = {"reducers": [TOKENS, credit_reducer("meter")]}
+CONFIGURATION: ScenarioConfiguration = {"reducers": [TOKENS, credit_reducer("meter")]}
 _ids = itertools.count(1)
 CUSTOMER: ExternalCustomerID = {"external_customer_id": "alice"}
 METER: ExternalCustomerMeterRequest = {**CUSTOMER, "meter_id": "meter"}

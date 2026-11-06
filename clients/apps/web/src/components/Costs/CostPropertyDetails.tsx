@@ -1,7 +1,11 @@
 'use client'
 
 import { CostDistributionStrip } from '@/components/Events/CostDistributionStrip'
-import { useEventHierarchyStats, useEvents } from '@/hooks/queries/events'
+import {
+  useEventHierarchyStats,
+  useEventPropertyGroupStats,
+  useEvents,
+} from '@/hooks/queries/events'
 import { formatCostAmount } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -24,6 +28,8 @@ import {
 import { CostRow } from './useCostBreakdown'
 
 export type CostProperty = 'model' | 'vendor'
+
+type Facts = Pick<CostRow, 'total' | 'occurrences' | 'customers' | 'average'>
 
 const PROPERTY_LABELS: Record<CostProperty, string> = {
   model: 'Model',
@@ -78,6 +84,33 @@ export const CostPropertyDetails = ({
     filter: propertyFilter(property, value, false),
     customer_id,
   })
+  // A deep link or a different grouping leaves no breakdown row to reuse, so
+  // fetch this property's groups and pick the value out of them.
+  const { data: groups } = useEventPropertyGroupStats(
+    organization.id,
+    `_llm.${property}`,
+    {
+      ...toStatsDates(range),
+      aggregate_fields: ['_cost.amount'],
+      customer_id,
+      limit: 1000,
+    },
+    row === null,
+  )
+  const groupStat = groups?.items.find((item) => item.value === value)
+  const facts: Facts | null = row
+    ? row
+    : groups
+      ? {
+          total: groupStat ? parseCost(groupStat.totals) : 0,
+          occurrences: groupStat?.occurrences ?? 0,
+          customers: groupStat?.customers ?? 0,
+          average:
+            groupStat && groupStat.occurrences > 0
+              ? parseCost(groupStat.totals) / groupStat.occurrences
+              : null,
+        }
+      : null
   const { data: samples } = useEvents(organization.id, {
     filter: propertyFilter(property, value, true),
     customer_id,
@@ -96,7 +129,9 @@ export const CostPropertyDetails = ({
     0,
   )
   const chartIsComplete =
-    row !== null && periods.length > 0 && chartOccurrences === row.occurrences
+    facts !== null &&
+    periods.length > 0 &&
+    chartOccurrences === facts.occurrences
 
   const costed = (samples?.items ?? []).flatMap((event) => {
     const cost = eventCostCents(event.metadata)
@@ -117,7 +152,7 @@ export const CostPropertyDetails = ({
       subtitle={PROPERTY_LABELS[property]}
       onClose={onClose}
     >
-      {!row ? (
+      {!facts ? (
         <CostFactsSkeleton rows={4} />
       ) : (
         <CostPanelSection>
@@ -132,24 +167,19 @@ export const CostPropertyDetails = ({
             flexDirection="column"
             paddingTop={chartIsComplete ? 's' : 'none'}
           >
-            <CostFact
-              label="Total"
-              value={row ? formatCostAmount(row.total) : null}
-            />
+            <CostFact label="Total" value={formatCostAmount(facts.total)} />
             <CostFact
               label="Events"
-              value={row?.occurrences.toLocaleString('en-US')}
+              value={facts.occurrences.toLocaleString('en-US')}
             />
             <CostFact
               label="Customers"
-              value={row?.customers?.toLocaleString('en-US')}
+              value={facts.customers?.toLocaleString('en-US')}
             />
             <CostFact
               label="Average"
               value={
-                row?.average !== null && row?.average !== undefined
-                  ? formatCostAmount(row.average)
-                  : null
+                facts.average !== null ? formatCostAmount(facts.average) : null
               }
             />
           </Box>

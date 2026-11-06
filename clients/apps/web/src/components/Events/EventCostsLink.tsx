@@ -2,7 +2,12 @@ import { useEventTypes } from '@/hooks/queries/event_types'
 import { schemas } from '@polar-sh/client'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { ArrowUpRight } from '@polar-sh/orbit/icons'
-import { differenceInDays, endOfDay, startOfDay, subDays } from 'date-fns'
+import {
+  differenceInCalendarDays,
+  endOfDay,
+  startOfDay,
+  subDays,
+} from 'date-fns'
 import Link from 'next/link'
 import { explorerPath } from './ExplorerModeSwitch'
 
@@ -17,14 +22,17 @@ export const EventCostsLink = ({
   event: schemas['Event']
   organization: schemas['Organization']
 }) => {
-  const { data } = useEventTypes(organization.id, { query: event.name })
+  const { data } = useEventTypes(organization.id, {
+    query: event.name,
+    limit: 100,
+  })
   const eventType = data?.items.find((item) => item.name === event.name)
   if (!eventType?.id) return null
 
   const timestamp = new Date(event.timestamp)
   const query = new URLSearchParams({ type: eventType.id })
   // The default range is the last 30 days; older events need their own window.
-  if (differenceInDays(new Date(), timestamp) >= DEFAULT_RANGE_DAYS) {
+  if (differenceInCalendarDays(new Date(), timestamp) >= DEFAULT_RANGE_DAYS) {
     query.set(
       'startDate',
       startOfDay(subDays(timestamp, DEFAULT_RANGE_DAYS - 1)).toISOString(),

@@ -136,7 +136,11 @@ const SortHeading = ({
     <button
       type="button"
       onClick={() => onSortChange(nextCostSort(sort, sortKey))}
-      aria-sort={active ? (descending ? 'descending' : 'ascending') : 'none'}
+      aria-label={
+        active
+          ? `${label}, sorted ${descending ? 'descending' : 'ascending'}`
+          : `Sort by ${label}`
+      }
       className={twMerge(
         'flex min-w-0 cursor-pointer items-center gap-1',
         align === 'end' && 'ml-auto',

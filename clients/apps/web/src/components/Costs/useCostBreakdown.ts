@@ -31,6 +31,8 @@ export interface CostRow {
 type BaseRow = Omit<CostRow, 'share' | 'previous'>
 
 const AGGREGATE = ['_cost.amount']
+// Customer and property breakdowns return at most this many rows.
+const GROUP_LIMIT = 100
 
 const useGroupedCosts = (
   organizationId: string,
@@ -57,7 +59,7 @@ const useGroupedCosts = (
     organizationId,
     {
       ...params,
-      limit: 100,
+      limit: GROUP_LIMIT,
       sorting: sorting as schemas['EventCustomerStatisticsSortProperty'][],
     },
     groupBy === 'customer',
@@ -67,7 +69,7 @@ const useGroupedCosts = (
     groupBy === 'vendor' ? '_llm.vendor' : '_llm.model',
     {
       ...params,
-      limit: 100,
+      limit: GROUP_LIMIT,
       sorting: sorting as schemas['EventPropertyStatisticsSortProperty'][],
     },
     groupBy === 'model' || groupBy === 'vendor',
@@ -159,22 +161,44 @@ export const useCostBreakdown = (
     customerIds,
     DEFAULT_COST_SORT,
   )
+  // Every cost rolls up to a root event, so the per-type totals add up to the
+  // whole period regardless of grouping or how many groups were returned.
+  const overall = useEventHierarchyStats(organizationId, {
+    ...toStatsDates(range),
+    interval: 'year',
+    aggregate_fields: AGGREGATE,
+    customer_id: customerIds && customerIds.length > 0 ? customerIds : null,
+  })
 
   // Rows arrive in the server's sort order.
   const rows = (current.rows ?? []).filter((row) => row.total > 0)
-  const total = rows.reduce((sum, row) => sum + row.total, 0)
+  const total = (overall.data?.totals ?? []).reduce(
+    (sum, stat) => sum + parseCost(stat.totals),
+    0,
+  )
   const previousByKey = new Map(
     (previous.rows ?? []).map((row) => [row.key, row.total]),
   )
+  // A key missing from a truncated previous period may just be outside the
+  // top groups, so its change is unknown rather than new.
+  const previousIsComplete =
+    groupBy === 'type' || (previous.rows?.length ?? 0) < GROUP_LIMIT
+
+  const previousOf = (key: string) => {
+    if (!previous.rows) return null
+    const value = previousByKey.get(key)
+    if (value !== undefined) return value
+    return previousIsComplete ? 0 : null
+  }
 
   return {
-    isLoading: current.isLoading,
+    isLoading: current.isLoading || overall.isLoading,
     total,
     rows: rows.map(
       (row): CostRow => ({
         ...row,
         share: total > 0 ? row.total / total : 0,
-        previous: previous.rows ? (previousByKey.get(row.key) ?? 0) : null,
+        previous: previousOf(row.key),
       }),
     ),
   }

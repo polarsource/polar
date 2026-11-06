@@ -124,16 +124,17 @@ export const CostTypeDetails = ({
   const [list, setList] = useState<'recent' | 'outliers'>('recent')
   const listItems = list === 'outliers' ? outlierItems : recentItems
   const editModal = useModal()
-  const { data: eventTypes } = useEventTypes(organization.id, {
-    sorting: ['-last_seen'],
-    root_events: true,
-    source: 'user',
-  })
+  // There's no lookup by id, so search by the stat's name and match the id.
+  const { data: eventTypes } = useEventTypes(
+    organization.id,
+    { query: stat?.name, limit: 100 },
+    !!stat,
+  )
   const eventType = eventTypes?.items.find((item) => item.id === eventTypeId)
 
   return (
     <CostPanelShell
-      title={stat?.label ?? eventType?.label ?? (data ? 'Event type' : null)}
+      title={stat?.label ?? (data ? 'Event type' : null)}
       subtitle={stat && stat.label !== stat.name ? stat.name : null}
       href={stat ? eventsPath(organization.slug, stat.name, range) : undefined}
       hrefLabel="Open in Events"

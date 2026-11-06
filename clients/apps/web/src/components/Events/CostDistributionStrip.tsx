@@ -18,6 +18,9 @@ const logScale = (values: number[]) => {
   }
 }
 
+// In percent of the strip width; closer than this, the labels overlap.
+const MARKER_MERGE_DISTANCE = 8
+
 const Marker = ({ position, label }: { position: number; label: string }) => (
   <div
     className="pointer-events-none absolute top-0 flex -translate-x-1/2 flex-col items-center"
@@ -86,8 +89,15 @@ export const CostDistributionStrip = ({
           style={{ left: `${position(value)}%` }}
         />
       ))}
-      <Marker position={position(average)} label="avg" />
-      <Marker position={position(p99)} label="p99" />
+      {/* With flat pricing both markers land together, so share one label. */}
+      {Math.abs(position(average) - position(p99)) < MARKER_MERGE_DISTANCE ? (
+        <Marker position={position(p99)} label="avg · p99" />
+      ) : (
+        <>
+          <Marker position={position(average)} label="avg" />
+          <Marker position={position(p99)} label="p99" />
+        </>
+      )}
       {highlight !== undefined && (
         <div
           className="absolute -top-0.5 h-4 w-px -translate-x-1/2 bg-gray-900 dark:bg-white"

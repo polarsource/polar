@@ -173,20 +173,42 @@ class Event(Model, MetadataMixin):
             "pending_parent_external_id",
             postgresql_where="pending_parent_external_id IS NOT NULL",
         ),
-        # Cover usage aggregation for a very active meter in production.
+        # Cover usage aggregation for high-volume production meters.
         *(
             (
                 Index(
-                    "ix_events_meter_a266c3bf-a7a0-4883-950c-b1f995b6193d",
+                    index_name,
                     "external_customer_id",
                     "ingested_at",
                     postgresql_include=["user_metadata"],
                     postgresql_where=(
-                        "organization_id = 'd49ecf1e-4cb2-41f2-827d-ea48b03706f6'::uuid "
-                        "AND source = 'user' AND name = 'credit_usage' "
+                        f"organization_id = '{organization_id}'::uuid "
+                        f"AND source = 'user' AND name = '{event_name}' "
                         "AND external_customer_id IS NOT NULL"
                     ),
-                ),
+                )
+                for index_name, organization_id, event_name in (
+                    (
+                        "ix_events_meter_a266c3bf-a7a0-4883-950c-b1f995b6193d",
+                        "d49ecf1e-4cb2-41f2-827d-ea48b03706f6",
+                        "credit_usage",
+                    ),
+                    (
+                        "ix_events_meter_94c5b1f0_external_cover",
+                        "3753e789-b30b-48be-b96f-fe4dd689892d",
+                        "billing_usage",
+                    ),
+                    (
+                        "ix_events_meter_379f7fd6_external_cover",
+                        "e4a7d515-fd73-4016-b7fe-792816457fd0",
+                        "bandwidth",
+                    ),
+                    (
+                        "ix_events_meter_7ea36ede_external_cover",
+                        "3039142f-21f8-4676-a7cf-1609cc831636",
+                        "allmates-global-credit-usage",
+                    ),
+                )
             )
             if settings.is_production()
             else ()

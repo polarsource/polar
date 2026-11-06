@@ -250,7 +250,8 @@ class DeclarativeConfigService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
-        await self._assert_expressible(session, organization)
+        if not organization.is_config_as_code_enabled:
+            await self._assert_expressible(session, organization)
         if config_init.external_ids:
             _assert_scopes(
                 auth_subject,

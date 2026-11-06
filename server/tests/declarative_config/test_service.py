@@ -378,6 +378,24 @@ class TestInit:
 
         assert raised.value.message.endswith("Unsupported: product Tip jar.")
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_allows_unsupported_resources_when_already_enabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        assert organization.is_config_as_code_enabled
+
     async def test_rejects_taken_and_existing_external_ids(
         self,
         save_fixture: SaveFixture,

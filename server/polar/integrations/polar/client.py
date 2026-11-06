@@ -80,30 +80,36 @@ class PolarSelfClientValidationError(InternalPolarError):
         self.message = body
 
 
+def _record_validation_error(
+    span: Any, error: HTTPValidationError, allowed_fields: set[str] | None = None
+) -> None:
+    errors = error.error.detail or []
+    span.set_attribute("validation.error_count", len(errors))
+    span.set_attribute(
+        "validation.fields",
+        sorted(
+            {
+                item.loc[1]
+                for item in errors
+                if len(item.loc) > 1
+                and item.loc[0] == "body"
+                and (allowed_fields is None or item.loc[1] in allowed_fields)
+            }
+        ),
+    )
+    span.set_attribute(
+        "validation.error_types",
+        sorted({item.type for item in errors if item.type in get_args(ErrorType)}),
+    )
+
+
 def _raise_validation_error(
     span: Any, error: PolarClientError | PolarServerError, allowed_fields: set[str]
 ) -> NoReturn:
     span.set_attribute("http.status_code", 422)
     span.set_attribute("error.type", type(error).__name__)
     if isinstance(error, HTTPValidationError):
-        errors = error.error.detail or []
-        span.set_attribute("validation.error_count", len(errors))
-        span.set_attribute(
-            "validation.fields",
-            sorted(
-                {
-                    item.loc[1]
-                    for item in errors
-                    if len(item.loc) > 1
-                    and item.loc[0] == "body"
-                    and item.loc[1] in allowed_fields
-                }
-            ),
-        )
-        span.set_attribute(
-            "validation.error_types",
-            sorted({item.type for item in errors if item.type in get_args(ErrorType)}),
-        )
+        _record_validation_error(span, error, allowed_fields)
     raise PolarSelfClientValidationError(str(getattr(error, "error", error))) from None
 
 
@@ -114,6 +120,9 @@ def _raise_error(
     span.set_attribute("error.type", type(error).__name__)
     span.set_attribute("operation", operation)
     message = f"{operation} failed with status {error.status_code}"
+    if isinstance(error, HTTPValidationError):
+        _record_validation_error(span, error)
+        raise PolarSelfClientError(message) from None
     if isinstance(error, (PolarRateLimitError, PolarServerError)):
         raise PolarSelfClientOperationalError(message) from error
     raise PolarSelfClientError(message) from error

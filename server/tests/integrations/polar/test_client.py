@@ -130,6 +130,60 @@ class TestCustomerSessionErrors:
 
 
 @pytest.mark.anyio
+class TestCreateCustomer:
+    async def test_422_does_not_leak_submitted_values(
+        self, mocker: MockerFixture
+    ) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customers,
+            "get_external",
+            new=AsyncMock(side_effect=_not_found()),
+        )
+        mocker.patch.object(
+            client._sdk.customers,
+            "create",
+            new=AsyncMock(
+                side_effect=SDKHTTPValidationError(
+                    422,
+                    deserialize(
+                        {
+                            "detail": [
+                                {
+                                    "type": "value_error",
+                                    "loc": ["body", "owner", "email"],
+                                    "msg": "jane.doe@example.com is not valid",
+                                    "input": {
+                                        "email": "jane.doe@example.com",
+                                        "name": "Jane Doe",
+                                    },
+                                }
+                            ]
+                        },
+                        SDKHTTPValidationError.error_type,
+                    ),
+                )
+            ),
+        )
+
+        with pytest.raises(PolarSelfClientError) as exc_info:
+            await client.create_customer(
+                external_id="org",
+                name="Acme",
+                slug="acme",
+                owner_external_id="user",
+                owner_email="jane.doe@example.com",
+                owner_name="Jane Doe",
+            )
+
+        exc: BaseException | None = exc_info.value
+        while exc is not None:
+            assert "jane.doe@example.com" not in str(exc)
+            assert "Jane Doe" not in str(exc)
+            exc = exc.__cause__
+
+
+@pytest.mark.anyio
 class TestTriggerOrderInvoiceGeneration:
     async def test_409_order_not_eligible_raises_polar_self_order_not_eligible(
         self, mocker: MockerFixture

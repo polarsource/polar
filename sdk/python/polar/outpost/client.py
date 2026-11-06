@@ -237,6 +237,7 @@ PULL_RETRY_DELAY = 1.0
 MAX_PULL_RETRY_DELAY = 30.0
 PULL_LIMIT = 500
 PULL_CONCURRENCY = 16
+SNAPSHOT_BATCH = 500
 PULL_CHECK_INTERVAL = 1.0
 RELEASE_LOCK_SCRIPT = """
 -- Deletes the lock, if it still holds this instance's token: once the lock expired, another
@@ -1179,8 +1180,12 @@ class Outpost:
                 "POST",
                 "/v1/outpost/meter-usage",
                 json={
-                    **self._customer_arguments(customer),
-                    "reducer_id": reducer["id"],
+                    "identities": [
+                        {
+                            **self._customer_arguments(customer),
+                            "reducer_id": reducer["id"],
+                        }
+                    ]
                 },
             )
             async with self._applying:
@@ -1455,7 +1460,7 @@ class Outpost:
                     raise
                 pages += 1
                 if changes["reset"]:
-                    await self._reset()
+                    await self._reset(renew)
                 if changes["configuration_changed"]:
                     await self._configure("polar")
                     revision = await redis.hincrby(self._pull_key, "configuration", 1)
@@ -1515,16 +1520,67 @@ class Outpost:
                 with contextlib.suppress(RedisError):
                     await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._pull_lock_key, lock)
 
-    async def _reset(self) -> None:
-        """Polar's changes went past its retention: no snapshot can be trusted any more."""
+    async def _reset(
+        self, renew: collections.abc.Callable[[], collections.abc.Awaitable[None]]
+    ) -> None:
+        """Polar's changes went past its retention: no snapshot can be trusted any more.
+        Polar snapshots every state again, a page at a time, while reads go on with the
+        state they find; a state Polar does not confirm goes cold."""
         redis = self._require_redis()
-        async with redis.pipeline(transaction=False) as pipeline:
-            async for key in redis.scan_iter(
-                match=f"{self._prefix}:state:*", count=1000
-            ):
+        prefix = f"{self._prefix}:state:"
+        page: list[str] = []
+        async for key in redis.scan_iter(match=f"{prefix}*", count=SNAPSHOT_BATCH):
+            page.append(key.decode() if isinstance(key, bytes) else key)
+            if len(page) == SNAPSHOT_BATCH:
+                await self._revalidate(page, prefix, renew)
+                page = []
+        if page:
+            await self._revalidate(page, prefix, renew)
+
+    async def _revalidate(
+        self,
+        page: list[str],
+        prefix: str,
+        renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
+    ) -> None:
+        identities = []
+        for key in page:
+            customer, reducer_id = key.removeprefix(prefix).rsplit(":", 1)
+            identities.append(
+                {**self._customer_arguments(customer), "reducer_id": reducer_id}
+            )
+        await renew()
+        try:
+            snapshots: list[Snapshot] = await self._request(
+                "POST", "/v1/outpost/meter-usage", json={"identities": identities}
+            )
+        except httpx.HTTPError:
+            await self._drop_snapshots(page)
+            return
+        limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
+
+        async def apply(snapshot: Snapshot) -> None:
+            async with limiter:
+                if await self._receive_snapshot(snapshot, pulled=True, renew=renew):
+                    await renew()
+
+        async with self._applying, anyio.create_task_group() as group:
+            for snapshot in snapshots:
+                group.start_soon(apply, snapshot)
+        confirmed = {
+            f"{prefix}{self._customer_key(snapshot['customer_id'], snapshot['external_customer_id'])}"
+            f":{snapshot['reducer_id']}"
+            for snapshot in snapshots
+            if snapshot["customer_exists"]
+        }
+        await self._drop_snapshots([key for key in page if key not in confirmed])
+
+    async def _drop_snapshots(self, keys: list[str]) -> None:
+        if not keys:
+            return
+        async with self._require_redis().pipeline(transaction=False) as pipeline:
+            for key in keys:
                 pipeline.hdel(key, "cold_until", "snapshot_version")
-                if len(pipeline) >= 1000:
-                    await pipeline.execute()
             await pipeline.execute()
 
     def _fail_unless_transient(self, error: Exception) -> None:

@@ -63,6 +63,7 @@ const PULL_RETRY_DELAY = 1000;
 const MAX_PULL_RETRY_DELAY = 30000;
 const PULL_LIMIT = 500;
 const PULL_CONCURRENCY = 16;
+const SNAPSHOT_BATCH = 500;
 const PULL_CHECK_INTERVAL = 1000;
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";
@@ -880,7 +881,7 @@ export class Outpost {
           throw error;
         });
         pages += 1;
-        if (changes.reset) await this.reset();
+        if (changes.reset) await this.reset(renew);
         if (changes.configuration_changed) {
           await this.configure("polar");
           this.configurationRevision = String(
@@ -928,15 +929,61 @@ export class Outpost {
     }
   }
 
-  // Polar's changes went past its retention: no snapshot can be trusted any more.
-  private async reset(): Promise<void> {
+  // Polar's changes went past its retention: no snapshot can be trusted any more. Polar
+  // snapshots every state again, a page at a time, while reads go on with the state they find; a
+  // state Polar does not confirm goes cold.
+  private async reset(renew: () => Promise<unknown>): Promise<void> {
     const redis = this.requireRedis();
-    for await (const keys of redis.scanStream({ match: `${this.prefix}:state:*`, count: 1000 })) {
-      if (!(keys as string[]).length) continue;
-      const pipeline = redis.pipeline();
-      for (const key of keys as string[]) pipeline.hdel(key, "cold_until", "snapshot_version");
-      await pipeline.exec();
+    const prefix = `${this.prefix}:state:`;
+    for await (const found of redis.scanStream({ match: `${prefix}*`, count: SNAPSHOT_BATCH })) {
+      const keys = found as string[];
+      for (let offset = 0; offset < keys.length; offset += SNAPSHOT_BATCH) {
+        const page = keys.slice(offset, offset + SNAPSHOT_BATCH);
+        const identities = page.map((key) => {
+          const identity = key.slice(prefix.length);
+          const separator = identity.lastIndexOf(":");
+          return {
+            ...customerArguments(identity.slice(0, separator)),
+            reducer_id: identity.slice(separator + 1),
+          };
+        });
+        await renew();
+        let snapshots: Snapshot[];
+        try {
+          snapshots = await this.request("POST", "/v1/outpost/meter-usage", {
+            body: { identities },
+          });
+        } catch (error) {
+          if (error instanceof RefusedError) throw error;
+          await this.dropSnapshots(page);
+          continue;
+        }
+        await this.serial(() =>
+          eachAtMost(snapshots, PULL_CONCURRENCY, async (snapshot) => {
+            if (await this.receiveSnapshot(snapshot, true, renew)) await renew();
+          }),
+        );
+        const confirmed = new Set(
+          snapshots
+            .filter((snapshot) => snapshot.customer_exists)
+            .map(
+              (snapshot) =>
+                `${prefix}${customerKey({
+                  customer_id: snapshot.customer_id ?? undefined,
+                  external_customer_id: snapshot.external_customer_id ?? undefined,
+                })}:${snapshot.reducer_id}`,
+            ),
+        );
+        await this.dropSnapshots(page.filter((key) => !confirmed.has(key)));
+      }
     }
+  }
+
+  private async dropSnapshots(keys: string[]): Promise<void> {
+    if (!keys.length) return;
+    const pipeline = this.requireRedis().pipeline();
+    for (const key of keys) pipeline.hdel(key, "cold_until", "snapshot_version");
+    await pipeline.exec();
   }
 
   // Snapshots and what they trigger run one at a time, in order.
@@ -968,7 +1015,7 @@ export class Outpost {
       locked = (await redis.set(lock, token, "PX", TIMEOUT, "NX")) !== null;
       if (!locked) return;
       const snapshots = await this.request<Snapshot[]>("POST", "/v1/outpost/meter-usage", {
-        body: { ...customerArguments(customer), reducer_id: reducer.id },
+        body: { identities: [{ ...customerArguments(customer), reducer_id: reducer.id }] },
       });
       await this.serial(async () => {
         for (const snapshot of snapshots) await this.receiveSnapshot(snapshot, false);

@@ -11,32 +11,11 @@ resource "render_registry_credential" "ghcr" {
 }
 
 # =============================================================================
-# Remote references that are managed by a different state.
-# =============================================================================
-
-data "tfe_outputs" "sandbox" {
-  organization = "polar-sh"
-  workspace    = "sandbox"
-}
-
-# =============================================================================
 # Locals
 # =============================================================================
 
 locals {
   private_backoffice_hostname = "backoffice.polar.sh"
-  # Workloads that reach the database over the public internet: the AWS pgbouncers
-  # fronting the Lambda workers, each behind its VPC's static NAT egress IP.
-  db_ip_allow_list = [
-    {
-      cidr_block  = "${module.egress_ip.public_ip}/32"
-      description = "AWS production NAT egress"
-    },
-    {
-      cidr_block  = "${data.tfe_outputs.sandbox.values.egress_ip}/32"
-      description = "AWS sandbox NAT egress"
-    },
-  ]
 
   # Redis connection info
   redis_host = var.redis_private_link_host
@@ -71,36 +50,6 @@ resource "render_project" "polar" {
   }
 
   depends_on = [render_registry_credential.ghcr]
-}
-
-# =============================================================================
-# PostgreSQL Database
-# =============================================================================
-
-resource "render_postgres" "db" {
-  environment_id = render_project.polar.environments["Production"].id
-  name           = "db"
-  database_name  = "polar_cpit"
-  plan           = "pro_4gb"
-  region         = "ohio"
-  version        = "15"
-  disk_size_gb   = 750
-
-  high_availability_enabled = false
-
-  read_replicas = []
-
-  ip_allow_list = local.db_ip_allow_list
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      disk_size_gb,
-      database_name,
-    ]
-  }
-
-  depends_on = [render_registry_credential.ghcr, render_project.polar]
 }
 
 # =============================================================================

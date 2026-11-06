@@ -811,11 +811,9 @@ class ConfigSkippedResource(Schema):
         description="Why the resource isn't in the exported config."
     )
     recurring_interval: SubscriptionRecurringInterval | None = Field(
-        default=None,
         description="The billing interval of a skipped product. None for one-time products and other resources.",
     )
     recurring_interval_count: int | None = Field(
-        default=None,
         description="The number of intervals between charges of a skipped product.",
     )
 
@@ -827,6 +825,12 @@ class ConfigExportCatalog(ConfigCatalog):
 
 
 class ConfigExport(Schema):
+    enabled: bool = Field(
+        description=(
+            "Whether config as code is enabled for the organization. "
+            "Until it is, plan and apply are refused."
+        )
+    )
     config: ConfigExportDocument = Field(
         description=(
             "The current config, in the shape plan and apply accept, "

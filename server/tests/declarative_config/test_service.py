@@ -446,8 +446,64 @@ class TestInit:
         ]
         assert unkeyed.external_id is None
 
+    async def test_rejects_resource_assigned_twice(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {"resource": "meter", "id": meter.id, "external_id": "a"},
+                            {"resource": "meter", "id": meter.id, "external_id": "b"},
+                        ]
+                    }
+                ),
+            )
+
+        assert [e["loc"] for e in error.value.errors()] == [
+            ("body", "external_ids", 1, "external_id"),
+        ]
+        assert meter.external_id is None
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.organizations_write})
+    )
+    async def test_requires_read_scopes_to_check_resources(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert not organization.is_config_as_code_enabled
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization",
+            scopes={
+                Scope.organizations_write,
+                Scope.benefits_read,
+                Scope.products_read,
+            },
+        )
     )
     async def test_requires_section_write_scope(
         self,

@@ -34,8 +34,11 @@ const acme: ActiveOrganization = {
 
 const EMPTY = { meters: [], benefits: [], products: [] }
 
-const exported = (config: object = EMPTY, skipped: object[] = []) =>
-  Response.json({ config, skipped, catalog: null })
+const exported = (
+  config: object = EMPTY,
+  skipped: object[] = [],
+  enabled = false,
+) => Response.json({ enabled, config, skipped, catalog: null })
 
 const acceptSuggestions: NameResources<never, never> = (resources) =>
   Effect.succeed(
@@ -51,13 +54,10 @@ let api: ReturnType<typeof fakeHttp>
 let directory: string
 let cwd: string
 
-const notEnabled = () =>
-  Response.json({ error: 'ConfigAsCodeNotEnabled' }, { status: 403 })
-
 beforeEach(async () => {
   let enabled = false
   api = fakeHttp({
-    [`GET ${exportUrl}`]: () => (enabled ? exported() : notEnabled()),
+    [`GET ${exportUrl}`]: () => exported(EMPTY, [], enabled),
     [`POST ${initUrl}`]: () => {
       enabled = true
       return new Response(null, { status: 204 })
@@ -145,7 +145,7 @@ describe('init', () => {
   })
 
   test('does not enable an organization that already manages its catalog as code', async () => {
-    api.routes[`GET ${exportUrl}`] = exported()
+    api.routes[`GET ${exportUrl}`] = exported(EMPTY, [], true)
 
     const result = await run()
 
@@ -170,7 +170,7 @@ describe('init', () => {
   test('writes nothing when the organization has benefits or products config cannot manage', async () => {
     const detail =
       'Config can only manage feature flag and meter credit benefits, and products with fixed, metered, seat-based or unit-based prices. Unsupported: benefit Priority support, product Tip jar.'
-    api.routes[`POST ${initUrl}`] = Response.json(
+    api.routes[`GET ${exportUrl}`] = Response.json(
       { error: 'ConfigUnsupportedResources', detail },
       { status: 409 },
     )
@@ -179,6 +179,7 @@ describe('init', () => {
 
     expect(error.message).toBe('Config cannot manage everything in Acme yet')
     expect(error.hint).toBe(detail)
+    expect(api.urls()).not.toContain(initUrl)
     await expect(read('polar.config.json')).rejects.toThrow()
   })
 
@@ -355,20 +356,19 @@ describe('init', () => {
       let exports = 0
       api.routes[`GET ${exportUrl}`] = () =>
         exports++ === 0
-          ? notEnabled()
-          : exports === 2
-            ? exported({ ...EMPTY, products: [pro] }, unkeyed)
-            : exported(
-                {
-                  ...EMPTY,
-                  products: [
-                    pro,
-                    { ...pro, external_id: 'pro_2' },
-                    { ...pro, external_id: 'cafe_plan' },
-                  ],
-                },
-                unkeyed.slice(2),
-              )
+          ? exported({ ...EMPTY, products: [pro] }, unkeyed)
+          : exported(
+              {
+                ...EMPTY,
+                products: [
+                  pro,
+                  { ...pro, external_id: 'pro_2' },
+                  { ...pro, external_id: 'cafe_plan' },
+                ],
+              },
+              unkeyed.slice(2),
+              true,
+            )
     })
 
     test('names resources without an external ID, saves them and writes the full config', async () => {
@@ -389,7 +389,8 @@ describe('init', () => {
         },
       ])
       const saves = api.requests.filter((request) => request.url === initUrl)
-      expect(await saves[1]!.json()).toEqual({
+      expect(saves).toHaveLength(1)
+      expect(await saves[0]!.json()).toEqual({
         external_ids: [
           { resource: 'product', id: 'p-1', external_id: 'pro_2' },
           { resource: 'product', id: 'p-2', external_id: 'cafe_plan' },
@@ -409,6 +410,16 @@ describe('init', () => {
       expect(written.products[0]).not.toHaveProperty('deprecated')
     })
 
+    test('does not enable config when naming is cancelled', async () => {
+      const error = await failure(
+        run({ format: 'json' }, () => Effect.die(new Error('cancelled'))),
+      )
+
+      expect(error.message).toBe('cancelled')
+      expect(api.urls()).not.toContain(initUrl)
+      await expect(read('polar.config.json')).rejects.toThrow()
+    })
+
     test('renders the imported products as TypeScript', async () => {
       await run({ format: 'ts' })
 
@@ -416,22 +427,18 @@ describe('init', () => {
     })
 
     test('reports why the external IDs were rejected and writes nothing', async () => {
-      let saves = 0
-      api.routes[`POST ${initUrl}`] = () =>
-        saves++ === 0
-          ? new Response(null, { status: 204 })
-          : Response.json(
-              {
-                detail: [
-                  {
-                    type: 'value_error',
-                    loc: ['body', 'external_ids', 1, 'external_id'],
-                    msg: 'Another product already has this external ID.',
-                  },
-                ],
-              },
-              { status: 422 },
-            )
+      api.routes[`POST ${initUrl}`] = Response.json(
+        {
+          detail: [
+            {
+              type: 'value_error',
+              loc: ['body', 'external_ids', 1, 'external_id'],
+              msg: 'Another product already has this external ID.',
+            },
+          ],
+        },
+        { status: 422 },
+      )
 
       const error = await failure(run({ format: 'json' }))
 

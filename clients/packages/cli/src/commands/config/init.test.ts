@@ -90,7 +90,7 @@ const run = async (
               calls.push({ organization, target })
               const named = yield* name(
                 setup.unkeyed ?? [],
-                setup.catalog ?? { config: {}, skipped: [] },
+                setup.catalog ?? { enabled: false, config: {}, skipped: [] },
               )
               keyed.push(...named)
               const format = target.format ?? 'ts'
@@ -350,6 +350,7 @@ describe('polar config init', () => {
     ]
 
     const catalog: ConfigExport = {
+      enabled: false,
       config: {
         meters: [{ external_id: 'api-calls', name: 'API calls' }],
         products: [{ external_id: 'starter', name: 'Starter' }],

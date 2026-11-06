@@ -65,9 +65,14 @@ async def _check[M: Meter | Benefit | Product](
         )
     }
     pending: list[tuple[M, str]] = []
+    seen: set[UUID] = set()
     for index, assignment in indexed:
         item = found.get(assignment.id)
-        if item is None:
+        if assignment.id in seen:
+            errors.append(
+                _error(index, assignment, f"This {resource} is assigned twice.")
+            )
+        elif item is None:
             errors.append(_error(index, assignment, f"No {resource} has this ID."))
         elif item.external_id == assignment.external_id:
             continue
@@ -88,6 +93,7 @@ async def _check[M: Meter | Benefit | Product](
         else:
             pending.append((item, assignment.external_id))
             taken.add(assignment.external_id)
+        seen.add(assignment.id)
     return pending
 
 

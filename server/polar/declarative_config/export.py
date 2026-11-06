@@ -78,7 +78,10 @@ async def _export_section[ModelT: _Exportable, EntryT](
     name: Callable[[ModelT], str],
     archived: Callable[[ModelT], bool],
     entry: Callable[[ModelT], EntryT | None],
-    details: Callable[[ModelT], dict[str, Any]] = lambda _: {},
+    details: Callable[[ModelT], dict[str, Any]] = lambda _: {
+        "recurring_interval": None,
+        "recurring_interval_count": None,
+    },
 ) -> tuple[list[EntryT], dict[str, str]]:
     """
     `entry` returns `None` when the model references something left out of the
@@ -327,6 +330,7 @@ async def export_config(
     )
 
     return ConfigExport(
+        enabled=organization.is_config_as_code_enabled,
         config=ConfigExportDocument(
             settings=_settings(organization),
             meters=meters,

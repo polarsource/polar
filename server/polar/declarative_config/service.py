@@ -251,6 +251,11 @@ class DeclarativeConfigService:
             OrganizationPermission.organization_manage,
         )
         if not organization.is_config_as_code_enabled:
+            _assert_scopes(
+                auth_subject,
+                {_SECTIONS[ConfigResource.benefit], _SECTIONS[ConfigResource.product]},
+                write=False,
+            )
             await self._assert_expressible(session, organization)
         if config_init.external_ids:
             _assert_scopes(
@@ -284,7 +289,7 @@ class DeclarativeConfigService:
         )
 
     async def _assert_expressible(
-        self, session: AsyncSession, organization: Organization
+        self, session: AsyncReadSession, organization: Organization
     ) -> None:
         benefit_names = await BenefitRepository.from_session(
             session
@@ -636,7 +641,10 @@ class DeclarativeConfigService:
             auth_subject,
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
+            require_enabled=False,
         )
+        if not organization.is_config_as_code_enabled:
+            await self._assert_expressible(session, organization)
         catalog = await catalog_service.resolve(session, organization, catalog_id)
         return await export_config(session, organization, catalog)
 
@@ -659,12 +667,14 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization | Agent],
         target: OrganizationIDModel,
         permission: OrganizationPermission,
+        *,
+        require_enabled: bool = True,
     ) -> Organization:
         organization = await get_payload_organization(session, auth_subject, target)
         await assert_organization_permission(
             session, auth_subject, organization.id, permission
         )
-        if not organization.is_config_as_code_enabled:
+        if require_enabled and not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
         return organization
 

@@ -61,12 +61,18 @@ CatalogQuery = Annotated[
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
-                "missing a scope required by one of the sections, "
-                "or config as code isn't enabled for it."
+                "or missing a scope required by one of the sections."
             ),
-            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+            "model": NotPermitted.schema(),
         },
         404: CatalogNotFoundResponse,
+        409: {
+            "description": (
+                "Config as code isn't enabled and config can't manage "
+                "some of the organization's benefits or products."
+            ),
+            "model": ConfigUnsupportedResources.schema(),
+        },
     },
 )
 async def export(
@@ -87,6 +93,9 @@ async def export(
     (or that reference a skipped resource), and ones beyond the config limit are
     listed in `skipped`, up to the config limit per section. Webhook endpoints
     are not exported.
+
+    Works before config as code is enabled, so the catalog can be reviewed
+    before `init`; `enabled` says whether it is.
 
     Requires the read or write scope of every exported section.
     """
@@ -129,6 +138,9 @@ async def init(
     without an `external_id` the requested one, so export includes them and
     apply updates them instead of creating new ones. Requires the write scope
     of each section the assignments touch.
+
+    Enabling also requires `benefits:read` and `products:read`, to check that
+    config can manage every benefit and product.
     """
     await declarative_config_service.init(session, auth_subject, config_init)
 

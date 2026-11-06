@@ -13,7 +13,6 @@ import {
 import { apiUrl, withOrganization } from '@/services/api'
 import {
   type Clients,
-  errorName,
   importCatalogHint,
   transportErrors,
   unexpected,
@@ -92,6 +91,26 @@ const EXPORT_SCOPES = [
   'products:read',
 ]
 
+const UnsupportedResources = Schema.Struct({
+  error: Schema.Literal('ConfigUnsupportedResources'),
+  detail: Schema.String,
+})
+
+const unsupportedResources = (
+  response: HttpClientResponse.HttpClientResponse,
+  organization: ActiveOrganization,
+) =>
+  HttpClientResponse.schemaBodyJson(UnsupportedResources)(response).pipe(
+    Effect.map(
+      ({ detail }) =>
+        new BillingConfigError({
+          message: `Config cannot manage everything in ${organization.name} yet`,
+          hint: detail,
+        }),
+    ),
+    Effect.option,
+  )
+
 const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
   Effect.gen(function* () {
     const response = yield* clients[organization.environment].execute(
@@ -99,11 +118,9 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
         yield* apiUrl(organization.environment, '/config/'),
       ).pipe(withOrganization(organization.id)),
     )
-    if (
-      response.status === 403 &&
-      (yield* errorName(response)) === 'ConfigAsCodeNotEnabled'
-    ) {
-      return undefined
+    if (response.status === 409) {
+      const unsupported = yield* unsupportedResources(response, organization)
+      if (unsupported._tag === 'Some') return yield* unsupported.value
     }
     if (response.status !== 200) {
       return yield* unexpected(response, organization, EXPORT_SCOPES)
@@ -115,20 +132,6 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
       HttpClientError: transportErrors.HttpClientError,
       SchemaError: transportErrors.SchemaError,
     }),
-  )
-
-const exportEnabledConfig = (
-  clients: Clients,
-  organization: ActiveOrganization,
-) =>
-  Effect.flatMap(exportConfig(clients, organization), (exported) =>
-    exported === undefined
-      ? Effect.fail(
-          new BillingConfigError({
-            message: `Config is not enabled for ${organization.name}`,
-          }),
-        )
-      : Effect.succeed(exported),
   )
 
 const SECTION_SCOPES = {
@@ -161,26 +164,6 @@ const rejected = (
       () =>
         new BillingConfigError({ message: 'Could not save the external IDs' }),
     ),
-  )
-
-const UnsupportedResources = Schema.Struct({
-  error: Schema.Literal('ConfigUnsupportedResources'),
-  detail: Schema.String,
-})
-
-const unsupportedResources = (
-  response: HttpClientResponse.HttpClientResponse,
-  organization: ActiveOrganization,
-) =>
-  HttpClientResponse.schemaBodyJson(UnsupportedResources)(response).pipe(
-    Effect.map(
-      ({ detail }) =>
-        new BillingConfigError({
-          message: `Config cannot manage everything in ${organization.name} yet`,
-          hint: detail,
-        }),
-    ),
-    Effect.option,
   )
 
 const enableConfig = (
@@ -318,18 +301,17 @@ export const init =
       if (yield* exists(fs, path)) {
         return yield* alreadyExists(path, organization)
       }
-      const current = yield* exportConfig(clients, organization)
-      const alreadyEnabled = current !== undefined
-      if (!alreadyEnabled) yield* enableConfig(clients, organization)
-      let exported =
-        current ?? (yield* exportEnabledConfig(clients, organization))
+      let exported = yield* exportConfig(clients, organization)
+      const alreadyEnabled = exported.enabled
       const keyed = yield* name(
         unkeyed(exported.config, exported.skipped),
         exported,
       )
-      if (keyed.length > 0) {
+      if (!alreadyEnabled || keyed.length > 0) {
         yield* enableConfig(clients, organization, keyed)
-        exported = yield* exportEnabledConfig(clients, organization)
+      }
+      if (keyed.length > 0) {
+        exported = yield* exportConfig(clients, organization)
       }
       yield* write(fs, path, yield* renderConfig(format, exported.config))
       return {

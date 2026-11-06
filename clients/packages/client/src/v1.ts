@@ -6305,6 +6305,9 @@ export interface paths {
      *     listed in `skipped`, up to the config limit per section. Webhook endpoints
      *     are not exported.
      *
+     *     Works before config as code is enabled, so the catalog can be reviewed
+     *     before `init`; `enabled` says whether it is.
+     *
      *     Requires the read or write scope of every exported section.
      *
      *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
@@ -6335,6 +6338,9 @@ export interface paths {
      *     without an `external_id` the requested one, so export includes them and
      *     apply updates them instead of creating new ones. Requires the write scope
      *     of each section the assignments touch.
+     *
+     *     Enabling also requires `benefits:read` and `products:read`, to check that
+     *     config can manage every benefit and product.
      *
      *     **Scopes**: `organizations:write`
      */
@@ -16667,6 +16673,11 @@ export interface components {
     }
     /** ConfigExport */
     ConfigExport: {
+      /**
+       * Enabled
+       * @description Whether config as code is enabled for the organization. Until it is, plan and apply are refused.
+       */
+      enabled: boolean
       /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
       /**
@@ -17391,12 +17402,12 @@ export interface components {
       /** @description Why the resource isn't in the exported config. */
       reason: components['schemas']['ConfigSkippedReason']
       /** @description The billing interval of a skipped product. None for one-time products and other resources. */
-      recurring_interval?: components['schemas']['RecurringInterval'] | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description The number of intervals between charges of a skipped product.
        */
-      recurring_interval_count?: number | null
+      recurring_interval_count: number | null
     }
     /** ConfigTierRead */
     ConfigTierRead: {
@@ -63274,15 +63285,13 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, or missing a scope required by one of the sections. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['NotPermitted']
-            | components['schemas']['ConfigAsCodeNotEnabled']
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description No catalog has this ID. */
@@ -63292,6 +63301,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description Config as code isn't enabled and config can't manage some of the organization's benefits or products. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigUnsupportedResources']
         }
       }
       /** @description Validation Error */

@@ -9,8 +9,6 @@ DATA = json.loads(pathlib.Path(__file__).with_name("benchmark.json").read_text()
 # 5-minute buckets: 5 minutes, 1 hour, 24 hours of usage since the last snapshot.
 COLD_UNTIL: int = DATA["cold_until"]
 BUCKET_COUNTS: list[int] = DATA["bucket_counts"]
-CHANNEL: str = DATA["channel"]
-EPOCH: str = DATA["epoch"]
 REDUCER: Reducer = DATA["reducer"]
 CREDIT_REDUCER: Reducer = DATA["credit_reducer"]
 SNAPSHOT: dict[str, typing.Any] = DATA["snapshot"]
@@ -47,10 +45,6 @@ def pending_entries(ids: list[str]) -> list[str]:
 # The flat field list decode_state reads: one `bucket:<start>:<statistic>` entry per bucket.
 def encode_state(buckets: int) -> list[str]:
     fields = [
-        "epoch",
-        EPOCH,
-        "revision",
-        "4242",
         "cold_until",
         str(COLD_UNTIL),
         "snapshot_version",

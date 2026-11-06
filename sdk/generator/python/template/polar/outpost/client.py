@@ -1040,21 +1040,31 @@ class Outpost:
     async def _configure(
         self, source: typing.Literal["redis", "polar", "either"] = "either"
     ) -> bool:
-        """False when only Redis may answer and it holds no configuration."""
+        """From "redis", the organization's copy: every token of the organization
+        reloads it once the pull hash says the configuration changed. False when Redis
+        holds none."""
         redis = self._require_redis()
-        stored = None if source == "polar" else await redis.get(self._configuration_key)
+        key = (
+            f"{self._prefix}:configuration"
+            if source == "redis"
+            else self._configuration_key
+        )
+        stored = None if source == "polar" else await redis.get(key)
         if not stored and source == "redis":
             return False
-        configuration: Configuration
-        if stored:
-            configuration = json.loads(stored)
-        else:
-            configuration = await self._request("GET", "/v1/outpost/configuration")
-            await redis.set(self._configuration_key, json.dumps(configuration))
+        configuration: Configuration = (
+            json.loads(stored)
+            if stored
+            else await self._request("GET", "/v1/outpost/configuration")
+        )
         self._prefix = f"{KEY_VERSION}:{configuration['organization_id']}"
         self._reducers = configuration["reducers"]
         self._matchers = with_matchers(self._reducers)
         self._configured.set()
+        if not stored:
+            dumped = json.dumps(configuration)
+            await redis.set(self._configuration_key, dumped)
+            await redis.set(f"{self._prefix}:configuration", dumped)
         return True
 
     async def _refresh(self) -> None:

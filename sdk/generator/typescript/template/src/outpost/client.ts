@@ -759,25 +759,29 @@ export class Outpost {
     return `${KEY_VERSION}:configuration:${identity}`;
   }
 
-  // False when only Redis may answer and it holds no configuration.
+  // From "redis", the organization's copy: every token of the organization reloads it once the
+  // pull hash says the configuration changed. False when Redis holds none.
   private async configure(from: "redis" | "polar" | "either" = "either"): Promise<boolean> {
     const redis = this.requireRedis();
     const unavailable = (error: unknown) => {
       throw redisUnavailable(error);
     };
-    const stored =
-      from === "polar" ? null : await redis.get(this.configurationKey).catch(unavailable);
+    const key = from === "redis" ? `${this.prefix}:configuration` : this.configurationKey;
+    const stored = from === "polar" ? null : await redis.get(key).catch(unavailable);
     if (!stored && from === "redis") return false;
     const configuration: { organization_id: string; reducers: Reducer[] } = stored
       ? JSON.parse(stored)
       : await this.request("GET", "/v1/outpost/configuration");
-    if (!stored)
-      await redis.set(this.configurationKey, JSON.stringify(configuration)).catch(unavailable);
     const { organization_id, reducers } = configuration;
     this.prefix = `${KEY_VERSION}:${organization_id}`;
     this.reducers = reducers;
     this.matchers = withMatchers(reducers);
     this.isConfigured = true;
+    if (!stored) {
+      const json = JSON.stringify(configuration);
+      await redis.set(this.configurationKey, json).catch(unavailable);
+      await redis.set(`${this.prefix}:configuration`, json).catch(unavailable);
+    }
     return true;
   }
 

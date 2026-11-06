@@ -23,6 +23,7 @@ from polar.declarative_config.schemas import (
     ConfigCatalog,
     ConfigCatalogChange,
     ConfigCatalogPlan,
+    ConfigDisable,
     ConfigExportDocument,
     ConfigInit,
     ConfigIssueSeverity,
@@ -37,6 +38,7 @@ from polar.declarative_config.schemas import (
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
+    ConfigCatalogPublished,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
@@ -526,6 +528,188 @@ class TestInit:
                     }
                 ),
             )
+
+    async def test_publishes_the_existing_catalog_as_baseline(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        await declarative_config_service.init(
+            session,
+            auth_subject,
+            ConfigInit.model_validate(
+                {
+                    "external_ids": [
+                        {"resource": "product", "id": product.id, "external_id": "pro"}
+                    ]
+                }
+            ),
+        )
+
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.name == "v1"
+        assert await CatalogProductRepository.from_session(session).get_external_ids(
+            live.id
+        ) == {"pro"}
+
+    async def test_publishes_no_catalog_without_products_or_benefits(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestDisable:
+    async def test_reverts_to_the_catalog_before_init(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(2000, "usd")],
+            external_id="pro",
+        )
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        draft = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            publish=False,
+        )
+        assert draft.catalog is not None
+        [draft_pro] = await CatalogProductRepository.from_session(
+            session
+        ).get_products_by_external_ids(draft.catalog.after.id, ["pro"], options=())
+
+        await declarative_config_service.disable(
+            session, auth_subject, ConfigDisable.model_validate({})
+        )
+
+        catalogs = CatalogRepository.from_session(session)
+        assert not organization.is_config_as_code_enabled
+        assert await catalogs.get_live(organization.id) is None
+        assert await catalogs.get_draft(organization.id) is None
+        await session.refresh(pro)
+        await session.refresh(draft_pro)
+        assert (pro.is_current, pro.catalog_id) == (True, None)
+        assert draft_pro.deleted_at is not None
+
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        live = await catalogs.get_live(organization.id)
+        assert live is not None
+        assert live.name == "v1"
+
+    async def test_without_a_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            publish=False,
+        )
+
+        await declarative_config_service.disable(
+            session, auth_subject, ConfigDisable.model_validate({})
+        )
+
+        assert not organization.is_config_as_code_enabled
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is None
+        )
+
+    async def test_after_the_first_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        await declarative_config_service.disable(
+            session, auth_subject, ConfigDisable.model_validate({})
+        )
+
+        [pro] = await ProductRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert not organization.is_config_as_code_enabled
+        assert (pro.is_current, pro.catalog_id) == (True, None)
+
+    async def test_refuses_after_a_second_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        for product in (MONTHLY_PRO, MONTHLY_PRO_25):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"products": [product]}),
+            )
+
+        with pytest.raises(ConfigCatalogPublished):
+            await declarative_config_service.disable(
+                session, auth_subject, ConfigDisable.model_validate({})
+            )
+
+        assert organization.is_config_as_code_enabled
 
 
 @pytest.mark.anyio

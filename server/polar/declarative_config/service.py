@@ -46,6 +46,7 @@ from .schemas import (
     ConfigCatalogChange,
     ConfigCatalogPlan,
     ConfigChange,
+    ConfigDisable,
     ConfigExport,
     ConfigInit,
     ConfigIssue,
@@ -135,6 +136,15 @@ class _OrganizationTarget:
 class ConfigAsCodeNotEnabled(PolarError):
     def __init__(self) -> None:
         super().__init__("Config as code is not enabled for this organization.", 403)
+
+
+class ConfigCatalogPublished(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization published more than one catalog with config as "
+            "code, so it can't be disabled.",
+            409,
+        )
 
 
 class ConfigUnsupportedResources(PolarError):
@@ -275,15 +285,44 @@ class DeclarativeConfigService:
                 )
             except IntegrityError as e:
                 raise _conflict(e) from e
-        if organization.is_config_as_code_enabled:
-            return
-        repository = OrganizationRepository.from_session(session)
-        await repository.update(
+        if not organization.is_config_as_code_enabled:
+            await self._set_enabled(session, organization, True)
+        # The catalog as it is now is the version disabling reverts to.
+        await catalog_service.get_or_create_live(session, organization)
+
+    async def disable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        config_disable: ConfigDisable,
+    ) -> None:
+        organization = await self._get_organization(
+            session,
+            auth_subject,
+            config_disable,
+            OrganizationPermission.organization_manage,
+        )
+        repository = CatalogRepository.from_session(session)
+        await repository.lock(organization.id)
+        if await repository.count_by_organization(organization.id) > 1:
+            raise ConfigCatalogPublished()
+        draft = await repository.get_draft(organization.id)
+        if draft is not None:
+            await catalog_service.discard_draft(session, draft)
+        live = await repository.get_live(organization.id)
+        if live is not None:
+            await repository.delete(live)
+        await self._set_enabled(session, organization, False)
+
+    async def _set_enabled(
+        self, session: AsyncSession, organization: Organization, enabled: bool
+    ) -> None:
+        await OrganizationRepository.from_session(session).update(
             organization,
             update_dict={
                 "feature_settings": {
                     **organization.feature_settings,
-                    "config_as_code_enabled": True,
+                    "config_as_code_enabled": enabled,
                 }
             },
         )

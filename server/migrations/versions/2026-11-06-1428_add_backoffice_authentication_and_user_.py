@@ -1,7 +1,7 @@
 """add backoffice authentication and user sessions
 
 Revision ID: 9c048db74f2e
-Revises: 57e6b4862574
+Revises: 8331ff1c33ff
 Create Date: 2026-11-06 14:28:35.922689
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "9c048db74f2e"
-down_revision = "57e6b4862574"
+down_revision = "8331ff1c33ff"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

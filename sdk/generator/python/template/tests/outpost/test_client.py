@@ -1019,6 +1019,70 @@ async def test_pulls_in_the_background_once_due_and_waits_for_it_once_stale(
 
 
 @pytest.mark.anyio
+async def test_applies_a_pulled_pages_customers_side_by_side(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    changes: dict[str, typing.Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    customers = [f"customer-{index}" for index in range(10)]
+    for customer in customers:
+        await redis.hset(f"outpost:v1:org-1:state:external:{customer}:tokens", "cold:sum", 0)
+    receive = Outpost._receive_snapshot
+
+    async def slow(outpost: Outpost, *args: typing.Any, **kwargs: typing.Any) -> bool:
+        await anyio.sleep(0.05)
+        return await receive(outpost, *args, **kwargs)
+
+    monkeypatch.setattr(Outpost, "_receive_snapshot", slow)
+    async with Outpost(url, client=polar_client) as outpost:
+        started = anyio.current_time()
+        await _deliver(
+            outpost,
+            changes,
+            *(
+                {
+                    **ALICE_SNAPSHOT,
+                    "reducer_id": "tokens",
+                    "external_customer_id": customer,
+                    "cold_until": BUCKET,
+                    "sum": 1,
+                }
+                for customer in customers
+            ),
+        )
+        assert anyio.current_time() - started < 0.25
+    for customer in customers:
+        key = f"outpost:v1:org-1:state:external:{customer}:tokens"
+        assert await redis.hget(key, "cold:sum") == b"1"
+
+
+@pytest.mark.anyio
+async def test_waits_for_a_stale_pull_at_most_its_snapshot_timeout(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    clock: types.SimpleNamespace,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
+    snapshots["external:alice:credits"] = ALICE_CREDITS
+
+    async def slow_pull(outpost: Outpost, *args: typing.Any) -> None:
+        await anyio.sleep(2)
+
+    async with Outpost(url, client=polar_client) as outpost:
+        await _consumed(outpost)
+        monkeypatch.setattr(Outpost, "_pull_changes", slow_pull)
+        clock.elapsed += 60
+        started = anyio.current_time()
+        assert await _consumed(outpost) == 3
+        assert anyio.current_time() - started < 1
+
+
+@pytest.mark.anyio
 async def test_backs_off_after_a_failed_pull_and_serves_reads_meanwhile(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
@@ -2627,9 +2691,34 @@ async def test_redis_errors_raise_outpost_errors(
 
 
 @pytest.mark.anyio
-async def test_redis_unavailable_at_startup(
-    redis_connection: tuple[str, Redis], polar_client: httpx.AsyncClient
+async def test_starts_once_redis_accepts_the_connection_it_first_closed(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    url, _ = redis_connection
+    ping = FakeAsyncRedis.ping
+    attempts: list[None] = []
+
+    async def closed_once(redis: FakeAsyncRedis, *args: typing.Any) -> typing.Any:
+        attempts.append(None)
+        if len(attempts) == 1:
+            raise RedisConnectionError("Connection closed by server.")
+        return await ping(redis, *args)
+
+    monkeypatch.setattr(FakeAsyncRedis, "ping", closed_once)
+    async with Outpost(url, client=polar_client) as outpost:
+        assert outpost.connected
+    assert len(attempts) >= 2
+
+
+@pytest.mark.anyio
+async def test_redis_unavailable_at_startup(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("polar.outpost.client.TIMEOUT", 0.3)
     url, redis = redis_connection
     server: FakeServer = redis.connection_pool.connection_kwargs["server"]
     server.connected = False

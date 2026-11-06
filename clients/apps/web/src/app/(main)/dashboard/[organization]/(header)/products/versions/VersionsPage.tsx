@@ -30,17 +30,17 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const publishedAt = (catalog: schemas['Catalog']) =>
   catalog.published_at ?? catalog.created_at
 
-export const CurrentBadge = () => (
+const StatusBadge = ({ draft }: { draft: boolean }) => (
   <Box
     as="span"
     display="inline-flex"
     paddingHorizontal="m"
     paddingVertical="xs"
     borderRadius="full"
-    backgroundColor="background-inverse"
+    backgroundColor={draft ? 'background-card' : 'background-inverse'}
   >
-    <Text as="span" color="inverse">
-      Current
+    <Text as="span" color={draft ? 'default' : 'inverse'}>
+      {draft ? 'Draft' : 'Current'}
     </Text>
   </Box>
 )
@@ -73,32 +73,39 @@ const VersionRow = ({
 }: {
   organization: schemas['Organization']
   catalog: schemas['Catalog']
-}) => (
-  <Link
-    href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
-  >
-    <ListItem className="px-6 py-5">
-      <Grid
-        templateColumns="minmax(0, 1fr) auto 130px"
-        columnGap="xl"
-        alignItems="center"
-        width="100%"
-      >
-        <Text
-          variant="body"
-          color={catalog.name ? 'default' : 'muted'}
-          truncate
+}) => {
+  const isDraft = catalog.status === 'draft'
+  return (
+    <Link
+      href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
+    >
+      <ListItem className="px-6 py-5">
+        <Grid
+          templateColumns="minmax(0, 1fr) auto 130px"
+          columnGap="xl"
+          alignItems="center"
+          width="100%"
         >
-          {catalog.name ?? 'Untitled'}
-        </Text>
-        <Box>{catalog.status === 'live' ? <CurrentBadge /> : null}</Box>
-        <Text variant="body" color="muted" align="right">
-          <PublishedAt catalog={catalog} />
-        </Text>
-      </Grid>
-    </ListItem>
-  </Link>
-)
+          <Text
+            variant="body"
+            color={catalog.name || isDraft ? 'default' : 'muted'}
+            truncate
+          >
+            {catalog.name ?? (isDraft ? 'Unpublished changes' : 'Untitled')}
+          </Text>
+          <Box>
+            {catalog.status === 'archived' ? null : (
+              <StatusBadge draft={isDraft} />
+            )}
+          </Box>
+          <Text variant="body" color="muted" align="right">
+            {isDraft ? 'Not published' : <PublishedAt catalog={catalog} />}
+          </Text>
+        </Grid>
+      </ListItem>
+    </Link>
+  )
+}
 
 export default function VersionsPage({
   organization,
@@ -137,7 +144,7 @@ export default function VersionsPage({
         <EmptyState
           icon={<HistoryRounded />}
           title="No versions yet"
-          description="A version is published each time you apply product changes from your config."
+          description="Apply your config to save a draft, then publish it to create a version."
         />
       )}
     </DashboardBody>

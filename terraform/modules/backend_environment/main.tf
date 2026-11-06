@@ -2,9 +2,12 @@ locals {
   environment = var.backend_config.environment == null ? var.environment : var.backend_config.environment
 
   google_secrets = {
-    POLAR_GOOGLE_CLIENT_ID            = var.google_secrets.client_id
-    POLAR_GOOGLE_CLIENT_SECRET        = var.google_secrets.client_secret
-    POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = var.google_secrets.service_account_json
+    POLAR_GOOGLE_CLIENT_ID                = var.google_secrets.client_id
+    POLAR_GOOGLE_CLIENT_SECRET            = var.google_secrets.client_secret
+    POLAR_GOOGLE_SERVICE_ACCOUNT_JSON     = var.google_secrets.service_account_json
+    POLAR_BACKOFFICE_GOOGLE_CLIENT_ID     = var.google_secrets.backoffice_client_id
+    POLAR_BACKOFFICE_GOOGLE_CLIENT_SECRET = var.google_secrets.backoffice_client_secret
+    POLAR_BACKOFFICE_GOOGLE_HOSTED_DOMAIN = var.google_secrets.backoffice_hosted_domain
   }
 
   pydantic_ai_gateway_secrets = {

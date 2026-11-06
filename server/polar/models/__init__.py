@@ -4,7 +4,9 @@ from .account import Account
 from .account_credit import AccountCredit
 from .agent import Agent
 from .authentication_session import AuthenticationSession
+from .backoffice_authentication_session import BackofficeAuthenticationSession
 from .backoffice_user import BackofficeUser
+from .backoffice_user_session import BackofficeUserSession
 from .backup_codes_enrollment import BackupCodesEnrollment
 from .benefit import Benefit
 from .benefit_grant import BenefitGrant
@@ -149,7 +151,9 @@ __all__ = [
     "AccountCredit",
     "Agent",
     "AuthenticationSession",
+    "BackofficeAuthenticationSession",
     "BackofficeUser",
+    "BackofficeUserSession",
     "BackupCodesEnrollment",
     "Benefit",
     "BenefitGrant",

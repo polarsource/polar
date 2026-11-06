@@ -93,6 +93,11 @@ variable "environment_groups" {
       POLAR_GOOGLE_CLIENT_SECRET        = string
       POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = string
     })
+    backoffice_google = object({
+      POLAR_BACKOFFICE_GOOGLE_CLIENT_ID     = string
+      POLAR_BACKOFFICE_GOOGLE_CLIENT_SECRET = string
+      POLAR_BACKOFFICE_GOOGLE_HOSTED_DOMAIN = string
+    })
     pydantic_ai_gateway = object({
       POLAR_PYDANTIC_AI_GATEWAY_API_KEY = string
     })

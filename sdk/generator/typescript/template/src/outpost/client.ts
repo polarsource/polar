@@ -1058,7 +1058,7 @@ export class Outpost {
       await this.backOff(this.missingKey(identity), 2 * MAX_PULL_RETRY_DELAY);
       return false;
     }
-    if (!pulled) await this.redis?.del(this.missingKey(identity)).catch(() => {});
+    await this.redis?.del(this.missingKey(identity)).catch(() => {});
     if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
       throw new TypeError("Snapshot timestamps must be safe integer microseconds");
     for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])

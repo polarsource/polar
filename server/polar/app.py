@@ -39,7 +39,6 @@ from polar.logfire import (
     instrument_fastapi,
     instrument_httpx,
     instrument_sqlalchemy,
-    log_slow_async_callbacks,
 )
 from polar.logging import Logger
 from polar.logging import configure as configure_logging
@@ -282,4 +281,3 @@ configure_posthog()
 app = create_app()
 instrument_fastapi(app)
 instrument_httpx()
-log_slow_async_callbacks()

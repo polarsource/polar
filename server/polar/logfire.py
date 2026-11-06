@@ -289,13 +289,8 @@ def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
     logfire.instrument_sqlalchemy(engines=engines, meter_provider=_meter_provider)
 
 
-def log_slow_async_callbacks() -> None:
-    logfire.log_slow_async_callbacks(slow_duration=0.1)
-
-
 __all__ = [
     "configure_logfire",
     "instrument_fastapi",
     "instrument_sqlalchemy",
-    "log_slow_async_callbacks",
 ]

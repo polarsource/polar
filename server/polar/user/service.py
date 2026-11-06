@@ -68,6 +68,26 @@ class InvalidAccount(UserError):
         super().__init__(message)
 
 
+class UserEmailConflict(UserError):
+    def __init__(self) -> None:
+        super().__init__("An account with this email already exists.", 409)
+
+
+_USERS_EMAIL_CONSTRAINT = "ix_users_email_case_insensitive"
+
+
+def _is_users_email_conflict(error: IntegrityError) -> bool:
+    driver_error = getattr(error, "driver_exception", None)
+    return getattr(driver_error, "constraint_name", None) == _USERS_EMAIL_CONSTRAINT
+
+
+def _discard_pending_user(session: AsyncSession, email: str) -> None:
+    normalized = email.lower()
+    for pending in list(session.new):
+        if isinstance(pending, User) and pending.email.lower() == normalized:
+            session.expunge(pending)
+
+
 class UserService:
     async def get_by_email_or_create(
         self,
@@ -86,12 +106,25 @@ class UserService:
                 user = await self.create_by_email(
                     session, email, signup_attribution=signup_attribution
                 )
-        except IntegrityError:
-            user = await repository.get_by_email(email)
-            if user is None:
+        except IntegrityError as error:
+            if not _is_users_email_conflict(error):
                 raise
-            log.info("user.get_by_email_or_create.concurrent_creation", user_id=user.id)
-            return (user, False)
+            _discard_pending_user(session, email)
+            with session.no_autoflush:
+                user = await repository.get_by_email(
+                    email, include_deleted=True, included_blocked=True
+                )
+            if user is not None and user.can_authenticate:
+                log.info(
+                    "user.get_by_email_or_create.concurrent_creation",
+                    user_id=user.id,
+                )
+                return (user, False)
+            log.info(
+                "user.get_by_email_or_create.email_conflict",
+                constraint=_USERS_EMAIL_CONSTRAINT,
+            )
+            raise UserEmailConflict() from None
 
         return (user, True)
 

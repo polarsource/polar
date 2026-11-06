@@ -1,4 +1,6 @@
 import os
+import re
+import traceback
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, Literal, cast
 
@@ -6,8 +8,9 @@ import httpx
 import logfire
 from fastapi import FastAPI, Request, WebSocket
 from logfire.sampling import SpanLevel
+from logfire.types import ExceptionCallbackHelper
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
-from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
+from opentelemetry.sdk.trace import Event, ReadableSpan, Span, SpanProcessor
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import (
     ALWAYS_OFF,
@@ -16,6 +19,7 @@ from opentelemetry.sdk.trace.sampling import (
     Sampler,
     SamplingResult,
 )
+from opentelemetry.trace import Status
 from starlette.routing import Host
 
 from polar.observability.http_telemetry import HttpURLSpanProcessor, server_request_hook
@@ -114,6 +118,85 @@ class LevelSampler(Sampler):
         return "LevelSampler"
 
 
+# Logfire leaves `exception.message` unscrubbed. Redact addresses and bound
+# query parameters in place so the constraint name stays visible.
+_EMAIL_RE = re.compile(r"(?<![\w.+-])[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}(?![\w.-])")
+_SQL_PARAMETERS_RE = re.compile(r"\[parameters:.*?(?=\n\(|\Z)", re.DOTALL)
+_EXCEPTION_MESSAGE_KEYS = ("exception.message",)
+_EXCEPTION_STACKTRACE_KEYS = ("exception.stacktrace",)
+
+
+def _redact_exception_text(value: str) -> str:
+    value = _SQL_PARAMETERS_RE.sub("[parameters: [Redacted]]", value)
+    return _EMAIL_RE.sub("[Redacted]", value)
+
+
+def _scrub_recorded_exception(helper: ExceptionCallbackHelper) -> None:
+    helper.event_attributes["exception.message"] = _redact_exception_text(
+        str(helper.exception)
+    )
+    helper.event_attributes["exception.stacktrace"] = _redact_exception_text(
+        "".join(traceback.format_exception(helper.exception))
+    )
+
+
+class _ExceptionMessageSpanProcessor(SpanProcessor):
+    """Scrub exception text that instrumentation records without Logfire's callback.
+
+    SQLAlchemy sets the span status description to ``str(exception)``, which
+    includes the Postgres detail and bound parameters, and never calls
+    ``record_exception``.
+    """
+
+    def on_end(self, span: ReadableSpan) -> None:
+        _scrub_span_status(span)
+        _scrub_span_events(span)
+
+
+def _scrub_span_status(span: ReadableSpan) -> None:
+    description = span.status.description
+    if not description:
+        return
+    redacted = _redact_exception_text(description)
+    if redacted == description:
+        return
+    cast(Any, span)._status = Status(span.status.status_code, redacted)
+
+
+def _scrub_span_events(span: ReadableSpan) -> None:
+    events: list[Event] = []
+    changed = False
+    for event in span.events:
+        attributes = event.attributes
+        if not attributes:
+            events.append(event)
+            continue
+        updated, event_changed = _redact_exception_attributes(dict(attributes))
+        changed = changed or event_changed
+        events.append(
+            Event(name=event.name, attributes=updated, timestamp=event.timestamp)
+            if event_changed
+            else event
+        )
+    if changed:
+        cast(Any, span)._events = events
+
+
+def _redact_exception_attributes(
+    attributes: dict[str, Any],
+) -> tuple[dict[str, Any], bool]:
+    changed = False
+    for key in (*_EXCEPTION_MESSAGE_KEYS, *_EXCEPTION_STACKTRACE_KEYS):
+        value = attributes.get(key)
+        if not isinstance(value, str):
+            continue
+        redacted = _redact_exception_text(value)
+        if redacted != value:
+            attributes[key] = redacted
+            changed = True
+    return attributes, changed
+
+
 def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
     if match.path in (
         # Task names are operational labels, even when they contain "email" or "auth".
@@ -173,6 +256,7 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         resource_attributes["service.instance.id"] = render_instance_id
 
     additional_span_processors: list[SpanProcessor] = [
+        _ExceptionMessageSpanProcessor(),
         HttpURLSpanProcessor(),
         PidSpanProcessor(),
     ]
@@ -225,6 +309,9 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
                 local_parent_sampled=LevelSampler(),
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
+        ),
+        advanced=logfire.AdvancedOptions(
+            exception_callback=_scrub_recorded_exception,
         ),
         scrubbing=logfire.ScrubbingOptions(
             callback=_scrubbing_callback,

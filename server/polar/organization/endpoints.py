@@ -97,6 +97,7 @@ from polar.support_case.schemas import (
 from polar.support_case.schemas import (
     SupportCase as SupportCaseSchema,
 )
+from polar.user.service import UserEmailConflict
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
     OrganizationMember,
@@ -621,6 +622,12 @@ async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:
     "/{id}/members/invite",
     response_model=OrganizationMember,
     tags=[APITag.private],
+    responses={
+        409: {
+            "description": "An account with this email already exists.",
+            "model": UserEmailConflict.schema(),
+        },
+    },
 )
 async def invite_member(
     authz: AuthorizeMembersManage,

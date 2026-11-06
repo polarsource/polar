@@ -21,6 +21,7 @@ from polar.user.service import (
     IdentityAlreadyVerified,
     IdentityVerificationForUnknownUser,
     IdentityVerificationProcessing,
+    UserEmailConflict,
 )
 from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
@@ -54,22 +55,71 @@ class TestGetByEmailOrCreate:
     ) -> None:
         """Both concurrent requests saw no user, so the insert hits the unique
         index on the email: the loser must recover the row instead of failing."""
-        mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, user])
+        real_get_by_email = UserRepository.get_by_email
+        calls = 0
+
+        async def miss_then_lookup(
+            repository: UserRepository,
+            email: str,
+            *,
+            include_deleted: bool = False,
+            included_blocked: bool = False,
+        ) -> User | None:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return None
+            return await real_get_by_email(
+                repository,
+                email,
+                include_deleted=include_deleted,
+                included_blocked=included_blocked,
+            )
+
+        mocker.patch.object(UserRepository, "get_by_email", miss_then_lookup)
 
         result, created = await user_service.get_by_email_or_create(session, user.email)
+        await session.flush()
 
         assert result.id == user.id
         assert created is False
 
-    async def test_integrity_error_without_conflicting_user(
+    async def test_blocked_email_does_not_raise_integrity_error(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        user.blocked_at = utc_now()
+        await save_fixture(user)
+
+        with pytest.raises(UserEmailConflict) as raised:
+            await user_service.get_by_email_or_create(session, user.email)
+
+        assert user.email not in str(raised.value)
+        found = await session.scalar(select(User).where(User.id == user.id))
+        assert found is not None
+        assert found.id == user.id
+
+    async def test_email_conflict_without_visible_user(
         self, session: AsyncSession, mocker: MockerFixture, user: User
     ) -> None:
-        """An IntegrityError we can't explain by a concurrent creation must not be
-        swallowed."""
         mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, None])
 
-        with pytest.raises(IntegrityError):
+        with pytest.raises(UserEmailConflict) as raised:
             await user_service.get_by_email_or_create(session, user.email)
+
+        assert user.email not in str(raised.value)
+
+    async def test_unrelated_integrity_error_is_reraised(
+        self, session: AsyncSession, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(UserRepository, "get_by_email", return_value=None)
+        mocker.patch.object(
+            UserRepository,
+            "create",
+            side_effect=IntegrityError("INSERT", None, Exception("other constraint")),
+        )
+
+        with pytest.raises(IntegrityError):
+            await user_service.get_by_email_or_create(session, "new-user@example.com")
 
 
 @pytest.mark.anyio

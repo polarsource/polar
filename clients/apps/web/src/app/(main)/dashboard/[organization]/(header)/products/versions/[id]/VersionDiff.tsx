@@ -58,7 +58,7 @@ const DiffLine = ({
       py="xs"
       mt={spaced ? 's' : 'none'}
     >
-      <Text monospace color={sign.color}>
+      <Text monospace weight="semibold" color={sign.color}>
         {showSign ? sign.glyph : null}
       </Text>
       <Text color="muted" truncate>

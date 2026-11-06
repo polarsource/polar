@@ -4,15 +4,20 @@ import { HttpClientRequest, HttpClientResponse } from 'effect/http'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
+  type ConfigDocument,
+  ConfigExport,
   DEFAULT_CONFIG_FILES,
+  type ExternalIdAssignment,
+  ValidationErrors,
 } from '@/schemas/BillingConfig'
 import { apiUrl, withOrganization } from '@/services/api'
 import {
   type Clients,
+  importCatalogHint,
   transportErrors,
   unexpected,
 } from '@/services/billing-config/api'
-import { plural } from '@/utils/billing-config/problems'
+import { type Unkeyed, unkeyed } from '@/utils/billing-config/keys'
 import {
   detectPackageManager,
   exists,
@@ -27,10 +32,6 @@ import {
   renderConfig,
 } from '@/utils/billing-config/templates'
 
-const ProductCount = Schema.Struct({
-  pagination: Schema.Struct({ total_count: Schema.Finite }),
-})
-
 export interface InitTarget {
   readonly directory: string
   readonly file: string | undefined
@@ -40,8 +41,12 @@ export interface InitTarget {
 export interface Prepared {
   readonly file: string
   readonly format: Format
+  readonly imported: Record<'meters' | 'benefits' | 'products', number>
+  readonly keyed: ReadonlyArray<ExternalIdAssignment>
+  readonly skipped: ConfigExport['skipped']
   readonly install: ReadonlyArray<string> | undefined
   readonly installDirectory: string | undefined
+  readonly already_enabled: boolean
 }
 
 export interface Ran {
@@ -79,22 +84,48 @@ export const run: Run = (command, cwd) =>
     ),
   )
 
-const countProducts = (clients: Clients, organization: ActiveOrganization) =>
+const EXPORT_SCOPES = [
+  'organizations:read',
+  'meters:read',
+  'benefits:read',
+  'products:read',
+]
+
+const UnsupportedResources = Schema.Struct({
+  error: Schema.Literal('ConfigUnsupportedResources'),
+  detail: Schema.String,
+})
+
+const unsupportedResources = (
+  response: HttpClientResponse.HttpClientResponse,
+  organization: ActiveOrganization,
+) =>
+  HttpClientResponse.schemaBodyJson(UnsupportedResources)(response).pipe(
+    Effect.map(
+      ({ detail }) =>
+        new BillingConfigError({
+          message: `Config cannot manage everything in ${organization.name} yet`,
+          hint: detail,
+        }),
+    ),
+    Effect.option,
+  )
+
+const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
   Effect.gen(function* () {
     const response = yield* clients[organization.environment].execute(
       HttpClientRequest.get(
-        yield* apiUrl(organization.environment, '/products/'),
-      ).pipe(
-        HttpClientRequest.setUrlParams({ limit: '1', is_archived: 'false' }),
-        withOrganization(organization.id),
-      ),
+        yield* apiUrl(organization.environment, '/config/'),
+      ).pipe(withOrganization(organization.id)),
     )
-    if (response.status !== 200) {
-      return yield* unexpected(response, organization, ['products:read'])
+    if (response.status === 409) {
+      const unsupported = yield* unsupportedResources(response, organization)
+      if (unsupported._tag === 'Some') return yield* unsupported.value
     }
-    const { pagination } =
-      yield* HttpClientResponse.schemaBodyJson(ProductCount)(response)
-    return pagination.total_count
+    if (response.status !== 200) {
+      return yield* unexpected(response, organization, EXPORT_SCOPES)
+    }
+    return yield* HttpClientResponse.schemaBodyJson(ConfigExport)(response)
   }).pipe(
     Effect.scoped,
     Effect.catchTags({
@@ -103,14 +134,69 @@ const countProducts = (clients: Clients, organization: ActiveOrganization) =>
     }),
   )
 
-const enableConfig = (clients: Clients, organization: ActiveOrganization) =>
+const SECTION_SCOPES = {
+  meter: 'meters:write',
+  benefit: 'benefits:write',
+  product: 'products:write',
+} as const
+
+const rejected = (
+  response: HttpClientResponse.HttpClientResponse,
+  assignments: ReadonlyArray<ExternalIdAssignment>,
+) =>
+  HttpClientResponse.schemaBodyJson(ValidationErrors)(response).pipe(
+    Effect.map(
+      ({ detail }) =>
+        new BillingConfigError({
+          message: 'Could not save the external IDs',
+          hint: detail
+            .map(({ loc, msg }) => {
+              const assignment =
+                typeof loc[2] === 'number' ? assignments[loc[2]] : undefined
+              return assignment
+                ? `${assignment.external_id} (${assignment.resource} ${assignment.name}): ${msg}`
+                : msg
+            })
+            .join(' '),
+        }),
+    ),
+    Effect.orElseSucceed(
+      () =>
+        new BillingConfigError({ message: 'Could not save the external IDs' }),
+    ),
+  )
+
+const enableConfig = (
+  clients: Clients,
+  organization: ActiveOrganization,
+  assignments: ReadonlyArray<ExternalIdAssignment> = [],
+) =>
   Effect.gen(function* () {
     const request = yield* HttpClientRequest.post(
       yield* apiUrl(organization.environment, '/config/init'),
-    ).pipe(withOrganization(organization.id), HttpClientRequest.bodyJson({}))
+    ).pipe(
+      withOrganization(organization.id),
+      HttpClientRequest.bodyJson({
+        external_ids: assignments.map(({ resource, id, external_id }) => ({
+          resource,
+          id,
+          external_id,
+        })),
+      }),
+    )
     const response = yield* clients[organization.environment].execute(request)
+    if (response.status === 422) {
+      return yield* yield* rejected(response, assignments)
+    }
+    if (response.status === 409) {
+      const unsupported = yield* unsupportedResources(response, organization)
+      if (unsupported._tag === 'Some') return yield* unsupported.value
+    }
     if (response.status !== 204) {
-      return yield* unexpected(response, organization, ['organizations:write'])
+      return yield* unexpected(response, organization, [
+        'organizations:write',
+        ...new Set(assignments.map(({ resource }) => SECTION_SCOPES[resource])),
+      ])
     }
   }).pipe(
     Effect.scoped,
@@ -120,9 +206,24 @@ const enableConfig = (clients: Clients, organization: ActiveOrganization) =>
     }),
   )
 
+const count = (document: ConfigDocument, section: string) => {
+  const entries = document[section]
+  return Array.isArray(entries) ? entries.length : 0
+}
+
 const display = (path: string) => relative(process.cwd(), path) || '.'
 
-const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
+const alreadyExists = (path: string, organization: ActiveOrganization) =>
+  new BillingConfigError({
+    message: `${display(path)} already exists`,
+    hint: importCatalogHint(organization),
+  })
+
+const resolveTarget = (
+  fs: FileSystem.FileSystem,
+  target: InitTarget,
+  organization: ActiveOrganization,
+) =>
   Effect.gen(function* () {
     if (target.file !== undefined) {
       const format = formatOf(target.file)
@@ -143,10 +244,7 @@ const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
     for (const existing of DEFAULT_CONFIG_FILES) {
       const path = join(target.directory, existing)
       if (yield* exists(fs, path)) {
-        return yield* new BillingConfigError({
-          message: `${display(target.directory)} already has ${existing}`,
-          hint: 'Run polar config plan to check it, or pass another path to init.',
-        })
+        return yield* alreadyExists(path, organization)
       }
     }
     const format =
@@ -186,29 +284,47 @@ const packageToInstall = (
     }
   })
 
+export type NameResources<E, R> = (
+  resources: ReadonlyArray<Unkeyed>,
+  catalog: ConfigExport,
+) => Effect.Effect<ReadonlyArray<ExternalIdAssignment>, E, R>
+
 export const init =
   (fs: FileSystem.FileSystem, clients: Clients) =>
-  (organization: ActiveOrganization, target: InitTarget) =>
+  <E, R>(
+    organization: ActiveOrganization,
+    target: InitTarget,
+    name: NameResources<E, R>,
+  ) =>
     Effect.gen(function* () {
-      const { path, format } = yield* resolveTarget(fs, target)
+      const { path, format } = yield* resolveTarget(fs, target, organization)
       if (yield* exists(fs, path)) {
-        return yield* new BillingConfigError({
-          message: `${display(path)} already exists`,
-          hint: 'Run polar config plan to check it, or pass another path to init.',
-        })
+        return yield* alreadyExists(path, organization)
       }
-      const products = yield* countProducts(clients, organization)
-      if (products > 0) {
-        return yield* new BillingConfigError({
-          message: `${organization.name} already has ${plural(products, 'product')}`,
-          hint: 'polar config init only sets up organizations without products yet. Start from a new organization, or wait for migration support.',
-        })
+      let exported = yield* exportConfig(clients, organization)
+      const alreadyEnabled = exported.enabled
+      const keyed = yield* name(
+        unkeyed(exported.config, exported.skipped),
+        exported,
+      )
+      if (!alreadyEnabled || keyed.length > 0) {
+        yield* enableConfig(clients, organization, keyed)
       }
-      yield* enableConfig(clients, organization)
-      yield* write(fs, path, yield* renderConfig(format))
+      if (keyed.length > 0) {
+        exported = yield* exportConfig(clients, organization)
+      }
+      yield* write(fs, path, yield* renderConfig(format, exported.config))
       return {
         file: display(path),
         format,
+        imported: {
+          meters: count(exported.config, 'meters'),
+          benefits: count(exported.config, 'benefits'),
+          products: count(exported.config, 'products'),
+        },
+        keyed,
+        skipped: exported.skipped.filter(({ reason }) => reason !== 'archived'),
+        already_enabled: alreadyEnabled,
         ...(yield* packageToInstall(fs, format, path)),
       } satisfies Prepared
     })

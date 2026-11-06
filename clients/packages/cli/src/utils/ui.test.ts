@@ -6,6 +6,12 @@ import * as ui from '@/utils/ui'
 const ESC = String.fromCharCode(27)
 
 describe('ui', () => {
+  test('truncates styled text by visible width and resets the style', () => {
+    const text = `${ESC}[2mabc${ESC}[22mdefgh`
+    expect(ui.truncate(text, 5)).toBe(`${ESC}[2mabc${ESC}[22md…${ESC}[0m`)
+    expect(ui.truncate(text, 8)).toBe(text)
+  })
+
   test('prefixes status lines with their glyphs', () => {
     expect(stripAnsi(ui.success('Done'))).toBe('  ✔ Done')
     expect(stripAnsi(ui.warning('Careful'))).toBe('  ▲ Careful')

@@ -159,6 +159,8 @@ ConfigBenefit = Annotated[
     SetSchemaReference("ConfigBenefit"),
 ]
 
+CONFIG_BENEFIT_TYPES = (BenefitType.feature_flag, BenefitType.meter_credit)
+
 
 class ConfigProductPriceSeatBased(ProductPriceSeatBasedCreate):
     model_config = ConfigDict(extra="forbid")
@@ -808,6 +810,12 @@ class ConfigSkippedResource(Schema):
     reason: ConfigSkippedReason = Field(
         description="Why the resource isn't in the exported config."
     )
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        description="The billing interval of a skipped product. None for one-time products and other resources.",
+    )
+    recurring_interval_count: int | None = Field(
+        description="The number of intervals between charges of a skipped product.",
+    )
 
 
 class ConfigExportCatalog(ConfigCatalog):
@@ -817,6 +825,12 @@ class ConfigExportCatalog(ConfigCatalog):
 
 
 class ConfigExport(Schema):
+    enabled: bool = Field(
+        description=(
+            "Whether config as code is enabled for the organization. "
+            "Until it is, plan and apply are refused."
+        )
+    )
     config: ConfigExportDocument = Field(
         description=(
             "The current config, in the shape plan and apply accept, "
@@ -846,11 +860,29 @@ class DeclarativeConfigExportParams(QuerySchema):
     )
 
 
+class ConfigExternalIDAssignment(Schema):
+    resource: Literal[
+        ConfigResource.meter, ConfigResource.benefit, ConfigResource.product
+    ] = Field(description="The type of resource.")
+    id: UUID4 = Field(description="The ID of a resource without an `external_id`.")
+    external_id: str = Field(
+        min_length=1, description="The `external_id` to give the resource."
+    )
+
+
 class ConfigInit(Schema):
     organization_id: OrganizationID | None = Field(
         default=None,
         description=(
             "The ID of the organization to opt in. "
             "**Required unless you use an organization token.**"
+        ),
+    )
+    external_ids: list[ConfigExternalIDAssignment] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_METERS + MAXIMUM_BENEFITS + MAXIMUM_PRODUCTS,
+        description=(
+            "External IDs to give existing resources that don't have one yet, "
+            "so the config can manage them."
         ),
     )

@@ -24,6 +24,7 @@ from polar.declarative_config.schemas import (
     ConfigCatalogChange,
     ConfigCatalogPlan,
     ConfigExportDocument,
+    ConfigInit,
     ConfigIssueSeverity,
     ConfigIssueType,
     ConfigProductPrice,
@@ -39,6 +40,7 @@ from polar.declarative_config.service import (
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigUnsupportedResources,
 )
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
@@ -97,6 +99,7 @@ from tests.fixtures.random_objects import (
     create_product_price_unit_based,
     create_subscription,
     create_webhook_endpoint,
+    set_product_benefits,
 )
 
 TOOL_CALLS_METER = {
@@ -254,6 +257,275 @@ ORDERS_WEBHOOK = {
     "events": ["order.created", "order.paid"],
     "api_version": str(CURRENT_API_VERSION),
 }
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestInit:
+    async def test_assigned_external_ids_round_trip(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="Monthly credits",
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro",
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[credits])
+
+        await declarative_config_service.init(
+            session,
+            auth_subject,
+            ConfigInit.model_validate(
+                {
+                    "external_ids": [
+                        {"resource": "meter", "id": meter.id, "external_id": "calls"},
+                        {
+                            "resource": "benefit",
+                            "id": credits.id,
+                            "external_id": "credits",
+                        },
+                        {"resource": "product", "id": product.id, "external_id": "pro"},
+                    ]
+                }
+            ),
+        )
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(exported.config.model_dump(mode="json")),
+        )
+
+        assert exported.skipped == []
+        assert [m.external_id for m in exported.config.meters] == ["calls"]
+        assert [b.external_id for b in exported.config.benefits] == ["credits"]
+        assert [p.external_id for p in exported.config.products] == ["pro"]
+        assert exported.config.products[0].benefits == ["credits"]
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_refuses_benefits_config_cannot_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            description="Beta",
+            properties={},
+        )
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        with pytest.raises(ConfigUnsupportedResources, match="Priority support"):
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert not organization.is_config_as_code_enabled
+
+    async def test_refuses_products_config_cannot_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Hobby",
+            prices=[(0, "usd")],
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Tip jar",
+            prices=[(500, None, None, "usd")],
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Old tip jar",
+            prices=[(500, None, None, "usd")],
+            is_archived=True,
+        )
+
+        with pytest.raises(ConfigUnsupportedResources) as raised:
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert raised.value.message.endswith("Unsupported: product Tip jar.")
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_allows_unsupported_resources_when_already_enabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        assert organization.is_config_as_code_enabled
+
+    async def test_rejects_taken_and_existing_external_ids(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        keyed = await create_meter(
+            save_fixture, organization=organization, external_id="calls"
+        )
+        unkeyed = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {
+                                "resource": "product",
+                                "id": product.id,
+                                "external_id": "pack",
+                            },
+                            {
+                                "resource": "meter",
+                                "id": unkeyed.id,
+                                "external_id": "calls",
+                            },
+                            {
+                                "resource": "meter",
+                                "id": keyed.id,
+                                "external_id": "other",
+                            },
+                        ]
+                    }
+                ),
+            )
+
+        assert [e["loc"] for e in error.value.errors()] == [
+            ("body", "external_ids", 1, "external_id"),
+            ("body", "external_ids", 2, "external_id"),
+        ]
+        assert unkeyed.external_id is None
+
+    async def test_rejects_resource_assigned_twice(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {"resource": "meter", "id": meter.id, "external_id": "a"},
+                            {"resource": "meter", "id": meter.id, "external_id": "b"},
+                        ]
+                    }
+                ),
+            )
+
+        assert [e["loc"] for e in error.value.errors()] == [
+            ("body", "external_ids", 1, "external_id"),
+        ]
+        assert meter.external_id is None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.organizations_write})
+    )
+    async def test_requires_read_scopes_to_check_resources(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert not organization.is_config_as_code_enabled
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization",
+            scopes={
+                Scope.organizations_write,
+                Scope.benefits_read,
+                Scope.products_read,
+            },
+        )
+    )
+    async def test_requires_section_write_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {"resource": "meter", "id": meter.id, "external_id": "m"}
+                        ]
+                    }
+                ),
+            )
 
 
 @pytest.mark.anyio
@@ -4248,6 +4520,12 @@ class TestExport:
             is_archived=True,
             external_id="archived",
         )
+        archived_unkeyed = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+        )
 
         exported = await declarative_config_service.export(session, auth_subject, None)
 
@@ -4259,7 +4537,35 @@ class TestExport:
             (credits.id, ConfigSkippedReason.invalid),
             (custom_price.id, ConfigSkippedReason.invalid),
             (archived.id, ConfigSkippedReason.archived),
+            (archived_unkeyed.id, ConfigSkippedReason.archived),
         ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skipped_products_carry_their_interval(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        yearly = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        one_time = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert {
+            skip.id: (skip.recurring_interval, skip.recurring_interval_count)
+            for skip in exported.skipped
+        } == {
+            yearly.id: (SubscriptionRecurringInterval.year, 1),
+            one_time.id: (None, None),
+        }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     @pytest.mark.usefixtures("config_as_code_enabled")

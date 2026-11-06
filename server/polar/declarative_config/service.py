@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
@@ -33,10 +33,11 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, products, removals, validation
+from . import benefits, catalogs, external_ids, products, removals, validation
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
+    CONFIG_BENEFIT_TYPES,
     Config,
     ConfigAction,
     ConfigApplyResult,
@@ -69,6 +70,7 @@ from .validation import (
     ResourceChange,
     SettingsChange,
     WebhookChange,
+    is_expressible_product,
 )
 
 _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
@@ -135,6 +137,20 @@ class ConfigAsCodeNotEnabled(PolarError):
         super().__init__("Config as code is not enabled for this organization.", 403)
 
 
+class ConfigUnsupportedResources(PolarError):
+    def __init__(self, benefits: Sequence[str], products: Sequence[str]) -> None:
+        unsupported = [
+            *(f"benefit {name}" for name in benefits),
+            *(f"product {name}" for name in products),
+        ]
+        super().__init__(
+            "Config can only manage feature flag and meter credit benefits, and "
+            "products with fixed, metered, seat-based or unit-based prices. "
+            f"Unsupported: {', '.join(unsupported)}.",
+            409,
+        )
+
+
 class ConfigMeterConflict(PolarError):
     def __init__(self) -> None:
         super().__init__(
@@ -188,6 +204,27 @@ class ConfigInvalid(PolarError):
         return cls._schema
 
 
+_SECTIONS = {
+    ConfigResource.meter: "meters",
+    ConfigResource.benefit: "benefits",
+    ConfigResource.product: "products",
+}
+
+
+_CONFLICTS: dict[str | None, Callable[[], PolarError]] = {
+    _METER_EXTERNAL_ID_INDEX: ConfigMeterConflict,
+    _BENEFIT_EXTERNAL_ID_INDEX: ConfigBenefitConflict,
+    _PRODUCT_EXTERNAL_ID_INDEX: ConfigProductConflict,
+}
+
+
+def _conflict(error: IntegrityError) -> PolarError:
+    conflict = _CONFLICTS.get(_constraint_name(error))
+    if conflict is None:
+        raise error
+    return conflict()
+
+
 def _removed_external_ids(
     removed: Sequence[ConfigRemoval],
 ) -> tuple[list[str], list[str]]:
@@ -213,6 +250,31 @@ class DeclarativeConfigService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
+        if not organization.is_config_as_code_enabled:
+            _assert_scopes(
+                auth_subject,
+                {_SECTIONS[ConfigResource.benefit], _SECTIONS[ConfigResource.product]},
+                write=False,
+            )
+            await self._assert_expressible(session, organization)
+        if config_init.external_ids:
+            _assert_scopes(
+                auth_subject,
+                {_SECTIONS[a.resource] for a in config_init.external_ids},
+                write=True,
+            )
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.products_manage,
+            )
+            try:
+                await external_ids.assign(
+                    session, organization, config_init.external_ids
+                )
+            except IntegrityError as e:
+                raise _conflict(e) from e
         if organization.is_config_as_code_enabled:
             return
         repository = OrganizationRepository.from_session(session)
@@ -225,6 +287,25 @@ class DeclarativeConfigService:
                 }
             },
         )
+
+    async def _assert_expressible(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> None:
+        benefit_names = await BenefitRepository.from_session(
+            session
+        ).get_descriptions_excluding_types(organization.id, CONFIG_BENEFIT_TYPES)
+        product_repository = ProductRepository.from_session(session)
+        product_names = [
+            product.name
+            for product in await product_repository.get_all(
+                product_repository.get_organization_statement(organization.id).where(
+                    Product.is_archived.is_(False)
+                )
+            )
+            if not is_expressible_product(product)
+        ]
+        if benefit_names or product_names:
+            raise ConfigUnsupportedResources(benefit_names, product_names)
 
     async def apply(
         self,
@@ -560,7 +641,10 @@ class DeclarativeConfigService:
             auth_subject,
             _OrganizationTarget(organization_id),
             OrganizationPermission.products_read,
+            require_enabled=False,
         )
+        if not organization.is_config_as_code_enabled:
+            await self._assert_expressible(session, organization)
         catalog = await catalog_service.resolve(session, organization, catalog_id)
         return await export_config(session, organization, catalog)
 
@@ -583,12 +667,14 @@ class DeclarativeConfigService:
         auth_subject: AuthSubject[User | Organization | Agent],
         target: OrganizationIDModel,
         permission: OrganizationPermission,
+        *,
+        require_enabled: bool = True,
     ) -> Organization:
         organization = await get_payload_organization(session, auth_subject, target)
         await assert_organization_permission(
             session, auth_subject, organization.id, permission
         )
-        if not organization.is_config_as_code_enabled:
+        if require_enabled and not organization.is_config_as_code_enabled:
             raise ConfigAsCodeNotEnabled()
         return organization
 

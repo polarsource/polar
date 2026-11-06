@@ -21,7 +21,6 @@ from polar.models import (
     Meter,
     Organization,
     Product,
-    ProductPriceMeteredTiers,
 )
 from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
@@ -47,7 +46,7 @@ from .schemas import (
     ConfigSkippedReason,
     ConfigSkippedResource,
 )
-from .validation import benefit_properties, price_config
+from .validation import benefit_properties, is_expressible_product, price_config
 
 # Webhook endpoints stay out: they need a permission and scope that
 # unclaimed agents don't have. Apply leaves unlisted endpoints untouched.
@@ -79,6 +78,10 @@ async def _export_section[ModelT: _Exportable, EntryT](
     name: Callable[[ModelT], str],
     archived: Callable[[ModelT], bool],
     entry: Callable[[ModelT], EntryT | None],
+    details: Callable[[ModelT], dict[str, Any]] = lambda _: {
+        "recurring_interval": None,
+        "recurring_interval_count": None,
+    },
 ) -> tuple[list[EntryT], dict[str, str]]:
     """
     `entry` returns `None` when the model references something left out of the
@@ -89,10 +92,10 @@ async def _export_section[ModelT: _Exportable, EntryT](
     skipped_count = 0
     async for model in models:
         reason: ConfigSkippedReason | None = None
-        if model.external_id is None:
-            reason = ConfigSkippedReason.missing_external_id
-        elif archived(model):
+        if archived(model):
             reason = ConfigSkippedReason.archived
+        elif model.external_id is None:
+            reason = ConfigSkippedReason.missing_external_id
         elif len(entries) >= maximum:
             reason = ConfigSkippedReason.over_limit
         else:
@@ -109,7 +112,11 @@ async def _export_section[ModelT: _Exportable, EntryT](
             skipped_count += 1
             skipped.append(
                 ConfigSkippedResource(
-                    resource=resource, id=model.id, name=name(model), reason=reason
+                    resource=resource,
+                    id=model.id,
+                    name=name(model),
+                    reason=reason,
+                    **details(model),
                 )
             )
         if len(entries) >= maximum and skipped_count >= maximum:
@@ -157,10 +164,7 @@ def _product_entry(
     *,
     deprecated: bool,
 ) -> ConfigProductRead | None:
-    if any(
-        isinstance(price, ProductPriceMeteredTiers) and price.tiers is None
-        for price in product.prices
-    ):
+    if not is_expressible_product(product):
         return None
     prices = [price_config(price, meter_external_ids) for price in product.prices]
     benefits = [
@@ -306,8 +310,16 @@ async def export_config(
         MAXIMUM_PRODUCTS,
         skipped,
         name=lambda product: product.name,
+        details=lambda product: {
+            "recurring_interval": product.recurring_interval,
+            "recurring_interval_count": product.recurring_interval_count,
+        },
         archived=lambda product: (
-            product.is_archived and product.external_id in catalog_external_ids
+            product.is_archived
+            and (
+                product.external_id is None
+                or product.external_id in catalog_external_ids
+            )
         ),
         entry=lambda product: _product_entry(
             product,
@@ -318,6 +330,7 @@ async def export_config(
     )
 
     return ConfigExport(
+        enabled=organization.is_config_as_code_enabled,
         config=ConfigExportDocument(
             settings=_settings(organization),
             meters=meters,

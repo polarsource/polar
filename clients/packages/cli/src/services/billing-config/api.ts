@@ -228,6 +228,9 @@ export const requiredScopes = (
     )
 }
 
+export const importCatalogHint = (organization: ActiveOrganization) =>
+  `Move your config file aside and run polar config init to import ${organization.name}'s catalog into a new file, then bring your changes over.`
+
 export const unexpected = (
   response: HttpClientResponse.HttpClientResponse,
   organization: ActiveOrganization,
@@ -244,7 +247,7 @@ export const unexpected = (
     if (response.status === 403 && error === 'ConfigAsCodeNotEnabled') {
       return yield* new BillingConfigError({
         message: `Config is not enabled for ${organization.name}`,
-        hint: 'Ask Polar to enable it for your organization.',
+        hint: importCatalogHint(organization),
       })
     }
     if (response.status === 403) {

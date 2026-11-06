@@ -364,6 +364,7 @@ data "aws_iam_policy_document" "github_actions_image_resizer" {
   statement {
     actions = [
       "lambda:GetFunction",
+      "lambda:GetFunctionConfiguration",
       "lambda:PublishVersion",
       "lambda:UpdateFunctionCode",
     ]

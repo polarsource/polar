@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.models import (
     BillingInterval,
@@ -17,20 +18,27 @@ from polar.models import (
     Organization,
     Product,
     ReducerBucket,
+    User,
 )
 from polar.models.billing_entry import BillingEntryType
 from polar.models.billing_interval import UsagePolicy
 from polar.models.event import EventSource
+from polar.models.organization import OrganizationStatus
 from polar.models.reducer import ReducerKind
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
-from scripts.backfill_usage_reducer_buckets import backfill_organization
+from scripts.backfill_usage_reducer_buckets import (
+    _get_organization_ids,
+    backfill_organization,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_billing_entry,
     create_event,
     create_meter,
     create_order,
+    create_organization,
     create_product_price_metered_unit,
     create_reducer,
     create_subscription,
@@ -422,3 +430,47 @@ class TestBackfillBuckets:
         await backfill_organization(session, organization.id, START, END)
 
         assert await session.get(ReducerBucket, credit.id) is not None
+
+
+@pytest.mark.anyio
+class TestGetOrganizationIds:
+    async def test_skips_organizations_that_no_longer_bill(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        organizations = {
+            status: await create_organization(
+                save_fixture, await create_account(save_fixture, user), status=status
+            )
+            for status in (
+                OrganizationStatus.ACTIVE,
+                OrganizationStatus.OFFBOARDING,
+                OrganizationStatus.OFFBOARDED,
+                OrganizationStatus.BLOCKED,
+                OrganizationStatus.DENIED,
+            )
+        }
+        deleted = await create_organization(
+            save_fixture, await create_account(save_fixture, user)
+        )
+        deleted.deleted_at = utc_now()
+        await save_fixture(deleted)
+        for organization in (*organizations.values(), deleted):
+            meter = await create_meter(
+                save_fixture, organization=organization, id=uuid4()
+            )
+            await create_reducer(
+                save_fixture, organization=organization, meters=[meter]
+            )
+
+        organization_ids = set(await _get_organization_ids(session, None, None))
+
+        assert {
+            organizations[OrganizationStatus.ACTIVE].id,
+            organizations[OrganizationStatus.OFFBOARDING].id,
+        } <= organization_ids
+        assert not organization_ids & {
+            organizations[OrganizationStatus.OFFBOARDED].id,
+            organizations[OrganizationStatus.BLOCKED].id,
+            organizations[OrganizationStatus.DENIED].id,
+            deleted.id,
+        }

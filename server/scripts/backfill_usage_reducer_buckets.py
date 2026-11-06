@@ -34,6 +34,7 @@ from polar.models import (
     MeterReducer,
     Order,
     OrderItem,
+    Organization,
     ProductPrice,
     Reducer,
     ReducerBucket,
@@ -41,6 +42,7 @@ from polar.models import (
 from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
+from polar.organization.repository import SUBSCRIPTION_CANCELLATION_STATUSES
 from polar.postgres import create_async_engine
 from polar.reducer.bucket_repository import INGESTED_BEFORE_TIMESTAMP_MARGIN
 from polar.reducer.repository import ReducerRepository
@@ -195,13 +197,20 @@ async def _flush(
 async def _get_organization_ids(
     session: AsyncSession, organization_id: UUID | None, after: UUID | None
 ) -> Sequence[UUID]:
-    """The organizations with active usage reducers, or the given one."""
+    """The organizations still billing with active usage reducers, or the given
+    one. A deleted organization, or one whose subscriptions are cancelled, never
+    bills its usage again."""
     if organization_id is not None:
         return [organization_id]
     statement = (
         ReducerRepository.from_session(session)
         .get_active_statement((ReducerKind.usage,))
         .with_only_columns(Reducer.organization_id)
+        .join(Organization, Organization.id == Reducer.organization_id)
+        .where(
+            Organization.deleted_at.is_(None),
+            Organization.status.not_in(SUBSCRIPTION_CANCELLATION_STATUSES),
+        )
         .distinct()
         .order_by(Reducer.organization_id)
     )

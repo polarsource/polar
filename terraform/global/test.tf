@@ -821,3 +821,27 @@ resource "tfe_variable" "redis_private_link_host_test" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "backoffice_google_client_id_test" {
+  key             = "backoffice_google_client_id"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backoffice_google_client_secret_test" {
+  key             = "backoffice_google_client_secret"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "backoffice_google_hosted_domain_test" {
+  key             = "backoffice_google_hosted_domain"
+  category        = "terraform"
+  description     = "Backoffice Google Workspace hosted domain for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}

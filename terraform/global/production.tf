@@ -995,3 +995,27 @@ resource "tfe_variable" "planetscale_app_password_production" {
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "backoffice_google_client_id_production" {
+  key             = "backoffice_google_client_id"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client ID for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "backoffice_google_client_secret_production" {
+  key             = "backoffice_google_client_secret"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client secret for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "backoffice_google_hosted_domain_production" {
+  key             = "backoffice_google_hosted_domain"
+  category        = "terraform"
+  description     = "Backoffice Google Workspace hosted domain for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}

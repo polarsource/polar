@@ -44,9 +44,12 @@ locals {
   }
 
   google_secrets = {
-    client_id            = var.google_client_id
-    client_secret        = var.google_client_secret
-    service_account_json = var.google_service_account_json
+    backoffice_client_id     = var.backoffice_google_client_id
+    backoffice_client_secret = var.backoffice_google_client_secret
+    backoffice_hosted_domain = var.backoffice_google_hosted_domain
+    client_id                = var.google_client_id
+    client_secret            = var.google_client_secret
+    service_account_json     = var.google_service_account_json
   }
 
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key }

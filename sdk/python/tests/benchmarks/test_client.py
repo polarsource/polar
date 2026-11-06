@@ -23,7 +23,7 @@ def test_consumed_units_sum(benchmark: BenchmarkFixture, buckets: int) -> None:
 
 
 async def warm_outpost() -> Outpost:
-    # Configured, synced, state cached and actor known: a read touches neither Redis nor Polar.
+    # Configured, synced and state cached.
     outpost = Outpost(
         "redis://127.0.0.1:1", client=httpx.AsyncClient(), telemetry=False
     )
@@ -34,7 +34,6 @@ async def warm_outpost() -> Outpost:
     outpost._reducers = [REDUCER]
     identity = f"external:alice:{REDUCER['id']}"
     outpost._cache[identity] = LocalState(state=decode_state(encode_state(1)))
-    outpost._actors[identity] = None
     return outpost
 
 

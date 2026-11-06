@@ -226,15 +226,13 @@
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
     "@types/node": "^24.13.6",
-    "@types/ws": "^8.18.1",
     "ioredis": "^5.11.0",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "standardwebhooks": "^1.0.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9",
-    "ws": "^8.21.0"
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.1",
@@ -242,8 +240,7 @@
     "@opentelemetry/resources": "^2.12.0",
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
-    "ioredis": "^5.11.0",
-    "ws": "^8.21.0"
+    "ioredis": "^5.11.0"
   },
   "peerDependenciesMeta": {
     "@opentelemetry/api": {
@@ -262,9 +259,6 @@
       "optional": true
     },
     "ioredis": {
-      "optional": true
-    },
-    "ws": {
       "optional": true
     }
   },

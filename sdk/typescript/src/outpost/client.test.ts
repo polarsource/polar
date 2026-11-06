@@ -3,9 +3,9 @@ import type { ReadableSpan } from "@opentelemetry/sdk-trace";
 import { DataPointType, type DataPoint, type ResourceMetrics } from "@opentelemetry/sdk-metrics";
 import { Pipeline, Redis } from "ioredis";
 import { once } from "node:events";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
-import { WebSocketServer, type WebSocket } from "ws";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase } from "../base";
@@ -80,17 +80,24 @@ const customer = { external_customer_id: "alice" };
 let sequence = 0;
 const eventId = () => `event-${++sequence}`;
 const meter = { ...customer, meter_id: "meter" };
-const key = "outpost:v1:state:external:alice:tokens";
-const creditKey = "outpost:v1:state:external:alice:credits";
-const connectionId = "5b6e1f0c-8f4c-4d2a-9a51-3c7d2e8b1f60";
+const key = "outpost:v1:org-1:state:external:alice:tokens";
+const creditKey = "outpost:v1:org-1:state:external:alice:credits";
 let redisServer: RedisServer;
 let redis: Redis;
-let server: WebSocketServer;
+let server: Server;
 let core: ClientBase;
 let reducers: Reducer[];
 let snapshot: Record<string, unknown> | undefined;
-let delayConfiguration = false;
 let refuseConnections = false;
+// The organization Polar configures the next Outpost with: it namespaces its Redis keys.
+let organization = "org-1";
+// Polar's change log: the next pull of any instance takes them.
+let changes: Record<string, unknown>[] = [];
+let resetChanges = false;
+let configurationChanged = false;
+const changeRequests: (string | null)[] = [];
+let changesStatus = 200;
+let cursor = 0;
 // Each reducer's snapshot: `snapshot` for a usage reducer, the credits granted at its version for a
 // credit reducer, with the reducer's override on top.
 let credited = 100;
@@ -101,7 +108,7 @@ let ingested = new Set<string>();
 let answerConfirm = true;
 let confirmSnapshot: Record<string, unknown> | undefined;
 const confirmRequests: Record<string, unknown>[] = [];
-const connections: WebSocket[] = [];
+const meterUsageRequests: Record<string, unknown>[] = [];
 const outposts: Outpost[] = [];
 
 const creditReducer = (id: string, meterId: string): Reducer => ({
@@ -139,9 +146,9 @@ const applySnapshot = (
   redis.eval(
     APPLY_SNAPSHOT_SCRIPT,
     1,
-    `outpost:v1:state:${identity}`,
+    `outpost:v1:${organization}:state:${identity}`,
     identity,
-    "outpost:v1:0:updates",
+    `outpost:v1:${organization}:0:updates`,
     "epoch",
     coldUntil,
     version,
@@ -155,69 +162,91 @@ beforeAll(async () => {
   redisServer = await startRedisServer();
   redis = new Redis(redisServer.socket);
   await once(redis, "ready");
-  server = new WebSocketServer({
-    port: 0,
-    host: "127.0.0.1",
-    path: "/v1/outpost/",
-    verifyClient: (_info, callback) => callback(!refuseConnections, 401),
+  server = createServer((request, response) => {
+    void answer(request, response);
   });
+  server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const address = server.address();
-  if (typeof address === "string" || !address) throw new Error("Missing WebSocket address");
+  if (typeof address === "string" || !address) throw new Error("Missing server address");
   core = new ClientBase({
     baseUrl: `http://127.0.0.1:${address.port}`,
     accessToken: "test-token",
     version: "2026-10",
     organizationId: "org",
   });
-  server.on("connection", (ws, request) => {
-    expect(request.headers.authorization).toBe("Bearer test-token");
-    expect(request.headers["polar-organization"]).toBe("org");
-    connections.push(ws);
-    ws.send(JSON.stringify({ type: "connection", payload: { id: connectionId } }));
-    ws.on("message", (data) => {
-      const message = JSON.parse(data.toString());
-      if (message.type === "configuration" && !delayConfiguration)
-        ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-      if (message.type === "meter_usage" && snapshot) {
-        const reducerId: string = message.payload.reducer_id;
-        const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
-        const { delay = 0, ...override } = reducerSnapshots[reducerId] ?? {};
-        const payload = {
-          customer_exists: true,
-          ...snapshot,
-          ...(kind === "credit" && creditSnapshot(credited, snapshot.version as number)),
-          reducer_id: reducerId,
-          ...override,
-        };
-        setTimeout(() => ws.send(JSON.stringify({ type: "meter_usage", payload })), delay);
-      }
-      if (message.type === "confirm") {
-        confirmRequests.push(message.payload);
-        const { ids, ...payload } = message.payload;
-        const { delay: _delay, ...override } = reducerSnapshots[payload.reducer_id] ?? {};
-        if (answerConfirm)
-          ws.send(
-            JSON.stringify({
-              type: "confirmed",
-              payload: {
-                customer_id: null,
-                external_customer_id: null,
-                ...payload,
-                ids: ids.filter((id: string) => ingested.has(id)),
-                snapshot: {
-                  customer_exists: true,
-                  ...(confirmSnapshot ?? snapshot),
-                  reducer_id: payload.reducer_id,
-                  ...override,
-                },
-              },
-            }),
-          );
-      }
-    });
-  });
 });
+
+const respond = (response: ServerResponse, body: unknown, status = 200): void => {
+  response.writeHead(status, { "Content-Type": "application/json" });
+  response.end(JSON.stringify(body));
+};
+
+// Polar's side of Outpost: the configuration, the snapshots, the confirmations and the changes.
+const answer = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
+  expect(request.headers.authorization).toBe("Bearer test-token");
+  expect(request.headers["polar-organization"]).toBe("org");
+  let data = "";
+  for await (const chunk of request) data += chunk;
+  const body = data ? JSON.parse(data) : undefined;
+  if (refuseConnections) return respond(response, {}, 401);
+  const url = new URL(request.url!, "http://polar");
+  switch (`${request.method} ${url.pathname}`) {
+    case "GET /v1/outpost/configuration":
+      return respond(response, { organization_id: organization, reducers });
+    case "POST /v1/outpost/meter-usage": {
+      meterUsageRequests.push(body);
+      if (!snapshot) return respond(response, []);
+      const reducerId: string = body.reducer_id;
+      const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
+      const { delay = 0, ...override } = reducerSnapshots[reducerId] ?? {};
+      const payload = {
+        customer_exists: true,
+        ...snapshot,
+        ...(kind === "credit" && creditSnapshot(credited, snapshot.version as number)),
+        reducer_id: reducerId,
+        ...override,
+      };
+      setTimeout(() => respond(response, [payload]), delay);
+      return;
+    }
+    case "POST /v1/outpost/confirm": {
+      confirmRequests.push(body);
+      // Unanswered: the client gives up after its confirm timeout.
+      if (!answerConfirm) return;
+      const { ids, ...payload } = body;
+      const { delay: _delay, ...override } = reducerSnapshots[payload.reducer_id] ?? {};
+      return respond(response, {
+        customer_id: null,
+        external_customer_id: null,
+        ...payload,
+        ids: ids.filter((id: string) => ingested.has(id)),
+        snapshot: {
+          customer_exists: true,
+          ...(confirmSnapshot ?? snapshot),
+          reducer_id: payload.reducer_id,
+          ...override,
+        },
+      });
+    }
+    case "GET /v1/outpost/changes": {
+      changeRequests.push(url.searchParams.get("cursor"));
+      if (changesStatus !== 200) return respond(response, {}, changesStatus);
+      const page = {
+        changes: changes.splice(0).map((change) => ({ customer_exists: true, ...change })),
+        cursor: `${++cursor}-0`,
+        has_more: false,
+        reset: resetChanges,
+        configuration_changed: configurationChanged,
+        next_poll_in: 30,
+      };
+      resetChanges = false;
+      configurationChanged = false;
+      return respond(response, page);
+    }
+  }
+  respond(response, {}, 404);
+};
 
 beforeEach(async () => {
   await redis.flushdb();
@@ -232,8 +261,14 @@ beforeEach(async () => {
     creditReducer("credits", "meter"),
   ];
   snapshot = undefined;
-  delayConfiguration = false;
   refuseConnections = false;
+  organization = "org-1";
+  changes = [];
+  resetChanges = false;
+  configurationChanged = false;
+  changeRequests.length = 0;
+  changesStatus = 200;
+  meterUsageRequests.length = 0;
   credited = 100;
   reducerSnapshots = {};
   ingested = new Set();
@@ -249,13 +284,15 @@ afterEach(async () => {
   vi.unstubAllEnvs();
   vi.useRealTimers();
   await Promise.all(outposts.splice(0).map((outpost) => outpost.close()));
-  connections.length = 0;
+  server.closeAllConnections();
 });
 
 afterAll(async () => {
   redis?.disconnect();
-  for (const ws of server?.clients ?? []) ws.terminate();
-  if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+  if (server) {
+    server.closeAllConnections();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
   if (redisServer) await redisServer.stop();
 });
 
@@ -267,6 +304,11 @@ const start = async (options: Partial<OutpostOptions> = {}): Promise<Outpost> =>
   });
   outposts.push(outpost);
   return outpost.start();
+};
+// Adds snapshots to Polar's changes and pulls them.
+const deliver = async (outpost: Outpost, ...payloads: Record<string, unknown>[]): Promise<void> => {
+  changes.push(...payloads);
+  await outpost["pull"]();
 };
 const seed = async (cold = 10): Promise<void> => {
   await redis.hset(key, {
@@ -333,10 +375,10 @@ it("rejects an event without an external_id", async () => {
   );
 });
 
-it("retains the connection ID while connected", async () => {
+it("keeps an instance ID while started", async () => {
   const outpost = await start();
   await ingest(outpost, 3);
-  expect(outpost.connectionId).toBe(connectionId);
+  expect(outpost.connectionId).toMatch(/^[0-9a-f-]{36}$/);
   await outpost.close();
   expect(outpost.connectionId).toBeUndefined();
 });
@@ -353,7 +395,11 @@ it.each([
     meter_ids: [`meter-${i}`],
   }));
   for (let i = 0; i < bucketCount; i++)
-    await redis.hset(`outpost:v1:state:external:alice:tokens-${i}`, "cold_until", bucket);
+    await redis.hset(
+      `outpost:v1:${organization}:state:external:alice:tokens-${i}`,
+      "cold_until",
+      bucket,
+    );
   const outpost = await start();
   const execute = vi.spyOn(Pipeline.prototype, "exec");
   await ingest(outpost, 3);
@@ -364,12 +410,19 @@ it.each([
       balance: -3,
     });
     expect(
-      await redis.hget(`outpost:v1:state:external:alice:tokens-${i}`, `bucket:${bucket}:count`),
+      await redis.hget(
+        `outpost:v1:${organization}:state:external:alice:tokens-${i}`,
+        `bucket:${bucket}:count`,
+      ),
     ).toBe("1");
   }
   if (fail) {
     outpost["channel"] = "outpost:test:unsubscribed";
-    await redis.hset("outpost:v1:state:external:alice:tokens-1", `bucket:${bucket}:sum`, "invalid");
+    await redis.hset(
+      `outpost:v1:${organization}:state:external:alice:tokens-1`,
+      `bucket:${bucket}:sum`,
+      "invalid",
+    );
     await expect(ingest(outpost, 2)).rejects.toBeInstanceOf(UnavailableRedisError);
     expect(execute).toHaveBeenCalledTimes(2);
     for (const i of [0, 2]) {
@@ -378,19 +431,18 @@ it.each([
         balance: -5,
       });
       expect(
-        await redis.hget(`outpost:v1:state:external:alice:tokens-${i}`, `bucket:${bucket}:sum`),
+        await redis.hget(
+          `outpost:v1:${organization}:state:external:alice:tokens-${i}`,
+          `bucket:${bucket}:sum`,
+        ),
       ).toBe("5");
     }
   }
 });
 
-it("handles configuration asynchronously and reports a missing customer snapshot", async () => {
-  delayConfiguration = true;
+it("reports a missing customer snapshot and an unknown meter", async () => {
   const outpost = await start();
-  const result = ingest(outpost, 3);
-  for (const ws of connections)
-    ws.send(JSON.stringify({ type: "configuration", payload: { reducers } }));
-  expect(await result).toBeUndefined();
+  expect(await ingest(outpost, 3)).toBeUndefined();
   await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
   await expect(outpost.meter({ ...customer, meter_id: "unknown" })).rejects.toThrow(
     UnknownMeterError,
@@ -417,7 +469,7 @@ it("propagates snapshots, rejects older cutoffs, and counts a late write until P
     max: 5,
   };
   const writer = await start();
-  await writer.actor(customer);
+  await deliver(writer, snapshot);
   await vi.waitFor(async () => expect((await reader.meter(meter))?.balance).toBe(89));
   expect(await redis.hexists(key, `bucket:${bucket - BUCKET_SIZE}:sum`)).toBe(0);
   await applySnapshot("external:alice:tokens", bucket - BUCKET_SIZE, 1, 1, 1, 1, 1);
@@ -475,22 +527,43 @@ it("applies another instance's bucket updates and reloads after a missed revisio
   await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(25));
 });
 
+it("publishes a customer's states on its own channel, which only its readers follow", async () => {
+  await seed();
+  const outpost = await start();
+  await outpost.actor(customer);
+  const fleet = redis.duplicate();
+  const own = redis.duplicate();
+  const fleetStates: unknown[] = [];
+  const ownStates: unknown[] = [];
+  fleet.on("message", (_channel, data) => {
+    if ("customer" in JSON.parse(data)) fleetStates.push(data);
+  });
+  own.on("message", (_channel, data) => ownStates.push(data));
+  await fleet.subscribe(`outpost:v1:${organization}:0:updates`);
+  await own.subscribe(`outpost:v1:${organization}:0:updates:external:alice:tokens`);
+  await ingest(outpost, 1);
+  await vi.waitFor(() => expect(ownStates.length).toBeGreaterThan(0));
+  expect(fleetStates).toHaveLength(0);
+  fleet.disconnect();
+  own.disconnect();
+});
+
 // The full states published on the updates channel until `drain`, which publishes a marker
 // after everything already sent.
 const listenStates = async () => {
   const listener = redis.duplicate();
   const states: unknown[] = [];
   let onDrained = () => {};
-  listener.on("message", (_channel, data) => {
+  listener.on("pmessage", (_pattern, _channel, data) => {
     const update = JSON.parse(data);
     if (update.customer === "drained") onDrained();
     else if ("state" in update) states.push(update);
   });
-  await listener.subscribe("outpost:v1:0:updates");
+  await listener.psubscribe(`outpost:v1:${organization}:0:updates*`);
   const drain = async () => {
     const drained = new Promise<void>((resolve) => (onDrained = resolve));
     await redis.publish(
-      "outpost:v1:0:updates",
+      `outpost:v1:${organization}:0:updates`,
       JSON.stringify({ customer: "drained", bucket: [] }),
     );
     await drained;
@@ -499,37 +572,154 @@ const listenStates = async () => {
   return { drain, close: () => listener.disconnect() };
 };
 
-it("applies Polar's snapshot once when every instance receives it", async () => {
+it("pulls a snapshot once for the whole fleet", async () => {
   await seed();
-  await Promise.all([start(), start(), start()]);
-  await vi.waitFor(() => expect(connections).toHaveLength(3));
+  const fleet = await Promise.all([start(), start(), start()]);
+  for (const outpost of fleet) await outpost.actor(customer);
+  changeRequests.length = 0;
   const listener = await listenStates();
-  // Each connection reads the snapshot at its own version.
-  for (const [index, ws] of connections.entries())
-    ws.send(
-      JSON.stringify({
-        type: "meter_usage",
-        payload: {
-          ...customer,
-          customer_id: null,
-          customer_exists: true,
-          reducer_id: "tokens",
-          cold_until: bucket,
-          version: 1791807000000001 + index,
-          count: 2,
-          sum: 8,
-          min: 3,
-          max: 5,
-        },
-      }),
-    );
-  await vi.waitFor(() =>
-    expect(exported.filter((span) => span.name === "outpost.snapshot.received")).toHaveLength(3),
-  );
+  changes.push({
+    ...customer,
+    customer_id: null,
+    reducer_id: "tokens",
+    cold_until: bucket,
+    version: 1791807000000001,
+    count: 2,
+    sum: 8,
+    min: 3,
+    max: 5,
+  });
+  await Promise.all(fleet.map((outpost) => outpost["pull"]()));
+  expect(changeRequests).toHaveLength(1);
   expect(await listener.drain()).toHaveLength(1);
   expect(await redis.hget(key, "revision")).toBe("1");
-  expect(await redis.hget(key, "cold:sum")).toBe("8");
+  for (const outpost of fleet)
+    await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(8));
   listener.close();
+});
+
+it("moves the cursor once a page is applied, and pulls the next page from it", async () => {
+  const outpost = await start();
+  await outpost["pull"]();
+  expect(await redis.hget(`outpost:v1:${organization}:pull`, "cursor")).toBe(`${cursor}-0`);
+  const applied = `${cursor}-0`;
+  await seed();
+  vi.spyOn(outpost["redis"]!, "outpostApplySnapshot").mockRejectedValueOnce(
+    new Error("Command timed out"),
+  );
+  changes.push(aliceSnapshot);
+  await outpost["pull"]();
+  expect(await redis.hget(`outpost:v1:${organization}:pull`, "cursor")).toBe(applied);
+  // Once the backoff ends, Polar serves the same change again from the same cursor.
+  await redis.hdel(`outpost:v1:${organization}:pull`, "retry_at");
+  changes.push(aliceSnapshot);
+  await outpost["pull"]();
+  expect(changeRequests.at(-1)).toBe(applied);
+  expect(await redis.hget(key, "cold:sum")).toBe("3");
+  expect(await redis.hget(`outpost:v1:${organization}:pull`, "cursor")).toBe(`${cursor}-0`);
+});
+
+it("skips a pulled snapshot of a customer nobody reads", async () => {
+  const outpost = await start();
+  await deliver(outpost, { ...aliceSnapshot });
+  expect(await redis.exists(key)).toBe(0);
+});
+
+it("drops every snapshot once Polar's changes went past their retention", async () => {
+  await seed();
+  const outpost = await start();
+  await outpost.actor(customer);
+  resetChanges = true;
+  await outpost["pull"]();
+  expect(await redis.hget(key, "cold_until")).toBeNull();
+  snapshot = aliceSnapshot;
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(3));
+});
+
+it("fetches the configuration again when Polar changed it", async () => {
+  const outpost = await start();
+  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+  configurationChanged = true;
+  await outpost["pull"]();
+  snapshot = aliceSnapshot;
+  expect(await outpost.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
+});
+
+it("pulls in the background once due, and waits for it once stale", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.meter(meter);
+  changeRequests.length = 0;
+  vi.advanceTimersByTime(30_000);
+  await outpost.meter(meter);
+  await outpost.flush();
+  expect(changeRequests).toHaveLength(1);
+  vi.advanceTimersByTime(60_000);
+  await outpost.meter(meter);
+  expect(changeRequests).toHaveLength(2);
+  expect(outpost["pulling"]).toBeUndefined();
+});
+
+it("backs off after a failed pull, and serves reads meanwhile", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  changeRequests.length = 0;
+  changesStatus = 503;
+  vi.advanceTimersByTime(60_000);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  expect(changeRequests).toHaveLength(1);
+  // Within the backoff, a read neither waits for nor starts a pull.
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  expect(changeRequests).toHaveLength(1);
+  vi.advanceTimersByTime(1_000);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  await outpost["pulling"];
+  expect(changeRequests).toHaveLength(2);
+  // The second failure waits twice as long.
+  vi.advanceTimersByTime(1_000);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  expect(changeRequests).toHaveLength(2);
+  vi.advanceTimersByTime(1_000);
+  changesStatus = 200;
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  await outpost["pulling"];
+  expect(changeRequests).toHaveLength(3);
+  expect(outpost.connected).toBe(true);
+});
+
+it("holds the whole fleet back after a failed pull, and stops reads waiting for the next", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  snapshot = aliceSnapshot;
+  const [first, second] = await Promise.all([start(), start()]);
+  for (const outpost of [first, second]) await outpost.meter(meter);
+  changeRequests.length = 0;
+  changesStatus = 503;
+  vi.advanceTimersByTime(60_000);
+  await first["pull"]();
+  expect(changeRequests).toHaveLength(1);
+  await vi.waitFor(() => expect(second["pullRetryAt"]).toBeGreaterThan(Date.now()));
+  // Another instance, and one that starts meanwhile, wait for the same backoff.
+  const third = await start();
+  for (const outpost of [second, third])
+    expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  expect(changeRequests).toHaveLength(1);
+  // Once it ends, a read starts the next pull without waiting for it.
+  vi.advanceTimersByTime(1_000);
+  const pull = vi.spyOn(second as never, "pull");
+  expect((await second.meter(meter))?.consumed_units).toBe(3);
+  expect(pull).toHaveBeenCalledOnce();
+  expect(second["pulling"]).toBeDefined();
+});
+
+it("waits for a backoff whose message it missed", async () => {
+  const outpost = await start();
+  changeRequests.length = 0;
+  await redis.hset(`outpost:v1:${organization}:pull`, "retry_at", Date.now() + 1_000);
+  await outpost["pull"]();
+  expect(changeRequests).toHaveLength(0);
 });
 
 it("publishes nothing for an older snapshot or one already applied", async () => {
@@ -547,17 +737,6 @@ it("publishes nothing for an older snapshot or one already applied", async () =>
   await applySnapshot("external:alice:tokens", bucket, 4, 3, 9, 3, 5);
   expect(await listener.drain()).toHaveLength(1);
   listener.close();
-});
-
-it("repairs a missed notification on periodic refresh", async () => {
-  await seed();
-  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
-  const outpost = await start();
-  await outpost.actor(customer);
-  await redis.hset(key, "cold:sum", 20);
-  await redis.hincrby(key, "revision", 1);
-  await vi.advanceTimersByTimeAsync(30_000);
-  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(20));
 });
 
 it("invalidates cached state on subscriber loss and reloads after reconnect", async () => {
@@ -578,6 +757,20 @@ it("invalidates cached state on subscriber loss and reloads after reconnect", as
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
 });
 
+it("follows its customers' updates again after a reconnect", async () => {
+  await seed();
+  const reader = await start();
+  const writer = await start();
+  await reader.actor(customer);
+  const subscriber = reader["subscriber"]!;
+  const reconnect = once(subscriber, "ready");
+  subscriber.disconnect(true);
+  await reconnect;
+  expect((await reader.meter(meter))?.consumed_units).toBe(10);
+  await ingest(writer, 3);
+  await vi.waitFor(async () => expect((await reader.meter(meter))?.consumed_units).toBe(13));
+});
+
 it("reloads evicted customers and closes owned connections", async () => {
   await seed();
   const outpost = await start({ snapshotTimeout: 0 });
@@ -592,49 +785,53 @@ it("reloads evicted customers and closes owned connections", async () => {
   await expect(outpost.actor(customer)).rejects.toThrow("start()");
 });
 
-it.each([
-  { state: "held", requests: 2 },
-  { state: "lost", requests: 4 },
-  { state: "in flight", requests: 2 },
-])(
-  "asks Polar again for an evicted customer only once its answered snapshot is lost ($state)",
-  async ({ state, requests }) => {
-    const outpost = await start({ snapshotTimeout: 0 });
-    const send = vi.spyOn(outpost["websocket"]!, "send");
-    if (state !== "in flight") {
-      snapshot = {
-        ...customer,
-        customer_id: null,
-        cold_until: bucket,
-        version: 1,
-        count: 1,
-        sum: 10,
-        min: 10,
-        max: 10,
-      };
-      await outpost.actor(customer);
-      await vi.waitFor(() =>
-        expect(outpost["cache"].get("external:alice:credits")?.state?.coldUntil).toBeDefined(),
-      );
-      snapshot = undefined;
-    } else await outpost.actor(customer);
-    for (let i = 0; i < 1024; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
-    expect(outpost["cache"].has("external:alice:tokens")).toBe(false);
-    if (state === "lost") await redis.del(key, creditKey);
-    await outpost.actor(customer);
-    const requested = send.mock.calls
-      .map(([data]) => JSON.parse(data as string))
-      .filter(
-        ({ type, payload }) => type === "meter_usage" && payload.external_customer_id === "alice",
-      );
-    expect(requested).toHaveLength(requests);
-  },
-);
+it("asks Polar for a customer only while the shared Redis has no snapshot of it", async () => {
+  snapshot = aliceSnapshot;
+  const first = await start({ snapshotTimeout: 1_000 });
+  expect((await first.meter(meter))?.consumed_units).toBe(3);
+  const second = await start();
+  expect((await second.meter(meter))?.consumed_units).toBe(3);
+  expect(meterUsageRequests.map((request) => request.reducer_id)).toEqual(["tokens", "credits"]);
+});
 
-it("bounds the snapshot requests it remembers", async () => {
-  const outpost = await start({ snapshotTimeout: 0 });
-  for (let i = 0; i <= 8192; i++) await outpost.actor({ external_customer_id: `customer-${i}` });
-  expect(outpost["actors"].size).toBe(16_384);
+it("keeps the cold-fetch lock another instance took once its own expired", async () => {
+  snapshot = aliceSnapshot;
+  reducerSnapshots = { tokens: { delay: 100 } };
+  const outpost = await start({ snapshotTimeout: 1_000 });
+  const lock = `outpost:v1:${organization}:fetch:external:alice:tokens`;
+  const read = outpost.meter(meter);
+  await vi.waitFor(async () => expect(await redis.exists(lock)).toBe(1));
+  await redis.set(lock, "other");
+  expect((await read)?.consumed_units).toBe(3);
+  await vi.waitFor(() => expect(outpost["requesting"].size).toBe(0));
+  expect(await redis.get(lock)).toBe("other");
+});
+
+it("keeps two organizations apart on one Redis", async () => {
+  await seed();
+  const first = await start();
+  await first.actor(customer);
+  organization = "org-2";
+  const second = await start();
+  resetChanges = true;
+  await second["pull"]();
+  expect(await redis.hget(key, "cold_until")).toBe(String(bucket));
+  expect(await redis.hget("outpost:v1:org-1:pull", "cursor")).not.toBeNull();
+  expect(await redis.hget("outpost:v1:org-2:pull", "cursor")).not.toBe(
+    await redis.hget("outpost:v1:org-1:pull", "cursor"),
+  );
+  expect((await first.meter(meter))?.consumed_units).toBe(10);
+});
+
+it("lets one instance of the fleet ask Polar for a cold customer", async () => {
+  snapshot = aliceSnapshot;
+  reducerSnapshots = { tokens: { delay: 100 }, credits: { delay: 100 } };
+  const fleet = await Promise.all(
+    Array.from({ length: 3 }, () => start({ snapshotTimeout: 1_000 })),
+  );
+  const read = await Promise.all(fleet.map((outpost) => outpost.meter(meter)));
+  expect(read.map((value) => value?.consumed_units)).toEqual([3, 3, 3]);
+  expect(meterUsageRequests).toHaveLength(2);
 });
 
 it("ships the Outpost entrypoint for both ESM and CommonJS", async () => {
@@ -653,7 +850,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     filter: { conjunction: "and", clauses: [] },
     aggregation: { func: "avg", property: "tokens" },
   });
-  const averageKey = "outpost:v1:state:external:alice:average";
+  const averageKey = `outpost:v1:${organization}:state:external:alice:average`;
   await applySnapshot("external:alice:tokens", bucket, 20, 2, 20, 5, 15);
   await applySnapshot("external:alice:average", bucket, 20, 2, 20, 5, 15);
   // Same cutoff, older version: Polar's previous totals.
@@ -701,7 +898,7 @@ it("keeps reducer cutoffs and meter credits independent under concurrent writes"
     (await first.meter({ ...customer, meter_id: "average-meter" }))?.consumed_units,
   ).toBeCloseTo(124 / 23);
   expect((await first.meter({ ...customer, meter_id: "shared" }))?.credited_units).toBe(200);
-  expect(await redis.exists("outpost:v1:state:customer:alice:tokens")).toBe(0);
+  expect(await redis.exists(`outpost:v1:${organization}:state:customer:alice:tokens`)).toBe(0);
 });
 
 it("orders same-cutoff corrections at microsecond precision and keeps null extrema", async () => {
@@ -719,33 +916,27 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   const outpost = await start();
   await outpost.actor(customer);
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(10));
-  await outpost["receiveWebsocket"](
-    JSON.stringify({
-      type: "meter_usage",
-      payload: { ...snapshot, customer_exists: true, customer_id: "alice", sum: 999 },
-    }),
+  await outpost["receiveSnapshot"](
+    { ...snapshot, customer_exists: true, customer_id: "alice", sum: 999 } as never,
+    false,
   );
   expect((await outpost.meter(meter))?.consumed_units).toBe(10);
-  await outpost["receiveWebsocket"](
-    JSON.stringify({
-      type: "meter_usage",
-      payload: { ...snapshot, customer_exists: true, version: 1791807000000001, sum: 999 },
-    }),
+  await outpost["receiveSnapshot"](
+    { ...snapshot, customer_exists: true, version: 1791807000000001, sum: 999 } as never,
+    false,
   );
   expect((await outpost.meter(meter))?.consumed_units).toBe(10);
-  await outpost["receiveWebsocket"](
-    JSON.stringify({
-      type: "meter_usage",
-      payload: {
-        ...snapshot,
-        customer_exists: true,
-        version: 1791807000000003,
-        count: 0,
-        sum: 0,
-        min: null,
-        max: null,
-      },
-    }),
+  await outpost["receiveSnapshot"](
+    {
+      ...snapshot,
+      customer_exists: true,
+      version: 1791807000000003,
+      count: 0,
+      sum: 0,
+      min: null,
+      max: null,
+    } as never,
+    false,
   );
   expect((await outpost.meter(meter))?.consumed_units).toBe(0);
   expect(await redis.hget(key, "cold:min")).toBeNull();
@@ -777,20 +968,18 @@ it("preserves microsecond cutoffs and counts a late write as pending", async () 
     metadata: { tokens: 4 },
   });
   await outpost.confirm([settled]);
-  await outpost["receiveWebsocket"](
-    JSON.stringify({
-      type: "meter_usage",
-      payload: {
-        ...snapshot,
-        customer_exists: true,
-        cold_until: bucket + 1,
-        version: 1791807000000002,
-        count: 1,
-        sum: 2,
-        min: 2,
-        max: 2,
-      },
-    }),
+  await outpost["receiveSnapshot"](
+    {
+      ...snapshot,
+      customer_exists: true,
+      cold_until: bucket + 1,
+      version: 1791807000000002,
+      count: 1,
+      sum: 2,
+      min: 2,
+      max: 2,
+    } as never,
+    false,
   );
   expect((await outpost.meter(meter))?.consumed_units).toBe(6);
   expect(await redis.hget(key, "cold_until")).toBe(String(bucket + 1));
@@ -812,9 +1001,9 @@ const usage = (id: string, tokens: number) => ({
   timestamp,
   metadata: { tokens },
 });
-const warm = async (): Promise<Outpost> => {
+const warm = async (options: Partial<OutpostOptions> = {}): Promise<Outpost> => {
   await seed(0);
-  const outpost = await start();
+  const outpost = await start(options);
   await outpost.actor(customer);
   return outpost;
 };
@@ -875,7 +1064,7 @@ it("settles an event the previous SDK version left pending", async () => {
   await outpost.track(usage("new", 10));
   // What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
   await redis.hset(
-    `outpost:v1:pending:external:alice:tokens:${bucket}`,
+    `outpost:v1:${organization}:pending:external:alice:tokens:${bucket}`,
     "old",
     '["1","7","7","7"]',
   );
@@ -951,10 +1140,9 @@ it("settles the pending events the snapshot counts, and keeps the rest", async (
   for (const event of events) await outpost.track(event);
   ingested = new Set(["event-0", "event-1", "event-2", "event-3"]);
   snapshot = sealing(4, 40);
-  const other = await start();
-  await other.actor(customer);
+  await deliver(outpost, snapshot!);
   await vi.waitFor(async () => expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("6"));
-  expect((await other.meter(meter))?.consumed_units).toBe(100);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
   expect(await redis.hget(key, "cold:count")).toBe("4");
   expect(confirmRequests).toEqual([
     {
@@ -975,12 +1163,11 @@ it("applies the snapshot Polar read with its confirmation, not the one that aske
   // count it.
   ingested = new Set(["event-0", "event-1", "event-2", "event-3", "event-4"]);
   confirmSnapshot = { ...sealing(5, 50), version: 1791807000000006 };
-  const other = await start();
-  await other.actor(customer);
+  await deliver(outpost, snapshot!);
   await vi.waitFor(async () => expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("5"));
   expect(await redis.hget(key, "cold:count")).toBe("5");
   expect(await redis.hget(key, "snapshot_version")).toBe("1791807000000006");
-  expect((await other.meter(meter))?.consumed_units).toBe(100);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(100);
 });
 
 it("drops a cold bucket once Polar confirmed every pending event", async () => {
@@ -989,11 +1176,10 @@ it("drops a cold bucket once Polar confirmed every pending event", async () => {
   for (const event of events) await outpost.track(event);
   ingested = new Set(events.map((event) => event.external_id));
   snapshot = sealing(3, 30);
-  const other = await start();
-  await other.actor(customer);
+  await deliver(outpost, snapshot!);
   await vi.waitFor(async () => expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull());
   expect(await redis.hget(key, `pending:${bucket}:sum`)).toBeNull();
-  expect((await other.meter(meter))?.consumed_units).toBe(30);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(30);
 });
 
 it("reports the local value as it was before the confirmed events settled", async () => {
@@ -1003,8 +1189,7 @@ it("reports the local value as it was before the confirmed events settled", asyn
   await seal(bucket + BUCKET_SIZE);
   ingested = new Set(events.map((event) => event.external_id));
   snapshot = { ...sealing(2, 20), cold_until: bucket + 2 * BUCKET_SIZE, version: 1791807000000006 };
-  const other = await start();
-  await other.actor(customer);
+  await deliver(outpost, snapshot!);
   const confirming = () =>
     exported.find(
       (span) =>
@@ -1027,70 +1212,48 @@ it("applies a credit snapshot without asking Polar to confirm anything", async (
   for (const event of events) await outpost.track(event);
   ingested = new Set(events.map((event) => event.external_id));
   snapshot = sealing(2, 20);
-  credited = 80;
-  const other = await start();
-  await other.actor(customer);
+  await deliver(outpost, snapshot!, {
+    ...customer,
+    customer_id: null,
+    reducer_id: "credits",
+    ...creditSnapshot(80, snapshot!.version as number),
+  });
   await vi.waitFor(async () => expect(await redis.hget(creditKey, "cold:sum")).toBe("80"));
   await vi.waitFor(async () => expect(await redis.hget(key, "cold:sum")).toBe("20"));
   expect(confirmRequests.map((request) => request.reducer_id)).toEqual(["tokens"]);
 });
 
 it("applies a snapshot Polar did not confirm in time, keeping its events pending", async () => {
-  const outpost = await warm();
+  const outpost = await warm({ confirmTimeout: 50 });
   for (let i = 0; i < 3; i++) await outpost.track(usage(`event-${i}`, 10));
   answerConfirm = false;
   snapshot = sealing(3, 30);
-  const other = await start({ confirmTimeout: 50 });
-  await other.actor(customer);
+  await deliver(outpost, snapshot!);
   // The read moves once the snapshot applied and reached the cache: Polar's 30 plus the 30 pending.
-  await vi.waitFor(async () => expect((await other.meter(meter))?.consumed_units).toBe(60));
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(60));
   expect(confirmRequests).toHaveLength(1);
   expect(await redis.hget(key, "cold:count")).toBe("3");
   expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("3");
 });
 
-it("waits for a confirmation before confirming a newer snapshot", async () => {
-  const outpost = await warm();
-  const events = Array.from({ length: 10 }, (_, i) => usage(`event-${i}`, 10));
-  for (const event of events) await outpost.track(event);
+it("keeps the pull lock while a page outlasts its TTL", async () => {
+  const outpost = await warm({ confirmTimeout: 150 });
+  for (let i = 0; i < 3; i++) await outpost.track(usage(`event-${i}`, 10));
   answerConfirm = false;
-  snapshot = sealing(0, 0);
-  const other = await start({ confirmTimeout: 10_000 });
-  await other.actor(customer);
-  await vi.waitFor(() => expect(confirmRequests).toHaveLength(1));
-  const polar = connections.at(-1)!;
-  const answer = (ids: string[], answered: Record<string, unknown>) =>
-    polar.send(
-      JSON.stringify({
-        type: "confirmed",
-        payload: {
-          ...customer,
-          customer_id: null,
-          reducer_id: "tokens",
-          bucket_start: bucket,
-          ids,
-          snapshot: { customer_exists: true, ...answered },
-        },
-      }),
-    );
-  const newer = { ...sealing(4, 40), version: 1791807000000006 };
-  polar.send(JSON.stringify({ type: "meter_usage", payload: { customer_exists: true, ...newer } }));
-  // Polar answers the first confirmation as it stood when asked: nothing stored yet.
-  answer([], sealing(0, 0));
-  await vi.waitFor(() => expect(confirmRequests).toHaveLength(2));
-  answer(
-    events.slice(0, 4).map((event) => event.external_id),
-    newer,
-  );
-  await vi.waitFor(async () => expect((await other.meter(meter))?.consumed_units).toBe(100));
+  const redisClient = outpost["redis"]!;
+  const set = redisClient.set.bind(redisClient);
+  vi.spyOn(redisClient, "set").mockImplementation(((lock: string, token: string) =>
+    set(lock, token, "PX", 200, "NX")) as never);
+  // Each snapshot waits for its confirm: the page outlasts the lock.
+  await deliver(outpost, sealing(3, 30), sealing(3, 30), sealing(3, 30));
+  expect(await redis.hget(`outpost:v1:${organization}:pull`, "cursor")).toBe(`${cursor}-0`);
 });
 
 it("asks for a bucket's pending events a thousand at a time", async () => {
   const outpost = await warm();
   for (let i = 0; i < 1_001; i++) await outpost.track(usage(`event-${i}`, 1));
   snapshot = sealing(0, 0);
-  const other = await start();
-  await other.actor(customer);
+  await deliver(outpost, snapshot!);
   await vi.waitFor(() => expect(confirmRequests).toHaveLength(2));
   expect(confirmRequests.map((request) => (request.ids as string[]).length)).toEqual([1_000, 1]);
 });
@@ -1117,7 +1280,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
     max: null,
   };
   const outpost = await start();
-  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
+  const connectionId = outpost.connectionId;
   await ingest(outpost, 3);
   await vi.waitFor(() => {
     expect(exported.map((span) => span.name)).toContain("outpost.snapshot.received");
@@ -1141,10 +1304,9 @@ it("sends telemetry spans tagged with the connection ID", async () => {
     new Set([
       "outpost.redis.connect",
       "outpost.redis.subscribe",
-      "outpost.websocket.connect",
       "outpost.snapshot.received",
+      "outpost.pull",
       "outpost.sync",
-      "outpost.websocket.disconnect",
       "outpost.redis.disconnect",
     ]),
   );
@@ -1153,11 +1315,7 @@ it("sends telemetry spans tagged with the connection ID", async () => {
       .filter((span) => span.name === "outpost.redis.connect")
       .map((span) => span.attributes["outpost.redis.connection"]),
   ).toEqual(["primary", "subscriber"]);
-  const beforeConnection = [
-    "outpost.redis.connect",
-    "outpost.redis.subscribe",
-    "outpost.websocket.connect",
-  ];
+  const beforeConnection = ["outpost.redis.connect", "outpost.redis.subscribe"];
   for (const span of exported.filter((span) => !beforeConnection.includes(span.name)))
     expect(span.attributes["outpost.connection_id"]).toBe(connectionId);
 });
@@ -1210,7 +1368,7 @@ it.each([
       max: snapshotMax,
     };
     const outpost = await start();
-    await outpost.actor(customer);
+    await deliver(outpost, snapshot);
     await vi.waitFor(() => expect(tokensSnapshotSpan()).toBeDefined());
     const span = tokensSnapshotSpan()!;
     expect(span.attributes).toMatchObject({
@@ -1259,7 +1417,7 @@ it("reports a bucket already cold by its pending part only", async () => {
     max: 5,
   };
   const outpost = await start();
-  await outpost.actor(customer);
+  await deliver(outpost, snapshot);
   await vi.waitFor(() => expect(tokensSnapshotSpan()).toBeDefined());
   const span = tokensSnapshotSpan()!;
   expect(span.attributes).toMatchObject({
@@ -1272,24 +1430,30 @@ it("reports a bucket already cold by its pending part only", async () => {
   });
 });
 
-it("reconnects the WebSocket and keeps serving from Redis", async () => {
-  const outpost = await start();
-  connections[0].terminate();
-  expect(await ingest(outpost, 3)).toBeUndefined();
-  await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
-  await vi.waitFor(() => expect(outpost.connectionId).toBe(connectionId));
-  expect(outpost.connected).toBe(true);
-  expect(await ingest(outpost, 3)).toBeUndefined();
-});
-
-it("fails when Polar refuses the reconnection", async () => {
+it("fails when Polar refuses a pull", async () => {
   const outpost = await start();
   refuseConnections = true;
-  connections[0].terminate();
-  await vi.waitFor(() => expect(outpost.actor(customer)).rejects.toThrow("refused"), {
-    timeout: 3_000,
-  });
+  await outpost["pull"]();
+  await expect(outpost.actor(customer)).rejects.toThrow("refused");
   expect(outpost.connected).toBe(false);
+});
+
+it.each([
+  [422, false],
+  [429, true],
+])(
+  "fails when Polar rejects a pull with %i unless it only slows it down",
+  async (status, connected) => {
+    const outpost = await start();
+    changesStatus = status;
+    await outpost["pull"]();
+    expect(outpost.connected).toBe(connected);
+  },
+);
+
+it("fails to start when Polar refuses Outpost", async () => {
+  refuseConnections = true;
+  await expect(start()).rejects.toThrow("refused");
 });
 
 it("fails to start without Redis instead of hanging", async () => {
@@ -1326,7 +1490,6 @@ it.each([
     .spyOn(outpost["redis"]!, "outpostApplySnapshot")
     .mockRejectedValueOnce(error);
   await outpost.actor(customer);
-  await vi.waitFor(() => expect(connections).toHaveLength(2), { timeout: 3_000 });
   await outpost.actor(customer);
   // The snapshot can take longer than the test's snapshotTimeout to arrive after a reconnection.
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(3));
@@ -1351,7 +1514,6 @@ it.each([
   await vi.waitFor(() => expect(outpost.meter(meter)).rejects.toBe(error));
   await expect(ingest(outpost, 5)).rejects.toBe(error);
   expect(outpost.connected).toBe(false);
-  expect(connections).toHaveLength(1);
 });
 
 it("gives the state a day to live, refreshed by each read, write and confirmation", async () => {
@@ -1366,7 +1528,9 @@ it("gives the state a day to live, refreshed by each read, write and confirmatio
   const settled = usage(eventId(), 3);
   await outpost.track(settled);
   expect(await redis.ttl(key)).toBeGreaterThan(60);
-  const pending = await redis.ttl(`outpost:v1:pending:external:alice:tokens:${bucket}`);
+  const pending = await redis.ttl(
+    `outpost:v1:${organization}:pending:external:alice:tokens:${bucket}`,
+  );
   expect(pending).toBeGreaterThan(0);
   expect(pending).toBeLessThanOrEqual(3_900);
   await redis.expire(key, 60);
@@ -1401,21 +1565,6 @@ it("refuses to read a meter Outpost does not know", async () => {
     UnknownMeterError,
   );
   expect(await readOutcomes(outpost)).toEqual([["meter", "unknown_meter"]]);
-});
-
-it("reports reads without configuration as not ready", async () => {
-  delayConfiguration = true;
-  const outpost = await start();
-  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
-  const reads = [outpost.actor(customer), outpost.meter(meter)].map((read) =>
-    expect(read).rejects.toThrow("timed out"),
-  );
-  await vi.advanceTimersByTimeAsync(5_000);
-  await Promise.all(reads);
-  expect(await readOutcomes(outpost)).toEqual([
-    ["actor", "not_ready"],
-    ["meter", "not_ready"],
-  ]);
 });
 
 it("reports a failed read as an error", async () => {
@@ -1461,25 +1610,44 @@ it.each([
 );
 
 it("reads the value of a customer created after a miss", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
   snapshot = { ...aliceSnapshot, customer_exists: false };
   const outpost = await start();
   expect(await outpost.meter(meter)).toBeNull();
   snapshot = aliceSnapshot;
+  vi.advanceTimersByTime(1_000);
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.balance).toBe(97));
 });
 
+it("asks Polar about a customer it does not know once per backoff, for the whole fleet", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  const [first, second] = await Promise.all([start(), start()]);
+  expect(await first.meter(meter)).toBeNull();
+  const asked = meterUsageRequests.length;
+  // The other instance knows at once, and neither asks again before the backoff ends.
+  expect(await second.meter(meter)).toBeNull();
+  expect(await first.meter(meter)).toBeNull();
+  expect(meterUsageRequests).toHaveLength(asked);
+  vi.advanceTimersByTime(1_000);
+  expect(await second.meter(meter)).toBeNull();
+  expect(meterUsageRequests).toHaveLength(2 * asked);
+  // The second miss waits twice as long.
+  vi.advanceTimersByTime(1_000);
+  expect(await first.meter(meter)).toBeNull();
+  expect(meterUsageRequests).toHaveLength(2 * asked);
+});
+
 const receiveCredits = (outpost: Outpost, units: number, version: number) =>
-  outpost["receiveWebsocket"](
-    JSON.stringify({
-      type: "meter_usage",
-      payload: {
-        ...customer,
-        customer_id: null,
-        customer_exists: true,
-        reducer_id: "credits",
-        ...creditSnapshot(units, version),
-      },
-    }),
+  outpost["receiveSnapshot"](
+    {
+      ...customer,
+      customer_id: null,
+      customer_exists: true,
+      reducer_id: "credits",
+      ...creditSnapshot(units, version),
+    } as never,
+    false,
   );
 
 it("reads the balance as the credits less the usage", async () => {
@@ -1554,7 +1722,8 @@ it("reports sync counts when telemetry is flushed", async () => {
     },
   ])
     await writer.track(event);
-  await vi.waitFor(() => expect(reader["syncReceived"]).toBe(2));
+  // Bob's update goes to bob's channel, which the reader does not follow.
+  await vi.waitFor(() => expect(reader["syncReceived"]).toBe(1));
   exported.length = 0;
   await reader.flushTelemetry();
   await reader.flushTelemetry();
@@ -1562,8 +1731,8 @@ it("reports sync counts when telemetry is flushed", async () => {
     exported.filter((span) => span.name === "outpost.sync").map((span) => span.attributes),
   ).toEqual([
     {
-      "outpost.connection_id": connectionId,
-      "outpost.sync.received": 2,
+      "outpost.connection_id": reader.connectionId,
+      "outpost.sync.received": 1,
       "outpost.sync.applied": 1,
     },
   ]);
@@ -1572,6 +1741,7 @@ it("reports sync counts when telemetry is flushed", async () => {
 it("does not split a message in flight across sync reports", async () => {
   const writer = await start();
   const reader = await start();
+  await reader.actor(customer);
   let receiving = false;
   let release!: () => void;
   const released = new Promise<void>((resolve) => (release = resolve));
@@ -1591,7 +1761,7 @@ it("does not split a message in flight across sync reports", async () => {
     exported.filter((span) => span.name === "outpost.sync").map((span) => span.attributes),
   ).toEqual([
     {
-      "outpost.connection_id": connectionId,
+      "outpost.connection_id": reader.connectionId,
       "outpost.sync.received": 1,
       "outpost.sync.applied": 1,
     },
@@ -1643,9 +1813,16 @@ it("fails fast while Redis is unavailable", async () => {
 });
 
 it("composes buffered Polar delivery with Outpost through the client factory", async () => {
+  const polarFetch = globalThis.fetch;
   const fetch = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response('{"inserted":1,"duplicates":0}'));
+    .mockImplementation((input, init) =>
+      String(input).includes("/v1/events/ingest")
+        ? Promise.resolve(new Response('{"inserted":1,"duplicates":0}'))
+        : polarFetch(input, init),
+    );
+  const ingested = () =>
+    fetch.mock.calls.filter(([input]) => String(input).includes("/v1/events/ingest"));
   await seed();
   const [baseUrl] = core.buildRequest("GET", "");
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
@@ -1661,12 +1838,12 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
         metadata: { tokens: 2 },
       });
       expect((await reader.meter(meter))?.consumed_units).toBe(12);
-      expect(fetch).not.toHaveBeenCalled();
+      expect(ingested()).toHaveLength(0);
     } finally {
       await metering.close();
     }
   }
-  expect(fetch).toHaveBeenCalledOnce();
+  expect(ingested()).toHaveLength(1);
 });
 
 it.each(["abc", "Infinity", "NaN", "1e999"])("rejects the stored value %j", (value) => {

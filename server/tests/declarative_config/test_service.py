@@ -4466,6 +4466,33 @@ class TestExport:
             (archived_unkeyed.id, ConfigSkippedReason.archived),
         ]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skipped_products_carry_their_interval(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        yearly = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        one_time = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert {
+            skip.id: (skip.recurring_interval, skip.recurring_interval_count)
+            for skip in exported.skipped
+        } == {
+            yearly.id: (SubscriptionRecurringInterval.year, 1),
+            one_time.id: (None, None),
+        }
+
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_agent(

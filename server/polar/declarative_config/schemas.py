@@ -810,6 +810,14 @@ class ConfigSkippedResource(Schema):
     reason: ConfigSkippedReason = Field(
         description="Why the resource isn't in the exported config."
     )
+    recurring_interval: SubscriptionRecurringInterval | None = Field(
+        default=None,
+        description="The billing interval of a skipped product. None for one-time products and other resources.",
+    )
+    recurring_interval_count: int | None = Field(
+        default=None,
+        description="The number of intervals between charges of a skipped product.",
+    )
 
 
 class ConfigExportCatalog(ConfigCatalog):

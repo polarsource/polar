@@ -213,6 +213,8 @@ export const SkippedResource = Schema.Struct({
   id: Schema.String,
   name: Schema.String,
   reason: Schema.String,
+  recurring_interval: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  recurring_interval_count: Schema.optionalKey(Schema.NullOr(Schema.Number)),
 })
 export type SkippedResource = typeof SkippedResource.Type
 

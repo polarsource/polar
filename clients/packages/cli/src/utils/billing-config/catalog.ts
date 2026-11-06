@@ -3,7 +3,7 @@ import type {
   ExternalIdAssignment,
   KeyedResource,
 } from '@/schemas/BillingConfig'
-import { slugify, type Unkeyed } from '@/utils/billing-config/keys'
+import { displayName, slugify, type Unkeyed } from '@/utils/billing-config/keys'
 import { plural } from '@/utils/billing-config/problems'
 import * as ui from '@/utils/ui'
 
@@ -69,7 +69,10 @@ const added = (
       const source = resources.find(({ id }) => id === assignment.id)
       return {
         external_id: assignment.external_id,
-        name: assignment.name,
+        name:
+          source === undefined
+            ? ui.printable(assignment.name)
+            : displayName(source),
         added: true,
         renamed:
           source !== undefined && renamed(source, assignment.external_id),
@@ -79,7 +82,7 @@ const added = (
 const rowLine = (row: Row, width: number) => {
   const id = ui.pad(ui.truncate(ui.printable(row.external_id), width), width)
   const marker = row.added ? ui.green('+') : ' '
-  const name = ui.dim(ui.printable(row.name))
+  const name = ui.dim(row.added ? row.name : ui.printable(row.name))
   return row.renamed
     ? `${ui.INDENT}${marker} ${ui.yellow(id)}  ${name} ${ui.yellow('duplicate name, suffix added')}`
     : `${ui.INDENT}${marker} ${row.added ? id : ui.dim(id)}  ${name}`
@@ -132,9 +135,7 @@ export const catalogPreview = (
   return [
     ui.blank,
     ui.heading('Your catalog'),
-    ui.step(
-      `${counts} · ${plural(assignments.length, 'new external ID')} marked ${ui.green('+')}`,
-    ),
+    ui.step(`${counts} · ${plural(assignments.length, 'new external ID')}`),
     ...sections.flatMap(([, title, rows]) =>
       rows.length === 0
         ? []

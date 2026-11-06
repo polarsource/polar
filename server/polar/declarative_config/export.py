@@ -78,6 +78,7 @@ async def _export_section[ModelT: _Exportable, EntryT](
     name: Callable[[ModelT], str],
     archived: Callable[[ModelT], bool],
     entry: Callable[[ModelT], EntryT | None],
+    details: Callable[[ModelT], dict[str, Any]] = lambda _: {},
 ) -> tuple[list[EntryT], dict[str, str]]:
     """
     `entry` returns `None` when the model references something left out of the
@@ -108,7 +109,11 @@ async def _export_section[ModelT: _Exportable, EntryT](
             skipped_count += 1
             skipped.append(
                 ConfigSkippedResource(
-                    resource=resource, id=model.id, name=name(model), reason=reason
+                    resource=resource,
+                    id=model.id,
+                    name=name(model),
+                    reason=reason,
+                    **details(model),
                 )
             )
         if len(entries) >= maximum and skipped_count >= maximum:
@@ -302,6 +307,10 @@ async def export_config(
         MAXIMUM_PRODUCTS,
         skipped,
         name=lambda product: product.name,
+        details=lambda product: {
+            "recurring_interval": product.recurring_interval,
+            "recurring_interval_count": product.recurring_interval_count,
+        },
         archived=lambda product: (
             product.is_archived
             and (

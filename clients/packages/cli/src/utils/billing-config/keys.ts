@@ -1,3 +1,4 @@
+import { printable } from '@/utils/ui'
 import type {
   ConfigDocument,
   KeyedResource,
@@ -9,6 +10,7 @@ export interface Unkeyed {
   readonly id: string
   readonly name: string
   readonly suggestion: string
+  readonly cadence?: string
 }
 
 const SECTIONS: Record<KeyedResource, string> = {
@@ -24,6 +26,20 @@ export const slugify = (name: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
+
+const ADVERBS: Record<string, string> = {
+  day: 'daily',
+  week: 'weekly',
+  month: 'monthly',
+  year: 'yearly',
+}
+
+const cadence = (interval: string | null, count: number | null) =>
+  interval === null
+    ? 'one-time'
+    : count === null || count === 1
+      ? (ADVERBS[interval] ?? `every ${interval}`)
+      : `every ${count} ${interval}s`
 
 const isKeyed = (resource: string): resource is KeyedResource =>
   resource in SECTIONS
@@ -52,12 +68,16 @@ const unique = (base: string, taken: Set<string>) => {
   return key
 }
 
+export const displayName = ({ id, name, cadence }: Unkeyed) =>
+  `${id.split('-')[0]} · ${printable(name)}${cadence === undefined ? '' : ` (${cadence})`}`
+
 export const unkeyed = (
   document: ConfigDocument,
   skipped: ReadonlyArray<SkippedResource>,
 ): Unkeyed[] => {
   const taken = new Map<KeyedResource, Set<string>>()
-  return skipped.flatMap(({ resource, id, name, reason }) => {
+  return skipped.flatMap((entry) => {
+    const { resource, id, name, reason } = entry
     if (reason !== 'missing_external_id' || !isKeyed(resource)) return []
     const keys = taken.get(resource) ?? takenKeys(document, resource)
     taken.set(resource, keys)
@@ -67,6 +87,14 @@ export const unkeyed = (
         id,
         name,
         suggestion: unique(slugify(name) || resource, keys),
+        ...(resource !== 'product' || entry.recurring_interval === undefined
+          ? {}
+          : {
+              cadence: cadence(
+                entry.recurring_interval,
+                entry.recurring_interval_count ?? null,
+              ),
+            }),
       },
     ]
   })

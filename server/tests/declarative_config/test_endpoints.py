@@ -604,18 +604,24 @@ class TestExport:
                 "id": str(without_external_id.id),
                 "name": "My Meter",
                 "reason": "missing_external_id",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             },
             {
                 "resource": "meter",
                 "id": str(archived.id),
                 "name": "My Meter",
                 "reason": "archived",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             },
             {
                 "resource": "meter",
                 "id": str(invalid.id),
                 "name": "My Meter",
                 "reason": "invalid",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             },
         ]
 
@@ -658,6 +664,8 @@ class TestExport:
                 "id": str(second.id),
                 "name": "My Meter",
                 "reason": "over_limit",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             }
         ]
 

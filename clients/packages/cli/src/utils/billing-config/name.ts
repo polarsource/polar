@@ -9,7 +9,11 @@ import {
   changes,
   renamed,
 } from '@/utils/billing-config/catalog'
-import { takenKeys, type Unkeyed } from '@/utils/billing-config/keys'
+import {
+  displayName,
+  takenKeys,
+  type Unkeyed,
+} from '@/utils/billing-config/keys'
 import { plural } from '@/utils/billing-config/problems'
 import type { Progress } from '@/utils/progress'
 import { select } from '@/utils/prompt'
@@ -103,7 +107,7 @@ const edit = (
       headers: ['TYPE', 'NAME'],
       column: 'EXTERNAL ID',
       rows: editable.map((resource) => ({
-        cells: [resource.resource, ui.printable(resource.name)],
+        cells: [resource.resource, displayName(resource)],
         value: current(resource),
       })),
       validate: problems(editable, fixed, catalog),

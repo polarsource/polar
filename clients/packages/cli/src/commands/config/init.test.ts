@@ -368,7 +368,7 @@ describe('polar config init', () => {
       expect(output).toContain('1 meter, 0 benefits, 3 products')
       expect(output).toMatch(/ {3}api-calls\s+API calls/)
       expect(output).toMatch(/ {3}starter\s+Starter/)
-      expect(output).toMatch(/\+ pro-plan\s+Pro Plan/)
+      expect(output).toMatch(/\+ pro-plan\s+p · Pro Plan/)
       expect(output).toContain('Legacy (product p-9) cannot be expressed')
       expect(terminal).toContain('2 resources need an external ID')
       expect(externalIds(keyed)).toEqual(['pro-plan', 'team'])
@@ -382,15 +382,18 @@ describe('polar config init', () => {
           unkeyed: [
             {
               resource: 'product',
-              id: 'p-1',
+              id: '3f2a9c1e-0000-4000-8000-000000000000',
               name: 'Pro',
               suggestion: 'pro-2',
+              cadence: 'yearly',
             },
           ],
         },
       )
 
-      expect(output).toContain('pro-2  Pro duplicate name, suffix added')
+      expect(output).toContain(
+        'pro-2  3f2a9c1e · Pro (yearly) duplicate name, suffix added',
+      )
       expect(output).toContain(
         '1 suggestion has a numbered suffix because of a duplicate name. Double-check it before continuing.',
       )
@@ -414,7 +417,7 @@ describe('polar config init', () => {
       )
 
       expect(terminal).toContain('EXTERNAL ID')
-      expect(terminal).toMatch(/❯ product\s+Team\s+teams/)
+      expect(terminal).toMatch(/❯ product\s+p · Team\s+teams/)
       expect(output).toMatch(/team → teams product Team/)
       expect(externalIds(keyed)).toEqual(['pro-plan', 'teams'])
     })

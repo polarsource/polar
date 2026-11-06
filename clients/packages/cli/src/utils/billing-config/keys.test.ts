@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { slugify, unkeyed } from '@/utils/billing-config/keys'
 
+
 describe('slugify', () => {
   test.each([
     ['Pro Plan', 'pro_plan'],
@@ -51,6 +52,50 @@ describe('unkeyed', () => {
       ['p-2', 'pro_3'],
       ['m-1', 'pro'],
       ['b-1', 'benefit'],
+    ])
+  })
+
+  test('describes how often a product bills', () => {
+    const product = (
+      id: string,
+      recurring_interval: string | null,
+      recurring_interval_count: number | null,
+    ) => ({
+      resource: 'product',
+      id,
+      name: 'Team',
+      reason: 'missing_external_id',
+      recurring_interval,
+      recurring_interval_count,
+    })
+
+    expect(
+      unkeyed({}, [
+        product('p-1', 'month', 1),
+        product('p-2', 'year', 1),
+        product('p-3', 'month', 3),
+        product('p-5', 'week', 3),
+        product('p-6', 'day', 1),
+        product('p-7', 'year', 2),
+        product('p-4', null, null),
+        {
+          resource: 'meter',
+          id: 'm-1',
+          name: 'Calls',
+          reason: 'missing_external_id',
+          recurring_interval: null,
+          recurring_interval_count: null,
+        },
+      ]).map(({ cadence }) => cadence),
+    ).toEqual([
+      'monthly',
+      'yearly',
+      'every 3 months',
+      'every 3 weeks',
+      'daily',
+      'every 2 years',
+      'one-time',
+      undefined,
     ])
   })
 })

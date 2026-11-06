@@ -3,9 +3,8 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { CurrentBadge, PublishedAt } from '../VersionsPage'
@@ -18,25 +17,6 @@ const statusLabel = {
   archived: 'Archived',
   draft: 'Draft',
 } as const
-
-const BackLink = ({ versionsPath }: { versionsPath: string }) => (
-  <Link href={versionsPath}>
-    <Box
-      as="span"
-      display="inline-flex"
-      alignItems="center"
-      columnGap="xs"
-      color={{ base: 'text-secondary', hover: 'text-primary' }}
-      transitionProperty="colors"
-      transitionDuration="fast"
-    >
-      <ArrowBackOutlined fontSize="inherit" />
-      <Text as="span" color="inherit">
-        All versions
-      </Text>
-    </Box>
-  </Link>
-)
 
 const Dot = () => (
   <Text as="span" color="muted">
@@ -83,61 +63,58 @@ export default function VersionPage({
   const productsPath = `/dashboard/${organization.slug}/products`
 
   return (
-    <DashboardBody title={null} wrapperClassName="max-w-(--breakpoint-lg)!">
-      <Box flexDirection="column" rowGap="3xl" minWidth={0}>
-        <Box flexDirection="column" rowGap="l" alignItems="start">
-          <BackLink versionsPath={versionsPath} />
-          <Box flexDirection="column" rowGap="m" minWidth={0} width="100%">
+    <DashboardBody
+      wrapperClassName="max-w-(--breakpoint-lg)!"
+      title={
+        <Box flexDirection="column" rowGap="xs" minWidth={0}>
+          <Box alignItems="center" columnGap="l" minWidth={0}>
             <Text variant="heading-xs" as="h1" truncate>
               {catalog.name ?? 'Untitled'}
             </Text>
-            <Box alignItems="center" columnGap="s" flexWrap="wrap">
+            <Box flexShrink={0}>
               {catalog.status === 'live' ? (
-                // Badge padding would make the line taller than for other statuses
-                <Box my="-xs" mr="xs">
-                  <CurrentBadge />
-                </Box>
+                <CurrentBadge />
               ) : (
-                <>
-                  <Text color="muted">{statusLabel[catalog.status]}</Text>
-                  <Dot />
-                </>
+                <Status
+                  status={statusLabel[catalog.status]}
+                  color={catalog.status === 'archived' ? 'gray' : undefined}
+                />
               )}
-              <Text color="muted">
-                {catalog.published_at ? (
-                  <>
-                    Published <PublishedAt catalog={catalog} />
-                  </>
-                ) : (
-                  'Not published'
-                )}
-              </Text>
-              {parent ? (
-                <>
-                  <Dot />
-                  <Box alignItems="baseline" columnGap="xs">
-                    <Text color="muted">Based on</Text>
-                    <Link href={`${versionsPath}/${parent.id}`}>
-                      <Box
-                        as="span"
-                        color={{
-                          base: 'text-primary',
-                          hover: 'text-secondary',
-                        }}
-                        transitionProperty="colors"
-                        transitionDuration="fast"
-                      >
-                        <Text as="span" color="inherit">
-                          {parent.name ?? 'Untitled'}
-                        </Text>
-                      </Box>
-                    </Link>
-                  </Box>
-                </>
-              ) : null}
             </Box>
           </Box>
+          <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
+            <Text color="muted">
+              {catalog.published_at ? (
+                <>
+                  Published <PublishedAt catalog={catalog} />
+                </>
+              ) : (
+                'Not published'
+              )}
+            </Text>
+            {parent ? (
+              <>
+                <Dot />
+                <Text color="muted">Based on</Text>
+                <Link href={`${versionsPath}/${parent.id}`}>
+                  <Box
+                    as="span"
+                    color={{ base: 'text-primary', hover: 'text-secondary' }}
+                    transitionProperty="colors"
+                    transitionDuration="fast"
+                  >
+                    <Text as="span" color="inherit">
+                      {parent.name ?? 'Untitled'}
+                    </Text>
+                  </Box>
+                </Link>
+              </>
+            ) : null}
+          </Box>
         </Box>
+      }
+    >
+      <Box flexDirection="column" minWidth={0}>
         {diffReady ? (
           <VersionDiff
             config={exported.config}

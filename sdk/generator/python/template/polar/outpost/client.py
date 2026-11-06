@@ -237,6 +237,7 @@ PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay / 1000 }}
 MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay / 1000 }}
 PULL_LIMIT = {{ outpost_constants.pull_limit }}
 PULL_CONCURRENCY = {{ outpost_constants.pull_concurrency }}
+SNAPSHOT_BATCH = {{ outpost_constants.snapshot_batch }}
 PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval / 1000 }}
 RELEASE_LOCK_SCRIPT = """
 {{ outpost_scripts.release_lock }}"""
@@ -942,7 +943,11 @@ class Outpost:
             snapshots: list[Snapshot] = await self._request(
                 "POST",
                 "/v1/outpost/meter-usage",
-                json={**self._customer_arguments(customer), "reducer_id": reducer["id"]},
+                json={
+                    "identities": [
+                        {**self._customer_arguments(customer), "reducer_id": reducer["id"]}
+                    ]
+                },
             )
             async with self._applying:
                 for snapshot in snapshots:
@@ -1209,7 +1214,7 @@ class Outpost:
                     raise
                 pages += 1
                 if changes["reset"]:
-                    await self._reset()
+                    await self._reset(renew)
                 if changes["configuration_changed"]:
                     await self._configure("polar")
                     revision = await redis.hincrby(self._pull_key, "configuration", 1)
@@ -1269,15 +1274,57 @@ class Outpost:
                 with contextlib.suppress(RedisError):
                     await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._pull_lock_key, lock)
 
-    async def _reset(self) -> None:
-        """Polar's changes went past its retention: no snapshot can be trusted any more."""
+    async def _reset(
+        self, renew: collections.abc.Callable[[], collections.abc.Awaitable[None]]
+    ) -> None:
+        """Polar's changes went past its retention: no snapshot can be trusted any more.
+        Polar snapshots every state again, a page at a time, while reads go on with the
+        state they find; a page Polar does not answer goes cold."""
         redis = self._require_redis()
-        async with redis.pipeline(transaction=False) as pipeline:
-            async for key in redis.scan_iter(match=f"{self._prefix}:state:*", count=1000):
-                pipeline.hdel(key, "cold_until", "snapshot_version")
-                if len(pipeline) >= 1000:
-                    await pipeline.execute()
-            await pipeline.execute()
+        prefix = f"{self._prefix}:state:"
+        page: list[str] = []
+        async for key in redis.scan_iter(match=f"{prefix}*", count=SNAPSHOT_BATCH):
+            page.append(key.decode() if isinstance(key, bytes) else key)
+            if len(page) == SNAPSHOT_BATCH:
+                await self._revalidate(page, prefix, renew)
+                page = []
+        if page:
+            await self._revalidate(page, prefix, renew)
+
+    async def _revalidate(
+        self,
+        page: list[str],
+        prefix: str,
+        renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
+    ) -> None:
+        redis = self._require_redis()
+        identities = []
+        for key in page:
+            customer, reducer_id = key.removeprefix(prefix).rsplit(":", 1)
+            identities.append(
+                {**self._customer_arguments(customer), "reducer_id": reducer_id}
+            )
+        await renew()
+        try:
+            snapshots: list[Snapshot] = await self._request(
+                "POST", "/v1/outpost/meter-usage", json={"identities": identities}
+            )
+        except httpx.HTTPError:
+            async with redis.pipeline(transaction=False) as pipeline:
+                for key in page:
+                    pipeline.hdel(key, "cold_until", "snapshot_version")
+                await pipeline.execute()
+            return
+        limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
+
+        async def apply(snapshot: Snapshot) -> None:
+            async with limiter:
+                if await self._receive_snapshot(snapshot, pulled=True, renew=renew):
+                    await renew()
+
+        async with self._applying, anyio.create_task_group() as group:
+            for snapshot in snapshots:
+                group.start_soon(apply, snapshot)
 
     def _fail_unless_transient(self, error: Exception) -> None:
         if not _is_connection_error(error):

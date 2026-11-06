@@ -14,7 +14,7 @@ from polar.backoffice.routing import BackofficeRouter
 from polar.dispute.repository import DisputeRepository
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParamsQuery, count_subquery
-from polar.models import Organization, User
+from polar.models import BackofficeUser, Organization, User
 from polar.models.support_case import (
     DisputeSupportCase,
     SupportCase,
@@ -535,12 +535,26 @@ async def case_detail(
     author_ids = {m.author_user_id for m in messages if m.author_user_id is not None}
     if case.assigned_user_id is not None:
         author_ids.add(case.assigned_user_id)
+    backoffice_ids = {
+        m.backoffice_author_user_id
+        for m in messages
+        if m.backoffice_author_user_id is not None
+    }
+    if case.backoffice_assigned_user_id is not None:
+        backoffice_ids.add(case.backoffice_assigned_user_id)
     author_emails: dict[uuid.UUID, str] = {}
     if author_ids:
-        email_result = await session.execute(
+        result = await session.execute(
             select(User.id, User.email).where(User.id.in_(author_ids))
         )
-        author_emails = {row.id: row.email for row in email_result.all()}
+        author_emails.update((row.id, row.email) for row in result)
+    if backoffice_ids:
+        result = await session.execute(
+            select(BackofficeUser.id, BackofficeUser.email).where(
+                BackofficeUser.id.in_(backoffice_ids)
+            )
+        )
+        author_emails.update((row.id, row.email) for row in result)
 
     attachments_by_message: dict[uuid.UUID, list[SupportCaseAttachment]] = {}
     attachments = await SupportCaseAttachmentRepository.from_session(

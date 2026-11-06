@@ -28,7 +28,9 @@ def stale_oauth2_client(cutoff: datetime) -> ColumnElement[bool]:
         OAuth2Client.agent_id.is_(None),
         OAuth2Client.created_at < cutoff - timedelta(days=7),
         OAuth2Client.first_party.is_(False),
-        OAuth2Client.client_id.is_distinct_from(settings.MCP_OAUTH2_CLIENT_ID),
+        *(OAuth2Client.client_id != settings.MCP_OAUTH2_CLIENT_ID,)
+        if settings.MCP_OAUTH2_CLIENT_ID
+        else (),
         ~has_tokens,
     )
 

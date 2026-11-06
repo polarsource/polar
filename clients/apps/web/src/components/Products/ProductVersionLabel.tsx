@@ -6,14 +6,17 @@ import { History } from '@polar-sh/orbit/icons'
 export const ProductVersionLabel = ({
   organization,
   product,
+  label,
 }: {
   organization: schemas['Organization']
-  product: { catalog_id?: string | null }
+  product: { catalog_id?: string | null; is_current: boolean }
+  label?: string
 }) => {
   // Every table row calls this, but React Query sends one request per organization and all rows share it.
   const { data: labels } = useCatalogVersionLabels(organization)
   const catalog = product.catalog_id && labels?.get(product.catalog_id)
   if (
+    product.is_current ||
     !organization.feature_settings?.config_as_code_enabled ||
     !catalog ||
     catalog.status !== 'archived' ||
@@ -27,7 +30,7 @@ export const ProductVersionLabel = ({
       className="shrink-0 space-x-1 rounded-sm py-0.5 pr-1.5 pl-1 font-normal"
     >
       <History size={12} aria-hidden />
-      <span>{catalog.name}</span>
+      <span>{label ?? catalog.name}</span>
     </Pill>
   )
 }

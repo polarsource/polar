@@ -58,6 +58,7 @@ export const useInfiniteBenefits = (
         api.GET('/v1/benefits/', {
           params: {
             query: {
+              ...(parameters?.id ? {} : { catalog_status: 'live' as const }),
               ...parameters,
               organization_id: orgId,
               page: pageParam,
@@ -90,6 +91,7 @@ export const useBenefits = (
         api.GET('/v1/benefits/', {
           params: {
             query: {
+              ...(parameters?.id ? {} : { catalog_status: 'live' as const }),
               ...parameters,
               organization_id: orgId,
             },

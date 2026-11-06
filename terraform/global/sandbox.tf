@@ -838,6 +838,10 @@ resource "tfe_variable" "backoffice_google_client_id_sandbox" {
   description     = "Backoffice Google OAuth client ID for sandbox"
   sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backoffice_google_client_secret_sandbox" {
@@ -846,6 +850,10 @@ resource "tfe_variable" "backoffice_google_client_secret_sandbox" {
   description     = "Backoffice Google OAuth client secret for sandbox"
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backoffice_google_hosted_domain_sandbox" {
@@ -854,4 +862,8 @@ resource "tfe_variable" "backoffice_google_hosted_domain_sandbox" {
   description     = "Backoffice Google Workspace hosted domain for sandbox"
   sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

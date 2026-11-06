@@ -828,6 +828,10 @@ resource "tfe_variable" "backoffice_google_client_id_test" {
   description     = "Backoffice Google OAuth client ID for test"
   sensitive       = false
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backoffice_google_client_secret_test" {
@@ -836,6 +840,10 @@ resource "tfe_variable" "backoffice_google_client_secret_test" {
   description     = "Backoffice Google OAuth client secret for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backoffice_google_hosted_domain_test" {
@@ -844,4 +852,8 @@ resource "tfe_variable" "backoffice_google_hosted_domain_test" {
   description     = "Backoffice Google Workspace hosted domain for test"
   sensitive       = false
   variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

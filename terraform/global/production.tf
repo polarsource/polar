@@ -1002,6 +1002,10 @@ resource "tfe_variable" "backoffice_google_client_id_production" {
   description     = "Backoffice Google OAuth client ID for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backoffice_google_client_secret_production" {
@@ -1010,6 +1014,10 @@ resource "tfe_variable" "backoffice_google_client_secret_production" {
   description     = "Backoffice Google OAuth client secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "backoffice_google_hosted_domain_production" {
@@ -1018,4 +1026,8 @@ resource "tfe_variable" "backoffice_google_hosted_domain_production" {
   description     = "Backoffice Google Workspace hosted domain for production"
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

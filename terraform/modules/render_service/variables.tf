@@ -89,9 +89,11 @@ variable "environment_groups" {
   description = "Named environment-variable groups produced by the backend_environment module"
   type = object({
     google = object({
-      POLAR_GOOGLE_CLIENT_ID                = string
-      POLAR_GOOGLE_CLIENT_SECRET            = string
-      POLAR_GOOGLE_SERVICE_ACCOUNT_JSON     = string
+      POLAR_GOOGLE_CLIENT_ID            = string
+      POLAR_GOOGLE_CLIENT_SECRET        = string
+      POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = string
+    })
+    backoffice_google = object({
       POLAR_BACKOFFICE_GOOGLE_CLIENT_ID     = string
       POLAR_BACKOFFICE_GOOGLE_CLIENT_SECRET = string
       POLAR_BACKOFFICE_GOOGLE_HOSTED_DOMAIN = string

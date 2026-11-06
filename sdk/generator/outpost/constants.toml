@@ -29,6 +29,8 @@ pull_lock_ttl = 10000
 pull_retry_delay = 1000
 max_pull_retry_delay = 30000
 pull_limit = 500
+# Customers of a pulled page whose snapshots apply side by side; each one's apply in order.
+pull_concurrency = 16
 pull_check_interval = 1000
 # A reducer bucket, in microseconds.
 bucket_size = 300000000

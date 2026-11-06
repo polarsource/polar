@@ -62,6 +62,7 @@ const PULL_LOCK_TTL = {{ outpost_constants.pull_lock_ttl }};
 const PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay }};
 const MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay }};
 const PULL_LIMIT = {{ outpost_constants.pull_limit }};
+const PULL_CONCURRENCY = {{ outpost_constants.pull_concurrency }};
 const PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval }};
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";
@@ -190,6 +191,19 @@ const withTimeout = async <T>(promise: Promise<T>): Promise<T> => {
   }
 };
 const isReady = (read: Read): boolean => read === "missing" || read.coldUntil !== undefined;
+// Runs `work` on every item, at most `limit` at a time.
+const eachAtMost = async <T>(
+  items: T[],
+  limit: number,
+  work: (item: T) => Promise<void>,
+): Promise<void> => {
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) await work(items[next++]);
+    }),
+  );
+};
 const sleep = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
 const waitAtMost = async (promise: Promise<unknown>, milliseconds: number): Promise<void> => {
@@ -421,11 +435,25 @@ export class Outpost {
         if (this.redis !== redis) return;
         this.event("outpost.redis.disconnect", new PolarError("Redis connection closed"));
       });
+      // A connection the server closes at once, as under a burst of new ones, is tried again
+      // until the timeout.
       await this.trace(
         "outpost.redis.connect",
         async () => {
-          await withTimeout(redis.connect());
-          await redis.ping();
+          const deadline = Date.now() + TIMEOUT;
+          for (let attempt = 1; ; attempt++) {
+            try {
+              await withTimeout(redis.connect());
+              await redis.ping();
+              return;
+            } catch (error) {
+              if (Date.now() >= deadline) throw error;
+              redis.disconnect();
+              await sleep(
+                Math.min(MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)),
+              );
+            }
+          }
         },
         { "outpost.redis.connection": "primary" },
       ).catch((error: unknown) => {
@@ -731,16 +759,17 @@ export class Outpost {
     this.isConfigured = true;
   }
 
-  // A read starts the pull once it is due, and waits for it once the Redis may be stale. While a
-  // failed pull backs off, it does neither; once the backoff ends, it no longer waits. Another
-  // instance may have pulled since: the pull hash in Redis says.
+  // A read starts the pull once it is due, and waits for it once the Redis may be stale, no longer
+  // than for a snapshot. While a failed pull backs off, it does neither; once the backoff ends, it
+  // no longer waits. Another instance may have pulled since: the pull hash in Redis says.
   private async refresh(): Promise<void> {
     if (!this.pullDue()) return;
     await this.loadPull();
     if (!this.pullDue()) return;
     const age = Date.now() - this.pulledAt;
     const pull = this.pull();
-    if (age >= 2 * this.pullInterval && !this.pullRetryAt) await pull;
+    if (age >= 2 * this.pullInterval && !this.pullRetryAt)
+      await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
   }
 
   private pullDue(): boolean {
@@ -758,15 +787,13 @@ export class Outpost {
     this.pullRetryAt = Number(retryAt ?? 0);
   }
 
-  // Another instance holds the pull: the pull hash says when it ends.
+  // Another instance holds the pull: it has ended, pulled or failed, once its lock is gone.
   private async waitForPull(): Promise<void> {
-    const before = this.pulledAt;
+    const redis = this.requireRedis();
     const deadline = Date.now() + TIMEOUT;
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && (await redis.exists(this.pullLockKey)))
       await sleep(POLL_INTERVAL);
-      await this.loadPull();
-      if (this.pulledAt !== before || this.pullRetryAt > Date.now()) return;
-    }
+    await this.loadPull();
   }
 
   private pull(): Promise<void> {
@@ -829,13 +856,21 @@ export class Outpost {
         pages += 1;
         if (changes.reset) await this.reset();
         if (changes.configuration_changed) await this.configure();
-        await this.serial(async () => {
-          for (const snapshot of changes.changes)
-            if (await this.receiveSnapshot(snapshot, true, renew)) {
-              applied += 1;
-              await renew();
-            }
-        });
+        // Each customer's snapshots apply in order; customers apply side by side.
+        const customers = new Map<string, Snapshot[]>();
+        for (const snapshot of changes.changes) {
+          const identity = `${snapshot.reducer_id}:${snapshot.customer_id}:${snapshot.external_customer_id}`;
+          customers.set(identity, [...(customers.get(identity) ?? []), snapshot]);
+        }
+        await this.serial(() =>
+          eachAtMost([...customers.values()], PULL_CONCURRENCY, async (snapshots) => {
+            for (const snapshot of snapshots)
+              if (await this.receiveSnapshot(snapshot, true, renew)) {
+                applied += 1;
+                await renew();
+              }
+          }),
+        );
         const pulledAt = Date.now();
         const nextPoll = Math.round(changes.next_poll_in * 1000);
         const committed = await redis.outpostCommitPull(

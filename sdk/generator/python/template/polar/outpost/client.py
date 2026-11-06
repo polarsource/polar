@@ -202,7 +202,20 @@ async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]
         socket_timeout=TIMEOUT,
         socket_connect_timeout=TIMEOUT,
     ) as redis:
-        await redis.ping()
+        # A connection the server closes at once, as under a burst of new ones, is tried
+        # again until the timeout.
+        deadline = anyio.current_time() + TIMEOUT
+        backoff = RedisReconnectBackoff()
+        failures = 0
+        while True:
+            try:
+                await redis.ping()
+                break
+            except (RedisConnectionError, RedisTimeoutError):
+                failures += 1
+                if anyio.current_time() >= deadline:
+                    raise
+                await anyio.sleep(backoff.compute(failures))
         yield redis
 
 
@@ -222,6 +235,7 @@ PULL_LOCK_TTL = {{ outpost_constants.pull_lock_ttl / 1000 }}
 PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay / 1000 }}
 MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay / 1000 }}
 PULL_LIMIT = {{ outpost_constants.pull_limit }}
+PULL_CONCURRENCY = {{ outpost_constants.pull_concurrency }}
 PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval / 1000 }}
 RELEASE_LOCK_SCRIPT = """
 {{ outpost_scripts.release_lock }}"""
@@ -1012,9 +1026,9 @@ class Outpost:
 
     async def _refresh(self) -> None:
         """A read starts the pull once it is due, and waits for it once the Redis may be
-        stale. While a failed pull backs off, it does neither; once the backoff ends, it
-        no longer waits. Another instance may have pulled since: the pull hash in Redis
-        says."""
+        stale, no longer than for a snapshot. While a failed pull backs off, it does
+        neither; once the backoff ends, it no longer waits. Another instance may have
+        pulled since: the pull hash in Redis says."""
         if not self._pull_due():
             return
         await self._load_pull()
@@ -1023,7 +1037,8 @@ class Outpost:
         age = time.time() - self._pulled_at
         pulling = self._start_pull()
         if age >= 2 * self._pull_interval and not self._pull_retry_at:
-            await pulling.wait()
+            with anyio.move_on_after(SNAPSHOT_TIMEOUT):
+                await pulling.wait()
 
     def _pull_due(self) -> bool:
         now = time.time()
@@ -1040,14 +1055,13 @@ class Outpost:
         self._pull_retry_at = float(retry_at) / 1000 if retry_at else 0.0
 
     async def _wait_for_pull(self) -> None:
-        """Another instance holds the pull: the pull hash says when it ends."""
-        pulled_at = self._pulled_at
+        """Another instance holds the pull: it has ended, pulled or failed, once its lock
+        is gone."""
+        redis = self._require_redis()
         with anyio.move_on_after(TIMEOUT):
-            while True:
+            while await redis.exists(self._pull_lock_key):
                 await anyio.sleep(POLL_INTERVAL)
-                await self._load_pull()
-                if self._pulled_at != pulled_at or self._pull_retry_at > time.time():
-                    return
+        await self._load_pull()
 
     async def _pull(self) -> None:
         self._require_redis()
@@ -1151,13 +1165,34 @@ class Outpost:
                     await self._reset()
                 if changes["configuration_changed"]:
                     await self._configure()
-                async with self._applying:
-                    for snapshot in changes["changes"]:
-                        if await self._receive_snapshot(
-                            snapshot, pulled=True, renew=renew
-                        ):
-                            applied += 1
-                            await renew()
+                # Each customer's snapshots apply in order; customers apply side by side.
+                customers: dict[tuple[str, str | None, str | None], list[Snapshot]] = {}
+                for snapshot in changes["changes"]:
+                    customers.setdefault(
+                        (
+                            snapshot["reducer_id"],
+                            snapshot["customer_id"],
+                            snapshot["external_customer_id"],
+                        ),
+                        [],
+                    ).append(snapshot)
+                limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
+
+                async def apply(
+                    snapshots: list[Snapshot], limiter: anyio.CapacityLimiter
+                ) -> None:
+                    nonlocal applied
+                    async with limiter:
+                        for snapshot in snapshots:
+                            if await self._receive_snapshot(
+                                snapshot, pulled=True, renew=renew
+                            ):
+                                applied += 1
+                                await renew()
+
+                async with self._applying, anyio.create_task_group() as group:
+                    for snapshots in customers.values():
+                        group.start_soon(apply, snapshots, limiter)
                 now = int(time.time() * 1000)
                 next_poll_in = changes["next_poll_in"]
                 committed = await self._commit_pull(

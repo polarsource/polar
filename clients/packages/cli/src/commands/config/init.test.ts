@@ -46,6 +46,7 @@ interface Setup {
   installs?: boolean
   unkeyed?: Unkeyed[]
   catalog?: ConfigExport
+  alreadyEnabled?: boolean
 }
 
 let directory: string
@@ -101,6 +102,7 @@ const run = async (
                 skipped: [],
                 install: setup.install ? INSTALL : undefined,
                 installDirectory: setup.install ? target.directory : undefined,
+                already_enabled: setup.alreadyEnabled ?? false,
               } satisfies Prepared
             }),
           install: (command, cwd) => {
@@ -308,6 +310,13 @@ describe('polar config init', () => {
     ])
   })
 
+  test('says the file is a snapshot when the organization already manages its catalog as code', async () => {
+    const { output } = await run([], {}, { alreadyEnabled: true })
+
+    expect(output).toContain('Acme already manages its catalog as code')
+    expect(output).toContain('If another config file applies to Acme')
+  })
+
   test('prints the result and the next steps as JSON', async () => {
     const { output } = await run(['--json'], {}, { install: true })
 
@@ -318,6 +327,7 @@ describe('polar config init', () => {
       imported: { meters: 0, benefits: 0, products: 0 },
       keyed: [],
       skipped: [],
+      already_enabled: false,
       install: { command: 'pnpm add @polar-sh/polar', status: 'installed' },
       organization: acme,
       next: [

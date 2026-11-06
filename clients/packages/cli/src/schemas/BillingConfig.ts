@@ -242,6 +242,7 @@ export const InitResult = Schema.Struct({
   }),
   keyed: Schema.Array(ExternalIdAssignment),
   skipped: Schema.Array(SkippedResource),
+  already_enabled: Schema.Boolean,
   install: Schema.optionalKey(
     Schema.Struct({
       command: Schema.String,

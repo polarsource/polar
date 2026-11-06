@@ -274,8 +274,20 @@ const installLines = (install: Written['install']) =>
       ? [['Package', `${PACKAGE} installed`] as const]
       : [['Package', `${PACKAGE} not installed`] as const]
 
+const alreadyEnabledLines = (result: Written) =>
+  result.already_enabled
+    ? [
+        ui.blank,
+        ui.warning(
+          `${result.organization.name} already manages its catalog as code`,
+        ),
+        `${ui.INDENT}${ui.INDENT}${ui.dim(`${result.file} is a snapshot of it. If another config file applies to ${result.organization.name}, keep only one.`)}`,
+      ]
+    : []
+
 const renderWritten = (result: Written) => [
   ui.success('Your billing config is ready'),
+  ...alreadyEnabledLines(result),
   ...section(
     'Summary',
     ui.keyValue([
@@ -462,6 +474,7 @@ export const init = Command.make('init', {
               imported: prepared.imported,
               keyed: prepared.keyed,
               skipped: prepared.skipped,
+              already_enabled: prepared.already_enabled,
               ...(install ? { install } : {}),
               organization,
             }

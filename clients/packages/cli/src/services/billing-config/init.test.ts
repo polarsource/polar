@@ -51,10 +51,17 @@ let api: ReturnType<typeof fakeHttp>
 let directory: string
 let cwd: string
 
+const notEnabled = () =>
+  Response.json({ error: 'ConfigAsCodeNotEnabled' }, { status: 403 })
+
 beforeEach(async () => {
+  let enabled = false
   api = fakeHttp({
-    [`GET ${exportUrl}`]: exported(),
-    [`POST ${initUrl}`]: new Response(null, { status: 204 }),
+    [`GET ${exportUrl}`]: () => (enabled ? exported() : notEnabled()),
+    [`POST ${initUrl}`]: () => {
+      enabled = true
+      return new Response(null, { status: 204 })
+    },
   })
   directory = await realpath(await mkdtemp(join(tmpdir(), 'polar-init-')))
   cwd = process.cwd()
@@ -121,6 +128,7 @@ describe('init', () => {
       skipped: [],
       install: ['npm', 'install', '@polar-sh/polar'],
       installDirectory: directory,
+      already_enabled: false,
     })
     expect(await read('polar.config.ts')).toContain(
       "import { defineConfig } from '@polar-sh/polar'",
@@ -134,6 +142,16 @@ describe('init', () => {
     const enable = api.requests.find((request) => request.url === initUrl)!
     expect(enable.method).toBe('POST')
     expect(enable.headers.get('Polar-Organization')).toBe('org-1')
+  })
+
+  test('does not enable an organization that already manages its catalog as code', async () => {
+    api.routes[`GET ${exportUrl}`] = exported()
+
+    const result = await run()
+
+    expect(result.already_enabled).toBe(true)
+    expect(api.urls()).not.toContain(initUrl)
+    expect(await read('polar.config.json')).toBeDefined()
   })
 
   test('writes nothing when config cannot be enabled', async () => {
@@ -186,6 +204,7 @@ describe('init', () => {
       skipped: [],
       install: undefined,
       installDirectory: undefined,
+      already_enabled: false,
     })
     expect(JSON.parse(await read('polar.config.json'))).toEqual({
       meters: [],
@@ -263,7 +282,9 @@ describe('init', () => {
     const error = await failure(run())
 
     expect(error.message).toBe('polar.json already exists')
-    expect(error.hint).toContain('polar config plan')
+    expect(error.hint).toBe(
+      "Move your config file aside and run polar config init to import Acme's catalog into a new file, then bring your changes over.",
+    )
     expect(api.requests).toHaveLength(0)
   })
 
@@ -274,6 +295,7 @@ describe('init', () => {
 
     expect(error.message).toBe('polar.config.ts already exists')
     expect(await read('polar.config.ts')).toBe('keep')
+    expect(api.requests).toHaveLength(0)
   })
 
   test('refuses file types it cannot write and a mismatched --format', async () => {
@@ -333,18 +355,20 @@ describe('init', () => {
       let exports = 0
       api.routes[`GET ${exportUrl}`] = () =>
         exports++ === 0
-          ? exported({ ...EMPTY, products: [pro] }, unkeyed)
-          : exported(
-              {
-                ...EMPTY,
-                products: [
-                  pro,
-                  { ...pro, external_id: 'pro_2' },
-                  { ...pro, external_id: 'cafe_plan' },
-                ],
-              },
-              unkeyed.slice(2),
-            )
+          ? notEnabled()
+          : exports === 2
+            ? exported({ ...EMPTY, products: [pro] }, unkeyed)
+            : exported(
+                {
+                  ...EMPTY,
+                  products: [
+                    pro,
+                    { ...pro, external_id: 'pro_2' },
+                    { ...pro, external_id: 'cafe_plan' },
+                  ],
+                },
+                unkeyed.slice(2),
+              )
     })
 
     test('names resources without an external ID, saves them and writes the full config', async () => {

@@ -13,6 +13,8 @@ import {
 import { apiUrl, withOrganization } from '@/services/api'
 import {
   type Clients,
+  errorName,
+  importCatalogHint,
   transportErrors,
   unexpected,
 } from '@/services/billing-config/api'
@@ -45,6 +47,7 @@ export interface Prepared {
   readonly skipped: ConfigExport['skipped']
   readonly install: ReadonlyArray<string> | undefined
   readonly installDirectory: string | undefined
+  readonly already_enabled: boolean
 }
 
 export interface Ran {
@@ -96,6 +99,12 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
         yield* apiUrl(organization.environment, '/config/'),
       ).pipe(withOrganization(organization.id)),
     )
+    if (
+      response.status === 403 &&
+      (yield* errorName(response)) === 'ConfigAsCodeNotEnabled'
+    ) {
+      return undefined
+    }
     if (response.status !== 200) {
       return yield* unexpected(response, organization, EXPORT_SCOPES)
     }
@@ -106,6 +115,20 @@ const exportConfig = (clients: Clients, organization: ActiveOrganization) =>
       HttpClientError: transportErrors.HttpClientError,
       SchemaError: transportErrors.SchemaError,
     }),
+  )
+
+const exportEnabledConfig = (
+  clients: Clients,
+  organization: ActiveOrganization,
+) =>
+  Effect.flatMap(exportConfig(clients, organization), (exported) =>
+    exported === undefined
+      ? Effect.fail(
+          new BillingConfigError({
+            message: `Config is not enabled for ${organization.name}`,
+          }),
+        )
+      : Effect.succeed(exported),
   )
 
 const SECTION_SCOPES = {
@@ -207,7 +230,17 @@ const count = (document: ConfigDocument, section: string) => {
 
 const display = (path: string) => relative(process.cwd(), path) || '.'
 
-const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
+const alreadyExists = (path: string, organization: ActiveOrganization) =>
+  new BillingConfigError({
+    message: `${display(path)} already exists`,
+    hint: importCatalogHint(organization),
+  })
+
+const resolveTarget = (
+  fs: FileSystem.FileSystem,
+  target: InitTarget,
+  organization: ActiveOrganization,
+) =>
   Effect.gen(function* () {
     if (target.file !== undefined) {
       const format = formatOf(target.file)
@@ -228,10 +261,7 @@ const resolveTarget = (fs: FileSystem.FileSystem, target: InitTarget) =>
     for (const existing of DEFAULT_CONFIG_FILES) {
       const path = join(target.directory, existing)
       if (yield* exists(fs, path)) {
-        return yield* new BillingConfigError({
-          message: `${display(path)} already exists`,
-          hint: 'Run polar config plan to check it, or pass another path to init.',
-        })
+        return yield* alreadyExists(path, organization)
       }
     }
     const format =
@@ -284,22 +314,22 @@ export const init =
     name: NameResources<E, R>,
   ) =>
     Effect.gen(function* () {
-      const { path, format } = yield* resolveTarget(fs, target)
+      const { path, format } = yield* resolveTarget(fs, target, organization)
       if (yield* exists(fs, path)) {
-        return yield* new BillingConfigError({
-          message: `${display(path)} already exists`,
-          hint: 'Run polar config plan to check it, or pass another path to init.',
-        })
+        return yield* alreadyExists(path, organization)
       }
-      yield* enableConfig(clients, organization)
-      let exported = yield* exportConfig(clients, organization)
+      const current = yield* exportConfig(clients, organization)
+      const alreadyEnabled = current !== undefined
+      if (!alreadyEnabled) yield* enableConfig(clients, organization)
+      let exported =
+        current ?? (yield* exportEnabledConfig(clients, organization))
       const keyed = yield* name(
         unkeyed(exported.config, exported.skipped),
         exported,
       )
       if (keyed.length > 0) {
         yield* enableConfig(clients, organization, keyed)
-        exported = yield* exportConfig(clients, organization)
+        exported = yield* exportEnabledConfig(clients, organization)
       }
       yield* write(fs, path, yield* renderConfig(format, exported.config))
       return {
@@ -312,6 +342,7 @@ export const init =
         },
         keyed,
         skipped: exported.skipped.filter(({ reason }) => reason !== 'archived'),
+        already_enabled: alreadyEnabled,
         ...(yield* packageToInstall(fs, format, path)),
       } satisfies Prepared
     })

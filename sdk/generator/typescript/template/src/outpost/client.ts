@@ -47,27 +47,22 @@ import {
 } from "./scripts";
 import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
 
-// Every key and the channel carry the layout version. A new layout takes a new version, starts
-// cold from Polar's snapshot and never reads the previous keys.
-const KEY_VERSION = "outpost:v1";
-const CACHE_SIZE = 1024;
-const TIMEOUT = 5_000;
-const SNAPSHOT_TIMEOUT = 5_000;
-const CONFIRM_TIMEOUT = 2_000;
-// Pending ids per confirm request: Polar refuses a bigger one.
-const CONFIRM_BATCH = 1_000;
-const SYNC_INTERVAL = 30_000;
-const REDIS_RECONNECT_DELAY = 100;
-const MAX_REDIS_RECONNECT_DELAY = 2_000;
-// Polar sets the interval with each pull; this one holds until the first.
-const PULL_INTERVAL = 30_000;
-// How long an instance that froze mid-pull keeps the others from pulling.
-const PULL_LOCK_TTL = 10_000;
-// A failed pull waits this long before the next, twice as long after each failure.
-const PULL_RETRY_DELAY = 1_000;
-const MAX_PULL_RETRY_DELAY = 30_000;
-const PULL_LIMIT = 500;
-const PULL_CHECK_INTERVAL = 1_000;
+// Shared by every Outpost SDK: sdk/generator/outpost/constants.toml says what each one means.
+const KEY_VERSION = "{{ outpost_constants.key_version }}";
+const CACHE_SIZE = {{ outpost_constants.cache_size }};
+const TIMEOUT = {{ outpost_constants.timeout }};
+const SNAPSHOT_TIMEOUT = {{ outpost_constants.snapshot_timeout }};
+const CONFIRM_TIMEOUT = {{ outpost_constants.confirm_timeout }};
+const CONFIRM_BATCH = {{ outpost_constants.confirm_batch }};
+const SYNC_INTERVAL = {{ outpost_constants.sync_interval }};
+const REDIS_RECONNECT_DELAY = {{ outpost_constants.redis_reconnect_delay }};
+const MAX_REDIS_RECONNECT_DELAY = {{ outpost_constants.max_redis_reconnect_delay }};
+const PULL_INTERVAL = {{ outpost_constants.pull_interval }};
+const PULL_LOCK_TTL = {{ outpost_constants.pull_lock_ttl }};
+const PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay }};
+const MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay }};
+const PULL_LIMIT = {{ outpost_constants.pull_limit }};
+const PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval }};
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";
 const COLD_PREFIX = "cold:";

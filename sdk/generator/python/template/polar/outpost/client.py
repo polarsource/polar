@@ -207,27 +207,23 @@ async def connect_redis(url: str) -> collections.abc.AsyncGenerator[Redis, None]
         yield redis
 
 
-# Every key and the channel carry the layout version. A new layout takes a new version, starts
-# cold from Polar's snapshot and never reads the previous keys.
-KEY_VERSION = "outpost:v1"
-CACHE_SIZE = 1024
-TIMEOUT = 5.0
-SNAPSHOT_TIMEOUT = 5.0
-CONFIRM_TIMEOUT = 2.0
-# Pending ids per confirm request: Polar refuses a bigger one.
-CONFIRM_BATCH = 1000
-SYNC_INTERVAL = 30.0
-REDIS_RECONNECT_DELAY = 0.1
-MAX_REDIS_RECONNECT_DELAY = 2.0
-# Polar sets the interval with each pull; this one holds until the first.
-PULL_INTERVAL = 30.0
-# How long an instance that froze mid-pull keeps the others from pulling.
-PULL_LOCK_TTL = 10.0
-# A failed pull waits this long before the next, twice as long after each failure.
-PULL_RETRY_DELAY = 1.0
-MAX_PULL_RETRY_DELAY = 30.0
-PULL_LIMIT = 500
-PULL_CHECK_INTERVAL = 1.0
+# Shared by every Outpost SDK: sdk/generator/outpost/constants.toml says what each one
+# means. Durations are in seconds here.
+KEY_VERSION = "{{ outpost_constants.key_version }}"
+CACHE_SIZE = {{ outpost_constants.cache_size }}
+TIMEOUT = {{ outpost_constants.timeout / 1000 }}
+SNAPSHOT_TIMEOUT = {{ outpost_constants.snapshot_timeout / 1000 }}
+CONFIRM_TIMEOUT = {{ outpost_constants.confirm_timeout / 1000 }}
+CONFIRM_BATCH = {{ outpost_constants.confirm_batch }}
+SYNC_INTERVAL = {{ outpost_constants.sync_interval / 1000 }}
+REDIS_RECONNECT_DELAY = {{ outpost_constants.redis_reconnect_delay / 1000 }}
+MAX_REDIS_RECONNECT_DELAY = {{ outpost_constants.max_redis_reconnect_delay / 1000 }}
+PULL_INTERVAL = {{ outpost_constants.pull_interval / 1000 }}
+PULL_LOCK_TTL = {{ outpost_constants.pull_lock_ttl / 1000 }}
+PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay / 1000 }}
+MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay / 1000 }}
+PULL_LIMIT = {{ outpost_constants.pull_limit }}
+PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval / 1000 }}
 RELEASE_LOCK_SCRIPT = """
 {{ outpost_scripts.release_lock }}"""
 

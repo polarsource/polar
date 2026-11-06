@@ -56,7 +56,7 @@ export interface BucketUpdate {
   bucketStart: number;
   statistics: BucketStatistics;
 }
-export const BUCKET_SIZE = 300_000_000;
+export const BUCKET_SIZE = {{ outpost_constants.bucket_size }};
 
 export const getBucketStart = (timestamp: number): number => {
   if (!Number.isSafeInteger(timestamp)) throw new TypeError("Invalid bucket timestamp");

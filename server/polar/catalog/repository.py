@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select, delete, func, select
+from sqlalchemy import Select, delete, func, select, update
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -44,6 +44,17 @@ class CatalogRepository(
             Catalog.status == CatalogStatus.draft,
         )
         return await self.get_one_or_none(statement)
+
+    async def delete(self, catalog: Catalog) -> None:
+        """Delete the catalog and its memberships. The rows created in it stay,
+        no longer tied to a catalog."""
+        for model in (Product, Benefit):
+            await self.session.execute(
+                update(model)
+                .where(model.catalog_id == catalog.id)
+                .values(catalog_id=None)
+            )
+        await self.session.execute(delete(Catalog).where(Catalog.id == catalog.id))
 
     async def count_by_organization(self, organization_id: UUID) -> int:
         """Count the organization's catalogs, soft-deleted ones included.

@@ -870,6 +870,16 @@ class ConfigExternalIDAssignment(Schema):
     )
 
 
+class ConfigDisable(Schema):
+    organization_id: OrganizationID | None = Field(
+        default=None,
+        description=(
+            "The ID of the organization to opt out. "
+            "**Required unless you use an organization token.**"
+        ),
+    )
+
+
 class ConfigInit(Schema):
     organization_id: OrganizationID | None = Field(
         default=None,

@@ -6342,9 +6342,41 @@ export interface paths {
      *     Enabling also requires `benefits:read` and `products:read`, to check that
      *     config can manage every benefit and product.
      *
+     *     The products and benefits that have an `external_id` are published as the
+     *     first catalog, unless one is already live. Disabling reverts to it.
+     *
      *     **Scopes**: `organizations:write`
      */
     post: operations['config:init']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/config/disable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Disable Config
+     * @description Stop managing the organization's catalog as code, so it can be edited in the
+     *     dashboard and API again.
+     *
+     *     The draft catalog is discarded, and the live catalog is removed: its
+     *     products and benefits stay as they are. So do meters, settings and webhook
+     *     endpoints applied in the meantime.
+     *
+     *     Only possible while at most one catalog was published.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['config:disable']
     delete?: never
     options?: never
     head?: never
@@ -16654,6 +16686,17 @@ export interface components {
        */
       name: string
     }
+    /** ConfigCatalogPublished */
+    ConfigCatalogPublished: {
+      /**
+       * Error
+       * @example ConfigCatalogPublished
+       * @constant
+       */
+      error: 'ConfigCatalogPublished'
+      /** Detail */
+      detail: string
+    }
     /** ConfigChange */
     ConfigChange: {
       /** @description The type of resource. */
@@ -16670,6 +16713,14 @@ export interface components {
        * @description Fields that applying the config changes. On create, fields left empty are omitted.
        */
       diff: components['schemas']['ConfigFieldChange'][]
+    }
+    /** ConfigDisable */
+    ConfigDisable: {
+      /**
+       * Organization Id
+       * @description The ID of the organization to opt out. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
     }
     /** ConfigExport */
     ConfigExport: {
@@ -63363,6 +63414,57 @@ export interface operations {
             | components['schemas']['ConfigMeterConflict']
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:disable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigDisable']
+      }
+    }
+    responses: {
+      /** @description Config as code disabled. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description More than one catalog was published. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigCatalogPublished']
         }
       }
       /** @description Validation Error */

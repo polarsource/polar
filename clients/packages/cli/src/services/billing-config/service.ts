@@ -11,6 +11,7 @@ import type {
 } from '@/schemas/BillingConfig'
 import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
+import { disable } from '@/services/billing-config/disable'
 import {
   init,
   type InitTarget,
@@ -74,6 +75,9 @@ export class BillingConfig extends Context.Service<
       organization: ActiveOrganization,
       draft: Catalog,
     ) => Effect.Effect<Catalog, AuthError | BillingConfigError>
+    disable: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<void, AuthError | BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -94,6 +98,7 @@ const make = Effect.gen(function* () {
     prune: prune(fs, load, clients),
     catalogs: catalogs(clients),
     publish: publish(clients),
+    disable: disable(clients),
   })
 })
 

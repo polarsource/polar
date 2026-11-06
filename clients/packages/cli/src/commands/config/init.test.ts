@@ -112,6 +112,7 @@ const run = async (
               output: setup.installs === false ? 'ERR_PNPM_FETCH_404' : '',
             })
           },
+          disable: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(

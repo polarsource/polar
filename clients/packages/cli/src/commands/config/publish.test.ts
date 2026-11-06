@@ -74,6 +74,7 @@ const run = async (
           publish: published,
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
+          disable: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),

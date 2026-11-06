@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import functools
 import hashlib
+import json
 import math
 import time
 import types
@@ -393,6 +394,9 @@ class _Confirmation:
     confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
 
 
+_UNREAD = object()
+
+
 class Outpost:
     def __init__(
         self,
@@ -436,6 +440,8 @@ class Outpost:
         self._read_state: AsyncScript | None = None
         self._redis_available = False
         self._prefix = KEY_VERSION
+        # The configuration's revision in the pull hash: _UNREAD until the first read.
+        self._configuration_revision: bytes | None | object = _UNREAD
 
     @classmethod
     def create(
@@ -451,6 +457,7 @@ class Outpost:
             raise RuntimeError("Outpost is already connected")
         self._configured = anyio.Event()
         self._pull_retry_at = 0.0
+        self._configuration_revision = _UNREAD
         self._failure = None
         if self._telemetry:
             self._tracer_provider = create_tracer_provider(self._client)
@@ -1015,10 +1022,29 @@ class Outpost:
     def _pull_lock_key(self) -> str:
         return f"{self._prefix}:pull:lock"
 
-    async def _configure(self) -> None:
-        configuration: Configuration = await self._request(
-            "GET", "/v1/outpost/configuration"
-        )
+    @property
+    def _configuration_key(self) -> str:
+        """The instances of a token share its configuration in Redis, where a new
+        instance reads it instead of asking Polar. The key hashes the token: Redis never
+        sees it."""
+        headers = self._client.headers
+        sent = [
+            str(self._client.base_url.join("/v1/outpost/configuration")),
+            headers.get("authorization"),
+            headers.get("polar-organization"),
+        ]
+        identity = hashlib.sha256(json.dumps(sent).encode()).hexdigest()
+        return f"{KEY_VERSION}:configuration:{identity}"
+
+    async def _configure(self, *, from_polar: bool = False) -> None:
+        redis = self._require_redis()
+        stored = None if from_polar else await redis.get(self._configuration_key)
+        configuration: Configuration
+        if stored:
+            configuration = json.loads(stored)
+        else:
+            configuration = await self._request("GET", "/v1/outpost/configuration")
+            await redis.set(self._configuration_key, json.dumps(configuration))
         self._prefix = f"{KEY_VERSION}:{configuration['organization_id']}"
         self._reducers = configuration["reducers"]
         self._matchers = with_matchers(self._reducers)
@@ -1045,9 +1071,16 @@ class Outpost:
         return now - self._pulled_at >= self._pull_interval and now >= self._pull_retry_at
 
     async def _load_pull(self) -> None:
-        pulled_at, next_poll_in, retry_at = await self._require_redis().hmget(
-            self._pull_key, "pulled_at", "next_poll_in", "retry_at"
+        pulled_at, next_poll_in, retry_at, revision = await self._require_redis().hmget(
+            self._pull_key, "pulled_at", "next_poll_in", "retry_at", "configuration"
         )
+        # Another instance pulled a new configuration.
+        if (
+            self._configuration_revision is not _UNREAD
+            and revision != self._configuration_revision
+        ):
+            await self._configure()
+        self._configuration_revision = revision
         self._pulled_at = float(pulled_at) / 1000 if pulled_at else 0.0
         self._pull_interval = (
             float(next_poll_in) / 1000 if next_poll_in else PULL_INTERVAL
@@ -1164,7 +1197,9 @@ class Outpost:
                 if changes["reset"]:
                     await self._reset()
                 if changes["configuration_changed"]:
-                    await self._configure()
+                    await self._configure(from_polar=True)
+                    revision = await redis.hincrby(self._pull_key, "configuration", 1)
+                    self._configuration_revision = str(revision).encode()
                 # Each customer's snapshots apply in order; customers apply side by side.
                 customers: dict[tuple[str, str | None, str | None], list[Snapshot]] = {}
                 for snapshot in changes["changes"]:

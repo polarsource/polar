@@ -2589,6 +2589,31 @@ async def test_cold_read_waits_for_its_own_meter(
 
 
 @pytest.mark.anyio
+async def test_reads_a_customer_a_pull_found_before_its_miss_backs_off(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    changes: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await redis.hset(
+        "outpost:v1:org-1:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "cold:sum": 10},
+    )
+    await _credit(redis, 100)
+    await redis.hset(
+        "outpost:v1:org-1:missing:external:alice:tokens",
+        "retry_at",
+        (time.time() + 60) * 1000,
+    )
+    async with Outpost(url, client=polar_client) as outpost:
+        assert (
+            await outpost.meter(external_customer_id="alice", meter_id="meter") is None
+        )
+        await _deliver(outpost, changes, {**ALICE_SNAPSHOT, "reducer_id": "tokens"})
+        assert await _consumed(outpost) == 3
+
+
+@pytest.mark.anyio
 async def test_unknown_customer_reads_its_value_once_created(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

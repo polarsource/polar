@@ -56,6 +56,18 @@ class TestListWebhookEndpoints:
         assert len(json["items"]) == 1
         assert json["items"][0]["id"] == str(webhook_endpoint_organization.id)
 
+    @pytest.mark.auth
+    async def test_excludes_mcp_endpoints(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        response = await client.get("/v1/webhooks/endpoints")
+
+        assert response.status_code == 200
+        assert response.json()["items"] == []
+
 
 @pytest.mark.anyio
 class TestGetExternalWebhookEndpoint:

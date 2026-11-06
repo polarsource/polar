@@ -389,6 +389,32 @@ async def test_webhook_send_not_subscribed_to_event(
 
 
 @pytest.mark.anyio
+async def test_webhook_send_expired_endpoint(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    enqueue_job_mock: MagicMock,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.mcp,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_created],
+        expires_at=utc_now() - timedelta(minutes=1),
+    )
+    await save_fixture(endpoint)
+
+    events = await webhook_service.send(
+        session, organization, WebhookEventType.subscription_created, subscription
+    )
+
+    assert len(events) == 0
+    enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(
     ("response", "expected"),
     [
@@ -679,7 +705,9 @@ class TestSlackSubscriptionPayload:
             ),
         )
 
-        fields = _slack_fields(payload.get_payload(WebhookFormat.slack, organization))
+        fields = _slack_fields(
+            payload.get_payload(WebhookFormat.slack, organization, event_id=uuid4())
+        )
 
         assert "*Customer*\nJane &lt;!channel&gt; Doe\njane@example.com" in fields
         assert "*Reason*\nToo expensive" in fields
@@ -712,7 +740,9 @@ class TestSlackSubscriptionPayload:
             ),
         )
 
-        raw_payload = payload.get_payload(WebhookFormat.slack, organization)
+        raw_payload = payload.get_payload(
+            WebhookFormat.slack, organization, event_id=uuid4()
+        )
 
         assert json.loads(raw_payload)["text"] == (
             "Subscription change has been scheduled."
@@ -747,7 +777,7 @@ class TestSlackSubscriptionPayload:
         )
 
         with pytest.raises(SkipEvent):
-            payload.get_payload(WebhookFormat.slack, organization)
+            payload.get_payload(WebhookFormat.slack, organization, event_id=uuid4())
 
     async def test_updated_with_previous_product(
         self, organization: Organization, subscription: Subscription
@@ -760,7 +790,9 @@ class TestSlackSubscriptionPayload:
             previous_product_name="Starter <Team>",
         )
 
-        raw_payload = payload.get_payload(WebhookFormat.slack, organization)
+        raw_payload = payload.get_payload(
+            WebhookFormat.slack, organization, event_id=uuid4()
+        )
 
         assert json.loads(raw_payload)["text"] == "Subscription plan has changed."
         fields = _slack_fields(raw_payload)
@@ -788,7 +820,7 @@ class TestDiscordSubscriptionPayload:
         )
 
         fields = _discord_fields(
-            payload.get_payload(WebhookFormat.discord, organization)
+            payload.get_payload(WebhookFormat.discord, organization, event_id=uuid4())
         )
 
         assert fields["Customer"] == "Jane <!channel> Doe\njane@example.com"
@@ -821,7 +853,9 @@ class TestDiscordSubscriptionPayload:
             ),
         )
 
-        raw_payload = payload.get_payload(WebhookFormat.discord, organization)
+        raw_payload = payload.get_payload(
+            WebhookFormat.discord, organization, event_id=uuid4()
+        )
 
         assert json.loads(raw_payload)["content"] == (
             "Subscription change has been scheduled."
@@ -856,7 +890,7 @@ class TestDiscordSubscriptionPayload:
         )
 
         with pytest.raises(SkipEvent):
-            payload.get_payload(WebhookFormat.discord, organization)
+            payload.get_payload(WebhookFormat.discord, organization, event_id=uuid4())
 
     async def test_updated_with_previous_product(
         self, organization: Organization, subscription: Subscription
@@ -869,7 +903,9 @@ class TestDiscordSubscriptionPayload:
             previous_product_name="Starter",
         )
 
-        raw_payload = payload.get_payload(WebhookFormat.discord, organization)
+        raw_payload = payload.get_payload(
+            WebhookFormat.discord, organization, event_id=uuid4()
+        )
 
         assert json.loads(raw_payload)["content"] == "Subscription plan has changed."
         fields = _discord_fields(raw_payload)

@@ -89,3 +89,18 @@ async def webhook_delivery(
     )
     await save_fixture(delivery)
     return delivery
+
+
+@pytest.fixture
+async def webhook_endpoint_mcp(
+    save_fixture: SaveFixture, organization: Organization
+) -> WebhookEndpoint:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/mcp",
+        format=WebhookFormat.mcp,
+        organization_id=organization.id,
+        secret="foobar",
+        events=[WebhookEventType.subscription_created],
+    )
+    await save_fixture(endpoint)
+    return endpoint

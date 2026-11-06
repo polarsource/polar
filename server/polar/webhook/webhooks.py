@@ -12,6 +12,7 @@ from typing import (
     get_args,
     get_origin,
 )
+from uuid import UUID
 
 from babel.dates import format_date
 from fastapi.routing import APIRoute
@@ -47,6 +48,7 @@ from polar.integrations.slack.payload import (
 )
 from polar.kit.schemas import IDSchema, Schema
 from polar.kit.versioning import APIVersion, api_version_context
+from polar.mcp_event.catalog import MCP_EVENTS
 from polar.member.schemas import Member as MemberSchema
 from polar.models import (
     Benefit,
@@ -160,7 +162,9 @@ class BaseWebhookPayload(Schema):
     api_version: APIVersion
     data: IDSchema
 
-    def get_payload(self, format: WebhookFormat, target: User | Organization) -> str:
+    def get_payload(
+        self, format: WebhookFormat, target: User | Organization, *, event_id: UUID
+    ) -> str:
         match format:
             case WebhookFormat.raw:
                 return self.get_raw_payload()
@@ -168,12 +172,26 @@ class BaseWebhookPayload(Schema):
                 return self.get_discord_payload(target)
             case WebhookFormat.slack:
                 return self.get_slack_payload(target)
+            case WebhookFormat.mcp:
+                return self.get_mcp_payload(event_id)
             case _:
                 assert_never(format)
 
     def get_raw_payload(self) -> str:
         with api_version_context(self.api_version):
             return self.model_dump_json()
+
+    def get_mcp_payload(self, event_id: UUID) -> str:
+        data = MCP_EVENTS[self.type].data_schema.model_validate(self.data)
+        return json.dumps(
+            {
+                "eventId": str(event_id),
+                "name": self.type,
+                "timestamp": self.timestamp.isoformat(),
+                "data": data.model_dump(mode="json"),
+                "cursor": None,
+            }
+        )
 
     def get_discord_payload(self, target: User | Organization) -> str:
         # Generic Discord payload, override in subclasses for more specific payloads

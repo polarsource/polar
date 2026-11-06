@@ -448,6 +448,9 @@ export const createMetering = (
       async meter(input) {
         return outpost!.meter(input);
       },
+      async flush() {
+        await outpost?.flush();
+      },
       async close() {
         await outpost?.close();
       },

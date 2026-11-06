@@ -1,0 +1,33 @@
+# Constants every Outpost SDK shares: the generator renders them into each one.
+# Durations are in milliseconds.
+
+# Every key and the channel carry the layout version. A new layout takes a new version,
+# starts cold from Polar's snapshot and never reads the previous keys.
+key_version = "outpost:v1"
+# Customer states an instance keeps in memory.
+cache_size = 1024
+# How long an operation waits on Redis or Polar before giving up.
+timeout = 5000
+# How long a cold read waits for the customer's first snapshot.
+snapshot_timeout = 5000
+# How long a confirm request waits for Polar. The snapshot then applies with its events
+# still pending.
+confirm_timeout = 2000
+# Pending ids per confirm request: Polar refuses a bigger one.
+confirm_batch = 1000
+# How often an instance reloads its states from Redis and reports to telemetry.
+sync_interval = 30000
+redis_reconnect_delay = 100
+max_redis_reconnect_delay = 2000
+# Polar sets the interval with each pull; this one holds until the first.
+pull_interval = 30000
+# How long an instance that froze mid-pull keeps the others from pulling.
+pull_lock_ttl = 10000
+# A failed pull, or a customer Polar does not know, waits this long before the next try, twice
+# as long after each failure.
+pull_retry_delay = 1000
+max_pull_retry_delay = 30000
+pull_limit = 500
+pull_check_interval = 1000
+# A reducer bucket, in microseconds.
+bucket_size = 300000000

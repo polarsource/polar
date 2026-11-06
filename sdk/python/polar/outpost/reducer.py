@@ -89,7 +89,7 @@ class BucketStatistics:
 
 
 Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
-BUCKET_SIZE = 300_000_000
+BUCKET_SIZE = 300000000
 EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 FILTER_OPERATORS = {
     "eq": operator.eq,

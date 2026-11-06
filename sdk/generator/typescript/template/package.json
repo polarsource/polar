@@ -62,8 +62,6 @@
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
     "ioredis": "^5.11.0",
-    "ws": "^8.21.0",
-    "@types/ws": "^8.18.1",
     "@types/node": "^24.13.6",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
@@ -79,8 +77,7 @@
     "@opentelemetry/resources": "^2.12.0",
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
-    "ioredis": "^5.11.0",
-    "ws": "^8.21.0"
+    "ioredis": "^5.11.0"
   },
   "peerDependenciesMeta": {
     "@opentelemetry/api": { "optional": true },
@@ -88,8 +85,7 @@
     "@opentelemetry/resources": { "optional": true },
     "@opentelemetry/sdk-metrics": { "optional": true },
     "@opentelemetry/sdk-trace": { "optional": true },
-    "ioredis": { "optional": true },
-    "ws": { "optional": true }
+    "ioredis": { "optional": true }
   },
   "packageManager": "pnpm@12.8.0",
   "keywords": [

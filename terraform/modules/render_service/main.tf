@@ -185,16 +185,16 @@ resource "render_web_service" "api" {
 
   autoscaling = var.environment == "production" ? {
     enabled = true
-    min     = 2
-    max     = 4
+    min     = 3
+    max     = 6
     criteria = {
       cpu = {
         enabled    = true
-        percentage = 90
+        percentage = 55
       }
       memory = {
         enabled    = true
-        percentage = 90
+        percentage = 85
       }
     }
     } : var.environment == "sandbox" ? {

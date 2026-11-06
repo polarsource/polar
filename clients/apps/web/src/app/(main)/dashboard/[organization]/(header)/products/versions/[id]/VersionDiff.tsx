@@ -7,17 +7,17 @@ import {
   KeyboardArrowUp,
 } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { ReactNode, useId, useState } from 'react'
-import { diffItems, Entry, Line } from './diff'
+import { useId, useState } from 'react'
+import { Change, diffItems, Line } from './diff'
 import { fieldLabel, plural, productFields, valueFormatter } from './format'
 
 type Config = schemas['ConfigExportDocument']
 type Format = (field: string, value: unknown) => string
 
 const signs = {
-  '+': { glyph: '+', color: 'success' },
-  '-': { glyph: '−', color: 'danger' },
-  '~': { glyph: '~', color: 'warning' },
+  added: { glyph: '+', color: 'success' },
+  removed: { glyph: '−', color: 'danger' },
+  changed: { glyph: '~', color: 'warning' },
 } as const
 
 const changeStatus = {
@@ -26,33 +26,12 @@ const changeStatus = {
   removed: { label: 'Removed', color: 'text-danger' },
 } as const
 
-const StatusDot = ({
-  color,
-}: {
-  color: 'text-success' | 'text-warning' | 'text-danger'
-}) => (
-  <Box as="span" display="flex" flexShrink={0} color={color}>
-    <Circle size={8} fill="currentColor" strokeWidth={0} />
-  </Box>
-)
-
-const ChangeStatus = ({ change }: { change: keyof typeof changeStatus }) => (
+const ChangeStatus = ({ change }: { change: Change }) => (
   <Box alignItems="center" columnGap="s" flexShrink={0}>
-    <StatusDot color={changeStatus[change].color} />
+    <Box as="span" display="flex" color={changeStatus[change].color}>
+      <Circle size={8} fill="currentColor" strokeWidth={0} />
+    </Box>
     <Text>{changeStatus[change].label}</Text>
-  </Box>
-)
-
-const Card = ({ children }: { children: ReactNode }) => (
-  <Box
-    flexDirection="column"
-    borderRadius="l"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-    overflow="hidden"
-  >
-    {children}
   </Box>
 )
 
@@ -69,7 +48,7 @@ const DiffLine = ({
   spaced: boolean
   format: Format
 }) => {
-  const sign = signs[line.sign]
+  const sign = signs[line.change]
   return (
     <Grid
       templateColumns="16px 128px minmax(0, 1fr)"
@@ -85,7 +64,7 @@ const DiffLine = ({
       <Text color="muted" truncate>
         {showLabel ? fieldLabel(line.field) : null}
       </Text>
-      {line.sign === '~' ? (
+      {line.change === 'changed' ? (
         <Box alignItems="baseline" columnGap="s" minWidth={0} flexWrap="wrap">
           <Text color="muted" lineThrough>
             {format(line.field, line.before)}
@@ -95,7 +74,10 @@ const DiffLine = ({
         </Box>
       ) : (
         <Text>
-          {format(line.field, line.sign === '-' ? line.before : line.after)}
+          {format(
+            line.field,
+            line.change === 'removed' ? line.before : line.after,
+          )}
         </Text>
       )}
     </Grid>
@@ -105,11 +87,11 @@ const DiffLine = ({
 const ItemName = ({
   name,
   href,
-  removed,
+  removed = false,
 }: {
   name: string
   href?: string
-  removed: boolean
+  removed?: boolean
 }) => {
   const text = (
     <Text
@@ -202,7 +184,6 @@ const UnchangedItems = <T extends { external_id: string }>({
               <ItemName
                 name={String(item[nameField])}
                 href={href(item.external_id)}
-                removed={false}
               />
             </Box>
           ))}
@@ -215,18 +196,21 @@ const UnchangedItems = <T extends { external_id: string }>({
 const DiffSection = <T extends { external_id: string }>({
   title,
   noun,
-  diff: { entries, unchanged },
+  before,
+  after,
   nameField,
   href,
   format,
 }: {
   title: string
   noun: string
-  diff: { entries: Entry<T>[]; unchanged: T[] }
+  before: T[]
+  after: T[]
   nameField: keyof T & string
   href: (externalId: string) => string | undefined
   format: Format
 }) => {
+  const { entries, unchanged } = diffItems(before, after, nameField)
   if (!entries.length && !unchanged.length) return null
 
   return (
@@ -234,61 +218,61 @@ const DiffSection = <T extends { external_id: string }>({
       <Text variant="heading-xxs" as="h2">
         {title}
       </Text>
-      <Card>
-        {entries.map(({ key, item, change, lines: allLines }, entryIndex) => {
-          const changed = change === 'changed'
-          // A new or removed item's name is already its header
-          const lines = changed
-            ? allLines
-            : allLines.filter((line) => line.field !== nameField)
-          return (
+      <Box
+        flexDirection="column"
+        borderRadius="l"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        overflow="hidden"
+      >
+        {entries.map(({ key, item, change, lines }, entryIndex) => (
+          <Box
+            key={key}
+            flexDirection="column"
+            borderTopWidth={entryIndex ? 1 : 0}
+            borderStyle="solid"
+            borderColor="border-primary"
+          >
             <Box
-              key={key}
-              flexDirection="column"
-              borderTopWidth={entryIndex ? 1 : 0}
-              borderStyle="solid"
-              borderColor="border-primary"
+              alignItems="baseline"
+              justifyContent="between"
+              columnGap="l"
+              px="xl"
+              py="m"
             >
-              <Box
-                alignItems="baseline"
-                justifyContent="between"
-                columnGap="l"
-                px="xl"
-                py="m"
-              >
-                <ItemName
-                  name={String(item[nameField])}
-                  href={href(key)}
-                  removed={change === 'removed'}
-                />
-                <ChangeStatus change={change} />
-              </Box>
-              {lines.length ? (
-                <Box
-                  flexDirection="column"
-                  py="s"
-                  borderTopWidth={1}
-                  borderStyle="solid"
-                  borderColor="border-primary"
-                >
-                  {lines.map((line, index) => {
-                    const showLabel = lines[index - 1]?.field !== line.field
-                    return (
-                      <DiffLine
-                        key={index}
-                        line={line}
-                        showLabel={showLabel}
-                        showSign={changed}
-                        spaced={showLabel && index > 0}
-                        format={format}
-                      />
-                    )
-                  })}
-                </Box>
-              ) : null}
+              <ItemName
+                name={String(item[nameField])}
+                href={href(key)}
+                removed={change === 'removed'}
+              />
+              <ChangeStatus change={change} />
             </Box>
-          )
-        })}
+            {lines.length ? (
+              <Box
+                flexDirection="column"
+                py="s"
+                borderTopWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+              >
+                {lines.map((line, index) => {
+                  const showLabel = lines[index - 1]?.field !== line.field
+                  return (
+                    <DiffLine
+                      key={index}
+                      line={line}
+                      showLabel={showLabel}
+                      showSign={change === 'changed'}
+                      spaced={showLabel && index > 0}
+                      format={format}
+                    />
+                  )
+                })}
+              </Box>
+            ) : null}
+          </Box>
+        ))}
         {unchanged.length ? (
           <UnchangedItems
             items={unchanged}
@@ -298,7 +282,7 @@ const DiffSection = <T extends { external_id: string }>({
             bordered={entries.length > 0}
           />
         ) : null}
-      </Card>
+      </Box>
     </Box>
   )
 }
@@ -323,10 +307,8 @@ export const VersionDiff = ({
       <DiffSection
         title="Products"
         noun="product"
-        diff={diffItems(
-          config.products.map(productFields),
-          parentConfig?.products.map(productFields) ?? [],
-        )}
+        before={parentConfig?.products.map(productFields) ?? []}
+        after={config.products.map(productFields)}
         nameField="name"
         href={productHref}
         format={format}
@@ -334,7 +316,8 @@ export const VersionDiff = ({
       <DiffSection
         title="Benefits"
         noun="benefit"
-        diff={diffItems(config.benefits, parentConfig?.benefits ?? [])}
+        before={parentConfig?.benefits ?? []}
+        after={config.benefits}
         nameField="description"
         href={benefitHref}
         format={format}

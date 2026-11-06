@@ -1,5 +1,7 @@
+export type Change = 'added' | 'changed' | 'removed'
+
 export type Line = {
-  sign: '+' | '-' | '~'
+  change: Change
   field: string
   before?: unknown
   after?: unknown
@@ -8,7 +10,7 @@ export type Line = {
 export type Entry<T> = {
   key: string
   item: T
-  change: 'added' | 'changed' | 'removed'
+  change: Change
   lines: Line[]
 }
 
@@ -20,41 +22,40 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const isEmpty = (value: unknown) =>
-  value == null ||
-  (Array.isArray(value) && value.length === 0) ||
-  (isObject(value) && Object.keys(value).length === 0)
+  value == null || (typeof value === 'object' && !Object.keys(value).length)
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
 // Prices of the same type, currency and meter read as one price that changed
 const pairKey = (value: unknown) =>
-  isObject(value) && 'amount_type' in value
-    ? JSON.stringify([value.amount_type, value.price_currency, value.meter])
-    : undefined
+  JSON.stringify(
+    isObject(value) && 'amount_type' in value
+      ? [value.amount_type, value.price_currency, value.meter]
+      : value,
+  )
 
 const diffList = (field: string, before: unknown[], after: unknown[]) => {
   const added = after.filter(
     (value) => !before.some((other) => same(value, other)),
   )
-  const lines: Line[] = before
-    .filter((value) => !after.some((other) => same(value, other)))
-    .map((value) => {
-      const key = pairKey(value)
-      const index =
-        key === undefined
-          ? -1
-          : added.findIndex((other) => pairKey(other) === key)
-      if (index === -1) return { sign: '-', field, before: value }
-      return {
-        sign: '~',
-        field,
-        before: value,
-        after: added.splice(index, 1)[0],
-      }
-    })
+  const lines: Line[] = []
+  for (const value of before) {
+    if (after.some((other) => same(value, other))) continue
+    const index = added.findIndex((other) => pairKey(other) === pairKey(value))
+    lines.push(
+      index === -1
+        ? { change: 'removed', field, before: value }
+        : {
+            change: 'changed',
+            field,
+            before: value,
+            after: added.splice(index, 1)[0],
+          },
+    )
+  }
   return [
     ...lines,
-    ...added.map((value): Line => ({ sign: '+', field, after: value })),
+    ...added.map((value): Line => ({ change: 'added', field, after: value })),
   ]
 }
 
@@ -83,9 +84,9 @@ export const diffValue = (
     )
   }
 
-  if (isEmpty(before)) return [{ sign: '+', field, after }]
-  if (isEmpty(after)) return [{ sign: '-', field, before }]
-  return [{ sign: '~', field, before, after }]
+  if (isEmpty(before)) return [{ change: 'added', field, after }]
+  if (isEmpty(after)) return [{ change: 'removed', field, before }]
+  return [{ change: 'changed', field, before, after }]
 }
 
 // Deprecated items are still exported, but they're no longer in the version
@@ -96,37 +97,44 @@ const byKey = <T extends Item>(items: T[]) =>
       .map((item) => [item.external_id, item]),
   )
 
-export const diffItems = <T extends Item>(after: T[], before: T[]) => {
-  const current = byKey(after)
-  const previous = byKey(before)
-  const keys = new Set([...current.keys(), ...previous.keys()])
+export const diffItems = <T extends Item>(
+  before: T[],
+  after: T[],
+  nameField: string,
+) => {
+  const beforeItems = byKey(before)
+  const afterItems = byKey(after)
+  const keys = new Set([...afterItems.keys(), ...beforeItems.keys()])
 
   const entries: Entry<T>[] = []
   const unchanged: T[] = []
   for (const key of keys) {
-    const item = current.get(key)
-    const previousItem = previous.get(key)
+    const beforeItem = beforeItems.get(key)
+    const afterItem = afterItems.get(key)
+    const addedOrRemoved = !beforeItem || !afterItem
     const fields = new Set([
-      ...Object.keys(previousItem ?? {}),
-      ...Object.keys(item ?? {}),
+      ...Object.keys(beforeItem ?? {}),
+      ...Object.keys(afterItem ?? {}),
     ])
     const lines = [...fields]
       .filter((field) => !hiddenFields.has(field))
+      // A new or removed item's name is already its header
+      .filter((field) => !(addedOrRemoved && field === nameField))
       .flatMap((field) =>
         diffValue(
           field,
-          previousItem?.[field as keyof T],
-          item?.[field as keyof T],
+          beforeItem?.[field as keyof T],
+          afterItem?.[field as keyof T],
         ),
       )
-    if (!previousItem) {
-      entries.push({ key, item: item!, change: 'added', lines })
-    } else if (!item) {
-      entries.push({ key, item: previousItem, change: 'removed', lines })
+    if (!beforeItem) {
+      entries.push({ key, item: afterItem!, change: 'added', lines })
+    } else if (!afterItem) {
+      entries.push({ key, item: beforeItem, change: 'removed', lines })
     } else if (lines.length) {
-      entries.push({ key, item, change: 'changed', lines })
+      entries.push({ key, item: afterItem, change: 'changed', lines })
     } else {
-      unchanged.push(item)
+      unchanged.push(afterItem)
     }
   }
   return { entries, unchanged }

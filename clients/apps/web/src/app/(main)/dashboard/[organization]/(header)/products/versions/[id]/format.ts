@@ -53,12 +53,8 @@ export const productFields = ({
   ...product,
 })
 
-const fieldLabels: Record<string, string> = {
-  prices: 'Price',
-}
-
 export const fieldLabel = (field: string) =>
-  fieldLabels[field] ?? humanize(field)
+  field === 'prices' ? 'Price' : humanize(field)
 
 const enumFields = new Set(['visibility', 'type'])
 
@@ -79,18 +75,22 @@ export const valueFormatter = (configs: Config[]) => {
     const rate = (amount: number | string, unit: string) =>
       `${formatCurrency('subcent')(Number(amount), price.price_currency)} / ${unit}`
     // Every tier is listed so a change to any one of them shows in the diff
-    const tiered = ({ type, tiers }: Tiers, unit: string) =>
-      tiers.length === 1
-        ? rate(tiers[0].unit_amount, unit)
-        : `${capitalize(type)}: ${tiers
-            .map(({ bound, unit_amount }) =>
-              bound === null
-                ? rate(unit_amount, unit)
-                : `${rate(unit_amount, unit)} up to ${bound.toLocaleString('en-US')}`,
-            )
-            .join(', then ')}`
+    const tiered = ({ type, tiers }: Tiers, unit: string) => {
+      const steps = tiers
+        .map(({ bound, unit_amount }) =>
+          bound === null
+            ? rate(unit_amount, unit)
+            : `${rate(unit_amount, unit)} up to ${bound.toLocaleString('en-US')}`,
+        )
+        .join(', then ')
+      return tiers.length === 1 ? steps : `${capitalize(type)}: ${steps}`
+    }
     const minimum = (count: number, unit: string) =>
       count > 1 ? `, minimum ${plural(count, unit)}` : ''
+    const cap = (amount: number | null) =>
+      amount
+        ? `, capped at ${formatCurrency('standard')(amount, price.price_currency)}`
+        : ''
 
     switch (price.amount_type) {
       case 'fixed':
@@ -99,13 +99,9 @@ export const valueFormatter = (configs: Config[]) => {
           price.price_currency,
         )
       case 'metered_unit':
-        return rate(price.unit_amount, meterName(price.meter))
-      case 'metered_tiers': {
-        const cap = price.cap_amount
-          ? `, capped at ${formatCurrency('standard')(price.cap_amount, price.price_currency)}`
-          : ''
-        return `${tiered(price.tiers, meterName(price.meter))}${cap}`
-      }
+        return `${rate(price.unit_amount, meterName(price.meter))}${cap(price.cap_amount)}`
+      case 'metered_tiers':
+        return `${tiered(price.tiers, meterName(price.meter))}${cap(price.cap_amount)}`
       case 'seat_based':
         return `${tiered(price.tiers, 'seat')}${minimum(price.minimum_units, 'seat')}`
       case 'unit_based': {

@@ -1069,7 +1069,10 @@ class EventService:
                     )
                     if event_create.member_id is not None:
                         validate_member_id(
-                            index, event_create.member_id, organization_id
+                            index,
+                            event_create.member_id,
+                            organization_id,
+                            event_create.customer_id,
                         )
 
                 event_label_cache_key = (event_create.name, organization_id)
@@ -1552,11 +1555,13 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         member_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not member_ids:
-            allowed_members: dict[uuid.UUID, uuid.UUID] = {}
+            allowed_members: dict[uuid.UUID, tuple[uuid.UUID, uuid.UUID]] = {}
         else:
-            statement = select(Member.id, Member.organization_id).where(
+            statement = select(
+                Member.id, Member.organization_id, Member.customer_id
+            ).where(
                 ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
@@ -1570,14 +1575,19 @@ class EventService:
                 )
             result = await session.execute(statement)
             allowed_members = {
-                member_id: member_organization_id
-                for member_id, member_organization_id in result.all()
+                member_id: (member_organization_id, member_customer_id)
+                for member_id, member_organization_id, member_customer_id in (
+                    result.all()
+                )
             }
 
         def _validate_member_id(
-            index: int, member_id: uuid.UUID, organization_id: uuid.UUID
+            index: int,
+            member_id: uuid.UUID,
+            organization_id: uuid.UUID,
+            customer_id: uuid.UUID,
         ) -> uuid.UUID:
-            if allowed_members.get(member_id) != organization_id:
+            if allowed_members.get(member_id) != (organization_id, customer_id):
                 raise EventIngestValidationError(
                     [
                         {

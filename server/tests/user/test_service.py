@@ -1,8 +1,9 @@
+import traceback
+
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -21,6 +22,8 @@ from polar.user.service import (
     IdentityAlreadyVerified,
     IdentityVerificationForUnknownUser,
     IdentityVerificationProcessing,
+    UserCannotAuthenticate,
+    UserCreationConflict,
 )
 from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
@@ -54,22 +57,42 @@ class TestGetByEmailOrCreate:
     ) -> None:
         """Both concurrent requests saw no user, so the insert hits the unique
         index on the email: the loser must recover the row instead of failing."""
-        mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, user])
+        mocker.patch.object(
+            UserRepository, "get_by_email", side_effect=[None, None, user]
+        )
 
         result, created = await user_service.get_by_email_or_create(session, user.email)
 
         assert result.id == user.id
         assert created is False
 
+    async def test_blocked_user_does_not_raise_integrity_error(
+        self, session: AsyncSession, save_fixture: SaveFixture, user: User
+    ) -> None:
+        user.blocked_at = utc_now()
+        await save_fixture(user)
+
+        with pytest.raises(UserCannotAuthenticate) as exc_info:
+            await user_service.get_by_email_or_create(session, user.email)
+
+        assert user.email not in str(exc_info.value)
+        assert exc_info.value.__cause__ is None
+
     async def test_integrity_error_without_conflicting_user(
         self, session: AsyncSession, mocker: MockerFixture, user: User
     ) -> None:
-        """An IntegrityError we can't explain by a concurrent creation must not be
-        swallowed."""
-        mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, None])
+        """An IntegrityError we can't explain by a concurrent creation must not
+        propagate with the email in its message."""
+        mocker.patch.object(
+            UserRepository, "get_by_email", side_effect=[None, None, None]
+        )
 
-        with pytest.raises(IntegrityError):
+        with pytest.raises(UserCreationConflict) as exc_info:
             await user_service.get_by_email_or_create(session, user.email)
+
+        assert user.email not in str(exc_info.value)
+        assert exc_info.value.__cause__ is None
+        assert user.email not in "".join(traceback.format_exception(exc_info.value))
 
 
 @pytest.mark.anyio

@@ -68,6 +68,25 @@ class InvalidAccount(UserError):
         super().__init__(message)
 
 
+class UserCannotAuthenticate(UserError):
+    def __init__(self) -> None:
+        super().__init__("This account cannot sign in.", 403)
+
+
+class UserCreationConflict(UserError):
+    def __init__(self) -> None:
+        super().__init__("Could not create the account.")
+
+
+def _integrity_error_fields(error: IntegrityError) -> dict[str, object]:
+    database_error = getattr(error.orig, "__cause__", None)
+    return {
+        "error_type": type(error).__name__,
+        "sqlstate": getattr(error.orig, "sqlstate", None),
+        "constraint_name": getattr(database_error, "constraint_name", None),
+    }
+
+
 class UserService:
     async def get_by_email_or_create(
         self,
@@ -81,17 +100,42 @@ class UserService:
         if user is not None:
             return (user, False)
 
+        reserved = await repository.get_by_email(
+            email, include_deleted=True, included_blocked=True
+        )
+        if reserved is not None:
+            log.info(
+                "user.get_by_email_or_create.unusable_account",
+                user_id=reserved.id,
+            )
+            raise UserCannotAuthenticate()
+
         try:
             async with session.begin_nested():
                 user = await self.create_by_email(
                     session, email, signup_attribution=signup_attribution
                 )
-        except IntegrityError:
-            user = await repository.get_by_email(email)
-            if user is None:
-                raise
-            log.info("user.get_by_email_or_create.concurrent_creation", user_id=user.id)
-            return (user, False)
+        except IntegrityError as error:
+            user = await repository.get_by_email(
+                email, include_deleted=True, included_blocked=True
+            )
+            if user is not None and user.can_authenticate:
+                log.info(
+                    "user.get_by_email_or_create.concurrent_creation",
+                    user_id=user.id,
+                )
+                return (user, False)
+            if user is not None:
+                log.info(
+                    "user.get_by_email_or_create.unusable_account",
+                    user_id=user.id,
+                )
+                raise UserCannotAuthenticate() from None
+            log.error(
+                "user.get_by_email_or_create.integrity_error",
+                **_integrity_error_fields(error),
+            )
+            raise UserCreationConflict() from None
 
         return (user, True)
 

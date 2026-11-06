@@ -39,6 +39,7 @@ from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
+from polar.user.service import UserCannotAuthenticate
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
 
@@ -272,7 +273,10 @@ async def email_otp_verify(
 
     # New user
     if identity_id is None:
-        user, _ = await user_service.get_by_email_or_create(session, email)
+        try:
+            user, _ = await user_service.get_by_email_or_create(session, email)
+        except UserCannotAuthenticate as e:
+            raise PolarAuthError(e.message, 403) from None
         user.email_verified = True
         session.add(user)
         identity_id = user.id

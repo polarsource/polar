@@ -571,18 +571,6 @@ variable "private_backoffice_tailscale_ip" {
   }
 }
 
-variable "render_api_key" {
-  description = "Render API key"
-  type        = string
-  sensitive   = true
-}
-
-variable "backup_alert_slack_bot_token" {
-  description = "Slack bot token for database backup copy failure alerts"
-  type        = string
-  sensitive   = true
-}
-
 variable "linear_api_key" {
   description = "Linear API key"
   type        = string

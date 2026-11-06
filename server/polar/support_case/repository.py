@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, select, text
+from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import joinedload
 
@@ -199,18 +199,17 @@ class SupportCaseParticipantRepository(
     async def upsert_platform_read(
         self,
         case_id: UUID,
-        user_id: UUID,
+        user_id: UUID | None,
         backoffice_user_id: UUID,
         *,
         read_at: datetime,
     ) -> SupportCaseParticipant:
-        """Atomically stamp a staff member's read state for a case.
-
-        Inserts the platform participant or, if one already exists, bumps its
-        ``last_read_at``. A single ``INSERT ... ON CONFLICT DO UPDATE`` so that
-        concurrent first reads (two tabs, a double-click) can't race the partial
-        unique ``(case_id, platform_user_id)`` index into an error.
-        """
+        """Use the legacy conflict key while callers still write both staff IDs."""
+        identity_column = (
+            SupportCaseParticipant.platform_user_id
+            if user_id is not None
+            else SupportCaseParticipant.backoffice_platform_user_id
+        )
         statement = (
             pg_insert(SupportCaseParticipant)
             .values(
@@ -221,8 +220,9 @@ class SupportCaseParticipantRepository(
                 last_read_at=read_at,
             )
             .on_conflict_do_update(
-                index_elements=["case_id", "platform_user_id"],
-                index_where=text("platform_user_id IS NOT NULL AND deleted_at IS NULL"),
+                index_elements=[SupportCaseParticipant.case_id, identity_column],
+                index_where=identity_column.is_not(None)
+                & SupportCaseParticipant.deleted_at.is_(None),
                 set_={
                     "last_read_at": read_at,
                     "backoffice_platform_user_id": backoffice_user_id,

@@ -819,8 +819,11 @@ class ConfigSkippedResource(Schema):
 
 
 class ConfigExportCatalog(ConfigCatalog):
-    status: Literal[CatalogStatus.live, CatalogStatus.archived] = Field(
-        description="`live` for the catalog new checkouts use, `archived` otherwise."
+    status: CatalogStatus = Field(
+        description=(
+            "`live` for the catalog new checkouts use, `draft` for unpublished "
+            "changes, `archived` otherwise."
+        )
     )
 
 

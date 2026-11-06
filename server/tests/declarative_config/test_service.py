@@ -4855,6 +4855,46 @@ class TestCatalogDrafts:
         await session.refresh(live)
         assert live.status == CatalogStatus.archived
 
+    async def test_export_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [MONTHLY_PRO]}
+            ),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [MONTHLY_PRO_25]}
+            ),
+            publish=False,
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, catalog_id=draft.id
+        )
+
+        assert exported.catalog is not None
+        assert (exported.catalog.id, exported.catalog.status) == (
+            draft.id,
+            CatalogStatus.draft,
+        )
+        [product] = exported.config.products
+        [price] = product.prices
+        assert price.model_dump(include={"price_amount"}) == {"price_amount": 2500}
+
     async def test_apply_without_catalog_sections_keeps_the_draft(
         self,
         session: AsyncSession,

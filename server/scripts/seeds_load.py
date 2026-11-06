@@ -424,9 +424,15 @@ async def _stamp_event_type_ids(
 
 
 def _normalize_seed_event_batch(events: list[dict[str, Any]]) -> None:
+    # Reference parents the way API ingestion does, so `resolve_pending_parents`
+    # links them and propagates root_id after the insert.
     for event in events:
         event.setdefault("external_id", None)
-        event.setdefault("parent_id", None)
+        parent_id = event.pop("parent_id", None)
+        event["parent_id"] = None
+        event["pending_parent_external_id"] = (
+            str(parent_id) if parent_id is not None else None
+        )
 
 
 def _generate_seed_uuid(rng: random.Random) -> UUID:
@@ -2584,6 +2590,7 @@ async def _create_simple_complement_event_history(
         event_ids, _ = await event_repository.insert_batch(
             pending_events, render_nulls=True
         )
+        await event_repository.resolve_pending_parents(event_ids)
         inserted = await event_repository.get_all(
             select(EventModel).where(EventModel.id.in_(event_ids))
         )
@@ -3015,6 +3022,7 @@ async def create_single_org_seed(
         event_ids, _ = await event_repository.insert_batch(
             pending_events, render_nulls=True
         )
+        await event_repository.resolve_pending_parents(event_ids)
         inserted_event_count = len(event_ids)
         if event_ids:
             inserted = await event_repository.get_all(

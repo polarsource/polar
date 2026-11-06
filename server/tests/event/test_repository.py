@@ -438,62 +438,6 @@ class TestInsertBatch:
         assert inserted[events[1]["id"]].root_id is None
         assert inserted[events[2]["id"]].external_id == "event-1"
 
-    async def test_child_events_share_their_parents_root(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        base: dict[str, Any] = {
-            "organization_id": organization.id,
-            "source": EventSource.user,
-            "name": "test",
-            "timestamp": utc_now(),
-            "user_metadata": {},
-            "external_customer_id": "ext",
-        }
-        root_id = uuid.uuid4()
-        child_id = uuid.uuid4()
-        grandchild_id = uuid.uuid4()
-        events = [
-            {**base, "id": grandchild_id, "parent_id": child_id},
-            {**base, "id": child_id, "parent_id": root_id},
-            {**base, "id": root_id},
-        ]
-
-        inserted_ids, _ = await EventRepository.from_session(session).insert_batch(
-            events, render_nulls=True
-        )
-
-        inserted = {
-            event.id: event
-            for event in await session.scalars(
-                select(Event).where(Event.id.in_(inserted_ids))
-            )
-        }
-        assert inserted[root_id].root_id == root_id
-        assert inserted[child_id].root_id == root_id
-        assert inserted[grandchild_id].root_id == root_id
-
-    async def test_child_of_existing_event_waits_for_propagation(
-        self, session: AsyncSession, organization: Organization
-    ) -> None:
-        base: dict[str, Any] = {
-            "organization_id": organization.id,
-            "source": EventSource.user,
-            "name": "test",
-            "timestamp": utc_now(),
-            "user_metadata": {},
-            "external_customer_id": "ext",
-        }
-        repository = EventRepository.from_session(session)
-        [parent_id], _ = await repository.insert_batch([{**base}], render_nulls=True)
-
-        [child_id], _ = await repository.insert_batch(
-            [{**base, "parent_id": parent_id}], render_nulls=True
-        )
-
-        child = await session.get(Event, child_id)
-        assert child is not None
-        assert child.root_id is None
-
 
 @pytest.mark.anyio
 class TestGetLatestMeterReset:

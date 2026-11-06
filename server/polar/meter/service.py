@@ -1,6 +1,6 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -74,6 +74,8 @@ from .sorting import MeterSortProperty
 
 # Maximum number of events processed by one billing task invocation.
 _BILLING_ENTRY_BATCH_SIZE = 500
+# Let in-flight event inserts commit before the watermark passes them.
+_BILLING_LAG = timedelta(minutes=2)
 
 METER_LOCKED_FIELDS = ("filter", "aggregation")
 METER_LOCKED_FIELD_MESSAGE = (
@@ -619,13 +621,17 @@ class MeterService:
         repository = MeterRepository.from_session(session)
 
         last_billed_event = aliased(Event)
+        cutoff = datetime.now(UTC) - _BILLING_LAG
         has_events = (
-            select(MeterEvent.event_id).where(MeterEvent.meter_id == Meter.id).exists()
+            select(MeterEvent.event_id)
+            .where(MeterEvent.meter_id == Meter.id, MeterEvent.ingested_at < cutoff)
+            .exists()
         )
         has_events_after_last_billed = (
             select(MeterEvent.event_id)
             .where(
                 MeterEvent.meter_id == Meter.id,
+                MeterEvent.ingested_at < cutoff,
                 tuple_(MeterEvent.ingested_at, MeterEvent.event_id)
                 > tuple_(last_billed_event.ingested_at, last_billed_event.id),
             )
@@ -683,6 +689,7 @@ class MeterService:
             after_event_id=(
                 last_billed_event.id if last_billed_event is not None else None
             ),
+            before_ingested_at=datetime.now(UTC) - _BILLING_LAG,
             limit=_BILLING_ENTRY_BATCH_SIZE,
         )
 

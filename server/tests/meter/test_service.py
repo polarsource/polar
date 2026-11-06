@@ -71,6 +71,11 @@ def enqueue_job_mock(mocker: MockerFixture) -> AsyncMock:
     return mocker.patch("polar.meter.service.enqueue_job")
 
 
+@pytest.fixture
+def no_billing_lag(mocker: MockerFixture) -> None:
+    mocker.patch("polar.meter.service._BILLING_LAG", timedelta(0))
+
+
 @pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
@@ -1577,6 +1582,7 @@ async def metered_subscription(
 
 
 @pytest.mark.anyio
+@pytest.mark.usefixtures("no_billing_lag")
 class TestEnqueueBilling:
     async def test_only_meters_with_unbilled_events(
         self,
@@ -1605,6 +1611,26 @@ class TestEnqueueBilling:
 
 
 @pytest.mark.anyio
+class TestBillingLag:
+    async def test_recent_events_not_billed(
+        self,
+        enqueue_job_mock: AsyncMock,
+        session: AsyncSession,
+        events: list[Event],
+        meter: Meter,
+        metered_subscription: Subscription,
+    ) -> None:
+        await meter_service.enqueue_billing(session)
+        enqueue_job_mock.assert_not_called()
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert entries == []
+        assert meter.last_billed_event is None
+
+
+@pytest.mark.anyio
+@pytest.mark.usefixtures("no_billing_lag")
 class TestCreateBillingEntries:
     async def test_no_subscription(
         self,
@@ -1962,6 +1988,7 @@ class TestCreateBillingEntries:
 
 
 @pytest.mark.anyio
+@pytest.mark.usefixtures("no_billing_lag")
 class TestCreateBillingEntriesWithSeats:
     async def test_seat_holder_overage_charges_billing_manager(
         self,

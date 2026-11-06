@@ -5,13 +5,12 @@ from typing import Annotated
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import selectinload
 
 from polar.event.service import event as event_service
 from polar.exceptions import PolarTaskError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Event, Meter, MeterEvent
+from polar.models import Event, MeterEvent
 from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
@@ -50,11 +49,7 @@ async def meter_billing_entries(meter_id: Annotated[uuid.UUID, LoggableField]) -
         repository = MeterRepository.from_session(session)
         # Load the watermark after acquiring the meter lock. A joinedload can return
         # the updated meter row with a stale event from the pre-lock snapshot.
-        meter = await repository.get_by_id(
-            meter_id,
-            options=(selectinload(Meter.last_billed_event),),
-            for_update=True,
-        )
+        meter = await repository.get_for_billing(meter_id)
         if meter is None:
             raise MeterDoesNotExist(meter_id)
 

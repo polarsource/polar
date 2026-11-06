@@ -563,6 +563,16 @@ it("revalidates every state in one request once Polar's changes went past their 
   expect((await outpost.meter(meter))?.consumed_units).toBe(3);
 });
 
+it("drops the states Polar no longer confirms after a reset", async () => {
+  await seed();
+  const outpost = await start();
+  await outpost.actor(customer);
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  resetChanges = true;
+  await outpost["pull"]();
+  expect(await redis.hget(key, "cold_until")).toBeNull();
+});
+
 it("drops the snapshots Polar could not revalidate after a reset", async () => {
   await seed();
   const outpost = await start();

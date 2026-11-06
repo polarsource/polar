@@ -1005,6 +1005,26 @@ async def test_revalidates_every_state_in_one_request_once_polars_changes_went_p
 
 
 @pytest.mark.anyio
+async def test_drops_the_states_polar_no_longer_confirms_after_a_reset(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    key = "outpost:v1:org-1:state:external:alice:tokens"
+    await redis.hset(key, mapping={"cold_until": BUCKET, "cold:sum": 10})
+    await _credit(redis, 100)
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "customer_exists": False}
+        snapshots["external:alice:credits"] = {**ALICE_CREDITS, "customer_exists": False}
+        changes["reset"] = True
+        await outpost._pull()
+        assert await redis.hget(key, "cold_until") is None
+
+
+@pytest.mark.anyio
 async def test_drops_the_snapshots_polar_could_not_revalidate_after_a_reset(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

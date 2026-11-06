@@ -75,9 +75,69 @@ class PolarSelfClientOperationalError(PolarSelfClientError):
 
 
 class PolarSelfClientValidationError(InternalPolarError):
-    def __init__(self, body: str) -> None:
+    def __init__(self) -> None:
+        # Sentry prefers ``.message`` over ``str(exc)``. Never store the
+        # response body here: a 422 repeats the submitted value.
         super().__init__("Polar API request validation failed", status_code=422)
-        self.message = body
+
+
+def _unique_preserving_order(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        unique.append(item)
+    return unique
+
+
+def _validation_summary(error: BaseException) -> str:
+    """Field paths and error types, without submitted values."""
+    body = getattr(error, "error", None)
+    detail = getattr(body, "detail", None)
+    if not isinstance(detail, list):
+        return ""
+    fields: list[str] = []
+    types: list[str] = []
+    for item in detail:
+        loc = getattr(item, "loc", None)
+        if isinstance(loc, list) and loc:
+            fields.append(".".join(str(part) for part in loc))
+        error_type = getattr(item, "type", None)
+        if isinstance(error_type, str) and error_type:
+            types.append(error_type)
+    parts: list[str] = []
+    fields = _unique_preserving_order(fields)
+    types = _unique_preserving_order(types)
+    if fields:
+        parts.append(f"fields={fields}")
+    if types:
+        parts.append(f"types={types}")
+    return " ".join(parts)
+
+
+def _without_response_body(error: BaseException) -> BaseException:
+    """Drop the response body from an SDK error before it is chained.
+
+    Sentry formats an exception from ``.message``, then ``str(exc)``.
+    ``PolarClientError`` stores the parsed body in both, and a 422
+    ``HTTPValidationError`` repeats the submitted value in ``msg`` and
+    ``input``. That is how ``polar_self.create_customer`` leaked customer
+    emails. Field paths and error types stay; submitted values do not.
+    """
+    status_code = getattr(error, "status_code", None)
+    if isinstance(status_code, int):
+        safe = f"{type(error).__name__} status {status_code}"
+    else:
+        safe = type(error).__name__
+    summary = _validation_summary(error)
+    if summary:
+        safe = f"{safe} {summary}"
+    error.args = (safe,)
+    if "message" in getattr(error, "__dict__", {}):
+        error.__dict__["message"] = safe
+    return error
 
 
 def _raise_validation_error(
@@ -104,7 +164,8 @@ def _raise_validation_error(
             "validation.error_types",
             sorted({item.type for item in errors if item.type in get_args(ErrorType)}),
         )
-    raise PolarSelfClientValidationError(str(getattr(error, "error", error))) from None
+    # ``from None``: the SDK error's message is the response body.
+    raise PolarSelfClientValidationError() from None
 
 
 def _raise_error(
@@ -114,9 +175,10 @@ def _raise_error(
     span.set_attribute("error.type", type(error).__name__)
     span.set_attribute("operation", operation)
     message = f"{operation} failed with status {error.status_code}"
+    cause = _without_response_body(error)
     if isinstance(error, (PolarRateLimitError, PolarServerError)):
-        raise PolarSelfClientOperationalError(message) from error
-    raise PolarSelfClientError(message) from error
+        raise PolarSelfClientOperationalError(message) from cause
+    raise PolarSelfClientError(message) from cause
 
 
 def _raise_network_error(span: Any, exc: PolarNetworkError, operation: str) -> NoReturn:
@@ -324,7 +386,9 @@ class PolarSelfClient:
                     span.set_attribute("order_not_eligible", True)
                     span.set_attribute("http.status_code", e.status_code)
                     span.set_attribute("error.type", type(e).__name__)
-                    raise PolarSelfOrderNotEligible(order_id) from e
+                    raise PolarSelfOrderNotEligible(
+                        order_id
+                    ) from _without_response_body(e)
                 _raise_error(span, e, "trigger_order_invoice_generation")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "trigger_order_invoice_generation")
@@ -888,7 +952,9 @@ class PolarSelfClient:
                 list(item.loc) == ["body", "external_customer_id"]
                 for item in e.error.detail or []
             ):
-                raise PolarSelfCustomerNotFound(UUID(external_customer_id)) from e
+                raise PolarSelfCustomerNotFound(
+                    UUID(external_customer_id)
+                ) from _without_response_body(e)
             raise
 
     async def _create_portal_sdk(
@@ -990,11 +1056,15 @@ class PolarSelfClient:
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
-                    raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
+                    raise PolarSelfPaymentMethodNotFound(
+                        payment_method_id
+                    ) from _without_response_body(e)
                 if e.status_code == 400:
                     span.set_attribute("http.status_code", 400)
                     span.set_attribute("error.type", type(e).__name__)
-                    raise PolarSelfPaymentMethodInUse(payment_method_id) from e
+                    raise PolarSelfPaymentMethodInUse(
+                        payment_method_id
+                    ) from _without_response_body(e)
                 _raise_error(span, e, "polar.portal.delete_payment_method")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.delete_payment_method")
@@ -1115,7 +1185,9 @@ class PolarSelfClient:
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
-                    raise PolarSelfBenefitGrantNotFound(benefit_grant_id) from e
+                    raise PolarSelfBenefitGrantNotFound(
+                        benefit_grant_id
+                    ) from _without_response_body(e)
                 if e.status_code == 422:
                     _raise_validation_error(span, e, {"benefit_type", "properties"})
                 _raise_error(span, e, "polar.portal.update_benefit_grant")

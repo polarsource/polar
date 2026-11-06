@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from typing import TYPE_CHECKING, cast
 
 import sentry_sdk
@@ -84,6 +85,24 @@ _PII_KEYS = frozenset(
 _LOG_EVENT_META_KEYS = frozenset(
     {"event", "level", "logger", "timestamp", "exc_info", "stack"}
 )
+_REDACTED = "[redacted]"
+# Local part, then a dotted domain with a letter TLD. A trailing period (end
+# of a sentence) is left in place. Values stored under a user-agent key are
+# not passed through this pattern; contact strings there are kept.
+_EMAIL_RE = re.compile(
+    r"(?<![A-Za-z0-9._%+-])"
+    r"[A-Za-z0-9](?:[A-Za-z0-9._%+-]{0,62}[A-Za-z0-9])?"
+    r"@"
+    r"(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+"
+    r"[A-Za-z]{2,63}"
+    r"(?![A-Za-z0-9-])"
+)
+# ``input=`` is the submitted value on a pydantic / dataclass ValidationError.
+_INPUT_ATTR_RE = re.compile(r"(?<![A-Za-z0-9_])input=")
+# email-validator echoes the registrable domain next to the address:
+# "The domain name example.com does not exist."
+_DOMAIN_NAME_RE = re.compile(r"(The domain name )([^\s'\"]+)", re.IGNORECASE)
+_OPEN_TO_CLOSE = {"[": "]", "{": "}", "(": ")"}
 
 
 class DramatiqIntegration(_DramatiqIntegration):
@@ -115,6 +134,110 @@ def _scrub_pii(value: object) -> None:
             _scrub_pii(item)
 
 
+def _is_user_agent_key(key: str) -> bool:
+    normalized = key.lower().replace("_", "-")
+    return normalized == "user-agent" or normalized.endswith(".user-agent")
+
+
+def _end_of_quoted(text: str, start: int, quote: str) -> int:
+    index = start + 1
+    while index < len(text):
+        if text[index] == "\\":
+            index += 2
+            continue
+        if text[index] == quote:
+            return index + 1
+        index += 1
+    return len(text)
+
+
+def _end_of_bracketed(text: str, start: int) -> int:
+    stack = [_OPEN_TO_CLOSE[text[start]]]
+    index = start + 1
+    while index < len(text) and stack:
+        char = text[index]
+        if char in {"'", '"'}:
+            index = _end_of_quoted(text, index, char)
+            continue
+        if char in _OPEN_TO_CLOSE:
+            stack.append(_OPEN_TO_CLOSE[char])
+            index += 1
+            continue
+        if char == stack[-1]:
+            stack.pop()
+        index += 1
+    return index
+
+
+def _end_of_repr_value(text: str, start: int) -> int:
+    if start >= len(text):
+        return start
+    char = text[start]
+    if char in {"'", '"'}:
+        return _end_of_quoted(text, start, char)
+    if char in _OPEN_TO_CLOSE:
+        return _end_of_bracketed(text, start)
+    end = start
+    while end < len(text) and text[end] not in ",)":
+        end += 1
+    return end
+
+
+def _redact_validation_inputs(text: str) -> str:
+    parts: list[str] = []
+    cursor = 0
+    for match in _INPUT_ATTR_RE.finditer(text):
+        parts.append(text[cursor : match.start()])
+        parts.append(f"input={_REDACTED}")
+        cursor = _end_of_repr_value(text, match.end())
+    parts.append(text[cursor:])
+    return "".join(parts)
+
+
+def _scrub_text(text: str) -> str:
+    """Remove emails and pydantic ``input`` values from a free-text string.
+
+    Key scrubbing never sees these: ``HTTPValidationError`` stringifies the
+    submitted value into ``msg`` and ``input``.
+    """
+    redacted = _redact_validation_inputs(text)
+    redacted = _EMAIL_RE.sub(_REDACTED, redacted)
+    return _DOMAIN_NAME_RE.sub(rf"\1{_REDACTED}", redacted)
+
+
+def _scrub_text_values(value: object) -> None:
+    if isinstance(value, dict):
+        mapping = cast(dict[object, object], value)
+        for key, item in list(mapping.items()):
+            if isinstance(key, str) and _is_user_agent_key(key):
+                continue
+            if isinstance(item, str):
+                mapping[key] = _scrub_text(item)
+            else:
+                _scrub_text_values(item)
+    elif isinstance(value, list):
+        items = cast(list[object], value)
+        for index, item in enumerate(items):
+            if isinstance(item, str):
+                items[index] = _scrub_text(item)
+            else:
+                _scrub_text_values(item)
+
+
+def _scrub_exception_messages(exception: object) -> None:
+    if not isinstance(exception, dict):
+        return
+    values = cast(dict[str, object], exception).get("values")
+    if not isinstance(values, list):
+        return
+    for entry in cast(list[object], values):
+        if not isinstance(entry, dict):
+            continue
+        message = cast(dict[str, object], entry).get("value")
+        if isinstance(message, str):
+            entry["value"] = _scrub_text(message)
+
+
 def before_breadcrumb(crumb: Breadcrumb, hint: BreadcrumbHint) -> Breadcrumb:
     # structlog hands the event dict to stdlib logging as the record message,
     # which the SDK stringifies whole into the breadcrumb message, out of reach
@@ -144,10 +267,16 @@ def before_send(event: Event, hint: Hint) -> Event | None:
         request.pop("query_string", None)
         request.pop("fragment", None)
         _scrub_pii(request.get("data"))
+    _scrub_exception_messages(event.get("exception"))
     breadcrumbs = event.get("breadcrumbs")
     if isinstance(breadcrumbs, dict):
         for breadcrumb in breadcrumbs.get("values", []):
-            _scrub_pii(breadcrumb.get("data"))
+            message = breadcrumb.get("message")
+            if isinstance(message, str):
+                breadcrumb["message"] = _scrub_text(message)
+            data = breadcrumb.get("data")
+            _scrub_pii(data)
+            _scrub_text_values(data)
     return event
 
 

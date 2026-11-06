@@ -218,6 +218,119 @@ class TestBeforeSend:
         request = cast(dict[str, Any], result["request"])
         assert request["data"] == "raw-body"
 
+    def test_scrubs_validation_error_emails_and_inputs(self) -> None:
+        # SERVER-4W4: polar_self.create_customer chained the SDK error, whose
+        # message is the unredacted 422 HTTPValidationError repr.
+        email = "owner@example.com"
+        event = {
+            "exception": {
+                "values": [
+                    {
+                        "type": "HTTPValidationError",
+                        "value": (
+                            "Polar API returned an error: 422 - "
+                            "HTTPValidationError(detail=[ValidationError("
+                            "loc=['body', 'team', 'owner', 'email'], "
+                            f"msg='{email} is not a valid email address: "
+                            "The domain name example.com does not exist.', "
+                            "type='value_error', "
+                            f"input='{email}', ctx=Context())])"
+                        ),
+                    },
+                    {
+                        "type": "PolarSelfClientError",
+                        "value": "create_customer failed with status 422",
+                    },
+                ]
+            },
+            "request": {
+                "headers": {"User-Agent": f"PolarBot/1.0 ({email})"},
+            },
+            "breadcrumbs": {
+                "values": [
+                    {
+                        "message": f"rejected {email}",
+                        "data": {
+                            "detail": (
+                                "ValidationError("
+                                f"msg='{email} is not a valid email address: "
+                                "The domain name example.com does not exist.', "
+                                f"input={{'email': '{email}', 'name': 'Ada Lovelace'}})"
+                            ),
+                            "user_agent": f"PolarBot/1.0 ({email})",
+                            "User-Agent": f"PolarBot/1.0 ({email})",
+                            "status_code": 422,
+                        },
+                    },
+                    {"type": "http"},
+                ]
+            },
+        }
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        values = cast(dict[str, Any], result["exception"])["values"]
+        sanitized = cast(str, values[0]["value"])
+        assert email not in sanitized
+        assert "example.com" not in sanitized
+        assert "Ada Lovelace" not in sanitized
+        assert "input=[redacted]" in sanitized
+        assert "The domain name [redacted] does not exist." in sanitized
+        assert "loc=['body', 'team', 'owner', 'email']" in sanitized
+        assert values[1]["value"] == "create_customer failed with status 422"
+        request = cast(dict[str, Any], result["request"])
+        assert request["headers"]["User-Agent"] == f"PolarBot/1.0 ({email})"
+        breadcrumbs = cast(dict[str, Any], result["breadcrumbs"])["values"]
+        assert breadcrumbs[0]["message"] == "rejected [redacted]"
+        detail = cast(str, breadcrumbs[0]["data"]["detail"])
+        assert email not in detail
+        assert "example.com" not in detail
+        assert "Ada Lovelace" not in detail
+        assert "input=[redacted]" in detail
+        assert breadcrumbs[0]["data"]["user_agent"] == f"PolarBot/1.0 ({email})"
+        assert breadcrumbs[0]["data"]["User-Agent"] == f"PolarBot/1.0 ({email})"
+        assert breadcrumbs[0]["data"]["status_code"] == 422
+        assert breadcrumbs[1] == {"type": "http"}
+
+    def test_scrubs_validation_input_that_is_not_an_email(self) -> None:
+        event = {
+            "exception": {
+                "values": [
+                    {
+                        "value": (
+                            "ValidationError(loc=['body', 'name'], "
+                            "msg='field required', type='missing', "
+                            "input={'name': 'Ada Lovelace', 'slug': 'acme'}, "
+                            "ctx=None)"
+                        )
+                    },
+                    {
+                        "value": (
+                            "ValidationError(type='value_error', "
+                            r"input='o\'brien@example.com')"
+                        )
+                    },
+                ]
+            }
+        }
+
+        result = before_send(cast(Any, event), {})
+
+        assert result is not None
+        values = cast(dict[str, Any], result["exception"])["values"]
+        assert values[0]["value"] == (
+            "ValidationError(loc=['body', 'name'], "
+            "msg='field required', type='missing', "
+            "input=[redacted], "
+            "ctx=None)"
+        )
+        assert values[1]["value"] == (
+            "ValidationError(type='value_error', input=[redacted])"
+        )
+        assert "obrien@example.com" not in values[1]["value"]
+        assert "brien@example.com" not in values[1]["value"]
+
 
 def _log_record(msg: object) -> logging.LogRecord:
     return logging.LogRecord("polar.test", logging.INFO, __file__, 1, msg, (), None)

@@ -30,6 +30,8 @@ from polar.integrations.polar.client import (
     PolarSelfClient,
     PolarSelfClientError,
     PolarSelfClientOperationalError,
+    PolarSelfClientValidationError,
+    _raise_validation_error,
 )
 from polar.integrations.polar.exceptions import (
     PolarSelfCustomerNotFound,
@@ -169,6 +171,10 @@ class TestTriggerOrderInvoiceGeneration:
         assert not isinstance(exc_info.value, PolarSelfOrderNotEligible)
         assert "409" not in str(exc_info.value)
         assert "422" in str(exc_info.value)
+        cause = exc_info.value.__cause__
+        assert cause is not None
+        assert "Billing name" not in str(cause)
+        assert "Billing name" not in getattr(cause, "message", "")
 
     async def test_404_falls_through_to_client_error(
         self, mocker: MockerFixture
@@ -210,6 +216,82 @@ class TestTriggerOrderInvoiceGeneration:
         await client.trigger_order_invoice_generation(order_id="ord_1")
 
         generate_invoice.assert_awaited_once_with("ord_1")
+
+
+def _validation_error_with_email(email: str) -> SDKHTTPValidationError:
+    return SDKHTTPValidationError(
+        422,
+        deserialize(
+            {
+                "detail": [
+                    {
+                        "type": "value_error",
+                        "loc": ["body", "team", "owner", "email"],
+                        "msg": (
+                            f"{email} is not a valid email address: "
+                            "The domain name example.com does not exist."
+                        ),
+                        "input": email,
+                    }
+                ]
+            },
+            SDKHTTPValidationError.error_type,
+        ),
+    )
+
+
+@pytest.mark.anyio
+class TestCreateCustomer:
+    async def test_validation_error_omits_customer_email(
+        self, mocker: MockerFixture
+    ) -> None:
+        email = "owner@example.com"
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customers,
+            "get_external",
+            new=AsyncMock(side_effect=_not_found()),
+        )
+        mocker.patch.object(
+            client._sdk.customers,
+            "create",
+            new=AsyncMock(side_effect=_validation_error_with_email(email)),
+        )
+
+        with pytest.raises(PolarSelfClientError) as exc_info:
+            await client.create_customer(
+                external_id="org_1",
+                name="Acme",
+                slug="acme",
+                owner_external_id="user_1",
+                owner_email=email,
+                owner_name="Owner",
+            )
+
+        assert str(exc_info.value) == "create_customer failed with status 422"
+        assert email not in exc_info.value.message
+        cause = exc_info.value.__cause__
+        assert isinstance(cause, SDKHTTPValidationError)
+        rendered = f"{cause} {getattr(cause, 'message', '')}"
+        assert email not in rendered
+        assert "example.com" not in rendered
+        assert "body.team.owner.email" in rendered
+        assert "value_error" in rendered
+
+
+class TestRaiseValidationError:
+    def test_message_omits_response_body(self) -> None:
+        email = "owner@example.com"
+        span = MagicMock()
+
+        with pytest.raises(PolarSelfClientValidationError) as exc_info:
+            _raise_validation_error(span, _validation_error_with_email(email), {"team"})
+
+        assert str(exc_info.value) == "Polar API request validation failed"
+        assert exc_info.value.message == "Polar API request validation failed"
+        assert email not in exc_info.value.message
+        assert exc_info.value.__cause__ is None
+        span.set_attribute.assert_any_call("validation.fields", ["team"])
 
 
 def _members(*emails: str) -> list[MagicMock]:

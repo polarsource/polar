@@ -1528,6 +1528,19 @@ it("reads the value of a customer created after a miss", async () => {
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.balance).toBe(97));
 });
 
+it("reads a customer a pull found before its miss backs off", async () => {
+  await seed();
+  const outpost = await start();
+  await redis.hset(
+    `outpost:v1:${organization}:missing:external:alice:tokens`,
+    "retry_at",
+    Date.now() + 60_000,
+  );
+  expect(await outpost.meter(meter)).toBeNull();
+  await deliver(outpost, aliceSnapshot);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+});
+
 it("asks Polar about a customer it does not know once per backoff, for the whole fleet", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   snapshot = { ...aliceSnapshot, customer_exists: false };

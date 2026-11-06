@@ -1524,9 +1524,8 @@ class Outpost:
                 self._missing_key(identity), int(2 * MAX_PULL_RETRY_DELAY * 1000)
             )
             return False
-        if not pulled:
-            with contextlib.suppress(RedisError):
-                await self._require_redis().delete(self._missing_key(identity))
+        with contextlib.suppress(RedisError):
+            await self._require_redis().delete(self._missing_key(identity))
         statistics = [
             snapshot["count"],
             snapshot["sum"],

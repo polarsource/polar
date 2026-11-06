@@ -34,7 +34,7 @@ class Scenario:
         return COLD_UNTIL + (self.buckets - 1) * BUCKET_SIZE
 
     def state_key(self, reducer: str) -> str:
-        return f"outpost:v1:state:external:{self.customer}:{reducer}"
+        return f"outpost:v1:org:state:external:{self.customer}:{reducer}"
 
 
 ONE_REDUCER = {
@@ -54,10 +54,12 @@ def reducers() -> list[Reducer]:
 @pytest.fixture(scope="module")
 def redis(redis_socket: str) -> collections.abc.Iterator[Redis]:
     with Redis(unix_socket_path=redis_socket) as client:
+        # A warm customer has a state for every reducer: ingesting fetches none.
         for scenario in [*ONE_REDUCER.values(), THREE_REDUCERS]:
-            for reducer in scenario.reducers:
+            for reducer in REDUCERS:
                 client.hset(
-                    scenario.state_key(reducer), items=encode_state(scenario.buckets)
+                    scenario.state_key(reducer["id"]),
+                    items=encode_state(scenario.buckets),
                 )
         yield client
 

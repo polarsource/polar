@@ -301,17 +301,18 @@ class LicenseKeyService:
             customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
         )
-        await session.refresh(
-            license_key,
-            attribute_names=[
-                "status",
-                "expires_at",
-                "usage",
-                "limit_usage",
-                "validations",
-            ],
-            with_for_update=True,
-        )
+        if validate.increment_usage:
+            await session.refresh(
+                license_key,
+                attribute_names=[
+                    "status",
+                    "expires_at",
+                    "usage",
+                    "limit_usage",
+                    "validations",
+                ],
+                with_for_update=True,
+            )
         if not license_key.is_active():
             bound_logger.info("license_key.validate.invalid_status")
             raise ResourceNotFound("License key is no longer active.")
@@ -353,9 +354,15 @@ class LicenseKeyService:
                 )
                 raise BadRequest(f"License key only has {remaining} more usages.")
 
-        license_key.mark_validated(increment_usage=validate.increment_usage)
         await session.refresh(license_key, attribute_names=["subscription", "order"])
-        session.add(license_key)
+        if validate.increment_usage:
+            license_key.mark_validated(increment_usage=validate.increment_usage)
+            session.add(license_key)
+        elif not await LicenseKeyRepository.from_session(session).record_validation(
+            license_key
+        ):
+            bound_logger.info("license_key.validate.invalid_status")
+            raise ResourceNotFound("License key is no longer active.")
         bound_logger.info("license_key.validate")
         return license_key
 

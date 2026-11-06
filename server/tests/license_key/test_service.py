@@ -1,11 +1,12 @@
 import asyncio
-from typing import cast
+from collections.abc import AsyncIterator
+from typing import Any, cast
 from unittest.mock import call
 from uuid import UUID
 
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.license_keys.properties import (
@@ -15,7 +16,7 @@ from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeysCreateProperties,
 )
 from polar.config import settings
-from polar.exceptions import BadRequest, NotPermitted
+from polar.exceptions import BadRequest, NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import (
     AsyncSessionMaker,
     create_async_engine,
@@ -142,7 +143,9 @@ class TestConcurrentActivation:
 
 
 async def _attempt_validation(
-    sessionmaker: AsyncSessionMaker, license_key_id: UUID
+    sessionmaker: AsyncSessionMaker,
+    license_key_id: UUID,
+    increment_usage: int | None = 1,
 ) -> bool:
     async with sessionmaker() as session:
         repository = LicenseKeyRepository.from_session(session)
@@ -155,7 +158,7 @@ async def _attempt_validation(
                 validate=LicenseKeyValidate(
                     key=license_key.key,
                     organization_id=license_key.organization_id,
-                    increment_usage=1,
+                    increment_usage=increment_usage,
                     conditions={},
                 ),
             )
@@ -166,60 +169,127 @@ async def _attempt_validation(
         return True
 
 
+@pytest.fixture
+async def committed_license_key(
+    worker_id: str,
+) -> AsyncIterator[tuple[AsyncSessionMaker, UUID]]:
+    engine = create_async_engine(
+        dsn=get_database_url(worker_id),
+        application_name=f"test_{worker_id}_lk_validate_concurrency",
+        pool_size=8,
+        pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    )
+    sessionmaker = create_async_sessionmaker(engine)
+
+    async with sessionmaker() as setup_session:
+        save_fixture = save_fixture_factory(setup_session)
+        user = await create_user(save_fixture)
+        account = await create_account(save_fixture, user)
+        organization = await create_organization(save_fixture, account)
+        customer = await create_customer(save_fixture, organization=organization)
+        benefit = await create_benefit(save_fixture, organization=organization)
+        license_key = LicenseKey(
+            organization_id=organization.id,
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            key="testing-concurrent-validation",
+            status=LicenseKeyStatus.granted,
+            limit_usage=3,
+        )
+        setup_session.add(license_key)
+        await setup_session.commit()
+
+    try:
+        yield sessionmaker, license_key.id
+    finally:
+        async with sessionmaker() as cleanup_session:
+            await cleanup_session.execute(
+                delete(Organization).where(Organization.id == organization.id)
+            )
+            await cleanup_session.execute(
+                delete(Account).where(Account.id == account.id)
+            )
+            await cleanup_session.execute(delete(User).where(User.id == user.id))
+            await cleanup_session.commit()
+        await engine.dispose()
+
+
 @pytest.mark.anyio
 class TestConcurrentValidation:
-    async def test_usage_limit_enforced_under_concurrency(self, worker_id: str) -> None:
-        engine = create_async_engine(
-            dsn=get_database_url(worker_id),
-            application_name=f"test_{worker_id}_lk_validate_concurrency",
-            pool_size=8,
-            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+    @pytest.mark.parametrize(
+        ("increment_usage", "column", "expected_successes", "expected_value"),
+        [
+            pytest.param(1, LicenseKey.usage, 3, 3, id="usage_limit_enforced"),
+            pytest.param(None, LicenseKey.validations, 5, 5, id="validations_counted"),
+        ],
+    )
+    async def test_counters_under_concurrency(
+        self,
+        committed_license_key: tuple[AsyncSessionMaker, UUID],
+        increment_usage: int | None,
+        column: Any,
+        expected_successes: int,
+        expected_value: int,
+    ) -> None:
+        sessionmaker, license_key_id = committed_license_key
+
+        results = await asyncio.gather(
+            *(
+                _attempt_validation(sessionmaker, license_key_id, increment_usage)
+                for _ in range(5)
+            )
         )
-        sessionmaker = create_async_sessionmaker(engine)
 
-        async with sessionmaker() as setup_session:
-            save_fixture = save_fixture_factory(setup_session)
-            user = await create_user(save_fixture)
-            account = await create_account(save_fixture, user)
-            organization = await create_organization(save_fixture, account)
-            customer = await create_customer(save_fixture, organization=organization)
-            benefit = await create_benefit(save_fixture, organization=organization)
-            license_key = LicenseKey(
-                organization_id=organization.id,
-                customer_id=customer.id,
-                benefit_id=benefit.id,
-                key="testing-concurrent-validation",
-                status=LicenseKeyStatus.granted,
-                limit_usage=3,
+        async with sessionmaker() as session:
+            value = (
+                await session.execute(
+                    select(column).where(LicenseKey.id == license_key_id)
+                )
+            ).scalar_one()
+
+        assert results.count(True) == expected_successes
+        assert value == expected_value
+
+    async def test_revoked_while_validating_is_rejected(
+        self, committed_license_key: tuple[AsyncSessionMaker, UUID]
+    ) -> None:
+        sessionmaker, license_key_id = committed_license_key
+
+        async with sessionmaker() as session:
+            license_key = await LicenseKeyRepository.from_session(session).get_by_id(
+                license_key_id
             )
-            setup_session.add(license_key)
-            await setup_session.commit()
+            assert license_key is not None
 
-        try:
-            results = await asyncio.gather(
-                *(_attempt_validation(sessionmaker, license_key.id) for _ in range(5))
-            )
+            async with sessionmaker() as revoking_session:
+                await revoking_session.execute(
+                    update(LicenseKey)
+                    .where(LicenseKey.id == license_key_id)
+                    .values(status=LicenseKeyStatus.revoked)
+                )
+                await revoking_session.commit()
 
-            async with sessionmaker() as session:
-                usage = (
-                    await session.execute(
-                        select(LicenseKey.usage).where(LicenseKey.id == license_key.id)
+            with pytest.raises(ResourceNotFound):
+                await license_key_service.validate(
+                    session,
+                    license_key=license_key,
+                    validate=LicenseKeyValidate(
+                        key=license_key.key,
+                        organization_id=license_key.organization_id,
+                        conditions={},
+                    ),
+                )
+            await session.rollback()
+
+        async with sessionmaker() as session:
+            validations = (
+                await session.execute(
+                    select(LicenseKey.validations).where(
+                        LicenseKey.id == license_key_id
                     )
-                ).scalar_one()
-
-            assert results.count(True) == 3
-            assert usage == 3
-        finally:
-            async with sessionmaker() as cleanup_session:
-                await cleanup_session.execute(
-                    delete(Organization).where(Organization.id == organization.id)
                 )
-                await cleanup_session.execute(
-                    delete(Account).where(Account.id == account.id)
-                )
-                await cleanup_session.execute(delete(User).where(User.id == user.id))
-                await cleanup_session.commit()
-            await engine.dispose()
+            ).scalar_one()
+        assert validations == 0
 
 
 async def _license_key_and_grant(

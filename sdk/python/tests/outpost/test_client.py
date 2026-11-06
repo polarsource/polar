@@ -270,7 +270,11 @@ async def polar_client(
     async def app(scope: typing.Any, receive: typing.Any, send: typing.Any) -> None:
         # Each organization's token: organizations can share a Redis.
         token = dict(scope["headers"])[b"authorization"]
-        assert token in (b"Bearer test-token", b"Bearer org-2-token")
+        assert token in (
+            b"Bearer test-token",
+            b"Bearer other-token",
+            b"Bearer org-2-token",
+        )
         data = b""
         while True:
             message = await receive()
@@ -1084,6 +1088,7 @@ async def test_reloads_a_configuration_another_instance_pulled_while_this_one_st
         )
         [stored] = await redis.keys("outpost:v1:configuration:*")
         await redis.set(stored, json.dumps(configuration))
+        await redis.set("outpost:v1:org-1:configuration", json.dumps(configuration))
         await redis.hincrby("outpost:v1:org-1:pull", "configuration", 1)
         return configured
 
@@ -1101,6 +1106,7 @@ async def test_keeps_its_configuration_while_the_stored_one_is_gone_without_aski
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,
     configuration_status: dict[str, int],
+    polar_requests: list[tuple[str, typing.Any]],
     clock: types.SimpleNamespace,
 ) -> None:
     url, redis = redis_connection
@@ -1111,11 +1117,46 @@ async def test_keeps_its_configuration_while_the_stored_one_is_gone_without_aski
     await _credit(redis, 100)
     async with Outpost(url, client=polar_client) as outpost:
         [stored] = await redis.keys("outpost:v1:configuration:*")
-        await redis.delete(stored)
+        await redis.delete(stored, "outpost:v1:org-1:configuration")
         await redis.hincrby("outpost:v1:org-1:pull", "configuration", 1)
         configuration_status["status"] = 503
         clock.elapsed += 30
         assert await _consumed(outpost) == 10
+    assert len(_requested(polar_requests, "GET /v1/outpost/configuration")) == 1
+
+
+@pytest.mark.anyio
+async def test_reloads_a_configuration_another_token_of_the_organization_pulled(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    configuration: dict[str, typing.Any],
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, _ = redis_connection
+    async with (
+        httpx.AsyncClient(
+            base_url=polar_client.base_url,
+            headers={"Authorization": "Bearer other-token"},
+            transport=polar_client._transport,
+        ) as other_client,
+        Outpost(url, client=polar_client) as puller,
+        Outpost(url, client=other_client) as other,
+    ):
+        configuration["reducers"].append(
+            {
+                **configuration["reducers"][0],
+                "id": "requests",
+                "meter_ids": ["requests"],
+            }
+        )
+        changes["configuration_changed"] = True
+        await puller._pull()
+        snapshots["external:alice:requests"] = ALICE_SNAPSHOT
+        assert (
+            await other.meter(meter_id="requests", external_customer_id="alice")
+            is not None
+        )
 
 
 @pytest.mark.anyio

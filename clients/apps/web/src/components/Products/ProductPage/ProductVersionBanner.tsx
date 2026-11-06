@@ -57,7 +57,7 @@ export const ProductVersionBanner = ({
     )
   }
 
-  if (catalog?.status !== 'archived') {
+  if (product.is_current || catalog?.status !== 'archived') {
     return null
   }
 

@@ -1,7 +1,7 @@
 """delete legacy oauth2 grants
 
 Revision ID: 57e6b4862574
-Revises: 30bb4db922cb
+Revises: 7556261cda9f
 Create Date: 2026-11-04 10:23:31.257305
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "57e6b4862574"
-down_revision = "30bb4db922cb"
+down_revision = "7556261cda9f"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

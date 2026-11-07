@@ -1930,7 +1930,9 @@ class OrderService:
 
                 payment_intent_params: dict[str, Any] = {}
                 if payment_method.type == "sepa_debit":
-                    payment_intent_params["payment_method_types"] = ["sepa_debit"]
+                    payment_intent_params["allowed_payment_method_types"] = [
+                        "sepa_debit"
+                    ]
 
                 try:
                     payment_intent = await stripe_service.create_payment_intent(
@@ -2022,7 +2024,9 @@ class OrderService:
     async def _mark_intent_as_failed_sync(self, error: stripe_lib.StripeError) -> None:
         payment_intent = getattr(error.error, "payment_intent", None)
         if payment_intent is not None:
-            intent_metadata = payment_intent.metadata or {}
+            intent_metadata = (
+                payment_intent.metadata.to_dict() if payment_intent.metadata else {}
+            )
             intent_metadata["polar_failed_sync_payment"] = "true"
             await stripe_service.modify_payment_intent(
                 payment_intent.id, metadata=intent_metadata
@@ -2130,7 +2134,9 @@ class OrderService:
                         }
                     }
                     if saved_payment_method.type == "sepa_debit":
-                        payment_intent_params = {"payment_method_types": ["sepa_debit"]}
+                        payment_intent_params = {
+                            "allowed_payment_method_types": ["sepa_debit"]
+                        }
                     payment_intent = await stripe_service.create_payment_intent(
                         amount=order.due_amount,
                         currency=order.currency,

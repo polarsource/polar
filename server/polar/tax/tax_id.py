@@ -584,7 +584,7 @@ def to_stripe_tax_id(value: TaxID) -> CustomerCreateParamsTaxIdDatum:
         raise IncompatibleTaxIDFormat(tax_id_type)
 
     return {
-        "type": str(tax_id_type),  # type: ignore
+        "type": str(tax_id_type),
         "value": tax_id,
     }
 

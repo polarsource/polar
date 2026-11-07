@@ -16,7 +16,7 @@ from polar.email.sender import enqueue_email_template
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
+from polar.integrations.stripe.utils import get_expandable_id, get_stripe_field
 from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
 from polar.models.organization import resolve_default_customer_email_settings
 from polar.organization.repository import OrganizationRepository
@@ -91,9 +91,16 @@ class PaymentMethodService:
         else:
             source = intent
 
-        details = source.get("payment_method_details") if source is not None else None
+        details = (
+            get_stripe_field(source, "payment_method_details")
+            if source is not None
+            else None
+        )
         generated = (
-            (details.get(payment_method.type) or {}).get("generated_sepa_debit")
+            get_stripe_field(
+                get_stripe_field(details, payment_method.type) or {},
+                "generated_sepa_debit",
+            )
             if details is not None
             else None
         )
@@ -128,7 +135,7 @@ class PaymentMethodService:
         payment_method.type = stripe_payment_method.type
         payment_method.method_metadata = stripe_payment_method[
             stripe_payment_method.type
-        ]
+        ].to_dict(for_json=True)
         payment_method.deleted_at = None  # Restore if it was soft-deleted
 
         return await repository.update(payment_method, flush=flush)

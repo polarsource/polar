@@ -18,7 +18,7 @@ from polar.event.service import event as event_service
 from polar.event.system import OrderRefundedMetadata, SystemEvent, build_system_event
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
+from polar.integrations.stripe.utils import get_expandable_id, get_stripe_field
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -341,9 +341,11 @@ class RefundService:
         if refund is not None:
             return await self.update_from_stripe(session, refund, stripe_refund)
 
-        if stripe_refund.metadata and stripe_refund.metadata.get("refund_id"):
+        if stripe_refund.metadata and get_stripe_field(
+            stripe_refund.metadata, "refund_id"
+        ):
             raise RefundPendingCreation(
-                uuid.UUID(stripe_refund.metadata.get("refund_id"))
+                uuid.UUID(get_stripe_field(stripe_refund.metadata, "refund_id"))
             )
 
         return await self.create_from_stripe(session, stripe_refund)
@@ -362,7 +364,7 @@ class RefundService:
         dispute_repository = DisputeRepository.from_session(session)
         dispute: Dispute | None = None
         if stripe_refund.metadata and (
-            alert_id := stripe_refund.metadata.get("cbs_related_alert_id")
+            alert_id := get_stripe_field(stripe_refund.metadata, "cbs_related_alert_id")
         ):
             dispute = await dispute_repository.get_by_alert_processor_id(
                 DisputeAlertProcessor.chargeback_stop, alert_id

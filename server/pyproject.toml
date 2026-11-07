@@ -16,7 +16,7 @@ dependencies = [
   "githubkit==0.16.1",
   "redis>=5.0.4",
   "sse-starlette>=3.4.5",
-  "stripe>=14,<15",
+  "stripe>=16.1,<16.2",
   "pyjwt>=2.13.0",
   "pydantic>=2.13.4",
   "sentry-sdk[fastapi,sqlalchemy]>=2.64.0",
@@ -226,7 +226,7 @@ override-dependencies = [
   "opentelemetry-instrumentation-sqlalchemy @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-sqlalchemy",
 ]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false }
+exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false, stripe = false }
 
 [tool.vercel]
 entrypoint = "polar.app:app"

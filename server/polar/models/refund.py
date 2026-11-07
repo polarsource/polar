@@ -58,15 +58,7 @@ class RefundReason(StrEnum):
     @classmethod
     def from_stripe(
         cls,
-        reason: (
-            Literal[
-                "duplicate",
-                "expired_uncaptured_charge",
-                "fraudulent",
-                "requested_by_customer",
-            ]
-            | None
-        ),
+        reason: str | None,
     ) -> "RefundReason":
         if reason == "requested_by_customer":
             return cls.customer_request

@@ -14,6 +14,7 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_benefit,
     create_event,
     create_meter,
 )
@@ -485,16 +486,41 @@ class TestExport:
     @pytest.mark.auth
     async def test_not_enabled(
         self,
+        save_fixture: SaveFixture,
         client: AsyncClient,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        await create_meter(save_fixture, organization=organization, external_id="calls")
+
         response = await client.get(
             "/v1/config/", params={"organization_id": str(organization.id)}
         )
 
-        assert response.status_code == 403
-        assert response.json()["error"] == "ConfigAsCodeNotEnabled"
+        assert response.status_code == 200
+        json = response.json()
+        assert json["enabled"] is False
+        assert [meter["external_id"] for meter in json["config"]["meters"]] == ["calls"]
+        assert not organization.is_config_as_code_enabled
+
+    @pytest.mark.auth
+    async def test_not_enabled_unsupported_resources(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        response = await client.get(
+            "/v1/config/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 409
+        assert response.json()["error"] == "ConfigUnsupportedResources"
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -604,18 +630,24 @@ class TestExport:
                 "id": str(without_external_id.id),
                 "name": "My Meter",
                 "reason": "missing_external_id",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             },
             {
                 "resource": "meter",
                 "id": str(archived.id),
                 "name": "My Meter",
                 "reason": "archived",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             },
             {
                 "resource": "meter",
                 "id": str(invalid.id),
                 "name": "My Meter",
                 "reason": "invalid",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             },
         ]
 
@@ -658,6 +690,8 @@ class TestExport:
                 "id": str(second.id),
                 "name": "My Meter",
                 "reason": "over_limit",
+                "recurring_interval": None,
+                "recurring_interval_count": None,
             }
         ]
 

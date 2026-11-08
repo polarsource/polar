@@ -14,11 +14,19 @@ import uuid
 
 import anyio
 from anyio.streams.buffered import BufferedByteReceiveStream
-from polar.outpost.client import Configuration, EventInput, Snapshot
+from polar.outpost.client import EventInput, Snapshot
+from polar.outpost.reducer import Reducer
 from redis.asyncio import Redis
 from redis.exceptions import ConnectionError as RedisConnectionError
 
 ROOT = pathlib.Path(__file__).resolve().parent
+
+
+# Polar's configuration as a scenario writes it: the fake Polar adds its organization.
+class ScenarioConfiguration(typing.TypedDict):
+    reducers: list[Reducer]
+
+
 RETRYABLE_READ_ERRORS = ("Customer snapshot is not ready", "Redis is unavailable")
 
 
@@ -153,7 +161,7 @@ Step: typing.TypeAlias = (
 @dataclasses.dataclass(frozen=True)
 class Scenario:
     name: str
-    configuration: Configuration
+    configuration: ScenarioConfiguration
     snapshots: list[Snapshot]
     steps: list[Step]
 

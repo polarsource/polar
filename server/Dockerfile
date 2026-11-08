@@ -120,6 +120,10 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", \
 
 FROM public.ecr.aws/lambda/python:3.14 AS lambda-base
 
+RUN dnf upgrade -y --releasever=latest \
+  && dnf clean all \
+  && rm /usr/local/bin/aws-lambda-rie
+
 RUN trust extract --overwrite --format=pem-bundle \
     --filter='pkcs11:object=Comodo%20AAA%20Services%20root;type=cert' \
     /etc/pki/ca-trust/source/blocklist/Comodo_AAA_Services_root.pem \

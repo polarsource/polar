@@ -162,6 +162,81 @@ redis.call('PUBLISH', ARGV[2], cjson.encode({customer = ARGV[1], state = state})
 return state
 `;
 
+export const RELEASE_LOCK_SCRIPT = `
+-- Deletes the lock, if it still holds this instance's token: once the lock expired, another
+-- instance may hold it.
+local lock = KEYS[1]
+local token = ARGV[1]
+
+if redis.call('GET', lock) == token then
+    return redis.call('DEL', lock)
+end
+return 0
+`;
+
+export const EXTEND_LOCK_SCRIPT = `
+-- Keeps the lock for another ttl milliseconds, if it still holds this instance's token.
+local lock = KEYS[1]
+local token = ARGV[1]
+local ttl = ARGV[2]
+
+if redis.call('GET', lock) == token then
+    return redis.call('PEXPIRE', lock, ttl)
+end
+return 0
+`;
+
+export const COMMIT_PULL_SCRIPT = `
+-- Saves the cursor once a page of changes is applied. Returns 0 and saves nothing when this
+-- instance no longer holds the pull lock: once the lock expired, another instance may pull.
+local pull = KEYS[1]
+local lock = KEYS[2]
+local token = ARGV[1]
+local cursor = ARGV[2]
+local pulled_at = ARGV[3]
+local next_poll_in = ARGV[4]
+local channel = ARGV[5]
+-- '1' on the last page: the pull is over and the lock goes.
+local last_page = ARGV[6] == '1'
+
+if redis.call('GET', lock) ~= token then
+    return 0
+end
+redis.call('HSET', pull, 'cursor', cursor, 'pulled_at', pulled_at, 'next_poll_in', next_poll_in)
+-- A pull that succeeds ends the backoff.
+redis.call('HDEL', pull, 'failures', 'retry_at')
+if last_page then
+    redis.call('DEL', lock)
+end
+-- Every instance learns when the next pull is due.
+redis.call('PUBLISH', channel,
+    cjson.encode({pulled = {at = tonumber(pulled_at), next = tonumber(next_poll_in)}}))
+return 1
+`;
+
+export const BACKOFF_SCRIPT = `
+-- Counts one more failure in a row on a key the whole fleet shares, such as the pull's, and
+-- says when to try again. Each failure in a row doubles the wait, up to a maximum.
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local first_delay = tonumber(ARGV[2])
+local max_delay = tonumber(ARGV[3])
+local channel = ARGV[4]
+-- Optional: the key expires this many milliseconds later, and its failures with it.
+local forget_after = ARGV[5]
+
+local failures = redis.call('HINCRBY', key, 'failures', 1)
+local delay = math.min(max_delay, first_delay * 2 ^ math.min(failures - 1, 16))
+local retry_at = now + delay
+redis.call('HSET', key, 'retry_at', retry_at)
+if forget_after then
+    redis.call('PEXPIRE', key, forget_after)
+end
+-- Every instance learns when it may try again.
+redis.call('PUBLISH', channel, cjson.encode({failed = {key = key, retry = retry_at}}))
+return retry_at
+`;
+
 export const APPLY_SNAPSHOT_SCRIPT = `
 local cutoff = tonumber(ARGV[4])
 local state = redis.call('HGETALL', KEYS[1])

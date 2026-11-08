@@ -100,6 +100,7 @@ variable "environment_groups" {
       POLAR_USER_SESSION_COOKIE_DOMAIN           = string
       POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN = string
       POLAR_OAUTH2_SESSION_STATE_COOKIE_DOMAIN   = string
+      POLAR_MCP_OAUTH2_CLIENT_ID                 = string
       POLAR_BASE_URL                             = string
       POLAR_BACKOFFICE_HOST                      = optional(string)
       POLAR_EMAIL_SENDER                         = string

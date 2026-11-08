@@ -1180,6 +1180,11 @@ class ProductVersionOutputMixin(BaseModel):
             )
         ),
     ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the product."),
+    ]
 
 
 class Product(
@@ -1259,10 +1264,7 @@ class ProductListParams(QuerySchema):
     ] = Field(
         None,
         title="CatalogStatus Filter",
-        description=(
-            "Filter by catalog status. "
-            "Defaults to `live` unless filtering by ID or catalog ID."
-        ),
+        description="Filter by catalog status.",
     )
     query: str | None = Field(None, description="Filter by product name.")
     is_archived: bool | None = Field(None, description="Filter on archived products.")

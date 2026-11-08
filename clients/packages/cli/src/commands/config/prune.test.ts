@@ -66,6 +66,7 @@ const run = async (
           apply: () => Effect.die('unused'),
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
+          disable: () => Effect.die('unused'),
           prune: (_config, _organization, confirm) =>
             entries.some(
               (entry) =>

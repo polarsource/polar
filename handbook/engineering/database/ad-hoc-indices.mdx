@@ -1,0 +1,36 @@
+---
+title: "Ad-hoc indices"
+description: "Manually managed PostgreSQL indices for production query hotspots."
+---
+
+## Customer meter usage aggregation
+
+The [PlanetScale query fingerprint](https://app.planetscale.com/polar-sh/polar-production/main/insights/9b386e778e98655e63f709a2a3f65bf558d96a0d0e10467740e6d5107ffcce13?keyspace=polar_production.public)
+sums a numeric field from `events.user_metadata`. It combines two sums with `UNION ALL`:
+one filters by `customer_id`, the other by `external_customer_id`. Both filter by
+organization, event name, and source. The query has no time bound.
+
+The indices below cover the `external_customer_id` branch. The partial predicate
+limits each index to one organization and event name. Including `user_metadata`
+lets PostgreSQL check the JSON value's type and compute the sum from the index when
+an index-only scan is possible.
+
+```sql
+CREATE INDEX CONCURRENTLY IF NOT EXISTS "<index_name>"
+ON events (external_customer_id, ingested_at)
+INCLUDE (user_metadata)
+WHERE organization_id = '<organization_id>'::uuid
+  AND source = 'user'
+  AND name = '<event_name>'
+  AND external_customer_id IS NOT NULL;
+```
+
+Use the `ix_events_meter_` prefix for these manually managed indices. Alembic
+autogeneration ignores database-only indices with this prefix on `events`.
+
+| Index name | Organization ID |
+| --- | --- |
+| `ix_events_meter_a266c3bf-a7a0-4883-950c-b1f995b6193d` | `d49ecf1e-4cb2-41f2-827d-ea48b03706f6` |
+| `ix_events_meter_94c5b1f0_external_cover` | `3753e789-b30b-48be-b96f-fe4dd689892d` |
+| `ix_events_meter_379f7fd6_external_cover` | `e4a7d515-fd73-4016-b7fe-792816457fd0` |
+| `ix_events_meter_7ea36ede_external_cover` | `3039142f-21f8-4676-a7cf-1609cc831636` |

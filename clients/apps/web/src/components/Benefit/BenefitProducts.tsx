@@ -26,6 +26,7 @@ export const BenefitProducts = ({
   const { data: products, isLoading } = useProducts(organization.id, {
     benefit_id: benefit.id,
     is_archived: null,
+    catalog_status: null,
     sorting: ['name'],
     page,
     limit: PAGE_SIZE,

@@ -1,99 +1,16 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
-import { useCatalog } from '@/hooks/queries/catalogs'
-import { useSelectedProducts } from '@/hooks/queries/products'
-import { useSubscriptions } from '@/hooks/queries/subscriptions'
+import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
+import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowBackOutlined, Circle } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ReactNode } from 'react'
-import { PublishedAt } from '../VersionsPage'
+import { PublishedAt, StatusBadge } from '../VersionsPage'
+import { VersionDiff } from './VersionDiff'
 
 type Organization = schemas['Organization']
-type CatalogProduct = schemas['CatalogProduct']
-type Product = schemas['Product']
-type Change = (typeof changes)[number]
-type Entry = {
-  row: CatalogProduct
-  change: Change | null
-  previousProductId?: string
-}
-
-const changes = ['added', 'changed', 'removed'] as const
-
-// Temporary: subscriber counts cost one request per product, so large catalogs skip them.
-const MAX_PRODUCTS_WITH_SUBSCRIBERS = 25
-
-const changeText = {
-  added: { label: 'Added', color: 'success' },
-  changed: { label: 'Changed', color: 'muted' },
-  removed: { label: 'Removed', color: 'danger' },
-} as const
-
-const diffCatalog = (
-  rows: CatalogProduct[],
-  parentRows: CatalogProduct[] | undefined,
-): Entry[] => {
-  if (!parentRows) return rows.map((row) => ({ row, change: null }))
-
-  const parentByKey = new Map(parentRows.map((row) => [row.external_id, row]))
-  const keys = new Set(rows.map((row) => row.external_id))
-
-  return [
-    ...rows.map((row): Entry => {
-      const previous = parentByKey.get(row.external_id)
-      if (!previous) return { row, change: 'added' }
-      if (previous.product_id === row.product_id) return { row, change: null }
-      return { row, change: 'changed', previousProductId: previous.product_id }
-    }),
-    ...parentRows
-      .filter((row) => !keys.has(row.external_id))
-      .map((row): Entry => ({ row, change: 'removed' })),
-  ].sort((a, b) => a.row.external_id.localeCompare(b.row.external_id))
-}
-
-// Fields that differ between copies of the same price across product versions
-const identityFields = new Set([
-  'id',
-  'created_at',
-  'modified_at',
-  'product_id',
-])
-
-const priceSignature = ({
-  prices,
-  recurring_interval,
-  recurring_interval_count,
-}: Product) =>
-  JSON.stringify(
-    [recurring_interval, recurring_interval_count, prices],
-    (key, value) => (identityFields.has(key) ? undefined : value),
-  )
-
-const plural = (count: number, noun: string) =>
-  `${count} ${count === 1 ? noun : `${noun}s`}`
-
-const Diff = ({
-  before,
-  children,
-}: {
-  before?: ReactNode
-  children: ReactNode
-}) => (
-  <Box alignItems="baseline" columnGap="s" minWidth={0}>
-    {before ? (
-      <Text as="span" color="muted" lineThrough truncate>
-        {before}
-      </Text>
-    ) : null}
-    {children}
-  </Box>
-)
 
 const statusLabel = {
   live: 'Current',
@@ -101,143 +18,11 @@ const statusLabel = {
   draft: 'Draft',
 } as const
 
-const BackLink = ({ versionsPath }: { versionsPath: string }) => (
-  <Link href={versionsPath} aria-label="All versions">
-    <Box
-      as="span"
-      display="flex"
-      color={{ base: 'text-tertiary', hover: 'text-primary' }}
-      transitionProperty="colors"
-      transitionDuration="fast"
-    >
-      <ArrowBackOutlined fontSize="small" />
-    </Box>
-  </Link>
+const Dot = () => (
+  <Text as="span" color="muted">
+    ·
+  </Text>
 )
-
-const Field = ({
-  label,
-  first,
-  children,
-}: {
-  label: string
-  first?: boolean
-  children: ReactNode
-}) => (
-  <Box
-    flexDirection="column"
-    rowGap="xs"
-    borderTopWidth={first ? 0 : 1}
-    borderStyle="solid"
-    borderColor="border-primary"
-    paddingTop={first ? 'none' : 'l'}
-  >
-    <Text color="muted">{label}</Text>
-    {children}
-  </Box>
-)
-
-const Subscribers = ({
-  organizationId,
-  productId,
-}: {
-  organizationId: string
-  productId: string
-}) => {
-  const { data } = useSubscriptions(organizationId, {
-    product_id: productId,
-    status: ['active', 'trialing'],
-    limit: 1,
-  })
-  const count = data?.pagination.total_count
-  if (count === undefined) return null
-  return (
-    <Text color={count ? 'default' : 'muted'} align="right">
-      {plural(count, 'subscriber')}
-    </Text>
-  )
-}
-
-const ProductRow = ({
-  organization,
-  entry: { row, change },
-  product,
-  previous,
-  showStatus,
-  showSubscribers,
-}: {
-  organization: Organization
-  entry: Entry
-  product?: Product
-  previous?: Product
-  showStatus: boolean
-  showSubscribers: boolean
-}) => {
-  const currency = organization.default_presentment_currency
-  const removed = change === 'removed'
-
-  const nameBefore =
-    previous && previous.name !== product?.name ? previous.name : undefined
-  const priceBefore =
-    previous &&
-    product &&
-    priceSignature(previous) !== priceSignature(product) ? (
-      <ProductPriceLabel product={previous} currency={currency} />
-    ) : undefined
-
-  const columns = `160px minmax(0, 1fr) ${showStatus ? '296px' : '200px'}${showSubscribers ? ' 176px' : ''}`
-
-  return (
-    <Link href={`/dashboard/${organization.slug}/products/${row.product_id}`}>
-      <ListItem className="px-6 py-5">
-        <Grid
-          templateColumns={columns}
-          columnGap="xl"
-          alignItems="center"
-          width="100%"
-        >
-          <Text color="muted" monospace truncate>
-            {row.external_id}
-          </Text>
-          <Diff before={nameBefore}>
-            <Text
-              color={removed ? 'disabled' : 'default'}
-              lineThrough={removed}
-              truncate
-            >
-              {product?.name}
-            </Text>
-          </Diff>
-          <Box
-            justifyContent="end"
-            alignItems="center"
-            columnGap="m"
-            minWidth={0}
-          >
-            {showStatus && change ? (
-              <Text variant="title" color={changeText[change].color}>
-                {changeText[change].label}
-              </Text>
-            ) : null}
-            <Diff before={priceBefore}>
-              <Text color={removed ? 'disabled' : 'default'}>
-                {product ? (
-                  <ProductPriceLabel product={product} currency={currency} />
-                ) : null}
-              </Text>
-            </Diff>
-          </Box>
-          {showSubscribers ? (
-            <Subscribers
-              organizationId={organization.id}
-              productId={row.product_id}
-            />
-          ) : null}
-        </Grid>
-      </ListItem>
-    </Link>
-  )
-}
 
 export default function VersionPage({
   organization,
@@ -248,16 +33,10 @@ export default function VersionPage({
 }) {
   const { data: catalog, error } = useCatalog(catalogId)
   const { data: parent } = useCatalog(catalog?.parent_id)
-  const entries = diffCatalog(catalog?.products ?? [], parent?.products)
-  const productIds = entries.flatMap(({ row, previousProductId }) =>
-    previousProductId ? [row.product_id, previousProductId] : [row.product_id],
-  )
-  const { data: products } = useSelectedProducts(
-    { id: [...new Set(productIds)] },
-    true,
-  )
-  const productsById = new Map(
-    products?.map((product) => [product.id, product]),
+  const { data: exported } = useCatalogConfig(organization.id, catalog?.id)
+  const { data: parentExported } = useCatalogConfig(
+    organization.id,
+    catalog?.parent_id,
   )
 
   if (error || (catalog && catalog.organization_id !== organization.id)) {
@@ -268,89 +47,88 @@ export default function VersionPage({
   }
 
   const versionsPath = `/dashboard/${organization.slug}/products/versions`
-  const changeSummary = changes
-    .flatMap((change) => {
-      const count = entries.filter((entry) => entry.change === change).length
-      return count ? [`${count} ${change}`] : []
-    })
-    .join(' · ')
+  const diffReady = exported && (!catalog.parent_id || parentExported)
+  // Removed items link to their copy in the parent version
+  const catalogs = parent ? [parent, catalog] : [catalog]
+  const productIds = new Map(
+    catalogs.flatMap(({ products }) =>
+      products.map((row) => [row.external_id, row.product_id]),
+    ),
+  )
+  const benefitIds = new Map(
+    catalogs.flatMap(({ benefits }) =>
+      benefits.map((row) => [row.external_id, row.benefit_id]),
+    ),
+  )
+  const productsPath = `/dashboard/${organization.slug}/products`
 
   return (
-    <DashboardBody title={null}>
-      <Box flexDirection={{ base: 'column', md: 'row' }} gap="2xl">
-        <Box flex={3} flexDirection="column" rowGap="xl" minWidth={0}>
-          <Box alignItems="center" justifyContent="between" columnGap="l">
-            <Box alignItems="center" columnGap="l" minWidth={0}>
-              <BackLink versionsPath={versionsPath} />
-              <Text variant="heading-xs" as="h1" truncate>
-                {catalog.name ?? 'Untitled'}
-              </Text>
-            </Box>
-            <Text variant="heading-xs" color="muted">
-              {plural(catalog.products.length, 'product')}
+    <DashboardBody
+      wrapperClassName="max-w-(--breakpoint-lg)!"
+      title={
+        <Box flexDirection="column" rowGap="xs" minWidth={0}>
+          <Box alignItems="center" columnGap="l" minWidth={0}>
+            <Text variant="heading-xs" as="h1" truncate>
+              {catalog.name ?? 'Untitled'}
             </Text>
+            <Box flexShrink={0}>
+              {catalog.status === 'live' ? (
+                <StatusBadge draft={false} />
+              ) : (
+                <Status
+                  status={statusLabel[catalog.status]}
+                  color={catalog.status === 'archived' ? 'gray' : undefined}
+                />
+              )}
+            </Box>
           </Box>
-          <List size="small">
-            {entries.map((entry) => (
-              <ProductRow
-                key={entry.row.external_id}
-                organization={organization}
-                entry={entry}
-                product={productsById.get(entry.row.product_id)}
-                previous={
-                  entry.previousProductId
-                    ? productsById.get(entry.previousProductId)
-                    : undefined
-                }
-                showStatus={!!parent}
-                showSubscribers={
-                  entries.length <= MAX_PRODUCTS_WITH_SUBSCRIBERS
-                }
-              />
-            ))}
-          </List>
-        </Box>
-        <Box flex={1} flexDirection="column" rowGap="l" minWidth={0}>
-          <Field label="Status" first>
-            {catalog.status === 'live' ? (
-              <>
-                <Box alignItems="center" columnGap="s">
-                  <Box as="span" display="flex" color="text-success">
-                    <Circle size={8} fill="currentColor" strokeWidth={0} />
-                  </Box>
-                  <Text>{statusLabel.live}</Text>
-                </Box>
-                <Text color="muted">New checkouts use this version</Text>
-              </>
-            ) : (
-              <Text>{statusLabel[catalog.status]}</Text>
-            )}
-          </Field>
-          <Field label="Published">
-            <Text>
+          <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
+            <Text color="muted">
               {catalog.published_at ? (
-                <PublishedAt catalog={catalog} />
+                <>
+                  Published <PublishedAt catalog={catalog} />
+                </>
               ) : (
                 'Not published'
               )}
             </Text>
-          </Field>
-          {parent ? (
-            <Field label="Based on">
-              <Link href={`${versionsPath}/${parent.id}`}>
-                <Box
-                  as="span"
-                  color={{ base: 'text-primary', hover: 'text-secondary' }}
-                  transitionProperty="colors"
-                  transitionDuration="fast"
-                >
-                  {parent.name ?? 'Untitled'}
-                </Box>
-              </Link>
-              <Text color="muted">{changeSummary || 'No changes'}</Text>
-            </Field>
-          ) : null}
+            {parent ? (
+              <>
+                <Dot />
+                <Text color="muted">Based on</Text>
+                <Link href={`${versionsPath}/${parent.id}`}>
+                  <Box
+                    as="span"
+                    color={{ base: 'text-primary', hover: 'text-secondary' }}
+                    transitionProperty="colors"
+                    transitionDuration="fast"
+                  >
+                    <Text as="span" color="inherit">
+                      {parent.name ?? 'Untitled'}
+                    </Text>
+                  </Box>
+                </Link>
+              </>
+            ) : null}
+          </Box>
         </Box>
+      }
+    >
+      <Box flexDirection="column" minWidth={0}>
+        {diffReady ? (
+          <VersionDiff
+            config={exported.config}
+            parentConfig={parentExported?.config}
+            productHref={(externalId) => {
+              const id = productIds.get(externalId)
+              return id ? `${productsPath}/${id}` : undefined
+            }}
+            benefitHref={(externalId) => {
+              const id = benefitIds.get(externalId)
+              return id ? `${productsPath}/benefits/${id}` : undefined
+            }}
+          />
+        ) : null}
       </Box>
     </DashboardBody>
   )

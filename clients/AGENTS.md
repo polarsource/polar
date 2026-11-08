@@ -313,12 +313,12 @@ Use these instead of hand-rolled tailwind components:
 import { Text } from '@polar-sh/orbit' // typography (variant-driven)
 import { Button, Grid } from '@polar-sh/orbit'
 import { Avatar, SegmentedControl } from '@polar-sh/orbit'
-import { Alert } from '@polar-sh/orbit' // tinted callout (info/warning/danger/success)
+import { Alert } from '@polar-sh/orbit' // callout (info/warning/danger/success)
 import { ButtonGroup } from '@polar-sh/orbit' // one or two primary/ghost actions
 ```
 
 `Alert` takes a `variant` (`info` | `warning` | `danger` | `success`, default `info`), a
-`title`, and an optional `description`; the variant abstracts away the icon and all colors.
+`title`, and an optional `description`; the variant abstracts away the icon and its accent color.
 It also accepts `loading` (swaps the icon for a spinner), `onDismiss` (renders a dismiss
 button), and `actions` (one or two `ButtonGroup` CTAs, rendered bottom-right). `ButtonGroup`
 takes an `actions` tuple of at most two `{ text, onClick, loading?, disabled? }` — the first

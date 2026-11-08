@@ -1,8 +1,10 @@
-from bisect import bisect_right
-from collections.abc import AsyncIterator, Collection, Sequence
-from dataclasses import dataclass
+from bisect import bisect_left, bisect_right
+from collections import defaultdict
+from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from itertools import pairwise
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -14,32 +16,35 @@ from sqlalchemy import (
     case,
     delete,
     event,
-    func,
     literal,
     null,
     or_,
     select,
 )
 
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import PropertyAggregation, UniqueAggregation
 from polar.models import (
     BillingEntry,
+    BillingInterval,
     Customer,
     Event,
     MeterReducer,
     Order,
     OrderItem,
+    Organization,
     ProductPrice,
     Reducer,
     ReducerBucket,
-    Subscription,
 )
 from polar.models.billing_entry import BillingEntryType
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
+from polar.organization.repository import SUBSCRIPTION_CANCELLATION_STATUSES
 from polar.postgres import create_async_engine
+from polar.reducer.bucket_repository import INGESTED_BEFORE_TIMESTAMP_MARGIN
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
 
@@ -54,9 +59,10 @@ type BucketKey = tuple[UUID, datetime, datetime, UUID | None, str | None]
 """reducer_id, bucket_start, bucket_end, customer_id, external_customer_id"""
 type Boundaries = dict[tuple[UUID | str, UUID], list[datetime]]
 """Per customer id or external id and reducer, the sorted timestamps buckets
-are split at: each subscription's billable start, so that usage before it can
-never be billed. Past billing cutoffs aren't reconstructed: what each order
-billed is a sealed generation, what's pending an open one."""
+are split at, like live seals and bills split them: each billing interval's start
+and end, and each meter reset."""
+type Slot = tuple[UUID, datetime, UUID | None, str | None]
+"""reducer_id, bucket_start of the slot, customer_id, external_customer_id"""
 
 
 @dataclass
@@ -75,9 +81,17 @@ class Summary:
 
 type Billing = tuple[datetime, UUID]
 """created_at and id of the order that billed some usage"""
-type Totals = dict[BucketKey, dict[Billing | None, Summary]]
-"""Per bucket, the summary of its usage per order that billed it, with the
-unbilled usage under None."""
+
+
+@dataclass
+class Usage:
+    billings: set[Billing] = field(default_factory=set)
+    """The orders that billed some of the bucket's usage."""
+    values: list[tuple[datetime, Decimal]] = field(default_factory=list)
+    """ingested_at and value of each of the bucket's events."""
+
+
+type Totals = dict[BucketKey, Usage]
 
 
 async def backfill_organization(
@@ -88,10 +102,12 @@ async def backfill_organization(
     *,
     page_size: int = PAGE_SIZE,
 ) -> int:
-    """Rebuilds the buckets of all the organization's reducers starting in
+    """Rebuilds the buckets of all the organization's usage reducers starting in
     [start, end) from one pass over its events, and returns how many were written."""
     reducers = await _get_reducers(session, organization_id)
-    boundaries = await _get_boundaries(session, organization_id)
+    boundaries, split_slots = await _get_boundaries(
+        session, organization_id, reducers, start, end
+    )
     totals: Totals = {}
     flushed_until = start
     written = 0
@@ -104,7 +120,15 @@ async def backfill_organization(
         # The page may end inside a bucket: only the buckets before it are complete.
         flush_until = get_reducer_bucket_start(rows[-1].timestamp)
         written += await _flush(
-            session, organization_id, totals, flushed_until, flush_until, end
+            session,
+            organization_id,
+            reducers,
+            totals,
+            boundaries,
+            split_slots,
+            flushed_until,
+            flush_until,
+            end,
         )
         flushed_until = flush_until
         await session.commit()
@@ -113,7 +137,17 @@ async def backfill_organization(
             f"{utc_now():%H:%M:%S}  {seen:,} events, {written:,} buckets, "
             f"flushed until {flushed_until.isoformat()}"
         )
-    written += await _flush(session, organization_id, totals, flushed_until, end, end)
+    written += await _flush(
+        session,
+        organization_id,
+        reducers,
+        totals,
+        boundaries,
+        split_slots,
+        flushed_until,
+        end,
+        end,
+    )
     await session.commit()
     return written
 
@@ -142,16 +176,20 @@ async def _iter_events(
 async def _flush(
     session: AsyncSession,
     organization_id: UUID,
+    reducers: Sequence[Reducer],
     totals: Totals,
+    boundaries: Boundaries,
+    split_slots: set[Slot],
     start: datetime,
     end: datetime,
     synced_at: datetime,
 ) -> int:
-    """Replaces the organization's buckets starting in [start, end) with the
-    totals of those buckets, which it drops from `totals`."""
+    """Replaces the reducers' buckets starting in [start, end) with the totals of
+    those buckets, which it drops from `totals`."""
+    _add_empty_intervals(totals, reducers, boundaries, split_slots, start, end)
     completed = _pop_totals_before(totals, end)
     buckets = _to_buckets(organization_id, completed, synced_at)
-    await _delete_buckets(session, organization_id, start, end)
+    await _delete_buckets(session, organization_id, reducers, start, end)
     await _insert_buckets(session, buckets)
     return len(buckets)
 
@@ -159,13 +197,20 @@ async def _flush(
 async def _get_organization_ids(
     session: AsyncSession, organization_id: UUID | None, after: UUID | None
 ) -> Sequence[UUID]:
-    """The organizations with active reducers, or the given one."""
+    """The organizations still billing with active usage reducers, or the given
+    one. A deleted organization, or one whose subscriptions are cancelled, never
+    bills its usage again."""
     if organization_id is not None:
         return [organization_id]
     statement = (
         ReducerRepository.from_session(session)
         .get_active_statement((ReducerKind.usage,))
         .with_only_columns(Reducer.organization_id)
+        .join(Organization, Organization.id == Reducer.organization_id)
+        .where(
+            Organization.deleted_at.is_(None),
+            Organization.status.not_in(SUBSCRIPTION_CANCELLATION_STATUSES),
+        )
         .distinct()
         .order_by(Reducer.organization_id)
     )
@@ -177,7 +222,7 @@ async def _get_organization_ids(
 async def _get_reducers(
     session: AsyncSession, organization_id: UUID
 ) -> Sequence[Reducer]:
-    """The organization's active reducers with a mergeable aggregation."""
+    """The organization's active usage reducers with a mergeable aggregation."""
     reducers = await ReducerRepository.from_session(
         session
     ).get_all_active_by_organization_and_kinds(organization_id, (ReducerKind.usage,))
@@ -188,33 +233,101 @@ async def _get_reducers(
     ]
 
 
-async def _get_boundaries(session: AsyncSession, organization_id: UUID) -> Boundaries:
-    """The timestamps the organization's buckets are split at, per customer and
-    reducer, with the customer's external id as an alternate key."""
-    billable_from = (
-        select(
-            Subscription.customer_id,
-            Customer.external_id,
-            MeterReducer.reducer_id,
-            func.coalesce(Subscription.trial_end, Subscription.started_at),
+async def _get_boundaries(
+    session: AsyncSession,
+    organization_id: UUID,
+    reducers: Sequence[Reducer],
+    start: datetime,
+    end: datetime,
+) -> tuple[Boundaries, set[Slot]]:
+    """The timestamps in [start, end) the reducers' buckets are split at, per
+    customer and reducer, with the customer's external id as an alternate key, and
+    the slots they split for each of the customer's identities. Only those can
+    split a bucket starting in [start, end)."""
+    reducer_ids_by_meter: dict[UUID, list[UUID]] = defaultdict(list)
+    for meter_id, reducer_id in await session.execute(
+        select(MeterReducer.meter_id, MeterReducer.reducer_id).where(
+            MeterReducer.reducer_id.in_([reducer.id for reducer in reducers])
         )
-        .join(Customer, Customer.id == Subscription.customer_id)
-        .join(ProductPrice, ProductPrice.product_id == Subscription.product_id)
-        .join(MeterReducer, MeterReducer.meter_id == ProductPrice.__table__.c.meter_id)
+    ):
+        reducer_ids_by_meter[meter_id].append(reducer_id)
+    meter_ids = list(reducer_ids_by_meter)
+    resets = await session.execute(
+        select(
+            Customer.id,
+            Customer.external_id,
+            Event.user_metadata["meter_id"].as_string(),
+            Event.timestamp,
+        )
+        .join(Customer, Customer.id == Event.customer_id)
         .where(
-            Subscription.organization_id == organization_id,
-            Subscription.started_at.is_not(None),
+            Event.organization_id == organization_id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_reset,
+            Event.user_metadata["meter_id"]
+            .as_string()
+            .in_([str(meter_id) for meter_id in meter_ids]),
+            Event.timestamp >= start,
+            Event.timestamp < end,
+            # A reset is never timestamped after its ingestion: this bound lets
+            # the name index skip the organization's older resets.
+            Event.ingested_at >= start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
+        )
+    )
+    intervals = await session.execute(
+        select(
+            Customer.id,
+            Customer.external_id,
+            BillingInterval.meter_id,
+            BillingInterval.period_start,
+            BillingInterval.period_end,
+        )
+        .join(Customer, Customer.id == BillingInterval.customer_id)
+        .where(
+            BillingInterval.organization_id == organization_id,
+            BillingInterval.meter_id.in_(meter_ids),
+            or_(
+                and_(
+                    BillingInterval.period_start >= start,
+                    BillingInterval.period_start < end,
+                ),
+                and_(
+                    BillingInterval.period_end >= start,
+                    BillingInterval.period_end < end,
+                ),
+            ),
         )
     )
     boundaries: Boundaries = {}
-    for statement in (billable_from,):
-        for customer_id, external_id, reducer_id, at in await session.execute(
-            statement
-        ):
+    split_slots: set[Slot] = set()
+
+    def add(
+        customer_id: UUID, external_id: str | None, meter_id: UUID, at: datetime
+    ) -> None:
+        if not start <= at < end:
+            return
+        slot = get_reducer_bucket_start(at)
+        # Like seals and bills, which split every identity of the customer.
+        identities: list[tuple[UUID | None, str | None]] = [(customer_id, None)]
+        if external_id is not None:
+            identities += [(None, external_id), (customer_id, external_id)]
+        for reducer_id in reducer_ids_by_meter[meter_id]:
             boundaries.setdefault((customer_id, reducer_id), []).append(at)
             if external_id is not None:
                 boundaries.setdefault((external_id, reducer_id), []).append(at)
-    return {key: sorted(set(ats)) for key, ats in boundaries.items()}
+            if at != slot:
+                split_slots.update(
+                    (reducer_id, slot, identity_customer_id, identity_external_id)
+                    for identity_customer_id, identity_external_id in identities
+                )
+
+    for customer_id, external_id, meter_id, at in resets:
+        add(customer_id, external_id, UUID(meter_id), at)
+    for customer_id, external_id, meter_id, period_start, period_end in intervals:
+        add(customer_id, external_id, meter_id, period_start)
+        if period_end is not None:
+            add(customer_id, external_id, meter_id, period_end)
+    return {key: sorted(set(ats)) for key, ats in boundaries.items()}, split_slots
 
 
 def _get_interval(
@@ -240,11 +353,13 @@ async def _get_events_page(
 ) -> Sequence[Row[*tuple[Any, ...]]]:
     """Up to `page_size` of the organization's user events with a timestamp in
     [start, end) and (timestamp, id) after `after`, in that order: the event's
-    id, timestamp and customer identity, then its value for each reducer."""
+    id, timestamp, ingestion time and customer identity, then its value for each
+    reducer."""
     statement = (
         select(
             Event.id,
             Event.timestamp,
+            Event.ingested_at,
             Event.customer_id,
             Event.external_customer_id,
             *(_value_column(reducer) for reducer in reducers),
@@ -315,7 +430,7 @@ def _matched_event_ids(rows: Sequence[Row[*tuple[Any, ...]]]) -> list[UUID]:
     """The events with a value for at least one reducer."""
     return [
         id
-        for id, _, _, _, *values in rows
+        for id, _, _, _, _, *values in rows
         if any(value is not None for value in values)
     ]
 
@@ -327,10 +442,10 @@ def _add_to_totals(
     billed_at: dict[tuple[UUID, UUID], Billing],
     boundaries: Boundaries,
 ) -> None:
-    """Adds each event's value to the bucket of every reducer it matches, under
-    the order that billed it for that reducer, or None."""
+    """Adds each event's value to the bucket of every reducer it matches, and the
+    order that billed it for that reducer to the bucket's billings."""
     for row in rows:
-        id, timestamp, customer_id, external_customer_id, *values = row
+        id, timestamp, ingested_at, customer_id, external_customer_id, *values = row
         bucket_start = get_reducer_bucket_start(timestamp)
         customer_key = customer_id if customer_id is not None else external_customer_id
         for reducer, value in zip(reducers, values, strict=True):
@@ -340,9 +455,60 @@ def _add_to_totals(
                 boundaries.get((customer_key, reducer.id), []), bucket_start, timestamp
             )
             key = (reducer.id, start, end, customer_id, external_customer_id)
+            usage = totals.setdefault(key, Usage())
+            usage.values.append((ingested_at, Decimal(str(value))))
             billing = billed_at.get((id, reducer.id))
-            totals.setdefault(key, {}).setdefault(billing, Summary()).add(
-                Decimal(str(value))
+            if billing is not None:
+                usage.billings.add(billing)
+
+
+def _add_empty_intervals(
+    totals: Totals,
+    reducers: Sequence[Reducer],
+    boundaries: Boundaries,
+    split_slots: set[Slot],
+    start: datetime,
+    end: datetime,
+) -> None:
+    """Adds an empty bucket for each interval of the slots in [start, end) with
+    usage or a boundary that has none, like a split creates them: sync only
+    recomputes a slot's existing intervals, so a missing one would never count
+    its late events."""
+    reducer_ids = {reducer.id for reducer in reducers}
+    slots: set[Slot] = {
+        (
+            reducer_id,
+            get_reducer_bucket_start(bucket_start),
+            customer_id,
+            external_customer_id,
+        )
+        for reducer_id, bucket_start, _, customer_id, external_customer_id in totals
+        if bucket_start < end
+    } | {
+        slot
+        for slot in split_slots
+        if slot[0] in reducer_ids and start <= slot[1] < end
+    }
+    for reducer_id, slot_start, customer_id, external_customer_id in slots:
+        customer_key = customer_id if customer_id is not None else external_customer_id
+        assert customer_key is not None
+        slot_boundaries = [
+            at
+            for at in boundaries.get((customer_key, reducer_id), [])
+            if slot_start < at < slot_start + REDUCER_BUCKET_SIZE
+        ]
+        for interval_start, interval_end in pairwise(
+            [slot_start, *slot_boundaries, slot_start + REDUCER_BUCKET_SIZE]
+        ):
+            totals.setdefault(
+                (
+                    reducer_id,
+                    interval_start,
+                    interval_end,
+                    customer_id,
+                    external_customer_id,
+                ),
+                Usage(),
             )
 
 
@@ -355,9 +521,11 @@ def _pop_totals_before(totals: Totals, end: datetime) -> Totals:
 def _to_buckets(
     organization_id: UUID, totals: Totals, synced_at: datetime
 ) -> list[BucketValues]:
-    """Bucket rows to insert: each bucket gets one generation per billing order
-    in order of billing, sealed and billed at the order's created_at, then the
-    unbilled usage last, unsealed."""
+    """Bucket rows to insert: each order that billed some of a bucket's usage
+    sealed it at the order's created_at, and each seal starts a new generation,
+    like `reducer_bucket.sync` splits them: by ingestion time. A generation holds
+    the events ingested since the previous seal until its own, sealed and billed
+    by its order; the last one, unsealed, those ingested after the last seal."""
     buckets: list[BucketValues] = []
     for (
         reducer_id,
@@ -365,9 +533,8 @@ def _to_buckets(
         bucket_end,
         customer_id,
         external_customer_id,
-    ), summaries in totals.items():
-        for generation, billing in enumerate(_generation_order(summaries), 1):
-            summary = summaries[billing]
+    ), usage in totals.items():
+        for generation, (billing, summary) in enumerate(_get_generations(usage), 1):
             sealed_at, order_id = billing if billing is not None else (None, None)
             buckets.append(
                 {
@@ -391,17 +558,33 @@ def _to_buckets(
     return buckets
 
 
-def _generation_order(billings: Collection[Billing | None]) -> list[Billing | None]:
-    billed = sorted(billing for billing in billings if billing is not None)
-    return [*billed, None] if None in billings else [*billed]
+def _get_generations(usage: Usage) -> list[tuple[Billing | None, Summary]]:
+    """The bucket's non-empty generations in order, each with the order that
+    sealed it, or None for the unsealed one: a single empty, unsealed one for a
+    bucket without usage."""
+    seals: list[Billing | None] = [*sorted(usage.billings), None]
+    sealed_at = [created_at for created_at, _ in sorted(usage.billings)]
+    summaries = [Summary() for _ in seals]
+    for ingested_at, value in usage.values:
+        summaries[bisect_left(sealed_at, ingested_at)].add(value)
+    return [
+        (billing, summary)
+        for billing, summary in zip(seals, summaries, strict=True)
+        if summary.count
+    ] or [(None, Summary())]
 
 
 async def _delete_buckets(
-    session: AsyncSession, organization_id: UUID, start: datetime, end: datetime
+    session: AsyncSession,
+    organization_id: UUID,
+    reducers: Sequence[Reducer],
+    start: datetime,
+    end: datetime,
 ) -> None:
     await session.execute(
         delete(ReducerBucket).where(
             ReducerBucket.organization_id == organization_id,
+            ReducerBucket.reducer_id.in_([reducer.id for reducer in reducers]),
             ReducerBucket.bucket_start >= start,
             ReducerBucket.bucket_start < end,
         )
@@ -465,7 +648,7 @@ async def backfill(
     after_organization_id: UUID | None = None,
     page_size: int = typer.Option(PAGE_SIZE, min=1),
 ) -> None:
-    """Rebuild usage and billing buckets, excluding the latest ten minutes."""
+    """Rebuild usage reducer buckets, excluding the latest ten minutes."""
     # Whole buckets only: a window ending inside a bucket would rebuild it from
     # part of its events.
     start = get_reducer_bucket_start(start.replace(tzinfo=UTC))

@@ -1229,7 +1229,11 @@ class TestRequests:
 
         response = await client.post(
             "/v1/outpost/meter-usage",
-            json={"reducer_id": str(reducer.id), customer_key: customer_value},
+            json={
+                "identities": [
+                    {"reducer_id": str(reducer.id), customer_key: customer_value}
+                ]
+            },
         )
 
         assert response.status_code == 200
@@ -1247,13 +1251,96 @@ class TestRequests:
         assert (external["count"], external["sum"]) == (1, 4.0)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_queries_do_not_grow_with_the_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        requests_meter = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4(), name="Requests"
+        )
+        reducers = [
+            await create_reducer(save_fixture, organization=organization, meters=[m])
+            for m in (meter, requests_meter)
+        ]
+        external_ids = ["alice", "bob", "carol"]
+        for value, external_id in enumerate(external_ids, start=1):
+            await create_customer(
+                save_fixture,
+                organization=organization,
+                external_id=external_id,
+                email=f"{external_id}@example.com",
+            )
+            for reducer in reducers:
+                await _save_synced_bucket(
+                    save_fixture, organization, reducer, external_id, value
+                )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        answers = []
+        for customers in (external_ids[:1], external_ids):
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                response = await client.post(
+                    "/v1/outpost/meter-usage",
+                    json={
+                        "identities": [
+                            {"reducer_id": str(reducer.id), "external_customer_id": id}
+                            for reducer in reducers
+                            for id in customers
+                        ]
+                    },
+                )
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            assert response.status_code == 200
+            answers.append((response.json(), queries))
+
+        [(_, one), (snapshots, three)] = answers
+        assert three == one
+        assert {
+            (snapshot["reducer_id"], snapshot["external_customer_id"]): snapshot["sum"]
+            for snapshot in snapshots
+            if snapshot["customer_id"] is None
+        } == {
+            (str(reducer.id), external_id): float(value)
+            for reducer in reducers
+            for value, external_id in enumerate(external_ids, start=1)
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_unknown_reducer(self, client: httpx.AsyncClient) -> None:
         response = await client.post(
             "/v1/outpost/meter-usage",
-            json={"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"},
+            json={
+                "identities": [
+                    {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
+                ]
+            },
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_too_many_identities(
+        self, client: httpx.AsyncClient
+    ) -> None:
+        identity = {"reducer_id": str(uuid.uuid4()), "external_customer_id": "alice"}
+        response = await client.post(
+            "/v1/outpost/meter-usage", json={"identities": [identity] * 501}
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_confirm(

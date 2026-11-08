@@ -17,7 +17,7 @@ def test_emits_metering_and_outpost_submodules(
         manifest["exports"]["./outpost"]["import"]["default"]
         == "./dist/outpost/index.mjs"
     )
-    assert manifest["peerDependenciesMeta"]["ws"]["optional"] is True
+    assert manifest["peerDependenciesMeta"]["ioredis"]["optional"] is True
     for module in ("client", "event", "reducer", "scripts", "index"):
         assert (tmp_path / "src" / "outpost" / f"{module}.ts").is_file()
     tests = (tmp_path / "src" / "outpost" / "client.test.ts").read_text()

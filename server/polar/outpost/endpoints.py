@@ -26,7 +26,7 @@ from .schemas import (
     ConfirmIncomingMessagePayload,
     ConnectionOutgoingMessage,
     ConnectionOutgoingMessagePayload,
-    MeterUsageIncomingMessagePayload,
+    MeterUsageIncomingPayload,
     MeterUsageOutgoingMessagePayload,
     OutgoingMessage,
     OutgoingMessageType,
@@ -182,13 +182,13 @@ async def configuration(
     responses={404: ReducerNotFound},
 )
 async def meter_usage(
-    payload: MeterUsageIncomingMessagePayload,
+    payload: MeterUsageIncomingPayload,
     auth_subject: OutpostWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> list[MeterUsageOutgoingMessagePayload]:
-    """The snapshot of every identity of the customer."""
+    """The snapshot of every identity of each requested customer."""
     return await outpost_service.get_requested_meter_usage(
-        session, auth_subject.subject, payload
+        session, auth_subject.subject, payload.identities
     )
 
 

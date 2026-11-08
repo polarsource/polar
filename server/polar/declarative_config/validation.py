@@ -769,9 +769,33 @@ _PRODUCT_FIELDS = ("name", "description", "visibility")
 _TRIAL_FIELDS = ("trial_interval", "trial_interval_count")
 
 
+def is_expressible_price(price: ProductPrice) -> bool:
+    if isinstance(price, ProductPriceFixed | ProductPriceMeteredUnit):
+        return True
+    if isinstance(price, ProductPriceMeteredTiers):
+        return price.tiers is not None
+    if isinstance(price, ProductPriceSeatUnit):
+        return (
+            price.tiers is not None
+            and price.get_maximum_seats() == price.tiers.last_bound
+        )
+    if isinstance(price, ProductPriceUnit):
+        return (
+            price.tiers is not None
+            and price.get_maximum_units() == price.tiers.last_bound
+        )
+    return False
+
+
+def is_expressible_product(product: Product) -> bool:
+    return all(is_expressible_price(price) for price in product.prices)
+
+
 def price_config(
     price: ProductPrice, meter_external_ids: dict[str, str]
 ) -> dict[str, Any] | None:
+    if not is_expressible_price(price):
+        return None
     config: dict[str, Any] = {
         "amount_type": price.amount_type,
         "price_currency": price.price_currency,
@@ -794,7 +818,7 @@ def price_config(
         meter_id = str(price.meter_id)
         if meter_id not in meter_external_ids:
             return None
-
+        assert price.tiers is not None
         return {
             **config,
             "meter": meter_external_ids[meter_id],
@@ -803,8 +827,7 @@ def price_config(
         }
 
     if isinstance(price, ProductPriceSeatUnit):
-        if price.tiers is None or price.get_maximum_seats() != price.tiers.last_bound:
-            return None
+        assert price.tiers is not None
         return {
             **config,
             "tiers": price.tiers.model_dump(),
@@ -812,8 +835,7 @@ def price_config(
         }
 
     if isinstance(price, ProductPriceUnit):
-        if price.tiers is None or price.get_maximum_units() != price.tiers.last_bound:
-            return None
+        assert price.tiers is not None
         return {
             **config,
             "tiers": price.tiers.model_dump(),

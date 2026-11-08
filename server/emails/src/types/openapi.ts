@@ -371,6 +371,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -453,6 +458,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -543,6 +553,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -627,6 +642,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -706,6 +726,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -816,6 +841,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -903,6 +933,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -987,6 +1022,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean

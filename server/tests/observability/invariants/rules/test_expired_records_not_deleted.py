@@ -21,6 +21,7 @@ from polar.models import (
     MerchantMigration,
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
+    OAuth2Client,
     OAuth2State,
     OAuth2Token,
     Organization,
@@ -198,6 +199,12 @@ async def create_deletable_records(
             token="member_session_token",
             member_id=member.id,
             expires_at=deletable_at,
+        )
+    )
+    await save_fixture(
+        OAuth2Client(
+            client_id="polar_ci_stale_client",
+            created_at=deletable_at - timedelta(days=7),
         )
     )
     await save_fixture(

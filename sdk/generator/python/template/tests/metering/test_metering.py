@@ -479,7 +479,6 @@ from unittest.mock import AsyncMock
 
 sys.modules["polar.outpost"] = None
 sys.modules["redis"] = None
-sys.modules["httpx_ws"] = None
 sys.modules["opentelemetry"] = None
 
 from polar.base import AsyncClientBase

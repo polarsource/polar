@@ -201,7 +201,7 @@ class TestList:
         assert results[0].id == benefit_organization.id
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_excludes_previous_versions(
+    async def test_includes_previous_versions(
         self,
         auth_subject: AuthSubject[Organization],
         session: AsyncSession,
@@ -220,7 +220,7 @@ class TestList:
             session, auth_subject, pagination=PaginationParams(1, 10)
         )
 
-        assert [benefit.id for benefit in results] == [current.id]
+        assert {benefit.id for benefit in results} == {previous.id, current.id}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_catalog_filter(
@@ -274,7 +274,7 @@ class TestList:
 
         archived_id = catalogs[CatalogStatus.archived].id
         draft_id = catalogs[CatalogStatus.draft].id
-        assert await ids() == {a2.id, b.id}
+        assert await ids() == {a1.id, a2.id, a3.id, b.id}
         assert await ids(catalog_status=[CatalogStatus.live]) == {a2.id, b.id}
         assert await ids(catalog_status=[CatalogStatus.draft]) == {a3.id, b.id}
         assert await ids(catalog_status=[CatalogStatus.archived]) == {a1.id, b.id}

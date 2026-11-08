@@ -56,6 +56,7 @@ variable "backend_config" {
 
 variable "backend_secrets" {
   type = object({
+    mcp_oauth2_client_id           = string
     stripe_publishable_key         = string
     discord_bot_token              = string
     discord_client_id              = string

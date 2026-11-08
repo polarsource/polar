@@ -92,6 +92,11 @@ class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase)
             )
         ),
     ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the benefit."),
+    ]
 
     @field_validator("visibility", mode="before")
     @classmethod

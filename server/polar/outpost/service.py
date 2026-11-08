@@ -92,7 +92,7 @@ class OutpostService:
             case IncomingMessageType.meter_usage:
                 try:
                     snapshots = await self.get_requested_meter_usage(
-                        session, organization, incoming.payload
+                        session, organization, [incoming.payload]
                     )
                 except ResourceNotFound:
                     log.warning(
@@ -274,28 +274,48 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        payload: MeterUsageIncomingMessagePayload,
+        payloads: Sequence[MeterUsageIncomingMessagePayload],
     ) -> list[MeterUsageOutgoingMessagePayload]:
-        """The snapshots of every identity of the customer."""
-        reducer = await ReducerRepository.from_session(
-            session
-        ).get_active_by_id_and_kinds(payload.reducer_id, tuple(ReducerKind))
-        if reducer is None or reducer.organization_id != organization.id:
-            raise ResourceNotFound()
-        if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
-            identity: Identity = (payload.customer_id, None)
-        else:
-            identity = (None, payload.external_customer_id)
-        customer = (await self._get_customers(session, organization, [identity]))[
-            identity
-        ]
-        return await self._get_meter_usage(
+        """The snapshots of every identity of the requested customers, reading the
+        customers once for all reducers."""
+        reducers = {
+            reducer.id: reducer
+            for reducer in await ReducerRepository.from_session(
+                session
+            ).get_all_active_by_organization_and_kinds(
+                organization.id, tuple(ReducerKind)
+            )
+        }
+        requested: dict[uuid.UUID, list[Identity]] = {}
+        for payload in payloads:
+            if payload.reducer_id not in reducers:
+                raise ResourceNotFound()
+            identity: Identity
+            if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
+                identity = (payload.customer_id, None)
+            else:
+                identity = (None, payload.external_customer_id)
+            requested.setdefault(payload.reducer_id, []).append(identity)
+        customers = await self._get_customers(
             session,
-            reducer,
-            dict.fromkeys(
-                get_customer_identities(customer) if customer else [identity], customer
-            ),
+            organization,
+            [identity for identities in requested.values() for identity in identities],
         )
+        snapshots: list[MeterUsageOutgoingMessagePayload] = []
+        for reducer_id, identities in requested.items():
+            snapshots += await self._get_meter_usage(
+                session,
+                reducers[reducer_id],
+                {
+                    known: customer
+                    for identity in identities
+                    for customer in (customers[identity],)
+                    for known in (
+                        get_customer_identities(customer) if customer else [identity]
+                    )
+                },
+            )
+        return snapshots
 
     async def confirm(
         self,

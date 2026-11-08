@@ -26,6 +26,7 @@ locals {
   }
 
   backend_secrets = {
+    mcp_oauth2_client_id           = var.mcp_oauth2_client_id
     linear_api_key                 = var.linear_api_key
     stripe_publishable_key         = var.stripe_publishable_key
     discord_bot_token              = var.backend_discord_bot_token

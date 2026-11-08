@@ -5,7 +5,7 @@ from pydantic import UUID4
 
 from polar.catalog.service import CatalogNotFound
 from polar.exceptions import NotPermitted, Unauthorized
-from polar.openapi import APITag
+from polar.openapi import APITag, destructive
 from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
@@ -19,6 +19,7 @@ from .auth import ConfigOrganizationWrite, ConfigRead, ConfigWrite
 from .schemas import (
     Config,
     ConfigApplyResult,
+    ConfigDisable,
     ConfigExport,
     ConfigInit,
     ConfigPlan,
@@ -28,10 +29,12 @@ from .schemas import (
 from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
+    ConfigCatalogPublished,
     ConfigCustomFieldConflict,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigUnsupportedResources,
     ConfigWebhookConflict,
 )
 from .service import declarative_config as declarative_config_service
@@ -61,12 +64,18 @@ CatalogQuery = Annotated[
         403: {
             "description": (
                 "Not allowed to read this organization's products, "
-                "missing a scope required by one of the sections, "
-                "or config as code isn't enabled for it."
+                "or missing a scope required by one of the sections."
             ),
-            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+            "model": NotPermitted.schema(),
         },
         404: CatalogNotFoundResponse,
+        409: {
+            "description": (
+                "Config as code isn't enabled and config can't manage "
+                "some of the organization's benefits or products."
+            ),
+            "model": ConfigUnsupportedResources.schema(),
+        },
     },
 )
 async def export(
@@ -89,6 +98,9 @@ async def export(
     are not exported, and custom fields only with the `custom_fields:read` or
     `custom_fields:write` scope.
 
+    Works before config as code is enabled, so the catalog can be reviewed
+    before `init`; `enabled` says whether it is.
+
     Requires the read or write scope of every other exported section.
     """
     return await declarative_config_service.export(
@@ -106,6 +118,16 @@ async def export(
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),
         },
+        409: {
+            "description": (
+                "The organization has benefits or products config can't manage yet, "
+                "or another request gave a resource the same external ID."
+            ),
+            "model": ConfigUnsupportedResources.schema()
+            | ConfigMeterConflict.schema()
+            | ConfigBenefitConflict.schema()
+            | ConfigProductConflict.schema(),
+        },
     },
 )
 async def init(
@@ -113,7 +135,59 @@ async def init(
     auth_subject: ConfigOrganizationWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
+    """
+    Enable config as code for the organization.
+
+    With `external_ids`, also give existing meters, benefits and products
+    without an `external_id` the requested one, so export includes them and
+    apply updates them instead of creating new ones. Requires the write scope
+    of each section the assignments touch.
+
+    Enabling also requires `benefits:read` and `products:read`, to check that
+    config can manage every benefit and product.
+
+    The products and benefits that have an `external_id` are published as the
+    first catalog, unless one is already live. Disabling reverts to it.
+    """
     await declarative_config_service.init(session, auth_subject, config_init)
+
+
+@router.post(
+    "/disable",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Disable Config",
+    openapi_extra=destructive(),
+    responses={
+        204: {"description": "Config as code disabled."},
+        403: {
+            "description": (
+                "Not allowed to manage this organization, "
+                "or config as code isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | ConfigAsCodeNotEnabled.schema(),
+        },
+        409: {
+            "description": "More than one catalog was published.",
+            "model": ConfigCatalogPublished.schema(),
+        },
+    },
+)
+async def disable(
+    config_disable: ConfigDisable,
+    auth_subject: ConfigOrganizationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """
+    Stop managing the organization's catalog as code, so it can be edited in the
+    dashboard and API again.
+
+    The draft catalog is discarded, and the live catalog is removed: its
+    products and benefits stay as they are. So do meters, settings and webhook
+    endpoints applied in the meantime.
+
+    Only possible while at most one catalog was published.
+    """
+    await declarative_config_service.disable(session, auth_subject, config_disable)
 
 
 @router.post(

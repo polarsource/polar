@@ -59,6 +59,8 @@ export const keys = {
   down: key('down'),
   escape: key('escape'),
   ctrlC: key('c', { ctrl: true }),
+  ctrlU: key('u', { ctrl: true }),
+  ctrlF: key('f', { ctrl: true }),
   type: (text: string): Terminal.UserInput[] =>
     [...text].map((character) => ({
       input: Option.some(character),
@@ -69,14 +71,18 @@ export const keys = {
 const scriptedTerminal = (
   inputs: ReadonlyArray<Terminal.UserInput>,
   frames: string[],
-) =>
-  Terminal.make({
+) => {
+  // One queue for the whole run, so each prompt reads on from the last one.
+  let shared: Queue.Queue<Terminal.UserInput, Cause.Done> | undefined
+  return Terminal.make({
     columns: Effect.succeed(80),
     rows: Effect.succeed(24),
     readInput: Effect.gen(function* () {
+      if (shared !== undefined) return shared
       const queue = yield* Queue.unbounded<Terminal.UserInput, Cause.Done>()
       yield* Queue.offerAll(queue, inputs)
       yield* Queue.end(queue)
+      shared = queue
       return queue
     }),
     readLine: Effect.die('readLine is not scripted, pass input to runCli'),
@@ -85,6 +91,7 @@ const scriptedTerminal = (
         frames.push(text)
       }),
   })
+}
 
 export interface RunCliOptions {
   interactive?: boolean

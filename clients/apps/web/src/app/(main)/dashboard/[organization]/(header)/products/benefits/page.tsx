@@ -28,6 +28,7 @@ export default async function Page(props: {
     params: {
       query: {
         organization_id: organization.id,
+        catalog_status: 'live',
         limit: 1,
         sorting: ['-created_at'],
       },

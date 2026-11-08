@@ -68,7 +68,6 @@ export const useCatalogs = (
           params: {
             query: {
               organization_id: organizationId,
-              status: ['live', 'archived'],
               page,
               limit,
             },
@@ -86,4 +85,22 @@ export const useCatalog = (id: string | null | undefined) =>
       unwrap(api.GET('/v1/catalogs/{id}', { params: { path: { id: id! } } })),
     retry: defaultRetry,
     enabled: !!id,
+  })
+
+export const useCatalogConfig = (
+  organizationId: string,
+  catalogId: string | null | undefined,
+) =>
+  useQuery({
+    queryKey: ['catalogs', 'config', { id: catalogId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/config/', {
+          params: {
+            query: { organization_id: organizationId, catalog_id: catalogId },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!catalogId,
   })

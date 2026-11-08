@@ -6306,6 +6306,9 @@ export interface paths {
      *     are not exported, and custom fields only with the `custom_fields:read` or
      *     `custom_fields:write` scope.
      *
+     *     Works before config as code is enabled, so the catalog can be reviewed
+     *     before `init`; `enabled` says whether it is.
+     *
      *     Requires the read or write scope of every other exported section.
      *
      *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
@@ -6330,9 +6333,51 @@ export interface paths {
     put?: never
     /**
      * Init Config
-     * @description **Scopes**: `organizations:write`
+     * @description Enable config as code for the organization.
+     *
+     *     With `external_ids`, also give existing meters, benefits and products
+     *     without an `external_id` the requested one, so export includes them and
+     *     apply updates them instead of creating new ones. Requires the write scope
+     *     of each section the assignments touch.
+     *
+     *     Enabling also requires `benefits:read` and `products:read`, to check that
+     *     config can manage every benefit and product.
+     *
+     *     The products and benefits that have an `external_id` are published as the
+     *     first catalog, unless one is already live. Disabling reverts to it.
+     *
+     *     **Scopes**: `organizations:write`
      */
     post: operations['config:init']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/config/disable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Disable Config
+     * @description Stop managing the organization's catalog as code, so it can be edited in the
+     *     dashboard and API again.
+     *
+     *     The draft catalog is discarded, and the live catalog is removed: its
+     *     products and benefits stay as they are. So do meters, settings and webhook
+     *     endpoints applied in the meantime.
+     *
+     *     Only possible while at most one catalog was published.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['config:disable']
     delete?: never
     options?: never
     head?: never
@@ -6953,7 +6998,7 @@ export interface paths {
     put?: never
     /**
      * Meter Usage
-     * @description The snapshot of every identity of the customer.
+     * @description The snapshot of every identity of each requested customer.
      *
      *     **Scopes**: `events:write`
      */
@@ -9943,6 +9988,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10309,6 +10359,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10681,6 +10736,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10971,6 +11031,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -11252,6 +11317,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12483,6 +12553,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12787,6 +12862,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -13199,6 +13279,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -15195,6 +15280,11 @@ export interface components {
        */
       catalog_id: string | null
       /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
+      /**
        * Prices
        * @description List of prices for this product.
        */
@@ -16602,6 +16692,17 @@ export interface components {
        */
       name: string
     }
+    /** ConfigCatalogPublished */
+    ConfigCatalogPublished: {
+      /**
+       * Error
+       * @example ConfigCatalogPublished
+       * @constant
+       */
+      error: 'ConfigCatalogPublished'
+      /** Detail */
+      detail: string
+    }
     /** ConfigChange */
     ConfigChange: {
       /** @description The type of resource. */
@@ -16892,8 +16993,21 @@ export interface components {
       type: 'text'
       properties: components['schemas']['CustomFieldTextProperties']
     }
+    /** ConfigDisable */
+    ConfigDisable: {
+      /**
+       * Organization Id
+       * @description The ID of the organization to opt out. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+    }
     /** ConfigExport */
     ConfigExport: {
+      /**
+       * Enabled
+       * @description Whether config as code is enabled for the organization. Until it is, plan and apply are refused.
+       */
+      enabled: boolean
       /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
       /**
@@ -16917,12 +17031,8 @@ export interface components {
        * @description Name of the catalog.
        */
       name: string | null
-      /**
-       * Status
-       * @description `live` for the catalog new checkouts use, `archived` otherwise.
-       * @enum {string}
-       */
-      status: 'live' | 'archived'
+      /** @description `live` for the catalog new checkouts use, `draft` for unpublished changes, `archived` otherwise. */
+      status: components['schemas']['CatalogStatus']
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
@@ -16935,6 +17045,26 @@ export interface components {
       benefits: components['schemas']['ConfigBenefitRead'][]
       /** Products */
       products: components['schemas']['ConfigProductRead'][]
+    }
+    /** ConfigExternalIDAssignment */
+    ConfigExternalIDAssignment: {
+      /**
+       * Resource
+       * @description The type of resource.
+       * @enum {string}
+       */
+      resource: 'meter' | 'benefit' | 'product'
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of a resource without an `external_id`.
+       */
+      id: string
+      /**
+       * External Id
+       * @description The `external_id` to give the resource.
+       */
+      external_id: string
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16961,6 +17091,11 @@ export interface components {
        * @description The ID of the organization to opt in. **Required unless you use an organization token.**
        */
       organization_id?: string | null
+      /**
+       * External Ids
+       * @description External IDs to give existing resources that don't have one yet, so the config can manage them.
+       */
+      external_ids?: components['schemas']['ConfigExternalIDAssignment'][]
     }
     /** ConfigInvalid */
     ConfigInvalid: {
@@ -17623,6 +17758,13 @@ export interface components {
       name: string
       /** @description Why the resource isn't in the exported config. */
       reason: components['schemas']['ConfigSkippedReason']
+      /** @description The billing interval of a skipped product. None for one-time products and other resources. */
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Recurring Interval Count
+       * @description The number of intervals between charges of a skipped product.
+       */
+      recurring_interval_count: number | null
     }
     /** ConfigTierRead */
     ConfigTierRead: {
@@ -17636,6 +17778,17 @@ export interface components {
       type: components['schemas']['TierType']
       /** Tiers */
       tiers: components['schemas']['ConfigTierRead'][]
+    }
+    /** ConfigUnsupportedResources */
+    ConfigUnsupportedResources: {
+      /**
+       * Error
+       * @example ConfigUnsupportedResources
+       * @constant
+       */
+      error: 'ConfigUnsupportedResources'
+      /** Detail */
+      detail: string
     }
     /** ConfigWebhookConflict */
     ConfigWebhookConflict: {
@@ -27924,6 +28077,14 @@ export interface components {
       /** External Customer Id */
       external_customer_id: string
     }
+    MeterUsageIncomingMessagePayload:
+      | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
+      | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+    /** MeterUsageIncomingPayload */
+    MeterUsageIncomingPayload: {
+      /** Identities */
+      identities: components['schemas']['MeterUsageIncomingMessagePayload'][]
+    }
     /** MeterUsageOutgoingMessagePayload */
     MeterUsageOutgoingMessagePayload: {
       /**
@@ -29556,6 +29717,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
     }
     /**
      * OrderReceipt
@@ -34397,6 +34563,11 @@ export interface components {
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
       catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
       /**
        * External Id
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
@@ -40762,6 +40933,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** UserCannotAuthenticate */
+    UserCannotAuthenticate: {
+      /**
+       * Error
+       * @example UserCannotAuthenticate
+       * @constant
+       */
+      error: 'UserCannotAuthenticate'
+      /** Detail */
+      detail: string
+    }
     /**
      * UserDeletionBlockedReason
      * @description Reasons why a user account cannot be immediately deleted.
@@ -44694,6 +44876,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationMember']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserCannotAuthenticate']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -47967,13 +48158,15 @@ export interface operations {
           'application/json': components['schemas']['AuthenticationSession']
         }
       }
-      /** @description Invalid or expired OTP */
+      /** @description Invalid or expired OTP, or the account cannot sign in */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['PolarAuthError']
+            | components['schemas']['UserCannotAuthenticate']
         }
       }
       /** @description Validation Error */
@@ -48568,7 +48761,7 @@ export interface operations {
         exclude_id?: string | string[] | null
         /** @description Filter by catalog ID. */
         catalog_id?: string | string[] | null
-        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        /** @description Filter by catalog status. */
         catalog_status?:
           | components['schemas']['CatalogStatus']
           | components['schemas']['CatalogStatus'][]
@@ -49357,7 +49550,7 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by catalog ID. */
         catalog_id?: string | string[] | null
-        /** @description Filter by catalog status. Defaults to `live` unless filtering by ID or catalog ID. */
+        /** @description Filter by catalog status. */
         catalog_status?:
           | components['schemas']['CatalogStatus']
           | components['schemas']['CatalogStatus'][]
@@ -63479,15 +63672,13 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, or missing a scope required by one of the sections. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['NotPermitted']
-            | components['schemas']['ConfigAsCodeNotEnabled']
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description No catalog has this ID. */
@@ -63497,6 +63688,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description Config as code isn't enabled and config can't manage some of the organization's benefits or products. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigUnsupportedResources']
         }
       }
       /** @description Validation Error */
@@ -63537,6 +63737,70 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The organization has benefits or products config can't manage yet, or another request gave a resource the same external ID. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['ConfigUnsupportedResources']
+            | components['schemas']['ConfigMeterConflict']
+            | components['schemas']['ConfigBenefitConflict']
+            | components['schemas']['ConfigProductConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:disable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigDisable']
+      }
+    }
+    responses: {
+      /** @description Config as code disabled. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description More than one catalog was published. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigCatalogPublished']
         }
       }
       /** @description Validation Error */
@@ -64864,9 +65128,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json':
-          | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
-          | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+        'application/json': components['schemas']['MeterUsageIncomingPayload']
       }
     }
     responses: {
@@ -72160,9 +72422,9 @@ export const configCustomFieldTextTypeValues: ReadonlyArray<
 export const configCustomFieldTextReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldTextRead']['type']
 > = ['text']
-export const configExportCatalogStatusValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigExportCatalog']['status']
-> = ['live', 'archived']
+export const configExternalIDAssignmentResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExternalIDAssignment']['resource']
+> = ['meter', 'benefit', 'product']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']

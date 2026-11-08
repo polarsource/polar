@@ -40623,6 +40623,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** UserCannotAuthenticate */
+    UserCannotAuthenticate: {
+      /**
+       * Error
+       * @example UserCannotAuthenticate
+       * @constant
+       */
+      error: 'UserCannotAuthenticate'
+      /** Detail */
+      detail: string
+    }
     /**
      * UserDeletionBlockedReason
      * @description Reasons why a user account cannot be immediately deleted.
@@ -44555,6 +44566,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationMember']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserCannotAuthenticate']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -47828,13 +47848,15 @@ export interface operations {
           'application/json': components['schemas']['AuthenticationSession']
         }
       }
-      /** @description Invalid or expired OTP */
+      /** @description Invalid or expired OTP, or the account cannot sign in */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['PolarAuthError']
+            | components['schemas']['UserCannotAuthenticate']
         }
       }
       /** @description Validation Error */

@@ -144,6 +144,10 @@ const FIELD_METHODS = [
   ['le', 'max'],
 ] as const
 
+// Bounds are Unix seconds, checked as the UTC calendar day they fall on.
+const dateText = (seconds: number): string =>
+  new Date(seconds * 1000).toISOString().slice(0, 10)
+
 const renderCustomField = (
   field: CustomFieldConfig,
   helpers: Set<string>,
@@ -151,21 +155,24 @@ const renderCustomField = (
   helpers.add(field.type)
   const properties: Record<string, unknown> = field.properties
   return [
-    `${field.type}(${literal(field.name)})`,
+    field.type === 'select'
+      ? `select(${literal(field.name)}, ${renderPairs(
+          field.properties.options.map(({ value, label }) => [value, label]),
+        )})`
+      : `${field.type}(${literal(field.name)})`,
     ...FIELD_METHODS.flatMap(([property, method]) => {
       const value = properties[property]
+      if (property === 'form_placeholder' && field.type === 'checkbox') {
+        return []
+      }
+      if (typeof value === 'number' && field.type === 'date') {
+        return [`.${method}(${literal(dateText(value))})`]
+      }
       return typeof value === 'string' || typeof value === 'number'
         ? [`.${method}(${literal(value)})`]
         : []
     }),
     ...(properties['textarea'] === true ? ['.textarea()'] : []),
-    ...(field.type === 'select'
-      ? [
-          `.options(${renderPairs(
-            field.properties.options.map(({ value, label }) => [value, label]),
-          )})`,
-        ]
-      : []),
     ...renderMetadata(field.metadata),
   ].join('\n')
 }

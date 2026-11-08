@@ -1005,3 +1005,59 @@ test('products ask for declared custom fields in order', () => {
     }),
   ).toThrow('Product "pro" references unknown custom field "vat".')
 })
+
+test('custom field helpers catch mistakes early', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({
+        // @ts-expect-error keys can only use a-z, 0-9, - and _
+        teamSize: text(),
+      }),
+    }),
+  ).toThrow(
+    'Custom field key "teamSize" can only use lowercase letters, numbers, - and _.',
+  )
+
+  // Only typechecked: neither method exists at runtime.
+  void (() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ checkbox, select }) => ({
+        // @ts-expect-error a select needs its options
+        size: select('Size'),
+        // @ts-expect-error a checkbox has no placeholder
+        terms: checkbox('Terms').placeholder('x'),
+      }),
+    }))
+
+  for (const invalid of ['soon', '2026-02-30', '2026-1-1']) {
+    expect(() =>
+      defineConfig({
+        meters: () => ({}),
+        customFields: ({ date }) => ({
+          // @ts-expect-error not a YYYY-MM-DD date
+          start: date().min(invalid),
+        }),
+      }),
+    ).toThrow(`Invalid date "${invalid}", use YYYY-MM-DD.`)
+  }
+
+  void (() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        // @ts-expect-error a Date depends on the timezone it was made in
+        start: date().min(new Date()),
+      }),
+    }))
+
+  expect(
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        start: date().min('2026-01-01').max('2026-12-31'),
+      }),
+    }).toJSON().custom_fields?.[0]?.properties,
+  ).toEqual({ ge: 1767225600, le: 1798675200 })
+})

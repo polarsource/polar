@@ -239,6 +239,33 @@ type CustomFieldKey<CustomFields extends CustomFieldEntries> =
     ? Key & string
     : keyof CustomFields & string
 
+const SLUG = /^[a-z0-9-_]+$/
+
+type SlugCharacters = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
+
+type IsSlug<Key extends string> = string extends Key
+  ? true
+  : Key extends `${infer Character}${infer Rest}`
+    ? SlugCharacters extends `${string}${Character}${string}`
+      ? Rest extends ''
+        ? true
+        : IsSlug<Rest>
+      : false
+    : false
+
+type ValidCustomFields<CustomFields extends CustomFieldEntries> = ValidEntries<
+  CustomFields,
+  {
+    [Key in CustomFieldKey<CustomFields>]: IsSlug<Key> extends true
+      ? unknown
+      : DeprecationError<`Custom field key '${Key}' can only use lowercase letters, numbers, - and _.`>
+  }
+>
+
+type CustomFieldsInput<CustomFields extends CustomFieldEntries> = (
+  helpers: CustomFieldHelpers,
+) => CustomFields & ValidCustomFields<CustomFields>
+
 type ProductEntries<
   Meter extends string = string,
   Benefit extends string = string,
@@ -401,7 +428,7 @@ export const defineConfig = <
       readonly meter: typeof meter<DeclaredEvents<Events>>
       readonly events: EventReferences<DeclaredEvents<Events>>
     }) => Meters
-    readonly customFields?: (helpers: CustomFieldHelpers) => CustomFields
+    readonly customFields?: CustomFieldsInput<CustomFields>
     readonly benefits?: BenefitsInput<Meters, Benefits>
     readonly products?: ProductsInput<Meters, Benefits, Products, CustomFields>
     readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
@@ -409,6 +436,10 @@ export const defineConfig = <
     Benefits,
     { readonly benefits: BenefitsInput<Meters, Benefits> }
   > &
+    Present<
+      CustomFields,
+      { readonly customFields: CustomFieldsInput<CustomFields> }
+    > &
     Present<
       Products,
       {
@@ -448,6 +479,12 @@ export const defineConfig = <
     customFields === undefined
       ? []
       : toEntries<CustomFieldDefinition>(customFields)
+  const invalidSlug = customFieldEntries.find(([slug]) => !SLUG.test(slug))
+  if (invalidSlug !== undefined) {
+    throw new Error(
+      `Custom field key "${invalidSlug[0]}" can only use lowercase letters, numbers, - and _.`,
+    )
+  }
   const customFieldSlugs = new Set(customFieldEntries.map(([slug]) => slug))
   const products = input.products?.({
     product,

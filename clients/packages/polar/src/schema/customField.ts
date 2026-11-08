@@ -87,13 +87,18 @@ class CustomFieldBuilder<Type extends CustomFieldType> extends withMetadata(
   help(text: string): this {
     return this.set({ form_help_text: text })
   }
+}
 
+class InputField<
+  Type extends 'text' | 'number' | 'date' | 'select',
+> extends CustomFieldBuilder<Type> {
+  /** The hint shown in the empty input. */
   placeholder(placeholder: string): this {
     return this.set({ form_placeholder: placeholder })
   }
 }
 
-class TextField extends CustomFieldBuilder<'text'> {
+class TextField extends InputField<'text'> {
   /** Asks with a multi-line text area. */
   textarea(): this {
     return this.set({ textarea: true })
@@ -108,9 +113,7 @@ class TextField extends CustomFieldBuilder<'text'> {
   }
 }
 
-class RangeField<
-  Type extends 'number' | 'date',
-> extends CustomFieldBuilder<Type> {
+class NumberField extends InputField<'number'> {
   min(value: number): this {
     return this.set({ ge: value })
   }
@@ -120,31 +123,65 @@ class RangeField<
   }
 }
 
-class SelectField extends CustomFieldBuilder<'select'> {
-  /**
-   * The choices, as `{ value: label }` or `[value, label]` entries, in the
-   * order they're shown. Use entries when a value looks like an integer:
-   * objects list those keys first.
-   */
-  options(
-    options:
-      | Readonly<Record<string, string>>
-      | ReadonlyArray<readonly [value: string, label: string]>,
-  ): this {
-    return this.set({
-      options: (Array.isArray(options) ? options : Object.entries(options)).map(
-        ([value, label]) => ({ value, label }),
-      ),
-    })
+/** A calendar day, like `'2026-01-31'`. */
+type CalendarDate = `${number}-${number}-${number}`
+
+// Checkout compares calendar days in UTC, so a day is stored as its UTC midnight.
+const timestamp = (date: CalendarDate): number => {
+  const time = /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? Date.parse(`${date}T00:00:00Z`)
+    : Number.NaN
+  if (
+    Number.isNaN(time) ||
+    new Date(time).toISOString().slice(0, 10) !== date
+  ) {
+    throw new Error(`Invalid date "${String(date)}", use YYYY-MM-DD.`)
   }
+  return time / 1000
+}
+
+class DateField extends InputField<'date'> {
+  /** The earliest day accepted, like `'2026-01-31'`. */
+  min(date: CalendarDate): this {
+    return this.set({ ge: timestamp(date) })
+  }
+
+  /** The latest day accepted, like `'2026-12-31'`. */
+  max(date: CalendarDate): this {
+    return this.set({ le: timestamp(date) })
+  }
+}
+
+class SelectField extends InputField<'select'> {}
+
+type SelectOptions =
+  | Readonly<Record<string, string>>
+  | ReadonlyArray<readonly [value: string, label: string]>
+
+/**
+ * A dropdown. Its choices are `{ value: label }` or `[value, label]` entries,
+ * in the order they're shown. Use entries when a value looks like an integer:
+ * objects list those keys first.
+ */
+function select(options: SelectOptions): SelectField
+function select(name: string, options: SelectOptions): SelectField
+function select(
+  ...args: [SelectOptions] | [string, SelectOptions]
+): SelectField {
+  const [name, options] = args.length === 1 ? [undefined, args[0]] : args
+  return new SelectField(name, 'select', {
+    options: (Array.isArray(options) ? options : Object.entries(options)).map(
+      ([value, label]) => ({ value, label }),
+    ),
+  })
 }
 
 export const customFieldHelpers = {
   text: (name?: string) => new TextField(name, 'text'),
-  number: (name?: string) => new RangeField(name, 'number'),
-  date: (name?: string) => new RangeField(name, 'date'),
+  number: (name?: string) => new NumberField(name, 'number'),
+  date: (name?: string) => new DateField(name, 'date'),
   checkbox: (name?: string) => new CustomFieldBuilder(name, 'checkbox'),
-  select: (name?: string) => new SelectField(name, 'select'),
+  select,
 }
 
 export type CustomFieldHelpers = typeof customFieldHelpers

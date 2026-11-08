@@ -285,13 +285,13 @@ const cases: [string, PolarConfig][] = [
             .maxLength(100)
             .metadata({ source: 'crm' }),
           employees: number('Employees').min(1).max(100000),
-          start: date('Start date').min(0),
+          start: date('Start date').min('2026-01-01').max('2027-06-30'),
           terms: checkbox('Terms').label('I accept the terms'),
-          'team-size': select('Team size').options({
+          'team-size': select('Team size', {
             small: '1-10',
             '"\\\n` ${notCode}': 'Large',
-          }),
-          '10': select('Tens').options([
+          }).placeholder('Pick one'),
+          '10': select('Tens', [
             ['20', 'Twenty'],
             ['10', 'Ten'],
           ]),
@@ -641,4 +641,22 @@ test('leaves empty metadata out of the generated code', async () => {
     generateConfig({ meters: [{ ...meter, metadata: {} }] }),
   )
   expect(source).not.toContain('.metadata(')
+})
+
+test('renders date bounds as the UTC day they fall on', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      custom_fields: [
+        {
+          type: 'date',
+          slug: 'start',
+          name: 'Start',
+          properties: { ge: 1767261600, le: 1798761599 },
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(".min('2026-01-01')")
+  expect(source).toContain(".max('2026-12-31')")
 })

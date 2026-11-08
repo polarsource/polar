@@ -22,6 +22,24 @@ trust extract --overwrite --format=pem-bundle \
   /etc/pki/ca-trust/source/blocklist/emSign_ECC_Root_CA_-_G3.pem
 update-ca-trust
 
+echo latest > /etc/dnf/vars/releasever
+dnf install -y dnf-automatic dnf-plugins-core
+sed -i 's/^upgrade_type = .*/upgrade_type = security/' /etc/dnf/automatic.conf
+mkdir -p /etc/systemd/system/dnf-automatic-install.service.d
+cat > /etc/systemd/system/dnf-automatic-install.service.d/reboot.conf <<'EOF'
+[Service]
+ExecStartPost=/bin/sh -c 'dnf needs-restarting -r || systemctl reboot'
+EOF
+mkdir -p /etc/systemd/system/dnf-automatic-install.timer.d
+cat > /etc/systemd/system/dnf-automatic-install.timer.d/hourly.conf <<'EOF'
+[Timer]
+OnCalendar=
+OnCalendar=hourly
+RandomizedDelaySec=5m
+EOF
+systemctl daemon-reload
+systemctl enable --now dnf-automatic-install.timer
+
 curl --fail --silent --show-error --location --retry 5 \
   https://pkgs.tailscale.com/stable/amazon-linux/2023/tailscale.repo \
   --output /etc/yum.repos.d/tailscale.repo

@@ -23,6 +23,7 @@ trust extract --overwrite --format=pem-bundle \
 update-ca-trust
 
 echo latest > /etc/dnf/vars/releasever
+dnf upgrade --security -y
 dnf install -y dnf-automatic dnf-plugins-core
 sed -i 's/^upgrade_type = .*/upgrade_type = security/' /etc/dnf/automatic.conf
 mkdir -p /etc/systemd/system/dnf-automatic-install.service.d
@@ -37,7 +38,20 @@ OnCalendar=
 OnCalendar=hourly
 RandomizedDelaySec=5m
 EOF
+cat > /etc/systemd/system/remove-old-kernels.service <<'EOF'
+[Unit]
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/bin/dnf remove --oldinstallonly -y
+
+[Install]
+WantedBy=multi-user.target
+EOF
 systemctl daemon-reload
+systemctl enable remove-old-kernels.service
 systemctl enable --now dnf-automatic-install.timer
 
 curl --fail --silent --show-error --location --retry 5 \
@@ -68,3 +82,5 @@ tailscale up \
   --snat-subnet-routes=true \
   --accept-dns=false \
   --timeout=120s
+
+dnf needs-restarting -r || systemctl reboot

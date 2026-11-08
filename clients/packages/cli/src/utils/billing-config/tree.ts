@@ -8,7 +8,6 @@ import {
 import {
   type MeterUse,
   benefitSentence,
-  customFieldSentence,
   meterSentence,
   meterUnit,
   productMeters,
@@ -35,7 +34,7 @@ const isSection = (section: string): section is Section =>
 
 const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
-  custom_fields: customFieldSentence,
+  custom_fields: () => undefined,
   benefits: benefitSentence,
   products: productSentence,
   webhooks: webhookSentence,
@@ -43,7 +42,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
-  custom_fields: new Set(['type']),
+  custom_fields: new Set(),
   benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',

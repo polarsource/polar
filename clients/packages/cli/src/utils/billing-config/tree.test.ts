@@ -769,7 +769,7 @@ describe('formatTree', () => {
     )
   })
 
-  test('lists custom fields, matched by slug, and the ones it deletes', () => {
+  test('lists custom fields one setting per row, and the ones it deletes', () => {
     const output = stripAnsi(
       formatTree(
         {
@@ -779,7 +779,26 @@ describe('formatTree', () => {
               type: 'text',
               slug: 'company',
               name: 'Company',
-              properties: { form_label: 'Company name' },
+              properties: { form_label: 'Company name', textarea: true },
+            },
+            {
+              type: 'select',
+              slug: 'size',
+              name: 'Size',
+              properties: { options: [] },
+            },
+            { type: 'date', slug: 'start', name: 'Start', properties: {} },
+          ],
+          products: [
+            {
+              external_id: 'pro',
+              name: 'Pro',
+              prices: [],
+              benefits: [],
+              custom_fields: [
+                { field: 'company', required: true },
+                { field: 'size', required: false },
+              ],
             },
           ],
         },
@@ -787,12 +806,45 @@ describe('formatTree', () => {
           entry('custom_fields', 'company', 'created', [
             { field: 'type', after: 'text' },
             { field: 'name', after: 'Company' },
-            { field: 'properties', after: { form_label: 'Company name' } },
+            {
+              field: 'properties',
+              after: { form_label: 'Company name', textarea: true },
+            },
+          ]),
+          entry('custom_fields', 'size', 'updated', [
+            {
+              field: 'properties',
+              before: {
+                options: [
+                  { value: 'small', label: '1-10' },
+                  { value: 'large', label: '50+' },
+                ],
+              },
+              after: {
+                options: [
+                  { value: 'small', label: '1-10' },
+                  { value: 'large', label: '100+' },
+                ],
+              },
+            },
+          ]),
+          entry('custom_fields', 'start', 'updated', [
+            { field: 'properties', before: {}, after: { ge: 1767225600 } },
           ]),
           {
             ...entry('custom_fields', 'vat', 'removed'),
             reason: 'missing',
           },
+          entry('products', 'pro', 'updated', [
+            {
+              field: 'custom_fields',
+              before: [{ field: 'company', required: false }],
+              after: [
+                { field: 'company', required: true },
+                { field: 'size', required: false },
+              ],
+            },
+          ]),
         ],
       ),
     )
@@ -800,10 +852,25 @@ describe('formatTree', () => {
       [
         '  custom_fields',
         '  + company',
-        '      type  text',
-        '      name        "Company"',
-        '      properties  {"form_label":"Company name"}',
+        '      type      "text"',
+        '      name      "Company"',
+        '      label     "Company name"',
+        '      textarea  yes',
+        '  ~ size',
+        '      options',
+        '          small → 1-10',
+        '        - large → 50+',
+        '        + large → 100+',
+        '  ~ start',
+        '      min  unset → 2026-01-01',
         '  - vat  not in config',
+        '',
+        '  products',
+        '  ~ pro',
+        '      custom fields',
+        '        - company',
+        '        + company (required)',
+        '        + size',
       ].join('\n'),
     )
   })

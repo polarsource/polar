@@ -283,7 +283,7 @@ describe('locateInScript with a settings section', () => {
       '  meters: () => ({}),',
       '  customFields: ({ text, select }) => ({',
       "    company: text('Company'),",
-      "    team_size: select('Team size').options({ small: '1-10' }),",
+      "    team_size: select('Team size', { small: '1-10' }),",
       '  }),',
       '})',
     ].join('\n')

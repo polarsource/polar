@@ -10,3 +10,16 @@ variable "guardduty_finding_severity_threshold" {
   type        = number
   default     = 4
 }
+
+variable "inspector_alert_slack_bot_token" {
+  description = "Slack bot token used to post Inspector findings."
+  type        = string
+  sensitive   = true
+  nullable    = false
+}
+
+variable "inspector_alert_slack_channel" {
+  description = "Slack channel ID Inspector findings are posted to."
+  type        = string
+  nullable    = false
+}

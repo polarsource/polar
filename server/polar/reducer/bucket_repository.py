@@ -312,10 +312,10 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         usage_closed_before: datetime,
     ) -> Sequence[Row[*tuple[Any, ...]]]:
         """The id, kind and aggregation of each of the meter's reducers, the
-        customer's latest meter reset, and the count, sum, min and max of the
-        reducer's buckets of every generation starting from it: one row per
-        identity of the customer's usage buckets before `usage_closed_before`,
-        and one of its credit buckets."""
+        customer's latest meter reset, whether one of the buckets starts at it, and
+        the count, sum, min and max of the reducer's buckets of every generation
+        starting from it: one row per identity of the customer's usage buckets
+        before `usage_closed_before`, and one of its credit buckets."""
         reducers = (
             await self.session.execute(
                 select(Reducer)
@@ -376,6 +376,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 Reducer.kind,
                 Reducer.aggregation,
                 since,
+                func.coalesce(func.bool_or(ReducerBucket.bucket_start == since), False),
                 func.coalesce(func.sum(ReducerBucket.count), 0),
                 func.coalesce(func.sum(ReducerBucket.sum), 0),
                 func.min(ReducerBucket.min),

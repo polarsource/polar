@@ -151,8 +151,14 @@ const CustomFieldDateInput: React.FC<CustomFieldDateInputProps> = ({
   field,
 }) => {
   const { ge, le } = customField.properties
-  const min = ge ? new Date(ge * 1000).toISOString().slice(0, 10) : undefined
-  const max = le ? new Date(le * 1000).toISOString().slice(0, 10) : undefined
+  const min =
+    typeof ge === 'number'
+      ? new Date(ge * 1000).toISOString().slice(0, 10)
+      : undefined
+  const max =
+    typeof le === 'number'
+      ? new Date(le * 1000).toISOString().slice(0, 10)
+      : undefined
 
   return (
     <Input

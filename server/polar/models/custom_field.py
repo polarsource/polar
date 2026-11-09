@@ -201,9 +201,9 @@ class CustomFieldDate(CustomField):
 
     def get_field_definition(self, required: bool) -> tuple[Any, Any]:
         ge = self.properties.get("ge")
-        ge_date = datetime.fromtimestamp(ge, UTC).date() if ge else None
+        ge_date = datetime.fromtimestamp(ge, UTC).date() if ge is not None else None
         le = self.properties.get("le")
-        le_date = datetime.fromtimestamp(le, UTC).date() if le else None
+        le_date = datetime.fromtimestamp(le, UTC).date() if le is not None else None
         return (
             datetime if required else datetime | None,
             Field(default=None if not required else ..., ge=ge_date, le=le_date),

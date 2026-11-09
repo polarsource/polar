@@ -7,7 +7,12 @@ import {
   type MetadataShape,
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
-import { CustomFieldConfig, customFieldHelpers, required } from './customField'
+import {
+  CustomFieldConfig,
+  customFieldHelpers,
+  required,
+  SLUG,
+} from './customField'
 import type { CustomFieldDefinition, CustomFieldHelpers } from './customField'
 import { deprecatedKey } from './deprecation'
 import type { Deprecated } from './deprecation'
@@ -238,8 +243,6 @@ type CustomFieldKey<CustomFields extends CustomFieldEntries> =
   >
     ? Key & string
     : keyof CustomFields & string
-
-const SLUG = /^[a-z0-9-_]+$/
 
 type SlugCharacters = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
 
@@ -483,6 +486,17 @@ export const defineConfig = <
   if (invalidSlug !== undefined) {
     throw new Error(
       `Custom field key "${invalidSlug[0]}" can only use lowercase letters, numbers, - and _.`,
+    )
+  }
+  const invalidRange = customFieldEntries.find(
+    ([, { properties }]) =>
+      typeof properties.ge === 'number' &&
+      typeof properties.le === 'number' &&
+      properties.ge > properties.le,
+  )
+  if (invalidRange !== undefined) {
+    throw new Error(
+      `Custom field "${invalidRange[0]}" has a min that is after its max.`,
     )
   }
   const customFieldSlugs = new Set(customFieldEntries.map(([slug]) => slug))

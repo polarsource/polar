@@ -2,6 +2,8 @@ import { Schema } from 'effect'
 import { Builder } from './builder'
 import { Metadata, withMetadata, type HasMetadata } from './metadata'
 
+export const SLUG = /^[a-z0-9-_]+$/
+
 const NonEmpty = Schema.String.check(Schema.isMinLength(1))
 const Int32 = Schema.Int.check(
   Schema.isGreaterThanOrEqualTo(-2147483648),
@@ -23,7 +25,7 @@ const fieldOf = <const Type extends string, Properties extends Schema.Top>(
 ) =>
   Schema.Struct({
     type: Schema.Literal(type),
-    slug: Schema.String.check(Schema.isPattern(/^[a-z0-9-_]+$/)),
+    slug: Schema.String.check(Schema.isPattern(SLUG)),
     name: NonEmpty,
     properties,
     metadata: Schema.optionalKey(Metadata),

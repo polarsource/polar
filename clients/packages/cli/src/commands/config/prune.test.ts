@@ -153,6 +153,19 @@ describe('polar config prune', () => {
     expect(output).toContain('Nothing to remove')
   })
 
+  test('lists custom fields in resource order', async () => {
+    const tier: PruneEntry = {
+      resource: 'custom_field',
+      external_id: 'tier',
+      customers_count: 0,
+      referenced_by: [],
+    }
+    const { output } = await run([legacy, tier, apples], ['--confirm'])
+    expect(output).toMatch(
+      /- meter {9}apples *│\n {2}│ {2}- custom_field {2}tier *│/,
+    )
+  })
+
   test('reports when nothing is deprecated', async () => {
     const { output } = await run([])
     expect(output).toContain('No deprecated entries in polar.json')

@@ -35,3 +35,17 @@ export const useCreditCustomerMeter = () =>
       queryClient.invalidateQueries({ queryKey: ['events'] })
     },
   })
+
+export const useReverseMeterCredit = () =>
+  useMutation({
+    mutationFn: (id: string) =>
+      api.POST('/v1/customer-meters/credits/{id}/reverse', {
+        params: { path: { id } },
+      }),
+    onSuccess: (result) => {
+      if (result.error) return
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({ queryKey: ['customer_meters'] })
+      queryClient.invalidateQueries({ queryKey: ['events'] })
+    },
+  })

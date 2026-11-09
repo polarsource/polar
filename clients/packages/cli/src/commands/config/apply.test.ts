@@ -11,6 +11,7 @@ import {
   type PlanResult,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { keys, runCli, stripAnsi } from '@/utils/test-utils/cli'
@@ -129,7 +130,20 @@ const run = async (
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
 ) => {
-  const applied = vi.fn(() => Effect.succeed(result))
+  const planned = vi.fn(
+    (
+      _config: LoadedConfig,
+      _organization: unknown,
+      _options?: CatalogOptions,
+    ) => Effect.succeed(plan),
+  )
+  const applied = vi.fn(
+    (
+      _config: LoadedConfig,
+      _organization: unknown,
+      _options?: CatalogOptions,
+    ) => Effect.succeed(result),
+  )
   const cli = runCli(apply, ['polar.json', ...args], options)
   const exit = await Effect.runPromiseExit(
     cli.effect.pipe(
@@ -137,9 +151,14 @@ const run = async (
         BillingConfig,
         BillingConfig.of({
           load: () => Effect.succeed(config),
-          plan: () => Effect.succeed(plan),
+          plan: planned,
           apply: applied,
-          pull: () => Effect.die('unused'),
+          init: () => Effect.die('unused'),
+          install: () => Effect.die('unused'),
+          disable: () => Effect.die('unused'),
+          prune: () => Effect.die('unused'),
+          catalogs: () => Effect.die('unused'),
+          publish: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(Auth, fakeAuth().auth),
@@ -157,6 +176,9 @@ const run = async (
     terminal: stripAnsi(cli.terminal()),
     failed: exit._tag === 'Failure',
     applied: applied.mock.calls.length,
+    names: [...planned.mock.calls, ...applied.mock.calls].map(
+      ([, , options]) => options?.name,
+    ),
     exit,
   }
 }
@@ -169,26 +191,66 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
     : undefined
 
 describe('polar config apply', () => {
-  test('applies with --yes and reports what was applied', async () => {
+  test('applies with --confirm and reports what was applied', async () => {
     const { output, failed, applied } = await run(
       { entries: [created, kept], issues: [] },
       { status: 'applied', entries: [created, kept] },
-      ['--yes'],
+      ['--confirm'],
     )
     expect(failed).toBe(false)
     expect(applied).toBe(1)
-    expect(output).toContain(
-      '  │ + tool-calls\n  │     events       all events\n  │     aggregation  count',
+    expect(output).toMatch(
+      /╯\n\n {2}Summary\n {2}╭─+╮\n *│ {2}Organization {2}Acme *│\n *│ {2}Environment {3}sandbox *│\n *│ {2}File {10}polar\.json *│\n *│ {2}Changes {7}0 to change, 1 to add, 1 unchanged *│\n *│ {2}Issues {8}none *│\n {2}╰─+╯\n\n {2}Apply\n/,
+    )
+    expect(output).toMatch(
+      /│ {2}\+ tool-calls *│\n *│ {6}events {7}all events *│\n *│ {6}aggregation {2}count *│/,
     )
     expect(output).toContain(
       'polar.json applied to Acme (sandbox): 2 entries (1 created, 0 updated, 1 unchanged)',
     )
     expect(output).toMatch(
-      /╰─\n\n {2}Applying 1 change \(\d+ms\)\n {2}polar\.json applied to Acme/,
+      /╯\n\n {2}Apply\n {2}╭─+╮\n {2}│ {2}Applying 1 change \(\d+ms\) *│\n {2}╰─+╯\n {2}polar\.json applied to Acme/,
     )
   })
 
-  test.each(['-y', '--aladåb'])(
+  test('points at publish when products or benefits went to the draft', async () => {
+    const { output } = await run(
+      { entries: [created], issues: [] },
+      {
+        status: 'applied',
+        entries: [created],
+        draft: { id: 'cat-draft', name: null },
+      },
+      ['--confirm'],
+    )
+    expect(output).toContain(
+      'Products and benefits are saved to the draft catalog.',
+    )
+    expect(output).toContain('Run polar config publish to make it live.')
+  })
+
+  test('does not point at publish when only meters changed', async () => {
+    const { output } = await run(
+      { entries: [created], issues: [] },
+      { status: 'applied', entries: [created] },
+      ['--confirm'],
+    )
+    expect(output).not.toContain('polar config publish')
+  })
+
+  test('plans and applies with --name as the catalog version name', async () => {
+    const result = { status: 'applied', entries: [created] } as const
+    const plan = { entries: [created], issues: [] }
+    expect((await run(plan, result, ['--confirm'])).names).toEqual([
+      undefined,
+      undefined,
+    ])
+    expect(
+      (await run(plan, result, ['--confirm', '--name', 'Spring launch'])).names,
+    ).toEqual(['Spring launch', 'Spring launch'])
+  })
+
+  test.each(['-c', '--aladåb'])(
     'also skips the question with %s',
     async (flag) => {
       const { failed, applied } = await run(
@@ -210,7 +272,7 @@ describe('polar config apply', () => {
     )
     expect(applied).toBe(0)
     expect(output).toContain('+ tool-calls')
-    expect(terminal).toContain('Apply these changes to Acme (sandbox)?')
+    expect(terminal).toContain('y to apply  n to cancel')
     expect(message(exit)).toBe('Apply cancelled, nothing changed')
   })
 
@@ -226,13 +288,13 @@ describe('polar config apply', () => {
     expect(output).toContain('polar.json applied to Acme (sandbox): 1 entry')
   })
 
-  test('needs --yes when there is no terminal to ask', async () => {
+  test('needs --confirm when there is no terminal to ask', async () => {
     const { output, terminal, applied, exit } = await run(
       { entries: [created], issues: [] },
       { status: 'applied', entries: [created] },
     )
     expect(applied).toBe(0)
-    expect(terminal).not.toContain('Apply these changes')
+    expect(terminal).not.toContain('y to apply')
     expect(output).toContain('+ tool-calls')
     expect(message(exit)).toBe('Confirmation needed to apply to Acme (sandbox)')
   })
@@ -268,6 +330,34 @@ describe('polar config apply', () => {
     expect(output).toContain('Acme (sandbox) is up to date, nothing to apply')
   })
 
+  test.each([
+    ['nothing changed', [kept], []],
+    ['changes were applied', [created], ['--confirm']],
+  ])(
+    'includes plan warnings in --json output when %s',
+    async (_, entries, args) => {
+      const warning: ConfigIssue = {
+        severity: 'warning',
+        code: 'unknown_event',
+        path: 'meters.0.filter.clauses.0.value',
+        message: 'No events with this name have been received yet.',
+        got: '"tool_call"',
+        location,
+      }
+      const { output, failed } = await run(
+        { entries, issues: [warning] },
+        { status: 'applied', entries },
+        [...args, '--json'],
+      )
+      expect(failed).toBe(false)
+      expect(JSON.parse(output)).toMatchObject({
+        file: 'polar.json',
+        status: 'applied',
+        issues: [{ severity: 'warning', code: 'unknown_event' }],
+      })
+    },
+  )
+
   test('fails and shows the problems when the plan has errors', async () => {
     const issues: ConfigIssue[] = [
       {
@@ -281,12 +371,13 @@ describe('polar config apply', () => {
     const { output, failed, applied } = await run(
       { entries: [created], issues },
       { status: 'rejected', issues },
-      ['--yes'],
+      ['--confirm'],
     )
     expect(failed).toBe(true)
     expect(applied).toBe(0)
     expect(output).toContain('Error: Cannot change "filter" of meters.0')
-    expect(output).toContain('Found 1 error.')
+    expect(output).toContain('Issues        1 error')
+    expect(output).toContain('Fix the error above')
     expect(output).not.toContain('applied')
   })
 })

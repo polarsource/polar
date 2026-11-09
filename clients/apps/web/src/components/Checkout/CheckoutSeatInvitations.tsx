@@ -6,7 +6,11 @@ import { getSeatPrice } from '@polar-sh/checkout/guards'
 import type { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
-import { MailCheckIcon, PlusIcon, XIcon } from 'lucide-react'
+import {
+  MailCheck as MailCheckIcon,
+  Plus as PlusIcon,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 import { Well, WellContent, WellHeader } from '../Shared/Well'
 
@@ -172,7 +176,7 @@ const SeatInvitationsPanel = ({
                   className={`${input.error ? 'border-red-500' : ''}`}
                 />
                 {input.error && (
-                  <p className="mt-1 text-left text-xs text-red-500">
+                  <p className="mt-1 text-start text-xs text-red-500">
                     {input.error}
                   </p>
                 )}
@@ -208,7 +212,7 @@ const SeatInvitationsPanel = ({
               disabled={isSending}
               className="rounded-xl"
             >
-              <PlusIcon className="mr-2 h-4 w-4" />
+              <PlusIcon className="me-2 h-4 w-4" />
               Add another email
             </Button>
           )}

@@ -225,7 +225,7 @@ jobs:
           cache-key: polar/server-production
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v4.6.0
+        uses: docker/login-action@v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -259,6 +259,7 @@ jobs:
           platforms: linux/amd64
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+            TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
@@ -332,6 +333,7 @@ jobs:
           sbom: false
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
+            TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 
@@ -413,6 +415,29 @@ jobs:
               --publish
           done
 
+  build-production-frontend:
+    name: "Frontend: Build for Production 🚀"
+    needs: changes
+    # Runs alongside the sandbox deploy. The deployment stays staged (not on
+    # the domain) until deploy-production promotes it after sandbox succeeds.
+    if: needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    outputs:
+      deployment-url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Deploy to Vercel (Staged Production)
+        id: deploy
+        uses: ./.github/actions/vercel-build
+        with:
+          token: ${{ secrets.VERCEL_TOKEN }}
+          org-id: ${{ secrets.VERCEL_ORG_ID }}
+          project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"
     needs: [changes, build]
@@ -425,7 +450,7 @@ jobs:
     with:
       environment: sandbox
       render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
-      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og"
+      render-worker-service-ids: "srv-d089jj7diees73934kgg,srv-dajtvp5g1s2s73c683og,srv-dbc6vi4s728c73e7fo5g"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -449,7 +474,7 @@ jobs:
     with:
       environment: test
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
-      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770"
+      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770,srv-dbktog5bedkc73eht8i0"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -463,7 +488,7 @@ jobs:
 
   deploy-production:
     name: "Deploy to Production 🚀"
-    needs: [changes, build, deploy-sandbox]
+    needs: [changes, build, build-production-frontend, deploy-sandbox]
     if: always() && !failure() && !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') && (needs.changes.outputs.backend-production == 'true' || needs.changes.outputs.frontend-production == 'true' || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy-environment.yml
     with:
@@ -473,6 +498,7 @@ jobs:
       has-migrations: ${{ needs.changes.outputs.migrations-production == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-production != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-production != 'true' && github.event_name != 'workflow_dispatch' }}
+      frontend-deployment-url: ${{ needs.build-production-frontend.outputs.deployment-url }}
     secrets:
       RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -517,10 +543,12 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.MCP_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.MCP_CLOUDFLARE_ACCOUNT_ID }}
           MINTLIFY_SEARCH_KEY: ${{ secrets.MCP_MINTLIFY_SEARCH_KEY }}
+          MCP_ANALYTICS_SECRET: ${{ secrets.MCP_ANALYTICS_SECRET }}
         run: |
           set -euo pipefail
+          : "${MCP_ANALYTICS_SECRET:?MCP_ANALYTICS_SECRET is not set in the production environment}"
           secrets="$RUNNER_TEMP/mcp-secrets.json"
-          jq -n '{MINTLIFY_SEARCH_KEY: env.MINTLIFY_SEARCH_KEY}' > "$secrets"
+          jq -n '{MINTLIFY_SEARCH_KEY: env.MINTLIFY_SEARCH_KEY, MCP_ANALYTICS_SECRET: env.MCP_ANALYTICS_SECRET}' > "$secrets"
           pnpm exec cf deploy --prebuilt --tag "$GITHUB_SHA" --secrets-file "$secrets"
 
       # See update-backend-tag in deploy-environment.yml: tag advance is
@@ -545,8 +573,8 @@ jobs:
 
   notify-failure:
     name: "Notify Failure 🚨"
-    needs: [build, deploy-sandbox, deploy-production, deploy-mcp]
-    if: always() && (needs.build.result == 'failure' || needs.deploy-sandbox.result == 'failure' || needs.deploy-production.result == 'failure' || needs.deploy-mcp.result == 'failure')
+    needs: [build, build-production-frontend, deploy-sandbox, deploy-production, deploy-mcp]
+    if: always() && (needs.build.result == 'failure' || needs.build-production-frontend.result == 'failure' || needs.deploy-sandbox.result == 'failure' || needs.deploy-production.result == 'failure' || needs.deploy-mcp.result == 'failure')
     runs-on: ubuntu-latest
     steps:
       - name: Announce in Slack
@@ -564,7 +592,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":rotating_light: *Deploy failed* — triggered by *${{ github.actor }}*\n*Failed jobs:*${{ needs.build.result == 'failure' && ' `build`' || '' }}${{ needs.deploy-sandbox.result == 'failure' && ' `deploy-sandbox`' || '' }}${{ needs.deploy-production.result == 'failure' && ' `deploy-production`' || '' }}${{ needs.deploy-mcp.result == 'failure' && ' `deploy-mcp`' || '' }}\n*Commit:* `${{ github.sha }}`\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
+                    "text": ":rotating_light: *Deploy failed* — triggered by *${{ github.actor }}*\n*Failed jobs:*${{ needs.build.result == 'failure' && ' `build`' || '' }}${{ needs.build-production-frontend.result == 'failure' && ' `build-production-frontend`' || '' }}${{ needs.deploy-sandbox.result == 'failure' && ' `deploy-sandbox`' || '' }}${{ needs.deploy-production.result == 'failure' && ' `deploy-production`' || '' }}${{ needs.deploy-mcp.result == 'failure' && ' `deploy-mcp`' || '' }}\n*Commit:* `${{ github.sha }}`\n*<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View workflow run>*"
                   }
                 }
               ]

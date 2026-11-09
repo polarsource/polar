@@ -16,6 +16,14 @@ Polar supports any provider that implements OpenID Connect, including Google Wor
 
 SSO lives under [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) in your dashboard.
 
+## Company-managed accounts
+
+When you configure SSO for a verified email domain, Polar treats accounts using that domain as company-managed. Polar trusts your identity provider to authenticate those users, including users who already have a Polar account. The email address must belong to a domain verified by your organization and be marked as verified by your provider.
+
+Administrators who control your identity provider can authenticate as those users and control their Polar accounts, including account-level email and security settings. This authority extends to the user's identity across Polar, including access they hold in other organizations, subject to those organizations' own access requirements. Enforcing SSO is not required for this trust model to apply.
+
+Use a separate account with a personal email address for work that should remain outside your company's control.
+
 ## How people become members
 
 Anyone who signs in through your connection becomes a member of your organization. You don't invite them first — authenticating against your identity provider is what grants membership.
@@ -32,7 +40,12 @@ Polar only accepts an identity whose email address your provider marks as verifi
 
 ## Setting up a connection
 
+You can only add a connection once you've verified a domain you own, so start there.
+
 <Steps>
+  <Step title="Verify your email domain">
+    Go to [**Settings → Domains**](https://polar.sh/to/dashboard/settings/domains), enter the domain of your team's email addresses, and click **Add**. Add the TXT record shown to your DNS, then click **Verify**.
+  </Step>
   <Step title="Add the connection in Polar">
     Go to [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) and click **Add connection**. Pick **Google Workspace** or **Custom OIDC provider**.
   </Step>
@@ -61,7 +74,9 @@ Polar sets `response_type`, `client_id`, `redirect_uri`, `scope`, `state`, `nonc
 
 By default, members can sign in either through SSO or through the standard methods — email code, Google, GitHub, or Apple. Enforcing SSO removes the alternatives: members reach your organization only through your identity provider.
 
-To enforce it, you need an enabled connection, and you must already be signed in through this organization's SSO. That proves the connection works before it becomes the only way in.
+To enforce it, you need an enabled connection and a verified domain, and you must already be signed in through this organization's SSO. That proves the connection works before it becomes the only way in.
+
+Once SSO is enforced, anyone who signs in with an email address on your verified domain goes straight to your identity provider. With several connections, they pick one on your organization's SSO sign-in page.
 
 <Warning>
 Enforcing SSO disconnects every member and every authorized third-party app. They must sign in again through your identity provider.
@@ -82,7 +97,7 @@ Enforcement applies to dashboard sessions. Personal access tokens and organizati
     No. Polar creates the account on their first sign-in through your connection, and adds them to your organization.
   </Accordion>
   <Accordion title="What happens to someone who already has a Polar account?">
-    They keep it. Signing in through your connection adds your organization to their existing account — it doesn't create a second one, and it doesn't give your organization access to anything else they own.
+    They keep it. Signing in through your connection adds your organization to their existing account instead of creating a second one. Accounts using your verified domain are company-managed: your identity provider is trusted for the whole Polar identity, including account-level settings and access to other organizations, subject to those organizations' own access requirements. Use a separate account with a personal email address for independent work.
   </Accordion>
   <Accordion title="Can I still invite members by email?">
     Yes, as long as you don't enforce SSO. [Invitations](/features/team-management#inviting-a-member) work alongside it, which is useful for contractors who aren't in your identity provider.

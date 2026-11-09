@@ -1,8 +1,10 @@
 import AmountLabel from '@/components/Shared/AmountLabel'
 import { useProduct } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
-import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined'
+import {
+  AllInclusiveOutlined,
+  ArrowForwardOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 import Link from 'next/link'

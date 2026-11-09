@@ -1,10 +1,13 @@
-import type { AppliedEntry } from '@/schemas/BillingConfig'
+import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
 import { name, record } from '@/utils/billing-config/describe'
-import { MARKS, formatRows } from '@/utils/billing-config/entries'
+import {
+  MARKS,
+  formatRows,
+  updatedBenefits,
+} from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
-  discountSentence,
   meterSentence,
   meterUnit,
   productMeters,
@@ -14,13 +17,12 @@ import {
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products' | 'discounts' | 'webhooks'
+type Section = 'meters' | 'benefits' | 'products' | 'webhooks'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
   'benefits',
   'products',
-  'discounts',
   'webhooks',
 ]
 
@@ -33,7 +35,6 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
   benefits: benefitSentence,
   products: productSentence,
-  discounts: discountSentence,
   webhooks: webhookSentence,
 }
 
@@ -45,22 +46,10 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'visibility',
     'recurring_interval',
     'recurring_interval_count',
+    'meter_interval',
+    'meter_interval_count',
     'prices',
     'benefits',
-  ]),
-  discounts: new Set([
-    'name',
-    'type',
-    'basis_points',
-    'amounts',
-    'duration',
-    'duration_in_months',
-    'code',
-    'products',
-    'max_redemptions',
-    'max_redemptions_per_customer',
-    'starts_at',
-    'ends_at',
   ]),
   webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
@@ -71,7 +60,7 @@ const NESTED = ui.INDENT.repeat(3)
 const ids = (input: unknown): string[] =>
   Array.isArray(input) ? input.map((id) => name(id)) : []
 
-const documents = (input: unknown, section: Section) => {
+export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {
@@ -81,9 +70,13 @@ const documents = (input: unknown, section: Section) => {
   return byId
 }
 
-type Grant = { id: string; status: 'kept' | 'added' | 'removed' }
+type Grant = { id: string; status: 'kept' | 'added' | 'removed' | 'updated' }
 
-const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
+const grants = (
+  entry: AppliedEntry,
+  product: unknown,
+  updated: ReadonlySet<string>,
+): Grant[] => {
   const change = entry.diff.find(({ field }) => field === 'benefits')
   if (change === undefined) {
     return ids(record(product)?.['benefits']).map((id) => ({
@@ -95,7 +88,14 @@ const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
   const after = ids(change.after)
   return [
     ...after.map(
-      (id): Grant => ({ id, status: before.includes(id) ? 'kept' : 'added' }),
+      (id): Grant => ({
+        id,
+        status: !before.includes(id)
+          ? 'added'
+          : updated.has(id)
+            ? 'updated'
+            : 'kept',
+      }),
     ),
     ...before
       .filter((id) => !after.includes(id))
@@ -103,7 +103,20 @@ const grants = (entry: AppliedEntry, product: unknown): Grant[] => {
   ]
 }
 
+// The config may leave out a price's currency, the planned prices carry it
+const withPlannedPrices = (document: unknown, entry: AppliedEntry) => {
+  const prices = entry.diff.find(({ field }) => field === 'prices')
+  return prices === undefined
+    ? document
+    : { ...record(document), prices: prices.after }
+}
+
 type Block = { readonly head: string; readonly body: ReadonlyArray<string> }
+
+const REASONS: Record<RemovalReason, string> = {
+  missing: 'not in config',
+  deprecated: 'deprecated',
+}
 
 // Facts describe what is new; an update is told by its diff rows alone.
 const describe = (
@@ -152,6 +165,7 @@ const GRANT_MARKS: Record<Grant['status'], string> = {
   added: ui.green('+'),
   removed: ui.red('-'),
   kept: ui.dim('='),
+  updated: ui.yellow('~'),
 }
 
 const reference = ({ id, status }: Grant): Block => ({
@@ -170,25 +184,39 @@ export const formatTree = (
     meters: documents(input, 'meters'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
-    discounts: documents(input, 'discounts'),
     webhooks: documents(input, 'webhooks'),
   }
 
+  const updated = updatedBenefits(entries)
+
+  const width = Math.max(
+    0,
+    ...entries
+      .filter(({ action }) => action === 'unchanged' || action === 'removed')
+      .map((entry) => entry.id.length),
+  )
+
+  const removal = ({ id, reason }: AppliedEntry) => [
+    `${TOP}${MARKS.removed} ${ui.bold(id.padEnd(width))}  ${reason ? ui.dim(REASONS[reason]) : ''}`,
+  ]
+
   const product = (entry: AppliedEntry) => {
+    if (entry.action === 'removed') return removal(entry)
     const document = docs.products.get(entry.id)
-    const granted = grants(entry, document)
+    const granted = grants(entry, document, updated)
     const regranted = granted.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'
+    const planned = withPlannedPrices(document, entry)
     const own = describe(
       MARKS[entry.action],
       entry.id,
-      productSentence(document),
+      productSentence(planned),
       fresh,
     )
     const children = [
       ...(fresh
-        ? productMeters(document, (id) => meterUnit(docs.meters.get(id))).map(
+        ? productMeters(planned, (id) => meterUnit(docs.meters.get(id))).map(
             meterUse,
           )
         : []),
@@ -204,6 +232,7 @@ export const formatTree = (
 
   const plain = (entry: AppliedEntry, section: string) => {
     if (entry.action === 'unchanged') return undefined
+    if (entry.action === 'removed') return removal(entry)
     const document = isSection(section)
       ? docs[section].get(entry.id)
       : undefined
@@ -230,12 +259,6 @@ export const formatTree = (
     .flatMap((section) => {
       const own = bySection(section)
       if (own.length === 0) return []
-      const width = Math.max(
-        0,
-        ...own
-          .filter((entry) => entry.action === 'unchanged')
-          .map((entry) => entry.id.length),
-      )
       const rendered = own.map((entry) => ({
         entry,
         lines: section === 'products' ? product(entry) : plain(entry, section),

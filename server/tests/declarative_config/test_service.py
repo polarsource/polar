@@ -1,5 +1,7 @@
+import uuid
 from decimal import Decimal
-from typing import Any
+from typing import Any, get_args
+from uuid import UUID
 
 import pytest
 from pytest_mock import MockerFixture
@@ -7,40 +9,73 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogProductRepository,
+    CatalogRepository,
+)
+from polar.catalog.service import catalog as catalog_service
+from polar.catalog.service import compute_version_hash
 from polar.declarative_config.schemas import (
     Config,
     ConfigAction,
+    ConfigBenefit,
+    ConfigCatalog,
+    ConfigCatalogChange,
+    ConfigCatalogPlan,
+    ConfigDisable,
+    ConfigExportDocument,
+    ConfigInit,
     ConfigIssueSeverity,
     ConfigIssueType,
+    ConfigProductPrice,
+    ConfigProductPriceFixedRead,
+    ConfigRemoval,
+    ConfigRemovalReason,
     ConfigResource,
+    ConfigSkippedReason,
 )
 from polar.declarative_config.service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
+    ConfigCatalogPublished,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
+    ConfigUnsupportedResources,
 )
 from polar.declarative_config.service import (
     declarative_config as declarative_config_service,
 )
-from polar.discount.repository import DiscountRepository
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.enums import (
+    MeterInterval,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+    TaxBehaviorOption,
+)
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.trial import TrialInterval
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
+    Agent,
+    Customer,
     Organization,
+    ProductPriceFixed,
     ProductPriceMeteredTiers,
     ProductPriceUnit,
+    SubscriptionMeter,
+    SubscriptionUpdate,
     User,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -54,14 +89,19 @@ from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_active_subscription,
     create_benefit,
+    create_benefit_grant,
+    create_checkout_link,
     create_discount,
     create_event,
     create_meter,
     create_product,
     create_product_price_metered_tiers,
     create_product_price_unit_based,
+    create_subscription,
     create_webhook_endpoint,
+    set_product_benefits,
 )
 
 TOOL_CALLS_METER = {
@@ -135,16 +175,6 @@ EUR_PACK_PRICE = {
     "price_currency": "eur",
 }
 
-LAUNCH_DISCOUNT = {
-    "external_id": "launch",
-    "name": "Launch",
-    "type": "percentage",
-    "basis_points": 2000,
-    "duration": "once",
-    "code": "LAUNCH20",
-    "products": ["pack"],
-}
-
 
 TEAM_PRODUCT = {
     "external_id": "team",
@@ -177,6 +207,20 @@ METERED_TIERS_PRICE = {
 }
 
 
+ANNUAL_PRODUCT = {
+    "external_id": "annual",
+    "name": "Annual",
+    "recurring_interval": "year",
+    "meter_interval": "month",
+    "prices": [
+        {"amount_type": "fixed", "price_amount": 24000},
+        {
+            "amount_type": "metered_unit",
+            "meter": "sdk-tool-calls",
+            "unit_amount": "0.5",
+        },
+    ],
+}
 USAGE_PRODUCT = {
     "external_id": "usage",
     "name": "Usage",
@@ -215,6 +259,457 @@ ORDERS_WEBHOOK = {
     "events": ["order.created", "order.paid"],
     "api_version": str(CURRENT_API_VERSION),
 }
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestInit:
+    async def test_assigned_external_ids_round_trip(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            description="Monthly credits",
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            name="Pro",
+        )
+        await set_product_benefits(save_fixture, product=product, benefits=[credits])
+
+        await declarative_config_service.init(
+            session,
+            auth_subject,
+            ConfigInit.model_validate(
+                {
+                    "external_ids": [
+                        {"resource": "meter", "id": meter.id, "external_id": "calls"},
+                        {
+                            "resource": "benefit",
+                            "id": credits.id,
+                            "external_id": "credits",
+                        },
+                        {"resource": "product", "id": product.id, "external_id": "pro"},
+                    ]
+                }
+            ),
+        )
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(exported.config.model_dump(mode="json")),
+        )
+
+        assert exported.skipped == []
+        assert [m.external_id for m in exported.config.meters] == ["calls"]
+        assert [b.external_id for b in exported.config.benefits] == ["credits"]
+        assert [p.external_id for p in exported.config.products] == ["pro"]
+        assert exported.config.products[0].benefits == ["credits"]
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_refuses_benefits_config_cannot_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            description="Beta",
+            properties={},
+        )
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        with pytest.raises(ConfigUnsupportedResources, match="Priority support"):
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert not organization.is_config_as_code_enabled
+
+    async def test_refuses_products_config_cannot_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Hobby",
+            prices=[(0, "usd")],
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Tip jar",
+            prices=[(500, None, None, "usd")],
+        )
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            name="Old tip jar",
+            prices=[(500, None, None, "usd")],
+            is_archived=True,
+        )
+
+        with pytest.raises(ConfigUnsupportedResources) as raised:
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert raised.value.message.endswith("Unsupported: product Tip jar.")
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_allows_unsupported_resources_when_already_enabled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        assert organization.is_config_as_code_enabled
+
+    async def test_rejects_taken_and_existing_external_ids(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        keyed = await create_meter(
+            save_fixture, organization=organization, external_id="calls"
+        )
+        unkeyed = await create_meter(
+            save_fixture, organization=organization, id=uuid.uuid4()
+        )
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {
+                                "resource": "product",
+                                "id": product.id,
+                                "external_id": "pack",
+                            },
+                            {
+                                "resource": "meter",
+                                "id": unkeyed.id,
+                                "external_id": "calls",
+                            },
+                            {
+                                "resource": "meter",
+                                "id": keyed.id,
+                                "external_id": "other",
+                            },
+                        ]
+                    }
+                ),
+            )
+
+        assert [e["loc"] for e in error.value.errors()] == [
+            ("body", "external_ids", 1, "external_id"),
+            ("body", "external_ids", 2, "external_id"),
+        ]
+        assert unkeyed.external_id is None
+
+    async def test_rejects_resource_assigned_twice(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(PolarRequestValidationError) as error:
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {"resource": "meter", "id": meter.id, "external_id": "a"},
+                            {"resource": "meter", "id": meter.id, "external_id": "b"},
+                        ]
+                    }
+                ),
+            )
+
+        assert [e["loc"] for e in error.value.errors()] == [
+            ("body", "external_ids", 1, "external_id"),
+        ]
+        assert meter.external_id is None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.organizations_write})
+    )
+    async def test_requires_read_scopes_to_check_resources(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture, organization=organization, description="Priority support"
+        )
+
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.init(
+                session, auth_subject, ConfigInit.model_validate({})
+            )
+
+        assert not organization.is_config_as_code_enabled
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization",
+            scopes={
+                Scope.organizations_write,
+                Scope.benefits_read,
+                Scope.products_read,
+            },
+        )
+    )
+    async def test_requires_section_write_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.init(
+                session,
+                auth_subject,
+                ConfigInit.model_validate(
+                    {
+                        "external_ids": [
+                            {"resource": "meter", "id": meter.id, "external_id": "m"}
+                        ]
+                    }
+                ),
+            )
+
+    async def test_publishes_the_existing_catalog_as_baseline(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+
+        await declarative_config_service.init(
+            session,
+            auth_subject,
+            ConfigInit.model_validate(
+                {
+                    "external_ids": [
+                        {"resource": "product", "id": product.id, "external_id": "pro"}
+                    ]
+                }
+            ),
+        )
+
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.name == "v1"
+        assert await CatalogProductRepository.from_session(session).get_external_ids(
+            live.id
+        ) == {"pro"}
+
+    async def test_publishes_no_catalog_without_products_or_benefits(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestDisable:
+    async def test_reverts_to_the_catalog_before_init(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(2000, "usd")],
+            external_id="pro",
+        )
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        draft = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            publish=False,
+        )
+        assert draft.catalog is not None
+        [draft_pro] = await CatalogProductRepository.from_session(
+            session
+        ).get_products_by_external_ids(draft.catalog.after.id, ["pro"], options=())
+
+        await declarative_config_service.disable(
+            session, auth_subject, ConfigDisable.model_validate({})
+        )
+
+        catalogs = CatalogRepository.from_session(session)
+        assert not organization.is_config_as_code_enabled
+        assert await catalogs.get_live(organization.id) is None
+        assert await catalogs.get_draft(organization.id) is None
+        await session.refresh(pro)
+        await session.refresh(draft_pro)
+        assert (pro.is_current, pro.catalog_id) == (True, None)
+        assert draft_pro.deleted_at is not None
+
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+
+        live = await catalogs.get_live(organization.id)
+        assert live is not None
+        assert live.name == "v1"
+
+    async def test_without_a_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            publish=False,
+        )
+
+        await declarative_config_service.disable(
+            session, auth_subject, ConfigDisable.model_validate({})
+        )
+
+        assert not organization.is_config_as_code_enabled
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is None
+        )
+
+    async def test_after_the_first_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        await declarative_config_service.disable(
+            session, auth_subject, ConfigDisable.model_validate({})
+        )
+
+        [pro] = await ProductRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert not organization.is_config_as_code_enabled
+        assert (pro.is_current, pro.catalog_id) == (True, None)
+
+    async def test_refuses_after_a_second_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.init(
+            session, auth_subject, ConfigInit.model_validate({})
+        )
+        for product in (MONTHLY_PRO, MONTHLY_PRO_25):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"products": [product]}),
+            )
+
+        with pytest.raises(ConfigCatalogPublished):
+            await declarative_config_service.disable(
+                session, auth_subject, ConfigDisable.model_validate({})
+            )
+
+        assert organization.is_config_as_code_enabled
 
 
 @pytest.mark.anyio
@@ -260,6 +755,32 @@ class TestApply:
             mocker.call("reducer.invalidate_cache", organization.id),
             mocker.call("meter.backfill_events", meter.id),
         ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_create_deprecated(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [{**TOOL_CALLS_METER, "deprecated": True}]}
+            ),
+        )
+
+        assert result.changes[0].action == ConfigAction.created
+        [meter] = await MeterRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["sdk-tool-calls"]
+        )
+        assert meter.archived_at is None
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_unchanged(
@@ -542,7 +1063,7 @@ class TestApply:
         meter = await create_meter(
             save_fixture, organization=organization, external_id="sdk-tool-calls"
         )
-        benefit = await create_benefit(
+        previous = await create_benefit(
             save_fixture,
             organization=organization,
             type=BenefitType.meter_credit,
@@ -557,13 +1078,18 @@ class TestApply:
         result = await declarative_config_service.apply(
             session, redis, auth_subject, config
         )
-        rerun = await declarative_config_service.apply(
-            session, redis, auth_subject, config
-        )
 
-        assert result.changes[1].action == ConfigAction.updated
+        [benefit] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["tool-call-credits"])
+        assert benefit.id != previous.id
         assert dict(benefit.properties)["units"] == 1000
-        assert rerun.changes[1].action == ConfigAction.unchanged
+        await session.refresh(previous)
+        assert (previous.is_current, dict(previous.properties)["units"]) == (
+            False,
+            10,
+        )
+        assert result.catalog is not None
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_benefit_visibility(
@@ -574,7 +1100,12 @@ class TestApply:
         organization: Organization,
     ) -> None:
         private = Config.model_validate(
-            {"meters": [], "benefits": [{**BETA_BENEFIT, "visibility": "private"}]}
+            {
+                "meters": [],
+                "benefits": [
+                    {**BETA_BENEFIT, "visibility": "private", "metadata": {"tier": 1}}
+                ],
+            }
         )
         default = Config.model_validate({"meters": [], "benefits": [BETA_BENEFIT]})
 
@@ -582,21 +1113,24 @@ class TestApply:
         [benefit] = await BenefitRepository.from_session(
             session
         ).get_all_by_external_ids(organization.id, ["beta"])
-        created_visibility = benefit.visibility
+        assert benefit.visibility == Visibility.private
 
         plan = await declarative_config_service.plan(session, auth_subject, default)
-        await declarative_config_service.apply(session, redis, auth_subject, default)
-        rerun = await declarative_config_service.apply(
-            session, redis, auth_subject, default
-        )
-
         assert [
             (change.field, change.before, change.after)
             for change in plan.changes[0].diff
         ] == [("visibility", Visibility.private, Visibility.public)]
-        assert created_visibility == Visibility.private
-        assert benefit.visibility == Visibility.public
-        assert rerun.changes[0].action == ConfigAction.unchanged
+        assert plan.issues == []
+
+        await declarative_config_service.apply(session, redis, auth_subject, default)
+        [current] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        assert (current.id != benefit.id, current.visibility) == (
+            True,
+            Visibility.public,
+        )
+        assert current.user_metadata == {"tier": 1}
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_concurrent_benefit_create(
@@ -713,15 +1247,131 @@ class TestApply:
 
         assert created.changes[3].action == ConfigAction.created
         assert updated.changes[3].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.name == "Pro Plus"
         assert product.description is None
         assert [price.amount_type for price in product.prices] == [
             ProductPriceAmountType.fixed,
             ProductPriceAmountType.metered_unit,
         ]
-        assert product.prices[1].id == metered_price.id
+        assert product.prices[1].id != metered_price.id
         assert [benefit.description for benefit in product.benefits] == ["Beta access"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_product_meter_cycle(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate(
+            {"meters": [TOOL_CALLS_METER], "products": [ANNUAL_PRODUCT]}
+        )
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == []
+        product_change = next(
+            change
+            for change in plan.changes
+            if change.resource == ConfigResource.product
+        )
+        assert [
+            (field.field, field.after)
+            for field in product_change.diff
+            if field.field.startswith("meter_")
+        ] == [
+            ("meter_interval", MeterInterval.month),
+            ("meter_interval_count", 1),
+        ]
+
+        await declarative_config_service.apply(session, redis, auth_subject, config)
+
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["annual"])
+        assert product.recurring_interval == SubscriptionRecurringInterval.year
+        assert product.meter_interval == MeterInterval.month
+        assert product.meter_interval_count == 1
+
+        unchanged = await declarative_config_service.plan(session, auth_subject, config)
+        assert [
+            issue
+            for issue in unchanged.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == []
+        assert {change.action for change in unchanged.changes} == {
+            ConfigAction.unchanged
+        }
+
+        omitted = Config.model_validate(
+            {
+                "meters": [TOOL_CALLS_METER],
+                "products": [
+                    {
+                        **{
+                            k: v
+                            for k, v in ANNUAL_PRODUCT.items()
+                            if k != "meter_interval"
+                        },
+                        "name": "Annual renamed",
+                    }
+                ],
+            }
+        )
+        await declarative_config_service.apply(session, redis, auth_subject, omitted)
+
+        [renamed] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["annual"])
+        assert renamed.id != product.id
+        assert renamed.name == "Annual renamed"
+        assert renamed.meter_interval == MeterInterval.month
+        assert renamed.meter_interval_count == 1
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_deprecated_product_not_created(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT, BETA_BENEFIT],
+                    "products": [{**PRO_PRODUCT, "deprecated": True}],
+                }
+            ),
+        )
+
+        assert [change.resource for change in result.changes] == [
+            ConfigResource.meter,
+            ConfigResource.benefit,
+            ConfigResource.benefit,
+        ]
+        assert result.removed == []
+        assert result.catalog is not None
+        assert result.catalog.before is None
+        assert (
+            await ProductRepository.from_session(session).get_all_by_external_ids(
+                organization.id, ["pro"]
+            )
+            == []
+        )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_trial(
@@ -770,7 +1420,9 @@ class TestApply:
             ),
         )
         assert updated.changes[0].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval == TrialInterval.day
         assert product.trial_interval_count == 7
 
@@ -792,7 +1444,9 @@ class TestApply:
             ),
         )
         assert cleared.changes[0].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval is None
         assert product.trial_interval_count is None
 
@@ -961,9 +1615,13 @@ class TestApply:
         assert isinstance(price, ProductPriceMeteredTiers)
         assert price.meter_id == meter.id
         assert updated.changes[1].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["usage"])
         assert product.name == "Usage Plus"
-        assert [price.id for price in product.prices] == [price.id]
+        assert [p.amount_type for p in product.prices] == [
+            ProductPriceAmountType.metered_tiers
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_and_update_unit_based_price(
@@ -994,9 +1652,13 @@ class TestApply:
         assert isinstance(price, ProductPriceUnit)
         assert price.get_minimum_purchasable_units() == 1
         assert updated.changes[0].action == ConfigAction.updated
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["devices"])
         assert product.name == "Devices Plus"
-        assert [price.id for price in product.prices] == [price.id]
+        assert [p.amount_type for p in product.prices] == [
+            ProductPriceAmountType.unit_based
+        ]
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
@@ -1066,113 +1728,6 @@ class TestApply:
         assert endpoint.url == "https://example.com/polar"
         assert endpoint.events == ["order.created", "order.paid"]
         assert endpoint.secret == "SECRET"
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_create_and_update_discount(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        created = await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate(
-                {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
-            ),
-        )
-        repository = DiscountRepository.from_session(session)
-        [discount] = await repository.get_all_by_external_ids(
-            organization.id, ["launch"]
-        )
-        assert discount.code == "LAUNCH20"
-        assert [product.external_id for product in discount.products] == ["pack"]
-
-        updated = await declarative_config_service.apply(
-            session,
-            redis,
-            auth_subject,
-            Config.model_validate(
-                {
-                    "products": [PACK_PRODUCT],
-                    "discounts": [
-                        {
-                            **LAUNCH_DISCOUNT,
-                            "name": "Launch week",
-                            "code": None,
-                            "products": [],
-                        }
-                    ],
-                }
-            ),
-        )
-
-        assert created.changes[1].action == ConfigAction.created
-        assert updated.changes[1].action == ConfigAction.updated
-        await session.refresh(discount)
-        assert discount.name == "Launch week"
-        assert discount.code is None
-        assert discount.products == []
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(
-            subject="organization", scopes={Scope.meters_write, Scope.products_write}
-        )
-    )
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discounts_require_discounts_scope(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-    ) -> None:
-        with pytest.raises(InsufficientScopeError):
-            await declarative_config_service.apply(
-                session,
-                redis,
-                auth_subject,
-                Config.model_validate(
-                    {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
-                ),
-            )
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discount_validation_error_location(
-        self,
-        save_fixture: SaveFixture,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        redis: Redis,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization,
-            code="LAUNCH20",
-        )
-        mocker.patch(
-            "polar.declarative_config.validation.DiscountRepository.get_all_by_codes",
-            return_value=[],
-        )
-
-        with pytest.raises(PolarRequestValidationError) as exc_info:
-            await declarative_config_service.apply(
-                session,
-                redis,
-                auth_subject,
-                Config.model_validate(
-                    {"products": [PACK_PRODUCT], "discounts": [LAUNCH_DISCOUNT]}
-                ),
-            )
-
-        [error] = exc_info.value.errors()
-        assert error["loc"] == ("body", "discounts", 0, "code")
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_with_new_products(
@@ -1532,11 +2087,12 @@ class TestPlan:
         assert plan.issues == []
 
     @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read})
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read}),
+        AuthSubjectFixture(subject="agent"),
     )
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_webhooks_require_webhooks_scope(
-        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization | Agent]
     ) -> None:
         with pytest.raises(InsufficientScopeError):
             await declarative_config_service.plan(
@@ -1758,6 +2314,33 @@ class TestPlan:
         ] == [["body", "benefits", 0, "type"]]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_type_not_versioned(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+            properties={},
+            external_id="beta",
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"benefits": [BETA_BENEFIT]})
+        )
+
+        [issue] = plan.issues
+        assert (issue.type, issue.loc) == (
+            ConfigIssueType.not_supported,
+            ["body", "benefits", 0, "type"],
+        )
+        assert issue.msg.startswith("This is a License Keys benefit.")
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_new_resources(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
     ) -> None:
@@ -1894,11 +2477,12 @@ class TestPlan:
             (ConfigIssueSeverity.warning, ["body", "products", 0, "prices"])
         ]
         assert [change.field for change in plan.changes[0].diff] == ["name"]
-        await session.refresh(product)
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
         assert product.name == "Team"
         assert [price.amount_type for price in product.prices] == [
             ProductPriceAmountType.fixed,
-            ProductPriceAmountType.custom,
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -2280,6 +2864,125 @@ class TestPlan:
         ] == [["body", "products", 0, field]]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_meter_cycle_not_enabled(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [TOOL_CALLS_METER], "products": [ANNUAL_PRODUCT]}
+            ),
+        )
+
+        assert [
+            (issue.type, issue.loc)
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == [
+            (ConfigIssueType.not_supported, ["body", "products", 0, "meter_interval"])
+        ]
+
+    @pytest.mark.parametrize(
+        ("benefits", "issues"),
+        [
+            pytest.param(
+                [], [ConfigIssueType.meter_cycle_unused], id="nothing_metered"
+            ),
+            pytest.param(["tool-call-credits"], [], id="meter_credit"),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_product_meter_cycle_unused(
+        self,
+        benefits: list[str],
+        issues: list[ConfigIssueType],
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [TOOL_CALLS_METER],
+                    "benefits": [CREDITS_BENEFIT],
+                    "products": [
+                        {
+                            **ANNUAL_PRODUCT,
+                            "prices": [{"amount_type": "fixed", "price_amount": 24000}],
+                            "benefits": benefits,
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            issue.type
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ] == issues
+
+    @pytest.mark.parametrize(
+        ("existing", "meter_cycle", "field"),
+        [
+            pytest.param(MeterInterval.month, {}, None, id="omitted"),
+            pytest.param(
+                MeterInterval.month,
+                {"meter_interval": "month", "meter_interval_count": 2},
+                "meter_interval_count",
+                id="count_changed",
+            ),
+            pytest.param(
+                None, {"meter_interval": "month"}, "meter_interval", id="added"
+            ),
+        ],
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_product_meter_cycle_changed(
+        self,
+        existing: MeterInterval | None,
+        meter_cycle: dict[str, Any],
+        field: str | None,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=existing,
+            external_id="pro",
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "pro",
+                            "name": "Pro",
+                            "recurring_interval": "year",
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                            **meter_cycle,
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.interval_changed
+        ] == ([] if field is None else [["body", "products", 0, field]])
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_product_trial_changed(
         self,
         save_fixture: SaveFixture,
@@ -2380,7 +3083,6 @@ class TestPlan:
                             "prices": [*PRO_PRODUCT["prices"], METERED_TIERS_PRICE],
                         }
                     ],
-                    "discounts": [LAUNCH_DISCOUNT],
                 }
             ),
         )
@@ -2394,8 +3096,88 @@ class TestPlan:
             (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "prices", 2, "meter"], "sdk-tool-calls"),
             (["body", "products", 0, "benefits", 1], "beta"),
-            (["body", "discounts", 0, "products", 0], "pack"),
         ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_deprecated_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [{**TOOL_CALLS_METER, "deprecated": True}],
+                    "benefits": [CREDITS_BENEFIT],
+                    "products": [
+                        {
+                            **PRO_PRODUCT,
+                            "prices": [*PRO_PRODUCT["prices"], METERED_TIERS_PRICE],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.deprecated_reference
+        ] == [
+            (["body", "benefits", 0, "properties", "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "prices", 2, "meter"], "sdk-tool-calls"),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_deprecated_benefit_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [{**TOOL_CALLS_METER, "deprecated": True}],
+                    "benefits": [
+                        {**CREDITS_BENEFIT, "deprecated": True},
+                        {**BETA_BENEFIT, "deprecated": True},
+                    ],
+                    "products": [PRO_PRODUCT],
+                }
+            ),
+        )
+
+        assert [
+            (issue.loc, issue.input)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.deprecated_reference
+        ] == [
+            (["body", "products", 0, "prices", 1, "meter"], "sdk-tool-calls"),
+            (["body", "products", 0, "benefits", 0], "tool-call-credits"),
+            (["body", "products", 0, "benefits", 1], "beta"),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_deprecated_product_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [{**TOOL_CALLS_METER, "deprecated": True}],
+                    "benefits": [
+                        {**CREDITS_BENEFIT, "deprecated": True},
+                        {**BETA_BENEFIT, "deprecated": True},
+                    ],
+                    "products": [{**PRO_PRODUCT, "deprecated": True}],
+                }
+            ),
+        )
+
+        assert [issue for issue in plan.issues if issue.severity == "error"] == []
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_duplicate_external_ids_per_resource(
@@ -2428,159 +3210,1737 @@ class TestPlan:
             ["body", "benefits", 1, "external_id"],
         ]
 
+
+DEPRECATED_CONFIG = {
+    "meters": [{**FIXTURE_METER, "external_id": "apples", "deprecated": True}],
+    "benefits": [{**BETA_BENEFIT, "deprecated": True}],
+    "products": [
+        {
+            "external_id": "legacy",
+            "name": "Legacy",
+            "recurring_interval": "month",
+            "prices": [
+                {"amount_type": "metered_unit", "meter": "apples", "unit_amount": "1"}
+            ],
+            "benefits": ["beta"],
+            "deprecated": True,
+        }
+    ],
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestPrune:
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discount_diff(
+    async def test_unused(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        result = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(DEPRECATED_CONFIG)
+        )
+
+        assert [entry.model_dump() for entry in result.entries] == [
+            {
+                "resource": ConfigResource.meter,
+                "external_id": "apples",
+                "customers_count": 0,
+                "referenced_by": [],
+            },
+            {
+                "resource": ConfigResource.benefit,
+                "external_id": "beta",
+                "customers_count": 0,
+                "referenced_by": [],
+            },
+            {
+                "resource": ConfigResource.product,
+                "external_id": "legacy",
+                "customers_count": 0,
+                "referenced_by": [],
+            },
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.active, SubscriptionStatus.past_due]
+    )
+    async def test_kept_by_subscribed_product(
+        self,
+        status: SubscriptionStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        beta = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+        )
+        legacy = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="legacy",
+        )
+        await create_subscription(
+            save_fixture,
+            product=legacy,
+            customer=customer,
+            status=status,
+        )
+        await create_subscription(
+            save_fixture,
+            product=legacy,
+            customer=customer,
+        )
+        await create_subscription(
+            save_fixture,
+            product=legacy,
+            customer=customer_second,
+            revoke=True,
+        )
+        await create_benefit_grant(save_fixture, customer, beta, granted=True)
+        await create_benefit_grant(save_fixture, customer_second, beta, granted=False)
+
+        result = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(DEPRECATED_CONFIG)
+        )
+
+        assert [
+            (
+                entry.external_id,
+                entry.customers_count,
+                [(ref.resource, ref.external_id) for ref in entry.referenced_by],
+            )
+            for entry in result.entries
+        ] == [
+            ("apples", 0, [(ConfigResource.product, "legacy")]),
+            ("beta", 1, [(ConfigResource.product, "legacy")]),
+            ("legacy", 1, []),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_references_sharing_an_external_id(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        config = {
+            "meters": [{**FIXTURE_METER, "external_id": "calls", "deprecated": True}],
+            "benefits": [
+                {
+                    **CREDITS_BENEFIT,
+                    "external_id": "calls",
+                    "properties": {"meter": "calls", "units": 1000},
+                }
+            ],
+            "products": [
+                {
+                    "external_id": "calls",
+                    "name": "Calls",
+                    "recurring_interval": "month",
+                    "prices": [
+                        {
+                            "amount_type": "metered_unit",
+                            "meter": "calls",
+                            "unit_amount": "1",
+                        }
+                    ],
+                }
+            ],
+        }
+
+        result = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(config)
+        )
+
+        assert [
+            (ref.resource, ref.external_id) for ref in result.entries[0].referenced_by
+        ] == [(ConfigResource.product, "calls"), (ConfigResource.benefit, "calls")]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        "status", [SubscriptionStatus.active, SubscriptionStatus.past_due]
+    )
+    async def test_meter_in_use_by_subscription(
+        self,
+        status: SubscriptionStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=status,
+        )
+        await save_fixture(SubscriptionMeter(subscription=subscription, meter=meter))
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
+        )
+
+        assert [
+            (entry.external_id, entry.customers_count) for entry in result.entries
+        ] == [("apples", 1)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meter_in_use_by_credits(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[Organization],
         organization: Organization,
+        customer: Customer,
     ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        await create_benefit_grant(save_fixture, customer, credits, granted=True)
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
+        )
+
+        assert [
+            (entry.external_id, entry.customers_count) for entry in result.entries
+        ] == [("apples", 1)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_meters_count_each_customer_once(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture, organization=organization, external_id="apples"
+        )
         product = await create_product(
             save_fixture,
             organization=organization,
-            recurring_interval=None,
-            external_id="pack",
+            recurring_interval=SubscriptionRecurringInterval.month,
         )
-        await create_discount(
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        await save_fixture(SubscriptionMeter(subscription=subscription, meter=meter))
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 10, "rollover": False},
+        )
+        await create_benefit_grant(save_fixture, customer, credits, granted=True)
+        await create_benefit_grant(save_fixture, customer_second, credits, granted=True)
+        pears = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="pears",
+        )
+        other_subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer_second,
+            status=SubscriptionStatus.active,
+        )
+        await save_fixture(
+            SubscriptionMeter(subscription=other_subscription, meter=pears)
+        )
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "meters": [
+                        *DEPRECATED_CONFIG["meters"],
+                        {**FIXTURE_METER, "external_id": "pears", "deprecated": True},
+                    ]
+                }
+            ),
+        )
+
+        assert [
+            (entry.external_id, entry.customers_count) for entry in result.entries
+        ] == [
+            ("apples", 2),
+            ("pears", 1),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_benefit_in_use_by_previous_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.feature_flag,
+            properties={},
+            external_id="beta",
+            is_current=False,
+        )
+        await create_benefit_grant(save_fixture, customer, previous, granted=True)
+
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate({"benefits": [{**BETA_BENEFIT, "deprecated": True}]}),
+        )
+
+        assert [
+            (entry.external_id, entry.customers_count) for entry in result.entries
+        ] == [("beta", 1)]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_read})
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_requires_section_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.prune(
+                session,
+                auth_subject,
+                Config.model_validate({"meters": DEPRECATED_CONFIG["meters"]}),
+            )
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_active_entries_are_skipped(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        result = await declarative_config_service.prune(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"meters": [TOOL_CALLS_METER], "benefits": [BETA_BENEFIT]}
+            ),
+        )
+
+        assert result.entries == []
+
+
+MONTHLY_PRO = {
+    "external_id": "pro",
+    "name": "Pro",
+    "recurring_interval": "month",
+    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+}
+MONTHLY_PRO_25 = {
+    **MONTHLY_PRO,
+    "prices": [{"amount_type": "fixed", "price_amount": 2500}],
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestCatalogVersioning:
+    async def test_catalog_name(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        unnamed = Config.model_validate({"products": [MONTHLY_PRO]})
+        name_only = Config.model_validate(
+            {"products": [MONTHLY_PRO], "catalog_name": "Ignored"}
+        )
+        named = Config.model_validate(
+            {"products": [MONTHLY_PRO_25], "catalog_name": "Spring pricing"}
+        )
+        catalogs_repo = CatalogRepository.from_session(session)
+
+        await declarative_config_service.apply(session, redis, auth_subject, unnamed)
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        assert first.name == "v1"
+
+        await declarative_config_service.apply(session, redis, auth_subject, name_only)
+        assert await catalogs_repo.get_live(organization.id) == first
+        assert first.name == "v1"
+
+        plan = await declarative_config_service.plan(session, auth_subject, named)
+        assert plan.catalog == ConfigCatalogPlan(
+            before=ConfigCatalog(id=first.id, name="v1"), name="Spring pricing"
+        )
+        assert "catalog" not in [field.field for field in plan.changes[0].diff]
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, named
+        )
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.id != first.id
+        assert live.name == "Spring pricing"
+        assert result.catalog == ConfigCatalogChange(
+            before=ConfigCatalog(id=first.id, name="v1"),
+            after=ConfigCatalog(id=live.id, name="Spring pricing"),
+        )
+
+        await declarative_config_service.apply(session, redis, auth_subject, unnamed)
+        third = await catalogs_repo.get_live(organization.id)
+        assert third is not None
+        assert third.name == "v3"
+
+    async def test_lifecycle(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        initial_config = Config.model_validate({"products": [MONTHLY_PRO]})
+        updated_config = Config.model_validate({"products": [MONTHLY_PRO_25]})
+        products_repo = ProductRepository.from_session(session)
+        catalogs_repo = CatalogRepository.from_session(session)
+        members_repo = CatalogProductRepository.from_session(session)
+
+        create_plan = await declarative_config_service.plan(
+            session, auth_subject, initial_config
+        )
+        assert create_plan.catalog == ConfigCatalogPlan(before=None, name="v1")
+        assert "catalog" not in [field.field for field in create_plan.changes[0].diff]
+
+        created = await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+        [old_product] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        assert first.version_hash is not None
+        assert (len(first.version_hash), old_product.catalog_id) == (64, first.id)
+        assert created.catalog == ConfigCatalogChange(
+            before=None, after=ConfigCatalog(id=first.id, name="v1")
+        )
+        assert [
+            m.product_id for m in await members_repo.get_all_by_catalog(first.id)
+        ] == [old_product.id]
+
+        unchanged = await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+        assert unchanged.changes[0].action == ConfigAction.unchanged
+        assert unchanged.catalog is None
+        assert (await catalogs_repo.get_live(organization.id)) == first
+
+        subscription = await create_active_subscription(
+            save_fixture, product=old_product, customer=customer
+        )
+        checkout_link = await create_checkout_link(save_fixture, products=[old_product])
+        discount = await create_discount(
             save_fixture,
             type=DiscountType.percentage,
-            basis_points=2000,
+            basis_points=1000,
             duration=DiscountDuration.once,
             organization=organization,
-            name="Launch",
-            code="LAUNCH20",
-            products=[product],
-            external_id="launch",
+            products=[old_product],
         )
+
+        update_plan = await declarative_config_service.plan(
+            session, auth_subject, updated_config
+        )
+        assert [field.field for field in update_plan.changes[0].diff] == ["prices"]
+        assert update_plan.catalog == ConfigCatalogPlan(
+            before=ConfigCatalog(id=first.id, name="v1"), name="v2"
+        )
+
+        updated = await declarative_config_service.apply(
+            session, redis, auth_subject, updated_config
+        )
+        [new_product] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert new_product.id != old_product.id
+        assert isinstance(new_product.prices[0], ProductPriceFixed)
+        assert new_product.prices[0].price_amount == 2500
+
+        await session.refresh(old_product)
+        assert (old_product.is_current, old_product.is_archived) == (False, False)
+        assert isinstance(old_product.prices[0], ProductPriceFixed)
+        assert old_product.prices[0].price_amount == 2000
+
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.id != first.id
+        assert live.version_hash not in (None, first.version_hash)
+        assert (live.parent_id, new_product.catalog_id) == (first.id, live.id)
+        assert updated.catalog == ConfigCatalogChange(
+            before=ConfigCatalog(id=first.id, name="v1"),
+            after=ConfigCatalog(id=live.id, name="v2"),
+        )
+        assert [
+            m.product_id for m in await members_repo.get_all_by_catalog(live.id)
+        ] == [new_product.id]
+
+        await session.refresh(subscription)
+        assert subscription.product_id == old_product.id
+        await session.refresh(checkout_link, ["checkout_link_products"])
+        assert [p.product_id for p in checkout_link.checkout_link_products] == [
+            new_product.id
+        ]
+        await session.refresh(discount, ["discount_products"])
+        assert {p.product_id for p in discount.discount_products} == {old_product.id}
+
+    async def test_baseline_from_existing_products(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        existing = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+            is_tax_applicable=False,
+        )
+        config = Config.model_validate({"products": [MONTHLY_PRO_25]})
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert plan.catalog == ConfigCatalogPlan(before=None, name="v2")
+        assert "catalog" not in [field.field for field in plan.changes[0].diff]
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        repository = CatalogRepository.from_session(session)
+        live = await repository.get_live(organization.id)
+        assert live is not None
+        [new_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert (new_product.catalog_id, new_product.is_tax_applicable) == (
+            live.id,
+            False,
+        )
+        await session.refresh(existing)
+        assert existing.is_current is False
+        assert existing.catalog_id is not None
+        assert existing.catalog_id != live.id
+        assert result.catalog == ConfigCatalogChange(
+            before=ConfigCatalog(id=existing.catalog_id, name="v1"),
+            after=ConfigCatalog(id=live.id, name="v2"),
+        )
+        assert (await repository.get_version_hashes([existing.catalog_id])) == {
+            existing.catalog_id: compute_version_hash(None, {"pro": str(existing.id)})
+        }
+
+    async def test_reapply_older_config_takes_next_number(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        initial_config = Config.model_validate({"products": [MONTHLY_PRO]})
+        updated_config = Config.model_validate({"products": [MONTHLY_PRO_25]})
+        catalogs_repo = CatalogRepository.from_session(session)
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+        first = await catalogs_repo.get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session, redis, auth_subject, updated_config
+        )
+        await catalogs_repo.soft_delete(first)
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, initial_config
+        )
+
+        live = await catalogs_repo.get_live(organization.id)
+        assert live is not None
+        assert live.version_hash != first.version_hash
+        assert result.catalog is not None
+        assert result.catalog.after == ConfigCatalog(id=live.id, name="v3")
+
+    async def test_archived_product_stays_archived(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            name="Pro",
+            is_archived=True,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        [new_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert new_product.is_archived is True
+        assert isinstance(new_product.prices[0], ProductPriceFixed)
+        assert new_product.prices[0].price_amount == 2500
+        assert (
+            await CatalogRepository.from_session(session).get_live(organization.id)
+            is None
+        )
+
+
+SUPPORT_BENEFIT = {
+    "type": "feature_flag",
+    "external_id": "support",
+    "description": "Priority support",
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestBenefitVersioning:
+    async def test_change_cascades_to_granting_products(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        products_repo = ProductRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [pro, PACK_PRODUCT]}
+            ),
+        )
+        [old_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        changed = Config.model_validate(
+            {
+                "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                "products": [pro, PACK_PRODUCT],
+            }
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, changed)
+        assert {
+            change.external_id: [(f.field, f.before, f.after) for f in change.diff]
+            for change in plan.changes
+        } == {
+            "beta": [("description", "Beta access", "Early access")],
+            "pro": [("benefits", ["beta"], ["beta"])],
+            "pack": [],
+        }
+
+        await declarative_config_service.apply(session, redis, auth_subject, changed)
+        [new_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        await session.refresh(old_pro, ["product_benefits"])
+        assert new_pro.id != old_pro.id
+        assert [
+            [b.description for b in product.benefits] for product in (old_pro, new_pro)
+        ] == [["Beta access"], ["Early access"]]
+
+    async def test_export_and_plan_previous_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        initial = Config.model_validate({"benefits": [BETA_BENEFIT], "products": [pro]})
+        await declarative_config_service.apply(session, redis, auth_subject, initial)
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                    "products": [pro],
+                }
+            ),
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, catalog_id=first.id
+        )
+        [benefit] = exported.config.benefits
+        [product] = exported.config.products
+        assert (benefit.description, product.benefits) == ("Beta access", ["beta"])
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, initial, catalog_id=first.id
+        )
+        assert (plan.issues, plan.removed, plan.catalog) == ([], [], None)
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    async def test_removes_benefits_left_out(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        benefits_repo = BenefitRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT, SUPPORT_BENEFIT], "products": [pro]}
+            ),
+        )
+        [support] = await benefits_repo.get_all_by_external_ids(
+            organization.id, ["support"]
+        )
+        deprecated = {**SUPPORT_BENEFIT, "external_id": "legacy", "deprecated": True}
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT, deprecated], "products": [pro]}
+            ),
+        )
+
+        assert result.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.benefit,
+                external_id="support",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        await session.refresh(support)
+        assert support.is_current is False
+        assert (
+            await benefits_repo.get_all_by_external_ids(organization.id, ["legacy"])
+            == []
+        )
+        assert result.catalog is not None
+        assert [
+            member.external_id
+            for member in await CatalogBenefitRepository.from_session(
+                session
+            ).get_all_by_catalog(result.catalog.after.id)
+        ] == ["beta"]
+
+    async def test_unlisted_products_block_changed_and_removed_benefits(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT, SUPPORT_BENEFIT],
+                    "products": [
+                        {**MONTHLY_PRO, "benefits": ["beta"]},
+                        {**PACK_PRODUCT, "benefits": ["support"]},
+                    ],
+                }
+            ),
+        )
+        benefits_only = Config.model_validate(
+            {"benefits": [{**BETA_BENEFIT, "description": "Early access"}]}
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, benefits_only
+        )
+
+        assert sorted((issue.input, issue.loc) for issue in plan.issues) == [
+            ("beta", ["body", "benefits", 0]),
+            ("support", ["body", "benefits"]),
+        ]
+        with pytest.raises(ConfigInvalid):
+            await declarative_config_service.apply(
+                session, redis, auth_subject, benefits_only
+            )
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestProductRemoval:
+    async def test_unlisted_product_without_subscriptions(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        products_repo = ProductRepository.from_session(session)
+        [pack] = await products_repo.get_all_by_external_ids(organization.id, ["pack"])
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        assert [change.external_id for change in plan.changes] == ["pro"]
+        assert plan.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.product,
+                external_id="pack",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        assert plan.issues == []
+        assert plan.catalog is not None
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        assert result.removed == plan.removed
+        await session.refresh(pack)
+        assert pack.is_current is False
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert result.catalog is not None
+        assert (result.catalog.after.id, live.name) == (live.id, plan.catalog.name)
+        [pro] = await products_repo.get_all_by_external_ids(organization.id, ["pro"])
+        members = await CatalogProductRepository.from_session(
+            session
+        ).get_all_by_catalog(live.id)
+        assert [member.product_id for member in members] == [pro.id]
+
+        again = await declarative_config_service.plan(session, auth_subject, config)
+        assert (again.removed, again.catalog) == ([], None)
+
+    async def test_products_section_omitted(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"meters": []})
+        )
+
+        assert (plan.removed, plan.catalog) == ([], None)
+
+    async def test_unlisted_product_with_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [old_pro] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25, PACK_PRODUCT]}),
+        )
+        config = Config.model_validate({"products": [PACK_PRODUCT]})
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+
+        [issue] = plan.issues
+        assert (issue.severity, issue.type, issue.loc, issue.input) == (
+            ConfigIssueSeverity.error,
+            ConfigIssueType.removed_in_use,
+            ["body", "products"],
+            "pro",
+        )
+        assert (plan.removed, plan.catalog) == ([], None)
+        with pytest.raises(ConfigInvalid) as e:
+            await declarative_config_service.apply(session, redis, auth_subject, config)
+        assert e.value.errors == [issue]
+
+    async def test_unlisted_product_with_scheduled_change(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        team = {**MONTHLY_PRO, "external_id": "team", "name": "Team"}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, team]}),
+        )
+        products_repo = ProductRepository.from_session(session)
+        [pro] = await products_repo.get_all_by_external_ids(organization.id, ["pro"])
+        [team_product] = await products_repo.get_all_by_external_ids(
+            organization.id, ["team"]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=pro, customer=customer
+        )
+        await save_fixture(
+            SubscriptionUpdate(
+                subscription=subscription,
+                product=team_product,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+                applies_at=utc_now(),
+            )
+        )
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
+        )
+
+        assert [(issue.type, issue.input) for issue in plan.issues] == [
+            (ConfigIssueType.removed_in_use, "team")
+        ]
+
+    async def test_unlisted_archived_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [pack] = await ProductRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+        pack.is_archived = True
+        await save_fixture(pack)
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate({"products": [MONTHLY_PRO]})
+        )
+
+        assert (plan.removed, plan.issues, plan.catalog) == ([], [], None)
+
+    async def test_deprecated_product_with_subscriptions(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [pro] = await ProductRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=pro, customer=customer
+        )
+        config = Config.model_validate(
+            {"products": [{**MONTHLY_PRO_25, "deprecated": True}, PACK_PRODUCT]}
+        )
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+
+        assert [change.external_id for change in result.changes] == ["pack"]
+        assert result.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.product,
+                external_id="pro",
+                reason=ConfigRemovalReason.deprecated,
+            )
+        ]
+        assert result.catalog is not None
+        await session.refresh(pro)
+        assert (pro.is_current, pro.is_archived) == (False, False)
+        assert isinstance(pro.prices[0], ProductPriceFixed)
+        assert pro.prices[0].price_amount == 2000
+        await session.refresh(subscription)
+        assert subscription.product_id == pro.id
+
+        again = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        assert (again.removed, again.catalog) == ([], None)
+
+
+@pytest.fixture
+async def catalog_versions(
+    session: AsyncSession,
+    redis: Redis,
+    auth_subject: AuthSubject[Organization],
+    organization: Organization,
+    config_as_code_enabled: None,
+) -> tuple[UUID, UUID]:
+    catalog_repository = CatalogRepository.from_session(session)
+    await declarative_config_service.apply(
+        session,
+        redis,
+        auth_subject,
+        Config.model_validate({"products": [MONTHLY_PRO]}),
+    )
+    first = await catalog_repository.get_live(organization.id)
+    await declarative_config_service.apply(
+        session,
+        redis,
+        auth_subject,
+        Config.model_validate({"products": [MONTHLY_PRO_25]}),
+    )
+    second = await catalog_repository.get_live(organization.id)
+    assert first is not None
+    assert second is not None
+    return first.id, second.id
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestCatalogSelector:
+    async def test_export_archived_version_deprecates_later_products_in_use(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+        config_as_code_enabled: None,
+    ) -> None:
+        team = {**MONTHLY_PRO, "external_id": "team", "name": "Team"}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, team, PACK_PRODUCT]}),
+        )
+        [team_product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["team"])
+        await create_active_subscription(
+            save_fixture, product=team_product, customer=customer
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, first.id
+        )
+
+        assert [
+            (product.external_id, product.deprecated)
+            for product in exported.config.products
+        ] == [("pro", None), ("team", True)]
+
+    async def test_plan_archived_version_removes_relative_to_it(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        config_as_code_enabled: None,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+
+        against_first = await declarative_config_service.plan(
+            session, auth_subject, config, first.id
+        )
+        against_live = await declarative_config_service.plan(
+            session, auth_subject, config
+        )
+
+        assert against_first.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.product,
+                external_id="pack",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        assert (against_first.issues, against_first.catalog) == ([], None)
+        assert against_live.removed == []
+
+    async def test_export_archived_version(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, first
+        )
+
+        [product] = exported.config.products
+        assert isinstance(product.prices[0], ConfigProductPriceFixedRead)
+        assert product.prices[0].price_amount == 2000
+        assert exported.catalog is not None
+        assert (exported.catalog.id, exported.catalog.status) == (
+            first,
+            CatalogStatus.archived,
+        )
+
+    async def test_export_live(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        _, second = catalog_versions
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.catalog is not None
+        assert (exported.catalog.id, exported.catalog.status) == (
+            second,
+            CatalogStatus.live,
+        )
+
+    async def test_plan_archived_version_unchanged(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            first,
+        )
+
+        assert plan.issues == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+        assert plan.catalog is None
+
+    async def test_plan_archived_version_changed(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            first,
+        )
+
+        [change] = plan.changes
+        assert change.action == ConfigAction.updated
+        assert [field.field for field in change.diff] == ["prices"]
+        assert plan.catalog is None
+
+    async def test_plan_archived_version_new_currency_listed_product(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        catalog_versions: tuple[UUID, UUID],
+    ) -> None:
+        first, _ = catalog_versions
 
         plan = await declarative_config_service.plan(
             session,
             auth_subject,
             Config.model_validate(
                 {
-                    "products": [PACK_PRODUCT],
-                    "discounts": [
-                        {**LAUNCH_DISCOUNT, "basis_points": 2500, "products": []}
-                    ],
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [{**MONTHLY_PRO, "prices": [EUR_PACK_PRICE]}],
                 }
             ),
+            first,
         )
 
-        discount_change = plan.changes[1]
-        assert discount_change.resource == ConfigResource.discount
-        assert discount_change.action == ConfigAction.updated
-        assert [
-            (change.field, change.before, change.after)
-            for change in discount_change.diff
-        ] == [("basis_points", 2000, 2500), ("products", ["pack"], [])]
         assert [
             issue
             for issue in plan.issues
             if issue.severity == ConfigIssueSeverity.error
         ] == []
 
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discount_immutable_fields(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=2000,
-            duration=DiscountDuration.once,
-            organization=organization,
-            external_id="launch",
-        )
-        discount.redemptions_count = 1
-        await save_fixture(discount)
-        await create_discount(
-            save_fixture,
-            type=DiscountType.fixed,
-            amounts={"usd": 1000},
-            duration=DiscountDuration.once,
-            organization=organization,
-            external_id="partner",
-        )
 
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate(
+ROUND_TRIP_CONFIG: dict[str, Any] = {
+    "settings": {"payments": {"currency": "usd", "tax": "inclusive"}},
+    "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
+    "benefits": [
+        {
+            **CREDITS_BENEFIT,
+            "properties": {"meter": "sdk-tool-calls", "units": 1000, "rollover": True},
+        },
+        {**BETA_BENEFIT, "visibility": "private", "metadata": {"tier": 1}},
+    ],
+    "products": [
+        {
+            **PRO_PRODUCT,
+            "description": "The Pro plan",
+            "visibility": "private",
+            "recurring_interval_count": 3,
+            "trial_interval": "day",
+            "trial_interval_count": 14,
+            "prices": [
+                {"amount_type": "fixed", "price_amount": 2000},
                 {
-                    "products": [PACK_PRODUCT],
-                    "discounts": [
-                        {
-                            **LAUNCH_DISCOUNT,
-                            "basis_points": 2500,
-                            "duration": "repeating",
-                            "duration_in_months": 3,
-                        },
-                        {**LAUNCH_DISCOUNT, "external_id": "partner", "code": None},
-                    ],
-                }
-            ),
-        )
-
-        assert [(issue.type, issue.loc) for issue in plan.issues] == [
-            (ConfigIssueType.duration_changed, ["body", "discounts", 0, "duration"]),
-            (
-                ConfigIssueType.discount_locked,
-                ["body", "discounts", 0, "basis_points"],
-            ),
-            (
-                ConfigIssueType.discount_locked,
-                ["body", "discounts", 0, "duration_in_months"],
-            ),
-            (ConfigIssueType.type_changed, ["body", "discounts", 1, "type"]),
-        ]
-
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_discount_duplicate_codes(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=1000,
-            duration=DiscountDuration.once,
-            organization=organization,
-            code="launch20",
-        )
-
-        plan = await declarative_config_service.plan(
-            session,
-            auth_subject,
-            Config.model_validate(
+                    "amount_type": "metered_unit",
+                    "meter": "sdk-tool-calls",
+                    "unit_amount": "0.5",
+                    "cap_amount": 10000,
+                },
+            ],
+            "metadata": {"plan": "pro"},
+        },
+        TEAM_PRODUCT,
+        USAGE_PRODUCT,
+        ANNUAL_PRODUCT,
+        {
+            "external_id": "devices",
+            "name": "Devices",
+            "recurring_interval": "month",
+            "prices": [
                 {
-                    "products": [PACK_PRODUCT],
-                    "discounts": [
-                        LAUNCH_DISCOUNT,
-                        {**LAUNCH_DISCOUNT, "external_id": "partner"},
-                    ],
+                    **UNIT_BASED_PRICE,
+                    "minimum_units": 2,
+                    "unit_label": {"en": {"=1": "device", "other": "devices"}},
                 }
-            ),
+            ],
+        },
+        {
+            "external_id": "lifetime",
+            "name": "Lifetime",
+            "prices": [{"amount_type": "fixed", "price_amount": 0}],
+            "benefits": ["beta"],
+        },
+    ],
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+class TestExport:
+    @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
+    async def test_round_trips_through_apply(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+        await declarative_config_service.apply(
+            session, redis, auth_subject, Config.model_validate(ROUND_TRIP_CONFIG)
         )
 
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        config = Config.model_validate(exported.config.model_dump(mode="json"))
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        applied = await declarative_config_service.apply(
+            session, redis, auth_subject, config
+        )
+        again = await declarative_config_service.export(session, auth_subject, None)
+
+        assert set(ROUND_TRIP_CONFIG) == set(ConfigExportDocument.model_fields)
+        assert set(ConfigExportDocument.model_fields) == set(Config.model_fields) - {
+            "organization_id",
+            "webhooks",
+            "catalog_name",
+        }
+        assert {type(benefit) for benefit in config.benefits} == set(
+            get_args(get_args(ConfigBenefit)[0])
+        )
+        assert {
+            type(price) for product in config.products for price in product.prices
+        } == set(get_args(get_args(ConfigProductPrice)[0]))
+        assert exported.skipped == []
+        assert config == Config.model_validate(ROUND_TRIP_CONFIG)
         assert [
-            (issue.loc, issue.msg)
+            issue
             for issue in plan.issues
-            if issue.type == ConfigIssueType.duplicate_code
-        ] == [
-            (
-                ["body", "discounts", 0, "code"],
-                "Another discount already uses this code.",
-            ),
-            (
-                ["body", "discounts", 1, "code"],
-                "Another discount in this config has the same code.",
-            ),
+            if issue.type != ConfigIssueType.unknown_event
+        ] == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+        assert plan.settings is not None
+        assert plan.settings.action == ConfigAction.unchanged
+        assert {change.action for change in applied.changes} == {ConfigAction.unchanged}
+        assert again.config == exported.config
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_exports_only_current_versions(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        config = Config.model_validate(exported.config.model_dump(mode="json"))
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+
+        [product] = exported.config.products
+        assert product.external_id == "pro"
+        assert isinstance(product.prices[0], ConfigProductPriceFixedRead)
+        assert product.prices[0].price_amount == 2500
+        assert plan.issues == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_exports_deprecated_products_while_in_use(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [old_pro] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        subscription = await create_active_subscription(
+            save_fixture, product=old_pro, customer=customer
+        )
+        for products in (
+            [MONTHLY_PRO_25, PACK_PRODUCT],
+            [{**MONTHLY_PRO_25, "deprecated": True}, PACK_PRODUCT],
+        ):
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate({"products": products}),
+            )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        document = exported.config.model_dump(mode="json")
+        plan = await declarative_config_service.plan(
+            session, auth_subject, Config.model_validate(document)
+        )
+
+        prune = await declarative_config_service.prune(
+            session, auth_subject, Config.model_validate(document)
+        )
+
+        pack, pro = document["products"]
+        assert (pack["external_id"], pro["external_id"]) == ("pack", "pro")
+        assert (pack["deprecated"], pro["deprecated"]) == (None, True)
+        assert pro["prices"][0]["price_amount"] == 2500
+        assert (plan.issues, plan.removed, plan.catalog) == ([], [], None)
+        assert [(change.external_id, change.action) for change in plan.changes] == [
+            ("pack", ConfigAction.unchanged)
         ]
+        assert [
+            (entry.external_id, entry.customers_count) for entry in prune.entries
+        ] == [("pro", 1)]
+
+        subscription.status = SubscriptionStatus.canceled
+        await save_fixture(subscription)
+        again = await declarative_config_service.export(session, auth_subject, None)
+        assert [product.external_id for product in again.config.products] == ["pack"]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_what_config_cannot_express(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        unlisted_meter = await create_meter(save_fixture, organization=organization)
+        credits = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(unlisted_meter.id),
+                "units": 10,
+                "rollover": False,
+            },
+            external_id="credits",
+        )
+        custom_price = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(500, None, None, "usd")],
+            external_id="pay-what-you-want",
+        )
+        archived = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+            external_id="archived",
+        )
+        archived_unkeyed = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            is_archived=True,
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.config.meters == []
+        assert exported.config.benefits == []
+        assert exported.config.products == []
+        assert [(skip.id, skip.reason) for skip in exported.skipped] == [
+            (unlisted_meter.id, ConfigSkippedReason.missing_external_id),
+            (credits.id, ConfigSkippedReason.invalid),
+            (custom_price.id, ConfigSkippedReason.invalid),
+            (archived.id, ConfigSkippedReason.archived),
+            (archived_unkeyed.id, ConfigSkippedReason.archived),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skipped_products_carry_their_interval(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        yearly = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        one_time = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert {
+            skip.id: (skip.recurring_interval, skip.recurring_interval_count)
+            for skip in exported.skipped
+        } == {
+            yearly.id: (SubscriptionRecurringInterval.year, 1),
+            one_time.id: (None, None),
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_agent(
+        self, session: AsyncSession, auth_subject: AuthSubject[Agent]
+    ) -> None:
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.skipped == []
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization", scopes={Scope.meters_read, Scope.benefits_read}
+        )
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_requires_every_section_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.export(session, auth_subject, None)
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestCatalogDrafts:
+    async def test_apply_saves_and_replaces_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        pro = {**MONTHLY_PRO, "benefits": ["beta"]}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [BETA_BENEFIT], "products": [pro]}),
+        )
+        catalogs_repo = CatalogRepository.from_session(session)
+        products_repo = ProductRepository.from_session(session)
+        live = await catalogs_repo.get_live(organization.id)
+        [live_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+
+        first = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [MONTHLY_PRO_25]}
+            ),
+            publish=False,
+        )
+        second = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                    "products": [{**MONTHLY_PRO_25, "benefits": ["beta"]}],
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await catalogs_repo.get_draft(organization.id)
+        assert draft is not None
+        assert live is not None
+        assert first.catalog is not None
+        assert second.catalog is not None
+        assert first.catalog.after.id == second.catalog.after.id == draft.id
+        assert await catalogs_repo.get_live(organization.id) == live
+        assert await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        ) == [live_pro]
+        members = {
+            member.external_id: member.product
+            for member in await CatalogProductRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+        }
+        assert (members["pro"].is_current, members["pro"].catalog_id) == (
+            False,
+            draft.id,
+        )
+        assert [b.description for b in members["pro"].benefits] == ["Early access"]
+
+        published = await catalog_service.publish_draft(
+            session, auth_subject, organization, draft
+        )
+
+        await session.refresh(live_pro)
+        [current_pro] = await products_repo.get_all_by_external_ids(
+            organization.id, ["pro"]
+        )
+        assert (published.status, published.name) == (CatalogStatus.live, "v2")
+        assert (live_pro.is_current, current_pro.id) == (False, members["pro"].id)
+        await session.refresh(live)
+        assert live.status == CatalogStatus.archived
+
+    async def test_export_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [MONTHLY_PRO]}
+            ),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [BETA_BENEFIT], "products": [MONTHLY_PRO_25]}
+            ),
+            publish=False,
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, catalog_id=draft.id
+        )
+
+        assert exported.catalog is not None
+        assert (exported.catalog.id, exported.catalog.status) == (
+            draft.id,
+            CatalogStatus.draft,
+        )
+        [product] = exported.config.products
+        [price] = product.prices
+        assert price.model_dump(include={"price_amount"}) == {"price_amount": 2500}
+
+    async def test_apply_without_catalog_sections_keeps_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            publish=False,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [TOOL_CALLS_METER]}),
+            publish=False,
+        )
+
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is not None
+        )
+
+    async def test_publish_discards_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        config = Config.model_validate({"products": [MONTHLY_PRO]})
+        await declarative_config_service.apply(
+            session, redis, auth_subject, config, publish=False
+        )
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, config, publish=True
+        )
+
+        assert result.catalog is not None
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is None
+        )

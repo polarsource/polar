@@ -15,21 +15,29 @@ import {
   ProductEditOrCreateForm,
   productToCreateForm,
 } from '@/utils/product'
+import {
+  FlaggedProductName,
+  getFlaggedNamesToReport,
+  useFlaggedProductName,
+} from '@/hooks/useFlaggedProductName'
+import { api } from '@/utils/client'
+import { usePostHog } from '@/hooks/posthog'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import * as Sentry from '@sentry/nextjs'
+import { Alert, Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
 import type { FieldErrors } from 'react-hook-form'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { DashboardBody } from '../Layout/DashboardLayout'
 import { getStatusRedirect } from '../Toast/utils'
 import { Benefits } from './Benefits/Benefits'
 import { duplicateProductMedia } from './duplicateMedia'
 import ProductForm from './ProductForm/ProductForm'
-import { Wand2Icon } from 'lucide-react'
-
+import { WandSparkles as Wand2Icon } from '@polar-sh/orbit/icons'
 export interface CreateProductPageProps {
   organization: schemas['Organization']
   sourceProduct?: schemas['Product']
@@ -43,6 +51,7 @@ export const CreateProductPage = ({
 }: CreateProductPageProps) => {
   const router = useRouter()
   const { toast } = useToast()
+  const posthog = usePostHog()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const benefitsQuery = useBenefits(organization.id, {
     limit: 200,
@@ -96,6 +105,18 @@ export const CreateProductPage = ({
     defaultValues: getDefaultValues(),
   })
   const { handleSubmit, setError } = form
+  const name = useWatch({ control: form.control, name: 'name' })
+  const [flaggedNames, setFlaggedNames] = useState<FlaggedProductName[]>([])
+  const flaggedPhrase = useFlaggedProductName({
+    organizationId: organization.id,
+    name: name ?? '',
+  })
+  if (
+    flaggedPhrase &&
+    !flaggedNames.some((flagged) => flagged.name === flaggedPhrase.name)
+  ) {
+    setFlaggedNames([...flaggedNames, flaggedPhrase])
+  }
 
   const onInvalid = useCallback(
     (errors: FieldErrors<ProductEditOrCreateForm>) => {
@@ -163,6 +184,38 @@ export const CreateProductPage = ({
           },
         })
 
+        if (flaggedPhrase && flaggedPhrase.name === productCreate.name.trim()) {
+          posthog.capture('dashboard:products:flagged_name:create', {
+            organization_id: organization.id,
+            product_id: product.id,
+            product_name: product.name,
+            category: flaggedPhrase.category,
+            phrase: flaggedPhrase.phrase,
+          })
+        }
+
+        const attempts = getFlaggedNamesToReport(
+          productCreate.name.trim(),
+          flaggedNames,
+        )
+        if (attempts.length > 0) {
+          void api
+            .POST('/v1/products/{id}/flagged-name', {
+              params: { path: { id: product.id } },
+              body: { attempts },
+            })
+            .then(({ response }) => {
+              if (!response.ok) {
+                Sentry.captureException(
+                  new Error(
+                    `Flagged product name report failed with status ${response.status}`,
+                  ),
+                )
+              }
+            })
+            .catch((error) => Sentry.captureException(error))
+        }
+
         router.push(
           getStatusRedirect(
             returnTo ?? `/dashboard/${organization.slug}/products`,
@@ -190,6 +243,9 @@ export const CreateProductPage = ({
       organization,
       toast,
       setError,
+      flaggedPhrase,
+      flaggedNames,
+      posthog,
     ],
   )
 
@@ -233,6 +289,7 @@ export const CreateProductPage = ({
               organization={organization}
               update={false}
               hasMeterCreditBenefit={hasMeterCreditBenefit}
+              flaggedCategory={flaggedPhrase?.category ?? undefined}
               benefitsSlot={
                 <Benefits
                   organization={organization}
@@ -248,15 +305,40 @@ export const CreateProductPage = ({
           </form>
         </Form>
       </div>
-      <div className="flex flex-row items-center gap-2 pb-12">
-        <Button
-          onClick={handleSubmit(onSubmit, onInvalid)}
-          loading={isSubmitting}
-          disabled={isSubmitting}
-        >
-          Create Product
-        </Button>
-      </div>
+      <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
+        {flaggedPhrase && (
+          <Alert
+            variant="warning"
+            title="This product may not be allowed on Polar"
+            description={
+              <>
+                {flaggedPhrase.phrase
+                  ? `“${flaggedPhrase.phrase}” suggests`
+                  : 'The name suggests'}{' '}
+                {flaggedPhrase.category}, which is not permitted under our{' '}
+                <a
+                  href="https://polar.sh/legal/acceptable-use-policy"
+                  className="underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Acceptable Use Policy
+                </a>
+                . Polar is a Merchant of Record for digital products only.
+              </>
+            }
+          />
+        )}
+        <Box alignItems="center" columnGap="s">
+          <Button
+            onClick={handleSubmit(onSubmit, onInvalid)}
+            loading={isSubmitting}
+            disabled={isSubmitting}
+          >
+            Create Product
+          </Button>
+        </Box>
+      </Box>
     </DashboardBody>
   )
 }

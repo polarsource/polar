@@ -43,7 +43,7 @@ def recorded_exchange_rate_clauses() -> tuple[ColumnElement[bool], ...]:
 def closest_recorded_exchange_rate(
     currency: ColumnElement[str],
     timestamp: ColumnElement[datetime] | InstrumentedAttribute[datetime],
-) -> Select[tuple[Decimal]]:
+) -> Select[Decimal]:
     candidates = select(
         recorded_exchange_rate().label("rate"),
         Transaction.created_at.label("created_at"),

@@ -2,10 +2,17 @@
 
 import { getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { ChartContainer } from '@polar-sh/ui/components/ui/chart'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ChartContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
 import { useMemo } from 'react'
-import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts'
 import type { GenericChartSeries } from '../Charts/GenericChart'
 
 interface StackedMeterChartProps {
@@ -27,7 +34,10 @@ const StackedMeterChart = ({
   const config = useMemo(
     () =>
       series.reduce(
-        (acc, s) => ({ ...acc, [s.key]: { label: s.label, color: s.color } }),
+        (acc, s) => {
+          acc[s.key] = { label: s.label, color: s.color }
+          return acc
+        },
         {} as Record<string, { label: string; color: string }>,
       ),
     [series],

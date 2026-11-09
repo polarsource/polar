@@ -12,7 +12,7 @@ import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
-const applyUrl = 'https://sandbox-api.polar.sh/v1/config/apply'
+const applyUrl = 'https://sandbox-api.polar.sh/v1/config/apply?publish=false'
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -34,7 +34,7 @@ const source = [
 
 let api: ReturnType<typeof fakeHttp>
 
-const run = (file: string) =>
+const run = (file: string, name?: string) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const clients = {
@@ -43,7 +43,7 @@ const run = (file: string) =>
         local: yield* authenticatedClient('local'),
       }
       const config = yield* loader(yield* FileSystem.FileSystem)(file)
-      return yield* apply(clients)(config, acme)
+      return yield* apply(clients)(config, acme, { name })
     }).pipe(
       Effect.provide(Layer.mergeAll(BunServices.layer, api.layer)),
       Effect.provideService(Auth, fakeAuth({ environment: 'sandbox' }).auth),
@@ -97,6 +97,46 @@ describe('apply', () => {
         { section: 'products', id: 'pro', action: 'updated', diff: [] },
       ],
     })
+  })
+
+  test('saves product and benefit changes to the draft catalog', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({
+      changes: [{ resource: 'product', external_id: 'pro', action: 'created' }],
+      catalog: {
+        before: { id: 'cat-live', name: 'v3' },
+        after: { id: 'cat-draft', name: null },
+      },
+    })
+
+    const result = await run(await write(source))
+
+    expect(result).toEqual({
+      status: 'applied',
+      entries: [
+        { section: 'products', id: 'pro', action: 'created', diff: [] },
+      ],
+      draft: { id: 'cat-draft', name: null },
+    })
+  })
+
+  test('sends the catalog name alongside the config', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+
+    await run(await write(source), 'Spring launch')
+
+    expect(await api.requests[0]?.json()).toEqual({
+      ...JSON.parse(source),
+      catalog_name: 'Spring launch',
+    })
+  })
+
+  test('keeps a catalog name from the file when no name is given', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+    const named = { ...JSON.parse(source), catalog_name: 'From file' }
+
+    await run(await write(JSON.stringify(named)))
+
+    expect(await api.requests[0]?.json()).toEqual(named)
   })
 
   test('maps 422 validation errors onto the file', async () => {
@@ -206,7 +246,7 @@ describe('apply', () => {
     const error = await failure(run(await write(source)))
 
     expect(error.message).toBe('Config is not enabled for Acme')
-    expect(error.hint).toContain('enable it')
+    expect(error.hint).toContain('run polar config init')
   })
 
   test('keeps the generic message for other 403s', async () => {

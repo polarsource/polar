@@ -1,5 +1,22 @@
 # @polar-sh/hono
 
+## 2.1.3
+
+### Patch Changes
+
+- 3d1cd57: `polarClient()` is assignable to `BetterAuthClientPlugin` on better-auth 1.7, including 1.7.14, so `createAuthClient` and `inferAdditionalFields` keep their types. `checkoutEmbed` stays typed.
+- Updated dependencies [873039e]
+- Updated dependencies [44c022b]
+  - @polar-sh/checkout@0.6.0
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [609943e]
+- Updated dependencies [1ed6d86]
+  - @polar-sh/checkout@0.5.0
+
 ## 2.1.1
 
 ### Patch Changes

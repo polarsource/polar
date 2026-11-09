@@ -1,24 +1,24 @@
 from typing import Annotated
 
-from fastapi import Body, Depends, Path, Query
+from fastapi import Depends, Path, Query
 from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter, SetSchemaReference
+from polar.kit.schemas import SetSchemaReference
 from polar.kit.versioning import version
 from polar.models import Discount
 from polar.openapi import APITag, cli_preview
-from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
-from . import auth, sorting
+from . import auth, legacy_schemas, sorting
 from .schemas import Discount as DiscountSchema
 from .schemas import (
     DiscountAdapter,
     DiscountCreate,
+    DiscountListParams,
     DiscountUpdate,
 )
 from .service import discount as discount_service
@@ -40,56 +40,16 @@ async def list(
     auth_subject: auth.DiscountRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    query: str | None = Query(None, description="Filter by name."),
+    filters: Annotated[DiscountListParams, Query()],
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[DiscountSchema]:
     """List discounts."""
     results, count = await discount_service.list(
         session,
         auth_subject,
-        organization_id=organization_id,
-        query=query,
-        pagination=pagination,
-        sorting=sorting,
-    )
-
-    return ListResource.from_paginated_results(
-        [DiscountAdapter.validate_python(result) for result in results],
-        count,
-        pagination,
-    )
-
-
-@router.get(
-    "/",
-    name="list",
-    summary="List Discounts",
-    response_model=ListResource[DiscountSchema],
-)
-@version(starting_from=V2027_01)
-async def list_v2027_01(
-    auth_subject: auth.DiscountRead,
-    pagination: PaginationParamsQuery,
-    sorting: sorting.ListSorting,
-    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
-        None, title="OrganizationID Filter", description="Filter by organization ID."
-    ),
-    external_id: MultipleQueryFilter[str] | None = Query(
-        None, title="ExternalID Filter", description="Filter by discount external ID."
-    ),
-    query: str | None = Query(None, description="Filter by name."),
-    session: AsyncSession = Depends(get_db_session),
-) -> ListResource[DiscountSchema]:
-    """List discounts."""
-    results, count = await discount_service.list(
-        session,
-        auth_subject,
-        organization_id=organization_id,
-        external_id=external_id,
-        query=query,
+        organization_id=filters.organization_id,
+        external_id=filters.external_id,
+        query=filters.query,
         pagination=pagination,
         sorting=sorting,
     )
@@ -137,10 +97,29 @@ async def get(
 )
 async def create(
     auth_subject: auth.DiscountWrite,
-    # This is a workaround for FastAPI bug: https://github.com/fastapi/fastapi/discussions/12941
+    discount_create: Annotated[
+        legacy_schemas.DiscountCreate,
+        SetSchemaReference("DiscountCreate"),
+    ],
+    session: AsyncSession = Depends(get_db_session),
+) -> Discount:
+    """Create a discount."""
+    return await discount_service.create(session, discount_create, auth_subject)
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=DiscountSchema,
+    status_code=201,
+    summary="Create Discount",
+    responses={201: {"description": "Discount created."}},
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    auth_subject: auth.DiscountWrite,
     discount_create: Annotated[
         DiscountCreate,
-        Body(...),
         SetSchemaReference("DiscountCreate"),
     ],
     session: AsyncSession = Depends(get_db_session),
@@ -159,6 +138,34 @@ async def create(
     },
 )
 async def update(
+    id: DiscountID,
+    discount_update: legacy_schemas.DiscountUpdate,
+    auth_subject: auth.DiscountWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Discount:
+    """Update a discount."""
+    discount = await discount_service.get_by_id(session, auth_subject, id)
+
+    if discount is None:
+        raise ResourceNotFound()
+
+    return await discount_service.update(
+        session, discount, discount_update, auth_subject
+    )
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    response_model=DiscountSchema,
+    summary="Update Discount",
+    responses={
+        200: {"description": "Discount updated."},
+        404: DiscountNotFound,
+    },
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
     id: DiscountID,
     discount_update: DiscountUpdate,
     auth_subject: auth.DiscountWrite,

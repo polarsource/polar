@@ -71,13 +71,6 @@
 }
 
 @font-face {
-  font-family: 'Louize';
-  font-style: italic;
-  font-display: swap;
-  src: url('/fonts/Louize-Italic-205TF.otf') format('opentype');
-}
-
-@font-face {
   font-family: 'GeistMono';
   font-style: normal;
   font-display: swap;
@@ -240,6 +233,22 @@
   }
 
   --animate-send-off: send-off 0.5s ease-out;
+
+  @keyframes bar-grow {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  --animate-bar-grow: bar-grow 0.3s cubic-bezier(0, 0, 0, 1) both;
+
+  @keyframes bar-grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  --animate-bar-grow-x: bar-grow-x 0.3s cubic-bezier(0, 0, 0, 1) both;
 }
 
 @layer base {

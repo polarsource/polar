@@ -28,6 +28,7 @@ export default async function Page(props: {
     params: {
       query: {
         organization_id: organization.id,
+        catalog_status: 'live',
         limit: 1,
         sorting: ['-created_at'],
       },
@@ -50,11 +51,13 @@ export default async function Page(props: {
       <p className="dark:text-polar-500 text-gray-500">
         Create a benefit to get started
       </p>
-      <Link
-        href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
-      >
-        <Button>Create Benefit</Button>
-      </Link>
+      {!organization.feature_settings?.config_as_code_enabled && (
+        <Link
+          href={`/dashboard/${organization.slug}/products/benefits?create_benefit=true`}
+        >
+          <Button>Create Benefit</Button>
+        </Link>
+      )}
     </div>
   )
 }

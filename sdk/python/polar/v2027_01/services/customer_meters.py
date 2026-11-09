@@ -10,6 +10,7 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
+    CustomerMeterCreditNotReversible,
     CustomerMetersCredits409Error,
     HTTPValidationError,
     NotPermitted,
@@ -257,6 +258,56 @@ class CustomerMetersSync(SyncServiceBase):
         }
         return parse_response_json(response, MeterCreditEvent, method_errors)
 
+    def reverse_credit(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> MeterCreditEvent:
+        """
+        Reverse a manual credit, removing the units the customer hasn't used yet.
+
+        Works once per credit, within 7 days and in the current billing period.
+        Returns a `meter.credited` event with negative units and
+        `parent_id` set to the reversed credit.
+
+        **Scopes**: `customers:write`
+
+        Args:
+            id: The ID of the `meter.credited` event returned when the credit was granted.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            NotPermitted: You don't have permission to manage customers.
+            ResourceNotFound: Manual credit not found.
+            CustomerMeterCreditNotReversible: The credit can't be reversed, or the customer meter is being updated: retry shortly.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-meters/credits/{id}/reverse",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: CustomerMeterCreditNotReversible,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, MeterCreditEvent, method_errors)
+
 
 class CustomerMetersAsync(AsyncServiceBase):
     async def list(
@@ -483,6 +534,56 @@ class CustomerMetersAsync(AsyncServiceBase):
         method_errors = {
             403: NotPermitted,
             409: CustomerMetersCredits409Error,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, MeterCreditEvent, method_errors)
+
+    async def reverse_credit(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> MeterCreditEvent:
+        """
+        Reverse a manual credit, removing the units the customer hasn't used yet.
+
+        Works once per credit, within 7 days and in the current billing period.
+        Returns a `meter.credited` event with negative units and
+        `parent_id` set to the reversed credit.
+
+        **Scopes**: `customers:write`
+
+        Args:
+            id: The ID of the `meter.credited` event returned when the credit was granted.
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            NotPermitted: You don't have permission to manage customers.
+            ResourceNotFound: Manual credit not found.
+            CustomerMeterCreditNotReversible: The credit can't be reversed, or the customer meter is being updated: retry shortly.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/customer-meters/credits/{id}/reverse",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: CustomerMeterCreditNotReversible,
             422: HTTPValidationError,
         }
         return parse_response_json(response, MeterCreditEvent, method_errors)

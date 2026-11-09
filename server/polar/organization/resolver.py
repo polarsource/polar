@@ -2,10 +2,10 @@ from typing import Protocol
 
 from pydantic import UUID4
 
-from polar.auth.models import AuthSubject, is_organization
+from polar.auth.models import AuthSubject, is_agent, is_organization
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Organization, User
+from polar.models import Agent, Organization, User
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 
@@ -23,7 +23,7 @@ OrganizationIDModel = _OrganizationIDModelNone | _OrganizationIDModel
 
 async def get_payload_organization(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     model: OrganizationIDModel,
 ) -> Organization:
     if is_organization(auth_subject):
@@ -49,10 +49,10 @@ async def get_payload_organization(
     repository = OrganizationRepository.from_session(session)
 
     if model.organization_id is None:
-        # A credential down-scoped to exactly one organization resolves it
-        # implicitly, restoring organization-token ergonomics on create
-        # endpoints.
-        if (
+        # An agent, or a credential down-scoped to exactly one organization,
+        # resolves it implicitly, restoring organization-token ergonomics on
+        # create endpoints.
+        if is_agent(auth_subject) or (
             auth_subject.organization_ids is not None
             and len(auth_subject.organization_ids) == 1
         ):

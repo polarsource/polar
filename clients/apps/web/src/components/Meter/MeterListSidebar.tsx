@@ -1,14 +1,17 @@
 'use client'
 
 import { Spinner } from '@polar-sh/orbit'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useMetersInfinite } from '@/hooks/queries/meters'
 import { useInViewport } from '@/hooks/utils'
-import AddOutlined from '@mui/icons-material/AddOutlined'
-import ArrowDownward from '@mui/icons-material/ArrowDownward'
-import ArrowUpward from '@mui/icons-material/ArrowUpward'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
-import FilterList from '@mui/icons-material/FilterList'
-import Search from '@mui/icons-material/Search'
+import {
+  AddOutlined,
+  ArrowDownward,
+  ArrowUpward,
+  CheckOutlined,
+  FilterList,
+  SearchFilled as Search,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -34,6 +37,7 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
   organization,
 }) => {
   const pathname = usePathname()
+  const managedAsCode = useIsManagedAsCode(organization.id)
   const searchParams = useSearchParams()
 
   const [sorting, setSorting] = useQueryState(
@@ -142,11 +146,15 @@ export const MeterListSidebar: React.FC<MeterListSidebarProps> = ({
               <ArrowDownward fontSize="small" />
             )}
           </Button>
-          <Link href={`/dashboard/${organization.slug}/products/meters/create`}>
-            <Button size="icon" className="h-6 w-6">
-              <AddOutlined fontSize="small" />
-            </Button>
-          </Link>
+          {!managedAsCode && (
+            <Link
+              href={`/dashboard/${organization.slug}/products/meters/create`}
+            >
+              <Button size="icon" className="h-6 w-6">
+                <AddOutlined fontSize="small" />
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
       <div className="flex flex-row items-center gap-3 px-4 py-2">

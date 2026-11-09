@@ -8,30 +8,44 @@ import {
   ValidationErrors,
 } from '@/schemas/BillingConfig'
 import {
+  type CatalogOptions,
   type Clients,
   entries,
   post,
   requiredScopes,
   transportErrors,
   unexpected,
+  withDefaultCurrency,
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
 
 export const plan =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    options: CatalogOptions = {},
+  ) =>
     Effect.gen(function* () {
       const response = yield* post(
         clients,
-        '/config/plan',
+        options.catalogId === undefined
+          ? '/config/plan'
+          : `/config/plan?catalog_id=${options.catalogId}`,
         config,
         organization,
+        options,
       )
       if (response.status === 200) {
         const body =
           yield* HttpClientResponse.schemaBodyJson(PlanResponse)(response)
         return {
-          entries: entries(body.changes, body.settings),
+          entries: yield* withDefaultCurrency(
+            clients,
+            organization,
+            entries(body.changes, body.settings, body.removed),
+          ),
+          ...(body.catalog ? { catalog: body.catalog } : {}),
           issues: issues(config, body.issues),
         } satisfies PlanResult
       }

@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
+import { withDeprecation, type HasDeprecation } from './deprecation'
 import { Metadata, withMetadata, type HasMetadata } from './metadata'
 import { Visibility, withVisibility, type HasVisibility } from './visibility'
 
@@ -11,6 +12,7 @@ const benefitFields = {
   ),
   metadata: Schema.optionalKey(Metadata),
   visibility: Schema.optionalKey(Visibility),
+  deprecated: Schema.optionalKey(Schema.Literal(true)),
 }
 
 export const BenefitConfig = Schema.Union([
@@ -39,7 +41,8 @@ export type BenefitDefinition<Meter extends string = string> =
       readonly name: string | undefined
       readonly type: 'feature_flag'
     } & HasMetadata &
-      HasVisibility)
+      HasVisibility &
+      HasDeprecation)
   | ({
       readonly name: string | undefined
       readonly type: 'meter_credit'
@@ -49,9 +52,12 @@ export type BenefitDefinition<Meter extends string = string> =
         readonly rollover: boolean
       }
     } & HasMetadata &
-      HasVisibility)
+      HasVisibility &
+      HasDeprecation)
 
-class FlagDefinition extends withMetadata(withVisibility(Builder)) {
+class FlagDefinition extends withDeprecation(
+  withMetadata(withVisibility(Builder)),
+) {
   readonly type = 'feature_flag'
 
   constructor(readonly name: string | undefined) {
@@ -61,8 +67,8 @@ class FlagDefinition extends withMetadata(withVisibility(Builder)) {
 
 export const flag = (name?: string): FlagDefinition => new FlagDefinition(name)
 
-class CreditsDefinition<Meter extends string> extends withMetadata(
-  withVisibility(Builder),
+class CreditsDefinition<Meter extends string> extends withDeprecation(
+  withMetadata(withVisibility(Builder)),
 ) {
   readonly type = 'meter_credit'
 
@@ -105,6 +111,8 @@ export const credits = (name?: string) => ({
 export type BenefitHelpers<Meter extends string> = {
   readonly flag: typeof flag
   readonly credits: (name?: string) => {
-    readonly meter: (meter: Meter) => CreditsBuilder<Meter>
+    readonly meter: <const Credited extends Meter>(
+      meter: Credited,
+    ) => CreditsBuilder<Credited>
   }
 }

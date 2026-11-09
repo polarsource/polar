@@ -3,6 +3,7 @@ import json
 from typing import Any
 from urllib.parse import urlparse
 
+import anyio
 import clickhouse_connect
 import httpx
 import logfire
@@ -114,6 +115,7 @@ class TinybirdClient:
         self._clickhouse_client: (
             clickhouse_connect.driver.asyncclient.AsyncClient | None
         ) = None
+        self._clickhouse_client_lock = anyio.Lock()
 
         self._write_client = httpx.AsyncClient(
             base_url=api_url,
@@ -140,18 +142,19 @@ class TinybirdClient:
     async def _get_clickhouse_client(
         self,
     ) -> clickhouse_connect.driver.asyncclient.AsyncClient:
-        if self._clickhouse_client is None:
-            parsed = urlparse(self._clickhouse_url)
-            self._clickhouse_client = await clickhouse_connect.get_async_client(
-                host=parsed.hostname or "localhost",
-                port=parsed.port or (443 if parsed.scheme == "https" else 7182),
-                username=self._clickhouse_username,
-                password=self._clickhouse_token or "",
-                interface="https" if parsed.scheme == "https" else "http",
-                connect_timeout=3,
-                send_receive_timeout=30,
-                query_retries=1,
-            )
+        async with self._clickhouse_client_lock:
+            if self._clickhouse_client is None:
+                parsed = urlparse(self._clickhouse_url)
+                self._clickhouse_client = await clickhouse_connect.get_async_client(
+                    host=parsed.hostname or "localhost",
+                    port=parsed.port or (443 if parsed.scheme == "https" else 7182),
+                    username=self._clickhouse_username,
+                    password=self._clickhouse_token or "",
+                    interface="https" if parsed.scheme == "https" else "http",
+                    connect_timeout=3,
+                    send_receive_timeout=30,
+                    query_retries=1,
+                )
         return self._clickhouse_client
 
     async def _request_with_retry(

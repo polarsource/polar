@@ -1,5 +1,7 @@
 locals {
   backend_config = {
+    database_statement_cache_size             = 0
+    database_prepared_statement_cache_size    = 0
     linear_team_id                            = var.linear_team_id
     linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
 
@@ -57,14 +59,15 @@ locals {
       CA = "720474766 RT9999"
       AU = "300038975137"
     })
-    tax_processors                                   = "[\"stripe\"]"
-    tax_record_processor                             = "stripe"
+    tax_processors                                   = "[\"numeral\",\"stripe\"]"
+    tax_record_processor                             = "numeral"
     customer_portal_url_overrides                    = var.customer_portal_url_overrides
     plain_default_tier_external_id                   = var.plain_default_tier_external_id
     merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id
   }
 
   backend_secrets = {
+    mcp_oauth2_client_id           = var.mcp_oauth2_client_id
     linear_api_key                 = var.linear_api_key
     stripe_publishable_key         = var.stripe_publishable_key_production
     discord_bot_token              = var.backend_discord_bot_token_production
@@ -89,9 +92,12 @@ locals {
   }
 
   google_secrets = {
-    client_id            = var.google_client_id_production
-    client_secret        = var.google_client_secret_production
-    service_account_json = var.google_service_account_json
+    backoffice_client_id     = var.backoffice_google_client_id
+    backoffice_client_secret = var.backoffice_google_client_secret
+    backoffice_hosted_domain = var.backoffice_google_hosted_domain
+    client_id                = var.google_client_id_production
+    client_secret            = var.google_client_secret_production
+    service_account_json     = var.google_service_account_json
   }
 
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_production }
@@ -154,7 +160,6 @@ locals {
     access_token     = var.polar_access_token
     webhook_secret   = var.polar_webhook_secret
     organization_id  = var.polar_organization_id
-    free_product_id  = var.polar_free_product_id
     scale_product_id = var.polar_scale_product_id
     api_url          = "https://api.polar.sh"
   }

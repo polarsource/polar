@@ -16,7 +16,6 @@
     "NEXT_PUBLIC_FRONTEND_BASE_URL",
     "POLAR_SKIP_DTS",
     "VERCEL_ENV",
-    "VERCEL_URL",
     "NEXT_PUBLIC_VERCEL_ENV",
     "NEXT_PUBLIC_LOGIN_PATH",
     "NEXT_PUBLIC_GITHUB_APP_NAMESPACE",
@@ -25,8 +24,6 @@
     "NEXT_PUBLIC_POSTHOG_TOKEN",
     "NEXT_PUBLIC_STRIPE_COUNTRIES_WHITELIST",
     "NEXT_PUBLIC_APPLE_DOMAIN_ASSOCIATION",
-    "SENTRY_AUTH_TOKEN",
-    "VERCEL_GIT_COMMIT_SHA",
     "NEXT_PUBLIC_SENTRY_DSN",
     "SENTRY_PROJECT",
     "SENTRY_ORG",
@@ -57,6 +54,11 @@
     },
     "build": {
       "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+    },
+    "web#build": {
+      "dependsOn": ["^build"],
+      "env": ["VERCEL_GIT_COMMIT_SHA", "VERCEL_URL", "SENTRY_AUTH_TOKEN"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"]
     },
     "//#lint": {},

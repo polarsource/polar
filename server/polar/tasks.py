@@ -1,4 +1,5 @@
 from polar.auth import tasks as auth
+from polar.backoffice.auth import tasks as backoffice_auth
 from polar.benefit import tasks as benefit
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
@@ -33,7 +34,6 @@ from polar.order import tasks as order
 from polar.organization import tasks as organization
 from polar.organization_access_token import tasks as organization_access_token
 from polar.organization_review import tasks as organization_review
-from polar.outpost import tasks as outpost
 from polar.payment_method import tasks as payment_method
 from polar.payout import tasks as payout
 from polar.payout_account import tasks as payout_account
@@ -50,6 +50,7 @@ from polar.webhook import tasks as webhook
 
 __all__ = [
     "auth",
+    "backoffice_auth",
     "benefit",
     "chargeback_stop",
     "checkout",
@@ -79,7 +80,6 @@ __all__ = [
     "organization",
     "organization_access_token",
     "organization_review",
-    "outpost",
     "payment_method",
     "payout",
     "payout_account",

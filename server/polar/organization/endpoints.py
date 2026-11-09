@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, Query, Request, Response, status
@@ -50,8 +51,10 @@ from polar.integrations.polar.schemas import (
     organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.kit.concurrency import create_task_group
 from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
+from polar.kit.versioning import version
 from polar.models import Account, Organization, UserOrganization, UserSession
 from polar.models.support_case import (
     SupportCase,
@@ -60,6 +63,9 @@ from polar.models.user_organization import OrganizationRole
 from polar.openapi import APITag
 from polar.organization.repository import (
     OrganizationReviewRepository,
+)
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
 )
 from polar.organization_review.appeal_case import (
     AppealNotRejectedError,
@@ -77,6 +83,7 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
+from polar.sso.service import SSORequiresVerifiedDomain
 from polar.startup_program.service import (
     StartupProgramError,
 )
@@ -90,6 +97,7 @@ from polar.support_case.schemas import (
 from polar.support_case.schemas import (
     SupportCase as SupportCaseSchema,
 )
+from polar.user.service import UserCannotAuthenticate
 from polar.user.service import user as user_service
 from polar.user_organization.schemas import (
     OrganizationMember,
@@ -106,8 +114,9 @@ from polar.user_organization.service import (
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from polar.version import V2027_01
 
-from . import auth, sorting
+from . import auth, legacy_schemas, sorting
 from .embed_hosts import is_shared_host
 from .schemas import Organization as OrganizationSchema
 from .schemas import (
@@ -118,6 +127,7 @@ from .schemas import (
     OrganizationEmbedStatus,
     OrganizationID,
     OrganizationKYC,
+    OrganizationListParams,
     OrganizationPaymentStatus,
     OrganizationPayoutAccountSet,
     OrganizationReviewState,
@@ -153,17 +163,17 @@ OrganizationNotFound = {
     operation_id="organizations:list",
 )
 async def list_organizations(
+    filters: Annotated[OrganizationListParams, Query()],
     auth_subject: auth.OrganizationsRead,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    slug: str | None = Query(None, description="Filter by slug."),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrganizationSchema]:
     """List organizations."""
     results, count = await organization_service.list(
         session,
         auth_subject,
-        slug=slug,
+        slug=filters.slug,
         pagination=pagination,
         sorting=sorting,
     )
@@ -183,7 +193,7 @@ async def list_organizations(
     tags=[APITag.public, APITag.mcp, APITag.cli],
 )
 async def get(
-    authz: AuthorizeOrgAccess,
+    authz: auth.OrganizationsAccess,
 ) -> Organization:
     """Get an organization by ID."""
     return authz.organization
@@ -306,6 +316,28 @@ async def get_embed_status(
     tags=[APITag.public],
 )
 async def create(
+    organization_create: legacy_schemas.OrganizationCreate,
+    auth_subject: auth.OrganizationsCreate,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Create an organization."""
+    return await organization_service.create(session, organization_create, auth_subject)
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=OrganizationSchema,
+    status_code=201,
+    summary="Create Organization",
+    responses={
+        201: {"description": "Organization created."},
+        403: {"model": CannotCreateOrganizationError.schema()},
+    },
+    tags=[APITag.public],
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
     organization_create: OrganizationCreate,
     auth_subject: auth.OrganizationsCreate,
     session: AsyncSession = Depends(get_db_session),
@@ -351,9 +383,54 @@ async def check_slug(
     tags=[APITag.public],
 )
 async def update(
-    authz: AuthorizeOrgManage,
+    authz: auth.OrganizationsManage,
+    organization_update: legacy_schemas.OrganizationUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Update an organization."""
+    return await _update(authz, organization_update, session)
+
+
+@router.patch(
+    "/{id}",
+    name="update",
+    response_model=OrganizationSchema,
+    summary="Update Organization",
+    responses={
+        200: {"description": "Organization updated."},
+        403: {
+            "description": (
+                "You don't have the permission to update this organization, or "
+                "dispute auto-accept isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | DisputeAutoAcceptNotEnabled.schema(),
+        },
+        404: OrganizationNotFound,
+        409: {
+            "description": (
+                "Cannot enforce SSO without an enabled connection and a verified "
+                "domain."
+            ),
+            "model": SSOEnforcementRequiresConnection.schema()
+            | SSORequiresVerifiedDomain.schema(),
+        },
+    },
+    tags=[APITag.public],
+)
+@version(starting_from=V2027_01)
+async def update_v2027_01(
+    authz: auth.OrganizationsManage,
     organization_update: OrganizationUpdate,
     session: AsyncSession = Depends(get_db_session),
+) -> Organization:
+    """Update an organization."""
+    return await _update(authz, organization_update, session)
+
+
+async def _update(
+    authz: auth.OrganizationsManage,
+    organization_update: OrganizationUpdate,
+    session: AsyncSession,
 ) -> Organization:
     """Update an organization."""
     if organization_update.sso_enforced:
@@ -375,6 +452,10 @@ async def update(
             authz.organization.id
         ):
             raise SSOEnforcementRequiresConnection()
+        if not await organization_domain_service.has_verified(
+            session, authz.organization
+        ):
+            raise SSORequiresVerifiedDomain()
     return await organization_service.update(
         session, authz.organization, organization_update
     )
@@ -540,6 +621,7 @@ async def roles(authz: AuthorizeOrgAccess) -> list[OrganizationRoleDefinition]:
 @router.post(
     "/{id}/members/invite",
     response_model=OrganizationMember,
+    responses={403: {"model": UserCannotAuthenticate.schema()}},
     tags=[APITag.private],
 )
 async def invite_member(
@@ -942,12 +1024,29 @@ async def list_plans(
     The free plan is synthesized (no underlying Polar product); selecting it in
     the UI cancels the active subscription instead of creating one.
     """
-    products = await polar_self_service.list_plans()
-    subscription = await polar_self_service.get_subscription(authz.organization.id)
+    async with create_task_group() as tg:
+        products = tg.create_task(polar_self_service.list_plans())
+        subscription = tg.create_task(
+            polar_self_service.get_subscription(authz.organization.id)
+        )
     free_plan = await polar_self_service.resolve_free_plan(
-        session, authz.organization.id, subscription=subscription
+        session, authz.organization.id, subscription=subscription.return_value
     )
-    return [free_plan, *(OrganizationPlan.from_sdk(product) for product in products)]
+    return [
+        free_plan,
+        *(OrganizationPlan.from_sdk(product) for product in products.return_value),
+    ]
+
+
+def _apply_startup_program(
+    subscription_obj: OrganizationSubscription, status: str | None
+) -> OrganizationSubscription:
+    if settings.STARTUP_PROGRAM_ENABLED:
+        subscription_obj.startup_program_scale_product_id = (
+            settings.POLAR_SCALE_PRODUCT_ID
+        )
+        subscription_obj.startup_program_status = status
+    return subscription_obj
 
 
 async def _enrich_subscription(
@@ -956,14 +1055,9 @@ async def _enrich_subscription(
     organization_id: UUID,
 ) -> OrganizationSubscription:
     """Annotate the subscription with Startup Program state when configured."""
-    if settings.STARTUP_PROGRAM_ENABLED:
-        subscription_obj.startup_program_scale_product_id = (
-            settings.POLAR_SCALE_PRODUCT_ID
-        )
-        subscription_obj.startup_program_status = (
-            await startup_program_service.get_status(organization_id)
-        )
-    return subscription_obj
+    return _apply_startup_program(
+        subscription_obj, await startup_program_service.get_status(organization_id)
+    )
 
 
 @router.get(
@@ -982,7 +1076,15 @@ async def get_subscription(
     Returns a synthesized free-plan representation when the organization has no
     active paid subscription. Grandfathered orgs get the "Early Member" variant.
     """
-    subscription = await polar_self_service.get_subscription(authz.organization.id)
+    async with create_task_group() as tg:
+        subscription_task = tg.create_task(
+            polar_self_service.get_subscription(authz.organization.id)
+        )
+        startup_program_status_task = tg.create_task(
+            startup_program_service.get_status(authz.organization.id)
+        )
+    subscription = subscription_task.return_value
+    startup_program_status = startup_program_status_task.return_value
     if subscription is None:
         free_plan = await polar_self_service.resolve_free_plan(
             session, authz.organization.id, subscription=None
@@ -990,10 +1092,7 @@ async def get_subscription(
         subscription_obj = OrganizationSubscription.free(plan=free_plan)
     else:
         subscription_obj = OrganizationSubscription.from_sdk(subscription)
-    return await _enrich_subscription(
-        subscription_obj,
-        organization_id=authz.organization.id,
-    )
+    return _apply_startup_program(subscription_obj, startup_program_status)
 
 
 @router.post(

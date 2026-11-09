@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
 import pytest
@@ -15,6 +15,7 @@ from polar.meter.aggregation import (
 )
 from polar.meter.repository import MeterRepository
 from polar.models import Meter, Organization, Reducer
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer import cache
@@ -48,7 +49,9 @@ class TestGetActiveReducers:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        query = mocker.spy(ReducerRepository, "get_all_active_by_organization")
+        query = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
 
         await cache.get_active_reducers(session, redis, organization.id)
         [cached] = await cache.get_active_reducers(session, redis, organization.id)
@@ -56,6 +59,7 @@ class TestGetActiveReducers:
         assert query.call_count == 1
         assert cached.id == reducer.id
         assert cached.organization_id == organization.id
+        assert cached.kind == reducer.kind
         assert cached.filter == meter.filter
         assert cached.aggregation == aggregation
         assert (
@@ -74,7 +78,9 @@ class TestGetActiveReducers:
         organization_second: Organization,
         meter: Meter,
     ) -> None:
-        query = mocker.spy(ReducerRepository, "get_all_active_by_organization")
+        query = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
         for org in (organization, organization_second):
             assert await cache.get_active_reducers(session, redis, org.id) == []
             assert await cache.get_active_reducers(session, redis, org.id) == []
@@ -105,6 +111,28 @@ class TestGetActiveReducers:
         [cached] = await cache.get_active_reducers(session, redis, organization.id)
         assert cached.id == reducer.id
 
+    async def test_credit_reducers(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+
+        [cached] = await cache.get_active_reducers(session, redis, organization.id)
+
+        assert cached.id == reducer.id
+
     @pytest.mark.parametrize("failure", ["get", "set", "invalid_json"])
     async def test_cache_failure_uses_database(
         self,
@@ -119,7 +147,9 @@ class TestGetActiveReducers:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        query = mocker.spy(ReducerRepository, "get_all_active_by_organization")
+        query = mocker.spy(
+            ReducerRepository, "get_all_active_by_organization_and_kinds"
+        )
         if failure == "get":
             mocker.patch.object(redis, "get", side_effect=RedisError)
         elif failure == "set":
@@ -141,14 +171,16 @@ class TestGetActiveReducers:
         organization: Organization,
     ) -> None:
         async def query_then_invalidate(
-            repository: ReducerRepository, organization_id: UUID
+            repository: ReducerRepository,
+            organization_id: UUID,
+            kinds: Collection[ReducerKind],
         ) -> Sequence[Reducer]:
             await cache.invalidate(redis, organization_id)
             return []
 
         query = mocker.patch.object(
             ReducerRepository,
-            "get_all_active_by_organization",
+            "get_all_active_by_organization_and_kinds",
             autospec=True,
             side_effect=query_then_invalidate,
         )

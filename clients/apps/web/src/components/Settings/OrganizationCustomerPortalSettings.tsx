@@ -13,6 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import { Box } from '@polar-sh/orbit/Box'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerPortalSettingsProps {
@@ -81,145 +82,144 @@ const OrganizationCustomerPortalSettings: React.FC<
           e.preventDefault()
         }}
       >
-        <SettingsGroup>
-          <SettingsGroupItem
-            layout="inline"
-            title="Show metered usage"
-            description="Show customer usage in the portal (API endpoints unaffected)"
-          >
-            <FormField
-              control={control}
-              name="usage.show"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={readOnly}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-
-          <SettingsGroupItem
-            layout="inline"
-            title="Enable subscription seat management"
-            description="Allow customers to assign and manage seats for their subscriptions."
-          >
-            <FormField
-              control={control}
-              name="subscription.update_seats"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={readOnly}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-
-          <SettingsGroupItem
-            layout="inline"
-            title="Enable subscription unit changes"
-            description="Allow customers to change the number of units on their subscription from the portal."
-          >
-            <FormField
-              control={control}
-              name="subscription.update_units"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={readOnly}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-
-          <SettingsGroupItem
-            layout="inline"
-            title="Allow email address changes"
-            description="Allow customers to change the email address associated with their account."
-          >
-            <FormField
-              control={control}
-              name="customer.allow_email_change"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={readOnly}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-
-          <SettingsGroupItem
-            layout="inline"
-            title="Enable subscription plan changes"
-            description="Allow customers to change their subscription plan from the portal."
-          >
-            <FormField
-              control={control}
-              name="subscription.update_plan"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={readOnly}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-
-          <SettingsGroupItem
-            layout="inline"
-            title="Enable subscription pausing"
-            description="Allow customers to pause and resume their subscriptions from the portal."
-          >
-            <FormField
-              control={control}
-              name="subscription.pause"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      disabled={readOnly}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </SettingsGroupItem>
-        </SettingsGroup>
+        <Box flexDirection="column" rowGap="2xl">
+          <SettingsGroup title="Subscriptions">
+            <SettingsGroupItem
+              layout="inline"
+              title="Enable subscription plan changes"
+              description="Allow customers to change their subscription plan from the portal."
+            >
+              <FormField
+                control={control}
+                name="subscription.update_plan"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              layout="inline"
+              title="Enable subscription unit changes"
+              description="Allow customers to change the number of units on their subscription from the portal."
+            >
+              <FormField
+                control={control}
+                name="subscription.update_units"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              layout="inline"
+              title="Enable subscription seat management"
+              description="Allow customers to assign and manage seats for their subscriptions."
+            >
+              <FormField
+                control={control}
+                name="subscription.update_seats"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              layout="inline"
+              title="Enable subscription pausing"
+              description="Allow customers to pause and resume their subscriptions from the portal."
+            >
+              <FormField
+                control={control}
+                name="subscription.pause"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+          </SettingsGroup>
+          <SettingsGroup title="Account">
+            <SettingsGroupItem
+              layout="inline"
+              title="Allow email address changes"
+              description="Allow customers to change the email address associated with their account."
+            >
+              <FormField
+                control={control}
+                name="customer.allow_email_change"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+            <SettingsGroupItem
+              layout="inline"
+              title="Show metered usage"
+              description="Show customer usage in the portal (API endpoints unaffected)"
+            >
+              <FormField
+                control={control}
+                name="usage.show"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={readOnly}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </SettingsGroupItem>
+          </SettingsGroup>
+        </Box>
       </form>
     </Form>
   )

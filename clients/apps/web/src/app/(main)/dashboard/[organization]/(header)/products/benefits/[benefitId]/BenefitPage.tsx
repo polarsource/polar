@@ -3,6 +3,7 @@
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
+import { BenefitVersionBanner } from '@/components/Benefit/BenefitVersionBanner'
 import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
@@ -16,10 +17,11 @@ import { Button, InlineModal, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useDeleteBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePushRouteWithoutCache } from '@/utils/router'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import {
   DropdownMenu,
@@ -42,6 +44,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
 }: ClientPageProps) => {
   const pushRouteWithoutCache = usePushRouteWithoutCache()
   const { toast } = useToast()
+  const managedAsCode = useIsManagedAsCode(organization.id)
 
   const {
     isShown: isEditShown,
@@ -171,7 +174,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </Box>
 
           <Box alignItems="center" gap="l">
-            <Button onClick={toggleEdit}>Edit Benefit</Button>
+            {!managedAsCode && (
+              <Button onClick={toggleEdit}>Edit Benefit</Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none" asChild>
                 <Button className="h-10 w-10" variant="secondary">
@@ -185,7 +190,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 <DropdownMenuItem onClick={copyBenefitId}>
                   Copy ID
                 </DropdownMenuItem>
-                {benefit?.deletable && (
+                {benefit?.deletable && !managedAsCode && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem destructive onClick={toggleDelete}>
@@ -206,6 +211,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           rowGap="4xl"
           paddingBottom="2xl"
         >
+          <BenefitVersionBanner organization={organization} benefit={benefit} />
           <BenefitDetails benefit={benefit} organization={organization} />
           {benefit.type === 'downloadables' && (
             <DownloadablesSection benefit={benefit} />
@@ -220,7 +226,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       </Box>
 
       <InlineModal
-        isShown={isEditShown}
+        isShown={isEditShown && !managedAsCode}
         hide={requestClose}
         modalContent={
           <UpdateBenefitModalContent

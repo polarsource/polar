@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useMemo, useState } from 'react'
 
 interface AccountSetupContextType {
   targetStepKey: string | null
@@ -18,8 +18,12 @@ export const AccountSetupProvider = ({
   children: React.ReactNode
 }) => {
   const [targetStepKey, setTargetStepKey] = useState<string | null>(null)
+  const value = useMemo(
+    () => ({ targetStepKey, setTargetStepKey }),
+    [targetStepKey],
+  )
   return (
-    <AccountSetupContext.Provider value={{ targetStepKey, setTargetStepKey }}>
+    <AccountSetupContext.Provider value={value}>
       {children}
     </AccountSetupContext.Provider>
   )

@@ -53,6 +53,12 @@ const foundations: NavItem[] = [
     href: '/foundations/typography',
     description: 'Text variants, colors and the type scale.',
   },
+  {
+    title: 'Icons',
+    slug: 'icons',
+    href: '/foundations/icons',
+    description: 'Every icon in use, where it comes from and who imports it.',
+  },
 ]
 
 const components: NavItem[] = [

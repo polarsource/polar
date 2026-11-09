@@ -2,12 +2,13 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
-from polar.auth.permission import OrganizationPermission
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
 from polar.models.organization import OrganizationStatus
 from polar.models.user_organization import OrganizationRole
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
@@ -27,6 +28,7 @@ async def test_get_users_me_authed(user: User, client: AsyncClient) -> None:
 
 @pytest.mark.anyio
 @pytest.mark.auth
+@pytest.mark.api_version(V2026_10, V2027_01)
 async def test_get_users_me_embeds_organizations_with_role(
     client: AsyncClient,
     save_fixture: SaveFixture,
@@ -47,6 +49,7 @@ async def test_get_users_me_embeds_organizations_with_role(
     permissions = organizations[0]["permissions"]
     assert OrganizationPermission.finance_read in permissions
     assert OrganizationPermission.organization_manage in permissions
+    assert permissions == sorted(ROLE_PERMISSIONS[OrganizationRole.admin])
 
 
 @pytest.mark.anyio

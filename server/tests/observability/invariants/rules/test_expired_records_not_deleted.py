@@ -11,12 +11,17 @@ from polar.models import (
     Customer,
     CustomerEmailVerification,
     CustomerSession,
-    CustomerSessionCode,
+    CustomerSessionAuthenticationSession,
+    CustomerSessionEmailOTP,
     EmailOTP,
     EmailVerification,
     ExternalEvent,
     Member,
     MemberSession,
+    MerchantMigration,
+    MerchantMigrationSourcePlatform,
+    MerchantMigrationStep,
+    OAuth2Client,
     OAuth2State,
     OAuth2Token,
     Organization,
@@ -75,7 +80,6 @@ async def create_webhook_delivery(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
-    response: str | None,
     created_at: datetime,
 ) -> None:
     webhook_endpoint = await create_webhook_endpoint(
@@ -91,9 +95,10 @@ async def create_webhook_delivery(
         WebhookDelivery(
             webhook_endpoint=webhook_endpoint,
             webhook_event=webhook_event,
+            organization=organization,
             succeeded=True,
             http_code=200,
-            response=response,
+            response=None,
             created_at=created_at,
         )
     )
@@ -145,12 +150,24 @@ async def create_deletable_records(
             context=None,
         )
     )
+    customer_session_authentication_session = CustomerSessionAuthenticationSession(
+        token_hash="a" * 64,
+        expires_at=epoch_deletable_at,
+        step=0,
+        authentication_method_references=[],
+        used_factors=[],
+        context=None,
+        identity_id=None,
+    )
+    await save_fixture(customer_session_authentication_session)
+
     await save_fixture(
-        CustomerSessionCode(
-            code="d" * 64,
-            email=customer.email,
-            customer_id=customer.id,
-            expires_at=deletable_at,
+        CustomerSessionEmailOTP(
+            code_hash="b" * 64,
+            expires_at=epoch_deletable_at,
+            email=member.email,
+            identity_id=member.id,
+            authentication_session_id=customer_session_authentication_session.id,
         )
     )
     await save_fixture(
@@ -182,6 +199,12 @@ async def create_deletable_records(
             token="member_session_token",
             member_id=member.id,
             expires_at=deletable_at,
+        )
+    )
+    await save_fixture(
+        OAuth2Client(
+            client_id="polar_ci_stale_client",
+            created_at=deletable_at - timedelta(days=7),
         )
     )
     await save_fixture(
@@ -229,8 +252,7 @@ async def create_deletable_records(
     await create_webhook_delivery(
         save_fixture,
         organization,
-        response="response body",
-        created_at=deletable_at - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        created_at=deletable_at - settings.WEBHOOK_DELIVERY_RETENTION_PERIOD,
     )
     checkout = await create_checkout(
         save_fixture,
@@ -240,6 +262,15 @@ async def create_deletable_records(
     )
     checkout.customer_email = "john@example.com"
     await save_fixture(checkout)
+    await save_fixture(
+        MerchantMigration(
+            organization=organization,
+            source_platform=MerchantMigrationSourcePlatform.stripe,
+            step=MerchantMigrationStep.activate_subscriptions,
+            modified_at=deletable_at
+            - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+        )
+    )
 
 
 @pytest.mark.anyio
@@ -371,12 +402,14 @@ class TestCheck:
             + timedelta(days=1),
             status=EmailLogStatus.failed,
         )
-        await create_webhook_delivery(
-            save_fixture,
-            organization,
-            response=None,
-            created_at=deletable_at
-            - settings.WEBHOOK_DELIVERY_PAYLOAD_RETENTION_PERIOD,
+        await save_fixture(
+            MerchantMigration(
+                organization=organization,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+                step=MerchantMigrationStep.completed,
+                modified_at=deletable_at
+                - settings.MERCHANT_MIGRATION_IDLE_RETENTION_PERIOD,
+            )
         )
 
         invariant = ExpiredRecordsNotDeletedInvariant(session)

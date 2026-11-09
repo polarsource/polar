@@ -215,7 +215,16 @@ class TestQueryWildcardsAreLiteral:
             assert (
                 f"positionCaseInsensitiveUTF8(`events_by_timestamp`.`{column}`," in sql
             )
-        assert list(params.values()).count("100%_x") == 3
+        assert "`events_by_timestamp`.`external_id` =" in sql
+        assert "`events_by_timestamp`.`id` =" not in sql
+        assert list(params.values()).count("100%_x") == 4
+
+    def test_filter_by_query_event_id(self) -> None:
+        event_id = uuid.uuid4()
+        query = TinybirdEventsQuery([uuid.uuid4()]).filter_by_query(str(event_id))
+        sql, params = compile_clause(query._filters[-1])
+        assert "`events_by_timestamp`.`id` =" in sql
+        assert str(event_id) in params.values()
 
     def test_like_operator(self) -> None:
         clause = FilterClause(
@@ -238,15 +247,33 @@ class TestQueryWildcardsAreLiteral:
         assert "<= " in sql
         assert "api_test" in params.values()
 
-    def test_like_operator_numeric_column(self) -> None:
+    @pytest.mark.parametrize(
+        "clause",
+        [
+            FilterClause(property="tokens", operator=FilterOperator.like, value=10),
+            FilterClause(property="flag", operator=FilterOperator.not_like, value=True),
+            FilterClause(
+                property="timestamp", operator=FilterOperator.like, value=1234
+            ),
+            FilterClause(
+                property="_cost.amount", operator=FilterOperator.not_like, value="10"
+            ),
+        ],
+    )
+    def test_like_operator_matches_strings_only(self, clause: FilterClause) -> None:
+        query = TinybirdEventsQuery([uuid.uuid4()])
+        sql, _ = compile_clause(query._translate_filter_clause(clause))
+        assert sql == "false"
+
+    def test_like_operator_metadata_checks_json_type(self) -> None:
         clause = FilterClause(
-            property="_cost.amount", operator=FilterOperator.like, value=10
+            property="_llm.tier", operator=FilterOperator.not_like, value="lite"
         )
-        sql, params = compile_clause(
-            TinybirdEventsQuery._ch_comparison(events_table.c.cost_amount, clause)
-        )
-        assert "position(toString(`events_by_timestamp`.`cost_amount`)," in sql
-        assert "10" in params.values()
+        query = TinybirdEventsQuery([uuid.uuid4()])
+        sql, params = compile_clause(query._translate_filter_clause(clause))
+        assert "JSONType(`events_by_timestamp`.`user_metadata`," in sql
+        assert "String" in params.values()
+        assert "lite" in params.values()
 
 
 class TestQueryBindsValuesInsteadOfInlining:

@@ -1,4 +1,4 @@
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import Agent, AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.types import PolicyResult
 from polar.models import Organization as OrganizationModel
@@ -9,7 +9,7 @@ from . import _require_permission
 
 async def can_manage(
     session: AsyncReadSession,
-    auth_subject: AuthSubject[User | Organization],
+    auth_subject: AuthSubject[User | Organization | Agent],
     organization: OrganizationModel,
 ) -> PolicyResult:
     """Can the subject edit, delete, or set the payout account for this organization?"""

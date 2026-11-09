@@ -24,6 +24,11 @@ class TestListBenefitGrants:
         response = await client.get("/v1/benefit-grants/")
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_cannot_list_benefit_grants(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/benefit-grants/")
+        assert response.status_code == 401
+
     @pytest.mark.auth
     async def test_active_benefit_is_not_deleted(
         self,

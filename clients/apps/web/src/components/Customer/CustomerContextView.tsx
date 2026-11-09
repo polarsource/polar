@@ -10,6 +10,7 @@ import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Pill } from '@polar-sh/orbit'
 import Link from 'next/link'
+import { copyable } from '../Shared/ClickToCopy'
 import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
 import { CustomerTimeline } from './CustomerTimeline'
@@ -94,26 +95,26 @@ export const CustomerContextView = ({
           {!customer.deleted_at && (
             <DetailRow
               labelClassName="flex-none md:basis-24"
-              valueClassName="font-mono"
+              valueClassName="font-mono text-xs"
               label="ID"
-              value={customer.id}
+              value={copyable(customer.id)}
             />
           )}
           <DetailRow
             labelClassName="flex-none md:basis-24"
-            valueClassName="font-mono"
+            valueClassName="min-w-0 break-all font-mono"
             label="External ID"
-            value={customer.external_id ?? '—'}
+            value={copyable(customer.external_id)}
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
             label="Email"
-            value={customer.email}
+            value={copyable(customer.email)}
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
             label="Name"
-            value={customer.name}
+            value={copyable(customer.name)}
           />
           <DetailRow
             labelClassName="flex-none md:basis-24"
@@ -149,7 +150,11 @@ export const CustomerContextView = ({
           </div>
           <div className="flex flex-col">
             {Object.entries(customer.metadata).map(([key, value]) => (
-              <DetailRow key={key} label={key} value={value} />
+              <DetailRow
+                key={key}
+                label={key}
+                value={copyable(String(value))}
+              />
             ))}
           </div>
         </ContextCard>

@@ -38,11 +38,13 @@ export function ChipSelect({
     }
   }
 
+  const selectedValues = new Set(selected)
+
   return (
     <Box flexWrap="wrap" gap="s">
       {options.map((option) => {
         const { value, label } = normalizeOption(option)
-        const isSelected = selected.includes(value)
+        const isSelected = selectedValues.has(value)
         return (
           <button
             key={value}

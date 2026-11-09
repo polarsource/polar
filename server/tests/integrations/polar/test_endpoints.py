@@ -132,6 +132,7 @@ _SUBSCRIPTION: dict[str, Any] = {
         "meter_interval": None,
         "meter_interval_count": None,
         "is_recurring": True,
+        "is_deletable": False,
         "is_archived": False,
         "organization_id": "00000000-0000-0000-0000-000000000099",
         "metadata": {},

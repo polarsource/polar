@@ -1,7 +1,6 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
-import type { DiscountConfig } from './schema/discount'
 import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
@@ -10,11 +9,22 @@ import type { PriceConfig } from './schema/price'
 import type { ProductConfig } from './schema/product'
 import type { Visibility } from './schema/visibility'
 
-const literal = (value: string | number | boolean): string =>
-  Object.is(value, -0) ? '-0' : JSON.stringify(value)
+const literal = (value: string | number | boolean): string => {
+  if (typeof value !== 'string') {
+    return Object.is(value, -0) ? '-0' : JSON.stringify(value)
+  }
+  const escaped = JSON.stringify(value).slice(1, -1)
+  return `'${escaped.replaceAll('\\"', '"').replaceAll("'", "\\'")}'`
+}
+
+const IDENTIFIER = /^[A-Za-z_$][\w$]*$/
 
 const key = (value: string): string =>
-  value === '__proto__' ? `[${literal(value)}]` : literal(value)
+  value === '__proto__'
+    ? `[${literal(value)}]`
+    : IDENTIFIER.test(value)
+      ? value
+      : literal(value)
 
 const renderMetadata = (metadata: Metadata | undefined): string[] =>
   metadata === undefined || Object.keys(metadata).length === 0
@@ -27,6 +37,9 @@ const renderMetadata = (metadata: Metadata | undefined): string[] =>
 
 const renderVisibility = (visibility: Visibility | undefined): string[] =>
   visibility === 'private' ? ['.private()'] : []
+
+const renderDeprecated = (deprecated: true | undefined): string[] =>
+  deprecated ? ['.deprecated()'] : []
 
 const renderCondition = (
   condition: MeterFilter['clauses'][number],
@@ -64,6 +77,9 @@ const renderMeter = (meter: MeterConfig, imports: Set<string>): string => {
   }
 
   lines.push(...renderMetadata(meter.metadata))
+  if (meter.deprecated) {
+    lines.push('.deprecated()')
+  }
 
   const aggregation = meter.aggregation
   lines.push(
@@ -85,6 +101,7 @@ const renderBenefit = (
       `flag(${name})`,
       ...renderMetadata(benefit.metadata),
       ...renderVisibility(benefit.visibility),
+      ...renderDeprecated(benefit.deprecated),
     ].join('\n')
   }
   helpers.add('credits')
@@ -96,6 +113,7 @@ const renderBenefit = (
     ...(rollover ? ['.rollover()'] : []),
     ...renderMetadata(benefit.metadata),
     ...renderVisibility(benefit.visibility),
+    ...renderDeprecated(benefit.deprecated),
   ].join('\n')
 }
 
@@ -359,9 +377,15 @@ const renderProduct =
       recurring_interval_count: count,
       trial_interval: trialInterval,
       trial_interval_count: trialCount,
+      meter_interval: meterInterval,
+      meter_interval_count: meterCount,
     } = product
     const plural = (unit: string, amount: number) =>
       literal(amount === 1 ? unit : `${unit}s`)
+    const cycle = (unit: keyof typeof cadences, amount: number | undefined) =>
+      amount === undefined || amount === 1
+        ? literal(cadences[unit])
+        : `${literal(amount)}, ${plural(unit, amount)}`
     return [
       `product(${literal(product.name)})`,
       '.prices(',
@@ -369,9 +393,10 @@ const renderProduct =
       ')',
       interval === null
         ? '.once()'
-        : count === null || count === 1
-          ? `.recurring(${literal(cadences[interval])})`
-          : `.recurring(${literal(count)}, ${plural(interval, count)})`,
+        : `.recurring(${cycle(interval, count ?? undefined)})`,
+      ...(interval !== null && meterInterval !== undefined
+        ? [`.meterCycle(${cycle(meterInterval, meterCount)})`]
+        : []),
       ...(interval !== null &&
       trialInterval !== undefined &&
       trialCount !== undefined
@@ -387,44 +412,7 @@ const renderProduct =
         ? []
         : [`.description(${literal(product.description)})`]),
       ...renderVisibility(product.visibility),
-    ].join('\n')
-  }
-
-const renderDuration = (discount: DiscountConfig): string => {
-  const months = discount.duration_in_months
-  if (discount.duration !== 'repeating' || months === undefined) {
-    return `.${discount.duration}()`
-  }
-  const [count, unit] =
-    months % 12 === 0 ? [months / 12, 'year'] : [months, 'month']
-  return `.repeating(${literal(count)}, ${literal(count === 1 ? unit : `${unit}s`)})`
-}
-
-const renderDiscount =
-  (imports: Set<string>) =>
-  (discount: DiscountConfig, helpers: Set<string>): string => {
-    helpers.add('discount')
-    const optional = (method: string, value: string | number | undefined) =>
-      value === undefined ? [] : [`.${method}(${literal(value)})`]
-    return [
-      `discount(${literal(discount.name)})`,
-      discount.type === 'percentage'
-        ? `.percent(${literal(discount.basis_points / 100)})`
-        : `.amount(${Object.entries(discount.amounts)
-            .map(([currency, amount]) =>
-              renderMoney(currency as Currency, String(amount), imports),
-            )
-            .join(', ')})`,
-      renderDuration(discount),
-      ...optional('code', discount.code),
-      ...(discount.products === undefined
-        ? []
-        : [`.products(${discount.products.map(literal).join(', ')})`]),
-      ...optional('maxRedemptions', discount.max_redemptions),
-      ...optional('perCustomer', discount.max_redemptions_per_customer),
-      ...optional('starts', discount.starts_at),
-      ...optional('ends', discount.ends_at),
-      ...renderMetadata(discount.metadata),
+      ...renderDeprecated(product.deprecated),
     ].join('\n')
   }
 
@@ -449,6 +437,7 @@ const renderEntries = <Resource extends { readonly external_id: string }>(
   })
   const parameters =
     helpers.size === 0 ? '()' : `({ ${[...helpers].join(', ')} })`
+  if (lines.length === 0) return [`  ${property}: ${parameters} => ({}),`]
   return [
     `  ${property}: ${parameters} => (${useEntries ? '[' : '{'}`,
     ...lines,
@@ -471,19 +460,20 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     config.products === undefined
       ? []
       : renderEntries('products', config.products, renderProduct(imports))
-  const discounts =
-    config.discounts === undefined
+
+  const settings =
+    config.settings === undefined
       ? []
-      : renderEntries('discounts', config.discounts, renderDiscount(imports))
+      : [`  settings: ${JSON.stringify(config.settings)},`]
 
   return [
     `import { ${[...imports].join(', ')} } from '@polar-sh/polar'`,
     '',
     'export default defineConfig({',
+    ...settings,
     ...meters,
     ...benefits,
     ...products,
-    ...discounts,
     '})',
     '',
   ].join('\n')

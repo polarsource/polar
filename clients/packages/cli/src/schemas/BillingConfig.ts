@@ -1,5 +1,8 @@
 import { Data, Schema } from 'effect'
 
+export const NO_CONFIG_FILE =
+  'No billing config file found in the current directory'
+
 export const DEFAULT_CONFIG_FILES = [
   'polar.config.ts',
   'polar.config.mts',
@@ -43,7 +46,6 @@ export const ConfigResource = Schema.Literals([
   'meter',
   'benefit',
   'product',
-  'discount',
   'webhook',
 ])
 
@@ -59,23 +61,78 @@ export const SettingsResult = Schema.Struct({
   diff: Schema.optional(Schema.Array(FieldChange)),
 })
 
+const RemovalReason = Schema.Literals(['missing', 'deprecated'])
+export type RemovalReason = typeof RemovalReason.Type
+
+export const Removal = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  reason: RemovalReason,
+})
+
+export const Catalog = Schema.Struct({
+  id: Schema.String,
+  name: Schema.NullOr(Schema.String),
+})
+export type Catalog = typeof Catalog.Type
+
 export const ApplyResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  removed: Schema.optional(Schema.Array(Removal)),
+  catalog: Schema.optional(Schema.NullOr(Schema.Struct({ after: Catalog }))),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
+})
+
+export const CatalogList = Schema.Struct({
+  items: Schema.Array(
+    Schema.Struct({
+      ...Catalog.fields,
+      status: Schema.Literals(['draft', 'live', 'archived']),
+    }),
+  ),
 })
 
 export const AppliedEntry = Schema.Struct({
   section: Schema.String,
   id: Schema.String,
-  action: EntryAction,
+  action: Schema.Literals([...EntryAction.literals, 'removed']),
+  reason: Schema.optionalKey(RemovalReason),
   diff: Schema.Array(FieldChange),
 })
 export type AppliedEntry = typeof AppliedEntry.Type
 
+export const CatalogPlan = Schema.Struct({
+  before: Schema.NullOr(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
+  name: Schema.String,
+})
+export type CatalogPlan = typeof CatalogPlan.Type
+
 export const PlanResponse = Schema.Struct({
   changes: Schema.Array(EntryResult),
+  removed: Schema.optional(Schema.Array(Removal)),
+  catalog: Schema.optional(Schema.NullOr(CatalogPlan)),
   settings: Schema.optional(Schema.NullOr(SettingsResult)),
   issues: Schema.Array(ServerError),
+})
+
+export const PruneEntry = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  customers_count: Schema.Number,
+  referenced_by: Schema.Array(
+    Schema.Struct({ resource: ConfigResource, external_id: Schema.String }),
+  ),
+})
+export type PruneEntry = typeof PruneEntry.Type
+
+export const PruneResponse = Schema.Struct({
+  entries: Schema.Array(PruneEntry),
+})
+
+export const PruneOutput = Schema.Struct({
+  file: Schema.String,
+  entries: Schema.Array(PruneEntry),
+  removed: Schema.Boolean,
 })
 
 export const SourceLocation = Schema.Struct({
@@ -97,6 +154,7 @@ export type ConfigIssue = typeof ConfigIssue.Type
 
 export const PlanResult = Schema.Struct({
   entries: Schema.Array(AppliedEntry),
+  catalog: Schema.optionalKey(CatalogPlan),
   issues: Schema.Array(ConfigIssue),
 })
 export type PlanResult = typeof PlanResult.Type
@@ -105,6 +163,8 @@ export const ApplyResult = Schema.Union([
   Schema.Struct({
     status: Schema.Literal('applied'),
     entries: Schema.Array(AppliedEntry),
+    draft: Schema.optionalKey(Catalog),
+    issues: Schema.optionalKey(Schema.Array(ConfigIssue)),
   }),
   Schema.Struct({
     status: Schema.Literal('rejected'),
@@ -124,44 +184,74 @@ export const ApplyOutput = Schema.Union(
   ),
 )
 
+export const Catalogs = Schema.Struct({
+  live: Schema.NullOr(Catalog),
+  draft: Schema.NullOr(Catalog),
+})
+export type Catalogs = typeof Catalogs.Type
+
+export const PublishOutput = Schema.Struct({
+  ...Catalogs.fields,
+  published: Schema.Boolean,
+  drift: Schema.NullOr(Schema.Array(AppliedEntry)),
+})
+
 export const ConfigDocument = Schema.Record(
   Schema.String,
-  Schema.Array(Schema.Unknown),
+  Schema.Union([
+    Schema.Array(Schema.Unknown),
+    Schema.Record(Schema.String, Schema.Unknown),
+  ]),
 )
 export type ConfigDocument = typeof ConfigDocument.Type
+
+export const KeyedResource = Schema.Literals(['meter', 'benefit', 'product'])
+export type KeyedResource = typeof KeyedResource.Type
 
 export const SkippedResource = Schema.Struct({
   resource: Schema.String,
   id: Schema.String,
   name: Schema.String,
   reason: Schema.String,
+  recurring_interval: Schema.optionalKey(Schema.NullOr(Schema.String)),
+  recurring_interval_count: Schema.optionalKey(Schema.NullOr(Schema.Number)),
 })
 export type SkippedResource = typeof SkippedResource.Type
 
 export const ConfigExport = Schema.Struct({
+  enabled: Schema.Boolean,
   config: ConfigDocument,
   skipped: Schema.Array(SkippedResource),
 })
+export type ConfigExport = typeof ConfigExport.Type
 
-const PulledEntry = Schema.Struct({
-  section: Schema.String,
+export const ExternalIdAssignment = Schema.Struct({
+  resource: KeyedResource,
   id: Schema.String,
+  name: Schema.String,
+  external_id: Schema.String,
 })
+export type ExternalIdAssignment = typeof ExternalIdAssignment.Type
 
-export const PullResult = Schema.Union([
-  Schema.Struct({
-    status: Schema.Literal('written'),
-    file: Schema.String,
-    entries: Schema.Array(PulledEntry),
-    skipped: Schema.Array(SkippedResource),
+export const InitResult = Schema.Struct({
+  file: Schema.String,
+  format: Schema.Literals(['ts', 'json']),
+  imported: Schema.Struct({
+    meters: Schema.Finite,
+    benefits: Schema.Finite,
+    products: Schema.Finite,
   }),
-  Schema.Struct({
-    status: Schema.Literal('conflict'),
-    file: Schema.String,
-    entries: Schema.Array(PulledEntry),
-  }),
-])
-export type PullResult = typeof PullResult.Type
+  keyed: Schema.Array(ExternalIdAssignment),
+  skipped: Schema.Array(SkippedResource),
+  already_enabled: Schema.Boolean,
+  install: Schema.optionalKey(
+    Schema.Struct({
+      command: Schema.String,
+      status: Schema.Literals(['installed', 'failed', 'skipped']),
+    }),
+  ),
+})
+export type InitResult = typeof InitResult.Type
 
 export interface LoadedConfig {
   readonly file: string

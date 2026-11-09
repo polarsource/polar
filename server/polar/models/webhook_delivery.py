@@ -4,21 +4,21 @@ from uuid import UUID
 from sqlalchemy import Boolean, ForeignKey, Index, Integer, Text, Uuid
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.kit.db.models.base import RecordModel
+from polar.kit.db.models.base import OrganizationCreatedAtIndexMixin, RecordModel
 
 if TYPE_CHECKING:
+    from .organization import Organization
     from .webhook_endpoint import WebhookEndpoint
     from .webhook_event import WebhookEvent
 
 
-class WebhookDelivery(RecordModel):
+class WebhookDelivery(OrganizationCreatedAtIndexMixin, RecordModel):
     __tablename__ = "webhook_deliveries"
     __table_args__ = (
         Index(
-            "ix_webhook_deliveries_created_at_with_response",
+            "ix_webhook_deliveries_webhook_endpoint_id_created_at",
+            "webhook_endpoint_id",
             "created_at",
-            "id",
-            postgresql_where="response IS NOT NULL",
         ),
         {
             "postgresql_with": {
@@ -36,12 +36,21 @@ class WebhookDelivery(RecordModel):
         Uuid,
         ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     @declared_attr
     def webhook_endpoint(cls) -> Mapped["WebhookEndpoint"]:
         return relationship("WebhookEndpoint", lazy="raise")
+
+    organization_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+
+    @declared_attr
+    def organization(cls) -> Mapped["Organization"]:
+        return relationship("Organization", lazy="raise")
 
     webhook_event_id: Mapped[UUID] = mapped_column(
         Uuid,

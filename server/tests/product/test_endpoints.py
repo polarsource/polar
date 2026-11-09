@@ -5,17 +5,23 @@ import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.models import (
     Benefit,
+    Catalog,
     Customer,
     Organization,
+    OrganizationRiskSignal,
     Product,
     ProductPriceFixed,
     UserOrganization,
 )
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
+from polar.organization_review.repository import OrganizationRiskSignalRepository
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_custom_field,
@@ -305,9 +311,127 @@ class TestGetProduct:
         assert "seat_tiers" not in price
         assert "price_per_seat" not in price
 
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_price_type_before_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert price["type"] == "recurring"
+        assert price["recurring_interval"] == product.recurring_interval
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_price_type_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        price = response.json()["prices"][0]
+        assert "type" not in price
+        assert "recurring_interval" not in price
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_catalog_id(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        catalog = Catalog(
+            organization=organization,
+            version_hash="abc123",
+            status=CatalogStatus.archived,
+            published_at=utc_now(),
+        )
+        await save_fixture(catalog)
+        product.catalog = catalog
+        await save_fixture(product)
+
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["catalog_id"] == str(catalog.id)
+
 
 @pytest.mark.anyio
 class TestCreateProduct:
+    @pytest.mark.auth
+    async def test_organization_limit(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+    ) -> None:
+        organization.products_limit = 1
+        product.deleted_at = utc_now()
+        await save_fixture(organization)
+        await save_fixture(product)
+        payload = {
+            "organization_id": str(organization.id),
+            "name": "Product",
+            "recurring_interval": None,
+            "prices": [{"amount_type": "free", "price_currency": "usd"}],
+        }
+
+        response = await client.post("/v1/products/", json=payload)
+        assert response.status_code == 201
+        response = await client.patch(
+            f"/v1/products/{response.json()['id']}", json={"is_archived": True}
+        )
+        assert response.status_code == 200
+
+        response = await client.post("/v1/products/", json=payload)
+        assert response.status_code == 403
+        assert (
+            response.json()["detail"]
+            == "Organization has reached its limit of 1 products."
+        )
+
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "prices": [
+                    {
+                        "amount_type": "fixed",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post(
             "/v1/products/",
@@ -364,7 +488,10 @@ class TestCreateProduct:
 
         assert response.status_code == 422
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.parametrize(
         "payload",
         [
@@ -695,6 +822,23 @@ class TestCreateProduct:
 
 @pytest.mark.anyio
 class TestUpdateProduct:
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={"name": "Updated Name"},
+        )
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.patch(
             f"/v1/products/{product.id}",
@@ -712,8 +856,11 @@ class TestUpdateProduct:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth
-    async def test_user_cannot_access_other_organization_product(
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    async def test_cannot_access_other_organization_product(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -903,6 +1050,19 @@ class TestUpdateProductBenefits:
 
 @pytest.mark.anyio
 class TestDeleteProduct:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code_enabled(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.delete(f"/v1/products/{product.id}")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "DeclarativeConfigManaged"
+
     async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
         response = await client.delete(f"/v1/products/{product.id}")
 
@@ -961,3 +1121,183 @@ class TestDeleteProduct:
 
         response = await client.get(f"/v1/products/{product.id}")
         assert response.status_code == 404
+
+
+@pytest.mark.anyio
+class TestNameCheck:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_flagged_by_word_list(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"category": "gambling", "phrase": "Casino"}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization_token_rejected(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/products/name-check", json={"name": "Casino Night"}
+        )
+
+        assert response.status_code == 401
+
+
+@pytest.mark.anyio
+class TestReportFlaggedName:
+    COACHING = {
+        "name": "Coaching Package",
+        "category": "human services",
+        "flagged_at": "2026-11-02T14:51:02Z",
+    }
+    CASINO = {
+        "name": "Casino Night",
+        "category": "gambling",
+        "phrase": "Casino",
+        "flagged_at": "2026-11-02T14:51:18Z",
+    }
+
+    async def test_anonymous(self, client: AsyncClient, product: Product) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [self.CASINO]},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_other_organization_product(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product_organization_second: Product,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product_organization_second.id}/flagged-name",
+            json={"attempts": [self.CASINO]},
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_unknown_category(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [{**self.CASINO, "category": "not a category"}]},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_renamed_records_one_signal_with_ordered_attempts(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [self.COACHING, self.CASINO]},
+        )
+
+        assert response.status_code == 204
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_flagged_product_names(organization.id)
+        assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+        assert [attempt["name"] for attempt in signal.payload["attempts"]] == [
+            "Coaching Package",
+            "Casino Night",
+        ]
+        assert signal.payload["attempts"][0]["flagged_at"] == "2026-11-02T14:51:02Z"
+        assert signal.payload["product_name"] == product.name
+
+    @pytest.mark.auth
+    async def test_kept_when_any_attempt_is_the_product_name(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={
+                "attempts": [
+                    {**self.CASINO, "name": product.name.upper()},
+                    self.CASINO,
+                ]
+            },
+        )
+
+        assert response.status_code == 204
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_flagged_product_names(organization.id)
+        assert signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT
+
+    @pytest.mark.auth
+    async def test_rejects_timestamp_that_cannot_convert_to_utc(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={
+                "attempts": [{**self.CASINO, "flagged_at": "0001-01-01T00:00:00+23:59"}]
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_records_one_report_per_product(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        for attempt in (self.COACHING, self.CASINO):
+            response = await client.post(
+                f"/v1/products/{product.id}/flagged-name",
+                json={"attempts": [attempt]},
+            )
+            assert response.status_code == 204
+
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        [signal] = await repository.list_flagged_product_names(organization.id)
+        assert signal.payload["attempts"][0]["name"] == "Coaching Package"
+
+    @pytest.mark.auth
+    async def test_not_listed_with_general_risk_signals(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await client.post(
+            f"/v1/products/{product.id}/flagged-name",
+            json={"attempts": [self.CASINO]},
+        )
+
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        assert await repository.list_by_organization(organization.id) == []

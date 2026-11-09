@@ -8,9 +8,13 @@ on:
       - ".github/workflows/deploy_image_resizer.yml"
   workflow_dispatch:
 
+concurrency:
+  group: deploy-image-resizer
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    name: "Build & Upload Lambda Package"
+    name: "Build & Deploy Lambda@Edge"
     runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       id-token: write
@@ -19,12 +23,12 @@ jobs:
       - uses: actions/checkout@v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "lambda/image-resizer/pyproject.toml"
 
@@ -37,7 +41,7 @@ jobs:
             --python-platform x86_64-manylinux2014 \
             --only-binary=:all: \
             --python-version 3.13 \
-            pillow
+            pillow 'certifi>=2026.10.19'
           cp handler.py package/
           cd package
           zip -r ../package.zip .
@@ -45,10 +49,26 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: arn:aws:iam::975049931254:role/github-actions-image-resizer
           aws-region: us-east-1
 
-      - name: Upload to S3
+      - name: Deploy
         run: |
-          aws s3 cp lambda/image-resizer/package.zip \
-            s3://polar-lambda-artifacts/image-resizer/package.zip
+          deploy() {
+            local fn="$1" dist="$2"
+            aws lambda update-function-code --function-name "$fn" \
+              --zip-file fileb://lambda/image-resizer/package.zip > /dev/null
+            aws lambda wait function-updated-v2 --function-name "$fn"
+            local version
+            version=$(aws lambda publish-version --function-name "$fn" --query Version --output text)
+            aws cloudfront get-distribution-config --id "$dist" > "$RUNNER_TEMP/config.json"
+            jq --arg v "$version" \
+              '.DistributionConfig | .DefaultCacheBehavior.LambdaFunctionAssociations.Items |= map(.LambdaFunctionARN |= sub(":[0-9]+$"; ":" + $v))' \
+              "$RUNNER_TEMP/config.json" > "$RUNNER_TEMP/distribution.json"
+            aws cloudfront update-distribution --id "$dist" \
+              --if-match "$(jq -r .ETag "$RUNNER_TEMP/config.json")" \
+              --distribution-config "file://$RUNNER_TEMP/distribution.json" > /dev/null
+            echo "$fn:$version -> $dist"
+          }
+          deploy polar-sandbox-image-resizer E11MGVVO0TOWL1
+          deploy polar-image-resizer EOHRE2VUWCNHK

@@ -3,7 +3,7 @@ from typing import Unpack
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -24,6 +24,7 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
+from polar.order.repository import order_benefits_revoked_clause
 
 from .sorting import BenefitGrantSortProperty
 
@@ -38,7 +39,7 @@ class BenefitGrantRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[BenefitGrant]]:
+    ) -> Select[BenefitGrant]:
         statement = self.get_base_statement().join(
             Benefit, BenefitGrant.benefit_id == Benefit.id
         )
@@ -75,6 +76,25 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
+    async def list_granted_meter_credits_by_subscription(
+        self, subscription_id: UUID
+    ) -> Sequence[BenefitGrant]:
+        statement = (
+            self.get_base_statement()
+            .join(BenefitGrant.benefit)
+            .where(
+                BenefitGrant.subscription_id == subscription_id,
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+                Benefit.type == BenefitType.meter_credit,
+            )
+            .options(
+                contains_eager(BenefitGrant.benefit),
+                joinedload(BenefitGrant.customer),
+            )
+        )
+        return await self.get_all(statement)
+
     async def list_granted_by_benefit(
         self,
         benefit: Benefit,
@@ -91,6 +111,30 @@ class BenefitGrantRepository(
             .options(*options)
         )
         return await self.get_all(statement)
+
+    async def count_granted_customers_by_benefit_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers granted each benefit, in any of its versions."""
+        if not external_ids:
+            return {}
+        statement = (
+            select(Benefit.external_id, func.count(BenefitGrant.customer_id.distinct()))
+            .join(BenefitGrant, BenefitGrant.benefit_id == Benefit.id)
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
+            )
+            .group_by(Benefit.external_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            external_id: count
+            for external_id, count in result.tuples()
+            if external_id is not None
+        }
 
     async def list_granted_by_customer(
         self,
@@ -175,6 +219,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
         )
         return await self.get_all(statement)
@@ -196,6 +241,7 @@ class BenefitGrantRepository(
                 ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
+                ~order_benefits_revoked_clause(BenefitGrant.order_id),
             )
         )
         return await self.get_all(statement)
@@ -231,6 +277,7 @@ class BenefitGrantRepository(
         value: str,
         *,
         benefit_id: UUID | None = None,
+        customer_id: UUID | None = None,
         for_update: bool = False,
     ) -> BenefitGrant | None:
         filters = [
@@ -239,6 +286,8 @@ class BenefitGrantRepository(
         ]
         if benefit_id is not None:
             filters.append(BenefitGrant.benefit_id == benefit_id)
+        if customer_id is not None:
+            filters.append(BenefitGrant.customer_id == customer_id)
 
         statement = (
             self.get_base_statement()

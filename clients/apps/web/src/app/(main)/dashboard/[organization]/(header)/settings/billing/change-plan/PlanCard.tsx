@@ -1,4 +1,4 @@
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { CheckOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
@@ -14,23 +14,29 @@ const formatFee = (fee: schemas['OrganizationPlanFee']) =>
 export const PlanCard = ({
   plan,
   isCurrent,
+  isCurrentTier,
   isLocked,
   isSelected,
   onSelect,
   startupProgramOffer,
+  annualMonthsFree,
 }: {
   plan: schemas['OrganizationPlan']
   isCurrent: boolean
+  /** The org is on this plan's tier at another billing interval. */
+  isCurrentTier: boolean
   isLocked: boolean
   isSelected: boolean
   onSelect: () => void
   /** When set, this plan is the org's Startup Program target — render the
    * free-for-N-months highlight on top of the normal plan card. */
   startupProgramOffer?: { monthsFree: number }
+  annualMonthsFree?: number | null
 }) => {
   const amount = plan.price?.amount ?? 0
   const currency = plan.price?.currency ?? 'usd'
   const disabled = isCurrent || isLocked
+  const showCurrent = isCurrent || isCurrentTier
   const hasOffer = startupProgramOffer != null && !isCurrent
   const offerMonths = startupProgramOffer?.monthsFree ?? 0
   return (
@@ -39,7 +45,7 @@ export const PlanCard = ({
       onClick={onSelect}
       disabled={disabled}
       className={twMerge(
-        'dark:border-polar-700 row-span-3 grid h-full w-full grid-rows-[subgrid] gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent',
+        'dark:border-polar-700 row-span-3 grid h-full w-full grid-rows-subgrid gap-y-8 rounded-2xl border bg-white p-8 text-left transition-colors dark:bg-transparent',
         disabled
           ? 'dark:bg-polar-800 cursor-not-allowed border-gray-200 bg-gray-50 opacity-70'
           : isSelected
@@ -52,17 +58,23 @@ export const PlanCard = ({
           <Text variant="heading-xs" as="h3">
             {plan.name}
           </Text>
-          {isCurrent && <Pill color="gray">Current</Pill>}
+          {showCurrent && <Pill color="gray">Current</Pill>}
           {hasOffer && <Pill color="green">Free for {offerMonths} months</Pill>}
-          {plan.highlight && !isCurrent && !hasOffer && (
+          {plan.highlight && !showCurrent && !hasOffer && (
             <Pill color="blue">Popular</Pill>
+          )}
+          {annualMonthsFree != null && !hasOffer && (
+            <Pill color="green">
+              {annualMonthsFree} {annualMonthsFree === 1 ? 'month' : 'months'}{' '}
+              free
+            </Pill>
           )}
         </Box>
         {plan.description && <Text color="muted">{plan.description}</Text>}
       </Box>
 
       <Box flexDirection="column" rowGap="s">
-        <Box alignItems="baseline" columnGap="m">
+        <Box alignItems="baseline" columnGap="xs">
           {hasOffer ? (
             <>
               <Text variant="heading-s" as="span">

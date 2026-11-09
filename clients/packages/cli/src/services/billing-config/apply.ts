@@ -8,6 +8,7 @@ import {
   ValidationErrors,
 } from '@/schemas/BillingConfig'
 import {
+  type CatalogOptions,
   type Clients,
   entries,
   errorName,
@@ -15,25 +16,36 @@ import {
   requiredScopes,
   transportErrors,
   unexpected,
+  withDefaultCurrency,
 } from '@/services/billing-config/api'
 import { issues } from '@/services/billing-config/issues'
 
 export const apply =
   (clients: Clients) =>
-  (config: LoadedConfig, organization: ActiveOrganization) =>
+  (
+    config: LoadedConfig,
+    organization: ActiveOrganization,
+    options: CatalogOptions = {},
+  ) =>
     Effect.gen(function* () {
       const response = yield* post(
         clients,
-        '/config/apply',
+        '/config/apply?publish=false',
         config,
         organization,
+        options,
       )
       if (response.status === 200) {
         const body =
           yield* HttpClientResponse.schemaBodyJson(ApplyResponse)(response)
         return {
           status: 'applied',
-          entries: entries(body.changes, body.settings),
+          entries: yield* withDefaultCurrency(
+            clients,
+            organization,
+            entries(body.changes, body.settings, body.removed),
+          ),
+          ...(body.catalog && { draft: body.catalog.after }),
         } satisfies ApplyResult
       }
       const invalid =

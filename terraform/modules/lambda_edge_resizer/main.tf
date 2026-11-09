@@ -4,7 +4,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = ">= 5.0"
+      version = ">= 6.69.1, < 7.0.0"
     }
   }
 }
@@ -69,4 +69,8 @@ resource "aws_lambda_function" "this" {
   s3_bucket         = var.s3_bucket
   s3_key            = var.s3_key
   s3_object_version = var.s3_object_version
+
+  lifecycle {
+    ignore_changes = [s3_object_version]
+  }
 }

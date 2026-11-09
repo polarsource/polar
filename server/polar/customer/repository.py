@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import AsyncGenerator, Mapping, Sequence
+from collections.abc import AsyncGenerator, Collection, Mapping, Sequence
 from datetime import datetime
 from typing import Any, NamedTuple
 from uuid import UUID
@@ -8,12 +8,11 @@ from sqlalchemy import (
     TIMESTAMP,
     Case,
     ColumnElement,
+    NotNullable,
     Select,
-    String,
     Uuid,
     and_,
     case,
-    cast,
     column,
     func,
     or_,
@@ -209,6 +208,18 @@ class CustomerRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_all_by_organization_and_ids_or_external_ids(
+        self,
+        organization_id: UUID,
+        ids: Collection[UUID],
+        external_ids: Collection[str],
+    ) -> Sequence[Customer]:
+        statement = self.get_base_statement().where(
+            Customer.organization_id == organization_id,
+            or_(Customer.id.in_(ids), Customer.external_id.in_(external_ids)),
+        )
+        return await self.get_all(statement)
+
     async def get_by_email_and_organization(
         self, email: str, organization_id: UUID
     ) -> Customer | None:
@@ -385,30 +396,6 @@ class CustomerRepository(
         result = await self.session.execute(statement)
         return list(result.scalars().all())
 
-    async def search_by_query(
-        self,
-        org_ids: set[AccessibleOrganizationID],
-        query: str,
-    ) -> tuple[list[UUID], list[str]]:
-        statement = (
-            self.get_statement_by_org_ids(org_ids)
-            .with_only_columns(Customer.id, Customer.external_id)
-            .where(
-                or_(
-                    cast(Customer.id, String).icontains(query, autoescape=True),
-                    Customer.external_id.icontains(query, autoescape=True),
-                    Customer.name.icontains(query, autoescape=True),
-                    Customer._billing_name.icontains(query, autoescape=True),
-                    Customer.email.icontains(query, autoescape=True),
-                ),
-            )
-        )
-        result = await self.session.execute(statement)
-        rows = result.all()
-        customer_ids = [r.id for r in rows]
-        external_ids = [r.external_id for r in rows if r.external_id is not None]
-        return customer_ids, external_ids
-
     async def get_growth_per_period(
         self,
         organization_id: UUID,
@@ -475,7 +462,7 @@ class CustomerRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[Customer]]:
+    ) -> Select[Customer]:
         statement = self.get_base_statement()
         statement = statement.where(Customer.organization_id.in_(org_ids))
         return statement
@@ -517,7 +504,7 @@ class CustomerRepository(
     ) -> dict[str, UUID]:
         statement = (
             self.get_base_statement()
-            .with_only_columns(Customer.external_id, Customer.id)
+            .with_only_columns(NotNullable(Customer.external_id), Customer.id)
             .where(
                 Customer.organization_id == organization_id,
                 Customer.external_id.in_(external_ids),
@@ -606,4 +593,14 @@ class CustomerRepository(
         )
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
+        return next_number - 1
+
+    async def increment_credit_note_next_number(self, customer_id: UUID) -> int:
+        statement = (
+            update(Customer)
+            .where(Customer.id == customer_id)
+            .values(credit_note_next_number=Customer.credit_note_next_number + 1)
+            .returning(Customer.credit_note_next_number)
+        )
+        next_number = (await self.session.execute(statement)).scalar_one()
         return next_number - 1

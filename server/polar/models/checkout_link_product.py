@@ -21,7 +21,7 @@ class CheckoutLinkProduct(RecordModel):
         Uuid, ForeignKey("checkout_links.id", ondelete="cascade")
     )
     product_id: Mapped[UUID] = mapped_column(
-        Uuid, ForeignKey("products.id", ondelete="cascade")
+        Uuid, ForeignKey("products.id", ondelete="cascade"), index=True
     )
     order: Mapped[int] = mapped_column(Integer, nullable=False)
 

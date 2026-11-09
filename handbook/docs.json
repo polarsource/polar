@@ -53,6 +53,7 @@
         "group": "Engineering",
         "pages": [
           "engineering/introduction",
+          "engineering/architecture-overview",
           "engineering/api-tokens-and-system-credentials",
           {
             "group": "Guides",
@@ -95,7 +96,9 @@
               "engineering/design-documents/secrets-encryption",
               "engineering/design-documents/merchant-migrations",
               "engineering/design-documents/tasks-on-lambda",
-              "engineering/design-documents/resend-forge"
+              "engineering/design-documents/resend-forge",
+              "engineering/design-documents/versioning",
+              "engineering/design-documents/outpost"
             ]
           },
           {
@@ -115,11 +118,21 @@
               "engineering/decisions/0010-jwks-signing-keys-in-kms",
               "engineering/decisions/0011-specialized-webhooks-also-emit-updated",
               "engineering/decisions/0012-minimize-data-in-ai-api-calls",
-              "engineering/decisions/0013-minimize-personal-data-in-telemetry"
+              "engineering/decisions/0013-minimize-personal-data-in-telemetry",
+              "engineering/decisions/0014-agent-auth-subject"
             ]
           },
           "engineering/data-flows",
           "engineering/tech-notes",
+          {
+            "group": "Database",
+            "pages": [
+              "engineering/oncall/connecting-to-prod-db",
+              "engineering/oncall/rotate-db-credentials",
+              "engineering/oncall/kill-blocking-queries",
+              "engineering/database/ad-hoc-indices"
+            ]
+          },
           {
             "group": "On-Call Procedures",
             "pages": [
@@ -129,9 +142,6 @@
               "engineering/oncall/deploy-infra",
               "engineering/oncall/trigger-webhooks",
               "engineering/oncall/run-one-off-jobs",
-              "engineering/oncall/connecting-to-prod-db",
-              "engineering/oncall/kill-blocking-queries",
-              "engineering/oncall/rotate-db-credentials",
               "engineering/oncall/rotate-jwks",
               "engineering/oncall/rotate-secret",
               "engineering/oncall/respond-to-a-kms-compromise",

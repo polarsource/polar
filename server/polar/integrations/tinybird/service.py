@@ -10,6 +10,7 @@ from uuid import UUID
 import logfire
 import sqlalchemy
 import structlog
+from anyio import create_task_group
 from clickhouse_connect.cc_sqlalchemy.dialect import ClickHouseDialect
 from clickhouse_connect.cc_sqlalchemy.sql.compiler import ChStatementCompiler
 from sqlalchemy import (
@@ -82,11 +83,13 @@ class _ChBindCompiler(ChStatementCompiler):
         return f"{{{name}:{ch_type}}}"
 
     def _literal_execute_expanding_parameter(
-        self, name: str, parameter: Any, values: Any
+        self, name: str, parameter: Any, values: Any, *, taken_names: set[str]
     ) -> Any:
         self._expanding_ch_type = _ch_bind_type(parameter.type)
         try:
-            return super()._literal_execute_expanding_parameter(name, parameter, values)
+            return super()._literal_execute_expanding_parameter(
+                name, parameter, values, taken_names=taken_names
+            )
         finally:
             self._expanding_ch_type = "String"
 
@@ -112,6 +115,7 @@ events_table = Table(
     "events_by_timestamp",
     metadata,
     Column("id", String),
+    Column("external_id", String),
     Column("name", String),
     Column("source", String),
     Column("organization_id", String),
@@ -504,7 +508,7 @@ def _finite(value: Any, default: float = 0.0) -> float:
     return result if math.isfinite(result) else default
 
 
-def _compile(statement: Select[Any]) -> tuple[str, dict[str, Any]]:
+def _compile(statement: Select[*tuple[Any, ...]]) -> tuple[str, dict[str, Any]]:
     compiled = statement.compile(
         dialect=clickhouse_dialect, compile_kwargs={"render_postcompile": True}
     )
@@ -625,7 +629,7 @@ class TinybirdEventsQuery:
     ) -> Self:
         if start is not None:
             self._filters.append(
-                events_table.c.timestamp > start.astimezone(UTC).replace(tzinfo=None)
+                events_table.c.timestamp >= start.astimezone(UTC).replace(tzinfo=None)
             )
         if end is not None:
             self._filters.append(
@@ -667,27 +671,17 @@ class TinybirdEventsQuery:
             self._filters.append(or_(*[attr == v for v in values]))
         return self
 
-    def filter_by_query(
-        self,
-        query: str,
-        matching_customer_ids: Sequence[UUID] | None = None,
-        matching_external_customer_ids: Sequence[str] | None = None,
-    ) -> Self:
+    def filter_by_query(self, query: str) -> Self:
         conditions: list[Any] = [
             _icontains(events_table.c.name, query),
             _icontains(events_table.c.source, query),
             _icontains(events_table.c.user_metadata, query),
+            events_table.c.external_id == query,
         ]
-        if matching_customer_ids:
-            conditions.append(
-                events_table.c.customer_id.in_([str(c) for c in matching_customer_ids])
-            )
-        if matching_external_customer_ids:
-            conditions.append(
-                events_table.c.external_customer_id.in_(
-                    list(matching_external_customer_ids)
-                )
-            )
+        try:
+            conditions.append(events_table.c.id == str(UUID(query)))
+        except ValueError:
+            pass
         self._filters.append(or_(*conditions))
         return self
 
@@ -745,15 +739,23 @@ class TinybirdEventsQuery:
                 func.toUnixTimestamp(events_table.c.timestamp), clause
             )
 
+        is_like = clause.operator in (FilterOperator.like, FilterOperator.not_like)
         col = DENORMALIZED_COLUMNS.get(clause.property)
         if col is not None:
+            if is_like and not isinstance(col.type, String):
+                return false()
             return self._ch_comparison(col, clause)
 
         parts = clause.property.split(".")
-        if clause.operator in (
-            FilterOperator.like,
-            FilterOperator.not_like,
-        ) or isinstance(clause.value, str):
+        if is_like:
+            return and_(
+                func.JSONType(events_table.c.user_metadata, *parts) == "String",
+                self._ch_comparison(
+                    func.JSONExtractString(events_table.c.user_metadata, *parts),
+                    clause,
+                ),
+            )
+        if isinstance(clause.value, str):
             attr = func.JSONExtractString(events_table.c.user_metadata, *parts)
         else:
             attr = func.JSONExtractFloat(events_table.c.user_metadata, *parts)
@@ -763,11 +765,13 @@ class TinybirdEventsQuery:
     def _ch_comparison(attr: Any, clause: FilterClause) -> Any:
         v = clause.value
         if clause.operator in (FilterOperator.like, FilterOperator.not_like):
-            needle = str(v) if not isinstance(v, bool) else ("t" if v else "f")
+            # LIKE and NOT LIKE compare strings only
+            if not isinstance(v, str):
+                return false()
             haystack = func.toString(attr)
             if clause.operator == FilterOperator.like:
-                return _contains(haystack, needle)
-            return ~_contains(haystack, needle)
+                return _contains(haystack, v)
+            return ~_contains(haystack, v)
         op = clause.operator
         if op == FilterOperator.eq:
             return attr == v
@@ -833,6 +837,24 @@ class TinybirdEventsQuery:
             log.error("tinybird.get_event_type_stats.failed", error=str(e))
             raise
 
+    async def get_bucket_counts(
+        self, origin: datetime, step_seconds: int
+    ) -> dict[int, int]:
+        origin_ms = int(origin.timestamp() * 1000)
+        bucket = func.intDiv(
+            func.toUnixTimestamp64Milli(events_table.c.timestamp) - origin_ms,
+            step_seconds * 1000,
+        ).label("bucket")
+        statement = (
+            select(bucket, func.count().label("occurrences"))
+            .where(self._get_organization_filter(), *self._filters)
+            .group_by(bucket)
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return {int(row["bucket"]): int(row["occurrences"]) for row in rows}
+
     async def get_event_ids_and_count(
         self, limit: int, offset: int, descending: bool = True
     ) -> tuple[list[str], int]:
@@ -864,14 +886,16 @@ class TinybirdEventsQuery:
         count_sql, count_params = _compile(count_statement)
         ids_sql, ids_params = _compile(ids_statement)
 
-        count_rows = await client.query(
-            count_sql, parameters=count_params, db_statement=count_sql
-        )
+        async with create_task_group() as tg:
+            count_handle = tg.create_task(
+                client.query(count_sql, parameters=count_params, db_statement=count_sql)
+            )
+            ids_handle = tg.create_task(
+                client.query(ids_sql, parameters=ids_params, db_statement=ids_sql)
+            )
+        count_rows = count_handle.return_value
+        id_rows = ids_handle.return_value
         total = count_rows[0]["total"] if count_rows else 0
-
-        id_rows = await client.query(
-            ids_sql, parameters=ids_params, db_statement=ids_sql
-        )
         event_ids = [str(row["id"]) for row in id_rows]
 
         return event_ids, total

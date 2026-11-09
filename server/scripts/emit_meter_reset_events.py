@@ -146,8 +146,12 @@ def emit_meter_reset_events(
                 raise typer.Exit(code=1)
 
             for subscription, subscription_meter, reset_at in to_reset:
-                await subscription_service.reset_meter(
-                    session, subscription, subscription_meter, reset_at=reset_at
+                await subscription_service.reset_customer_meter(
+                    session,
+                    subscription.organization,
+                    subscription.customer,
+                    subscription_meter.meter,
+                    reset_at=reset_at,
                 )
 
             await session.commit()

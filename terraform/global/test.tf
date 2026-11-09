@@ -1,5 +1,13 @@
 # Bootstrap test variables
 
+resource "tfe_variable" "planetscale_app_password_test" {
+  key             = "planetscale_app_password"
+  category        = "terraform"
+  description     = "PlanetScale application role password for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 data "tfe_project" "test" {
   name         = "test"
   organization = "polar-sh"
@@ -534,17 +542,6 @@ resource "tfe_variable" "polar_organization_id_test" {
   }
 }
 
-resource "tfe_variable" "polar_free_product_id_test" {
-  key             = "polar_free_product_id"
-  category        = "terraform"
-  description     = "Polar free-tier product ID"
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "polar_scale_product_id_test" {
   key             = "polar_scale_product_id"
   category        = "terraform"
@@ -752,6 +749,17 @@ resource "tfe_variable" "private_backoffice_tailscale_ip_test" {
   }
 }
 
+resource "tfe_variable" "ec2_tailscale_oauth_client_id_test" {
+  key             = "ec2_tailscale_oauth_client_id"
+  category        = "terraform"
+  description     = "ID of the Tailscale OAuth client used by the EC2 router in test"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "ec2_tailscale_oauth_client_secret_test" {
   key             = "ec2_tailscale_oauth_client_secret"
   category        = "terraform"
@@ -808,6 +816,42 @@ resource "tfe_variable" "redis_private_link_host_test" {
   description  = "DNS name of the Render private link to the test Redis"
   sensitive    = false
   workspace_id = data.tfe_workspace_ids.aws.ids["test"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backoffice_google_client_id_test" {
+  key             = "backoffice_google_client_id"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backoffice_google_client_secret_test" {
+  key             = "backoffice_google_client_secret"
+  category        = "terraform"
+  description     = "Backoffice Google OAuth client secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "backoffice_google_hosted_domain_test" {
+  key             = "backoffice_google_hosted_domain"
+  category        = "terraform"
+  description     = "Backoffice Google Workspace hosted domain for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
 
   lifecycle {
     ignore_changes = [value]

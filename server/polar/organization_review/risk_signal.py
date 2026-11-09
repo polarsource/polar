@@ -14,7 +14,7 @@ class RiskSignalService:
         *,
         source: OrganizationRiskSignal.Source,
         type: OrganizationRiskSignal.Type,
-        risk_level: str,
+        risk_level: OrganizationRiskSignal.RiskLevel,
         description: str | None = None,
         account_evaluation_id: str | None = None,
         payload: dict[str, Any] | None = None,

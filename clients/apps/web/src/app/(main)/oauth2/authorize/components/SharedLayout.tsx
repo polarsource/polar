@@ -3,7 +3,7 @@ import { UploadImage } from '@/components/Image/Image'
 import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Plus } from 'lucide-react'
+import { Plus } from '@polar-sh/orbit/icons'
 import type { ReactNode, Ref } from 'react'
 
 type AuthorizationStep = 'create' | 'organizations' | 'scopes'
@@ -75,7 +75,7 @@ export default function SharedLayout({
   const branding = (
     <Box alignItems="center" gap="m">
       <Box color="text-primary">
-        <PolarLogotype logoVariant="logotype" logoClassName="ml-0" />
+        <PolarLogotype logoVariant="logotype" logoClassName="ml-0" size={80} />
       </Box>
       {client?.logo_uri && (
         <>

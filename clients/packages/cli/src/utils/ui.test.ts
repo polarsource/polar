@@ -1,10 +1,17 @@
 import { describe, expect, test } from 'vitest'
 import { stripAnsi } from '@/utils/test-utils/cli'
+import pc from 'picocolors'
 import * as ui from '@/utils/ui'
 
 const ESC = String.fromCharCode(27)
 
 describe('ui', () => {
+  test('truncates styled text by visible width and resets the style', () => {
+    const text = `${ESC}[2mabc${ESC}[22mdefgh`
+    expect(ui.truncate(text, 5)).toBe(`${ESC}[2mabc${ESC}[22md…${ESC}[0m`)
+    expect(ui.truncate(text, 8)).toBe(text)
+  })
+
   test('prefixes status lines with their glyphs', () => {
     expect(stripAnsi(ui.success('Done'))).toBe('  ✔ Done')
     expect(stripAnsi(ui.warning('Careful'))).toBe('  ▲ Careful')
@@ -91,5 +98,21 @@ describe('ui', () => {
     expect(stripAnsi(ui.timestamp(date))).toBe('13:05:09')
     expect(stripAnsi(ui.timestamp())).toMatch(/^\d{2}:\d{2}:\d{2}$/)
     expect(stripAnsi(ui.duration(12.6))).toBe('13ms')
+  })
+
+  describe('box', () => {
+    test('wraps long lines with a hanging indent and keeps colors', () => {
+      const colors = pc.createColors(true)
+      const long = `  catalog  ${colors.red(`"${'a'.repeat(130)}"`)} → "b"`
+      const rows = ui.box(long).split('\n')
+      expect(rows.length).toBeGreaterThan(3)
+      for (const row of rows.slice(1, -1)) {
+        expect(Bun.stringWidth(stripAnsi(row))).toBe(
+          Bun.stringWidth(stripAnsi(rows[0] ?? '')),
+        )
+      }
+      expect(stripAnsi(rows[2] ?? '')).toMatch(/^ {2}│ {4}"a+/)
+      expect(rows[2]).toContain(colors.red('').slice(0, 5))
+    })
   })
 })

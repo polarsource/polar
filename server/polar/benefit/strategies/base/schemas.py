@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Annotated
 
 from pydantic import UUID4, Field, computed_field, field_validator
 from pydantic.json_schema import SkipJsonSchema
@@ -6,10 +7,12 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.kit.external_id import ExternalIDInputMixin, ExternalIDOutputMixin
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+from polar.kit.versioning import Version
 from polar.kit.visibility import Visibility
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.benefit_grant import BenefitGrantError
 from polar.organization.schemas import OrganizationID, OrganizationPublicBase
+from polar.version import V2026_10, V2027_01
 
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
@@ -79,6 +82,21 @@ class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase)
     visibility: BenefitVisibility = Field(
         description="The visibility of the benefit in the customer portal."
     )
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the benefit. "
+                "None for benefits not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the benefit."),
+    ]
 
     @field_validator("visibility", mode="before")
     @classmethod
@@ -136,7 +154,9 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
         description="The error information if the benefit grant failed with an unrecoverable error.",
     )
 
-    @computed_field(deprecated="Use `customer_id`.")
+    @computed_field(
+        exclude_if=Version(up_to=V2026_10).exclude_if, deprecated="Use `customer_id`."
+    )
     def user_id(self) -> SkipJsonSchema[UUID4]:
         return self.customer_id
 

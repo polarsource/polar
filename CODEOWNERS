@@ -29,6 +29,8 @@ server/polar/**/endpoints.py @frankie567
 server/polar/**/schemas.py @frankie567
 server/polar/customer_portal/endpoints/** @frankie567
 server/polar/customer_portal/schemas/** @frankie567
+server/polar/declarative_config/**
+server/polar/catalog/**
 
 # Authentication
 server/polar/auth/** @frankie567

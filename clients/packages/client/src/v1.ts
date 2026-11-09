@@ -1475,7 +1475,7 @@ export interface paths {
     patch: operations['sso:update_sso_connection']
     trace?: never
   }
-  '/v1/organizations/{id}/sso-domains/': {
+  '/v1/organizations/{id}/domains/': {
     parameters: {
       query?: never
       header?: never
@@ -1483,12 +1483,56 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List SSO Domains
+     * List Organization Domains
      * @description **Scopes**: `organizations:read` `organizations:write`
      */
-    get: operations['sso:list_sso_domains']
+    get: operations['organization_domains:list_organization_domains']
+    put?: never
+    /**
+     * Create Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:create_organization_domain']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
     put?: never
     post?: never
+    /**
+     * Delete Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    delete: operations['organization_domains:delete_organization_domain']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/domains/{domain_id}/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Verify Organization Domain
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_domains:verify_organization_domain']
     delete?: never
     options?: never
     head?: never
@@ -1686,6 +1730,53 @@ export interface paths {
      *     **Scopes**: `subscriptions:write`
      */
     post: operations['subscriptions:preview_change']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/subscriptions/bulk-update': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Bulk Update Subscriptions
+     * @description Move the active subscriptions of a product, in any version, to another product.
+     *
+     *     Subscriptions move in the background, each one at its own renewal. Subscriptions
+     *     that are canceling or already have a pending change are left alone.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:bulk_update']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/subscriptions/bulk-update/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Subscription Bulk Update
+     * @description Get the progress of a subscription bulk update.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_bulk_update']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -2537,6 +2628,46 @@ export interface paths {
     patch: operations['products:update']
     trace?: never
   }
+  '/v1/products/name-check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check Product Name
+     * @description Warn when a product name suggests a use case the Acceptable Use Policy forbids.
+     */
+    post: operations['products:name_check']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/products/{id}/flagged-name': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Report Flagged Product Name
+     * @description Record that a product was created after its name showed the warning.
+     */
+    post: operations['products:report_flagged_name']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/products/{id}/benefits': {
     parameters: {
       query?: never
@@ -3321,113 +3452,6 @@ export interface paths {
     patch: operations['metrics:update_dashboard']
     trace?: never
   }
-  '/v1/compass/insights': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Insights
-     * @description List computed insights about your business.
-     *
-     *     Insights are derived live from your metrics, narrated, and linked to a
-     *     drill-down. They are ordered by importance.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:list_insights']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/compass/threads': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Assistant Threads
-     * @description List the caller's assistant conversation threads, most recent first.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:list_threads']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/compass/threads/{id}': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * Get Assistant Thread
-     * @description Get a thread. Its messages are fetched separately, page by page.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:get_thread']
-    put?: never
-    post?: never
-    /**
-     * Delete Assistant Thread
-     * @description Delete a thread and its conversation history.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    delete: operations['compass:delete_thread']
-    options?: never
-    head?: never
-    /**
-     * Update Assistant Thread
-     * @description Rename a thread.
-     *
-     *     **Scopes**: `metrics:write`
-     */
-    patch: operations['compass:update_thread']
-    trace?: never
-  }
-  '/v1/compass/threads/{id}/messages': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /**
-     * List Assistant Thread Messages
-     * @description List a thread's turns, for rehydrating the UI.
-     *
-     *     Paged newest-first: page 1 is the tail of the conversation and higher
-     *     pages walk back through it. Within a page, turns read oldest-first the
-     *     way they're rendered.
-     *
-     *     **Scopes**: `metrics:read`
-     */
-    get: operations['compass:list_thread_messages']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/license-keys/': {
     parameters: {
       query?: never
@@ -3652,6 +3676,76 @@ export interface paths {
      *     **Scopes**: `checkout_links:write`
      */
     patch: operations['checkout-links:update']
+    trace?: never
+  }
+  '/v1/catalogs/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Catalogs
+     * @description List the catalogs of organizations using config as code, newest first.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/catalogs/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Catalog
+     * @description Get a catalog version and the products in it.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/catalogs/{id}/publish': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Publish Draft Catalog
+     * @description Publish the draft catalog. Its new products and benefits replace the live
+     *     ones for new sales. Existing customers stay on their versions until moved.
+     *
+     *     Requires `products:write`, and `benefits:write` when the draft changes
+     *     benefits.
+     *
+     *     **Scopes**: `products:write`
+     */
+    post: operations['catalogs:publish']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/custom-fields/': {
@@ -4646,40 +4740,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/customer-portal/customer-session/request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Request */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.request']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/customer-portal/customer-session/authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /** Customer Portal.Customer Session.Authenticate */
-    post: operations['customer_portal:customer-session:customer_portal.customer_session.authenticate']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/customer-portal/customer-session/introspect': {
     parameters: {
       query?: never
@@ -4718,6 +4778,57 @@ export interface paths {
     get: operations['customer_portal:customer-session:get_authenticated_user']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Start */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Request */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_request']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/customer-session/email-otp/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Customer Portal.Customer Session.Email Otp Verify */
+    post: operations['customer_portal:customer-session:customer_portal.customer_session.email_otp_verify']
     delete?: never
     options?: never
     head?: never
@@ -5813,6 +5924,56 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/events/statistics/by-type': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get statistics grouped by event type
+     * @description Count matching events per event type.
+     *
+     *     Accepts the same filters as the event list, except the event name, so every
+     *     event type gets a count under the other filters.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_statistics_by_type']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/events/statistics/histogram': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get event histogram
+     * @description Count matching events in evenly sized buckets across a time range.
+     *
+     *     The bucket size is picked so the range is covered by at most 150 buckets,
+     *     starting at one minute.
+     *
+     *     **Scopes**: `events:read` `events:write`
+     */
+    get: operations['events:get_histogram']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/events/statistics/by-property': {
     parameters: {
       query?: never
@@ -6134,17 +6295,88 @@ export interface paths {
      * Export Config
      * @description Export the organization's current config as a declarative config document.
      *
+     *     With `catalog_id`, products come from that catalog version. Settings, meters
+     *     and benefits aren't versioned, so they're always the current ones.
+     *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
-     *     Meters without an `external_id`, archived meters, meters that wouldn't pass
-     *     config validation, and meters beyond the config limit are listed in
-     *     `skipped`.
+     *     Resources without an `external_id`, archived ones, ones config can't express
+     *     (or that reference a skipped resource), and ones beyond the config limit are
+     *     listed in `skipped`, up to the config limit per section. Webhook endpoints
+     *     are not exported.
      *
-     *     **Scopes**: `meters:read` `meters:write`
+     *     Works before config as code is enabled, so the catalog can be reviewed
+     *     before `init`; `enabled` says whether it is.
+     *
+     *     Requires the read or write scope of every exported section.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     get: operations['config:export']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/config/init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Init Config
+     * @description Enable config as code for the organization.
+     *
+     *     With `external_ids`, also give existing meters, benefits and products
+     *     without an `external_id` the requested one, so export includes them and
+     *     apply updates them instead of creating new ones. Requires the write scope
+     *     of each section the assignments touch.
+     *
+     *     Enabling also requires `benefits:read` and `products:read`, to check that
+     *     config can manage every benefit and product.
+     *
+     *     The products and benefits that have an `external_id` are published as the
+     *     first catalog, unless one is already live. Disabling reverts to it.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['config:init']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/config/disable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Disable Config
+     * @description Stop managing the organization's catalog as code, so it can be edited in the
+     *     dashboard and API again.
+     *
+     *     The draft catalog is discarded, and the live catalog is removed: its
+     *     products and benefits stay as they are. So do meters, settings and webhook
+     *     endpoints applied in the meantime.
+     *
+     *     Only possible while at most one catalog was published.
+     *
+     *     **Scopes**: `organizations:write`
+     */
+    post: operations['config:disable']
     delete?: never
     options?: never
     head?: never
@@ -6164,9 +6396,15 @@ export interface paths {
      * Apply Config
      * @description Apply a declarative config document to the organization.
      *
-     *     Meters, benefits, products, discounts and webhook endpoints are matched by
-     *     `external_id`: missing ones are created, changed ones are updated, and ones
-     *     not listed are left untouched.
+     *     Meters, benefits, products and webhook endpoints are matched by
+     *     `external_id`: missing ones are created, and changed ones are updated.
+     *     Deprecated products are neither created nor updated.
+     *     Deprecated products, and products that `config pull` exports but the config
+     *     doesn't list, are left out of the published catalog. Other products, and all
+     *     products when `products` is omitted, are left untouched. A product that
+     *     isn't listed but has a billable subscription or a pending subscription
+     *     update must be marked deprecated instead, or nothing is applied.
+     *     Other resources that aren't listed are left untouched.
      *     `settings` are applied first, so products can be priced in a new
      *     `payments.currency` in the same config. Every active product must have a price in
      *     the resulting currency, or nothing is applied.
@@ -6174,7 +6412,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `discounts:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     *     **Scopes**: `benefits:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6199,11 +6437,42 @@ export interface paths {
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
      *
+     *     With the ID of an archived catalog, products are compared to that version
+     *     instead of the live one. The plan then shows the changes from that version,
+     *     not what apply would do, and the response's `catalog` is None.
+     *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `discounts:read` `discounts:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/config/prune': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Prune Config
+     * @description Report which deprecated resources in a declarative config document are still in use.
+     *
+     *     A deprecated resource can be removed from the config once no customer uses it
+     *     and no product or benefit staying in the config references it.
+     *
+     *     Each section requires the read or write scope for its resource.
+     *
+     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     */
+    post: operations['config:prune']
     delete?: never
     options?: never
     head?: never
@@ -6313,6 +6582,32 @@ export interface paths {
      *     **Scopes**: `customers:write`
      */
     post: operations['customer_meters:credits']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-meters/credits/{id}/reverse': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Reverse Customer Meter Credit
+     * @description Reverse a manual credit, removing the units the customer hasn't used yet.
+     *
+     *     Works once per credit, within 7 days and in the current billing period.
+     *     Returns a `meter.credited` event with negative units and
+     *     `parent_id` set to the reversed credit.
+     *
+     *     **Scopes**: `customers:write`
+     */
+    post: operations['customer_meters:reverse_credit']
     delete?: never
     options?: never
     head?: never
@@ -6523,30 +6818,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/wallets/{id}/top-up': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Top-Up Wallet
-     * @description Top-up a wallet by adding funds to its balance.
-     *
-     *     The customer should have a valid payment method on file.
-     *
-     *     **Scopes**: `wallets:write`
-     */
-    post: operations['wallets:top_up']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/payout-accounts/': {
     parameters: {
       query?: never
@@ -6663,6 +6934,156 @@ export interface paths {
     put?: never
     /** Submit */
     post: operations['feedbacks:submit']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/changes': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Changes
+     * @description The snapshots that changed since the cursor.
+     *
+     *     When no cursor is provided, returns the cursor to start pulling from.
+     *
+     *     **Scopes**: `events:write`
+     */
+    get: operations['outpost:changes']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/configuration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Configuration
+     * @description The reducers Outpost runs.
+     *
+     *     **Scopes**: `events:write`
+     */
+    get: operations['outpost:configuration']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/meter-usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Meter Usage
+     * @description The snapshot of every identity of each requested customer.
+     *
+     *     **Scopes**: `events:write`
+     */
+    post: operations['outpost:meter_usage']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/outpost/confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm
+     * @description The pending ids Polar counts, with the snapshot that counts them.
+     *
+     *     **Scopes**: `events:write`
+     */
+    post: operations['outpost:confirm']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim/{link_token}/preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Agent Claim
+     * @description What a claim is about, shown to the human before they sign in.
+     */
+    get: operations['agent:preview_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim/{link_token}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Agent Claim
+     * @description Get what an agent built, for the human it asked to claim it.
+     */
+    get: operations['agent:get_claim']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/agent/claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Confirm Agent Claim
+     * @description Claim an agent and its organization with the code the agent gave.
+     */
+    post: operations['agent:confirm_claim']
     delete?: never
     options?: never
     head?: never
@@ -7770,30 +8191,6 @@ export interface components {
        */
       billing_notes?: string | null
     }
-    /**
-     * AddCurrencyAction
-     * @description A nudge to offer prices in an additional presentment currency.
-     *
-     *     The client routes to the products list, where per-product pricing can be
-     *     extended. Nothing is ever applied automatically.
-     */
-    AddCurrencyAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'add_currency'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Currency
-       * @description Lowercase ISO code of the suggested currency, e.g. `eur`.
-       */
-      currency: string
-    }
     /** Address */
     Address: {
       /** Line1 */
@@ -8345,52 +8742,129 @@ export interface components {
         | 'ZW'
     }
     /**
-     * AdjustPriceAction
-     * @description A recommendation to review a product's pricing, with a reference point.
-     *
-     *     The suggested amount is a *reference*, not a mandate: it's the list price
-     *     that would restore the target gross margin at the current cost to serve,
-     *     ignoring demand elasticity. It applies to new customers only — existing
-     *     subscriptions keep their price. The client routes to the product's pricing
-     *     editor; nothing is ever applied automatically.
+     * AgentClaim
+     * @description What the human reviews before claiming the agent.
      */
-    AdjustPriceAction: {
+    AgentClaim: {
       /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
+       * Agent Name
+       * @description What the agent calls itself.
        */
-      type: 'adjust_price'
+      agent_name: string | null
       /**
-       * Label
-       * @description Button label.
+       * Email
+       * @description The email the agent started the claim for.
        */
-      label: string
+      email: string
       /**
-       * Product Id
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+      /** @description The organization the agent built, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+      /**
+       * Products
+       * @description The products the agent created in that organization.
+       */
+      products: components['schemas']['AgentClaimProduct'][]
+    }
+    /** AgentClaimConfirm */
+    AgentClaimConfirm: {
+      /** Link Token */
+      link_token: string
+      /**
+       * Code
+       * @description The three words the agent gave, separated by hyphens.
+       */
+      code: string
+    }
+    /** AgentClaimEmailMismatch */
+    AgentClaimEmailMismatch: {
+      /**
+       * Error
+       * @example AgentClaimEmailMismatch
+       * @constant
+       */
+      error: 'AgentClaimEmailMismatch'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimExpired */
+    AgentClaimExpired: {
+      /**
+       * Error
+       * @example AgentClaimExpired
+       * @constant
+       */
+      error: 'AgentClaimExpired'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimInvalidCode */
+    AgentClaimInvalidCode: {
+      /**
+       * Error
+       * @example AgentClaimInvalidCode
+       * @constant
+       */
+      error: 'AgentClaimInvalidCode'
+      /** Detail */
+      detail: string
+    }
+    /** AgentClaimOrganization */
+    AgentClaimOrganization: {
+      /**
+       * Id
        * Format: uuid4
-       * @description The product whose pricing to review.
        */
-      product_id: string
+      id: string
+      /** Name */
+      name: string
+      /** Slug */
+      slug: string
+      /** Avatar Url */
+      avatar_url: string | null
+    }
+    /**
+     * AgentClaimPreview
+     * @description What a claim is about, for the human before they sign in.
+     */
+    AgentClaimPreview: {
       /**
-       * Product Name
-       * @description Display name of the product.
+       * Agent Name
+       * @description What the agent calls itself.
        */
-      product_name: string
+      agent_name: string | null
       /**
-       * Current Price Amount
-       * @description The product's current list price, in cents.
+       * Email
+       * @description The masked email the agent started the claim for.
        */
-      current_price_amount: number
+      email: string
       /**
-       * Suggested Price Amount
-       * @description Reference list price (cents) that would restore the target gross margin at the current cost to serve. Null when no meaningful suggestion can be computed.
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      suggested_price_amount: number | null
+      expires_at: string
+      /** @description The organization the agent created, if any. */
+      organization: components['schemas']['AgentClaimOrganization'] | null
+    }
+    /** AgentClaimProduct */
+    AgentClaimProduct: {
       /**
-       * Currency
-       * @description ISO currency code of the amounts.
+       * Id
+       * Format: uuid4
        */
-      currency: string
+      id: string
+      /** Name */
+      name: string
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      /** Prices */
+      prices: components['schemas']['ProductPrice'][]
     }
     AggregateField: string
     /**
@@ -8468,38 +8942,6 @@ export interface components {
       error: 'AppealNotRejectedError'
       /** Detail */
       detail: string
-    }
-    /**
-     * AssistantBlockPart
-     * @description A renderable block, at the position the model placed it.
-     */
-    AssistantBlockPart: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      kind: 'block'
-      /** Block */
-      block:
-        | components['schemas']['TextBlock']
-        | components['schemas']['MetricChartBlock']
-        | components['schemas']['InsightCardsBlock']
-        | components['schemas']['EntityListBlock']
-        | components['schemas']['DataTableBlock']
-        | components['schemas']['CustomerCardBlock']
-    }
-    /**
-     * AssistantTextPart
-     * @description A run of assistant prose, as it was streamed.
-     */
-    AssistantTextPart: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      kind: 'text'
-      /** Text */
-      text: string
     }
     /**
      * AttachedCustomField
@@ -9540,6 +9982,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitCustomProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -9901,6 +10353,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDiscordProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10268,6 +10730,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitDownloadablesProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10553,6 +11025,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitFeatureFlagProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -10829,6 +11311,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitGitHubRepositoryProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12055,6 +12547,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitLicenseKeysProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12354,6 +12856,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitMeterCreditProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -12761,6 +13273,16 @@ export interface components {
       metadata: components['schemas']['MetadataOutputType']
       /** @description The visibility of the benefit in the customer portal. */
       visibility: components['schemas']['BenefitVisibility']
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the benefit.
+       */
+      is_current: boolean
       properties: components['schemas']['BenefitSlackSharedChannelProperties']
       /** Visibility Configurable */
       readonly visibility_configurable: boolean
@@ -13373,6 +13895,68 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * Catalog
+     * @description A version of an organization's product catalog.
+     */
+    Catalog: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Name given when it was published. Defaults to `v{n}`, n being its position in the organization's catalog history.
+       */
+      name: string | null
+      /**
+       * Parent Id
+       * @description ID of the catalog this version replaced. Null for the first one.
+       */
+      parent_id: string | null
+      /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
+      status: components['schemas']['CatalogStatus']
+      /**
+       * Published At
+       * @description When the catalog was published. Null for drafts.
+       */
+      published_at: string | null
+    }
+    /** CatalogBenefit */
+    CatalogBenefit: {
+      /**
+       * External Id
+       * @description Key of the benefit in the catalog.
+       */
+      external_id: string
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The benefit version in this catalog.
+       */
+      benefit_id: string
+    }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
       /**
@@ -13394,6 +13978,139 @@ export interface components {
       error: 'CatalogImportNotReady'
       /** Detail */
       detail: string
+    }
+    /** CatalogNotDraft */
+    CatalogNotDraft: {
+      /**
+       * Error
+       * @example CatalogNotDraft
+       * @constant
+       */
+      error: 'CatalogNotDraft'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogNotFound */
+    CatalogNotFound: {
+      /**
+       * Error
+       * @example CatalogNotFound
+       * @constant
+       */
+      error: 'CatalogNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogProduct */
+    CatalogProduct: {
+      /**
+       * External Id
+       * @description Key of the product in the catalog.
+       */
+      external_id: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The product version in this catalog.
+       */
+      product_id: string
+    }
+    /**
+     * CatalogStatus
+     * @enum {string}
+     */
+    CatalogStatus: 'draft' | 'live' | 'archived'
+    /**
+     * CatalogVersion
+     * @description A catalog version with its products and benefits.
+     */
+    CatalogVersion: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Name
+       * @description Name given when it was published. Defaults to `v{n}`, n being its position in the organization's catalog history.
+       */
+      name: string | null
+      /**
+       * Parent Id
+       * @description ID of the catalog this version replaced. Null for the first one.
+       */
+      parent_id: string | null
+      /** @description `live` for the catalog new checkouts use, `archived` for previous versions, `draft` for unpublished changes. */
+      status: components['schemas']['CatalogStatus']
+      /**
+       * Published At
+       * @description When the catalog was published. Null for drafts.
+       */
+      published_at: string | null
+      /**
+       * Products
+       * @description The products in this version, ordered by key.
+       */
+      products: components['schemas']['CatalogProduct'][]
+      /**
+       * Benefits
+       * @description The benefits in this version, ordered by key. Empty for versions published before benefits were versioned.
+       */
+      benefits: components['schemas']['CatalogBenefit'][]
+    }
+    /** Changes */
+    Changes: {
+      /**
+       * Changes
+       * @description A snapshot of each customer and reducer that changed since the cursor.
+       */
+      changes: components['schemas']['MeterUsageOutgoingMessagePayload'][]
+      /**
+       * Cursor
+       * @description Pull the next changes after this one.
+       */
+      cursor: string
+      /**
+       * Has More
+       * @description The page is full: pull again from the cursor right away.
+       */
+      has_more: boolean
+      /**
+       * Reset
+       * @description Changes were missed: every snapshot the client holds may be stale. The client
+       *     drops them, and fetches each customer again at its next read.
+       */
+      reset: boolean
+      /**
+       * Configuration Changed
+       * @description The organization's reducers changed: fetch the configuration again.
+       */
+      configuration_changed: boolean
+      /**
+       * Next Poll In
+       * @description Seconds until the next pull.
+       */
+      next_poll_in: number
     }
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
@@ -13595,12 +14312,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -13702,21 +14413,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -13769,12 +14472,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -13838,12 +14535,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -13890,7 +14581,9 @@ export interface components {
        */
       confirmation_token_id?: string | null
     }
-    CheckoutCreate: components['schemas']['CheckoutProductsCreate']
+    CheckoutCreate:
+      | components['schemas']['CheckoutProductsCreate']
+      | components['schemas']['CheckoutProductsExternalCreate']
     /**
      * CheckoutCreatedEvent
      * @description An event created by Polar when a checkout is created.
@@ -13984,18 +14677,6 @@ export interface components {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
       /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
-      /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
        * @example {
@@ -14027,18 +14708,6 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -14218,180 +14887,6 @@ export interface components {
       /** Url */
       readonly url: string
     }
-    CheckoutLinkCreate:
-      | components['schemas']['CheckoutLinkCreateProductPrice']
-      | components['schemas']['CheckoutLinkCreateProduct']
-      | components['schemas']['CheckoutLinkCreateProducts']
-    /**
-     * CheckoutLinkCreateProduct
-     * @description Schema to create a new checkout link from a a single product.
-     *
-     *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
-     */
-    CheckoutLinkCreateProduct: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Payment Processor
-       * @description Payment processor to use. Currently only Stripe is supported.
-       * @constant
-       */
-      payment_processor: 'stripe'
-      /**
-       * Label
-       * @description Optional label to distinguish links internally
-       */
-      label?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-       * @default false
-       */
-      require_billing_address: boolean
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-       */
-      discount_id?: string | null
-      /**
-       * Seats
-       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      seats?: number | null
-      /**
-       * Units
-       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      units?: number | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Product Id
-       * Format: uuid4
-       */
-      product_id: string
-    }
-    /**
-     * CheckoutLinkCreateProductPrice
-     * @description Schema to create a new checkout link from a a single product price.
-     *
-     *     **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
-     */
-    CheckoutLinkCreateProductPrice: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Payment Processor
-       * @description Payment processor to use. Currently only Stripe is supported.
-       * @constant
-       */
-      payment_processor: 'stripe'
-      /**
-       * Label
-       * @description Optional label to distinguish links internally
-       */
-      label?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
-       * @default false
-       */
-      require_billing_address: boolean
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
-       */
-      discount_id?: string | null
-      /**
-       * Seats
-       * @description Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      seats?: number | null
-      /**
-       * Units
-       * @description Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored.
-       */
-      units?: number | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Product Price Id
-       * Format: uuid4
-       */
-      product_price_id: string
-    }
     /**
      * CheckoutLinkCreateProducts
      * @description Schema to create a new checkout link.
@@ -14552,10 +15047,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -14710,175 +15202,6 @@ export interface components {
       | components['schemas']['PaymentError']
       | components['schemas']['SharedPaymentTokenError']
     /**
-     * CheckoutPriceCreate
-     * @description Create a new checkout session from a product price.
-     *
-     *     **Deprecated**: Use `CheckoutProductsCreate` instead.
-     *
-     *     Metadata set on the checkout will be copied
-     *     to the resulting order and/or subscription.
-     */
-    CheckoutPriceCreate: {
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Custom Field Data
-       * @description Key-value object storing custom field values.
-       */
-      custom_field_data?: {
-        [key: string]: string | number | boolean | null
-      }
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout.
-       */
-      discount_id?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
-       * @default false
-       */
-      require_billing_address: boolean
-      /** Amount */
-      amount?: number | null
-      /**
-       * Seats
-       * @description Predefined number of seats (works with seat-based pricing only)
-       */
-      seats?: number | null
-      /**
-       * Min Seats
-       * @description Minimum number of seats (works with seat-based pricing only)
-       */
-      min_seats?: number | null
-      /**
-       * Max Seats
-       * @description Maximum number of seats (works with seat-based pricing only)
-       */
-      max_seats?: number | null
-      /**
-       * Units
-       * @description Predefined number of units (works with unit-based pricing only)
-       */
-      units?: number | null
-      /**
-       * Min Units
-       * @description Minimum number of units (works with unit-based pricing only)
-       */
-      min_units?: number | null
-      /**
-       * Max Units
-       * @description Maximum number of units (works with unit-based pricing only)
-       */
-      max_units?: number | null
-      /**
-       * Allow Trial
-       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
-       * @default true
-       */
-      allow_trial: boolean
-      /**
-       * Customer Id
-       * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
-       */
-      customer_id?: string | null
-      /**
-       * Is Business Customer
-       * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
-       * @default false
-       */
-      is_business_customer: boolean
-      /**
-       * External Customer Id
-       * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
-       */
-      external_customer_id?: string | null
-      /** Customer Name */
-      customer_name?: string | null
-      /** Customer Email */
-      customer_email?: string | null
-      /** Customer Ip Address */
-      customer_ip_address?: string | null
-      /** Customer Billing Name */
-      customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
-      /** Customer Tax Id */
-      customer_tax_id?: string | null
-      /**
-       * Customer Metadata
-       * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      customer_metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Subscription Id
-       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-       */
-      subscription_id?: string | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Embed Origin
-       * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
-       */
-      embed_origin?: string | null
-      /** Locale */
-      locale?: string | null
-      /**
-       * Product Price Id
-       * Format: uuid4
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string
-    }
-    /**
      * CheckoutProduct
      * @description Product data for a checkout session.
      */
@@ -14951,13 +15274,20 @@ export interface components {
        */
       organization_id: string
       /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
+      /**
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -14968,176 +15298,6 @@ export interface components {
        * @description List of medias associated to the product.
        */
       medias: components['schemas']['ProductMediaFileRead'][]
-    }
-    /**
-     * CheckoutProductCreate
-     * @description Create a new checkout session from a product.
-     *
-     *     **Deprecated**: Use `CheckoutProductsCreate` instead.
-     *
-     *     Metadata set on the checkout will be copied
-     *     to the resulting order and/or subscription.
-     */
-    CheckoutProductCreate: {
-      /** @description The interval unit for the trial period. */
-      trial_interval?: components['schemas']['TrialInterval'] | null
-      /**
-       * Trial Interval Count
-       * @description The number of interval units for the trial period.
-       */
-      trial_interval_count?: number | null
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Custom Field Data
-       * @description Key-value object storing custom field values.
-       */
-      custom_field_data?: {
-        [key: string]: string | number | boolean | null
-      }
-      /**
-       * Discount Id
-       * @description ID of the discount to apply to the checkout.
-       */
-      discount_id?: string | null
-      /**
-       * Allow Discount Codes
-       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
-       * @default true
-       */
-      allow_discount_codes: boolean
-      /**
-       * Require Billing Address
-       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
-       * @default false
-       */
-      require_billing_address: boolean
-      /** Amount */
-      amount?: number | null
-      /**
-       * Seats
-       * @description Predefined number of seats (works with seat-based pricing only)
-       */
-      seats?: number | null
-      /**
-       * Min Seats
-       * @description Minimum number of seats (works with seat-based pricing only)
-       */
-      min_seats?: number | null
-      /**
-       * Max Seats
-       * @description Maximum number of seats (works with seat-based pricing only)
-       */
-      max_seats?: number | null
-      /**
-       * Units
-       * @description Predefined number of units (works with unit-based pricing only)
-       */
-      units?: number | null
-      /**
-       * Min Units
-       * @description Minimum number of units (works with unit-based pricing only)
-       */
-      min_units?: number | null
-      /**
-       * Max Units
-       * @description Maximum number of units (works with unit-based pricing only)
-       */
-      max_units?: number | null
-      /**
-       * Allow Trial
-       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
-       * @default true
-       */
-      allow_trial: boolean
-      /**
-       * Customer Id
-       * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
-       */
-      customer_id?: string | null
-      /**
-       * Is Business Customer
-       * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
-       * @default false
-       */
-      is_business_customer: boolean
-      /**
-       * External Customer Id
-       * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
-       */
-      external_customer_id?: string | null
-      /** Customer Name */
-      customer_name?: string | null
-      /** Customer Email */
-      customer_email?: string | null
-      /** Customer Ip Address */
-      customer_ip_address?: string | null
-      /** Customer Billing Name */
-      customer_billing_name?: string | null
-      customer_billing_address?: components['schemas']['AddressInput'] | null
-      /** Customer Tax Id */
-      customer_tax_id?: string | null
-      /**
-       * Customer Metadata
-       * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      customer_metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * Subscription Id
-       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
-       */
-      subscription_id?: string | null
-      /**
-       * Success Url
-       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
-       */
-      success_url?: string | null
-      /**
-       * Return Url
-       * @description When set, a back button will be shown in the checkout to return to this URL.
-       */
-      return_url?: string | null
-      /**
-       * Embed Origin
-       * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
-       */
-      embed_origin?: string | null
-      /** Locale */
-      locale?: string | null
-      currency?: components['schemas']['PresentmentCurrency'] | null
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description ID of the product to checkout. First available price will be selected.
-       */
-      product_id: string
     }
     /**
      * CheckoutProductsCreate
@@ -15322,6 +15482,189 @@ export interface components {
       } | null
     }
     /**
+     * CheckoutProductsExternalCreate
+     * @description Create a new checkout session from a list of products,
+     *     referenced by their external ID.
+     *     Customers will be able to switch between those products.
+     *
+     *     Metadata set on the checkout will be copied
+     *     to the resulting order and/or subscription.
+     */
+    CheckoutProductsExternalCreate: {
+      /** @description The interval unit for the trial period. */
+      trial_interval?: components['schemas']['TrialInterval'] | null
+      /**
+       * Trial Interval Count
+       * @description The number of interval units for the trial period.
+       */
+      trial_interval_count?: number | null
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Custom Field Data
+       * @description Key-value object storing custom field values.
+       */
+      custom_field_data?: {
+        [key: string]: string | number | boolean | null
+      }
+      /**
+       * Discount Id
+       * @description ID of the discount to apply to the checkout.
+       */
+      discount_id?: string | null
+      /**
+       * Allow Discount Codes
+       * @description Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+       * @default true
+       */
+      allow_discount_codes: boolean
+      /**
+       * Require Billing Address
+       * @description Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+       * @default false
+       */
+      require_billing_address: boolean
+      /** Amount */
+      amount?: number | null
+      /**
+       * Seats
+       * @description Predefined number of seats (works with seat-based pricing only)
+       */
+      seats?: number | null
+      /**
+       * Min Seats
+       * @description Minimum number of seats (works with seat-based pricing only)
+       */
+      min_seats?: number | null
+      /**
+       * Max Seats
+       * @description Maximum number of seats (works with seat-based pricing only)
+       */
+      max_seats?: number | null
+      /**
+       * Units
+       * @description Predefined number of units (works with unit-based pricing only)
+       */
+      units?: number | null
+      /**
+       * Min Units
+       * @description Minimum number of units (works with unit-based pricing only)
+       */
+      min_units?: number | null
+      /**
+       * Max Units
+       * @description Maximum number of units (works with unit-based pricing only)
+       */
+      max_units?: number | null
+      /**
+       * Allow Trial
+       * @description Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+       * @default true
+       */
+      allow_trial: boolean
+      /**
+       * Customer Id
+       * @description ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+       */
+      customer_id?: string | null
+      /**
+       * Is Business Customer
+       * @description Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+       * @default false
+       */
+      is_business_customer: boolean
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+       */
+      external_customer_id?: string | null
+      /** Customer Name */
+      customer_name?: string | null
+      /** Customer Email */
+      customer_email?: string | null
+      /** Customer Ip Address */
+      customer_ip_address?: string | null
+      /** Customer Billing Name */
+      customer_billing_name?: string | null
+      customer_billing_address?: components['schemas']['AddressInput'] | null
+      /** Customer Tax Id */
+      customer_tax_id?: string | null
+      /**
+       * Customer Metadata
+       * @description Key-value object allowing you to store additional information that'll be copied to the created customer.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      customer_metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Subscription Id
+       * @description ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+       */
+      subscription_id?: string | null
+      /**
+       * Success Url
+       * @description URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+       */
+      success_url?: string | null
+      /**
+       * Return Url
+       * @description When set, a back button will be shown in the checkout to return to this URL.
+       */
+      return_url?: string | null
+      /**
+       * Embed Origin
+       * @description If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+       */
+      embed_origin?: string | null
+      /** Locale */
+      locale?: string | null
+      currency?: components['schemas']['PresentmentCurrency'] | null
+      /**
+       * External Products
+       * @description List of product external IDs available to select at that checkout. The first one will be selected by default.
+       */
+      external_products: string[]
+      /**
+       * Prices
+       * @description Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+       */
+      prices?: {
+        [key: string]: (
+          | components['schemas']['ProductPriceFixedCreate']
+          | components['schemas']['ProductPriceCustomCreate']
+          | components['schemas']['ProductPriceSeatBasedCreate']
+          | components['schemas']['ProductPriceUnitBasedCreate']
+          | components['schemas']['ProductPriceMeteredUnitCreate']
+          | components['schemas']['ProductPriceMeteredTiersCreate']
+        )[]
+      } | null
+    }
+    /**
      * CheckoutPublic
      * @description Checkout session data retrieved using the client secret.
      */
@@ -15486,12 +15829,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -15580,21 +15917,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -15774,12 +16103,6 @@ export interface components {
        */
       product_id: string | null
       /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout.
-       */
-      product_price_id: string | null
-      /**
        * Discount Id
        * @description ID of the discount applied to the checkout.
        */
@@ -15868,21 +16191,13 @@ export interface components {
        * @deprecated
        * @description Price of the selected product.
        */
-      product_price:
-        | (
-            | components['schemas']['LegacyRecurringProductPrice']
-            | components['schemas']['ProductPrice']
-          )
-        | null
+      product_price: components['schemas']['ProductPrice'] | null
       /**
        * Prices
        * @description Mapping of product IDs to their list of prices.
        */
       prices: {
-        [key: string]: (
-          | components['schemas']['LegacyRecurringProductPrice']
-          | components['schemas']['ProductPrice']
-        )[]
+        [key: string]: components['schemas']['ProductPrice'][]
       } | null
       /** Discount */
       discount:
@@ -15934,12 +16249,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -16062,12 +16371,6 @@ export interface components {
        * @description ID of the product to checkout. Must be present in the checkout's product list.
        */
       product_id?: string | null
-      /**
-       * Product Price Id
-       * @deprecated
-       * @description ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
-       */
-      product_price_id?: string | null
       /** Amount */
       amount?: number | null
       /**
@@ -16109,78 +16412,6 @@ export interface components {
        */
       allow_trial?: false | null
     }
-    /**
-     * ColumnFormat
-     * @enum {string}
-     */
-    ColumnFormat: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
-    /**
-     * CompassThreadMessageSchema
-     * @description One completed turn: the user's prompt and the rendered answer.
-     */
-    CompassThreadMessageSchema: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /** Prompt */
-      prompt: string
-      /** Parts */
-      parts: (
-        | components['schemas']['AssistantTextPart']
-        | components['schemas']['AssistantBlockPart']
-      )[]
-    }
-    /**
-     * CompassThreadSchema
-     * @description An assistant conversation thread.
-     */
-    CompassThreadSchema: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /** Title */
-      title: string
-    }
-    /** CompassThreadUpdate */
-    CompassThreadUpdate: {
-      /** Title */
-      title?: string | null
-    }
     /** ConcurrentRoleModification */
     ConcurrentRoleModification: {
       /**
@@ -16192,19 +16423,15 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * ConfidenceLevel
-     * @description How much we trust an insight, derived from sample size and baseline variance.
-     *
-     *     Low-confidence insights are softened or suppressed so small merchants don't
-     *     get noise (e.g. "churn doubled" off a 1 -> 2 customer change).
-     * @enum {string}
-     */
-    ConfidenceLevel: 'low' | 'medium' | 'high'
     /** Config */
     Config: {
       /** @description Organization settings to update. Left untouched when omitted. */
       settings?: components['schemas']['ConfigSettings'] | null
+      /**
+       * Catalog Name
+       * @description Name of the catalog version this apply publishes, if it publishes one. Defaults to `v{n}`, n being the version's position in the organization's catalog history. Numbers never go backwards: applying an older config again publishes a new version with the next number.
+       */
+      catalog_name?: string | null
       /**
        * Meters
        * @description Meters to create or update, matched by `external_id`. Omitted fields are set to their default, except `metadata`, which is left untouched when omitted. Existing meters that aren't listed are left untouched, and archived meters stay archived.
@@ -16217,14 +16444,9 @@ export interface components {
       benefits?: components['schemas']['ConfigBenefit'][]
       /**
        * Products
-       * @description Products to create or update, matched by `external_id`. Existing products that aren't listed are left untouched.
+       * @description Products to create or update, matched by `external_id`. Deprecated products are never created or updated. They, and live products that aren't listed, are left out of the next catalog. A product that isn't listed but still has a billable subscription, or a scheduled subscription change to it, is an error: mark it `deprecated` instead. Products that pulling the config doesn't export, and all products when `products` is omitted, are left untouched.
        */
       products?: components['schemas']['ConfigProduct'][]
-      /**
-       * Discounts
-       * @description Discounts to create or update, matched by `external_id`. Existing discounts that aren't listed are left untouched.
-       */
-      discounts?: components['schemas']['ConfigDiscount'][]
       /**
        * Webhooks
        * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
@@ -16245,6 +16467,13 @@ export interface components {
     ConfigApplyResult: {
       /** Changes */
       changes: components['schemas']['ConfigResult'][]
+      /**
+       * Removed
+       * @description Resources left out of the published catalog.
+       */
+      removed: components['schemas']['ConfigRemoval'][]
+      /** @description The published catalog, if applying published a new one. */
+      catalog: components['schemas']['ConfigCatalogChange'] | null
       /** @description Result for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsResult'] | null
     }
@@ -16293,6 +16522,12 @@ export interface components {
         [key: string]: string | number | boolean
       }
       /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
+       * @default false
+       */
+      deprecated: boolean | null
+      /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
        */
@@ -16313,6 +16548,20 @@ export interface components {
        */
       type: 'feature_flag'
     }
+    /** ConfigBenefitFeatureFlagRead */
+    ConfigBenefitFeatureFlagRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'feature_flag'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+    }
     /** ConfigBenefitMeterCredit */
     ConfigBenefitMeterCredit: {
       /**
@@ -16332,6 +16581,12 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
+       * @default false
+       */
+      deprecated: boolean | null
       /**
        * External Id
        * @description Your identifier for the benefit, used to match it.
@@ -16373,6 +16628,75 @@ export interface components {
        */
       rollover: boolean
     }
+    /** ConfigBenefitMeterCreditPropertiesRead */
+    ConfigBenefitMeterCreditPropertiesRead: {
+      /** Meter */
+      meter: string
+      /** Units */
+      units: number
+      /** Rollover */
+      rollover: boolean
+    }
+    /** ConfigBenefitMeterCreditRead */
+    ConfigBenefitMeterCreditRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'meter_credit'
+      /** External Id */
+      external_id: string
+      /** Description */
+      description: string
+      visibility: components['schemas']['BenefitVisibility']
+      metadata: components['schemas']['MetadataOutputType']
+      properties: components['schemas']['ConfigBenefitMeterCreditPropertiesRead']
+    }
+    ConfigBenefitRead:
+      | components['schemas']['ConfigBenefitFeatureFlagRead']
+      | components['schemas']['ConfigBenefitMeterCreditRead']
+    /** ConfigCatalog */
+    ConfigCatalog: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Name of the catalog.
+       */
+      name: string | null
+    }
+    /** ConfigCatalogChange */
+    ConfigCatalogChange: {
+      /** @description The live catalog before applying. `None` if no catalog exists to replace. */
+      before: components['schemas']['ConfigCatalog'] | null
+      /** @description The catalog applying published, or the draft it saved. */
+      after: components['schemas']['ConfigCatalog']
+    }
+    /** ConfigCatalogPlan */
+    ConfigCatalogPlan: {
+      /** @description The live catalog that applying replaces. `None` if the organization has no catalog yet. */
+      before: components['schemas']['ConfigCatalog'] | null
+      /**
+       * Name
+       * @description Name of the catalog applying publishes. A default `v{n}` name moves to the next number if another apply publishes first.
+       */
+      name: string
+    }
+    /** ConfigCatalogPublished */
+    ConfigCatalogPublished: {
+      /**
+       * Error
+       * @example ConfigCatalogPublished
+       * @constant
+       */
+      error: 'ConfigCatalogPublished'
+      /** Detail */
+      detail: string
+    }
     /** ConfigChange */
     ConfigChange: {
       /** @description The type of resource. */
@@ -16390,228 +16714,76 @@ export interface components {
        */
       diff: components['schemas']['ConfigFieldChange'][]
     }
-    ConfigDiscount:
-      | components['schemas']['ConfigDiscountPercentage']
-      | components['schemas']['ConfigDiscountFixed']
-    /** ConfigDiscountFixed */
-    ConfigDiscountFixed: {
+    /** ConfigDisable */
+    ConfigDisable: {
       /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
+       * Organization Id
+       * @description The ID of the organization to opt out. **Required unless you use an organization token.**
        */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description Your identifier for the discount, used to match it.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
-      duration: components['schemas']['DiscountDuration']
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     Required when `duration` is `repeating`. Must be omitted otherwise.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months?: number | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /**
-       * Max Redemptions Per Customer
-       * @description Optional maximum number of times the discount can be redeemed by a single customer.
-       */
-      max_redemptions_per_customer?: number | null
-      /**
-       * Products
-       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
-       */
-      products?: string[]
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'fixed'
-      /**
-       * Amounts
-       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
-       */
-      amounts: {
-        [key: string]: number
-      }
-    }
-    /** ConfigDiscountPercentage */
-    ConfigDiscountPercentage: {
-      /**
-       * Metadata
-       * @description Key-value object allowing you to store additional information.
-       *
-       *     The key must be a string with a maximum length of **40 characters**.
-       *     The value must be either:
-       *
-       *     * A string with a maximum length of **500 characters**
-       *     * An integer
-       *     * A floating-point number
-       *     * A boolean
-       *
-       *     You can store up to **50 key-value pairs**.
-       */
-      metadata?: {
-        [key: string]: string | number | boolean
-      }
-      /**
-       * External Id
-       * @description Your identifier for the discount, used to match it.
-       */
-      external_id: string
-      /**
-       * Name
-       * @description Name of the discount. Will be displayed to the customer when the discount is applied.
-       */
-      name: string
-      /**
-       * Code
-       * @description Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
-       */
-      code?: string | null
-      /** @description For subscriptions, determines if the discount should be applied once on the first invoice, forever, or for a certain number of months determined by `duration_in_months`. */
-      duration: components['schemas']['DiscountDuration']
-      /**
-       * Duration In Months
-       * @description Number of months the discount should be applied.
-       *
-       *     Required when `duration` is `repeating`. Must be omitted otherwise.
-       *
-       *     For this to work on yearly pricing, you should multiply this by 12.
-       *     For example, to apply the discount for 2 years, set this to 24.
-       */
-      duration_in_months?: number | null
-      /**
-       * Starts At
-       * @description Optional timestamp after which the discount is redeemable.
-       */
-      starts_at?: string | null
-      /**
-       * Ends At
-       * @description Optional timestamp after which the discount is no longer redeemable.
-       */
-      ends_at?: string | null
-      /**
-       * Max Redemptions
-       * @description Optional maximum number of times the discount can be redeemed.
-       */
-      max_redemptions?: number | null
-      /**
-       * Max Redemptions Per Customer
-       * @description Optional maximum number of times the discount can be redeemed by a single customer.
-       */
-      max_redemptions_per_customer?: number | null
-      /**
-       * Products
-       * @description The products the discount applies to. Leave it empty to apply the discount to every product.
-       */
-      products?: string[]
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'percentage'
-      /**
-       * Basis Points
-       * @description Discount percentage in basis points.
-       *
-       *     A basis point is 1/100th of a percent.
-       *     For example, to create a 25.5% discount, set this to 2550.
-       */
-      basis_points: number
+      organization_id?: string | null
     }
     /** ConfigExport */
     ConfigExport: {
-      /** @description The current config, in the same shape plan and apply accept. */
+      /**
+       * Enabled
+       * @description Whether config as code is enabled for the organization. Until it is, plan and apply are refused.
+       */
+      enabled: boolean
+      /** @description The current config, in the shape plan and apply accept, without `organization_id`. */
       config: components['schemas']['ConfigExportDocument']
       /**
        * Skipped
-       * @description Meters left out of the exported config.
+       * @description Resources left out of the exported config. At most the section's config limit is listed.
        */
-      skipped: components['schemas']['ConfigSkippedMeter'][]
+      skipped: components['schemas']['ConfigSkippedResource'][]
+      /** @description The catalog version the products come from. None before the first publish. */
+      catalog: components['schemas']['ConfigExportCatalog'] | null
+    }
+    /** ConfigExportCatalog */
+    ConfigExportCatalog: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Name
+       * @description Name of the catalog.
+       */
+      name: string | null
+      /** @description `live` for the catalog new checkouts use, `draft` for unpublished changes, `archived` otherwise. */
+      status: components['schemas']['CatalogStatus']
     }
     /** ConfigExportDocument */
     ConfigExportDocument: {
+      settings: components['schemas']['ConfigSettingsRead']
       /** Meters */
-      meters: components['schemas']['ConfigExportMeter'][]
+      meters: components['schemas']['ConfigMeterRead'][]
+      /** Benefits */
+      benefits: components['schemas']['ConfigBenefitRead'][]
+      /** Products */
+      products: components['schemas']['ConfigProductRead'][]
     }
-    /** ConfigExportMeter */
-    ConfigExportMeter: {
-      metadata: components['schemas']['MetadataOutputType']
+    /** ConfigExternalIDAssignment */
+    ConfigExternalIDAssignment: {
+      /**
+       * Resource
+       * @description The type of resource.
+       * @enum {string}
+       */
+      resource: 'meter' | 'benefit' | 'product'
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of a resource without an `external_id`.
+       */
+      id: string
       /**
        * External Id
-       * @description Your identifier for the meter.
+       * @description The `external_id` to give the resource.
        */
       external_id: string
-      /**
-       * Name
-       * @description The name of the meter. Will be shown on customer's invoices and usage.
-       */
-      name: string
-      /** @description The unit of the meter. */
-      unit: components['schemas']['MeterUnit']
-      /**
-       * Custom Label
-       * @description The label for the custom unit.
-       */
-      custom_label: string | null
-      /**
-       * Custom Multiplier
-       * @description The multiplier to convert from base unit to display scale.
-       */
-      custom_multiplier: number | null
-      /** @description The filter applied on events to calculate the meter. */
-      filter: components['schemas']['Filter']
-      /**
-       * Aggregation
-       * @description The aggregation applied on the filtered events.
-       */
-      aggregation:
-        | components['schemas']['CountAggregation']
-        | components['schemas']['PropertyAggregation']
-        | components['schemas']['UniqueAggregation']
     }
     /** ConfigFieldChange */
     ConfigFieldChange: {
@@ -16630,6 +16802,19 @@ export interface components {
        * @description Value after applying the config.
        */
       after: unknown | null
+    }
+    /** ConfigInit */
+    ConfigInit: {
+      /**
+       * Organization Id
+       * @description The ID of the organization to opt in. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /**
+       * External Ids
+       * @description External IDs to give existing resources that don't have one yet, so the config can manage them.
+       */
+      external_ids?: components['schemas']['ConfigExternalIDAssignment'][]
     }
     /** ConfigInvalid */
     ConfigInvalid: {
@@ -16675,14 +16860,14 @@ export interface components {
      */
     ConfigIssueType:
       | 'currency_changed'
-      | 'discount_locked'
-      | 'duplicate_code'
+      | 'deprecated_reference'
       | 'duplicate_external_id'
-      | 'duration_changed'
       | 'interval_changed'
+      | 'meter_cycle_unused'
       | 'meter_locked'
       | 'missing_currency'
       | 'not_supported'
+      | 'removed_in_use'
       | 'type_changed'
       | 'unknown_event'
       | 'unknown_reference'
@@ -16736,6 +16921,12 @@ export interface components {
         | components['schemas']['PropertyAggregation']
         | components['schemas']['UniqueAggregation']
       /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
+       * @default false
+       */
+      deprecated: boolean | null
+      /**
        * External Id
        * @description Your identifier for the meter. Used to match the config entry with an existing meter.
        */
@@ -16752,10 +16943,37 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ConfigMeterRead */
+    ConfigMeterRead: {
+      /** External Id */
+      external_id: string
+      /** Name */
+      name: string
+      unit: components['schemas']['MeterUnit']
+      /** Custom Label */
+      custom_label: string | null
+      /** Custom Multiplier */
+      custom_multiplier: number | null
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /** Aggregation */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      metadata: components['schemas']['MetadataOutputType']
+    }
     /** ConfigPlan */
     ConfigPlan: {
       /** Changes */
       changes: components['schemas']['ConfigChange'][]
+      /**
+       * Removed
+       * @description Resources that applying leaves out of the next catalog.
+       */
+      removed: components['schemas']['ConfigRemoval'][]
+      /** @description The catalog that applying publishes, if any. */
+      catalog: components['schemas']['ConfigCatalogPlan'] | null
       /** @description Change for `settings`, if in the config. */
       settings: components['schemas']['ConfigSettingsChange'] | null
       /** Issues */
@@ -16788,6 +17006,12 @@ export interface components {
         [key: string]: string | number | boolean
       }
       /**
+       * Deprecated
+       * @description Keeps the resource for customers who still use it, but active products and benefits can't reference it. Leaving it empty is the same as `false`.
+       * @default false
+       */
+      deprecated: boolean | null
+      /**
        * External Id
        * @description Your identifier for the product, used to match it.
        */
@@ -16814,6 +17038,13 @@ export interface components {
        * @description Billing cycle length in intervals. Defaults to 1.
        */
       recurring_interval_count?: number | null
+      /** @description Optional meter cycle, independent of the billing interval. Overage settlement, meter resets and meter-credit grants run on it. It must evenly divide the billing interval. Leave it empty to follow the billing interval. Can't be updated once the product is applied. Leaving it empty on an existing product keeps its current cycle. */
+      meter_interval?: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Meter cycle length in intervals. Defaults to 1.
+       */
+      meter_interval_count?: number | null
       /**
        * Prices
        * @description The prices of the product.
@@ -16862,6 +17093,18 @@ export interface components {
        */
       price_amount: number
     }
+    /** ConfigProductPriceFixedRead */
+    ConfigProductPriceFixedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'fixed'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Price Amount */
+      price_amount: number
+    }
     /** ConfigProductPriceMeteredTiers */
     ConfigProductPriceMeteredTiers: {
       /**
@@ -16887,6 +17130,21 @@ export interface components {
        * @description Optional maximum charge in cents.
        */
       cap_amount?: number | null
+    }
+    /** ConfigProductPriceMeteredTiersRead */
+    ConfigProductPriceMeteredTiersRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_tiers'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Meter */
+      meter: string
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Cap Amount */
+      cap_amount: number | null
     }
     /** ConfigProductPriceMeteredUnit */
     ConfigProductPriceMeteredUnit: {
@@ -16918,6 +17176,28 @@ export interface components {
        */
       cap_amount?: number | null
     }
+    /** ConfigProductPriceMeteredUnitRead */
+    ConfigProductPriceMeteredUnitRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'metered_unit'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      /** Meter */
+      meter: string
+      /** Unit Amount */
+      unit_amount: string
+      /** Cap Amount */
+      cap_amount: number | null
+    }
+    ConfigProductPriceRead:
+      | components['schemas']['ConfigProductPriceFixedRead']
+      | components['schemas']['ConfigProductPriceMeteredUnitRead']
+      | components['schemas']['ConfigProductPriceSeatBasedRead']
+      | components['schemas']['ConfigProductPriceMeteredTiersRead']
+      | components['schemas']['ConfigProductPriceUnitBasedRead']
     /** ConfigProductPriceSeatBased */
     ConfigProductPriceSeatBased: {
       /**
@@ -16939,6 +17219,19 @@ export interface components {
        * @description The minimum purchasable seat quantity (inclusive).
        * @default 1
        */
+      minimum_units: number
+    }
+    /** ConfigProductPriceSeatBasedRead */
+    ConfigProductPriceSeatBasedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'seat_based'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Minimum Units */
       minimum_units: number
     }
     /** ConfigProductPriceUnitBased */
@@ -16973,11 +17266,114 @@ export interface components {
         }
       } | null
     }
+    /** ConfigProductPriceUnitBasedRead */
+    ConfigProductPriceUnitBasedRead: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      amount_type: 'unit_based'
+      price_currency: components['schemas']['PresentmentCurrency']
+      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
+      tiers: components['schemas']['ConfigTiersRead']
+      /** Minimum Units */
+      minimum_units: number
+      /** Unit Label */
+      unit_label: {
+        [key: string]: {
+          [key: string]: string
+        }
+      } | null
+    }
+    /** ConfigProductRead */
+    ConfigProductRead: {
+      /** External Id */
+      external_id: string
+      /** Name */
+      name: string
+      /** Description */
+      description: string | null
+      visibility: components['schemas']['ProductVisibility']
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /** Recurring Interval Count */
+      recurring_interval_count: number | null
+      trial_interval: components['schemas']['TrialInterval'] | null
+      /** Trial Interval Count */
+      trial_interval_count: number | null
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /** Meter Interval Count */
+      meter_interval_count: number | null
+      /** Prices */
+      prices: components['schemas']['ConfigProductPriceRead'][]
+      /** Benefits */
+      benefits: string[]
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * Deprecated
+       * @description `true` for products that are no longer in the catalog but still have customers.
+       */
+      deprecated: true | null
+    }
+    /** ConfigPrune */
+    ConfigPrune: {
+      /**
+       * Entries
+       * @description Every deprecated resource in the config. Ones not in use and not referenced can be removed from the config.
+       */
+      entries: components['schemas']['ConfigPruneEntry'][]
+    }
+    /** ConfigPruneEntry */
+    ConfigPruneEntry: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /**
+       * Customers Count
+       * @description Number of customers still using the resource: subscribers for a product, customers granted a benefit, from a subscription or an order, and subscribers or credit holders for a meter.
+       */
+      customers_count: number
+      /**
+       * Referenced By
+       * @description The products and benefits staying in the config that reference the resource.
+       */
+      referenced_by: components['schemas']['ConfigPruneReference'][]
+    }
+    /** ConfigPruneReference */
+    ConfigPruneReference: {
+      /** @description The type of the referencing resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The referencing resource's `external_id`.
+       */
+      external_id: string
+    }
+    /** ConfigRemoval */
+    ConfigRemoval: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * External Id
+       * @description The resource's `external_id`.
+       */
+      external_id: string
+      /** @description `missing` when the config doesn't list the resource, `deprecated` when it's marked deprecated. */
+      reason: components['schemas']['ConfigRemovalReason']
+    }
+    /**
+     * ConfigRemovalReason
+     * @enum {string}
+     */
+    ConfigRemovalReason: 'missing' | 'deprecated'
     /**
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'discount' | 'webhook'
+    ConfigResource: 'meter' | 'benefit' | 'product' | 'webhook'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
@@ -17012,28 +17408,19 @@ export interface components {
       /** @description The organization's default tax behavior, used by prices without their own. Left untouched when omitted. */
       tax?: components['schemas']['TaxBehaviorOption'] | null
     }
+    /** ConfigSettingsPaymentsRead */
+    ConfigSettingsPaymentsRead: {
+      currency: components['schemas']['PresentmentCurrency']
+      tax: components['schemas']['TaxBehaviorOption']
+    }
+    /** ConfigSettingsRead */
+    ConfigSettingsRead: {
+      payments: components['schemas']['ConfigSettingsPaymentsRead']
+    }
     /** ConfigSettingsResult */
     ConfigSettingsResult: {
       /** @description What applying the config does. */
       action: components['schemas']['ConfigAction']
-    }
-    /** ConfigSkippedMeter */
-    ConfigSkippedMeter: {
-      /** @description The type of resource. */
-      resource: components['schemas']['ConfigResource']
-      /**
-       * Id
-       * Format: uuid4
-       * @description The meter ID.
-       */
-      id: string
-      /**
-       * Name
-       * @description The meter name.
-       */
-      name: string
-      /** @description Why the meter isn't in the exported config. */
-      reason: components['schemas']['ConfigSkippedReason']
     }
     /**
      * ConfigSkippedReason
@@ -17044,6 +17431,55 @@ export interface components {
       | 'archived'
       | 'invalid'
       | 'over_limit'
+    /** ConfigSkippedResource */
+    ConfigSkippedResource: {
+      /** @description The type of resource. */
+      resource: components['schemas']['ConfigResource']
+      /**
+       * Id
+       * Format: uuid4
+       * @description The resource ID.
+       */
+      id: string
+      /**
+       * Name
+       * @description The resource name.
+       */
+      name: string
+      /** @description Why the resource isn't in the exported config. */
+      reason: components['schemas']['ConfigSkippedReason']
+      /** @description The billing interval of a skipped product. None for one-time products and other resources. */
+      recurring_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Recurring Interval Count
+       * @description The number of intervals between charges of a skipped product.
+       */
+      recurring_interval_count: number | null
+    }
+    /** ConfigTierRead */
+    ConfigTierRead: {
+      /** Bound */
+      bound: number | null
+      /** Unit Amount */
+      unit_amount: string
+    }
+    /** ConfigTiersRead */
+    ConfigTiersRead: {
+      type: components['schemas']['TierType']
+      /** Tiers */
+      tiers: components['schemas']['ConfigTierRead'][]
+    }
+    /** ConfigUnsupportedResources */
+    ConfigUnsupportedResources: {
+      /**
+       * Error
+       * @example ConfigUnsupportedResources
+       * @constant
+       */
+      error: 'ConfigUnsupportedResources'
+      /** Detail */
+      detail: string
+    }
     /** ConfigWebhookConflict */
     ConfigWebhookConflict: {
       /**
@@ -17082,6 +17518,79 @@ export interface components {
        * @enum {string}
        */
       api_version: '2026-04' | '2026-10' | '2027-01'
+    }
+    /** ConfigurationOutgoingMessagePayload */
+    ConfigurationOutgoingMessagePayload: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Reducers */
+      reducers: components['schemas']['ConfigurationReducer'][]
+    }
+    /** ConfigurationReducer */
+    ConfigurationReducer: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      kind: components['schemas']['ReducerKind']
+      /** @description The filter to apply on events that'll be used to calculate the meter. */
+      filter: components['schemas']['Filter']
+      /** Aggregation */
+      aggregation:
+        | components['schemas']['CountAggregation']
+        | components['schemas']['PropertyAggregation']
+        | components['schemas']['UniqueAggregation']
+      /** Meter Ids */
+      meter_ids: string[]
+    }
+    /** ConfirmIncomingMessageCustomerPayload */
+    ConfirmIncomingMessageCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
+    /** ConfirmIncomingMessageExternalCustomerPayload */
+    ConfirmIncomingMessageExternalCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    /** ConfirmedOutgoingMessagePayload */
+    ConfirmedOutgoingMessagePayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      bucket_start: components['schemas']['EpochMicroseconds-Output']
+      /** Ids */
+      ids: string[]
+      snapshot: components['schemas']['MeterUsageOutgoingMessagePayload']
     }
     /** CostMetadata */
     'CostMetadata-Input': {
@@ -18893,29 +19402,6 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
-    /**
-     * CustomerCardBlock
-     * @description A single customer's identity header, above their orders/subscriptions.
-     */
-    CustomerCardBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'customer_card'
-      /** Email */
-      email: string
-      /** Name */
-      name: string | null
-      /** Avatar Url */
-      avatar_url: string | null
-      /**
-       * Created At
-       * Format: date-time
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-    }
     CustomerCreate:
       | components['schemas']['CustomerIndividualCreate']
       | components['schemas']['CustomerTeamCreate']
@@ -19458,6 +19944,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** CustomerMeterCreditNotReversible */
+    CustomerMeterCreditNotReversible: {
+      /**
+       * Error
+       * @example CustomerMeterCreditNotReversible
+       * @constant
+       */
+      error: 'CustomerMeterCreditNotReversible'
+      /** Detail */
+      detail: string
+    }
     /**
      * CustomerMeterCreditsExternalIDCreate
      * @description Schema to manually grant credits on a customer meter using external IDs.
@@ -19874,10 +20371,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -20009,9 +20503,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.
@@ -20546,10 +21042,7 @@ export interface components {
        * Prices
        * @description List of available prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -20787,10 +21280,13 @@ export interface components {
       customer_id: string
       customer: components['schemas']['Customer']
     }
-    /** CustomerSessionCodeAuthenticateRequest */
-    CustomerSessionCodeAuthenticateRequest: {
-      /** Code */
-      code: string
+    /** CustomerSessionAuthenticationStart */
+    CustomerSessionAuthenticationStart: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
     }
     /** CustomerSessionCodeAuthenticateResponse */
     CustomerSessionCodeAuthenticateResponse: {
@@ -20807,24 +21303,6 @@ export interface components {
       error: 'CustomerSessionCodeInvalidOrExpired'
       /** Detail */
       detail: string
-    }
-    /** CustomerSessionCodeRequest */
-    CustomerSessionCodeRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /**
-       * Customer Id
-       * @description Optional customer ID for disambiguation when multiple customers share the same email.
-       */
-      customer_id?: string | null
     }
     /**
      * CustomerSessionCustomerExternalIDCreate
@@ -20880,6 +21358,26 @@ export interface components {
        * @description ID of the customer to create a session for.
        */
       customer_id: string
+    }
+    /** CustomerSessionEmailOTPRequest */
+    CustomerSessionEmailOTPRequest: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string
+      /**
+       * Customer Id
+       * @description Optional customer ID for disambiguation when multiple customers share the same email.
+       */
+      customer_id?: string | null
+      /** Cf-Turnstile-Response */
+      'cf-turnstile-response': string
+    }
+    /** CustomerSessionEmailOTPVerify */
+    CustomerSessionEmailOTPVerify: {
+      /** Code */
+      code: string
     }
     /**
      * CustomerSortProperty
@@ -21253,10 +21751,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
        * @example 2025-01-03T13:37:00Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.
@@ -21548,9 +22047,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.
@@ -21620,10 +22121,7 @@ export interface components {
        * Prices
        * @description List of enabled prices for the subscription.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Meters
        * @description List of meters associated with the subscription.
@@ -21853,10 +22351,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -22341,44 +22836,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * DataTableBlock
-     * @description Tabular entities (orders, subscriptions, customers, ...).
-     */
-    DataTableBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'data_table'
-      /**
-       * Entity
-       * @description What the rows are, e.g. `subscriptions`.
-       */
-      entity: string
-      /**
-       * Title
-       * @description Heading rendered above the table.
-       */
-      title: string | null
-      /** Columns */
-      columns: components['schemas']['DataTableColumn'][]
-      /** Rows */
-      rows: {
-        [key: string]: string | number | null
-      }[]
-      /** Total Count */
-      total_count: number
-    }
-    /** DataTableColumn */
-    DataTableColumn: {
-      /** Key */
-      key: string
-      /** Label */
-      label: string
-      /** @default text */
-      format: components['schemas']['ColumnFormat']
-    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -22498,19 +22955,12 @@ export interface components {
        */
       duration_in_months?: number | null
       /**
-       * Amount
-       * @deprecated
+       * Amounts
+       * @description Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies.
        */
-      amount?: number | null
-      /**
-       * @deprecated
-       * @default usd
-       */
-      currency: components['schemas']['PresentmentCurrency'] | null
-      /** Amounts */
-      amounts?: {
+      amounts: {
         [key: string]: number
-      } | null
+      }
     }
     /**
      * DiscountFixedOnceForeverDuration
@@ -22519,18 +22969,6 @@ export interface components {
     DiscountFixedOnceForeverDuration: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22616,18 +23054,6 @@ export interface components {
     DiscountFixedOnceForeverDurationBase: {
       duration: components['schemas']['DiscountDuration']
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -22718,18 +23144,6 @@ export interface components {
       duration_in_months: number
       type: components['schemas']['DiscountType']
       /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
-      /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
        * @example {
@@ -22816,18 +23230,6 @@ export interface components {
       /** Duration In Months */
       duration_in_months: number
       type: components['schemas']['DiscountType']
-      /**
-       * Amount
-       * @deprecated
-       * @example 1000
-       */
-      amount: number
-      /**
-       * Currency
-       * @deprecated
-       * @example usd
-       */
-      currency: string
       /**
        * Amounts
        * @description Map of currency to fixed amount to discount from the total.
@@ -23489,13 +23891,6 @@ export interface components {
       /** Duration In Months */
       duration_in_months?: number | null
       type?: components['schemas']['DiscountType'] | null
-      /**
-       * Amount
-       * @deprecated
-       */
-      amount?: number | null
-      /** @deprecated */
-      currency?: components['schemas']['PresentmentCurrency'] | null
       /** Amounts */
       amounts?: {
         [key: string]: number
@@ -23913,36 +24308,9 @@ export interface components {
       /** Return To */
       return_to?: string | null
     }
-    /**
-     * EntityListBlock
-     * @description A few entities as a compact list; same shape as the table so the
-     *     client formats values (currency, dates) identically in both.
-     */
-    EntityListBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'entity_list'
-      /**
-       * Entity
-       * @description What the items are, e.g. `orders`.
-       */
-      entity: string
-      /**
-       * Title
-       * @description Heading rendered above the list.
-       */
-      title: string | null
-      /** Columns */
-      columns: components['schemas']['DataTableColumn'][]
-      /** Rows */
-      rows: {
-        [key: string]: string | number | null
-      }[]
-      /** Total Count */
-      total_count: number
-    }
+    /** Format: date-time */
+    'EpochMicroseconds-Input': string
+    'EpochMicroseconds-Output': number
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
@@ -24054,6 +24422,41 @@ export interface components {
        * @description ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B.
        */
       external_member_id?: string | null
+    }
+    /** EventHistogram */
+    EventHistogram: {
+      /**
+       * Interval Seconds
+       * @description Length of each bucket in seconds.
+       */
+      interval_seconds: number
+      /**
+       * Buckets
+       * @description Consecutive buckets covering the requested range.
+       */
+      buckets: components['schemas']['EventHistogramBucket'][]
+    }
+    /** EventHistogramBucket */
+    EventHistogramBucket: {
+      /**
+       * Start
+       * Format: date-time
+       * @description Bucket start (inclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      start: string
+      /**
+       * End
+       * Format: date-time
+       * @description Bucket end (exclusive).
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      end: string
+      /**
+       * Count
+       * @description Number of matching events in the bucket.
+       */
+      count: number
     }
     /** EventMetadataInput */
     EventMetadataInput: {
@@ -24842,125 +25245,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * Insight
-     * @description A computed, narrated reading of the business with a drill-down.
-     */
-    Insight: {
-      /**
-       * Id
-       * @description Deterministic insight key (`detector_id:organization_id:period_bucket`). Stable across recomputes so dismissals and feedback re-attach.
-       */
-      id: string
-      /**
-       * Detector Id
-       * @description The detector that produced this insight.
-       */
-      detector_id: string
-      category: components['schemas']['InsightCategory']
-      /**
-       * Category Label
-       * @description Visible label next to the category dot.
-       */
-      category_label: string
-      /** @description How much the merchant should care; the feed sorts on this first. */
-      severity: components['schemas']['InsightSeverity']
-      /** Title */
-      title: string
-      /** Body */
-      body: string
-      /**
-       * Why
-       * @description Explanation surfaced via the 'Why you're seeing this' link.
-       */
-      why?: string | null
-      confidence: components['schemas']['ConfidenceLevel']
-      /** Primary Action */
-      primary_action?:
-        | (
-            | components['schemas']['ViewMetricAction']
-            | components['schemas']['ViewCostsAction']
-            | components['schemas']['AdjustPriceAction']
-            | components['schemas']['AddCurrencyAction']
-          )
-        | null
-      /**
-       * Suggested Prompt
-       * @description A natural follow-up question this finding invites, offered to the merchant as a one-tap prompt for the assistant. None when the finding has no obvious next question.
-       */
-      suggested_prompt: string | null
-      /**
-       * Drivers
-       * @description Top contributors to the headline change.
-       */
-      drivers?: components['schemas']['InsightDriver'][]
-    }
-    /**
-     * InsightCardsBlock
-     * @description Compass insights, rendered with the same card as the feed.
-     */
-    InsightCardsBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'insight_cards'
-      /** Insights */
-      insights: components['schemas']['Insight'][]
-    }
-    /**
-     * InsightCategory
-     * @description Buckets an insight by which aspect of the business it speaks to.
-     * @enum {string}
-     */
-    InsightCategory:
-      | 'revenue'
-      | 'retention'
-      | 'growth'
-      | 'risk'
-      | 'cost'
-      | 'product'
-    /**
-     * InsightDriver
-     * @description One contributor to the headline change.
-     *
-     *     Decomposition is what makes an insight *explain* rather than *announce* — e.g.
-     *     "MRR grew 12%, ~70% of it from Pro upgrades". Populated by a grouped query; the
-     *     MRR scaffold leaves this empty until a dedicated Tinybird breakdown pipe lands.
-     */
-    InsightDriver: {
-      /**
-       * Dimension
-       * @description What the drivers are grouped by, e.g. `product`.
-       */
-      dimension: string
-      /**
-       * Label
-       * @description Human-readable name of this driver.
-       */
-      label: string
-      /**
-       * Contribution Pct
-       * @description Share of the headline change attributable to this driver (0-1).
-       */
-      contribution_pct: number
-      /**
-       * Value
-       * @description This driver's contribution in the metric's unit.
-       */
-      value: number
-    }
-    /**
-     * InsightSeverity
-     * @description How much the merchant should care, assigned per insight by its detector.
-     *
-     *     This is a property of what was *found*, not of the detector: the same MRR
-     *     detector emits `warning` when revenue falls and `info` when it grows. The
-     *     feed is ordered by severity first, so the most consequential reading always
-     *     leads.
-     * @enum {string}
-     */
-    InsightSeverity: 'critical' | 'warning' | 'opportunity' | 'info'
     /** InsufficientBalance */
     InsufficientBalance: {
       /**
@@ -25191,164 +25475,6 @@ export interface components {
       error: 'LastSSOConnectionRequired'
       /** Detail */
       detail: string
-    }
-    /**
-     * LegacyOrganizationStatus
-     * @description Legacy organization status values kept for backward compatibility in schemas
-     *     using OrganizationPublicBase.
-     * @enum {string}
-     */
-    LegacyOrganizationStatus: 'created' | 'under_review' | 'denied' | 'active'
-    LegacyRecurringProductPrice:
-      | components['schemas']['LegacyRecurringProductPriceFixed']
-      | components['schemas']['LegacyRecurringProductPriceCustom']
-    /**
-     * LegacyRecurringProductPriceCustom
-     * @description A pay-what-you-want recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceCustom: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'custom'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['RecurringInterval']
-      /**
-       * Minimum Amount
-       * @description The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'.
-       */
-      minimum_amount: number
-      /**
-       * Maximum Amount
-       * @description The maximum amount the customer can pay.
-       */
-      maximum_amount: number | null
-      /**
-       * Preset Amount
-       * @description The initial amount shown to the customer.
-       */
-      preset_amount: number | null
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
-    }
-    /**
-     * LegacyRecurringProductPriceFixed
-     * @description A recurring price for a product, i.e. a subscription.
-     *
-     *     **Deprecated**: The recurring interval should be set on the product itself.
-     */
-    LegacyRecurringProductPriceFixed: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the price.
-       */
-      id: string
-      /** @description The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session. */
-      source: components['schemas']['ProductPriceSource']
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      amount_type: 'fixed'
-      /**
-       * Price Currency
-       * @description The currency in which the customer will be charged.
-       */
-      price_currency: string
-      /** @description The tax behavior of the price. If null, it defaults to the organization's default tax behavior. */
-      tax_behavior: components['schemas']['TaxBehaviorOption'] | null
-      /**
-       * Is Archived
-       * @description Whether the price is archived and no longer available.
-       */
-      is_archived: boolean
-      /**
-       * Product Id
-       * Format: uuid4
-       * @description The ID of the product owning the price.
-       */
-      product_id: string
-      /**
-       * Type
-       * @description The type of the price.
-       * @constant
-       */
-      type: 'recurring'
-      /** @description The recurring interval of the price. */
-      recurring_interval: components['schemas']['RecurringInterval']
-      /**
-       * Price Amount
-       * @description The price in cents.
-       */
-      price_amount: number
-      /**
-       * Legacy
-       * @constant
-       */
-      readonly legacy: true
     }
     /** LicenseKeyActivate */
     LicenseKeyActivate: {
@@ -25747,20 +25873,6 @@ export interface components {
       /** Expires At */
       expires_at?: string | null
     }
-    /** LicenseKeyUser */
-    LicenseKeyUser: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Email */
-      email?: string | null
-      /** Public Name */
-      public_name: string
-      /** Avatar Url */
-      avatar_url?: string | null
-    }
     /** LicenseKeyValidate */
     LicenseKeyValidate: {
       /** Key */
@@ -25871,6 +25983,14 @@ export interface components {
        */
       items: components['schemas']['CustomerStat'][]
     }
+    /** ListEventTypeStatistics */
+    ListEventTypeStatistics: {
+      /**
+       * Items
+       * @description Event types with the number of matching events, most frequent first.
+       */
+      items: components['schemas']['EventTypeWithStats'][]
+    }
     /**
      * ListPropertyGroupStats
      * @description Event statistics grouped by a metadata property.
@@ -25906,6 +26026,12 @@ export interface components {
       items: components['schemas']['Benefit'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[Catalog] */
+    ListResource_Catalog_: {
+      /** Items */
+      items: components['schemas']['Catalog'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[CheckoutLink] */
     ListResource_CheckoutLink_: {
       /** Items */
@@ -25916,18 +26042,6 @@ export interface components {
     ListResource_Checkout_: {
       /** Items */
       items: components['schemas']['Checkout'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[CompassThreadMessageSchema] */
-    ListResource_CompassThreadMessageSchema_: {
-      /** Items */
-      items: components['schemas']['CompassThreadMessageSchema'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[CompassThreadSchema] */
-    ListResource_CompassThreadSchema_: {
-      /** Items */
-      items: components['schemas']['CompassThreadSchema'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CustomField] */
@@ -26092,6 +26206,12 @@ export interface components {
       items: components['schemas']['OrganizationBenefitGrant'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[OrganizationDomain] */
+    ListResource_OrganizationDomain_: {
+      /** Items */
+      items: components['schemas']['OrganizationDomain'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[OrganizationMember] */
     ListResource_OrganizationMember_: {
       /** Items */
@@ -26108,12 +26228,6 @@ export interface components {
     ListResource_OrganizationSSOConnection_: {
       /** Items */
       items: components['schemas']['OrganizationSSOConnection'][]
-      pagination: components['schemas']['Pagination']
-    }
-    /** ListResource[OrganizationSSODomain] */
-    ListResource_OrganizationSSODomain_: {
-      /** Items */
-      items: components['schemas']['OrganizationSSODomain'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Organization] */
@@ -26304,6 +26418,13 @@ export interface components {
       organization_name: string
       /** Organization Slug */
       organization_slug?: string | null
+      /**
+       * Threat Names
+       * @default []
+       */
+      threat_names: string[]
+      /** Benefits Url */
+      readonly benefits_url: string | null
     }
     /** MaintainerNewPaidSubscriptionNotification */
     MaintainerNewPaidSubscriptionNotification: {
@@ -27213,8 +27334,8 @@ export interface components {
       | 'create_catalog'
       | 'copy_cards'
       | 'activate_subscriptions'
-      | 'cleanup'
       | 'completed'
+      | 'closed'
     /** MerchantMigrationTaxBehaviorUpdateResult */
     MerchantMigrationTaxBehaviorUpdateResult: {
       /**
@@ -27623,6 +27744,61 @@ export interface components {
        */
       is_archived?: boolean | null
     }
+    /** MeterUsageIncomingMessageCustomerPayload */
+    MeterUsageIncomingMessageCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
+    /** MeterUsageIncomingMessageExternalCustomerPayload */
+    MeterUsageIncomingMessageExternalCustomerPayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    MeterUsageIncomingMessagePayload:
+      | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
+      | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
+    /** MeterUsageIncomingPayload */
+    MeterUsageIncomingPayload: {
+      /** Identities */
+      identities: components['schemas']['MeterUsageIncomingMessagePayload'][]
+    }
+    /** MeterUsageOutgoingMessagePayload */
+    MeterUsageOutgoingMessagePayload: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      /** Customer Exists */
+      customer_exists: boolean
+      version: components['schemas']['EpochMicroseconds-Output']
+      cold_until: components['schemas']['EpochMicroseconds-Output']
+      /** Count */
+      count: number
+      /** Sum */
+      sum: number
+      /** Min */
+      min: number | null
+      /** Max */
+      max: number | null
+    }
     /**
      * Metric
      * @description Information about a metric.
@@ -27640,45 +27816,6 @@ export interface components {
       display_name: string
       /** @description Type of the metric, useful to know the unit or format of the value. */
       type: components['schemas']['MetricType']
-    }
-    /**
-     * MetricChartBlock
-     * @description A single metric's series over the requested window.
-     */
-    MetricChartBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'metric_chart'
-      /**
-       * Metric
-       * @description Metric slug, e.g. `monthly_recurring_revenue`.
-       */
-      metric: string
-      /**
-       * Label
-       * @description Human-readable metric name.
-       */
-      label: string
-      /**
-       * Unit
-       * @description Metric unit type, e.g. `currency` or `scalar`.
-       */
-      unit: string
-      /** Points */
-      points: components['schemas']['MetricChartPoint'][]
-    }
-    /** MetricChartPoint */
-    MetricChartPoint: {
-      /**
-       * Timestamp
-       * Format: date-time
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      timestamp: string
-      /** Value */
-      value: number
     }
     /**
      * MetricDashboardCreate
@@ -28151,17 +28288,6 @@ export interface components {
        * @constant
        */
       error: 'MissingInvoiceBillingDetails'
-      /** Detail */
-      detail: string
-    }
-    /** MissingPaymentMethodError */
-    MissingPaymentMethodError: {
-      /**
-       * Error
-       * @example MissingPaymentMethodError
-       * @constant
-       */
-      error: 'MissingPaymentMethodError'
       /** Detail */
       detail: string
     }
@@ -29276,6 +29402,16 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
     }
     /**
      * OrderReceipt
@@ -29501,9 +29637,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.
@@ -29666,22 +29804,6 @@ export interface components {
       billing_name?: string | null
       /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
       billing_address?: components['schemas']['AddressInput'] | null
-    }
-    /** OrderUser */
-    OrderUser: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Email */
-      email?: string | null
-      /** Public Name */
-      public_name: string
-      /** Avatar Url */
-      avatar_url?: string | null
-      /** Github Username */
-      github_username?: string | null
     }
     /**
      * OrderVoidedEvent
@@ -30484,7 +30606,7 @@ export interface components {
        */
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetails'] | null
+      details?: components['schemas']['OrganizationDetailsInput'] | null
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -30835,11 +30957,36 @@ export interface components {
     /** OrganizationDetails */
     OrganizationDetails: {
       /**
-       * About
-       * @deprecated
-       * @description Brief information about you and your business.
+       * Product Description
+       * @description Description of digital products being sold.
        */
-      about?: string | null
+      product_description?: string | null
+      /**
+       * Selling Categories
+       * @description Categories of products being sold.
+       */
+      selling_categories?: string[]
+      /**
+       * Pricing Models
+       * @description Pricing models used by the organization.
+       */
+      pricing_models?: string[]
+      /**
+       * Switching
+       * @description Switching from another platform?
+       * @default false
+       */
+      switching: boolean
+      /**
+       * Switching From
+       * @description Which platform the organization is migrating from.
+       */
+      switching_from?:
+        | ('paddle' | 'lemon_squeezy' | 'gumroad' | 'stripe' | 'other')
+        | null
+    }
+    /** OrganizationDetailsInput */
+    OrganizationDetailsInput: {
       /**
        * Product Description
        * @description Description of digital products being sold.
@@ -30856,24 +31003,6 @@ export interface components {
        */
       pricing_models?: string[]
       /**
-       * Intended Use
-       * @deprecated
-       * @description How the organization will integrate and use Polar.
-       */
-      intended_use?: string | null
-      /**
-       * Customer Acquisition
-       * @deprecated
-       * @description Main customer acquisition channels.
-       */
-      customer_acquisition?: string[]
-      /**
-       * Future Annual Revenue
-       * @deprecated
-       * @description Estimated revenue in the next 12 months
-       */
-      future_annual_revenue?: number | null
-      /**
        * Switching
        * @description Switching from another platform?
        * @default false
@@ -30886,12 +31015,6 @@ export interface components {
       switching_from?:
         | ('paddle' | 'lemon_squeezy' | 'gumroad' | 'stripe' | 'other')
         | null
-      /**
-       * Previous Annual Revenue
-       * @deprecated
-       * @description Revenue from last year if applicable.
-       */
-      previous_annual_revenue?: number | null
     }
     /**
      * OrganizationDisputeSettings
@@ -30908,6 +31031,89 @@ export interface components {
        * @description Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
        */
       auto_accept_below_amount?: number | null
+    }
+    /** OrganizationDomain */
+    OrganizationDomain: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Domain
+       * @description Domain name.
+       */
+      domain: string
+      /**
+       * Verified At
+       * @description When Polar verified the domain. `null` while pending.
+       */
+      verified_at: string | null
+      /**
+       * Verification Record Name
+       * @description Name of the DNS TXT record that proves ownership.
+       */
+      verification_record_name: string
+      /**
+       * Verification Record Value
+       * @description Value of the DNS TXT record that proves ownership.
+       */
+      verification_record_value: string | null
+    }
+    /** OrganizationDomainAlreadyExists */
+    OrganizationDomainAlreadyExists: {
+      /**
+       * Error
+       * @example OrganizationDomainAlreadyExists
+       * @constant
+       */
+      error: 'OrganizationDomainAlreadyExists'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainCreate */
+    OrganizationDomainCreate: {
+      /**
+       * Domain
+       * @description Domain name, without scheme or path.
+       * @example example.com
+       */
+      domain: string
+    }
+    /** OrganizationDomainVerificationFailed */
+    OrganizationDomainVerificationFailed: {
+      /**
+       * Error
+       * @example OrganizationDomainVerificationFailed
+       * @constant
+       */
+      error: 'OrganizationDomainVerificationFailed'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationDomainVerifiedElsewhere */
+    OrganizationDomainVerifiedElsewhere: {
+      /**
+       * Error
+       * @example OrganizationDomainVerifiedElsewhere
+       * @constant
+       */
+      error: 'OrganizationDomainVerifiedElsewhere'
+      /** Detail */
+      detail: string
     }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
@@ -30960,12 +31166,6 @@ export interface components {
        */
       off_session_charges_enabled: boolean
       /**
-       * Meter Cycling Enabled
-       * @description If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).
-       * @default false
-       */
-      meter_cycling_enabled: boolean
-      /**
        * Slack Benefit Enabled
        * @description Enables the slack shared channel benefit
        * @default false
@@ -30996,23 +31196,17 @@ export interface components {
        */
       dispute_auto_accept_enabled: boolean
       /**
-       * Compass Enabled
-       * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
-       * @default false
-       */
-      compass_enabled: boolean
-      /**
        * Merchant Migration Enabled
        * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
        * @default false
        */
       merchant_migration_enabled: boolean
       /**
-       * Agentic Payments Enabled
-       * @description If this organization accepts payments from AI agents through Stripe shared payment tokens.
+       * Staged Events Ingest Enabled
+       * @description If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.
        * @default false
        */
-      agentic_payments_enabled: boolean
+      staged_events_ingest_enabled: boolean
       /**
        * Config As Code Enabled
        * @description If this organization can manage its configuration from a declarative config document.
@@ -31625,6 +31819,11 @@ export interface components {
       product_id?: string | null
       /** Name */
       name: string
+      /**
+       * Tier
+       * @description Plan tier shared by the monthly and annual variants of the same plan. Read from the product's `tier` metadata, falling back to its name.
+       */
+      tier: string
       /** Description */
       description?: string | null
       /** Recurring Interval */
@@ -31937,39 +32136,6 @@ export interface components {
        */
       enabled?: boolean | null
     }
-    /** OrganizationSSODomain */
-    OrganizationSSODomain: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Domain
-       * @description Email domain routed to the organization's SSO.
-       */
-      domain: string
-      /**
-       * Verified At
-       * Format: date-time
-       * @description When Polar verified the domain.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      verified_at: string
-    }
     /** OrganizationSlugAvailability */
     OrganizationSlugAvailability: {
       /**
@@ -32221,7 +32387,7 @@ export interface components {
        */
       socials?: components['schemas']['OrganizationSocialLink'][] | null
       /** @description Additional, private, business details Polar needs about active organizations for compliance (KYC). */
-      details?: components['schemas']['OrganizationDetails'] | null
+      details?: components['schemas']['OrganizationDetailsInput'] | null
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -33162,17 +33328,6 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** PaymentIntentFailedError */
-    PaymentIntentFailedError: {
-      /**
-       * Error
-       * @example PaymentIntentFailedError
-       * @constant
-       */
-      error: 'PaymentIntentFailedError'
-      /** Detail */
-      detail: string
-    }
     PaymentMethod:
       | components['schemas']['CustomerPaymentMethodCard']
       | components['schemas']['CustomerPaymentMethodKrCard']
@@ -34094,6 +34249,16 @@ export interface components {
        */
       organization_id: string
       /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the product.
+       */
+      is_current: boolean
+      /**
        * External Id
        * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
        * @example ext_1337
@@ -34109,10 +34274,7 @@ export interface components {
        * Prices
        * @description List of prices for this product.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Benefits
        * @description List of benefits granted by the product.
@@ -34316,6 +34478,39 @@ export interface components {
        */
       meter_interval_count?: number | null
     }
+    /** ProductFlaggedNameAttempt */
+    ProductFlaggedNameAttempt: {
+      /**
+       * Name
+       * @description A name that showed the Acceptable Use Policy warning.
+       */
+      name: string
+      /**
+       * Category
+       * @description Category the name check returned for it.
+       */
+      category: string
+      /**
+       * Phrase
+       * @description The word-list phrase that matched, if any.
+       */
+      phrase?: string | null
+      /**
+       * Flagged At
+       * Format: date-time
+       * @description When the name check first flagged this name, from the browser.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      flagged_at: string
+    }
+    /** ProductFlaggedNameReport */
+    ProductFlaggedNameReport: {
+      /**
+       * Attempts
+       * @description Flagged names tried before create, in the order they were typed.
+       */
+      attempts: components['schemas']['ProductFlaggedNameAttempt'][]
+    }
     /**
      * ProductMediaFileCreate
      * @description Schema to create a file to be used as a product media file.
@@ -34399,6 +34594,24 @@ export interface components {
       readonly size_readable: string
       /** Public Url */
       readonly public_url: string
+    }
+    /** ProductNameCheck */
+    ProductNameCheck: {
+      /**
+       * Category
+       * @description Acceptable Use Policy category the name suggests, if any.
+       */
+      category: string | null
+      /**
+       * Phrase
+       * @description The exact phrase that matched, when a word-list rule flagged it.
+       */
+      phrase: string | null
+    }
+    /** ProductNameCheckRequest */
+    ProductNameCheckRequest: {
+      /** Name */
+      name: string
     }
     /** ProductNotDeletable */
     ProductNotDeletable: {
@@ -35308,11 +35521,6 @@ export interface components {
      */
     ProductPriceSource: 'catalog' | 'ad_hoc'
     /**
-     * ProductPriceType
-     * @enum {string}
-     */
-    ProductPriceType: 'one_time' | 'recurring'
-    /**
      * ProductPriceUnitBased
      * @description A unit-based price for a product: the buyer picks a quantity of units,
      *     pays for it up-front. On subscriptions, quantity changes are prorated.
@@ -35584,6 +35792,11 @@ export interface components {
      * @enum {string}
      */
     RecurringInterval: 'day' | 'week' | 'month' | 'year'
+    /**
+     * ReducerKind
+     * @enum {string}
+     */
+    ReducerKind: 'usage' | 'credit'
     /** Refund */
     Refund: {
       /**
@@ -35795,6 +36008,8 @@ export interface components {
       | 'service_disruption'
       | 'satisfaction_guarantee'
       | 'dispute_prevention'
+      | 'tax_refund'
+      | 'vat_reverse_charge_correction'
       | 'other'
     /**
      * RefundSortProperty
@@ -36080,6 +36295,17 @@ export interface components {
       detail: string
       /** Redirect Url */
       redirect_url: string
+    }
+    /** SSORequiresVerifiedDomain */
+    SSORequiresVerifiedDomain: {
+      /**
+       * Error
+       * @example SSORequiresVerifiedDomain
+       * @constant
+       */
+      error: 'SSORequiresVerifiedDomain'
+      /** Detail */
+      detail: string
     }
     /**
      * Scope
@@ -36804,7 +37030,6 @@ export interface components {
       | 'MX'
       | 'MD'
       | 'MN'
-      | 'MA'
       | 'NA'
       | 'NL'
       | 'NZ'
@@ -36961,9 +37186,11 @@ export interface components {
       canceled_at: string | null
       /**
        * Started At
+       * Format: date-time
        * @description The timestamp when the subscription started.
+       * @example 2026-01-01T00:00:00.000000Z
        */
-      started_at: string | null
+      started_at: string
       /**
        * Ends At
        * @description The timestamp when the subscription will end.
@@ -37051,10 +37278,7 @@ export interface components {
        * Prices
        * @description List of enabled prices for the subscription.
        */
-      prices: (
-        | components['schemas']['LegacyRecurringProductPrice']
-        | components['schemas']['ProductPrice']
-      )[]
+      prices: components['schemas']['ProductPrice'][]
       /**
        * Meters
        * @description List of meters associated with the subscription.
@@ -37147,6 +37371,83 @@ export interface components {
       old_period_end: string
       /** New Period End */
       new_period_end: string
+    }
+    /** SubscriptionBulkUpdate */
+    SubscriptionBulkUpdate: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       */
+      organization_id: string
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose subscriptions move.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product to move to.
+       */
+      target_product_id: string
+      /** @description When each subscription moves. */
+      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Subscriptions Count
+       * @description Subscriptions scheduled to move at their renewal so far.
+       */
+      subscriptions_count: number
+      /**
+       * Skipped Count
+       * @description Subscriptions that couldn't move, for example on a currency mismatch.
+       */
+      skipped_count: number
+      /**
+       * Completed At
+       * @description When every subscription was handled. `None` while running.
+       */
+      completed_at: string | null
+    }
+    /** SubscriptionBulkUpdateCreate */
+    SubscriptionBulkUpdateCreate: {
+      /**
+       * Product External Id
+       * @description `external_id` of the product whose subscriptions move, in any version.
+       */
+      product_external_id: string
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product to move to. Must be a current version.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      target_product_id: string
+      /**
+       * Proration Behavior
+       * @description When each subscription moves. Each one moves at its own renewal.
+       * @default next_period
+       * @constant
+       */
+      proration_behavior: 'next_period'
     }
     /** SubscriptionCancel */
     SubscriptionCancel: {
@@ -39292,22 +39593,6 @@ export interface components {
       /** Subscription Id */
       subscription_id: string
     }
-    /** SubscriptionUser */
-    SubscriptionUser: {
-      /**
-       * Id
-       * Format: uuid4
-       */
-      id: string
-      /** Email */
-      email?: string | null
-      /** Public Name */
-      public_name: string
-      /** Avatar Url */
-      avatar_url?: string | null
-      /** Github Username */
-      github_username?: string | null
-    }
     /** SupportCase */
     SupportCase: {
       /**
@@ -39776,19 +40061,6 @@ export interface components {
       jurisdiction_count: number
     }
     /**
-     * TextBlock
-     * @description Plain narrated text.
-     */
-    TextBlock: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'text'
-      /** Text */
-      text: string
-    }
-    /**
      * Tier
      * @description A per-unit rate up to and including `bound`.
      *
@@ -40189,10 +40461,6 @@ export interface components {
       currency: string
       /** Amount */
       amount: number
-      /** Account Currency */
-      account_currency: string
-      /** Account Amount */
-      account_amount: number
     }
     /** TransactionsHeldBalance */
     TransactionsHeldBalance: {
@@ -40200,10 +40468,6 @@ export interface components {
       currency: string
       /** Amount */
       amount: number
-      /** Account Currency */
-      account_currency: string
-      /** Account Amount */
-      account_amount: number
       /**
        * Next Release At
        * @description When the next chunk of the held balance becomes available for payout.
@@ -40356,6 +40620,17 @@ export interface components {
        * @constant
        */
       error: 'UpdateSubscriptionUnitsNotAllowed'
+      /** Detail */
+      detail: string
+    }
+    /** UserCannotAuthenticate */
+    UserCannotAuthenticate: {
+      /**
+       * Error
+       * @example UserCannotAuthenticate
+       * @constant
+       */
+      error: 'UserCannotAuthenticate'
       /** Detail */
       detail: string
     }
@@ -40974,53 +41249,6 @@ export interface components {
       }
     }
     /**
-     * ViewCostsAction
-     * @description A drill-down to the cost analytics, where per-trace anomalies live.
-     *
-     *     Unlike `view_metric`, costs are not a single metric slug: they have their
-     *     own analytics with a p99 anomaly breakdown. When `event_id` is set, the
-     *     client deep-links to that specific outlier event's span; otherwise it lands
-     *     on the costs overview. The client owns the routing either way.
-     */
-    ViewCostsAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'view_costs'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Event Id
-       * @description Root event id of the single largest outlier trace, deep-linked to its span. Null routes to the costs overview instead.
-       */
-      event_id: string | null
-    }
-    /**
-     * ViewMetricAction
-     * @description A drill-down that points at the metric behind the insight.
-     */
-    ViewMetricAction: {
-      /**
-       * @description discriminator enum property added by openapi-typescript
-       * @enum {string}
-       */
-      type: 'view_metric'
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Metric
-       * @description Slug of the metric this insight is about (e.g. `monthly_recurring_revenue`). The client owns the routing and resolves it to the matching analytics page.
-       */
-      metric: string
-    }
-    /**
      * Visibility
      * @enum {string}
      */
@@ -41029,7 +41257,7 @@ export interface components {
      * Wallet
      * @description A wallet represents a customer's balance in your organization.
      *
-     *     They can top-up their wallet, and use the balance to pay for usage.
+     *     The balance can be used to pay for usage.
      */
     Wallet: {
       /**
@@ -41075,23 +41303,6 @@ export interface components {
      * @enum {string}
      */
     WalletSortProperty: 'created_at' | '-created_at' | 'balance' | '-balance'
-    /**
-     * WalletTopUpCreate
-     * @description Request schema to top-up a wallet.
-     */
-    WalletTopUpCreate: {
-      /**
-       * Amount
-       * @description The amount to top-up the wallet by, in cents.
-       * @example 2000
-       */
-      amount: number
-      /**
-       * Currency
-       * @description The currency. Currently, only `usd` is supported. It should match the wallet's currency.
-       */
-      currency: string
-    }
     /**
      * WalletType
      * @enum {string}
@@ -43894,13 +44105,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Cannot enforce SSO without an enabled connection. */
+      /** @description Cannot enforce SSO without an enabled connection and a verified domain. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SSOEnforcementRequiresConnection']
+          'application/json':
+            | components['schemas']['SSOEnforcementRequiresConnection']
+            | components['schemas']['SSORequiresVerifiedDomain']
         }
       }
       /** @description Validation Error */
@@ -44351,6 +44564,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationMember']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UserCannotAuthenticate']
         }
       }
       /** @description Validation Error */
@@ -45611,6 +45833,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description The organization has no verified domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSORequiresVerifiedDomain']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -45792,7 +46023,7 @@ export interface operations {
       }
     }
   }
-  'sso:list_sso_domains': {
+  'organization_domains:list_organization_domains': {
     parameters: {
       query?: {
         /** @description Page number, defaults to 1. */
@@ -45814,7 +46045,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ListResource_OrganizationSSODomain_']
+          'application/json': components['schemas']['ListResource_OrganizationDomain_']
         }
       }
       /** @description The user doesn't have the permission to manage the organization. */
@@ -45846,6 +46077,184 @@ export interface operations {
       }
     }
   }
+  'organization_domains:create_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationDomainCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The domain is already added to this organization. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainAlreadyExists']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:delete_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_domains:verify_organization_domain': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        domain_id: string
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomain']
+        }
+      }
+      /** @description The DNS TXT record was not found. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerificationFailed']
+        }
+      }
+      /** @description The user doesn't have the permission to manage the organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Organization or domain not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Another organization already verified the domain. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationDomainVerifiedElsewhere']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'subscriptions:list': {
     parameters: {
       query?: {
@@ -45853,6 +46262,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -45961,6 +46372,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by subscription status. */
         status?:
           | components['schemas']['SubscriptionStatus']
@@ -46362,6 +46775,89 @@ export interface operations {
       }
     }
   }
+  'subscriptions:bulk_update': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubscriptionBulkUpdateCreate']
+      }
+    }
+    responses: {
+      /** @description Bulk update started. */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBulkUpdate']
+        }
+      }
+      /** @description You don't have the permission to update subscriptions, or the organization doesn't use catalog versioning. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_bulk_update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription bulk update ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionBulkUpdate']
+        }
+      }
+      /** @description Subscription bulk update not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'transactions:search_transactions': {
     parameters: {
       query?: {
@@ -46405,7 +46901,6 @@ export interface operations {
   'transactions:export': {
     parameters: {
       query: {
-        account_id: string
         type?: components['schemas']['TransactionType'] | null
         exclude_platform_fees?: boolean
         /** @description Only include transactions created after this date. Must include a UTC offset. */
@@ -47017,6 +47512,7 @@ export interface operations {
           | components['schemas']['TransactionExportColumn']
           | components['schemas']['TransactionExportColumn'][]
           | null
+        account_id: string
       }
       header?: never
       path?: never
@@ -47352,13 +47848,15 @@ export interface operations {
           'application/json': components['schemas']['AuthenticationSession']
         }
       }
-      /** @description Invalid or expired OTP */
+      /** @description Invalid or expired OTP, or the account cannot sign in */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['PolarAuthError']
+            | components['schemas']['UserCannotAuthenticate']
         }
       }
       /** @description Validation Error */
@@ -47951,6 +48449,13 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Exclude benefits with these IDs. */
         exclude_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by description. */
         query?: string | null
         /** @description Page number, defaults to 1. */
@@ -48008,6 +48513,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Benefit']
+        }
+      }
+      /** @description Organization benefit limit reached. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */
@@ -48724,6 +49238,13 @@ export interface operations {
         external_id?: string | string[] | null
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
         /** @description Filter by product name. */
         query?: string | null
         /** @description Filter on archived products. */
@@ -48789,6 +49310,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Product']
+        }
+      }
+      /** @description Organization product limit reached. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */
@@ -48951,6 +49481,90 @@ export interface operations {
       }
     }
   }
+  'products:name_check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductNameCheckRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductNameCheck']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'products:report_flagged_name': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductFlaggedNameReport']
+      }
+    }
+    responses: {
+      /** @description Report recorded. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description You don't have the permission to manage this product. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Product not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'products:update_benefits': {
     parameters: {
       query?: never
@@ -49011,6 +49625,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by product billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         product_billing_type?:
           | components['schemas']['ProductBillingType']
@@ -49110,6 +49726,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by order status. */
         status?:
           | components['schemas']['OrderStatus']
@@ -49884,6 +50502,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by customer external ID. */
@@ -51329,6 +51949,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         billing_type?:
           | components['schemas']['ProductBillingType']
@@ -51978,6 +52600,8 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by product external ID. */
+        external_product_id?: string | string[] | null
         /** @description Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases. */
         billing_type?:
           | components['schemas']['ProductBillingType']
@@ -52184,850 +52808,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MetricDashboardSchema']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:list_insights': {
-    parameters: {
-      query?: {
-        /** @description Timezone used to resolve the current period. Default is UTC. */
-        timezone?:
-          | 'Africa/Abidjan'
-          | 'Africa/Accra'
-          | 'Africa/Addis_Ababa'
-          | 'Africa/Algiers'
-          | 'Africa/Asmara'
-          | 'Africa/Asmera'
-          | 'Africa/Bamako'
-          | 'Africa/Bangui'
-          | 'Africa/Banjul'
-          | 'Africa/Bissau'
-          | 'Africa/Blantyre'
-          | 'Africa/Brazzaville'
-          | 'Africa/Bujumbura'
-          | 'Africa/Cairo'
-          | 'Africa/Casablanca'
-          | 'Africa/Ceuta'
-          | 'Africa/Conakry'
-          | 'Africa/Dakar'
-          | 'Africa/Dar_es_Salaam'
-          | 'Africa/Djibouti'
-          | 'Africa/Douala'
-          | 'Africa/El_Aaiun'
-          | 'Africa/Freetown'
-          | 'Africa/Gaborone'
-          | 'Africa/Harare'
-          | 'Africa/Johannesburg'
-          | 'Africa/Juba'
-          | 'Africa/Kampala'
-          | 'Africa/Khartoum'
-          | 'Africa/Kigali'
-          | 'Africa/Kinshasa'
-          | 'Africa/Lagos'
-          | 'Africa/Libreville'
-          | 'Africa/Lome'
-          | 'Africa/Luanda'
-          | 'Africa/Lubumbashi'
-          | 'Africa/Lusaka'
-          | 'Africa/Malabo'
-          | 'Africa/Maputo'
-          | 'Africa/Maseru'
-          | 'Africa/Mbabane'
-          | 'Africa/Mogadishu'
-          | 'Africa/Monrovia'
-          | 'Africa/Nairobi'
-          | 'Africa/Ndjamena'
-          | 'Africa/Niamey'
-          | 'Africa/Nouakchott'
-          | 'Africa/Ouagadougou'
-          | 'Africa/Porto-Novo'
-          | 'Africa/Sao_Tome'
-          | 'Africa/Timbuktu'
-          | 'Africa/Tripoli'
-          | 'Africa/Tunis'
-          | 'Africa/Windhoek'
-          | 'America/Adak'
-          | 'America/Anchorage'
-          | 'America/Anguilla'
-          | 'America/Antigua'
-          | 'America/Araguaina'
-          | 'America/Argentina/Buenos_Aires'
-          | 'America/Argentina/Catamarca'
-          | 'America/Argentina/ComodRivadavia'
-          | 'America/Argentina/Cordoba'
-          | 'America/Argentina/Jujuy'
-          | 'America/Argentina/La_Rioja'
-          | 'America/Argentina/Mendoza'
-          | 'America/Argentina/Rio_Gallegos'
-          | 'America/Argentina/Salta'
-          | 'America/Argentina/San_Juan'
-          | 'America/Argentina/San_Luis'
-          | 'America/Argentina/Tucuman'
-          | 'America/Argentina/Ushuaia'
-          | 'America/Aruba'
-          | 'America/Asuncion'
-          | 'America/Atikokan'
-          | 'America/Atka'
-          | 'America/Bahia'
-          | 'America/Bahia_Banderas'
-          | 'America/Barbados'
-          | 'America/Belem'
-          | 'America/Belize'
-          | 'America/Blanc-Sablon'
-          | 'America/Boa_Vista'
-          | 'America/Bogota'
-          | 'America/Boise'
-          | 'America/Buenos_Aires'
-          | 'America/Cambridge_Bay'
-          | 'America/Campo_Grande'
-          | 'America/Cancun'
-          | 'America/Caracas'
-          | 'America/Catamarca'
-          | 'America/Cayenne'
-          | 'America/Cayman'
-          | 'America/Chicago'
-          | 'America/Chihuahua'
-          | 'America/Ciudad_Juarez'
-          | 'America/Coral_Harbour'
-          | 'America/Cordoba'
-          | 'America/Costa_Rica'
-          | 'America/Coyhaique'
-          | 'America/Creston'
-          | 'America/Cuiaba'
-          | 'America/Curacao'
-          | 'America/Danmarkshavn'
-          | 'America/Dawson'
-          | 'America/Dawson_Creek'
-          | 'America/Denver'
-          | 'America/Detroit'
-          | 'America/Dominica'
-          | 'America/Edmonton'
-          | 'America/Eirunepe'
-          | 'America/El_Salvador'
-          | 'America/Ensenada'
-          | 'America/Fort_Nelson'
-          | 'America/Fort_Wayne'
-          | 'America/Fortaleza'
-          | 'America/Glace_Bay'
-          | 'America/Godthab'
-          | 'America/Goose_Bay'
-          | 'America/Grand_Turk'
-          | 'America/Grenada'
-          | 'America/Guadeloupe'
-          | 'America/Guatemala'
-          | 'America/Guayaquil'
-          | 'America/Guyana'
-          | 'America/Halifax'
-          | 'America/Havana'
-          | 'America/Hermosillo'
-          | 'America/Indiana/Indianapolis'
-          | 'America/Indiana/Knox'
-          | 'America/Indiana/Marengo'
-          | 'America/Indiana/Petersburg'
-          | 'America/Indiana/Tell_City'
-          | 'America/Indiana/Vevay'
-          | 'America/Indiana/Vincennes'
-          | 'America/Indiana/Winamac'
-          | 'America/Indianapolis'
-          | 'America/Inuvik'
-          | 'America/Iqaluit'
-          | 'America/Jamaica'
-          | 'America/Jujuy'
-          | 'America/Juneau'
-          | 'America/Kentucky/Louisville'
-          | 'America/Kentucky/Monticello'
-          | 'America/Knox_IN'
-          | 'America/Kralendijk'
-          | 'America/La_Paz'
-          | 'America/Lima'
-          | 'America/Los_Angeles'
-          | 'America/Louisville'
-          | 'America/Lower_Princes'
-          | 'America/Maceio'
-          | 'America/Managua'
-          | 'America/Manaus'
-          | 'America/Marigot'
-          | 'America/Martinique'
-          | 'America/Matamoros'
-          | 'America/Mazatlan'
-          | 'America/Mendoza'
-          | 'America/Menominee'
-          | 'America/Merida'
-          | 'America/Metlakatla'
-          | 'America/Mexico_City'
-          | 'America/Miquelon'
-          | 'America/Moncton'
-          | 'America/Monterrey'
-          | 'America/Montevideo'
-          | 'America/Montreal'
-          | 'America/Montserrat'
-          | 'America/Nassau'
-          | 'America/New_York'
-          | 'America/Nipigon'
-          | 'America/Nome'
-          | 'America/Noronha'
-          | 'America/North_Dakota/Beulah'
-          | 'America/North_Dakota/Center'
-          | 'America/North_Dakota/New_Salem'
-          | 'America/Nuuk'
-          | 'America/Ojinaga'
-          | 'America/Panama'
-          | 'America/Pangnirtung'
-          | 'America/Paramaribo'
-          | 'America/Phoenix'
-          | 'America/Port-au-Prince'
-          | 'America/Port_of_Spain'
-          | 'America/Porto_Acre'
-          | 'America/Porto_Velho'
-          | 'America/Puerto_Rico'
-          | 'America/Punta_Arenas'
-          | 'America/Rainy_River'
-          | 'America/Rankin_Inlet'
-          | 'America/Recife'
-          | 'America/Regina'
-          | 'America/Resolute'
-          | 'America/Rio_Branco'
-          | 'America/Rosario'
-          | 'America/Santa_Isabel'
-          | 'America/Santarem'
-          | 'America/Santiago'
-          | 'America/Santo_Domingo'
-          | 'America/Sao_Paulo'
-          | 'America/Scoresbysund'
-          | 'America/Shiprock'
-          | 'America/Sitka'
-          | 'America/St_Barthelemy'
-          | 'America/St_Johns'
-          | 'America/St_Kitts'
-          | 'America/St_Lucia'
-          | 'America/St_Thomas'
-          | 'America/St_Vincent'
-          | 'America/Swift_Current'
-          | 'America/Tegucigalpa'
-          | 'America/Thule'
-          | 'America/Thunder_Bay'
-          | 'America/Tijuana'
-          | 'America/Toronto'
-          | 'America/Tortola'
-          | 'America/Vancouver'
-          | 'America/Virgin'
-          | 'America/Whitehorse'
-          | 'America/Winnipeg'
-          | 'America/Yakutat'
-          | 'America/Yellowknife'
-          | 'Antarctica/Casey'
-          | 'Antarctica/Davis'
-          | 'Antarctica/DumontDUrville'
-          | 'Antarctica/Macquarie'
-          | 'Antarctica/Mawson'
-          | 'Antarctica/McMurdo'
-          | 'Antarctica/Palmer'
-          | 'Antarctica/Rothera'
-          | 'Antarctica/South_Pole'
-          | 'Antarctica/Syowa'
-          | 'Antarctica/Troll'
-          | 'Antarctica/Vostok'
-          | 'Arctic/Longyearbyen'
-          | 'Asia/Aden'
-          | 'Asia/Almaty'
-          | 'Asia/Amman'
-          | 'Asia/Anadyr'
-          | 'Asia/Aqtau'
-          | 'Asia/Aqtobe'
-          | 'Asia/Ashgabat'
-          | 'Asia/Ashkhabad'
-          | 'Asia/Atyrau'
-          | 'Asia/Baghdad'
-          | 'Asia/Bahrain'
-          | 'Asia/Baku'
-          | 'Asia/Bangkok'
-          | 'Asia/Barnaul'
-          | 'Asia/Beirut'
-          | 'Asia/Bishkek'
-          | 'Asia/Brunei'
-          | 'Asia/Calcutta'
-          | 'Asia/Chita'
-          | 'Asia/Choibalsan'
-          | 'Asia/Chongqing'
-          | 'Asia/Chungking'
-          | 'Asia/Colombo'
-          | 'Asia/Dacca'
-          | 'Asia/Damascus'
-          | 'Asia/Dhaka'
-          | 'Asia/Dili'
-          | 'Asia/Dubai'
-          | 'Asia/Dushanbe'
-          | 'Asia/Famagusta'
-          | 'Asia/Gaza'
-          | 'Asia/Harbin'
-          | 'Asia/Hebron'
-          | 'Asia/Ho_Chi_Minh'
-          | 'Asia/Hong_Kong'
-          | 'Asia/Hovd'
-          | 'Asia/Irkutsk'
-          | 'Asia/Istanbul'
-          | 'Asia/Jakarta'
-          | 'Asia/Jayapura'
-          | 'Asia/Jerusalem'
-          | 'Asia/Kabul'
-          | 'Asia/Kamchatka'
-          | 'Asia/Karachi'
-          | 'Asia/Kashgar'
-          | 'Asia/Kathmandu'
-          | 'Asia/Katmandu'
-          | 'Asia/Khandyga'
-          | 'Asia/Kolkata'
-          | 'Asia/Krasnoyarsk'
-          | 'Asia/Kuala_Lumpur'
-          | 'Asia/Kuching'
-          | 'Asia/Kuwait'
-          | 'Asia/Macao'
-          | 'Asia/Macau'
-          | 'Asia/Magadan'
-          | 'Asia/Makassar'
-          | 'Asia/Manila'
-          | 'Asia/Muscat'
-          | 'Asia/Nicosia'
-          | 'Asia/Novokuznetsk'
-          | 'Asia/Novosibirsk'
-          | 'Asia/Omsk'
-          | 'Asia/Oral'
-          | 'Asia/Phnom_Penh'
-          | 'Asia/Pontianak'
-          | 'Asia/Pyongyang'
-          | 'Asia/Qatar'
-          | 'Asia/Qostanay'
-          | 'Asia/Qyzylorda'
-          | 'Asia/Rangoon'
-          | 'Asia/Riyadh'
-          | 'Asia/Saigon'
-          | 'Asia/Sakhalin'
-          | 'Asia/Samarkand'
-          | 'Asia/Seoul'
-          | 'Asia/Shanghai'
-          | 'Asia/Singapore'
-          | 'Asia/Srednekolymsk'
-          | 'Asia/Taipei'
-          | 'Asia/Tashkent'
-          | 'Asia/Tbilisi'
-          | 'Asia/Tehran'
-          | 'Asia/Tel_Aviv'
-          | 'Asia/Thimbu'
-          | 'Asia/Thimphu'
-          | 'Asia/Tokyo'
-          | 'Asia/Tomsk'
-          | 'Asia/Ujung_Pandang'
-          | 'Asia/Ulaanbaatar'
-          | 'Asia/Ulan_Bator'
-          | 'Asia/Urumqi'
-          | 'Asia/Ust-Nera'
-          | 'Asia/Vientiane'
-          | 'Asia/Vladivostok'
-          | 'Asia/Yakutsk'
-          | 'Asia/Yangon'
-          | 'Asia/Yekaterinburg'
-          | 'Asia/Yerevan'
-          | 'Atlantic/Azores'
-          | 'Atlantic/Bermuda'
-          | 'Atlantic/Canary'
-          | 'Atlantic/Cape_Verde'
-          | 'Atlantic/Faeroe'
-          | 'Atlantic/Faroe'
-          | 'Atlantic/Jan_Mayen'
-          | 'Atlantic/Madeira'
-          | 'Atlantic/Reykjavik'
-          | 'Atlantic/South_Georgia'
-          | 'Atlantic/St_Helena'
-          | 'Atlantic/Stanley'
-          | 'Australia/ACT'
-          | 'Australia/Adelaide'
-          | 'Australia/Brisbane'
-          | 'Australia/Broken_Hill'
-          | 'Australia/Canberra'
-          | 'Australia/Currie'
-          | 'Australia/Darwin'
-          | 'Australia/Eucla'
-          | 'Australia/Hobart'
-          | 'Australia/LHI'
-          | 'Australia/Lindeman'
-          | 'Australia/Lord_Howe'
-          | 'Australia/Melbourne'
-          | 'Australia/NSW'
-          | 'Australia/North'
-          | 'Australia/Perth'
-          | 'Australia/Queensland'
-          | 'Australia/South'
-          | 'Australia/Sydney'
-          | 'Australia/Tasmania'
-          | 'Australia/Victoria'
-          | 'Australia/West'
-          | 'Australia/Yancowinna'
-          | 'Brazil/Acre'
-          | 'Brazil/DeNoronha'
-          | 'Brazil/East'
-          | 'Brazil/West'
-          | 'CET'
-          | 'CST6CDT'
-          | 'Canada/Atlantic'
-          | 'Canada/Central'
-          | 'Canada/Eastern'
-          | 'Canada/Mountain'
-          | 'Canada/Newfoundland'
-          | 'Canada/Pacific'
-          | 'Canada/Saskatchewan'
-          | 'Canada/Yukon'
-          | 'Chile/Continental'
-          | 'Chile/EasterIsland'
-          | 'Cuba'
-          | 'EET'
-          | 'EST'
-          | 'EST5EDT'
-          | 'Egypt'
-          | 'Eire'
-          | 'Etc/GMT'
-          | 'Etc/GMT+0'
-          | 'Etc/GMT+1'
-          | 'Etc/GMT+10'
-          | 'Etc/GMT+11'
-          | 'Etc/GMT+12'
-          | 'Etc/GMT+2'
-          | 'Etc/GMT+3'
-          | 'Etc/GMT+4'
-          | 'Etc/GMT+5'
-          | 'Etc/GMT+6'
-          | 'Etc/GMT+7'
-          | 'Etc/GMT+8'
-          | 'Etc/GMT+9'
-          | 'Etc/GMT-0'
-          | 'Etc/GMT-1'
-          | 'Etc/GMT-10'
-          | 'Etc/GMT-11'
-          | 'Etc/GMT-12'
-          | 'Etc/GMT-13'
-          | 'Etc/GMT-14'
-          | 'Etc/GMT-2'
-          | 'Etc/GMT-3'
-          | 'Etc/GMT-4'
-          | 'Etc/GMT-5'
-          | 'Etc/GMT-6'
-          | 'Etc/GMT-7'
-          | 'Etc/GMT-8'
-          | 'Etc/GMT-9'
-          | 'Etc/GMT0'
-          | 'Etc/Greenwich'
-          | 'Etc/UCT'
-          | 'Etc/UTC'
-          | 'Etc/Universal'
-          | 'Etc/Zulu'
-          | 'Europe/Amsterdam'
-          | 'Europe/Andorra'
-          | 'Europe/Astrakhan'
-          | 'Europe/Athens'
-          | 'Europe/Belfast'
-          | 'Europe/Belgrade'
-          | 'Europe/Berlin'
-          | 'Europe/Bratislava'
-          | 'Europe/Brussels'
-          | 'Europe/Bucharest'
-          | 'Europe/Budapest'
-          | 'Europe/Busingen'
-          | 'Europe/Chisinau'
-          | 'Europe/Copenhagen'
-          | 'Europe/Dublin'
-          | 'Europe/Gibraltar'
-          | 'Europe/Guernsey'
-          | 'Europe/Helsinki'
-          | 'Europe/Isle_of_Man'
-          | 'Europe/Istanbul'
-          | 'Europe/Jersey'
-          | 'Europe/Kaliningrad'
-          | 'Europe/Kiev'
-          | 'Europe/Kirov'
-          | 'Europe/Kyiv'
-          | 'Europe/Lisbon'
-          | 'Europe/Ljubljana'
-          | 'Europe/London'
-          | 'Europe/Luxembourg'
-          | 'Europe/Madrid'
-          | 'Europe/Malta'
-          | 'Europe/Mariehamn'
-          | 'Europe/Minsk'
-          | 'Europe/Monaco'
-          | 'Europe/Moscow'
-          | 'Europe/Nicosia'
-          | 'Europe/Oslo'
-          | 'Europe/Paris'
-          | 'Europe/Podgorica'
-          | 'Europe/Prague'
-          | 'Europe/Riga'
-          | 'Europe/Rome'
-          | 'Europe/Samara'
-          | 'Europe/San_Marino'
-          | 'Europe/Sarajevo'
-          | 'Europe/Saratov'
-          | 'Europe/Simferopol'
-          | 'Europe/Skopje'
-          | 'Europe/Sofia'
-          | 'Europe/Stockholm'
-          | 'Europe/Tallinn'
-          | 'Europe/Tirane'
-          | 'Europe/Tiraspol'
-          | 'Europe/Ulyanovsk'
-          | 'Europe/Uzhgorod'
-          | 'Europe/Vaduz'
-          | 'Europe/Vatican'
-          | 'Europe/Vienna'
-          | 'Europe/Vilnius'
-          | 'Europe/Volgograd'
-          | 'Europe/Warsaw'
-          | 'Europe/Zagreb'
-          | 'Europe/Zaporozhye'
-          | 'Europe/Zurich'
-          | 'Factory'
-          | 'GB'
-          | 'GB-Eire'
-          | 'GMT'
-          | 'GMT+0'
-          | 'GMT-0'
-          | 'GMT0'
-          | 'Greenwich'
-          | 'HST'
-          | 'Hongkong'
-          | 'Iceland'
-          | 'Indian/Antananarivo'
-          | 'Indian/Chagos'
-          | 'Indian/Christmas'
-          | 'Indian/Cocos'
-          | 'Indian/Comoro'
-          | 'Indian/Kerguelen'
-          | 'Indian/Mahe'
-          | 'Indian/Maldives'
-          | 'Indian/Mauritius'
-          | 'Indian/Mayotte'
-          | 'Indian/Reunion'
-          | 'Iran'
-          | 'Israel'
-          | 'Jamaica'
-          | 'Japan'
-          | 'Kwajalein'
-          | 'Libya'
-          | 'MET'
-          | 'MST'
-          | 'MST7MDT'
-          | 'Mexico/BajaNorte'
-          | 'Mexico/BajaSur'
-          | 'Mexico/General'
-          | 'NZ'
-          | 'NZ-CHAT'
-          | 'Navajo'
-          | 'PRC'
-          | 'PST8PDT'
-          | 'Pacific/Apia'
-          | 'Pacific/Auckland'
-          | 'Pacific/Bougainville'
-          | 'Pacific/Chatham'
-          | 'Pacific/Chuuk'
-          | 'Pacific/Easter'
-          | 'Pacific/Efate'
-          | 'Pacific/Enderbury'
-          | 'Pacific/Fakaofo'
-          | 'Pacific/Fiji'
-          | 'Pacific/Funafuti'
-          | 'Pacific/Galapagos'
-          | 'Pacific/Gambier'
-          | 'Pacific/Guadalcanal'
-          | 'Pacific/Guam'
-          | 'Pacific/Honolulu'
-          | 'Pacific/Johnston'
-          | 'Pacific/Kanton'
-          | 'Pacific/Kiritimati'
-          | 'Pacific/Kosrae'
-          | 'Pacific/Kwajalein'
-          | 'Pacific/Majuro'
-          | 'Pacific/Marquesas'
-          | 'Pacific/Midway'
-          | 'Pacific/Nauru'
-          | 'Pacific/Niue'
-          | 'Pacific/Norfolk'
-          | 'Pacific/Noumea'
-          | 'Pacific/Pago_Pago'
-          | 'Pacific/Palau'
-          | 'Pacific/Pitcairn'
-          | 'Pacific/Pohnpei'
-          | 'Pacific/Ponape'
-          | 'Pacific/Port_Moresby'
-          | 'Pacific/Rarotonga'
-          | 'Pacific/Saipan'
-          | 'Pacific/Samoa'
-          | 'Pacific/Tahiti'
-          | 'Pacific/Tarawa'
-          | 'Pacific/Tongatapu'
-          | 'Pacific/Truk'
-          | 'Pacific/Wake'
-          | 'Pacific/Wallis'
-          | 'Pacific/Yap'
-          | 'Poland'
-          | 'Portugal'
-          | 'ROC'
-          | 'ROK'
-          | 'Singapore'
-          | 'Turkey'
-          | 'UCT'
-          | 'US/Alaska'
-          | 'US/Aleutian'
-          | 'US/Arizona'
-          | 'US/Central'
-          | 'US/East-Indiana'
-          | 'US/Eastern'
-          | 'US/Hawaii'
-          | 'US/Indiana-Starke'
-          | 'US/Michigan'
-          | 'US/Mountain'
-          | 'US/Pacific'
-          | 'US/Samoa'
-          | 'UTC'
-          | 'Universal'
-          | 'W-SU'
-          | 'WET'
-          | 'Zulu'
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
-        /** @description Filter by insight category. */
-        category?:
-          | components['schemas']['InsightCategory']
-          | components['schemas']['InsightCategory'][]
-          | null
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Insight'][]
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:list_threads': {
-    parameters: {
-      query: {
-        /** @description Organization whose threads to list. */
-        organization_id: string
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_CompassThreadSchema_']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:get_thread': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CompassThreadSchema']
-        }
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:delete_thread': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Thread deleted. */
-      204: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:update_thread': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompassThreadUpdate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CompassThreadSchema']
-        }
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'compass:list_thread_messages': {
-    parameters: {
-      query?: {
-        /** @description Page number, defaults to 1. */
-        page?: number
-        /** @description Size of a page, defaults to 10. Maximum is 100. */
-        limit?: number
-      }
-      header?: never
-      path: {
-        /** @description The thread ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ListResource_CompassThreadMessageSchema_']
-        }
-      }
-      /** @description Thread not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -53503,7 +53283,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CheckoutLinkCreate']
+        'application/json': components['schemas']['CheckoutLinkCreateProducts']
       }
     }
     responses: {
@@ -53639,6 +53419,140 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:list': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
+          | null
+        /** @description Only include catalogs published after this date. Must include a UTC offset. */
+        published_after?: string | null
+        /** @description Only include catalogs published before this date. Must include a UTC offset. */
+        published_before?: string | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_Catalog_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogVersion']
+        }
+      }
+      /** @description Catalog not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:publish': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Catalog']
+        }
+      }
+      /** @description No catalog with this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description The catalog isn't a draft. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotDraft']
         }
       }
       /** @description Validation Error */
@@ -56383,90 +56297,6 @@ export interface operations {
       }
     }
   }
-  'customer_portal:customer-session:customer_portal.customer_session.request': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': unknown
-        }
-      }
-      /** @description Multiple customers found for this email. */
-      409: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'customer_portal:customer-session:customer_portal.customer_session.authenticate': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CustomerSessionCodeAuthenticateRequest']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
-        }
-      }
-      /** @description Invalid or expired verification code. */
-      401: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['CustomerSessionCodeInvalidOrExpired']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'customer_portal:customer-session:introspect': {
     parameters: {
       query?: never
@@ -56503,6 +56333,134 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['PortalAuthenticatedUser']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionAuthenticationStart']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_request': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Turnstile verification failed */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Multiple customers found for this email. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSelectionRequiredResponse']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:customer-session:customer_portal.customer_session.email_otp_verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSessionEmailOTPVerify']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSessionCodeAuthenticateResponse']
+        }
+      }
+      /** @description Invalid or expired verification code, or invalid authentication session. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CustomerSessionCodeInvalidOrExpired']
+            | components['schemas']['InvalidAuthenticationSession']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
         }
       }
     }
@@ -59511,14 +59469,16 @@ export interface operations {
   'events:list': {
     parameters: {
       query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
         /** @description Filter events after this timestamp. */
         start_timestamp?: string | null
         /** @description Filter events before this timestamp. */
         end_timestamp?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -59532,8 +59492,6 @@ export interface operations {
           | components['schemas']['EventSource']
           | components['schemas']['EventSource'][]
           | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description When combined with depth, use this event as the anchor instead of root events. */
         parent_id?: string | null
         /** @description Fetch descendants up to this depth. When set: 0=root events only, 1=roots+children, etc. Max 5. When not set, returns all events. */
@@ -59575,11 +59533,113 @@ export interface operations {
       }
     }
   }
+  'events:get_statistics_by_type': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Filter events after this timestamp. */
+        start_timestamp?: string | null
+        /** @description Filter events before this timestamp. */
+        end_timestamp?: string | null
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListEventTypeStatistics']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'events:get_histogram': {
+    parameters: {
+      query: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
+        /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
+        filter?: string | null
+        /** @description Start of the histogram, inclusive. */
+        start_timestamp: string
+        /** @description End of the histogram, exclusive. */
+        end_timestamp: string
+        /** @description Filter by customer ID. */
+        customer_id?: string | string[] | null
+        /** @description Filter by external customer ID. */
+        external_customer_id?: string | string[] | null
+        /** @description Filter by event source. */
+        source?:
+          | components['schemas']['EventSource']
+          | components['schemas']['EventSource'][]
+          | null
+        /** @description Filter by event name. */
+        name?: string | string[] | null
+        /** @description Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`. */
+        metadata?: components['schemas']['MetadataQuery']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EventHistogram']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'events:get_statistics_by_property': {
     parameters: {
       query: {
-        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
-        property: string
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -60193,6 +60253,8 @@ export interface operations {
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Metadata property path to group by (e.g., _llm.model, _llm.vendor). */
+        property: components['schemas']['AggregateField']
       }
       header?: never
       path?: never
@@ -61476,11 +61538,11 @@ export interface operations {
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
         external_customer_id?: string | string[] | null
-        /** @description Filter by event name. */
-        name?: string | string[] | null
         /** @description Metadata field paths to aggregate. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         limit?: number
+        /** @description Filter by event name. */
+        name?: string | string[] | null
       }
       header?: never
       path?: never
@@ -61511,6 +61573,10 @@ export interface operations {
   'events:list_statistics_timeseries': {
     parameters: {
       query: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Query to filter events. */
+        query?: string | null
         /** @description Start date. */
         start_date: string
         /** @description End date. */
@@ -62119,8 +62185,6 @@ export interface operations {
         interval: components['schemas']['TimeInterval']
         /** @description Filter events following filter clauses. JSON string following the same schema a meter filter clause. */
         filter?: string | null
-        /** @description Filter by organization ID. */
-        organization_id?: string | string[] | null
         /** @description Filter by customer ID. */
         customer_id?: string | string[] | null
         /** @description Filter by external customer ID. */
@@ -62136,8 +62200,6 @@ export interface operations {
           | null
         /** @description Filter by event type ID. */
         event_type_id?: string | null
-        /** @description Query to filter events. */
-        query?: string | null
         /** @description Metadata field paths to aggregate (e.g., '_cost.amount', 'duration_ns'). Use dot notation for nested fields. */
         aggregate_fields?: components['schemas']['AggregateField'][]
         /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
@@ -63273,6 +63335,8 @@ export interface operations {
       query?: {
         /** @description The ID of the organization to export. **Required unless you use an organization token.** */
         organization_id?: string | null
+        /** @description ID of a catalog, published or draft. Defaults to the live catalog. */
+        catalog_id?: string | null
       }
       header?: never
       path?: never
@@ -63298,7 +63362,118 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
-      /** @description Not allowed to read this organization's products, or config as code isn't enabled for it. */
+      /** @description Not allowed to read this organization's products, or missing a scope required by one of the sections. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description No catalog has this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description Config as code isn't enabled and config can't manage some of the organization's benefits or products. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigUnsupportedResources']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:init': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigInit']
+      }
+    }
+    responses: {
+      /** @description Config as code enabled. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description The organization has benefits or products config can't manage yet, or another request gave a resource the same external ID. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['ConfigUnsupportedResources']
+            | components['schemas']['ConfigMeterConflict']
+            | components['schemas']['ConfigBenefitConflict']
+            | components['schemas']['ConfigProductConflict']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:disable': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfigDisable']
+      }
+    }
+    responses: {
+      /** @description Config as code disabled. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Not allowed to manage this organization, or config as code isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
@@ -63307,6 +63482,15 @@ export interface operations {
           'application/json':
             | components['schemas']['NotPermitted']
             | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description More than one catalog was published. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigCatalogPublished']
         }
       }
       /** @description Validation Error */
@@ -63322,7 +63506,10 @@ export interface operations {
   }
   'config:apply': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description Publish the product and benefit changes. With `false`, they're saved in the organization's draft catalog, to publish later. With `true`, a pending draft is discarded. Meters, settings and webhooks aren't versioned, so they apply right away. */
+        publish?: boolean
+      }
       header?: never
       path?: never
       cookie?: never
@@ -63389,7 +63576,10 @@ export interface operations {
   }
   'config:plan': {
     parameters: {
-      query?: never
+      query?: {
+        /** @description ID of a catalog, published or draft. Defaults to the live catalog. */
+        catalog_id?: string | null
+      }
       header?: never
       path?: never
       cookie?: never
@@ -63407,6 +63597,68 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ConfigPlan']
+        }
+      }
+      /** @description Not authenticated. */
+      401: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Unauthorized']
+        }
+      }
+      /** @description Not allowed to read this organization's products, missing a scope required by one of the sections, or config as code isn't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['ConfigAsCodeNotEnabled']
+        }
+      }
+      /** @description No catalog has this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'config:prune': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['Config']
+      }
+    }
+    responses: {
+      /** @description Deprecated resources checked. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigPrune']
         }
       }
       /** @description Not authenticated. */
@@ -63724,6 +63976,65 @@ export interface operations {
           'application/json':
             | components['schemas']['CustomerMeterCreditExternalIDConflict']
             | components['schemas']['AmbiguousExternalCustomerID']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_meters:reverse_credit': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The ID of the `meter.credited` event returned when the credit was granted. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Credit reversed. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterCreditEvent']
+        }
+      }
+      /** @description You don't have permission to manage customers. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Manual credit not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The credit can't be reversed, or the customer meter is being updated: retry shortly. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerMeterCreditNotReversible']
         }
       }
       /** @description Validation Error */
@@ -64186,76 +64497,6 @@ export interface operations {
       }
     }
   }
-  'wallets:top_up': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The wallet ID. */
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['WalletTopUpCreate']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Wallet']
-        }
-      }
-      /** @description Wallet topped up successfully. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content?: never
-      }
-      /** @description The payment request failed. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['PaymentIntentFailedError']
-        }
-      }
-      /** @description No payment method available. */
-      402: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['MissingPaymentMethodError']
-        }
-      }
-      /** @description Wallet not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'payout_accounts:list': {
     parameters: {
       query?: never
@@ -64502,6 +64743,320 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Feedback']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:changes': {
+    parameters: {
+      query?: {
+        cursor?: string | null
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Changes']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:configuration': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfigurationOutgoingMessagePayload']
+        }
+      }
+    }
+  }
+  'outpost:meter_usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MeterUsageIncomingPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeterUsageOutgoingMessagePayload'][]
+        }
+      }
+      /** @description Reducer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'outpost:confirm': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['ConfirmIncomingMessageCustomerPayload']
+          | components['schemas']['ConfirmIncomingMessageExternalCustomerPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ConfirmedOutgoingMessagePayload']
+        }
+      }
+      /** @description Reducer not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:preview_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimPreview']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:get_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        link_token: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaim']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'agent:confirm_claim': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AgentClaimConfirm']
+      }
+    }
+    responses: {
+      /** @description The agent and its organization are now the user's. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimInvalidCode']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['AgentClaimEmailMismatch']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Gone */
+      410: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentClaimExpired']
         }
       }
       /** @description Validation Error */
@@ -67121,608 +67676,6 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
 ]
 export const pathsV1MetricsExportGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/metrics/export']['get']['parameters']['query']['timezone']
-> = [
-  'Africa/Abidjan',
-  'Africa/Accra',
-  'Africa/Addis_Ababa',
-  'Africa/Algiers',
-  'Africa/Asmara',
-  'Africa/Asmera',
-  'Africa/Bamako',
-  'Africa/Bangui',
-  'Africa/Banjul',
-  'Africa/Bissau',
-  'Africa/Blantyre',
-  'Africa/Brazzaville',
-  'Africa/Bujumbura',
-  'Africa/Cairo',
-  'Africa/Casablanca',
-  'Africa/Ceuta',
-  'Africa/Conakry',
-  'Africa/Dakar',
-  'Africa/Dar_es_Salaam',
-  'Africa/Djibouti',
-  'Africa/Douala',
-  'Africa/El_Aaiun',
-  'Africa/Freetown',
-  'Africa/Gaborone',
-  'Africa/Harare',
-  'Africa/Johannesburg',
-  'Africa/Juba',
-  'Africa/Kampala',
-  'Africa/Khartoum',
-  'Africa/Kigali',
-  'Africa/Kinshasa',
-  'Africa/Lagos',
-  'Africa/Libreville',
-  'Africa/Lome',
-  'Africa/Luanda',
-  'Africa/Lubumbashi',
-  'Africa/Lusaka',
-  'Africa/Malabo',
-  'Africa/Maputo',
-  'Africa/Maseru',
-  'Africa/Mbabane',
-  'Africa/Mogadishu',
-  'Africa/Monrovia',
-  'Africa/Nairobi',
-  'Africa/Ndjamena',
-  'Africa/Niamey',
-  'Africa/Nouakchott',
-  'Africa/Ouagadougou',
-  'Africa/Porto-Novo',
-  'Africa/Sao_Tome',
-  'Africa/Timbuktu',
-  'Africa/Tripoli',
-  'Africa/Tunis',
-  'Africa/Windhoek',
-  'America/Adak',
-  'America/Anchorage',
-  'America/Anguilla',
-  'America/Antigua',
-  'America/Araguaina',
-  'America/Argentina/Buenos_Aires',
-  'America/Argentina/Catamarca',
-  'America/Argentina/ComodRivadavia',
-  'America/Argentina/Cordoba',
-  'America/Argentina/Jujuy',
-  'America/Argentina/La_Rioja',
-  'America/Argentina/Mendoza',
-  'America/Argentina/Rio_Gallegos',
-  'America/Argentina/Salta',
-  'America/Argentina/San_Juan',
-  'America/Argentina/San_Luis',
-  'America/Argentina/Tucuman',
-  'America/Argentina/Ushuaia',
-  'America/Aruba',
-  'America/Asuncion',
-  'America/Atikokan',
-  'America/Atka',
-  'America/Bahia',
-  'America/Bahia_Banderas',
-  'America/Barbados',
-  'America/Belem',
-  'America/Belize',
-  'America/Blanc-Sablon',
-  'America/Boa_Vista',
-  'America/Bogota',
-  'America/Boise',
-  'America/Buenos_Aires',
-  'America/Cambridge_Bay',
-  'America/Campo_Grande',
-  'America/Cancun',
-  'America/Caracas',
-  'America/Catamarca',
-  'America/Cayenne',
-  'America/Cayman',
-  'America/Chicago',
-  'America/Chihuahua',
-  'America/Ciudad_Juarez',
-  'America/Coral_Harbour',
-  'America/Cordoba',
-  'America/Costa_Rica',
-  'America/Coyhaique',
-  'America/Creston',
-  'America/Cuiaba',
-  'America/Curacao',
-  'America/Danmarkshavn',
-  'America/Dawson',
-  'America/Dawson_Creek',
-  'America/Denver',
-  'America/Detroit',
-  'America/Dominica',
-  'America/Edmonton',
-  'America/Eirunepe',
-  'America/El_Salvador',
-  'America/Ensenada',
-  'America/Fort_Nelson',
-  'America/Fort_Wayne',
-  'America/Fortaleza',
-  'America/Glace_Bay',
-  'America/Godthab',
-  'America/Goose_Bay',
-  'America/Grand_Turk',
-  'America/Grenada',
-  'America/Guadeloupe',
-  'America/Guatemala',
-  'America/Guayaquil',
-  'America/Guyana',
-  'America/Halifax',
-  'America/Havana',
-  'America/Hermosillo',
-  'America/Indiana/Indianapolis',
-  'America/Indiana/Knox',
-  'America/Indiana/Marengo',
-  'America/Indiana/Petersburg',
-  'America/Indiana/Tell_City',
-  'America/Indiana/Vevay',
-  'America/Indiana/Vincennes',
-  'America/Indiana/Winamac',
-  'America/Indianapolis',
-  'America/Inuvik',
-  'America/Iqaluit',
-  'America/Jamaica',
-  'America/Jujuy',
-  'America/Juneau',
-  'America/Kentucky/Louisville',
-  'America/Kentucky/Monticello',
-  'America/Knox_IN',
-  'America/Kralendijk',
-  'America/La_Paz',
-  'America/Lima',
-  'America/Los_Angeles',
-  'America/Louisville',
-  'America/Lower_Princes',
-  'America/Maceio',
-  'America/Managua',
-  'America/Manaus',
-  'America/Marigot',
-  'America/Martinique',
-  'America/Matamoros',
-  'America/Mazatlan',
-  'America/Mendoza',
-  'America/Menominee',
-  'America/Merida',
-  'America/Metlakatla',
-  'America/Mexico_City',
-  'America/Miquelon',
-  'America/Moncton',
-  'America/Monterrey',
-  'America/Montevideo',
-  'America/Montreal',
-  'America/Montserrat',
-  'America/Nassau',
-  'America/New_York',
-  'America/Nipigon',
-  'America/Nome',
-  'America/Noronha',
-  'America/North_Dakota/Beulah',
-  'America/North_Dakota/Center',
-  'America/North_Dakota/New_Salem',
-  'America/Nuuk',
-  'America/Ojinaga',
-  'America/Panama',
-  'America/Pangnirtung',
-  'America/Paramaribo',
-  'America/Phoenix',
-  'America/Port-au-Prince',
-  'America/Port_of_Spain',
-  'America/Porto_Acre',
-  'America/Porto_Velho',
-  'America/Puerto_Rico',
-  'America/Punta_Arenas',
-  'America/Rainy_River',
-  'America/Rankin_Inlet',
-  'America/Recife',
-  'America/Regina',
-  'America/Resolute',
-  'America/Rio_Branco',
-  'America/Rosario',
-  'America/Santa_Isabel',
-  'America/Santarem',
-  'America/Santiago',
-  'America/Santo_Domingo',
-  'America/Sao_Paulo',
-  'America/Scoresbysund',
-  'America/Shiprock',
-  'America/Sitka',
-  'America/St_Barthelemy',
-  'America/St_Johns',
-  'America/St_Kitts',
-  'America/St_Lucia',
-  'America/St_Thomas',
-  'America/St_Vincent',
-  'America/Swift_Current',
-  'America/Tegucigalpa',
-  'America/Thule',
-  'America/Thunder_Bay',
-  'America/Tijuana',
-  'America/Toronto',
-  'America/Tortola',
-  'America/Vancouver',
-  'America/Virgin',
-  'America/Whitehorse',
-  'America/Winnipeg',
-  'America/Yakutat',
-  'America/Yellowknife',
-  'Antarctica/Casey',
-  'Antarctica/Davis',
-  'Antarctica/DumontDUrville',
-  'Antarctica/Macquarie',
-  'Antarctica/Mawson',
-  'Antarctica/McMurdo',
-  'Antarctica/Palmer',
-  'Antarctica/Rothera',
-  'Antarctica/South_Pole',
-  'Antarctica/Syowa',
-  'Antarctica/Troll',
-  'Antarctica/Vostok',
-  'Arctic/Longyearbyen',
-  'Asia/Aden',
-  'Asia/Almaty',
-  'Asia/Amman',
-  'Asia/Anadyr',
-  'Asia/Aqtau',
-  'Asia/Aqtobe',
-  'Asia/Ashgabat',
-  'Asia/Ashkhabad',
-  'Asia/Atyrau',
-  'Asia/Baghdad',
-  'Asia/Bahrain',
-  'Asia/Baku',
-  'Asia/Bangkok',
-  'Asia/Barnaul',
-  'Asia/Beirut',
-  'Asia/Bishkek',
-  'Asia/Brunei',
-  'Asia/Calcutta',
-  'Asia/Chita',
-  'Asia/Choibalsan',
-  'Asia/Chongqing',
-  'Asia/Chungking',
-  'Asia/Colombo',
-  'Asia/Dacca',
-  'Asia/Damascus',
-  'Asia/Dhaka',
-  'Asia/Dili',
-  'Asia/Dubai',
-  'Asia/Dushanbe',
-  'Asia/Famagusta',
-  'Asia/Gaza',
-  'Asia/Harbin',
-  'Asia/Hebron',
-  'Asia/Ho_Chi_Minh',
-  'Asia/Hong_Kong',
-  'Asia/Hovd',
-  'Asia/Irkutsk',
-  'Asia/Istanbul',
-  'Asia/Jakarta',
-  'Asia/Jayapura',
-  'Asia/Jerusalem',
-  'Asia/Kabul',
-  'Asia/Kamchatka',
-  'Asia/Karachi',
-  'Asia/Kashgar',
-  'Asia/Kathmandu',
-  'Asia/Katmandu',
-  'Asia/Khandyga',
-  'Asia/Kolkata',
-  'Asia/Krasnoyarsk',
-  'Asia/Kuala_Lumpur',
-  'Asia/Kuching',
-  'Asia/Kuwait',
-  'Asia/Macao',
-  'Asia/Macau',
-  'Asia/Magadan',
-  'Asia/Makassar',
-  'Asia/Manila',
-  'Asia/Muscat',
-  'Asia/Nicosia',
-  'Asia/Novokuznetsk',
-  'Asia/Novosibirsk',
-  'Asia/Omsk',
-  'Asia/Oral',
-  'Asia/Phnom_Penh',
-  'Asia/Pontianak',
-  'Asia/Pyongyang',
-  'Asia/Qatar',
-  'Asia/Qostanay',
-  'Asia/Qyzylorda',
-  'Asia/Rangoon',
-  'Asia/Riyadh',
-  'Asia/Saigon',
-  'Asia/Sakhalin',
-  'Asia/Samarkand',
-  'Asia/Seoul',
-  'Asia/Shanghai',
-  'Asia/Singapore',
-  'Asia/Srednekolymsk',
-  'Asia/Taipei',
-  'Asia/Tashkent',
-  'Asia/Tbilisi',
-  'Asia/Tehran',
-  'Asia/Tel_Aviv',
-  'Asia/Thimbu',
-  'Asia/Thimphu',
-  'Asia/Tokyo',
-  'Asia/Tomsk',
-  'Asia/Ujung_Pandang',
-  'Asia/Ulaanbaatar',
-  'Asia/Ulan_Bator',
-  'Asia/Urumqi',
-  'Asia/Ust-Nera',
-  'Asia/Vientiane',
-  'Asia/Vladivostok',
-  'Asia/Yakutsk',
-  'Asia/Yangon',
-  'Asia/Yekaterinburg',
-  'Asia/Yerevan',
-  'Atlantic/Azores',
-  'Atlantic/Bermuda',
-  'Atlantic/Canary',
-  'Atlantic/Cape_Verde',
-  'Atlantic/Faeroe',
-  'Atlantic/Faroe',
-  'Atlantic/Jan_Mayen',
-  'Atlantic/Madeira',
-  'Atlantic/Reykjavik',
-  'Atlantic/South_Georgia',
-  'Atlantic/St_Helena',
-  'Atlantic/Stanley',
-  'Australia/ACT',
-  'Australia/Adelaide',
-  'Australia/Brisbane',
-  'Australia/Broken_Hill',
-  'Australia/Canberra',
-  'Australia/Currie',
-  'Australia/Darwin',
-  'Australia/Eucla',
-  'Australia/Hobart',
-  'Australia/LHI',
-  'Australia/Lindeman',
-  'Australia/Lord_Howe',
-  'Australia/Melbourne',
-  'Australia/NSW',
-  'Australia/North',
-  'Australia/Perth',
-  'Australia/Queensland',
-  'Australia/South',
-  'Australia/Sydney',
-  'Australia/Tasmania',
-  'Australia/Victoria',
-  'Australia/West',
-  'Australia/Yancowinna',
-  'Brazil/Acre',
-  'Brazil/DeNoronha',
-  'Brazil/East',
-  'Brazil/West',
-  'CET',
-  'CST6CDT',
-  'Canada/Atlantic',
-  'Canada/Central',
-  'Canada/Eastern',
-  'Canada/Mountain',
-  'Canada/Newfoundland',
-  'Canada/Pacific',
-  'Canada/Saskatchewan',
-  'Canada/Yukon',
-  'Chile/Continental',
-  'Chile/EasterIsland',
-  'Cuba',
-  'EET',
-  'EST',
-  'EST5EDT',
-  'Egypt',
-  'Eire',
-  'Etc/GMT',
-  'Etc/GMT+0',
-  'Etc/GMT+1',
-  'Etc/GMT+10',
-  'Etc/GMT+11',
-  'Etc/GMT+12',
-  'Etc/GMT+2',
-  'Etc/GMT+3',
-  'Etc/GMT+4',
-  'Etc/GMT+5',
-  'Etc/GMT+6',
-  'Etc/GMT+7',
-  'Etc/GMT+8',
-  'Etc/GMT+9',
-  'Etc/GMT-0',
-  'Etc/GMT-1',
-  'Etc/GMT-10',
-  'Etc/GMT-11',
-  'Etc/GMT-12',
-  'Etc/GMT-13',
-  'Etc/GMT-14',
-  'Etc/GMT-2',
-  'Etc/GMT-3',
-  'Etc/GMT-4',
-  'Etc/GMT-5',
-  'Etc/GMT-6',
-  'Etc/GMT-7',
-  'Etc/GMT-8',
-  'Etc/GMT-9',
-  'Etc/GMT0',
-  'Etc/Greenwich',
-  'Etc/UCT',
-  'Etc/UTC',
-  'Etc/Universal',
-  'Etc/Zulu',
-  'Europe/Amsterdam',
-  'Europe/Andorra',
-  'Europe/Astrakhan',
-  'Europe/Athens',
-  'Europe/Belfast',
-  'Europe/Belgrade',
-  'Europe/Berlin',
-  'Europe/Bratislava',
-  'Europe/Brussels',
-  'Europe/Bucharest',
-  'Europe/Budapest',
-  'Europe/Busingen',
-  'Europe/Chisinau',
-  'Europe/Copenhagen',
-  'Europe/Dublin',
-  'Europe/Gibraltar',
-  'Europe/Guernsey',
-  'Europe/Helsinki',
-  'Europe/Isle_of_Man',
-  'Europe/Istanbul',
-  'Europe/Jersey',
-  'Europe/Kaliningrad',
-  'Europe/Kiev',
-  'Europe/Kirov',
-  'Europe/Kyiv',
-  'Europe/Lisbon',
-  'Europe/Ljubljana',
-  'Europe/London',
-  'Europe/Luxembourg',
-  'Europe/Madrid',
-  'Europe/Malta',
-  'Europe/Mariehamn',
-  'Europe/Minsk',
-  'Europe/Monaco',
-  'Europe/Moscow',
-  'Europe/Nicosia',
-  'Europe/Oslo',
-  'Europe/Paris',
-  'Europe/Podgorica',
-  'Europe/Prague',
-  'Europe/Riga',
-  'Europe/Rome',
-  'Europe/Samara',
-  'Europe/San_Marino',
-  'Europe/Sarajevo',
-  'Europe/Saratov',
-  'Europe/Simferopol',
-  'Europe/Skopje',
-  'Europe/Sofia',
-  'Europe/Stockholm',
-  'Europe/Tallinn',
-  'Europe/Tirane',
-  'Europe/Tiraspol',
-  'Europe/Ulyanovsk',
-  'Europe/Uzhgorod',
-  'Europe/Vaduz',
-  'Europe/Vatican',
-  'Europe/Vienna',
-  'Europe/Vilnius',
-  'Europe/Volgograd',
-  'Europe/Warsaw',
-  'Europe/Zagreb',
-  'Europe/Zaporozhye',
-  'Europe/Zurich',
-  'Factory',
-  'GB',
-  'GB-Eire',
-  'GMT',
-  'GMT+0',
-  'GMT-0',
-  'GMT0',
-  'Greenwich',
-  'HST',
-  'Hongkong',
-  'Iceland',
-  'Indian/Antananarivo',
-  'Indian/Chagos',
-  'Indian/Christmas',
-  'Indian/Cocos',
-  'Indian/Comoro',
-  'Indian/Kerguelen',
-  'Indian/Mahe',
-  'Indian/Maldives',
-  'Indian/Mauritius',
-  'Indian/Mayotte',
-  'Indian/Reunion',
-  'Iran',
-  'Israel',
-  'Jamaica',
-  'Japan',
-  'Kwajalein',
-  'Libya',
-  'MET',
-  'MST',
-  'MST7MDT',
-  'Mexico/BajaNorte',
-  'Mexico/BajaSur',
-  'Mexico/General',
-  'NZ',
-  'NZ-CHAT',
-  'Navajo',
-  'PRC',
-  'PST8PDT',
-  'Pacific/Apia',
-  'Pacific/Auckland',
-  'Pacific/Bougainville',
-  'Pacific/Chatham',
-  'Pacific/Chuuk',
-  'Pacific/Easter',
-  'Pacific/Efate',
-  'Pacific/Enderbury',
-  'Pacific/Fakaofo',
-  'Pacific/Fiji',
-  'Pacific/Funafuti',
-  'Pacific/Galapagos',
-  'Pacific/Gambier',
-  'Pacific/Guadalcanal',
-  'Pacific/Guam',
-  'Pacific/Honolulu',
-  'Pacific/Johnston',
-  'Pacific/Kanton',
-  'Pacific/Kiritimati',
-  'Pacific/Kosrae',
-  'Pacific/Kwajalein',
-  'Pacific/Majuro',
-  'Pacific/Marquesas',
-  'Pacific/Midway',
-  'Pacific/Nauru',
-  'Pacific/Niue',
-  'Pacific/Norfolk',
-  'Pacific/Noumea',
-  'Pacific/Pago_Pago',
-  'Pacific/Palau',
-  'Pacific/Pitcairn',
-  'Pacific/Pohnpei',
-  'Pacific/Ponape',
-  'Pacific/Port_Moresby',
-  'Pacific/Rarotonga',
-  'Pacific/Saipan',
-  'Pacific/Samoa',
-  'Pacific/Tahiti',
-  'Pacific/Tarawa',
-  'Pacific/Tongatapu',
-  'Pacific/Truk',
-  'Pacific/Wake',
-  'Pacific/Wallis',
-  'Pacific/Yap',
-  'Poland',
-  'Portugal',
-  'ROC',
-  'ROK',
-  'Singapore',
-  'Turkey',
-  'UCT',
-  'US/Alaska',
-  'US/Aleutian',
-  'US/Arizona',
-  'US/Central',
-  'US/East-Indiana',
-  'US/Eastern',
-  'US/Hawaii',
-  'US/Indiana-Starke',
-  'US/Michigan',
-  'US/Mountain',
-  'US/Pacific',
-  'US/Samoa',
-  'UTC',
-  'Universal',
-  'W-SU',
-  'WET',
-  'Zulu',
-]
-export const pathsV1CompassInsightsGetParametersQueryTimezoneValues: ReadonlyArray<
-  FlattenedDeepRequired<paths>['/v1/compass/insights']['get']['parameters']['query']['timezone']
 > = [
   'Africa/Abidjan',
   'Africa/Accra',
@@ -71333,9 +71286,6 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'WET',
   'Zulu',
 ]
-export const addCurrencyActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AddCurrencyAction']['type']
-> = ['add_currency']
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [
@@ -71837,21 +71787,12 @@ export const addressInputCountryValues: ReadonlyArray<
   'ZM',
   'ZW',
 ]
-export const adjustPriceActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AdjustPriceAction']['type']
-> = ['adjust_price']
 export const aggregationFunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AggregationFunction']
 > = ['count', 'sum', 'max', 'min', 'avg', 'unique']
 export const appealDecisionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AppealDecision']
 > = ['approved', 'rejected']
-export const assistantBlockPartKindValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AssistantBlockPart']['kind']
-> = ['block']
-export const assistantTextPartKindValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['AssistantTextPart']['kind']
-> = ['text']
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AuthorizeResponseOrganization']['sub_type']
 > = ['organization']
@@ -72094,6 +72035,9 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'link',
   'other',
 ]
+export const catalogStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CatalogStatus']
+> = ['draft', 'live', 'archived']
 export const checkoutCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutCreatedEvent']['name']
 > = ['checkout.created']
@@ -72122,27 +72066,24 @@ export const checkoutSortPropertyValues: ReadonlyArray<
 export const checkoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutStatus']
 > = ['open', 'expired', 'confirmed', 'succeeded', 'failed']
-export const columnFormatValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ColumnFormat']
-> = ['text', 'currency', 'datetime', 'badge', 'avatar']
-export const confidenceLevelValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
-> = ['low', 'medium', 'high']
 export const configActionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigAction']
 > = ['created', 'updated', 'unchanged']
 export const configBenefitFeatureFlagTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlag']['type']
 > = ['feature_flag']
+export const configBenefitFeatureFlagReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitFeatureFlagRead']['type']
+> = ['feature_flag']
 export const configBenefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCredit']['type']
 > = ['meter_credit']
-export const configDiscountFixedTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountFixed']['type']
-> = ['fixed']
-export const configDiscountPercentageTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ConfigDiscountPercentage']['type']
-> = ['percentage']
+export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
+> = ['meter_credit']
+export const configExternalIDAssignmentResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigExternalIDAssignment']['resource']
+> = ['meter', 'benefit', 'product']
 export const configIssueSeverityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueSeverity']
 > = ['error', 'warning']
@@ -72150,14 +72091,14 @@ export const configIssueTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigIssueType']
 > = [
   'currency_changed',
-  'discount_locked',
-  'duplicate_code',
+  'deprecated_reference',
   'duplicate_external_id',
-  'duration_changed',
   'interval_changed',
+  'meter_cycle_unused',
   'meter_locked',
   'missing_currency',
   'not_supported',
+  'removed_in_use',
   'type_changed',
   'unknown_event',
   'unknown_reference',
@@ -72165,21 +72106,39 @@ export const configIssueTypeValues: ReadonlyArray<
 export const configProductPriceFixedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixed']['amount_type']
 > = ['fixed']
+export const configProductPriceFixedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceFixedRead']['amount_type']
+> = ['fixed']
 export const configProductPriceMeteredTiersAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiers']['amount_type']
+> = ['metered_tiers']
+export const configProductPriceMeteredTiersReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredTiersRead']['amount_type']
 > = ['metered_tiers']
 export const configProductPriceMeteredUnitAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnit']['amount_type']
 > = ['metered_unit']
+export const configProductPriceMeteredUnitReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceMeteredUnitRead']['amount_type']
+> = ['metered_unit']
 export const configProductPriceSeatBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBased']['amount_type']
+> = ['seat_based']
+export const configProductPriceSeatBasedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceSeatBasedRead']['amount_type']
 > = ['seat_based']
 export const configProductPriceUnitBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBased']['amount_type']
 > = ['unit_based']
+export const configProductPriceUnitBasedReadAmount_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigProductPriceUnitBasedRead']['amount_type']
+> = ['unit_based']
+export const configRemovalReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigRemovalReason']
+> = ['missing', 'deprecated']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'discount', 'webhook']
+> = ['meter', 'benefit', 'product', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']
@@ -72798,9 +72757,6 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'unused',
   'other',
 ]
-export const customerCardBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['CustomerCardBlock']['type']
-> = ['customer_card']
 export const customerCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerCreatedEvent']['name']
 > = ['customer.created']
@@ -72911,9 +72867,6 @@ export const customerUpdatedEventNameValues: ReadonlyArray<
 export const customerWalletSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerWalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
-export const dataTableBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['DataTableBlock']['type']
-> = ['data_table']
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
@@ -72973,9 +72926,6 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
-export const entityListBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['EntityListBlock']['type']
-> = ['entity_list']
 export const eventNamesSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['EventNamesSortProperty']
 > = [
@@ -73047,27 +72997,9 @@ export const filterOperatorValues: ReadonlyArray<
 export const identityVerificationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IdentityVerificationStatus']
 > = ['unverified', 'pending', 'verified', 'failed']
-export const insightCardsBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightCardsBlock']['type']
-> = ['insight_cards']
-export const insightCategoryValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightCategory']
-> = ['revenue', 'retention', 'growth', 'risk', 'cost', 'product']
-export const insightSeverityValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['InsightSeverity']
-> = ['critical', 'warning', 'opportunity', 'info']
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
-export const legacyOrganizationStatusValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyOrganizationStatus']
-> = ['created', 'under_review', 'denied', 'active']
-export const legacyRecurringProductPriceCustomAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceCustom']['amount_type']
-> = ['custom']
-export const legacyRecurringProductPriceFixedAmount_typeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['LegacyRecurringProductPriceFixed']['amount_type']
-> = ['fixed']
 export const licenseKeyStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['LicenseKeyStatus']
 > = ['granted', 'revoked', 'disabled']
@@ -73127,8 +73059,8 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'create_catalog',
   'copy_cards',
   'activate_subscriptions',
-  'cleanup',
   'completed',
+  'closed',
 ]
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
@@ -73145,9 +73077,6 @@ export const meterSortPropertyValues: ReadonlyArray<
 export const meterUnitValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterUnit']
 > = ['scalar', 'token', 'custom']
-export const metricChartBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['MetricChartBlock']['type']
-> = ['metric_chart']
 export const metricTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
@@ -73788,6 +73717,9 @@ export const organizationDeletionBlockedReasonValues: ReadonlyArray<
 > = ['has_orders', 'has_active_subscriptions', 'stripe_account_deletion_failed']
 export const organizationDetailsSwitching_fromAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationDetails']['switching_from']
+> = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
+export const organizationDetailsInputSwitching_fromAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrganizationDetailsInput']['switching_from']
 > = ['paddle', 'lemon_squeezy', 'gumroad', 'stripe', 'other']
 export const organizationIndividualLegalEntitySchemaTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationIndividualLegalEntitySchema']['type']
@@ -74940,9 +74872,6 @@ export const productPriceSeatBasedCreateAmount_typeValues: ReadonlyArray<
 export const productPriceSourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceSource']
 > = ['catalog', 'ad_hoc']
-export const productPriceTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ProductPriceType']
-> = ['one_time', 'recurring']
 export const productPriceUnitBasedAmount_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductPriceUnitBased']['amount_type']
 > = ['unit_based']
@@ -74970,6 +74899,9 @@ export const propertyAggregationFuncValues: ReadonlyArray<
 export const recurringIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RecurringInterval']
 > = ['day', 'week', 'month', 'year']
+export const reducerKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReducerKind']
+> = ['usage', 'credit']
 export const refundCreateReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundCreate']['reason']
 > = [
@@ -74989,6 +74921,8 @@ export const refundReasonValues: ReadonlyArray<
   'service_disruption',
   'satisfaction_guarantee',
   'dispute_prevention',
+  'tax_refund',
+  'vat_reverse_charge_correction',
   'other',
 ]
 export const refundSortPropertyValues: ReadonlyArray<
@@ -75154,7 +75088,6 @@ export const stripeAccountCountryValues: ReadonlyArray<
   'MX',
   'MD',
   'MN',
-  'MA',
   'NA',
   'NL',
   'NZ',
@@ -75462,9 +75395,6 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   'country',
   '-country',
 ]
-export const textBlockTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
-> = ['text']
 export const tierTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TierType']
 > = ['volume', 'graduated']
@@ -75763,12 +75693,6 @@ export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
-export const viewCostsActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ViewCostsAction']['type']
-> = ['view_costs']
-export const viewMetricActionTypeValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['ViewMetricAction']['type']
-> = ['view_metric']
 export const visibilityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Visibility']
 > = ['draft', 'private', 'public']

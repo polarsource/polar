@@ -51,6 +51,11 @@ const shownToBuyer = (error: object) => {
 export const isShownToBuyer = (error: unknown) =>
   errorsShownToBuyer.has(error as object)
 
+const CONTACT_FIELDS = new Set<string>(['customer_email', 'customer_name'])
+
+const isContactOnly = (data: schemas['CheckoutUpdatePublic']) =>
+  Object.keys(data).every((field) => CONTACT_FIELDS.has(field))
+
 export interface CheckoutFormContextProps {
   checkout: schemas['CheckoutPublic']
   form: UseFormReturn<schemas['CheckoutUpdatePublic']>
@@ -151,6 +156,7 @@ export const CheckoutFormProvider = ({
     payload: schemas['CheckoutUpdatePublic']
     deferred: Deferred<schemas['CheckoutPublic']>
   } | null>(null)
+  const lastUpdateRef = useRef<Promise<unknown>>(Promise.resolve())
 
   const pump = useCallback(
     async function pump(): Promise<void> {
@@ -191,8 +197,11 @@ export const CheckoutFormProvider = ({
           deferred: createDeferred<schemas['CheckoutPublic']>(),
         }
       }
-      setIsUpdatePending(true)
+      if (!isContactOnly(checkoutUpdatePublic)) {
+        setIsUpdatePending(true)
+      }
       const { promise } = pendingRef.current.deferred
+      lastUpdateRef.current = promise
       if (debounceRef.current !== null) {
         clearTimeout(debounceRef.current)
       }
@@ -209,6 +218,7 @@ export const CheckoutFormProvider = ({
     async (
       checkoutConfirmStripe: schemas['CheckoutConfirmStripe'],
     ): Promise<schemas['CheckoutPublicConfirmed']> => {
+      await lastUpdateRef.current.catch(() => {})
       const { ok, value, error } = await confirmOuter(checkoutConfirmStripe)
 
       if (ok) {

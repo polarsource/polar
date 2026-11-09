@@ -1,15 +1,17 @@
 from typing import Any, Literal
 
 import pytest
+from freezegun import freeze_time
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
-from sqlalchemy.dialects.postgresql.psycopg2 import PGDialect_psycopg2
+from sqlalchemy.dialects.postgresql.psycopg import PGDialect_psycopg
 from sqlalchemy.engine import make_url
 
-from polar.config import settings
+from polar.config import Environment, settings
+from polar.enums import TaxProcessor
 
 
 def build_dsn(
-    driver: Literal["asyncpg", "psycopg2"],
+    driver: Literal["asyncpg", "psycopg"],
     *,
     fallback_host: str | None = "fallback.example.com",
     fallback_port: int | None = 5432,
@@ -31,10 +33,64 @@ def get_connect_args(dsn: str) -> dict[str, Any]:
     dialect = (
         PGDialect_asyncpg()
         if url.drivername.endswith("asyncpg")
-        else PGDialect_psycopg2()
+        else PGDialect_psycopg()
     )
     _, connect_args = dialect.create_connect_args(url)
     return connect_args
+
+
+class TestTaxProcessors:
+    @pytest.mark.parametrize("environment", list(Environment))
+    @pytest.mark.parametrize(
+        "now",
+        ["2026-10-31T23:59:59Z", "2026-11-01T00:00:00Z", "2027-01-01T00:00:00Z"],
+    )
+    @pytest.mark.parametrize(
+        "configured_processors",
+        [[TaxProcessor.stripe], [TaxProcessor.numeral, TaxProcessor.stripe]],
+    )
+    def test_cutover(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        environment: Environment,
+        now: str,
+        configured_processors: list[TaxProcessor],
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", environment)
+        monkeypatch.setattr(settings, "TAX_PROCESSORS", configured_processors)
+        monkeypatch.setattr(settings, "TAX_RECORD_PROCESSOR", configured_processors[0])
+
+        with freeze_time(now):
+            if environment == Environment.production and now >= "2026-11-01":
+                assert settings.tax_processors == [
+                    TaxProcessor.numeral,
+                    TaxProcessor.stripe,
+                ]
+                assert settings.tax_record_processor == TaxProcessor.numeral
+            else:
+                assert settings.tax_processors == configured_processors
+                assert settings.tax_record_processor == configured_processors[0]
+
+    def test_cutover_without_reloading_settings(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", Environment.production)
+        monkeypatch.setattr(settings, "TAX_PROCESSORS", [TaxProcessor.stripe])
+        monkeypatch.setattr(settings, "TAX_RECORD_PROCESSOR", TaxProcessor.stripe)
+
+        with freeze_time("2026-10-31T23:59:59Z") as clock:
+            assert (settings.tax_processors, settings.tax_record_processor) == (
+                [TaxProcessor.stripe],
+                TaxProcessor.stripe,
+            )
+
+            clock.move_to("2026-11-01T00:00:00Z")
+
+            assert settings.tax_processors == [
+                TaxProcessor.numeral,
+                TaxProcessor.stripe,
+            ]
+            assert settings.tax_record_processor == TaxProcessor.numeral
 
 
 class TestBuildPostgresDsn:
@@ -47,9 +103,9 @@ class TestBuildPostgresDsn:
         "password",
         ["abc/123XYZ", "p@ss/w0rd"],
     )
-    @pytest.mark.parametrize("driver", ["asyncpg", "psycopg2"])
+    @pytest.mark.parametrize("driver", ["asyncpg", "psycopg"])
     def test_no_fallback_password_with_reserved_chars(
-        self, driver: Literal["asyncpg", "psycopg2"], password: str
+        self, driver: Literal["asyncpg", "psycopg"], password: str
     ) -> None:
         dsn = settings._build_postgres_dsn(
             driver,
@@ -75,8 +131,8 @@ class TestBuildPostgresDsn:
         assert connect_args["port"] == [6432, 5432]
         assert connect_args["password"] == "s3cret"
 
-    def test_fallback_psycopg2(self) -> None:
-        connect_args = get_connect_args(build_dsn("psycopg2"))
+    def test_fallback_psycopg(self) -> None:
+        connect_args = get_connect_args(build_dsn("psycopg"))
 
         assert connect_args["host"] == "primary.example.com,fallback.example.com"
         assert connect_args["port"] == "6432,5432"

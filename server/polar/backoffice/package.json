@@ -13,7 +13,7 @@
     "@tailwindcss/postcss": "^4.3.0",
     "@tailwindcss/typography": "^0.5.19",
     "daisyui": "^5.5.20",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.2",
     "event-source-plus": "^0.1.15",
     "htmx.org": "^2.0.10",
     "hyperscript.org": "^0.9.91",

@@ -16,7 +16,8 @@ from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject, is_user
+from polar.agent.repository import AgentRepository
+from polar.auth.models import AuthSubject, is_agent, is_user
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
@@ -48,6 +49,7 @@ from polar.kit.sorting import Sorting
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
+    Agent,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -234,9 +236,9 @@ def _review_missing(review: OrganizationReview | None) -> str | None:
         return "No organization review has been submitted"
     if review.is_approved:
         return None
-    missing = f"Review verdict is {review.verdict.value}"
+    missing = f"Review verdict is {review.verdict}"
     if review.appeal_decision is not None:
-        missing += f" (appeal {review.appeal_decision.value})"
+        missing += f" (appeal {review.appeal_decision})"
     return missing
 
 
@@ -342,13 +344,18 @@ class CannotChangeOwnerError(OrganizationError):
         super().__init__(f"Cannot change organization owner: {reason}")
 
 
+_AGENT_ONE_ORGANIZATION_MESSAGE = "An agent can only create one organization."
+
+
 class CannotCreateOrganizationError(OrganizationError):
-    def __init__(self) -> None:
-        super().__init__(
+    def __init__(
+        self,
+        message: str = (
             "You cannot create an organization from a session restricted to a "
-            "specific organization.",
-            403,
-        )
+            "specific organization."
+        ),
+    ) -> None:
+        super().__init__(message, 403)
 
 
 class DisputeAutoAcceptNotEnabled(OrganizationError):
@@ -381,7 +388,7 @@ class OrganizationService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         *,
         slug: str | None = None,
         pagination: PaginationParams,
@@ -461,10 +468,12 @@ class OrganizationService:
         self,
         session: AsyncSession,
         create_schema: OrganizationCreate,
-        auth_subject: AuthSubject[User],
+        auth_subject: AuthSubject[User | Agent],
     ) -> Organization:
         if auth_subject.organization_ids is not None:
             raise CannotCreateOrganizationError()
+        if is_agent(auth_subject) and auth_subject.subject.organization_id is not None:
+            raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
 
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
@@ -480,7 +489,14 @@ class OrganizationService:
             )
 
         create_data = create_schema.model_dump(exclude_unset=True, exclude_none=True)
-        create_data["feature_settings"] = create_data.get("feature_settings", {})
+        create_data["feature_settings"] = {
+            **create_data.get("feature_settings", {}),
+            # Meter cycling is GA, but API versions up to 2026-10 still expose the
+            # flag. Drop this once those versions no longer read it.
+            "meter_cycling_enabled": True,
+        }
+        if is_agent(auth_subject):
+            create_data["feature_settings"]["config_as_code_enabled"] = True
 
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
@@ -510,7 +526,26 @@ class OrganizationService:
                     }
                 ]
             ) from e
-        owner = auth_subject.subject
+
+        enqueue_job("organization.created", organization_id=organization.id)
+
+        if is_agent(auth_subject):
+            agent_repository = AgentRepository.from_session(session)
+            agent = await agent_repository.set_organization(
+                auth_subject.subject, organization
+            )
+            if agent is None:
+                raise CannotCreateOrganizationError(_AGENT_ONE_ORGANIZATION_MESSAGE)
+            return organization
+
+        assert is_user(auth_subject)
+        await self.set_up_for_owner(session, organization, auth_subject.subject)
+        return organization
+
+    async def set_up_for_owner(
+        self, session: AsyncSession, organization: Organization, owner: User
+    ) -> None:
+        """Make `owner` the owner of a new organization and run its setup."""
         polar_self_service.enqueue_create_customer(
             organization_id=organization.id,
             name=organization.name,
@@ -522,15 +557,13 @@ class OrganizationService:
         await self.add_user(
             session,
             organization,
-            auth_subject.subject,
+            owner,
             role=OrganizationRole.owner,
             enqueue_polar_self_member=False,
         )
 
-        enqueue_job("organization.created", organization_id=organization.id)
-
-        posthog.auth_subject_event(
-            auth_subject,
+        posthog.user_event(
+            owner,
             "organizations",
             "create",
             "done",
@@ -540,7 +573,6 @@ class OrganizationService:
                 "slug": organization.slug,
             },
         )
-        return organization
 
     async def _validate_currency_change(
         self,
@@ -1271,7 +1303,6 @@ class OrganizationService:
             organization.id,
             next_review_threshold=next_review_threshold,
             min_threshold=_MIN_REVIEW_THRESHOLD,
-            active_capabilities={**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]},
             now=datetime.now(UTC),
         )
 
@@ -1783,6 +1814,8 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         *,
+        actor_type: ActorType,
+        reviewer_id: uuid.UUID | None = None,
         enqueue_review: bool = True,
     ) -> Organization:
         self.set_status(organization, OrganizationStatus.REVIEW)
@@ -1791,12 +1824,13 @@ class OrganizationService:
         organization.snooze_type = None
         session.add(organization)
 
-        # Record a human ESCALATE decision so the agent knows not to auto-act
+        # Record a manual ESCALATE decision so the agent knows not to auto-act
         review_repository = AgentReviewRepository.from_session(session)
         await review_repository.deactivate_current_decisions(organization.id)
         await review_repository.save_review_decision(
             organization_id=organization.id,
-            actor_type=ActorType.HUMAN,
+            actor_type=actor_type,
+            reviewer_id=reviewer_id,
             decision=DecisionType.ESCALATE,
             review_context=ReviewContext.MANUAL,
         )
@@ -1911,7 +1945,7 @@ class OrganizationService:
             organization,
             source=OrganizationRiskSignal.Source.STRIPE,
             type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
-            risk_level=OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+            risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
             account_evaluation_id=evaluation_id,
         )
 
@@ -1968,7 +2002,10 @@ class OrganizationService:
         )
         if organization.status == OrganizationStatus.ACTIVE:
             await self.set_organization_under_review(
-                session, organization, enqueue_review=False
+                session,
+                organization,
+                actor_type=ActorType.STRIPE,
+                enqueue_review=False,
             )
 
     async def _handle_merchant_risk_signal(
@@ -2004,7 +2041,10 @@ class OrganizationService:
             )
             if organization.status == OrganizationStatus.ACTIVE:
                 await self.set_organization_under_review(
-                    session, organization, enqueue_review=False
+                    session,
+                    organization,
+                    actor_type=ActorType.STRIPE,
+                    enqueue_review=False,
                 )
 
     async def set_organization_offboarding(
@@ -2655,8 +2695,8 @@ class OrganizationService:
     ) -> Organization:
         """Override a single capability on an organization.
 
-        The override persists until the next status transition — `set_status`
-        resets `capabilities` from `STATUS_CAPABILITIES`.
+        The override persists across status transitions: `set_status` only
+        moves capabilities that still match the previous status default.
         """
         current: OrganizationCapabilities = dict(  # type: ignore[assignment]
             organization.capabilities

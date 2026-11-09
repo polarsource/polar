@@ -1,6 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check } from 'lucide-react'
+import { Check } from '@polar-sh/orbit/icons'
 import type { ReactNode } from 'react'
 
 export interface OnboardingStep<StepId extends string> {

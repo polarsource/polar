@@ -5,7 +5,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
 import { api } from '@/utils/client'
-import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
+import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import {
   enums,
   isValidationError,
@@ -40,7 +40,7 @@ import {
   useRef,
   useState,
 } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, useFormState } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
 
@@ -136,15 +136,9 @@ const DownloadInvoice = ({
       },
     },
   )
-  const {
-    control,
-    handleSubmit,
-    watch,
-    setError,
-    clearErrors,
-    formState: { errors, isDirty },
-  } = form
-  const country = watch('billing_address.country')
+  const { control, handleSubmit, setError, clearErrors } = form
+  const { errors, isDirty } = useFormState({ control })
+  const country = useWatch({ control, name: 'billing_address.country' })
 
   const fetchInvoiceUrl = useCallback(async (): Promise<string | null> => {
     const response = await api.GET(invoiceURL, {
@@ -351,7 +345,7 @@ const DownloadInvoice = ({
             </InlineModalHeader>
             <Form {...form}>
               <form
-                onSubmit={handleSubmit(onModalSubmit)}
+                onSubmit={(event) => handleSubmit(onModalSubmit)(event)}
                 className="flex flex-col gap-y-6 px-8 pb-10"
               >
                 <FormField

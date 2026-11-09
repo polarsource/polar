@@ -38,6 +38,35 @@ test('parent message shows the commit title with run, commit and PR links', () =
 const completed = { ...run, status: 'completed' };
 const environmentText = jobs => buildEnvironmentUpdates({ run: completed, jobs, channel: 'CDEPLOY' }).map(update => update.message.text).join('\n');
 
+test('parent credits the author and includes a different merger', () => {
+  const parent = buildParentMessage({ run, channel: 'CDEPLOY', author: 'alice', merger: 'bob' });
+  assert.equal(parent.text, 'Deploying: Ship a change\nAuthor: alice  ·  Merged by: bob');
+  assert.equal(parent.blocks[0].text.text, parent.text);
+  const same = buildParentMessage({ run, channel: 'CDEPLOY', author: 'Alice', merger: 'alice' });
+  assert.equal(same.text, 'Deploying: Ship a change\nAuthor: Alice');
+});
+
+test('parent falls back to the commit author and escapes attribution', () => {
+  const parent = buildParentMessage({
+    run: { ...run, head_commit: { message: 'Hotfix', author: { name: 'Alice & <!channel>' } } },
+    channel: 'CDEPLOY',
+  });
+  assert.equal(parent.text, 'Deploying: Hotfix\nAuthor: Alice &amp; &lt;!channel&gt;');
+});
+
+test('display names are escaped plain text and do not determine whether the merger is different', () => {
+  const parent = buildParentMessage({
+    run, channel: 'CDEPLOY', author: 'alice', merger: 'bob',
+    authorDisplayName: 'Alex & <@USER>', mergerDisplayName: 'Alex & <@USER>',
+  });
+  assert.equal(parent.text, 'Deploying: Ship a change\nAuthor: Alex &amp; &lt;@USER&gt;  ·  Merged by: Alex &amp; &lt;@USER&gt;');
+  const same = buildParentMessage({
+    run, channel: 'CDEPLOY', author: 'Alice', merger: 'alice',
+    authorDisplayName: 'Alex', mergerDisplayName: 'Alex',
+  });
+  assert.equal(same.text, 'Deploying: Ship a change\nAuthor: Alex');
+});
+
 test('environment replies link to telemetry and the Render service', () => {
   const text = environmentText([backend]);
   assert.match(text, /Render: :white_check_mark: <[^>]+\|success>/);
@@ -86,6 +115,19 @@ test('environment replies distinguish skipped, failed, cancelled and unknown com
   assert.match(text, /Frontend promotion: :x:/);
   assert.match(text, /Lambda update request: :no_entry_sign:/);
   assert.match(environmentText([{ ...backend, conclusion: null }]), /Render: :grey_question: <[^>]+\|unknown>/);
+});
+
+test('production reports the frontend build that runs before the production deploy', () => {
+  const deployWorkflow = readFileSync(new URL('../../workflows/deploy.yml', import.meta.url), 'utf8');
+  const buildName = deployWorkflow.match(/\n  build-production-frontend:\n    name: "([^"]+)"/)[1];
+  const text = environmentText([
+    { ...backend, name: buildName },
+    { ...backend, name: 'Deploy to Production 🚀 / Frontend: Build', conclusion: 'skipped' },
+    { ...backend, name: 'Deploy to Production 🚀 / Backend: Deploy to production' },
+    { ...backend, name: 'Deploy to Production 🚀 / Frontend: Promote to Production' },
+    { ...backend, name: 'Deploy Lambda Worker to Production 🚀' },
+  ]);
+  assert.match(text, /\*production\*\nRender: :white_check_mark: .* Frontend build: :white_check_mark:/);
 });
 
 test('escapes job names and conclusions in the failed jobs list', () => {

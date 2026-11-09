@@ -109,6 +109,7 @@ class TestGuardDutyScanResult:
         assert notification.payload.file_name == file.name
         assert notification.payload.organization_name == organization.name
         assert notification.payload.organization_slug == organization.slug
+        assert notification.payload.threat_names == ["EICAR-Test-File (not a virus)"]
 
     async def test_idempotent(
         self,

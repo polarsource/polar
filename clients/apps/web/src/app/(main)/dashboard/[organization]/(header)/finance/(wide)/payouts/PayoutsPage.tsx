@@ -28,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
-import { EllipsisVertical } from 'lucide-react'
+import { EllipsisVertical } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 
 const isPayout = (

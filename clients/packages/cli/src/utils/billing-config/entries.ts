@@ -5,11 +5,7 @@ import {
   name,
   priceGroups,
 } from '@/utils/billing-config/describe'
-import {
-  discountDuration,
-  discountValue,
-  recurrence,
-} from '@/utils/billing-config/sentences'
+import { meterCycle, recurrence } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
 type Action = AppliedEntry['action']
@@ -20,6 +16,7 @@ export const MARKS: Record<Action, string> = {
   created: ui.green('+'),
   updated: ui.yellow('~'),
   unchanged: ui.dim('='),
+  removed: ui.red('-'),
 }
 
 const INLINE_LIMIT = 40
@@ -100,13 +97,11 @@ const formatChange = (
     const [first = '', ...rest] = valueLines(change.after).map(ui.green)
     return row(indent, change.field, width, first, rest)
   }
-  if (isInline(change.before) && isInline(change.after)) {
-    return row(
-      indent,
-      change.field,
-      width,
-      `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`,
-    )
+  const inline = `${paint(change.before, ui.red)} ${ui.dim('→')} ${paint(change.after, ui.green)}`
+  const fits =
+    indent.length + width + 2 + Bun.stringWidth(inline) <= ui.boxInner()
+  if (isInline(change.before) && isInline(change.after) && fits) {
+    return row(indent, change.field, width, inline)
   }
   return [
     `${indent}${ui.dim(change.field)}`,
@@ -149,8 +144,6 @@ const mergeRecurrence = (diff: ReadonlyArray<Change>): Change[] => {
   )
 }
 
-const isSet = (value: unknown) => value !== null && value !== undefined
-
 const merge = (
   diff: ReadonlyArray<Change>,
   fields: ReadonlyArray<string>,
@@ -171,46 +164,6 @@ const merge = (
   )
 }
 
-const discountOff = (values: Record<string, unknown>) =>
-  isSet(values['amounts'])
-    ? discountValue({ type: 'fixed', amounts: values['amounts'] })
-    : isSet(values['basis_points'])
-      ? discountValue({ basis_points: values['basis_points'] })
-      : undefined
-
-const discountLength = (values: Record<string, unknown>) =>
-  isSet(values['duration_in_months'])
-    ? discountDuration({
-        duration: 'repeating',
-        duration_in_months: values['duration_in_months'],
-      })
-    : isSet(values['duration'])
-      ? discountDuration({ duration: values['duration'] })
-      : undefined
-
-const allProducts = (value: unknown) =>
-  Array.isArray(value) && value.length === 0
-    ? new Rendered('all products')
-    : value
-
-const mergeDiscount = (diff: ReadonlyArray<Change>) =>
-  merge(
-    diff.some(({ field }) => field === 'basis_points' || field === 'amounts')
-      ? merge(diff, ['type', 'basis_points', 'amounts'], 'value', discountOff)
-      : [...diff],
-    ['duration', 'duration_in_months'],
-    'duration',
-    discountLength,
-  ).map((change) =>
-    change.field === 'products'
-      ? {
-          ...change,
-          before: allProducts(change.before),
-          after: allProducts(change.after),
-        }
-      : change,
-  )
-
 const SETTING_VALUES: Record<string, (value: string) => string> = {
   currency: (value) => value.toUpperCase(),
   tax: (value) => value,
@@ -227,8 +180,17 @@ const renderSetting = (change: Change): Change => ({
   after: settingValue(change.field, change.after),
 })
 
+const METER_CYCLE = ['meter_interval', 'meter_interval_count']
+
+const mergeMeterCycle = (diff: ReadonlyArray<Change>) =>
+  METER_CYCLE.every((field) => diff.some((change) => change.field === field))
+    ? merge(diff, METER_CYCLE, 'meter cycle', (values) =>
+        meterCycle(values['meter_interval'], values['meter_interval_count']),
+      )
+    : [...diff]
+
 export const fieldChanges = (diff: ReadonlyArray<Change>, section?: string) =>
-  mergeDiscount(mergeRecurrence(diff))
+  mergeMeterCycle(mergeRecurrence(diff))
     .map((change) => (section === 'settings' ? renderSetting(change) : change))
     .flatMap(expand)
     .map((change) => ({ ...change, field: name(change.field) }))
@@ -252,26 +214,57 @@ const DONE: Labels = {
   created: 'created',
   updated: 'updated',
   unchanged: 'unchanged',
+  removed: 'removed',
 }
 
 const COLORS: Record<Action, Color> = {
   created: ui.green,
   updated: ui.yellow,
   unchanged: ui.dim,
+  removed: ui.red,
 }
 
 const count = (entries: ReadonlyArray<AppliedEntry>, action: Action) =>
   entries.filter((entry) => entry.action === action).length
 
+const counted = (
+  entries: ReadonlyArray<AppliedEntry>,
+  action: Action,
+  label: string,
+) => {
+  const total = count(entries, action)
+  return (total === 0 ? ui.dim : COLORS[action])(`${total} ${label}`)
+}
+
 export const tally = (entries: ReadonlyArray<AppliedEntry>) =>
-  (['created', 'updated', 'unchanged'] as const)
-    .map((action) =>
-      COLORS[action](`${count(entries, action)} ${DONE[action]}`),
-    )
+  (['created', 'updated', 'removed', 'unchanged'] as const)
+    .filter((action) => action !== 'removed' || count(entries, action) > 0)
+    .map((action) => counted(entries, action, DONE[action]))
     .join(', ')
 
 export const changeCount = (entries: ReadonlyArray<AppliedEntry>) =>
-  count(entries, 'created') + count(entries, 'updated')
+  count(entries, 'created') +
+  count(entries, 'updated') +
+  count(entries, 'removed')
+
+export const planTally = (entries: ReadonlyArray<AppliedEntry>) =>
+  [
+    counted(entries, 'updated', 'to change'),
+    counted(entries, 'created', 'to add'),
+    ...(count(entries, 'removed') > 0
+      ? [counted(entries, 'removed', 'to remove')]
+      : []),
+    counted(entries, 'unchanged', 'unchanged'),
+  ].join(', ')
+
+export const updatedBenefits = (entries: ReadonlyArray<AppliedEntry>) =>
+  new Set(
+    entries
+      .filter(
+        ({ section, action }) => section === 'benefits' && action === 'updated',
+      )
+      .map(({ id }) => name(id)),
+  )
 
 export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
-  `${ui.INDENT}${ui.dim('Plan:')} ${COLORS.updated(`${count(entries, 'updated')} to change`)}, ${COLORS.created(`${count(entries, 'created')} to add`)}, ${COLORS.unchanged(`${count(entries, 'unchanged')} unchanged`)}`
+  `${ui.INDENT}${ui.dim('Plan:')} ${planTally(entries)}`

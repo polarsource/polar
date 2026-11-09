@@ -60,12 +60,27 @@ const ErrorDetail = Schema.Struct({
   detail: Schema.Union([Schema.String, Schema.Array(ValidationIssue)]),
 })
 
+const repeatFlagHint = (loc: ReadonlyArray<string | number>, msg: string) => {
+  const name = loc.at(-2)
+  if (
+    typeof loc.at(-1) !== 'number' ||
+    typeof name !== 'string' ||
+    !msg.includes('valid UUID') ||
+    !msg.includes('found `[`')
+  ) {
+    return ''
+  }
+  const flag = `--${name.replace(/_/g, '-')}`
+  return `. Repeat ${flag} once per ID instead of passing a list, e.g. ${flag} <id> ${flag} <id>`
+}
+
 const describeIssues = (issues: ReadonlyArray<typeof ValidationIssue.Type>) =>
   [
     'The request is invalid:',
     ...issues.map(({ loc, msg }) => {
       const field = (loc[0] === 'body' ? loc.slice(1) : loc).join('.')
-      return field ? `${field}: ${msg}` : msg
+      const message = `${msg}${repeatFlagHint(loc, msg)}`
+      return field ? `${field}: ${message}` : message
     }),
   ].join('\n    ')
 
@@ -80,9 +95,13 @@ const detailOf = (body: unknown) => {
     : describeIssues(detail)
 }
 
-const describeFailure = (statusCode: number | undefined, detail?: string) => {
+const describeFailure = (
+  statusCode: number | undefined,
+  detail: string | undefined,
+  errorName: string,
+) => {
   if (statusCode === undefined) {
-    return 'Polar API request failed. Check your connection and try again.'
+    return `Polar API request failed (${errorName}). Check your connection and try again.`
   }
   if (detail) return detail
   return statusCode >= 500
@@ -164,6 +183,7 @@ export const make = Effect.gen(function* () {
                   : undefined,
               organizationNotAccessible: isOrganizationNotAccessible(body),
               detail: detailOf(body),
+              errorName: error instanceof Error ? error.name : typeof error,
             }
           },
         })
@@ -199,12 +219,16 @@ export const make = Effect.gen(function* () {
             case 404:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: `${error.detail ?? 'Not found'} in ${environment}. Check the ID, and --org or ${orgCommand} if it belongs to another organization.`,
+                message: `${error.detail ?? 'Not found'} in ${environment}. Check the ID, or run ${orgCommand} to switch if it belongs to another organization.`,
               })
             default:
               return new AuthError({
                 statusCode: error.statusCode,
-                message: describeFailure(error.statusCode, error.detail),
+                message: describeFailure(
+                  error.statusCode,
+                  error.detail,
+                  error.errorName,
+                ),
               })
           }
         }),

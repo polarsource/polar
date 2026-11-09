@@ -5,11 +5,11 @@ from tests.fixtures.database import SaveFixture
 
 
 @pytest.fixture
-async def config_as_code_enabled(
+async def meter_cycling_enabled(
     save_fixture: SaveFixture, organization: Organization
 ) -> None:
     organization.feature_settings = {
         **organization.feature_settings,
-        "config_as_code_enabled": True,
+        "meter_cycling_enabled": True,
     }
     await save_fixture(organization)

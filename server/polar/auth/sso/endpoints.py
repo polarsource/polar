@@ -25,13 +25,12 @@ from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
+from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.sso.repository import (
-    OrganizationDomainRepository,
-    OrganizationSSOConnectionRepository,
-)
+from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.user.repository import UserRepository
+from polar.user.service import UserCannotAuthenticate
 from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
 
@@ -278,7 +277,10 @@ async def callback(
             "This email address is not in a verified domain of this organization"
         )
 
-    user, created = await user_service.get_by_email_or_create(session, email)
+    try:
+        user, created = await user_service.get_by_email_or_create(session, email)
+    except UserCannotAuthenticate as e:
+        raise PolarAuthRedirectionError(e.message) from e
     if created:
         user.email_verified = True
         session.add(user)

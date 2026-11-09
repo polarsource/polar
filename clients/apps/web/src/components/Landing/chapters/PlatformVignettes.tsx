@@ -4,7 +4,7 @@ import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { useInView } from '@/hooks/useInView'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, LoaderCircle } from 'lucide-react'
+import { Check, LoaderCircle } from '@polar-sh/orbit/icons'
 import { useReducedMotion } from 'motion/react'
 import { Shimmer } from '../Shimmer'
 import { ReactNode, useEffect, useState, useSyncExternalStore } from 'react'
@@ -109,7 +109,7 @@ export const MeterVignette = () => {
         header={
           <>
             <Box alignItems="center" columnGap="xs">
-              <LogoIcon size={14} />
+              <LogoIcon size={12} />
               <Text variant="caption" color="muted">
                 Meter
               </Text>
@@ -173,7 +173,7 @@ export const CheckoutVignette = () => {
         header={
           <>
             <Box alignItems="center" columnGap="xs">
-              <LogoIcon size={14} />
+              <LogoIcon size={12} />
               <Text variant="caption" color="muted">
                 Checkout
               </Text>
@@ -225,7 +225,7 @@ export const PayoutVignette = () => {
         header={
           <>
             <Box alignItems="center" columnGap="xs">
-              <LogoIcon size={14} />
+              <LogoIcon size={12} />
               <Text variant="caption" color="muted">
                 Payout
               </Text>

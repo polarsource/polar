@@ -1,5 +1,7 @@
 locals {
   backend_config = {
+    database_statement_cache_size             = 0
+    database_prepared_statement_cache_size    = 0
     linear_team_id                            = var.linear_team_id
     linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
 
@@ -25,6 +27,7 @@ locals {
   }
 
   backend_secrets = {
+    mcp_oauth2_client_id           = var.mcp_oauth2_client_id
     linear_api_key                 = var.linear_api_key
     stripe_publishable_key         = var.stripe_publishable_key_sandbox
     discord_bot_token              = var.backend_discord_bot_token_sandbox
@@ -42,9 +45,12 @@ locals {
   }
 
   google_secrets = {
-    client_id            = var.google_client_id_sandbox
-    client_secret        = var.google_client_secret_sandbox
-    service_account_json = var.google_service_account_json
+    backoffice_client_id     = var.backoffice_google_client_id
+    backoffice_client_secret = var.backoffice_google_client_secret
+    backoffice_hosted_domain = var.backoffice_google_hosted_domain
+    client_id                = var.google_client_id_sandbox
+    client_secret            = var.google_client_secret_sandbox
+    service_account_json     = var.google_service_account_json
   }
 
   pydantic_ai_gateway_secrets = { api_key = var.pydantic_ai_gateway_api_key_sandbox }
@@ -101,7 +107,6 @@ locals {
     access_token     = var.polar_access_token
     webhook_secret   = var.polar_webhook_secret
     organization_id  = var.polar_organization_id
-    free_product_id  = var.polar_free_product_id
     scale_product_id = var.polar_scale_product_id
     api_url          = "https://sandbox-api.polar.sh"
   }
@@ -146,4 +151,9 @@ module "backend_environment" {
   prometheus_config = local.prometheus_config
   polar_self_config = local.polar_self_config
   tinybird_config   = local.tinybird_config
+
+  # Token only: without POLAR_SLACK_CHANNEL, invariant failures don't post to Slack.
+  slo_report_config = var.slo_report_slack_bot_token != "" ? {
+    slack_bot_token = var.slo_report_slack_bot_token
+  } : null
 }

@@ -7,12 +7,12 @@ import typing
 
 import typing_extensions
 
-from polar.outpost.event import Event
+from polar.outpost.event import Event, PropertyReader, get_property_reader
 
 
 class FilterClause(typing.TypedDict):
     property: str
-    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte"]
+    operator: typing.Literal["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"]
     value: str | int | float | bool
 
 
@@ -35,12 +35,14 @@ Aggregation: typing.TypeAlias = CountAggregation | PropertyAggregation
 
 class Reducer(typing.TypedDict):
     id: str
+    kind: typing.Literal["usage", "credit"]
     filter: Filter
     aggregation: Aggregation
     meter_ids: typing.NotRequired[list[str]]
 
 
 EventMatcher: typing.TypeAlias = collections.abc.Callable[[Event], bool]
+ReducerMatcher: typing.TypeAlias = tuple["Reducer", EventMatcher, PropertyReader]
 
 
 @dataclasses.dataclass
@@ -61,6 +63,15 @@ class BucketStatistics:
         if other.max is not None:
             self.max = max(self.max, other.max) if self.max is not None else other.max
 
+    def add_value(self, value: float) -> None:
+        total = self.sum + value
+        if isinstance(total, float) and not math.isfinite(total):
+            raise ValueError("Aggregation values must be finite")
+        self.count += 1
+        self.sum = total
+        self.min = min(self.min, value) if self.min is not None else value
+        self.max = max(self.max, value) if self.max is not None else value
+
     def quantity(self, func: str) -> int | float:
         match func:
             case "count":
@@ -78,7 +89,8 @@ class BucketStatistics:
 
 
 Updates: typing.TypeAlias = dict[tuple[str, str, int], BucketStatistics]
-BUCKET_SIZE = 300_000_000
+BUCKET_SIZE = 300000000
+EPOCH = datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
 FILTER_OPERATORS = {
     "eq": operator.eq,
     "ne": operator.ne,
@@ -99,53 +111,93 @@ def get_matcher(clause: Filter | FilterClause) -> EventMatcher:
     if is_filter_clause(clause):
         expected = clause["value"]
         expected_type = type(expected)
+        read = get_property_reader(clause["property"])
+
+        if clause["operator"] in ("like", "not_like"):
+            # Polar compares strings; a number or boolean on either side matches nothing.
+            if not isinstance(expected, str):
+                return lambda event: False
+            contains = clause["operator"] == "like"
+
+            def contains_matcher(event: Event) -> bool:
+                actual = read(event)
+                return isinstance(actual, str) and (expected in actual) is contains
+
+            return contains_matcher
+
         filter_operator = FILTER_OPERATORS[clause["operator"]]
-        property = clause["property"]
+        if filter_operator in (operator.eq, operator.ne):
 
-        def matcher(event: Event) -> bool:
-            actual = event.get_property(property)
-            if actual is None:
-                return False
-            if filter_operator in (operator.eq, operator.ne):
-                return filter_operator(actual, expected)
-            same_type = type(actual) is expected_type or (
-                type(actual) in (int, float) and expected_type in (int, float)
-            )
-            if not same_type:
-                return False
-            if type(actual) not in (int, float, str):
-                return False
-            return filter_operator(actual, expected)
+            def equality_matcher(event: Event) -> bool:
+                actual = read(event)
+                return actual is not None and filter_operator(actual, expected)
 
-        return matcher
+            return equality_matcher
+
+        if expected_type in (int, float):
+            comparable: tuple[type, ...] = (int, float)
+        elif expected_type is str:
+            comparable = (str,)
+        else:
+            return lambda event: False
+
+        def ordering_matcher(event: Event) -> bool:
+            actual = read(event)
+            return type(actual) in comparable and filter_operator(actual, expected)
+
+        return ordering_matcher
 
     child_matchers = [get_matcher(child) for child in clause["clauses"]]
-    conjunction_operator = all if clause["conjunction"] == "and" else any
+    if not child_matchers:
+        return lambda event: True
+    if len(child_matchers) == 1:
+        return child_matchers[0]
+    if clause["conjunction"] == "and":
 
-    def matcher(event: Event) -> bool:
-        return conjunction_operator(
-            child_matcher(event) for child_matcher in child_matchers
-        )
+        def all_matcher(event: Event) -> bool:
+            for child_matcher in child_matchers:
+                if not child_matcher(event):
+                    return False
+            return True
 
-    return matcher
+        return all_matcher
+
+    def any_matcher(event: Event) -> bool:
+        for child_matcher in child_matchers:
+            if child_matcher(event):
+                return True
+        return False
+
+    return any_matcher
 
 
+# Credit reducers count Polar's system events: no local event matches them.
 def with_matchers(
     reducers: collections.abc.Iterable[Reducer],
-) -> list[tuple[Reducer, EventMatcher]]:
-    return [(reducer, get_matcher(reducer["filter"])) for reducer in reducers]
+) -> list[ReducerMatcher]:
+    return [
+        (
+            reducer,
+            get_matcher(reducer["filter"]),
+            (lambda event: 1)
+            if reducer["aggregation"]["func"] == "count"
+            else get_property_reader(reducer["aggregation"]["property"]),
+        )
+        for reducer in reducers
+        if reducer["kind"] == "usage"
+    ]
 
 
 def get_bucket_start(timestamp: datetime.datetime) -> int:
     if timestamp.utcoffset() is None:
         raise ValueError("Bucket timestamps must include a timezone")
-    delta = timestamp - datetime.datetime(1970, 1, 1, tzinfo=datetime.UTC)
+    delta = timestamp - EPOCH
     epoch = (delta.days * 86400 + delta.seconds) * 1_000_000 + delta.microseconds
     return epoch - epoch % BUCKET_SIZE
 
 
 def reduce(
-    reducers: collections.abc.Sequence[tuple[Reducer, EventMatcher]],
+    reducers: collections.abc.Sequence[ReducerMatcher],
     events: collections.abc.Sequence[Event],
     *,
     oldest_bucket_start: int,
@@ -155,30 +207,21 @@ def reduce(
         bucket_start = get_bucket_start(event.timestamp)
         if bucket_start < oldest_bucket_start:
             continue
-        for reducer, matcher in reducers:
+        for reducer, matcher, read in reducers:
             if not matcher(event):
                 continue
-            aggregation = reducer["aggregation"]
-            func = aggregation["func"]
-            if func == "count":
-                value: int | float = 1
-            else:
-                raw_value = event.get_property(
-                    typing.cast(PropertyAggregation, aggregation)["property"]
-                )
-                if not isinstance(raw_value, (int, float)) or isinstance(
-                    raw_value, bool
-                ):
-                    continue
-                value = typing.cast(int | float, raw_value)
-                if isinstance(value, float) and not math.isfinite(value):
-                    raise ValueError("Aggregation values must be finite")
+            value = read(event)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                continue
+            if isinstance(value, float) and not math.isfinite(value):
+                raise ValueError("Aggregation values must be finite")
 
             update_key = (event.external_customer_id, reducer["id"], bucket_start)
-            statistics = updates.setdefault(update_key, BucketStatistics())
-            statistics.add(
-                BucketStatistics(count=1)
-                if func == "count"
-                else BucketStatistics(count=1, sum=value, min=value, max=value)
-            )
+            statistics = updates.get(update_key)
+            if statistics is None:
+                statistics = updates[update_key] = BucketStatistics()
+            if reducer["aggregation"]["func"] == "count":
+                statistics.count += 1
+            else:
+                statistics.add_value(value)
     return updates

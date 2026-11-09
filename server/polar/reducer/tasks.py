@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
+from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.observability.task_logging import LoggableField
@@ -37,11 +38,17 @@ async def seal(
     at: Annotated[str, LoggableField],
 ) -> None:
     async with AsyncSessionMaker() as session:
-        customer = await CustomerRepository.from_session(session).get_by_id(customer_id)
+        customer = await CustomerRepository.from_session(session).get_by_id(
+            customer_id, include_deleted=True
+        )
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
+        seal_at = datetime.fromisoformat(at)
+        boundaries = await billing_interval_service.get_boundaries(
+            session, customer, meter_id, until=seal_at
+        )
         await reducer_service.seal(
-            session, customer, meter_id, at=datetime.fromisoformat(at)
+            session, customer, meter_id, at=seal_at, boundaries=boundaries
         )
 
 

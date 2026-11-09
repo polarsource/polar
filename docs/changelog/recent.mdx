@@ -4,6 +4,73 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2026-11-04">
+## Polar is now in ChatGPT and Claude
+
+Polar is available as an official plugin in ChatGPT and an approved MCP server in Claude. Set up your account, configure pricing, meters and credits, or handle customer support from a chat. The MCP server works in any harness with MCP support, including Cursor and OpenCode.
+
+[Read more](/integrate/mcp)
+
+## AI agents can sign up for Polar
+
+An agent can now create a Polar account and get API access on its own, without waiting for you to sign up first. When you're ready to take over, the agent sends you a claim code. After that, the agent keeps working on your behalf.
+
+## Checkout for AI agents
+
+Hosted checkout now exposes WebMCP tools, so AI agents in a WebMCP-capable browser can read the order, fill in customer details, apply a discount, change seats, and submit.
+Agents complete checkouts faster and more reliably than by clicking through the form.
+
+Agents can also pay on the buyer's behalf with Agentcard.
+
+## Self-serve Stripe migrations for everyone
+
+Organizations that used to sell through an eligible Stripe account can now move their customers, products, subscriptions and saved cards to Polar from **Settings → Migrations**.
+The guided flow imports your catalog, moves saved cards, then switches subscriptions over when you're ready.
+
+[Read more](/migrate)
+
+## Verify your domains
+
+Add the domains you own under **Settings → Domains** and verify them with a DNS TXT record. Setting up SSO now requires a verified domain.
+</Update>
+
+<Update label="2026-10-21">
+## Grant credits to customers
+
+Grant usage credits on a customer's meter from the customer page or their usage table, with a preview of the new balance and how much overage the credits cover. The customer meter page now also shows credit history per billing period, including where each credit came from, and recent manual credits can be reversed.
+
+[Read more](/features/usage-based-billing/credits#granting-credits-manually)
+
+## Bill usage on its own cycle
+
+Metered usage no longer has to follow the subscription's billing interval. Turn on **Separate meter cycle** in a product's pricing section to, for example, charge a yearly base price while invoicing usage and granting credits every month.
+
+Customers see the upcoming usage charge in the customer portal and receive a dedicated usage invoice email for each cycle.
+
+[Read more](/features/usage-based-billing/billing#meter-cycle)
+
+## Unit-based pricing is generally available
+
+Sell a quantity of anything, paid up front: devices, licenses, gigabytes, servers. Name the unit, set tiered rates, optionally cap the maximum quantity, and let the buyer pick how many they want at checkout. On subscriptions, quantity changes are prorated.
+
+[Read more](/features/unit-based-pricing)
+
+## Volume and graduated tiers on metered prices
+
+Metered prices can now use volume or graduated tiers, so the rate changes as usage grows. Define the tiers in the product form, and checkout shows customers the full rate card.
+
+[Read more](/features/usage-based-billing/billing#metered-pricing)
+
+## Cancellation and trial notifications
+
+Team members can now be notified when a customer cancels a subscription, including the reason and comment they left. New trials get their own notification, separate from new subscriptions, and you can mute subscription notifications for free products.
+
+## Also new
+
+- **Invoices** now show your organization's name and your card statement descriptor, have a refreshed design, show reverse charge as a clear notice instead of a 0% VAT line, and render Thai text.
+- **Framework adapters** for Next.js, Nuxt, TanStack Start, and Better Auth now pass the customer's IP address when creating a checkout, so customers see prices in their local currency.
+</Update>
+
 <Update label="2026-09-01">
 ## New webhook IP addresses
 

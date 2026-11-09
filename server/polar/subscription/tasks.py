@@ -21,6 +21,7 @@ from polar.worker import (
     enqueue_job,
 )
 
+from .bulk_update import subscription_bulk_update as subscription_bulk_update_service
 from .service import SubscriptionUpdateContext
 from .service import subscription as subscription_service
 
@@ -346,3 +347,16 @@ async def send_trial_conversion_reminder(
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription
         )
+
+
+@actor(actor_name="subscription.bulk_update", priority=TaskPriority.LOW)
+async def subscription_bulk_update(
+    bulk_update_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        has_more = await subscription_bulk_update_service.run_batch(
+            session, bulk_update_id
+        )
+
+    if has_more:
+        enqueue_job("subscription.bulk_update", bulk_update_id=bulk_update_id)

@@ -1,7 +1,12 @@
-import { useProducts, useSelectedProducts } from '@/hooks/queries'
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
+import {
+  latestVersions,
+  useProducts,
+  useSelectedProducts,
+} from '@/hooks/queries'
+import { Check as CheckIcon, ExpandMoreOutlined } from '@polar-sh/orbit/icons'
 import { operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Command,
   CommandEmpty,
@@ -16,12 +21,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { CheckIcon } from 'lucide-react'
 import React, { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
-import ProductPriceTypeLabel from './ProductPriceTypeLabel'
+import ProductPriceTypeLabel, {
+  type ProductPriceType,
+} from './ProductPriceTypeLabel'
+import { ProductVersionLabel } from './ProductVersionLabel'
 
 const ProductsCommandGroup = ({
+  organization,
   groupedProducts,
   productPriceType,
   onSelectProduct,
@@ -29,10 +37,11 @@ const ProductsCommandGroup = ({
   selectedProducts,
   className,
 }: {
-  groupedProducts: Record<schemas['ProductPriceType'], schemas['Product'][]>
-  productPriceType: schemas['ProductPriceType']
+  organization: schemas['Organization']
+  groupedProducts: Record<ProductPriceType, schemas['Product'][]>
+  productPriceType: ProductPriceType
   onSelectProduct: (product: schemas['Product']) => void
-  onSelectProductType: (productPriceType: schemas['ProductPriceType']) => void
+  onSelectProductType: (productPriceType: ProductPriceType) => void
   selectedProducts: schemas['Product'][]
   className?: string
 }) => {
@@ -71,12 +80,19 @@ const ProductsCommandGroup = ({
 
         return (
           <CommandItem
-            className="flex flex-row items-center justify-between text-black dark:text-white"
+            className="flex flex-row items-center justify-between text-black dark:text-white [&_span_svg]:size-3"
             key={product.id}
             value={product.id}
             onSelect={() => onSelectProduct(product)}
           >
-            {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
+            <Box alignItems="center" columnGap="s">
+              {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
+              <ProductVersionLabel
+                organization={organization}
+                product={product}
+                label="Archived"
+              />
+            </Box>
             <CheckIcon
               className={twMerge(
                 'h-4 w-4',
@@ -96,6 +112,7 @@ interface ProductSelectProps {
   emptyLabel?: string
   className?: string
   includeArchived?: boolean
+  filterByExternalId?: boolean
 }
 
 const ProductSelect: React.FC<ProductSelectProps> = ({
@@ -105,12 +122,18 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   emptyLabel,
   className,
   includeArchived = false,
+  filterByExternalId = false,
 }) => {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
 
   // Selected products, with a dedicated hook to exhaust pagination
-  const { data: selectedProducts } = useSelectedProducts(value, includeArchived)
+  const { data: selectedProducts } = useSelectedProducts(
+    filterByExternalId
+      ? { organization_id: organization.id, external_id: value }
+      : { id: value },
+    { includeArchived, includeAllVersions: includeArchived },
+  )
 
   // Queried products, show a selection of products based on the query
   const queriedProductsParameters = useMemo<
@@ -121,7 +144,9 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   >(
     () => ({
       is_archived: includeArchived ? null : false,
-      ...(query ? { query } : {}),
+      ...(query
+        ? { query, ...(includeArchived ? { catalog_status: null } : {}) }
+        : {}),
       sorting: ['name'],
       limit: 50,
     }),
@@ -143,22 +168,22 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
         }
       }
     }
-    return products
-  }, [queriedProducts, selectedProducts, query])
+    return filterByExternalId
+      ? latestVersions(products.filter((product) => product.external_id))
+      : products
+  }, [queriedProducts, selectedProducts, query, filterByExternalId])
 
   // Group displayed products by product price type
   const groupedProducts = useMemo<
-    Record<schemas['ProductPriceType'], schemas['Product'][]>
+    Record<ProductPriceType, schemas['Product'][]>
   >(() => {
     return displayedProducts.reduce<
-      Record<schemas['ProductPriceType'], schemas['Product'][]>
+      Record<ProductPriceType, schemas['Product'][]>
     >(
       (acc, product) => {
         const type = product.is_recurring ? 'recurring' : 'one_time'
-        return {
-          ...acc,
-          [type]: [...acc[type], product],
-        }
+        acc[type].push(product)
+        return acc
       },
       {
         one_time: [],
@@ -172,42 +197,44 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
       return emptyLabel || 'All products'
     }
     if (value.length === 1) {
-      return selectedProducts?.[0].name
+      return selectedProducts?.[0]?.name
     }
     return `${value.length} products`
   }, [value, emptyLabel, selectedProducts])
 
   const onSelectProduct = useCallback(
     (product: schemas['Product']) => {
-      if (value.includes(product.id)) {
-        onChange(value.filter((id) => id !== product.id))
+      const productValue = filterByExternalId ? product.external_id : product.id
+      if (!productValue) {
+        return
+      }
+      if (value.includes(productValue)) {
+        onChange(value.filter((v) => v !== productValue))
       } else {
-        onChange([...value, product.id])
+        onChange([...value, productValue])
       }
     },
-    [onChange, value],
+    [onChange, value, filterByExternalId],
   )
 
   const onSelectProductType = useCallback(
-    (productPriceType: schemas['ProductPriceType']) => {
-      const products = groupedProducts[productPriceType]
-      const allSelected = products.every((product) =>
-        value.includes(product.id),
+    (productPriceType: ProductPriceType) => {
+      const productValues = groupedProducts[productPriceType].flatMap(
+        (product) =>
+          (filterByExternalId ? product.external_id : product.id) ?? [],
       )
+      const selectedValues = new Set(value)
+      const allSelected = productValues.every((v) => selectedValues.has(v))
       if (allSelected) {
-        onChange(
-          value.filter((id) => !products.some((product) => id === product.id)),
-        )
+        onChange(value.filter((v) => !productValues.includes(v)))
       } else {
         onChange([
           ...value,
-          ...products
-            .filter((product) => !value.includes(product.id))
-            .map(({ id }) => id),
+          ...productValues.filter((v) => !selectedValues.has(v)),
         ])
       }
     },
-    [groupedProducts, onChange, value],
+    [groupedProducts, onChange, value, filterByExternalId],
   )
 
   return (
@@ -242,6 +269,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             {queriedProducts?.items && queriedProducts.items.length ? (
               <>
                 <ProductsCommandGroup
+                  organization={organization}
                   groupedProducts={groupedProducts}
                   productPriceType="one_time"
                   onSelectProduct={onSelectProduct}
@@ -253,6 +281,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
                 {groupedProducts.one_time.length > 0 &&
                   groupedProducts.recurring.length > 0 && <CommandSeparator />}
                 <ProductsCommandGroup
+                  organization={organization}
                   groupedProducts={groupedProducts}
                   productPriceType="recurring"
                   onSelectProduct={onSelectProduct}

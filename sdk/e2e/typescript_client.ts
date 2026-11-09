@@ -5,6 +5,7 @@ import { createPolarCore } from "@polar-sh/sdk/2026-10";
 type Customer = Parameters<Outpost["actor"]>[0];
 type Command =
   | { operation: "ingest"; arguments: { events: EventInput[] } }
+  | { operation: "confirm"; arguments: { events: EventInput[] } }
   | { operation: "read"; arguments: Customer & { meter_id: string } }
   | { operation: "actor"; arguments: Customer }
   | { operation: "close" };
@@ -29,7 +30,11 @@ try {
       }
       switch (command.operation) {
         case "ingest":
-          for (const event of command.arguments.events) await outpost.ingest(event);
+          for (const event of command.arguments.events) await outpost.track(event);
+          respond({ result: null });
+          break;
+        case "confirm":
+          await outpost.confirm(command.arguments.events);
           respond({ result: null });
           break;
         case "read":

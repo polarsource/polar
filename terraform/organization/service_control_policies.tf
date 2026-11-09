@@ -106,9 +106,19 @@ locals {
               "rds:DeleteDBInstance",
               "elasticache:DeleteCacheCluster",
               "elasticache:DeleteReplicationGroup",
-              "secretsmanager:DeleteSecret",
             ]
             Resource = "*"
+          },
+          {
+            Sid      = "DenySecretForceDeletion"
+            Effect   = "Deny"
+            Action   = "secretsmanager:DeleteSecret"
+            Resource = "*"
+            Condition = {
+              Bool = {
+                "secretsmanager:ForceDeleteWithoutRecovery" = "true"
+              }
+            }
           },
         ]
       }

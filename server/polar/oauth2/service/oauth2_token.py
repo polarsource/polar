@@ -9,7 +9,7 @@ from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
 from polar.kit.services import ResourceServiceReader
 from polar.logging import Logger
-from polar.models import OAuth2Token, User
+from polar.models import Agent, OAuth2Token, Organization, User
 from polar.oauth2.repository import OAuth2TokenRepository
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -84,12 +84,16 @@ class OAuth2TokenService(ResourceServiceReader[OAuth2Token]):
 
         # Notify
         recipients: list[str]
-        sub = oauth2_token.sub
-        if isinstance(sub, User):
-            recipients = [sub.email]
-        else:
-            members = await user_organization_service.list_by_org(session, sub.id)
-            recipients = [member.user.email for member in members]
+        match oauth2_token.sub:
+            case User() as user:
+                recipients = [user.email]
+            case Organization() as organization:
+                members = await user_organization_service.list_by_org(
+                    session, organization.id
+                )
+                recipients = [member.user.email for member in members]
+            case Agent():
+                recipients = []
 
         oauth2_client = oauth2_token.client
 

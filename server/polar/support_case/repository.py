@@ -55,7 +55,7 @@ class SupportCaseRepository(
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
-    ) -> Select[tuple[SupportCase]]:
+    ) -> Select[SupportCase]:
         """Cases the subject may read: those owned by an organization they manage.
 
         Merchant-facing parity with the appeal gating — only org admins

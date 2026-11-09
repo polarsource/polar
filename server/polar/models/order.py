@@ -27,7 +27,7 @@ from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import TaxBehavior, TaxProcessor
 from polar.exceptions import PolarError
 from polar.kit.address import Address, AddressType
-from polar.kit.db.models import RecordModel
+from polar.kit.db.models import OrganizationCreatedAtIndexMixin, RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
@@ -38,6 +38,7 @@ from polar.tax.tax_id import TaxID, TaxIDType
 if TYPE_CHECKING:
     from polar.models import (
         Checkout,
+        CreditNote,
         Customer,
         CustomerSeat,
         Discount,
@@ -102,7 +103,9 @@ class RefundAmountTooHigh(OrderError):
         super().__init__(message)
 
 
-class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
+class Order(
+    CustomFieldDataMixin, MetadataMixin, OrganizationCreatedAtIndexMixin, RecordModel
+):
     __tablename__ = "orders"
     __table_args__ = (
         Index("ix_total_amount", text("(net_amount_v2 + tax_amount_v2)")),
@@ -276,6 +279,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         # Items are almost always needed, so eager loading makes sense
         lazy="selectin",
     )
+
+    @declared_attr
+    def credit_notes(cls) -> Mapped[list["CreditNote"]]:
+        return relationship("CreditNote", lazy="raise", back_populates="order")
 
     @declared_attr
     def customer_seats(cls) -> Mapped[list["CustomerSeat"]]:

@@ -6,13 +6,67 @@ from tagflow import attr, classes, tag, text
 
 from polar.enums import PaymentProcessor
 from polar.kit.sorting import Sorting
-from polar.models import Order, Payment
+from polar.models import Order, Payment, Refund
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus
+from polar.models.refund import RefundStatus
 from polar.order.sorting import OrderSortProperty
 from polar.payment.sorting import PaymentSortProperty
+from polar.refund.sorting import RefundSortProperty
 
 from ..components import datatable
+
+
+class CreditNoteDownloadAction(datatable.DatatableActionLink[Refund]):
+    def is_hidden(self, request: Request, item: Refund) -> bool:
+        return item.credit_note is None or item.credit_note.path is None
+
+
+@contextlib.contextmanager
+def refunds_datatable(request: Request, items: Sequence[Refund]) -> Generator[None]:
+    d = datatable.Datatable[Refund, RefundSortProperty](
+        datatable.DatatableAttrColumn("id", "ID", clipboard=True),
+        datatable.DatatableDateTimeColumn("created_at", "Created"),
+        datatable.DatatableAttrColumn("status", "Status"),
+        datatable.DatatableAttrColumn("reason", "Reason"),
+        datatable.DatatableCurrencyColumn("amount", "Net amount"),
+        datatable.DatatableCurrencyColumn("tax_amount", "Tax amount"),
+        datatable.DatatableCurrencyColumn("total_amount", "Total"),
+        datatable.DatatableAttrColumn("comment", "Comment"),
+        datatable.DatatableActionsColumn(
+            "Actions",
+            datatable.DatatableActionHTMX(
+                "Generate credit note",
+                lambda request, refund: str(
+                    request.url_for(
+                        "orders:credit_note", id=refund.order_id, refund_id=refund.id
+                    )
+                ),
+                target="#modal",
+                hidden=lambda request, refund: (
+                    refund.status != RefundStatus.succeeded
+                    or (
+                        refund.credit_note is not None
+                        and refund.credit_note.path is not None
+                    )
+                ),
+            ),
+            CreditNoteDownloadAction(
+                "Download credit note",
+                lambda request, refund: str(
+                    request.url_for(
+                        "orders:credit_note_download",
+                        id=refund.order_id,
+                        refund_id=refund.id,
+                    )
+                ),
+                target="_blank",
+            ),
+        ),
+    )
+    with d.render(request, items):
+        pass
+    yield
 
 
 class StatusColumn(datatable.DatatableSortingColumn[Order, OrderSortProperty]):

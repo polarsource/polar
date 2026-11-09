@@ -18,6 +18,16 @@ src/
 The `polar-cli/*` rules in `lint/rules/` enforce these boundaries. Run
 `pnpm lint` after adding a file; the message tells you where it belongs.
 
+## Running it locally
+
+Run the local CLI from source as `dev polar <command>` (the `dev` CLI runs
+`src/` in your current directory, so `dev polar config plan` from
+`clients/apps/demo-app` picks up its `polar.config.ts`). Never test against a
+compiled `polar` binary with saved sessions: macOS treats the fresh binary as
+untrusted and prompts for the keychain password on every read. When a compiled
+artifact must be tested, limit it to `--version` and `--help`, or set
+`POLAR_ACCESS_TOKEN` to bypass the keyring.
+
 ## Adding a command
 
 Build it with `command()` from `@/utils/command`. `run` computes a result,

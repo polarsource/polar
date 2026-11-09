@@ -4,5 +4,5 @@ import { switchStatus } from './switchStatus'
 
 export function SwitchStatusIndicator({ row }: { row: SwitchRow }) {
   const { label, color } = switchStatus(row)
-  return <Status status={label} color={color} size="small" />
+  return <Status status={label} color={color ?? 'gray'} size="small" />
 }

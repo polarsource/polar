@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 
 from polar.auth.dependencies import Authenticator
-from polar.auth.models import Anonymous, AuthSubject, User
+from polar.auth.models import Agent, Anonymous, AuthSubject, User
 from polar.auth.scope import Scope
 from polar.models.organization import Organization
 
@@ -12,15 +12,19 @@ _CheckoutRead = Authenticator(
         Scope.checkouts_read,
         Scope.checkouts_write,
     },
-    allowed_subjects={User, Organization},
+    allowed_subjects={User, Organization, Agent},
 )
-CheckoutRead = Annotated[AuthSubject[User | Organization], Depends(_CheckoutRead)]
+CheckoutRead = Annotated[
+    AuthSubject[User | Organization | Agent], Depends(_CheckoutRead)
+]
 
 _CheckoutWrite = Authenticator(
     required_scopes={Scope.checkouts_write},
-    allowed_subjects={User, Organization},
+    allowed_subjects={User, Organization, Agent},
 )
-CheckoutWrite = Annotated[AuthSubject[User | Organization], Depends(_CheckoutWrite)]
+CheckoutWrite = Annotated[
+    AuthSubject[User | Organization | Agent], Depends(_CheckoutWrite)
+]
 
 _CheckoutWeb = Authenticator(
     required_scopes=set(),

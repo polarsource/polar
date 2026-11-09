@@ -8,10 +8,10 @@ from pytest_codspeed import BenchmarkFixture
 from polar.outpost.event import Event
 from polar.outpost.reducer import (
     Aggregation,
-    EventMatcher,
     Filter,
     FilterClause,
     Reducer,
+    ReducerMatcher,
     get_bucket_start,
     get_matcher,
     reduce,
@@ -90,7 +90,7 @@ def any_of(*clauses: Filter | FilterClause) -> Filter:
 
 
 def reducer_of(id: str, filter: Filter, aggregation: Aggregation) -> Reducer:
-    return {"id": id, "filter": filter, "aggregation": aggregation}
+    return {"id": id, "kind": "usage", "filter": filter, "aggregation": aggregation}
 
 
 def match_all(filter: Filter) -> None:
@@ -99,9 +99,7 @@ def match_all(filter: Filter) -> None:
         matches(event)
 
 
-def reduce_all(
-    matchers: list[tuple[Reducer, EventMatcher]], batch: list[Event]
-) -> None:
+def reduce_all(matchers: list[ReducerMatcher], batch: list[Event]) -> None:
     reduce(matchers, batch, oldest_bucket_start=oldest_bucket_start)
 
 

@@ -1,11 +1,14 @@
-import { Console, Duration, Effect, Exit, Stdio } from 'effect'
+import { Cause, Console, Duration, Effect, Exit, Stdio } from 'effect'
 import yoctoSpinner from 'yocto-spinner'
 import { isJson } from '@/utils/output'
 import * as ui from '@/utils/ui'
 
-interface Progress {
+export interface Progress {
+  readonly open: (title: string) => Effect.Effect<void>
   readonly start: (text: string) => Effect.Effect<void>
   readonly finish: (detail?: string) => Effect.Effect<void>
+  readonly fail: (detail?: string) => Effect.Effect<void>
+  readonly close: Effect.Effect<void>
 }
 
 type Layout = 'checks' | 'columns'
@@ -24,7 +27,13 @@ const formatDuration = (duration: Duration.Duration) =>
   `${Math.round(Duration.toMillis(duration) / 1000)}s`
 
 const line = (mark: string, text: string, detail?: string) =>
-  `${ui.INDENT}${mark} ${text}${detail ? ` ${ui.dim(detail)}` : ''}`
+  `${ui.INDENT}${mark} ${text}${detail ? `\n${ui.INDENT}${ui.INDENT}${ui.dim(detail)}` : ''}`
+
+const boxedSpinnerText = (label: string, elapsed: string) => {
+  const used =
+    ui.INDENT.length + column(label).length + 2 + Bun.stringWidth(elapsed)
+  return `${elapsed}${' '.repeat(Math.max(ui.boxInner() - used, 0))}${ui.dim('│')}\n${ui.boxBottom()}`
+}
 
 const make = (interactive: boolean, layout: Layout) => {
   const spinnerFor = (text: string) =>
@@ -34,7 +43,7 @@ const make = (interactive: boolean, layout: Layout) => {
       spinner: {
         frames: FRAMES.map((frame) =>
           layout === 'columns'
-            ? `${ui.INDENT}${column(text)}${frame}`
+            ? `${ui.INDENT}│${ui.INDENT}${column(text)}${frame}`
             : `${ui.INDENT}${frame}`,
         ),
         interval: 80,
@@ -58,11 +67,32 @@ const make = (interactive: boolean, layout: Layout) => {
       yield* stop
       yield* Console.log(
         layout === 'columns'
-          ? failed
-            ? `${ui.INDENT}${ui.red(column(text))}${detail ?? ''}`.trimEnd()
-            : stepLine(text, detail)
+          ? ui
+              .boxRows(
+                failed
+                  ? `${ui.INDENT}${ui.red(column(text))}${detail ?? ''}`.trimEnd()
+                  : stepLine(text, detail),
+              )
+              .join('\n')
           : line(failed ? ui.red('✖') : ui.green('✔'), text, detail),
       )
+    })
+
+  let opened = false
+
+  const close = Effect.gen(function* () {
+    yield* settle(false)
+    if (!opened) return
+    opened = false
+    yield* Console.log(ui.boxBottom())
+  })
+
+  const open = (title: string) =>
+    Effect.gen(function* () {
+      yield* close
+      if (layout !== 'columns') return
+      opened = true
+      yield* Console.log([ui.blank, ui.heading(title), ui.boxTop()].join('\n'))
     })
 
   const begin = (text: string) =>
@@ -74,7 +104,9 @@ const make = (interactive: boolean, layout: Layout) => {
         const time = ui.dim(
           formatDuration(Duration.millis(Date.now() - startedAt)),
         )
-        return layout === 'columns' ? time : `${text} ${time}`
+        return layout === 'columns'
+          ? boxedSpinnerText(text, time)
+          : `${text} ${time}`
       }
       const running = spinnerFor(text)
       spinner = running
@@ -85,15 +117,24 @@ const make = (interactive: boolean, layout: Layout) => {
     })
 
   const progress: Progress = {
+    open,
     start: (text) => Effect.andThen(settle(false), begin(text)),
     finish: (detail) => settle(false, detail),
+    fail: (detail) => settle(true, detail),
+    close,
   }
-  return { progress, fail: settle(true) }
+  return {
+    progress,
+    fail: (detail: string) => Effect.andThen(settle(true, detail), close),
+  }
 }
 
 const silent: Progress = {
+  open: () => Effect.void,
   start: () => Effect.void,
   finish: () => Effect.void,
+  fail: () => Effect.void,
+  close: Effect.void,
 }
 
 export const withProgress = <A, E, R>(
@@ -106,7 +147,13 @@ export const withProgress = <A, E, R>(
     const { progress, fail } = make(yield* stdio.stdoutIsTerminal, layout)
     return yield* run(progress).pipe(
       Effect.onExit((exit) =>
-        Exit.isSuccess(exit) ? progress.finish() : fail,
+        Exit.isSuccess(exit)
+          ? progress.close
+          : fail(
+              ui.dim(
+                Cause.hasInterruptsOnly(exit.cause) ? 'cancelled' : 'failed',
+              ),
+            ),
       ),
     )
   })

@@ -47,6 +47,7 @@ from polar.kit.sorting import Sorting
 from polar.models import (
     AccountCredit,
     Organization,
+    OrganizationRiskSignal,
     PayoutAccount,
     User,
     UserOrganization,
@@ -57,7 +58,6 @@ from polar.models.order import Order, OrderStatus
 from polar.models.organization import (
     CAPABILITY_METADATA,
     CAPABILITY_NAMES,
-    CapabilityName,
     OrganizationStatus,
     SnoozeType,
 )
@@ -80,6 +80,7 @@ from polar.organization.service import (
     OrganizationError,
 )
 from polar.organization.service import organization as organization_service
+from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.organization_review.appeal_case import (
     AppealCaseError,
 )
@@ -87,11 +88,13 @@ from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
 )
 from polar.organization_review.repository import (
+    FLAGGED_PRODUCT_NAME_TYPES,
     OrganizationReviewRepository,
     OrganizationRiskSignalRepository,
 )
 from polar.organization_review.schemas import (
     AUP_SECTION_LABELS,
+    ActorType,
     AUPSection,
     DecisionType,
     ReviewAgentReport,
@@ -131,6 +134,7 @@ from .forms import (
     AddPaymentMethodDomainForm,
     OrganizationOrdersImportForm,
     UpdateAccountSettingsForm,
+    UpdateCatalogLimitsForm,
     UpdateOrganizationBasicForm,
     UpdateOrganizationDetailsForm,
     UpdateOrganizationInternalNotesForm,
@@ -528,7 +532,9 @@ def _search_rank(q: str) -> ColumnElement[int]:
     return case((_search_match(q), 0), (_search_match(f"{q}%"), 1), else_=2)
 
 
-def _apply_sql_sort(stmt: Select[Any], sort: str, direction: str) -> Select[Any]:
+def _apply_sql_sort(
+    stmt: Select[*tuple[Any, ...]], sort: str, direction: str
+) -> Select[*tuple[Any, ...]]:
     is_desc = direction == "desc"
     if sort == "name":
         return stmt.order_by(
@@ -592,6 +598,7 @@ async def list_organizations(
     days_in_status: str | None = Query(""),
     has_appeal: str | None = Query(""),
     first_reviews: str | None = Query(""),
+    flagged_names: str | None = Query(""),
     deleted: DeletedFilter | None = Query(None),
 ) -> None:
     """
@@ -727,6 +734,16 @@ async def list_organizations(
     elif first_reviews == "false":
         stmt = stmt.where(~Organization.is_first_review)
 
+    if flagged_names == "true":
+        stmt = stmt.where(
+            Organization.id.in_(
+                select(OrganizationRiskSignal.organization_id).where(
+                    OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
+                    OrganizationRiskSignal.deleted_at.is_(None),
+                )
+            )
+        )
+
     stmt = apply_deleted_filter(stmt, deleted_filter)
 
     is_review_tab = status_filter == OrganizationStatus.REVIEW
@@ -831,6 +848,7 @@ async def list_organizations(
                 selected_risk_level=risk_level,
                 selected_days_in_status=days_in_status,
                 selected_has_appeal=has_appeal,
+                selected_flagged_names=flagged_names,
                 selected_deleted=deleted_filter,
                 signals_by_org=signals_by_org,
                 open_case_org_ids=open_case_org_ids,
@@ -967,6 +985,7 @@ async def get_organization_detail(
     risk_signal_repo = OrganizationRiskSignalRepository.from_session(session)
     risk_signals = await risk_signal_repo.list_by_organization(organization_id)
     has_risk_signals = bool(risk_signals)
+    flagged_names = await risk_signal_repo.list_flagged_product_names(organization_id)
 
     # Any open case (appeal or dispute) lights the Support Cases nav badge.
     open_case_count = await session.scalar(
@@ -987,6 +1006,7 @@ async def get_organization_detail(
         startup_program_status=startup_program_status,
         has_open_case=has_open_case,
         has_risk_signals=has_risk_signals,
+        has_flagged_names=bool(flagged_names),
     )
 
     parsed_agent_report = None
@@ -1067,6 +1087,7 @@ async def get_organization_detail(
                     organization,
                     agent_reviews=agent_reviews,
                     risk_signals=risk_signals,
+                    flagged_names=flagged_names,
                 )
                 with reviews_section.render(request):
                     pass
@@ -1172,6 +1193,9 @@ async def _build_payment_stats(
         chargeback_count,
         chargeback_amount,
     ) = await payment_analytics.get_dispute_stats(organization.id)
+    chargeback_stop_count = await payment_analytics.get_chargeback_stop_stats(
+        organization.id
+    )
 
     total_attempts = payment_count + failed_count
     auth_rate = (payment_count / total_attempts * 100) if total_attempts > 0 else 100.0
@@ -1203,6 +1227,7 @@ async def _build_payment_stats(
         "dispute_count": dispute_count,
         "dispute_amount": dispute_amount,
         "dispute_rate": dispute_rate,
+        "chargeback_stop_count": chargeback_stop_count,
         "chargeback_count": chargeback_count,
         "chargeback_amount": chargeback_amount,
         "chargeback_rate": chargeback_rate,
@@ -1245,11 +1270,15 @@ async def overview_setup_checklist(
     orders_count, unrefunded_orders_count = await count_test_sales(
         session, organization_id
     )
+    domain_repository = OrganizationDomainRepository.from_session(session)
     overview = OverviewSection(
         organization,
         orders_count=orders_count,
         unrefunded_orders_count=unrefunded_orders_count,
         shared_organizations=await _get_shared_organizations(session, organization),
+        organization_domains=await domain_repository.get_all(
+            domain_repository.get_statement_by_organization(organization_id)
+        ),
     )
     with overview.setup_checklist_card(request, setup_data):
         pass
@@ -2510,6 +2539,7 @@ async def under_review_dialog(
     request: Request,
     organization_id: UUID4,
     session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
 ) -> HXRedirectResponse | None:
     """Set organization under review dialog and action."""
     repository = OrganizationRepository(session)
@@ -2520,7 +2550,11 @@ async def under_review_dialog(
 
     if request.method == "POST":
         await organization_service.set_organization_under_review(
-            session, organization, enqueue_review=False
+            session,
+            organization,
+            actor_type=ActorType.HUMAN,
+            reviewer_id=user_session.user.id,
+            enqueue_review=False,
         )
 
         return HXRedirectResponse(
@@ -3682,6 +3716,78 @@ async def edit_rate_limit_group(
             hx_post=str(
                 request.url_for(
                     "organizations:edit_rate_limit_group",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col",
+        ):
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
+                    text("Save Changes")
+
+    return None
+
+
+@router.api_route(
+    "/{organization_id}/edit-catalog-limits",
+    name="organizations:edit_catalog_limits",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def edit_catalog_limits(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse | None:
+    """Edit organization catalog limits."""
+    repository = OrganizationRepository(session)
+
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    validation_error: ValidationError | None = None
+
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = UpdateCatalogLimitsForm.model_validate_form(data)
+            await repository.update(
+                organization,
+                update_dict=form.model_dump(),
+            )
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
+                    )
+                )
+                + "?section=settings",
+                303,
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Edit Catalog Limits", open=True):
+        with tag.p(classes="text-sm text-base-content/60 mb-4"):
+            text(
+                "Archived products count towards these limits; deleted products and benefits do not."
+            )
+
+        with UpdateCatalogLimitsForm.render(
+            data={
+                "products_limit": organization.products_limit,
+                "benefits_limit": organization.benefits_limit,
+            },
+            validation_error=validation_error,
+            hx_post=str(
+                request.url_for(
+                    "organizations:edit_catalog_limits",
                     organization_id=organization_id,
                 )
             ),
@@ -5052,14 +5158,13 @@ async def set_capability(
     """Render the capability override modal (GET) or apply it (POST)."""
     if capability not in CAPABILITY_NAMES:
         raise HTTPException(status_code=404, detail="Unknown capability")
-    capability_name = cast(CapabilityName, capability)
 
     repository = OrganizationRepository(session)
     organization = await repository.get_by_id(organization_id, include_blocked=True)
     if organization is None:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    current_value = organization.capabilities[capability_name]
+    current_value = organization.capabilities[capability]
 
     settings_url = str(
         request.url_for(
@@ -5071,12 +5176,12 @@ async def set_capability(
         state = "enabled" if value else "disabled"
         await add_toast(
             request,
-            f"Capability '{capability_name}' is already {state}.",
+            f"Capability '{capability}' is already {state}.",
             "error",
         )
         return HXRedirectResponse(request, settings_url, 303)
 
-    label, _ = CAPABILITY_METADATA[capability_name]
+    label, _ = CAPABILITY_METADATA[capability]
     validation_error: ValidationError | None = None
 
     if request.method == "POST":
@@ -5086,7 +5191,7 @@ async def set_capability(
             await organization_service.set_capability(
                 session,
                 organization,
-                capability_name,
+                capability,
                 value,
                 reason=form.reason,
                 admin_email=user_session.user.email,
@@ -5106,12 +5211,12 @@ async def set_capability(
         request.url_for(
             "organizations:set_capability",
             organization_id=organization_id,
-            capability=capability_name,
+            capability=capability,
         ).include_query_params(value="true" if value else "false")
     )
     modal_view = SetCapabilityModal(
         organization,
-        capability_name,
+        capability,
         label,
         value,
         form_action,

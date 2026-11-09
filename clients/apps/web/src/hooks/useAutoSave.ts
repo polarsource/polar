@@ -19,11 +19,11 @@ export function useAutoSave<T extends FieldValues>({
 
   const isSavingRef = useRef(false)
   const hasPendingChangesRef = useRef(false)
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flushRef = useRef<(() => Promise<void>) | null>(null)
 
   useEffect(() => {
     let active = true
+    let timeout: ReturnType<typeof setTimeout> | null = null
     const flush = async () => {
       if (isSavingRef.current || !hasPendingChangesRef.current) return
 
@@ -42,16 +42,20 @@ export function useAutoSave<T extends FieldValues>({
         // Swallow: consumers handle their own errors via onSave.
       } finally {
         isSavingRef.current = false
-        if (
-          active &&
-          hasPendingChangesRef.current &&
-          timeoutRef.current === null
-        ) {
+        if (active && hasPendingChangesRef.current && timeout === null) {
           void flushRef.current?.()
         }
       }
     }
     flushRef.current = flush
+
+    const scheduleFlush = () => {
+      if (timeout) clearTimeout(timeout)
+      timeout = setTimeout(() => {
+        timeout = null
+        void flushRef.current?.()
+      }, delay)
+    }
 
     // `reset()` emits without a `name`; `field.onChange` and `setValue` both
     // set one. Filtering on `name` keeps programmatic setValue updates (e.g.
@@ -60,19 +64,14 @@ export function useAutoSave<T extends FieldValues>({
       if (!info.name) return
 
       hasPendingChangesRef.current = true
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      timeoutRef.current = setTimeout(() => {
-        timeoutRef.current = null
-        void flushRef.current?.()
-      }, delay)
+      scheduleFlush()
     })
 
     return () => {
       active = false
       subscription.unsubscribe()
       hasPendingChangesRef.current = false
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      timeoutRef.current = null
+      if (timeout) clearTimeout(timeout)
       if (flushRef.current === flush) flushRef.current = null
     }
   }, [form, delay])

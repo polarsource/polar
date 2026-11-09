@@ -11,13 +11,20 @@ import {
   ChartTooltipContent,
   Line,
   LineChart,
+  ReferenceLine,
   XAxis,
   YAxis,
+  type MouseHandlerDataParam,
 } from '@polar-sh/ui/components/ui/chart'
 import { useTheme } from 'next-themes'
-import React, { useCallback, useId, useMemo, useRef, useState } from 'react'
-import { ReferenceLine } from 'recharts'
-import type { MouseHandlerDataParam } from 'recharts'
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import type { AxisTick } from 'recharts/types/util/types'
 
 const MinHeightBar = (props: {
@@ -74,7 +81,6 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   valueFormatter?: (value: number, seriesKey: string) => React.ReactNode
   height?: number
   width?: number
-  showGrid?: boolean
   showYAxis?: boolean
   showLegend?: boolean
   chartType?: 'line' | 'bar'
@@ -82,6 +88,43 @@ interface GenericChartProps<T extends Record<string, unknown>> {
   simple?: boolean
   ticks?: AxisTick[]
   activeCursorIndex?: number | null
+}
+
+interface EdgeTickProps {
+  x?: number | string
+  y?: number | string
+  index?: number
+  visibleTicksCount?: number
+  payload?: { value: unknown }
+  fill?: string
+}
+
+// The axis runs edge to edge, so the first and last labels hang inward
+// instead of being cut off at the chart's edges.
+const EdgeAlignedTick = ({
+  x,
+  y,
+  index = 0,
+  visibleTicksCount = 0,
+  payload,
+  fill,
+  format,
+}: EdgeTickProps & { format?: (value: unknown) => string }) => {
+  const value = payload?.value
+  const anchor =
+    index === 0 ? 'start' : index === visibleTicksCount - 1 ? 'end' : 'middle'
+  return (
+    <text
+      x={x}
+      y={y}
+      dy={12}
+      textAnchor={anchor}
+      fill={fill}
+      className="dark:fill-polar-500 fill-gray-500 text-xs"
+    >
+      {format ? format(value) : String(value ?? '')}
+    </text>
+  )
 }
 
 export const GenericChart = <T extends Record<string, unknown>>({
@@ -94,7 +137,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
   valueFormatter,
   height,
   width,
-  showGrid = false,
   showYAxis = false,
   showLegend = false,
   chartType = 'line',
@@ -115,7 +157,9 @@ export const GenericChart = <T extends Record<string, unknown>>({
 
   // Use a ref so mouse handlers are stable and don't invalidate chartBase memo
   const onDataIndexHoverRef = useRef(onDataIndexHover)
-  onDataIndexHoverRef.current = onDataIndexHover
+  useEffect(() => {
+    onDataIndexHoverRef.current = onDataIndexHover
+  }, [onDataIndexHover])
 
   const handleMouseMove = useCallback((state: MouseHandlerDataParam) => {
     const index = state.activeTooltipIndex
@@ -137,13 +181,10 @@ export const GenericChart = <T extends Record<string, unknown>>({
   const config = useMemo(
     () =>
       series.reduce(
-        (acc, s) => ({
-          ...acc,
-          [s.key]: {
-            label: s.label,
-            color: s.color,
-          },
-        }),
+        (acc, s) => {
+          acc[s.key] = { label: s.label, color: s.color }
+          return acc
+        },
         {} as Record<string, { label: string; color: string }>,
       ),
     [series],
@@ -254,12 +295,13 @@ export const GenericChart = <T extends Record<string, unknown>>({
   // Stable chart base — no dependency on activeCursorIndex or onDataIndexHover,
   // so it won't rebuild on every hover frame.
   const chartBase = useMemo(() => {
+    const axisColor = isDark ? '#2c2d33' : '#e5e7eb'
     const commonProps = {
       accessibilityLayer: true,
       data: data,
       margin: {
-        left: showYAxis ? 4 : 24,
-        right: 24,
+        left: showYAxis ? 4 : 0,
+        right: 0,
         top: 24,
         bottom: showLegend ? 12 : undefined,
       },
@@ -267,28 +309,36 @@ export const GenericChart = <T extends Record<string, unknown>>({
       onMouseLeave: handleMouseLeave,
     }
 
-    const grid =
-      showGrid || !simple ? (
-        <CartesianGrid
-          horizontal={false}
-          vertical={true}
-          stroke={isDark ? '#222225' : '#ccc'}
-          strokeDasharray="6 6"
-          syncWithTicks={true}
-        />
-      ) : undefined
+    // The baseline is a grid line rather than the axis line: Recharts draws
+    // axes above the data, which would cover a line resting on zero.
+    const grid = (
+      <CartesianGrid
+        horizontal={true}
+        vertical={false}
+        stroke={axisColor}
+        horizontalCoordinatesGenerator={({ offset }) => [
+          (offset.top ?? 0) + (offset.height ?? 0),
+        ]}
+      />
+    )
 
     const xAxis = (
       <XAxis
         dataKey={xAxisKey as string}
-        tickLine={false}
+        tickLine={{ stroke: axisColor }}
+        tickSize={4}
         axisLine={false}
         tickMargin={8}
         interval="equidistantPreserveStart"
         ticks={ticks}
-        tickFormatter={
-          xAxisFormatter ? (value) => xAxisFormatter(value) : undefined
-        }
+        tick={(props: EdgeTickProps) => (
+          <EdgeAlignedTick
+            {...props}
+            format={
+              xAxisFormatter ? (value) => xAxisFormatter(value) : undefined
+            }
+          />
+        )}
       />
     )
 
@@ -421,29 +471,29 @@ export const GenericChart = <T extends Record<string, unknown>>({
       if (gradientInfo.type === 'positive') {
         return (
           <>
-            <stop offset="0%" stopColor={color} stopOpacity={0.5} />
-            <stop offset="100%" stopColor={color} stopOpacity={0.025} />
+            <stop offset="0%" stopColor={color} stopOpacity={0.16} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
           </>
         )
       }
       if (gradientInfo.type === 'negative') {
         return (
           <>
-            <stop offset="0%" stopColor={color} stopOpacity={0.025} />
-            <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+            <stop offset="0%" stopColor={color} stopOpacity={0} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.16} />
           </>
         )
       }
       // Mixed: 0.5 at edges, 0.025 at zero line
       return (
         <>
-          <stop offset="0%" stopColor={color} stopOpacity={0.5} />
+          <stop offset="0%" stopColor={color} stopOpacity={0.16} />
           <stop
             offset={`${gradientInfo.zeroOffset * 100}%`}
             stopColor={color}
-            stopOpacity={0.025}
+            stopOpacity={0}
           />
-          <stop offset="100%" stopColor={color} stopOpacity={0.5} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.16} />
         </>
       )
     })()
@@ -472,8 +522,6 @@ export const GenericChart = <T extends Record<string, unknown>>({
   }, [
     chartType,
     data,
-    showGrid,
-    simple,
     isDark,
     ticks,
     xAxisKey,

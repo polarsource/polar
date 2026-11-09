@@ -19,7 +19,6 @@ export interface ChartProps<T extends Record<string, unknown>> {
   xAxisFormatter?: (value: T[keyof T]) => string
   yAxisFormatter?: (value: number) => string
   labelFormatter?: (value: T[keyof T]) => string
-  showGrid?: boolean
   showLegend?: boolean
   showYAxis?: boolean
   loading?: boolean
@@ -34,7 +33,6 @@ export const Chart = <T extends Record<string, unknown>>({
   xAxisFormatter,
   yAxisFormatter,
   labelFormatter,
-  showGrid = true,
   showLegend = true,
   showYAxis = false,
   loading = false,
@@ -73,7 +71,6 @@ export const Chart = <T extends Record<string, unknown>>({
           valueFormatter={yAxisFormatter}
           height={height || 400}
           width={width}
-          showGrid={showGrid}
           showYAxis={showYAxis}
           showLegend={showLegend}
         />

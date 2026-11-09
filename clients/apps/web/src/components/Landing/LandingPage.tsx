@@ -1,6 +1,7 @@
 'use client'
 
 import { MerchantOfRecord } from './chapters/MerchantOfRecord'
+import { FieldGuide } from './chapters/FieldGuide'
 import { Meter } from './chapters/Meter'
 import { StartupProgram } from './chapters/StartupProgram'
 import { UsageBilling } from './chapters/UsageBilling'
@@ -22,6 +23,7 @@ export default function Page() {
       <Understand />
       <MerchantOfRecord />
       <Agents />
+      <FieldGuide />
       <Testimonials />
       <Pricing />
       <StartupProgram />

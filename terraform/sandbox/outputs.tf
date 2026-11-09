@@ -1,3 +1,8 @@
+output "planetscale" {
+  description = "PlanetScale sandbox branch and application role."
+  value       = module.planetscale
+}
+
 output "lambda_worker_ecr_repository_url" {
   description = "ECR repository URL for the sandbox Lambda worker image."
   value       = module.lambda_worker_ecr.repository_url
@@ -16,11 +21,6 @@ output "lambda_worker_queue_url" {
 output "egress_ip" {
   description = "Static NAT egress IP for the sandbox VPC. The production workspace puts it on the database IP allow list."
   value       = module.egress_ip.public_ip
-}
-
-output "redis_sandbox_id" {
-  description = "The sandbox Redis ID. Used for the render_redis data source."
-  value       = render_redis.redis_sandbox.id
 }
 
 output "redis_endpoint_service_name" {

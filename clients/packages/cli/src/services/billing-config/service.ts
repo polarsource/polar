@@ -3,15 +3,36 @@ import type { ActiveOrganization, AuthError } from '@/schemas/Auth'
 import type {
   ApplyResult,
   BillingConfigError,
+  Catalog,
+  Catalogs,
   LoadedConfig,
   PlanResult,
-  PullResult,
+  PruneEntry,
 } from '@/schemas/BillingConfig'
+import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
+import { disable } from '@/services/billing-config/disable'
+import {
+  init,
+  type InitTarget,
+  type NameResources,
+  type Prepared,
+  type Ran,
+  run,
+} from '@/services/billing-config/init'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
-import { pull } from '@/services/billing-config/pull'
+import { prune } from '@/services/billing-config/prune'
+import { catalogs, publish } from '@/services/billing-config/publish'
 import { authenticatedClient } from '@/services/client'
+
+export type {
+  InitTarget,
+  NameResources,
+  Prepared,
+  Ran,
+  Run,
+} from '@/services/billing-config/init'
 
 export class BillingConfig extends Context.Service<
   BillingConfig,
@@ -20,16 +41,43 @@ export class BillingConfig extends Context.Service<
     plan: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<PlanResult, AuthError | BillingConfigError>
     apply: (
       config: LoadedConfig,
       organization: ActiveOrganization,
+      options?: CatalogOptions,
     ) => Effect.Effect<ApplyResult, AuthError | BillingConfigError>
-    pull: (
+    init: <E, R>(
       organization: ActiveOrganization,
-      file: string | undefined,
-      force: boolean,
-    ) => Effect.Effect<PullResult, AuthError | BillingConfigError>
+      target: InitTarget,
+      name: NameResources<E, R>,
+    ) => Effect.Effect<Prepared, AuthError | BillingConfigError | E, R>
+    install: (
+      command: ReadonlyArray<string>,
+      directory: string,
+    ) => Effect.Effect<Ran>
+    prune: <R>(
+      config: LoadedConfig,
+      organization: ActiveOrganization,
+      confirm: (
+        entries: ReadonlyArray<PruneEntry>,
+      ) => Effect.Effect<void, BillingConfigError, R>,
+    ) => Effect.Effect<
+      { entries: ReadonlyArray<PruneEntry>; removed: boolean },
+      AuthError | BillingConfigError,
+      R
+    >
+    catalogs: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<Catalogs, AuthError | BillingConfigError>
+    publish: (
+      organization: ActiveOrganization,
+      draft: Catalog,
+    ) => Effect.Effect<Catalog, AuthError | BillingConfigError>
+    disable: (
+      organization: ActiveOrganization,
+    ) => Effect.Effect<void, AuthError | BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -45,7 +93,12 @@ const make = Effect.gen(function* () {
     load,
     plan: plan(clients),
     apply: apply(clients),
-    pull: pull(fs, load, clients),
+    init: init(fs, clients),
+    install: run,
+    prune: prune(fs, load, clients),
+    catalogs: catalogs(clients),
+    publish: publish(clients),
+    disable: disable(clients),
   })
 })
 

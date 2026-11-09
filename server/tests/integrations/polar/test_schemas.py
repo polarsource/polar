@@ -22,6 +22,7 @@ _PRODUCT_BASE: dict[str, Any] = {
     "meter_interval": None,
     "meter_interval_count": None,
     "is_recurring": True,
+    "is_deletable": False,
     "is_archived": False,
     "organization_id": "org_1",
     "metadata": {},
@@ -80,6 +81,7 @@ class TestOrganizationPlanFromSdk:
 
         assert plan.product_id == "prod_1"
         assert plan.name == "Pro"
+        assert plan.tier == "Pro"
         assert plan.recurring_interval == "month"
         assert plan.price is None
         assert plan.transaction_fee is None
@@ -140,6 +142,15 @@ class TestOrganizationPlanFromSdk:
 
         assert plan.highlight is True
         assert plan.features == ["Slack support", "Team permissions"]
+
+    def test_tier_from_metadata(self) -> None:
+        plan = OrganizationPlan.from_sdk(
+            _make_product(
+                name="Pro (Annual)", recurring_interval="year", metadata={"tier": "Pro"}
+            )
+        )
+
+        assert plan.tier == "Pro"
 
 
 class TestOrganizationSubscriptionFromSdk:

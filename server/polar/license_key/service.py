@@ -12,6 +12,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies import BenefitGrantProperties
 from polar.benefit.strategies.license_keys.properties import (
+    BenefitLicenseKeyExpirationProperties,
     BenefitLicenseKeysProperties,
 )
 from polar.exceptions import BadRequest, NotPermitted, PolarError, ResourceNotFound
@@ -267,6 +268,7 @@ class LicenseKeyService:
             "license_key_id",
             str(license_key.id),
             benefit_id=license_key.benefit_id,
+            customer_id=license_key.customer_id,
         )
 
     async def _enqueue_grant_lifecycle(
@@ -299,17 +301,18 @@ class LicenseKeyService:
             customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
         )
-        await session.refresh(
-            license_key,
-            attribute_names=[
-                "status",
-                "expires_at",
-                "usage",
-                "limit_usage",
-                "validations",
-            ],
-            with_for_update=True,
-        )
+        if validate.increment_usage:
+            await session.refresh(
+                license_key,
+                attribute_names=[
+                    "status",
+                    "expires_at",
+                    "usage",
+                    "limit_usage",
+                    "validations",
+                ],
+                with_for_update=True,
+            )
         if not license_key.is_active():
             bound_logger.info("license_key.validate.invalid_status")
             raise ResourceNotFound("License key is no longer active.")
@@ -351,9 +354,15 @@ class LicenseKeyService:
                 )
                 raise BadRequest(f"License key only has {remaining} more usages.")
 
-        license_key.mark_validated(increment_usage=validate.increment_usage)
         await session.refresh(license_key, attribute_names=["subscription", "order"])
-        session.add(license_key)
+        if validate.increment_usage:
+            license_key.mark_validated(increment_usage=validate.increment_usage)
+            session.add(license_key)
+        elif not await LicenseKeyRepository.from_session(session).record_validation(
+            license_key
+        ):
+            bound_logger.info("license_key.validate.invalid_status")
+            raise ResourceNotFound("License key is no longer active.")
         bound_logger.info("license_key.validate")
         return license_key
 
@@ -507,6 +516,7 @@ class LicenseKeyService:
                 session,
                 create_schema=create_schema,
                 license_key_id=license_key_id,
+                expires=expires,
                 member_id=member_id,
                 regrant=regrant,
             )
@@ -523,6 +533,7 @@ class LicenseKeyService:
         *,
         license_key_id: UUID,
         create_schema: LicenseKeyCreate,
+        expires: BenefitLicenseKeyExpirationProperties | None = None,
         member_id: UUID | None = None,
         regrant: bool = False,
     ) -> LicenseKey:
@@ -539,6 +550,11 @@ class LicenseKeyService:
 
         if member_id is not None and key.member_id is None:
             key.member_id = member_id
+
+        if not regrant and expires and create_schema.expires_at is not None:
+            create_schema.expires_at = LicenseKeyCreate.generate_expiration_dt(
+                expires["ttl"], expires["timeframe"], start=key.created_at
+            )
 
         update_attrs = [
             "expires_at",
@@ -649,7 +665,7 @@ class LicenseKeyService:
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[Customer | Member],
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         repository = LicenseKeyRepository.from_session(session)
         return repository.get_customer_statement(auth_subject).options(
             joinedload(LicenseKey.customer), joinedload(LicenseKey.member)

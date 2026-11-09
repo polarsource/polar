@@ -7,7 +7,7 @@ from enum import StrEnum
 from pathlib import Path
 from time import monotonic
 from typing import Any, Literal, NotRequired, TypedDict
-from uuid import NAMESPACE_URL, UUID, uuid5
+from uuid import UUID, uuid4
 
 import dramatiq
 import typer
@@ -78,6 +78,7 @@ from polar.models.organization import (
     OrganizationStatus,
 )
 from polar.models.organization_access_token import OrganizationAccessToken
+from polar.models.organization_domain import OrganizationDomain
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_sso_connection import (
     OrganizationSSOConnection,
@@ -132,6 +133,12 @@ from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
 )
 from scripts.seed_polar_for_polar import (
+    EXTERNAL_BENEFITS as POLAR_SELF_EXTERNAL_BENEFITS,
+)
+from scripts.seed_polar_for_polar import (
+    MONTHLY_PRODUCTS as POLAR_SELF_MONTHLY_PRODUCTS,
+)
+from scripts.seed_polar_for_polar import (
     PRODUCTS as POLAR_SELF_PRODUCTS,
 )
 from tests.fixtures.database import save_fixture_factory
@@ -165,7 +172,6 @@ EXPECTED_ORGANIZATION_SLUGS = {
     "melted-sql",
     "polar",
     "seatbased-members-corp",
-    "seatbased-only-corp",
     "widget-industries",
 }
 
@@ -208,6 +214,7 @@ class OrganizationDict(TypedDict):
     feature_settings: NotRequired[dict[str, bool]]
     customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
+    verified_domain: NotRequired[str]
     sso_connection: NotRequired["SSOConnectionDict"]
 
 
@@ -1091,6 +1098,7 @@ async def _seed_polar_self_billing_catalog(
         price_amount = product_data["price_amount"]
         benefit_descriptions = product_data["benefits"]
         visibility_value = product_data.get("visibility")
+        recurring_interval = product_data.get("recurring_interval", "month")
         visibility = (
             Visibility(visibility_value)
             if isinstance(visibility_value, str)
@@ -1101,6 +1109,7 @@ async def _seed_polar_self_billing_catalog(
         assert isinstance(metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
+        assert isinstance(recurring_interval, str)
 
         price_create: ProductPriceFixedCreate
         price_create = ProductPriceFixedCreate(
@@ -1116,7 +1125,7 @@ async def _seed_polar_self_billing_catalog(
                 name=name,
                 description=description,
                 organization_id=organization.id,
-                recurring_interval=SubscriptionRecurringInterval.month,
+                recurring_interval=SubscriptionRecurringInterval(recurring_interval),
                 prices=[price_create],
                 metadata=metadata,
                 visibility=visibility,
@@ -1129,7 +1138,11 @@ async def _seed_polar_self_billing_catalog(
             ProductBenefit(
                 benefit=benefits_by_description[benefit_description], order=order
             )
-            for order, benefit_description in enumerate(benefit_descriptions)
+            for order, benefit_description in enumerate(
+                description
+                for description in benefit_descriptions
+                if description not in POLAR_SELF_EXTERNAL_BENEFITS
+            )
         ]
 
 
@@ -1387,9 +1400,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
             "status": OrganizationStatus.ACTIVE,
-            "feature_settings": {
-                "compass_enabled": True,
-            },
             "details": {
                 "about": "We provide business intelligence dashboard",
                 "switching": False,
@@ -1684,6 +1694,7 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "feature_settings": {
                 "sso_enabled": True,
             },
+            "verified_domain": "polar.sh",
             "sso_connection": {
                 "name": "Local Mock SSO",
                 "issuer": "http://localhost:8080/default",
@@ -1776,41 +1787,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                 },
             ],
         },
-        {
-            "name": "SeatBased Only Corp",
-            "slug": "seatbased-only-corp",
-            "email": "admin@polar.sh",
-            "website": "https://seatbased-only.com",
-            "bio": "Organization with seat-based pricing but members model disabled",
-            "status": OrganizationStatus.ACTIVE,
-            "details": {
-                "about": "Testing seat-based pricing without members model",
-                "switching": False,
-                "switching_from": None,
-                "product_description": "Team software licenses with simple seat billing",
-                "previous_annual_revenue": 0,
-            },
-            "feature_settings": {
-                "member_model_enabled": False,
-            },
-            "products": [
-                {
-                    "name": "Simple Team Plan",
-                    "description": "Per-seat team plan without member management",
-                    "recurring": SubscriptionRecurringInterval.month,
-                    "seat_based": True,
-                    "price_per_seat": 1500,  # $15 per seat
-                },
-            ],
-            "seat_based_customers": [
-                {
-                    "email": "customer-no-members@polar.sh",
-                    "name": "Customer Without Members Inc",
-                    "seats_purchased": 5,
-                    "seats_allocated": 2,
-                },
-            ],
-        },
     ]
 
     # Benefits data for each organization
@@ -1890,6 +1866,16 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
         if "customer_email_settings" in org_data:
             organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
+
+        verified_domain = org_data.get("verified_domain")
+        if verified_domain is not None:
+            session.add(
+                OrganizationDomain(
+                    organization=organization,
+                    domain=verified_domain,
+                    verified_at=utc_now(),
+                )
+            )
 
         # Seed an enabled SSO connection pointing at the local mock OIDC IdP.
         # Written directly so the http:// mock issuer bypasses the HttpsUrl schema.
@@ -2418,10 +2404,7 @@ def _namespace_simple_complement_events(
 ) -> None:
     id_mapping: dict[UUID, UUID] = {}
     for index, event in enumerate(events):
-        event_id = uuid5(
-            NAMESPACE_URL,
-            f"{SIMPLE_COMPLEMENT_EVENT_PREFIX}{organization.slug}:{customer.id}:{index}",
-        )
+        event_id = uuid4()
         previous_id = event.get("id")
         if isinstance(previous_id, UUID):
             id_mapping[previous_id] = event_id
@@ -2859,7 +2842,7 @@ WEBHOOK_EVENTS: list[WebhookEventType] = [
 ]
 SERVER_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 WEBHOOK_SECRET_ENV_KEY = "POLAR_POLAR_WEBHOOK_SECRET"
-SCALE_PRODUCT_NAME = str(POLAR_SELF_PRODUCTS[-1]["name"])
+SCALE_PRODUCT_NAME = str(POLAR_SELF_MONTHLY_PRODUCTS[-1]["name"])
 
 
 def _write_webhook_secret_to_env(secret: str) -> None:
@@ -3123,6 +3106,8 @@ def polar_self_env() -> None:
                     select(Product).where(
                         Product.organization_id == org.id,
                         Product.name == SCALE_PRODUCT_NAME,
+                        Product.recurring_interval
+                        == SubscriptionRecurringInterval.month,
                     )
                 )
             ).scalar_one_or_none()

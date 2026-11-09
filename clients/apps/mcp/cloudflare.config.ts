@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => ({
     env: {
       LOADER: bindings.workerLoader(),
       MINTLIFY_SEARCH_KEY: bindings.secret(),
+      MCP_ANALYTICS_SECRET: bindings.secret(),
+      POSTHOG_PROJECT_KEY: bindings.text(
+        mode === 'development'
+          ? (process.env.POSTHOG_PROJECT_KEY ?? '')
+          : 'phc_H2ajVAY4cy0uQpcgN5fzpv8JC3yP8VZOjx2EXiFBbgz',
+      ),
       POLAR_SERVERS: bindings.json(
         mode === 'development'
           ? { ...POLAR_SERVERS, ...LOCAL_POLAR_SERVERS }

@@ -6,9 +6,11 @@ import {
 import { Effect } from 'effect'
 import { HttpClient, HttpClientRequest, type HttpMethod } from 'effect/http'
 import generatedTools from '../generated/tools.json'
+import { intentJsonSchema } from '../intent'
+import { RequestLog } from '../log'
 import type { PolarApiOutboundProps } from '../outbound'
 import { makeToolRunner, ToolError } from '../results'
-import { spec } from '../spec'
+import { rejectedFields, spec } from '../spec'
 
 type Arguments = Record<string, unknown>
 
@@ -23,11 +25,17 @@ interface OperationTool {
   inputSchema: JsonSchemaType
 }
 
+const withIntent = (schema: JsonSchemaType): JsonSchemaType => ({
+  ...schema,
+  properties: { ...schema.properties, intent: intentJsonSchema },
+})
+
 const operationTools = (generatedTools as unknown as OperationTool[]).map(
   (tool) => ({
     definition: tool,
-    inputSchema: fromJsonSchema<Arguments>(tool.inputSchema),
+    inputSchema: fromJsonSchema<Arguments>(withIntent(tool.inputSchema)),
     annotations: {
+      title: tool.title,
       readOnlyHint: tool.annotations.includes('read_only'),
       destructiveHint: tool.annotations.includes('destructive'),
       idempotentHint: tool.annotations.includes('idempotent'),
@@ -91,12 +99,21 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
             ? request
             : yield* HttpClientRequest.bodyJson(request, args.body),
         )
+        const log = yield* RequestLog
+        log.apiRequests = 1
+        log.apiOperations = [
+          `${definition.method} ${definition.path} ${response.status}`,
+        ]
         const text = yield* response.text
         if (response.status < 200 || response.status >= 300) {
+          const fields = yield* Effect.try(() =>
+            rejectedFields(JSON.parse(text)),
+          ).pipe(Effect.orElseSucceed(() => undefined))
           return yield* new ToolError({
             message: `Polar API ${response.status}: ${text}`,
             kind: 'api',
             status: response.status,
+            ...(fields && { fields }),
           })
         }
         if (!text) {

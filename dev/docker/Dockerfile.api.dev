@@ -16,10 +16,13 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     curl \
     postgresql-client \
+    && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+      -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv package manager (pinned for reproducible builds)
-COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.13.4 /uv /uvx /bin/
 
 # Install Node.js and pnpm for email templates
 RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \

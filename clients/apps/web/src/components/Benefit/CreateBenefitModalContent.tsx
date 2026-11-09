@@ -9,7 +9,7 @@ import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { NewBenefitForm } from '../Benefit/BenefitForm'
 import { CreatableBenefit, getDefaultBenefitVisibility } from '../Benefit/utils'
 import { useToast } from '../Toast/use-toast'
@@ -70,11 +70,8 @@ const CreateBenefitModalContent = ({
 
   const { toast } = useToast()
 
-  const {
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = form
+  const { control, handleSubmit, setError } = form
+  const { errors } = useFormState({ control })
 
   const handleCreateNewBenefit = useCallback(
     async (subscriptionBenefitCreate: BenefitCreateForm) => {
@@ -84,7 +81,9 @@ const CreateBenefitModalContent = ({
           metadata: entriesToMetadata(subscriptionBenefitCreate.metadata),
         })
       if (error) {
-        if (error.detail) {
+        if (typeof error.detail === 'string') {
+          setError('root', { message: error.detail })
+        } else if (error.detail) {
           setValidationErrors(
             error.detail,
             setError,

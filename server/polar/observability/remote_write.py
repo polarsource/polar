@@ -21,8 +21,8 @@ from collections.abc import Generator
 from typing import IO
 
 import httpx
-import snappy
 import structlog
+from cramjam import snappy
 from prometheus_client import CollectorRegistry, Metric, multiprocess
 from prometheus_client.samples import Sample
 
@@ -140,7 +140,7 @@ def _push_metrics(client: httpx.Client, url: str, headers: dict[str, str]) -> No
         return
 
     write_request = _encode_write_request(timeseries_list)
-    compressed = snappy.compress(write_request)
+    compressed = bytes(snappy.compress_raw(write_request))
 
     max_retries = 3
     for attempt in range(max_retries):

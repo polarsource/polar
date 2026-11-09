@@ -2,7 +2,7 @@ import json
 from decimal import Decimal
 from typing import Any, NewType
 
-from sqlalchemy import Engine
+from sqlalchemy import Connection, Engine, event
 from sqlalchemy import create_engine as _create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession as _AsyncSession
@@ -54,10 +54,15 @@ def create_async_engine(
     pool_pre_ping: bool = False,
     command_timeout: float | None = None,
     connect_timeout: float | None = None,
+    statement_cache_size: int = 100,
+    prepared_statement_cache_size: int = 0,
     debug: bool = False,
     ssl: str | None = None,
 ) -> AsyncEngine:
-    connect_args: dict[str, Any] = {"prepared_statement_cache_size": 0}
+    connect_args: dict[str, Any] = {
+        "statement_cache_size": statement_cache_size,
+        "prepared_statement_cache_size": prepared_statement_cache_size,
+    }
     if application_name is not None:
         connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:
@@ -92,16 +97,14 @@ def create_sync_engine(
     debug: bool = False,
     sslmode: str | None = None,
 ) -> Engine:
-    connect_args: dict[str, Any] = {}
+    connect_args: dict[str, Any] = {"prepare_threshold": None}
     if application_name is not None:
         connect_args["application_name"] = application_name
-    if command_timeout is not None:
-        connect_args["options"] = f"-c statement_timeout={int(command_timeout * 1000)}"
     if connect_timeout is not None:
         connect_args["connect_timeout"] = int(connect_timeout)
     if sslmode is not None:
         connect_args["sslmode"] = sslmode
-    return _create_engine(
+    engine = _create_engine(
         dsn,
         echo=debug,
         connect_args=connect_args,
@@ -109,6 +112,18 @@ def create_sync_engine(
         pool_recycle=pool_recycle,
         pool_logging_name=pool_logging_name,
     )
+    if command_timeout is not None:
+        statement_timeout_ms = int(command_timeout * 1000)
+
+        def set_statement_timeout(connection: Connection) -> None:
+            # SET LOCAL stays on the transaction's backend with PgBouncer pooling.
+            connection.exec_driver_sql(
+                f"SET LOCAL statement_timeout = {statement_timeout_ms}"
+            )
+
+        event.listen(engine, "begin", set_statement_timeout)
+
+    return engine
 
 
 type AsyncSessionMaker = async_sessionmaker[AsyncSession]

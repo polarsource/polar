@@ -27,7 +27,7 @@ import { useOnboardingV2Tracking } from '@/hooks/onboardingV2'
 import { useMonthDigitTypeahead } from '@/hooks/useMonthDigitTypeahead'
 import { formatCountry } from '@/utils/formatters'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { setValidationErrors } from '@/utils/api/errors'
 import { useOnboardingData } from './OnboardingContext'
@@ -119,7 +119,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
-  const showTerms = useRef(!currentUser?.accepted_terms_of_service)
+  const [showTerms] = useState(() => !currentUser?.accepted_terms_of_service)
   const updateUser = useUpdateUser()
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(false)
@@ -148,12 +148,11 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
     },
   })
 
-  const { control, handleSubmit, watch, setValue, setError } = form
+  const { control, handleSubmit, setValue, setError } = form
 
   const handleMonthDigit = useMonthDigitTypeahead()
 
-  // oxlint-disable-next-line react-hooks/incompatible-library
-  const country = watch('country')
+  const country = useWatch({ control, name: 'country' })
   const isUnsupportedCountry =
     country !== '' &&
     !(enums.stripeAccountCountryValues as readonly string[]).includes(country)
@@ -394,7 +393,7 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             </Box>
           </Box>
 
-          {showTerms.current && (
+          {showTerms && (
             <TermsCheckbox
               control={control}
               name="accepted_terms_of_service"

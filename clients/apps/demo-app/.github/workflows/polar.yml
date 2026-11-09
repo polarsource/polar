@@ -44,4 +44,4 @@ jobs:
       - name: Apply
         env:
           POLAR_ACCESS_TOKEN: ${{ secrets.POLAR_WRITE_TOKEN }}
-        run: polar config apply --yes
+        run: polar config apply --confirm

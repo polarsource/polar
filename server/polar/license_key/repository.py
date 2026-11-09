@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, or_, update
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import (
@@ -16,7 +16,9 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.utils import utc_now
 from polar.models import LicenseKey
+from polar.models.license_key import LicenseKeyStatus
 
 
 class LicenseKeyRepository(
@@ -25,6 +27,28 @@ class LicenseKeyRepository(
     RepositoryBase[LicenseKey],
 ):
     model = LicenseKey
+
+    async def record_validation(self, license_key: LicenseKey) -> bool:
+        now = utc_now()
+        statement = (
+            update(LicenseKey)
+            .where(
+                LicenseKey.id == license_key.id,
+                LicenseKey.status == LicenseKeyStatus.granted,
+                or_(LicenseKey.expires_at.is_(None), LicenseKey.expires_at > now),
+            )
+            .values(validations=LicenseKey.validations + 1, last_validated_at=now)
+            .returning(LicenseKey.id)
+            .execution_options(synchronize_session=False)
+        )
+        result = await self.session.execute(statement)
+        if result.scalar_one_or_none() is None:
+            return False
+        await self.session.refresh(
+            license_key,
+            attribute_names=["validations", "last_validated_at", "modified_at"],
+        )
+        return True
 
     async def get_by_organization_and_key(
         self,
@@ -91,7 +115,7 @@ class LicenseKeyRepository(
 
     def get_customer_statement(
         self, auth_subject: AuthSubject[Customer | Member]
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         statement = self.get_base_statement()
 
         if is_member(auth_subject):
@@ -107,7 +131,7 @@ class LicenseKeyRepository(
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
-    ) -> Select[tuple[LicenseKey]]:
+    ) -> Select[LicenseKey]:
         statement = self.get_base_statement()
         statement = statement.where(LicenseKey.organization_id.in_(org_ids))
         return statement

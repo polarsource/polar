@@ -65,7 +65,7 @@ def s3_key_to_uri(key: str) -> str:
 def resize_image(
     image_bytes: bytes, width: int | None, height: int | None
 ) -> bytes | None:
-    img = Image.open(io.BytesIO(image_bytes))
+    img: Image.Image = Image.open(io.BytesIO(image_bytes))
     orig_format = img.format
     orig_w, orig_h = img.size
 

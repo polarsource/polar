@@ -1,6 +1,6 @@
 'use client'
 
-import Circle from '@mui/icons-material/Circle'
+import { CircleFilled as Circle } from '@polar-sh/orbit/icons'
 import { formatCurrency } from '@polar-sh/currency'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { twMerge } from 'tailwind-merge'

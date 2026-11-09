@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { Pill } from '@polar-sh/orbit'
-import { CircleX, Clock } from 'lucide-react'
+import { CircleX, Clock } from '@polar-sh/orbit/icons'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {

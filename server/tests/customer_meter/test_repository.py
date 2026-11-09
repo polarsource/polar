@@ -4,7 +4,10 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.customer_meter.repository import CustomerMeterRepository
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.aggregation import (
+    AggregationFunction,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import Customer, CustomerMeter, Meter, Organization
 from polar.postgres import AsyncSession

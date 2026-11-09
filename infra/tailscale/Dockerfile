@@ -1,18 +1,17 @@
 FROM debian:latest
 WORKDIR /render
 
-ARG TAILSCALE_VERSION
-ENV TAILSCALE_VERSION=$TAILSCALE_VERSION
-
 RUN apt-get -qq update \
   && apt-get -qq install --upgrade -y --no-install-recommends \
-    apt-transport-https \
     ca-certificates \
     dnsmasq \
     libcap2-bin \
     wget \
     dnsutils \
   > /dev/null \
+  && sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+    -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' /etc/ca-certificates.conf \
+  && update-ca-certificates \
   && apt-get -qq clean \
   && rm -rf \
     /var/lib/apt/lists/* \
@@ -25,12 +24,18 @@ RUN groupadd --system tailscale \
 RUN echo "+search +short" > /render/.digrc
 COPY --chmod=755 run-tailscale.sh /render/
 
-COPY --chmod=755 install-tailscale.sh /tmp/
-RUN /tmp/install-tailscale.sh && rm -r /tmp/*
-
-RUN setcap 'cap_net_bind_service=+ep' /usr/sbin/dnsmasq \
+ARG TARGETARCH
+ARG TAILSCALE_VERSION
+RUN version="${TAILSCALE_VERSION:?Set the TAILSCALE_VERSION build argument}" \
+  && wget -q "https://pkgs.tailscale.com/stable/tailscale_${version}_${TARGETARCH}.tgz" -O /tmp/tailscale.tgz \
+  && tar xzf /tmp/tailscale.tgz --strip-components=1 \
+    "tailscale_${version}_${TARGETARCH}/tailscale" \
+    "tailscale_${version}_${TARGETARCH}/tailscaled" \
+  && rm /tmp/tailscale.tgz \
+  && mkdir -p /var/run/tailscale /var/cache/tailscale /var/lib/tailscale \
+  && setcap 'cap_net_bind_service=+ep' /usr/sbin/dnsmasq \
   && chown -R tailscale:tailscale /render /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
 
 USER tailscale
 
-CMD ./run-tailscale.sh
+CMD ["./run-tailscale.sh"]

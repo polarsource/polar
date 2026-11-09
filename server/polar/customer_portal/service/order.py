@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import UnaryExpression, asc, desc
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.enums import PaymentProcessor
@@ -100,7 +101,7 @@ class CustomerOrderService:
         if query is not None:
             statement = statement.where(Product.name.icontains(query, autoescape=True))
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomerOrderSortProperty.created_at:

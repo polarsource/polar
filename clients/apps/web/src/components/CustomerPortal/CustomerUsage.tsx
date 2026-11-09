@@ -1,7 +1,7 @@
 'use client'
 
 import { useCustomerCustomerMeters } from '@/hooks/queries/customerPortal'
-import Search from '@mui/icons-material/Search'
+import { SearchFilled as Search } from '@polar-sh/orbit/icons'
 import { Client } from '@polar-sh/client'
 import { DataTable } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
@@ -61,7 +61,8 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                               clipPath:
                                 'polygon(0 0, 100% 0, 100% 100%, 0% 100%)',
                               transform: 'rotate(-90deg)',
-                              transition: 'all 0.3s ease',
+                              transition:
+                                'clip-path 0.3s ease, transform 0.3s ease',
                             }}
                           />
                         </div>

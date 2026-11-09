@@ -44,6 +44,7 @@ module "redis" {
   name       = "polar-test-worker"
   vpc_id     = module.vpc[0].vpc_id
   subnet_ids = module.vpc[0].secondary_private_subnet_ids
+  tags       = local.lambda_worker_tags
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
@@ -100,13 +101,15 @@ locals {
     module.backend_environment[0].environment_variables,
     module.backend_environment[0].secret_environment_variables,
     {
-      POLAR_POSTGRES_DATABASE = local.db_name
-      POLAR_POSTGRES_HOST     = module.pgbouncer_aws[0].host
-      POLAR_POSTGRES_PORT     = module.pgbouncer_aws[0].port
-      POLAR_POSTGRES_USER     = local.db_user
+      POLAR_POSTGRES_DATABASE = module.planetscale.database_name
+      POLAR_POSTGRES_HOST     = local.planetscale_postgres_config.host
+      POLAR_POSTGRES_PORT     = local.planetscale_postgres_config.port
+      POLAR_POSTGRES_USER     = local.planetscale_postgres_config.user
       POLAR_POSTGRES_SSL      = "false"
+      PGSSLMODE               = local.planetscale_postgres_config.sslmode
+      PGSSLROOTCERT           = "/etc/pki/tls/certs/ca-bundle.crt"
       POLAR_REDIS_URL         = "rediss://${module.redis[0].host}:${tostring(module.redis[0].port)}/1"
-      POLAR_POSTGRES_PWD      = local.db_password
+      POLAR_POSTGRES_PWD      = local.planetscale_postgres_config.password
       TAILSCALE_AUTHKEY       = var.lambda_worker_tailscale_token
     },
   ) : {}

@@ -6,7 +6,6 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import inspect
 
-from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository, CustomerStripeIdentity
 from polar.event.system import SystemEvent
 from polar.models import (
@@ -35,6 +34,24 @@ from tests.merchant_migration._helpers import build_connected_migration
 @pytest.fixture
 def repository(session: AsyncSession) -> CustomerRepository:
     return CustomerRepository.from_session(session)
+
+
+@pytest.mark.anyio
+class TestIncrementCreditNoteNextNumber:
+    async def test_increment_credit_note_next_number(
+        self,
+        repository: CustomerRepository,
+        customer: Customer,
+        customer_organization_second: Customer,
+    ) -> None:
+        assert await repository.increment_credit_note_next_number(customer.id) == 1
+        assert await repository.increment_credit_note_next_number(customer.id) == 2
+        assert (
+            await repository.increment_credit_note_next_number(
+                customer_organization_second.id
+            )
+            == 1
+        )
 
 
 @pytest.mark.anyio
@@ -476,85 +493,6 @@ class TestAvatarUrl:
         assert result.avatar_url == (
             _avatar_url_for_email(expected_email) if expected_email else None
         )
-
-
-@pytest.mark.anyio
-class TestSearchByQuery:
-    @pytest.mark.parametrize(
-        ("match_email", "match_name", "non_match_email", "non_match_name", "query"),
-        [
-            # `%` is a wildcard for any string; it must match literally, not
-            # cause "50" (without `%`) in another customer's name to be returned.
-            (
-                "alice@example.com",
-                "Alice 50% Off",
-                "bob@example.com",
-                "Bob 50 Off",
-                "50%",
-            ),
-            # `_` is a wildcard for any single character; `user_one` must not
-            # match `userAone`.
-            (
-                "user_one@example.com",
-                "Customer",
-                "userAone@example.com",
-                "Customer",
-                "user_one",
-            ),
-        ],
-    )
-    async def test_escapes_special_like_characters(
-        self,
-        save_fixture: SaveFixture,
-        repository: CustomerRepository,
-        organization: Organization,
-        match_email: str,
-        match_name: str,
-        non_match_email: str,
-        non_match_name: str,
-        query: str,
-    ) -> None:
-        match = await create_customer(
-            save_fixture,
-            organization=organization,
-            email=match_email,
-            name=match_name,
-        )
-        await create_customer(
-            save_fixture,
-            organization=organization,
-            email=non_match_email,
-            name=non_match_name,
-        )
-
-        customer_ids, external_ids = await repository.search_by_query(
-            {AccessibleOrganizationID(organization.id)}, query
-        )
-
-        assert customer_ids == [match.id]
-        assert external_ids == []
-
-    async def test_matches_external_id_substring(
-        self,
-        save_fixture: SaveFixture,
-        repository: CustomerRepository,
-        organization: Organization,
-    ) -> None:
-        # search_by_query uses a contains match for external_id (prefix and
-        # middle both match), unlike the merchant-facing list endpoint.
-        match = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="c1@example.com",
-            external_id="org_123_user",
-        )
-
-        customer_ids, external_ids = await repository.search_by_query(
-            {AccessibleOrganizationID(organization.id)}, "123"
-        )
-
-        assert customer_ids == [match.id]
-        assert external_ids == ["org_123_user"]
 
 
 @pytest.mark.anyio

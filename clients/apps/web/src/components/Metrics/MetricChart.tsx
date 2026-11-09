@@ -1,10 +1,14 @@
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import { getFormattedMetricValue, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
+import dynamic from 'next/dynamic'
 import { useTheme } from 'next-themes'
-import { useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import type { AxisTick } from 'recharts/types/util/types'
-import { GenericChart } from '../Charts/GenericChart'
+
+const GenericChart = dynamic(() =>
+  import('../Charts/GenericChart').then((m) => m.GenericChart),
+)
 
 interface MetricChartProps {
   ref?: React.RefObject<HTMLDivElement | null>
@@ -14,7 +18,6 @@ interface MetricChartProps {
   metric: schemas['Metric']
   height?: number
   width?: number
-  grid?: boolean
   onDataIndexHover?: (index: number | null) => void
   simple?: boolean
   showYAxis?: boolean
@@ -30,7 +33,6 @@ const MetricChart = ({
   metric,
   height,
   width,
-  grid,
   onDataIndexHover,
   simple = false,
   showYAxis = false,
@@ -98,23 +100,24 @@ const MetricChart = ({
   }, [simple, genericData])
 
   return (
-    <GenericChart
-      ref={ref}
-      data={genericData}
-      series={series}
-      xAxisKey="timestamp"
-      xAxisFormatter={timestampFormatter}
-      valueFormatter={valueFormatter}
-      height={height}
-      width={width}
-      showGrid={grid}
-      showYAxis={showYAxis}
-      chartType={chartType}
-      onDataIndexHover={onDataIndexHover}
-      simple={simple}
-      ticks={ticks}
-      activeCursorIndex={activeCursorIndex}
-    />
+    <Suspense fallback={<div style={{ height, width: width || '100%' }} />}>
+      <GenericChart
+        ref={ref}
+        data={genericData}
+        series={series}
+        xAxisKey="timestamp"
+        xAxisFormatter={timestampFormatter}
+        valueFormatter={valueFormatter}
+        height={height}
+        width={width}
+        showYAxis={showYAxis}
+        chartType={chartType}
+        onDataIndexHover={onDataIndexHover}
+        simple={simple}
+        ticks={ticks}
+        activeCursorIndex={activeCursorIndex}
+      />
+    </Suspense>
   )
 }
 

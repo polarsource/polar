@@ -86,8 +86,8 @@ files, setup, and limitations.
 Every command reports one anonymous `cli_command` event straight to PostHog when
 it finishes: the command path (for example `auth login`), the names of the flags
 used (never their values), whether it succeeded, failed or was interrupted, the
-error type and status code, the name of the flag or argument behind a usage
-mistake, the environment (sandbox or production), the duration, the CLI version,
+error type and status code, the name of the flag, argument or subcommand behind
+a usage mistake, the environment (sandbox or production), the duration, the CLI version,
 OS, architecture, Bun version, whether it ran in CI, and which AI coding agent
 (if any) invoked it. Events are keyed by a random install id stored in
 `~/.polar/telemetry.json`. Access tokens, organization IDs, URLs and payloads

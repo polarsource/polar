@@ -7,9 +7,11 @@ import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
 from authlib.oauth2 import OAuth2Error
 from authlib.oauth2.rfc6749.errors import (
+    InvalidRequestError,
     UnsupportedResponseTypeError,
 )
 from authlib.oauth2.rfc6749.hooks import hooked
+from authlib.oauth2.rfc6749.util import extract_basic_authorization
 from authlib.oauth2.rfc6750 import BearerTokenGenerator
 from authlib.oauth2.rfc7009 import RevocationEndpoint as _RevocationEndpoint
 from authlib.oauth2.rfc7591 import (
@@ -20,6 +22,7 @@ from authlib.oauth2.rfc7592 import (
 )
 from authlib.oauth2.rfc7662 import IntrospectionEndpoint as _IntrospectionEndpoint
 from authlib.oauth2.rfc9207 import IssuerParameter as _IssuerParameter
+from authlib.oidc.core.errors import ConsentRequiredError
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 from starlette.requests import Request
@@ -34,7 +37,7 @@ from polar.kit.crypto import (
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
-from polar.oauth2.sub_type import SubTypeValue
+from polar.oauth2.sub_type import SubType, SubTypeValue
 
 from .constants import (
     ACCESS_TOKEN_PREFIX,
@@ -46,7 +49,11 @@ from .constants import (
 )
 from .grants import AuthorizationCodeGrant, CodeChallenge, register_grants
 from .metadata import get_server_metadata
-from .requests import StarletteJsonRequest, StarletteOAuth2Request
+from .requests import (
+    ClientConfigurationCredential,
+    StarletteJsonRequest,
+    StarletteOAuth2Request,
+)
 from .service.oauth2_grant import oauth2_grant as oauth2_grant_service
 
 logger: Logger = structlog.get_logger(__name__)
@@ -184,9 +191,11 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
 
         return status, body, headers
 
-    def authenticate_token(self, request: StarletteJsonRequest) -> User | str | None:
+    def authenticate_token(
+        self, request: StarletteJsonRequest
+    ) -> ClientConfigurationCredential | None:
         if request.user is not None:
-            return request.user
+            return ClientConfigurationCredential(request.user)
 
         authorization = request.headers.get("Authorization")
         if authorization is None:
@@ -194,7 +203,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
 
         scheme, _, token = authorization.partition(" ")
         if scheme.lower() == "bearer" and token != "":
-            return token
+            return ClientConfigurationCredential(token)
 
         return None
 
@@ -213,14 +222,7 @@ class ClientConfigurationEndpoint(_ClientConfigurationEndpoint):
             return None
 
         credential = request.credential
-        if (
-            credential is None
-            or (
-                isinstance(credential, str)
-                and not client.check_registration_access_token(credential)
-            )
-            or (isinstance(credential, User) and client.user_id != credential.id)
-        ):
+        if credential is None or not credential.check_client(client):
             return None
 
         return client
@@ -274,21 +276,15 @@ class _QueryTokenMixin:
     def query_token(
         self,
         token_string: str,
-        token_type_hint: typing.Literal["access_token", "refresh_token"] | None,
+        token_type_hint: str | None,
     ) -> OAuth2Token | None:
         token_hashes = get_token_hash_candidates(token_string).values()
-        statement = select(OAuth2Token)
-        if token_type_hint == "access_token":
-            statement = statement.where(OAuth2Token.access_token.in_(token_hashes))
-        elif token_type_hint == "refresh_token":
-            statement = statement.where(OAuth2Token.refresh_token.in_(token_hashes))
-        else:
-            statement = statement.where(
-                or_(
-                    OAuth2Token.access_token.in_(token_hashes),
-                    OAuth2Token.refresh_token.in_(token_hashes),
-                )
+        statement = select(OAuth2Token).where(
+            or_(
+                OAuth2Token.access_token.in_(token_hashes),
+                OAuth2Token.refresh_token.in_(token_hashes),
             )
+        )
 
         result = self.server.session.execute(statement)
         return result.unique().scalar_one_or_none()
@@ -297,12 +293,51 @@ class _QueryTokenMixin:
 class RevocationEndpoint(_QueryTokenMixin, _RevocationEndpoint):
     CLIENT_AUTH_METHODS = ["client_secret_basic", "client_secret_post"]
 
+    def check_params(
+        self, request: StarletteOAuth2Request, client: OAuth2Client
+    ) -> None:
+        # RFC 7009 requires ignoring unknown hints, unlike Authlib's default.
+        if "token" not in request.form:
+            raise InvalidRequestError()
+
+    def authenticate_endpoint_client(
+        self, request: StarletteOAuth2Request
+    ) -> OAuth2Client:
+        client = self._authenticate_agent_client(request)
+        if client is None:
+            return super().authenticate_endpoint_client(request)
+        request.client = client
+        return client
+
+    def _authenticate_agent_client(
+        self, request: StarletteOAuth2Request
+    ) -> OAuth2Client | None:
+        """Agent clients have no secret, and agents don't know their client ID:
+        holding one of their tokens is enough to revoke it."""
+        basic_client_id, _ = extract_basic_authorization(request.headers)
+        if basic_client_id is not None or request.form.get("client_secret"):
+            return None
+
+        token_string = request.form.get("token")
+        if not token_string:
+            return None
+        token = self.query_token(token_string, None)
+        if token is None:
+            return None
+
+        client_id = request.payload.client_id
+        if client_id is not None and client_id != token.client_id:
+            return None
+
+        client = self.server.query_client(token.client_id)
+        if client is None or client.agent_id is None:
+            return None
+        return client
+
     def revoke_token(self, token: OAuth2Token, request: StarletteOAuth2Request) -> None:
         now = int(time.time())
-        hint = request.form.get("token_type_hint")
         token.access_token_revoked_at = now  # pyright: ignore
-        if hint != "access_token":
-            token.refresh_token_revoked_at = now  # pyright: ignore
+        token.refresh_token_revoked_at = now  # pyright: ignore
         self.server.session.add(token)
         self.server.session.flush()
 
@@ -461,6 +496,16 @@ class AuthorizationServer(_AuthorizationServer):
 
         try:
             redirect_uri = grant.validate_authorization_request()
+            if not save_consent and grant_user is not None:
+                consent_grant = oauth2_grant_service.get_by_sub_and_client_id(
+                    self.session,
+                    sub_type=SubType.user,
+                    sub_id=grant_user.id,
+                    client_id=grant.client.client_id,
+                )
+                if consent_grant is None:
+                    raise ConsentRequiredError(redirect_uri=redirect_uri)
+                grant.consent_grant = consent_grant
             status_code, body, headers = grant.create_authorization_response(
                 redirect_uri, grant_user
             )
@@ -479,6 +524,7 @@ class AuthorizationServer(_AuthorizationServer):
         assert grant.sub_type is not None
         assert grant.sub is not None
         assert grant.client is not None
+        assert grant.organization_ids is not None
         payload = request.payload
         assert payload is not None
         oauth2_grant_service.create_or_update_grant(
@@ -487,6 +533,7 @@ class AuthorizationServer(_AuthorizationServer):
             sub_id=grant.sub.id,
             client_id=grant.client.client_id,
             scope=payload.scope,
+            organization_ids=grant.organization_ids,
         )
 
     @property

@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { format } from 'date-fns'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays } from '@polar-sh/orbit/icons'
 import { useCallback, useMemo } from 'react'
 import { Matcher } from 'react-day-picker'
 import { twMerge } from 'tailwind-merge'

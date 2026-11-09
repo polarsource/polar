@@ -4,7 +4,7 @@ import { Console, Effect, Layer, Option } from 'effect'
 import { CliConfig, CliOutput, Command, type HelpDoc } from 'effect/cli'
 import { FetchHttpClient } from 'effect/http'
 import { ApiRuntime } from '@polar-sh/cli-commands'
-import { builtIns, program } from '@/program'
+import { program, referenceBuiltIns } from '@/program'
 import { AgentSetup } from '@/services/agent-setup/service'
 import { Auth } from '@/services/auth'
 import { BillingConfig } from '@/services/billing-config/service'
@@ -36,7 +36,12 @@ const helpOnlyServices = Layer.mergeAll(
       load: unused,
       plan: unused,
       apply: unused,
-      pull: unused,
+      init: unused,
+      install: unused,
+      prune: unused,
+      catalogs: unused,
+      publish: unused,
+      disable: unused,
     }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),
@@ -195,7 +200,7 @@ const helpFor = (path: string[]) =>
       Effect.provide(
         Layer.mergeAll(
           BunServices.layer,
-          CliConfig.layer({ builtIns }),
+          CliConfig.layer({ builtIns: referenceBuiltIns }),
           CliOutput.layer(formatter),
           helpOnlyServices,
         ),

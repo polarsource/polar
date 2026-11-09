@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  tinypool@<2.1.2: 2.1.2
+
 importers:
 
   .:
@@ -508,8 +511,8 @@ packages:
   standard-as-callback@2.1.0:
     resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
 
-  tinypool@2.1.0:
-    resolution: {integrity: sha512-Pugqs6M0m7Lv1I7FtxN4aoyToKg1C4tu+/381vH35y8oENM/Ai7f7C4StcoK4/+BSw9ebcS8jRiVrORFKCALLw==}
+  tinypool@2.1.2:
+    resolution: {integrity: sha512-9YodfrxS9g9IbFr/KOjE5bAeJ0p61n3bW6mqvy0jtoeKd1kTW1Cxm0oulm6KX2lyM9Gl6WIe8nEbY7LWv5ZJww==}
     engines: {node: ^20.0.0 || >=22.0.0}
 
   typescript@6.0.3:
@@ -682,7 +685,7 @@ snapshots:
 
   oxfmt@0.56.0:
     dependencies:
-      tinypool: 2.1.0
+      tinypool: 2.1.2
     optionalDependencies:
       '@oxfmt/binding-android-arm-eabi': 0.56.0
       '@oxfmt/binding-android-arm64': 0.56.0
@@ -734,7 +737,7 @@ snapshots:
 
   standard-as-callback@2.1.0: {}
 
-  tinypool@2.1.0: {}
+  tinypool@2.1.2: {}
 
   typescript@6.0.3: {}
 

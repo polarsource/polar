@@ -3,5 +3,7 @@ allowBuilds:
   esbuild: true
 minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
-  - '@codspeed/vitest-plugin@6.1.0'
-  - '@codspeed/core@6.1.0'
+  - 'tinypool@2.1.2'
+
+overrides:
+  'tinypool@<2.1.2': '2.1.2'

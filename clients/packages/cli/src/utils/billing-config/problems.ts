@@ -96,8 +96,10 @@ const describe = (issue: ConfigIssue): Problem => {
     case 'missing_currency':
     case 'not_supported':
     case 'unknown_reference':
+    case 'deprecated_reference':
     case 'type_changed':
     case 'interval_changed':
+    case 'meter_cycle_unused':
       return { ...base, title: message, label }
     default:
       return {

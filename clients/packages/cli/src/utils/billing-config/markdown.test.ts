@@ -97,6 +97,22 @@ describe('planMarkdown', () => {
     )
   })
 
+  test('adds the catalog change to the summary table', () => {
+    expect(
+      planMarkdown(config, acme, {
+        entries,
+        catalog: { before: { name: 'v1' }, name: 'Spring_pricing' },
+        issues: [],
+      }),
+    ).toContain(
+      [
+        '| Organization | Environment | Config | Changes | Catalog |',
+        '| --- | --- | --- | --- | --- |',
+        '| Acme\\_Inc | sandbox | `polar.json` | 2 to change, 1 to add, 1 unchanged | v1 → Spring\\_pricing (draft) |',
+      ].join('\n'),
+    )
+  })
+
   test('has nothing to say when the plan changes nothing and has no errors', () => {
     expect(
       planMarkdown(config, acme, {
@@ -211,6 +227,27 @@ describe('planMarkdown', () => {
     )
   })
 
+  test('says which updated benefits a product grants', () => {
+    const output = planMarkdown(config, acme, {
+      entries: [
+        { section: 'benefits', id: 'support', action: 'updated', diff: [] },
+        {
+          section: 'products',
+          id: 'pro',
+          action: 'updated',
+          diff: [
+            { field: 'benefits', before: ['support'], after: ['support'] },
+          ],
+        },
+      ],
+      issues: [],
+    })
+    expect(output).toContain(
+      ['  pro', '    benefits  support (updated)'].join('\n'),
+    )
+    expect(output).not.toContain('-   benefits')
+  })
+
   test('diffs settings groups like entries', () => {
     const markdown = planMarkdown(config, acme, {
       entries: [
@@ -226,5 +263,44 @@ describe('planMarkdown', () => {
     expect(markdown).toContain(
       '#### Settings\n\n```diff\n  payments\n-   currency  USD\n+   currency  EUR\n```',
     )
+  })
+
+  test('redacts webhook urls by the format on their own side', () => {
+    const slack = 'https://hooks.slack.com/services/T0/B0/token'
+    const after = 'https://app:pw@app.test/hook?token=new'
+    const input = {
+      webhooks: [
+        { external_id: 'app', url: after, format: 'raw', events: [] },
+        { external_id: 'sales', url: slack, format: 'slack', events: [] },
+      ],
+    }
+    const markdown = planMarkdown({ ...config, input }, acme, {
+      entries: [
+        {
+          section: 'webhooks',
+          id: 'app',
+          action: 'updated',
+          diff: [
+            { field: 'url', before: slack, after },
+            { field: 'format', before: 'slack', after: 'raw' },
+          ],
+        },
+        {
+          section: 'webhooks',
+          id: 'sales',
+          action: 'created',
+          diff: [{ field: 'url', before: null, after: slack }],
+        },
+      ],
+      issues: [],
+    })
+    expect(markdown).not.toContain('B0/token')
+    expect(markdown).not.toContain('token=new')
+    expect(markdown).not.toContain('pw@')
+    expect(markdown).toContain('-   url     https://hooks.slack.com/***')
+    expect(markdown).toContain(
+      '+   url     https://***@app.test/hook?token=***',
+    )
+    expect(markdown).toContain('+   url  https://hooks.slack.com/***')
   })
 })

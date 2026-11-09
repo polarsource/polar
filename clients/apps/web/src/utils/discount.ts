@@ -30,7 +30,9 @@ export const getDiscountDisplay = (discount: CheckoutDiscount): string => {
   }
 
   if (isDiscountFixed(discount)) {
-    return formatCurrency('compact')(-discount.amount, discount.currency)
+    return Object.entries(discount.amounts)
+      .map(([currency, amount]) => formatCurrency('compact')(-amount, currency))
+      .join(', ')
   }
 
   throw new Error('Unknown discount type')

@@ -16,8 +16,10 @@ import functools
 import hashlib
 import json
 import os
+import threading
 from typing import Any, Protocol
 
+import logfire
 import sqlalchemy as sa
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from sqlalchemy.engine.interfaces import Dialect
@@ -92,37 +94,44 @@ class KMSKeyProvider:
 
     def __init__(self, key_id: str) -> None:
         self._key_id = key_id
+        self._kms_client: Any = None
+        self._kms_client_lock = threading.Lock()
 
-    @functools.cached_property
+    @property
     def _client(self) -> Any:
         import boto3
         from botocore.config import Config
 
-        # Bound the blocking KMS calls: the sync encryption path can run on the
-        # event loop, so a slow or throttled KMS must fail fast, not stall it.
-        return boto3.client(
-            "kms",
-            region_name=settings.AWS_REGION,
-            config=Config(
-                connect_timeout=3,
-                read_timeout=5,
-                retries={"max_attempts": 3, "mode": "standard"},
-            ),
-        )
+        with self._kms_client_lock:
+            if self._kms_client is None:
+                # Bound the blocking KMS calls: the sync encryption path can run on the
+                # event loop, so a slow or throttled KMS must fail fast, not stall it.
+                self._kms_client = boto3.client(
+                    "kms",
+                    region_name=settings.AWS_REGION,
+                    config=Config(
+                        connect_timeout=3,
+                        read_timeout=5,
+                        retries={"max_attempts": 3, "mode": "standard"},
+                    ),
+                )
+        return self._kms_client
 
     def generate_data_key_sync(self, context: dict[str, str]) -> tuple[bytes, bytes]:
-        response = self._client.generate_data_key(
-            KeyId=self._key_id, KeySpec="AES_256", EncryptionContext=context
-        )
+        with logfire.span("KMS GenerateDataKey"):
+            response = self._client.generate_data_key(
+                KeyId=self._key_id, KeySpec="AES_256", EncryptionContext=context
+            )
         return response["Plaintext"], response["CiphertextBlob"]
 
     async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
         return await asyncio.to_thread(self.generate_data_key_sync, context)
 
     def decrypt_data_key_sync(self, wrapped: bytes, context: dict[str, str]) -> bytes:
-        response = self._client.decrypt(
-            CiphertextBlob=wrapped, EncryptionContext=context
-        )
+        with logfire.span("KMS Decrypt"):
+            response = self._client.decrypt(
+                CiphertextBlob=wrapped, EncryptionContext=context
+            )
         return response["Plaintext"]
 
     async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:

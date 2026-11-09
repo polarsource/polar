@@ -6,7 +6,7 @@ import typing
 
 import pytest
 
-from polar.outpost.event import Event
+from polar.outpost.event import Event, get_property_reader
 
 TIMESTAMP = datetime.datetime(2026, 10, 12, 12, 4, 59, tzinfo=datetime.UTC)
 
@@ -24,10 +24,10 @@ def test_metadata_mapping_traversal(
         mapping_type({"nested": mapping_type({"value": 42})}),
     )
 
-    assert event.get_property("metadata.nested.value") == 42
-    assert event.get_property("nested.value") == 42
-    assert event.get_property("metadata.nested.missing") is None
-    assert event.get_property("metadata.nested.value.child") is None
+    assert get_property_reader("metadata.nested.value")(event) == 42
+    assert get_property_reader("nested.value")(event) == 42
+    assert get_property_reader("metadata.nested.missing")(event) is None
+    assert get_property_reader("metadata.nested.value.child")(event) is None
 
 
 def test_naive_timestamp_is_rejected() -> None:

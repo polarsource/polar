@@ -2,7 +2,7 @@
 
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
-import { Github } from 'lucide-react'
+import { Github } from '@polar-sh/orbit/icons'
 import { usePathname } from 'next/navigation'
 
 const REPO_BASE =

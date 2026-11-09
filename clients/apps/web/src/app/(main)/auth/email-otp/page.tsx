@@ -1,6 +1,6 @@
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
 import { Metadata } from 'next'
-import VerifyPage from './VerifyPage'
+import EmailOTPVerifyForm from '@/components/Auth/EmailOTPVerifyForm'
 import { checkAuthenticationSession } from '@/utils/auth'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { redirect } from 'next/navigation'
@@ -25,7 +25,7 @@ export default async function Page(props: {
   return (
     <div className="dark:bg-polar-950 flex h-screen w-full grow items-center justify-center bg-white">
       <div className="flex w-80 flex-col items-center">
-        <LogoIcon size={60} className="mb-6 text-black dark:text-white" />
+        <LogoIcon size={48} className="mb-6 text-black dark:text-white" />
         {intent === 'signup' && (
           <h1 className="mb-1 text-xl font-medium text-gray-700 dark:text-white">
             Welcome to Polar!
@@ -42,7 +42,7 @@ export default async function Page(props: {
         <div className="dark:text-polar-400 mb-6 text-center text-sm text-gray-500">
           Please enter the 6-character code below
         </div>
-        <VerifyPage intent={intent} />
+        <EmailOTPVerifyForm intent={intent} />
       </div>
     </div>
   )

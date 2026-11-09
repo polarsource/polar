@@ -11,18 +11,20 @@ from polar.base import (
 )
 from polar.v2027_01.errors import (
     CheckoutLocked,
+    CheckoutsClientConfirm400Error,
     CheckoutsClientConfirm403Error,
     CheckoutsClientUpdate403Error,
     CheckoutsUpdate403Error,
     ExpiredCheckoutError,
     HTTPValidationError,
     NotPermitted,
-    PaymentError,
     ResourceNotFound,
 )
 from polar.v2027_01.inputs import (
+    CheckoutConfirmSharedPaymentToken,
     CheckoutConfirmStripe,
-    CheckoutCreate,
+    CheckoutProductsCreate,
+    CheckoutProductsExternalCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
 )
@@ -44,6 +46,7 @@ class CheckoutsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -62,6 +65,7 @@ class CheckoutsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -86,6 +90,7 @@ class CheckoutsSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "status": status,
@@ -108,6 +113,7 @@ class CheckoutsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -126,6 +132,7 @@ class CheckoutsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -150,6 +157,7 @@ class CheckoutsSync(SyncServiceBase):
             response = self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 status=status,
@@ -165,12 +173,30 @@ class CheckoutsSync(SyncServiceBase):
                 break
             page += 1
 
+    @typing.overload
     def create(
         self,
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CheckoutCreate],
+        **kwargs: typing.Unpack[CheckoutProductsCreate],
+    ) -> Checkout: ...
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CheckoutProductsExternalCreate],
+    ) -> Checkout: ...
+
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
     ) -> Checkout:
         """
         Create a checkout session.
@@ -386,6 +412,7 @@ class CheckoutsSync(SyncServiceBase):
         }
         return parse_response_json(response, CheckoutPublic, method_errors)
 
+    @typing.overload
     def client_confirm(
         self,
         client_secret: str,
@@ -393,6 +420,25 @@ class CheckoutsSync(SyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutConfirmStripe],
+    ) -> CheckoutPublicConfirmed: ...
+
+    @typing.overload
+    def client_confirm(
+        self,
+        client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CheckoutConfirmSharedPaymentToken],
+    ) -> CheckoutPublicConfirmed: ...
+
+    def client_confirm(
+        self,
+        client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
     ) -> CheckoutPublicConfirmed:
         """
         Confirm a checkout session by client secret.
@@ -407,7 +453,7 @@ class CheckoutsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            PaymentError: The payment failed.
+            CheckoutsClientConfirm400Error: The payment failed or the shared payment token was rejected.
             CheckoutsClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             CheckoutLocked: The checkout session is being processed.
@@ -430,7 +476,7 @@ class CheckoutsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: PaymentError,
+            400: CheckoutsClientConfirm400Error,
             403: CheckoutsClientConfirm403Error,
             404: ResourceNotFound,
             409: CheckoutLocked,
@@ -446,6 +492,7 @@ class CheckoutsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -464,6 +511,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -488,6 +536,7 @@ class CheckoutsAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "status": status,
@@ -510,6 +559,7 @@ class CheckoutsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
@@ -528,6 +578,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             status: Filter by checkout session status.
@@ -552,6 +603,7 @@ class CheckoutsAsync(AsyncServiceBase):
             response = await self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 status=status,
@@ -568,12 +620,30 @@ class CheckoutsAsync(AsyncServiceBase):
                 break
             page += 1
 
+    @typing.overload
     async def create(
         self,
         *,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-        **kwargs: typing.Unpack[CheckoutCreate],
+        **kwargs: typing.Unpack[CheckoutProductsCreate],
+    ) -> Checkout: ...
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CheckoutProductsExternalCreate],
+    ) -> Checkout: ...
+
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
     ) -> Checkout:
         """
         Create a checkout session.
@@ -789,6 +859,7 @@ class CheckoutsAsync(AsyncServiceBase):
         }
         return parse_response_json(response, CheckoutPublic, method_errors)
 
+    @typing.overload
     async def client_confirm(
         self,
         client_secret: str,
@@ -796,6 +867,25 @@ class CheckoutsAsync(AsyncServiceBase):
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
         **kwargs: typing.Unpack[CheckoutConfirmStripe],
+    ) -> CheckoutPublicConfirmed: ...
+
+    @typing.overload
+    async def client_confirm(
+        self,
+        client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[CheckoutConfirmSharedPaymentToken],
+    ) -> CheckoutPublicConfirmed: ...
+
+    async def client_confirm(
+        self,
+        client_secret: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
     ) -> CheckoutPublicConfirmed:
         """
         Confirm a checkout session by client secret.
@@ -810,7 +900,7 @@ class CheckoutsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            PaymentError: The payment failed.
+            CheckoutsClientConfirm400Error: The payment failed or the shared payment token was rejected.
             CheckoutsClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             CheckoutLocked: The checkout session is being processed.
@@ -833,7 +923,7 @@ class CheckoutsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: PaymentError,
+            400: CheckoutsClientConfirm400Error,
             403: CheckoutsClientConfirm403Error,
             404: ResourceNotFound,
             409: CheckoutLocked,

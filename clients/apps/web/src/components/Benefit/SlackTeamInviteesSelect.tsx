@@ -1,5 +1,9 @@
 import { useSlackWorkspaceUsers } from '@/hooks/queries'
-import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
+import {
+  Check as CheckIcon,
+  ExpandMoreOutlined,
+  X as XIcon,
+} from '@polar-sh/orbit/icons'
 import { Button } from '@polar-sh/orbit'
 import {
   Command,
@@ -14,8 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { CheckIcon, XIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface Props {
@@ -32,10 +35,9 @@ export const SlackTeamInviteesSelect = ({
   const [open, setOpen] = useState(false)
   const { data: users, isLoading } = useSlackWorkspaceUsers(integrationId)
 
-  const selectedUsers = useMemo(
-    () => (users ?? []).filter((u) => value.includes(u.id)),
-    [users, value],
-  )
+  const selectedIds = new Set(value)
+
+  const selectedUsers = (users ?? []).filter((u) => selectedIds.has(u.id))
 
   const toggle = (id: string) => {
     if (value.includes(id)) {
@@ -87,7 +89,7 @@ export const SlackTeamInviteesSelect = ({
               <CommandEmpty>No members found</CommandEmpty>
               <CommandGroup>
                 {(users ?? []).map((user) => {
-                  const selected = value.includes(user.id)
+                  const selected = selectedIds.has(user.id)
                   return (
                     <CommandItem
                       key={user.id}

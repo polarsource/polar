@@ -1,2 +1,3 @@
 next-env.d.ts
 .next/
+*.tsbuildinfo

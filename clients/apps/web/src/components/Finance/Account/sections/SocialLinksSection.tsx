@@ -8,7 +8,7 @@ import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { SectionLayout } from './SectionLayout'
 
 interface Props {
@@ -29,7 +29,8 @@ export const SocialLinksSection = ({ organization: initialOrg }: Props) => {
   const form = useForm<FormValues>({
     values: { socials: organization.socials ?? [] },
   })
-  const { handleSubmit, setError, formState, reset } = form
+  const { control, handleSubmit, setError, reset } = form
+  const formState = useFormState({ control })
 
   const onSubmit = async ({ socials }: FormValues) => {
     posthog.capture('dashboard:organizations:account_review_section:submit', {

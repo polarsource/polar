@@ -1,9 +1,12 @@
 import httpx
+import logfire
 import pytest
 from fastapi import APIRouter, FastAPI
-from logfire.testing import CaptureLogfire
+from logfire.testing import CaptureLogfire, TestExporter
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 
 from polar.logfire import instrument_fastapi
+from polar.observability.http_telemetry import HttpURLSpanProcessor
 
 
 @pytest.mark.anyio
@@ -39,3 +42,43 @@ async def test_instrument_fastapi(
         if span.attributes is not None
     }
     assert "/v1/leaf/ping" in routes
+
+
+@pytest.mark.anyio
+async def test_instrument_fastapi_host_routed_app_hides_path_values() -> None:
+    exporter = TestExporter()
+    logfire.configure(
+        send_to_logfire=False,
+        console=False,
+        additional_span_processors=[
+            HttpURLSpanProcessor(),
+            SimpleSpanProcessor(exporter),
+        ],
+    )
+
+    host_app = FastAPI()
+
+    @host_app.get("/{client_secret}")
+    async def redirect(client_secret: str) -> dict[str, bool]:
+        return {"ok": True}
+
+    app = FastAPI()
+    app.host("buy.example.com", host_app)
+    instrument_fastapi(app)
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://buy.example.com"
+    ) as client:
+        response = await client.get("/polar_cl_secret?customer_email=a@example.com")
+
+    assert response.status_code == 200
+    spans = exporter.exported_spans
+    assert any(
+        span.attributes and span.attributes.get("http.route") == "/{client_secret}"
+        for span in spans
+    )
+    for span in spans:
+        serialized = f"{span.name} {dict(span.attributes or {})}"
+        assert "polar_cl_secret" not in serialized
+        assert "a@example.com" not in serialized

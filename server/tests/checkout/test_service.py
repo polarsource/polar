@@ -13,6 +13,7 @@ from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject
+from polar.checkout import legacy_schemas
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
@@ -195,18 +196,6 @@ def calculate_tax_mock(mocker: MockerFixture) -> AsyncMock:
 @pytest.fixture
 def product_parametrization_helper(request: pytest.FixtureRequest) -> Product:
     return request.getfixturevalue(request.param)
-
-
-@pytest.fixture
-async def agentic_payments_organization(
-    save_fixture: SaveFixture, organization: Organization
-) -> Organization:
-    organization.feature_settings = {
-        **organization.feature_settings,
-        "agentic_payments_enabled": True,
-    }
-    await save_fixture(organization)
-    return organization
 
 
 @pytest.fixture
@@ -585,19 +574,24 @@ class TestCreate:
                 auth_subject,
             )
 
+    @pytest.mark.parametrize(
+        ("field", "value"), [("is_archived", True), ("is_current", False)]
+    )
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_archived_product(
         self,
+        field: str,
+        value: bool,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
         product_one_time: Product,
     ) -> None:
-        product_one_time.is_archived = True
+        setattr(product_one_time, field, value)
         await save_fixture(product_one_time)
         with pytest.raises(PolarRequestValidationError):
             await checkout_service.create(
@@ -626,49 +620,6 @@ class TestCreate:
                     CheckoutPriceCreate(product_price_id=price.id),
                     auth_subject,
                 )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_legacy_price_of_legacy_product(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        price = product_recurring_monthly_and_yearly.prices[0]
-        checkout = await checkout_service.create(
-            session, CheckoutPriceCreate(product_price_id=price.id), auth_subject
-        )
-
-        assert checkout.product_price == price
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_legacy_price_of_product_with_seat_price(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        product_recurring_monthly_and_yearly: Product,
-    ) -> None:
-        legacy_price = product_recurring_monthly_and_yearly.prices[0]
-        seat_price = await create_product_price_seat_unit(
-            save_fixture, product=product_recurring_monthly_and_yearly
-        )
-        product_recurring_monthly_and_yearly.prices.append(seat_price)
-
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.create(
-                session,
-                CheckoutPriceCreate(product_price_id=legacy_price.id),
-                auth_subject,
-            )
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
@@ -3279,7 +3230,7 @@ class TestUpdate:
                 await checkout_service.update(
                     session,
                     checkout,
-                    CheckoutUpdate(
+                    legacy_schemas.CheckoutUpdate(
                         product_id=product_fixed_seat.id, product_price_id=price.id
                     ),
                 )
@@ -7155,7 +7106,6 @@ class TestConfirm:
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
-        agentic_payments_organization: Organization,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -7204,31 +7154,6 @@ class TestConfirm:
                 }
             )
 
-    async def test_shared_payment_token_feature_disabled(
-        self,
-        stripe_service_mock: MagicMock,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Anonymous],
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        with pytest.raises(SharedPaymentTokenError):
-            await checkout_service.confirm(
-                session,
-                auth_subject,
-                checkout_one_time_fixed,
-                CheckoutConfirmSharedPaymentToken.model_validate(
-                    {
-                        "shared_payment_token_id": "spt_123",
-                        "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
-                        "customer_billing_address": {"country": "FR"},
-                    }
-                ),
-            )
-
-        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
-        stripe_service_mock.create_payment_intent_from_shared_payment_token.assert_not_called()
-
     async def test_shared_payment_token_satisfies_required_payment_token(
         self,
         stripe_service_mock: MagicMock,
@@ -7257,7 +7182,6 @@ class TestConfirm:
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_recurring_fixed: Checkout,
-        agentic_payments_organization: Organization,
     ) -> None:
         with pytest.raises(SharedPaymentTokenError):
             await checkout_service.confirm(
@@ -7284,7 +7208,6 @@ class TestConfirm:
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
-        agentic_payments_organization: Organization,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -7324,7 +7247,6 @@ class TestConfirm:
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
-        agentic_payments_organization: Organization,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"

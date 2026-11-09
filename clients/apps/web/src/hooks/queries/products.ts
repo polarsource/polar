@@ -20,6 +20,7 @@ export const useProducts = (
           params: {
             query: {
               organization_id: organizationId,
+              ...(parameters?.id ? {} : { catalog_status: 'live' as const }),
               is_archived:
                 parameters?.is_archived === undefined
                   ? false
@@ -33,9 +34,38 @@ export const useProducts = (
     placeholderData: keepPreviousData,
   })
 
-export const useSelectedProducts = (id: string[], includeArchived = false) =>
+// One product per external_id, preferring the current version, then the newest.
+export const latestVersions = (products: schemas['Product'][]) => {
+  const byKey = new Map<string, schemas['Product']>()
+  for (const product of products) {
+    const key = product.external_id ?? product.id
+    const kept = byKey.get(key)
+    if (
+      !kept ||
+      (product.is_current === kept.is_current
+        ? product.created_at > kept.created_at
+        : product.is_current)
+    ) {
+      byKey.set(key, product)
+    }
+  }
+  return [...byKey.values()]
+}
+
+type ProductSelector =
+  | { id: string[] }
+  | { organization_id: string; external_id: string[] }
+
+export const useSelectedProducts = (
+  selector: ProductSelector,
+  {
+    includeArchived = false,
+    // Versions outside the live catalog, unlike the archived flag above.
+    includeAllVersions = false,
+  }: { includeArchived?: boolean; includeAllVersions?: boolean } = {},
+) =>
   useQuery({
-    queryKey: ['products', { id }],
+    queryKey: ['products', selector, includeArchived, includeAllVersions],
     queryFn: async () => {
       const products: schemas['Product'][] = []
       let page = 1
@@ -44,7 +74,10 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
           api.GET('/v1/products/', {
             params: {
               query: {
-                id,
+                ...selector,
+                ...('id' in selector || includeAllVersions
+                  ? {}
+                  : { catalog_status: 'live' as const }),
                 is_archived: includeArchived ? null : false,
                 page,
                 limit: 100,
@@ -53,7 +86,7 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
           }),
         )
         products.push(...data.items)
-        if (data.pagination.max_page === page) {
+        if (page >= data.pagination.max_page) {
           break
         }
         page++
@@ -62,7 +95,7 @@ export const useSelectedProducts = (id: string[], includeArchived = false) =>
     },
     placeholderData: keepPreviousData,
     retry: defaultRetry,
-    enabled: id.length > 0,
+    enabled: ('id' in selector ? selector.id : selector.external_id).length > 0,
   })
 
 export const useProduct = (id?: string | null) =>
@@ -197,3 +230,43 @@ export const useUpdateProductBenefits = (
       })
     },
   })
+
+// With config-as-code, each catalog publish adds new product rows, so saved IDs
+// can point at old versions. Map each one to the current row with the same
+// external_id. Products without a current row keep their saved ID.
+export const useCurrentProductIds = (
+  organization: schemas['Organization'],
+  productIds: string[],
+) => {
+  const enabled = !!organization.feature_settings?.config_as_code_enabled
+  const savedQuery = useSelectedProducts(
+    { id: enabled ? productIds : [] },
+    { includeArchived: true },
+  )
+  const saved = savedQuery.data
+  const externalIds = saved?.flatMap((product) => product.external_id ?? [])
+  const currentQuery = useSelectedProducts(
+    { organization_id: organization.id, external_id: externalIds ?? [] },
+    { includeArchived: true },
+  )
+  const current = currentQuery.data
+  if (savedQuery.isLoading || currentQuery.isLoading) {
+    return undefined
+  }
+  // Disabled, nothing to map, or a failed lookup: keep the saved IDs.
+  if (!saved || !current) {
+    return productIds
+  }
+  const currentIds = new Map(
+    current.map((product) => [product.external_id, product.id]),
+  )
+  return [
+    ...new Set(
+      saved.map(
+        (product) =>
+          (product.external_id && currentIds.get(product.external_id)) ||
+          product.id,
+      ),
+    ),
+  ]
+}

@@ -1,3 +1,5 @@
+import html
+import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
@@ -8,7 +10,8 @@ from pytest_mock import MockerFixture
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
-from polar.models import PayoutAccount
+from polar.kit.utils import utc_now
+from polar.models import OrganizationDomain, PayoutAccount
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
@@ -421,6 +424,94 @@ class TestDeletePayoutAccount:
 
 
 @pytest.mark.anyio
+class TestFlaggedProductNames:
+    async def _create_signal(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_id: uuid.UUID,
+        type: OrganizationRiskSignal.Type = (
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED
+        ),
+    ) -> None:
+        await save_fixture(
+            OrganizationRiskSignal(
+                organization=organization,
+                source=OrganizationRiskSignal.Source.POLAR,
+                type=type,
+                risk_level=OrganizationRiskSignal.RiskLevel.UNKNOWN,
+                payload={
+                    "attempts": [
+                        {
+                            "name": "Coaching Package",
+                            "category": "human services",
+                            "phrase": None,
+                            "flagged_at": "2026-11-02T14:51:02Z",
+                        },
+                        {
+                            "name": "Casino Night",
+                            "category": "gambling",
+                            "phrase": "Casino",
+                            "flagged_at": "2026-11-02T14:51:18Z",
+                        },
+                    ],
+                    "product_id": str(product_id),
+                    "product_name": "Night Games",
+                },
+            )
+        )
+
+    async def test_reviews_section_shows_the_timeline(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        product_id = uuid.uuid4()
+        await self._create_signal(save_fixture, organization, product_id)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=reviews"
+        )
+
+        assert response.status_code == 200
+        page = html.unescape(response.text)
+        assert f"/products/{product_id}" in page
+        timeline = [
+            "2026-11-02 14:51:02 UTC",
+            'Tried "Coaching Package"',
+            "2026-11-02 14:51:18 UTC",
+            'Tried "Casino Night"',
+            'Created as "Night Games"',
+        ]
+        positions = [page.index(entry) for entry in timeline]
+        assert positions == sorted(positions)
+
+    @pytest.mark.parametrize(
+        "type",
+        [
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED,
+            OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT,
+        ],
+    )
+    async def test_list_filter(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+        type: OrganizationRiskSignal.Type,
+    ) -> None:
+        await self._create_signal(save_fixture, organization, uuid.uuid4(), type)
+
+        response = await backoffice_client.get("/organizations/?flagged_names=true")
+
+        assert response.status_code == 200
+        assert organization.name in response.text
+        assert organization_second.name not in response.text
+
+
+@pytest.mark.anyio
 class TestDetailRiskSignals:
     async def _create_signal(
         self, save_fixture: SaveFixture, organization: Organization
@@ -471,7 +562,7 @@ class TestDetailRiskSignals:
         )
 
         assert response.status_code == 200
-        assert "External Risk Signals" in response.text
+        assert "Risk Signals" in response.text
         assert "Fraudulent Website" in response.text
 
     async def test_reviews_section_without_signals(
@@ -645,6 +736,108 @@ class TestOverviewLazyCards:
         assert "Payout Account" in response.text
         assert "<html" not in response.text
 
+    async def test_setup_checklist_website_domain_not_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Not verified" in response.text
+
+    async def test_setup_checklist_website_domain_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Verified" in response.text
+        assert "Not verified" not in response.text
+
+    async def test_setup_checklist_website_domain_other_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="other.com", verified_at=utc_now()
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Other domain verified" in response.text
+        assert "other.com" in response.text
+
+    async def test_setup_checklist_website_domain_pending(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Pending verification" in response.text
+
+    async def test_setup_checklist_website_domain_lost(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.website = "https://www.acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization,
+                domain="acme.com",
+                verification_record_value="TOKEN",
+                verification_lost_at=datetime(2026, 10, 1, tzinfo=UTC),
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Lost on 2026-10-01" in response.text
+
 
 @pytest.mark.anyio
 class TestListSearch:
@@ -727,3 +920,34 @@ class TestStatusCounts:
         # Active tab badge: the list treats a blank search as no search and
         # hides deleted organizations, so the counts must agree.
         assert 'badge badge-success ml-2">0<' in response.text
+
+
+@pytest.mark.anyio
+class TestEditCatalogLimits:
+    async def test_update(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        url = f"/organizations/{organization.id}/edit-catalog-limits"
+        response = await backoffice_client.get(url)
+        assert response.status_code == 200
+        assert 'name="products_limit"' in response.text
+        assert 'name="benefits_limit"' in response.text
+
+        response = await backoffice_client.post(
+            url, data={"products_limit": "25", "benefits_limit": "0"}
+        )
+        assert response.status_code == 303
+        await session.refresh(organization)
+        assert organization.products_limit == 25
+        assert organization.benefits_limit == 0
+
+        response = await backoffice_client.post(
+            url, data={"products_limit": "-1", "benefits_limit": "2147483648"}
+        )
+        assert response.status_code == 200
+        await session.refresh(organization)
+        assert organization.products_limit == 25
+        assert organization.benefits_limit == 0

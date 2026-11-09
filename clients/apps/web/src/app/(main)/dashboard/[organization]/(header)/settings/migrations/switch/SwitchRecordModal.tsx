@@ -12,10 +12,12 @@ import { needsAttention, SwitchRow } from './switchRows'
 export function SwitchRecordModal({
   row,
   migrationId,
+  readOnly = false,
   onClose,
 }: {
   row: SwitchRow
   migrationId: string
+  readOnly?: boolean
   onClose: () => void
 }) {
   const facts = assessmentFacts(row)
@@ -32,7 +34,7 @@ export function SwitchRecordModal({
   return (
     <Box flexDirection="column" height="100%">
       <InlineModalHeader hide={onClose}>
-        <Text variant="heading-xs" as="h2">
+        <Text variant="title" as="h2">
           {row.customer_email || row.title}
         </Text>
       </InlineModalHeader>
@@ -55,7 +57,7 @@ export function SwitchRecordModal({
           borderColor="border-primary"
         >
           <Box alignItems="center" justifyContent="between" columnGap="m">
-            <Text variant="heading-xs" as="h3">
+            <Text variant="title" as="h3">
               Before switch
             </Text>
             <SwitchStatusIndicator row={row} />
@@ -81,7 +83,11 @@ export function SwitchRecordModal({
               />
             </Box>
           ) : null}
-          <TaxAfterSwitchField row={row} migrationId={migrationId} />
+          <TaxAfterSwitchField
+            row={row}
+            migrationId={migrationId}
+            readOnly={readOnly}
+          />
         </Box>
 
         {showCustomer ? (

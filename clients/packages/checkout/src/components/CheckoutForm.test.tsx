@@ -1,4 +1,4 @@
-import type { schemas } from '@polar-sh/client'
+import type { Client, schemas } from '@polar-sh/client'
 import type { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
@@ -11,13 +11,20 @@ import {
   describe,
   expect,
   it,
+  onTestFinished,
   vi,
 } from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
 import {
   CheckoutFormContext,
+  CheckoutFormProvider,
+  useCheckoutForm,
   type CheckoutFormContextProps,
 } from '../providers/CheckoutFormProvider'
+import {
+  CheckoutContext,
+  type CheckoutContextProps,
+} from '../providers/CheckoutProvider'
 import { createCheckout } from '../test-utils/makeCheckout'
 import CheckoutForm from './CheckoutForm'
 
@@ -72,6 +79,12 @@ beforeAll(() => {
     disconnect() {}
     // oxlint-disable-next-line typescript/no-explicit-any
   } as any
+  globalThis.matchMedia ??= ((media: string) => ({
+    matches: false,
+    media,
+    addEventListener() {},
+    removeEventListener() {},
+  })) as unknown as typeof matchMedia
 })
 
 afterEach(() => {
@@ -123,8 +136,10 @@ const recurringProduct = {
   prices: [],
   benefits: [],
   medias: [],
+  catalog_id: null,
   description: null,
   is_archived: false,
+  is_current: true,
   organization_id: 'org_1',
   created_at: new Date().toISOString(),
   modified_at: null,
@@ -286,6 +301,143 @@ describe('CheckoutForm', () => {
     })
   })
 
+  describe('WebMCP tools', () => {
+    const renderWithModelContext = (
+      webMCP?: boolean,
+      {
+        checkout: overrides,
+        defaultValues,
+      }: {
+        checkout?: Parameters<typeof createCheckout>[0]
+        defaultValues?: Partial<schemas['CheckoutUpdatePublic']>
+      } = {},
+    ) => {
+      const registerTool = vi.fn()
+      Object.defineProperty(document, 'modelContext', {
+        value: { registerTool },
+        configurable: true,
+      })
+      onTestFinished(() => {
+        delete (document as Document & { modelContext?: unknown }).modelContext
+      })
+      const checkout = createCheckout({
+        // oxlint-disable-next-line typescript/no-explicit-any
+        payment_processor: 'dummy' as any,
+        ...overrides,
+      })
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          disabled={false}
+          locale="en"
+          webMCP={webMCP}
+          defaultValues={defaultValues}
+          onForm={(f) => {
+            form = f
+          }}
+        />,
+      )
+
+      const execute = async (name: string, input = {}) => {
+        const [tool] = registerTool.mock.calls.find(
+          ([tool]) => tool.name === name,
+        )!
+        let result = ''
+        await act(async () => {
+          result = await tool.execute(input)
+        })
+        return result
+      }
+
+      return { registerTool, form, execute }
+    }
+
+    it('does not register tools by default', () => {
+      const { registerTool } = renderWithModelContext()
+
+      expect(registerTool).not.toHaveBeenCalled()
+    })
+
+    it('registers tools when webMCP is set', () => {
+      const { registerTool } = renderWithModelContext(true)
+
+      expect(registerTool).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'submit_checkout' }),
+        expect.anything(),
+      )
+    })
+
+    it('reports the missing required fields', async () => {
+      const { execute } = renderWithModelContext(true)
+
+      const state = JSON.parse(await execute('get_checkout_state'))
+
+      expect(state.missing_required_fields).toEqual([
+        'email',
+        'name',
+        'billing_address.country',
+        'card_details',
+      ])
+    })
+
+    it('fills in the customer details and normalizes the state', async () => {
+      const { form, execute } = renderWithModelContext(true)
+
+      await execute('set_customer_details', {
+        email: 'buyer@example.com',
+        billing_address: { country: 'us', state: 'California' },
+      })
+
+      expect(form.getValues('customer_email')).toBe('buyer@example.com')
+      expect(form.getValues('customer_billing_address.country')).toBe('US')
+      expect(form.getValues('customer_billing_address.state')).toBe('US-CA')
+    })
+
+    it('drops the state when the country changes', async () => {
+      const { form, execute } = renderWithModelContext(true)
+
+      await execute('set_customer_details', {
+        billing_address: { country: 'US', state: 'CA' },
+      })
+      await execute('set_customer_details', {
+        billing_address: { country: 'DE' },
+      })
+
+      expect(form.getValues('customer_billing_address.country')).toBe('DE')
+      expect(form.getValues('customer_billing_address.state')).toBe('')
+    })
+
+    it('clears the tax ID when the country changes', async () => {
+      const { form, execute } = renderWithModelContext(true, {
+        checkout: {
+          is_business_customer: true,
+          customer_tax_id: 'DE123456789',
+        },
+        defaultValues: {
+          customer_billing_address: { country: 'DE' },
+          customer_tax_id: 'DE123456789',
+        } as Partial<schemas['CheckoutUpdatePublic']>,
+      })
+
+      await execute('set_customer_details', {
+        billing_address: { country: 'FR' },
+      })
+
+      expect(form.getValues('customer_tax_id')).toBe('')
+    })
+
+    it('rejects a product that is not on offer', async () => {
+      const { execute } = renderWithModelContext(true)
+
+      expect(await execute('update_order', { product: 'Yearly' })).toMatch(
+        /^No product "Yearly" in this checkout/,
+      )
+    })
+  })
+
   describe('trial unavailable notice', () => {
     const renderWithTrialUnavailable = (trialUnavailable: boolean) => {
       const checkout = createCheckout({
@@ -422,6 +574,54 @@ describe('CheckoutForm', () => {
     })
 
     expect(screen.getByText('Invalid US state')).toBeInTheDocument()
+  })
+
+  it('picks the state from a native select on touch devices, which in-app browsers cannot close mid-scroll', async () => {
+    const matchMedia = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (media) =>
+        ({
+          matches: media === '(pointer: coarse)',
+          media,
+          addEventListener() {},
+          removeEventListener() {},
+        }) as unknown as MediaQueryList,
+    )
+    onTestFinished(() => matchMedia.mockRestore())
+    let form: UseFormReturn<schemas['CheckoutUpdatePublic']> | null = null
+    const checkout = createCheckout({
+      // oxlint-disable-next-line typescript/no-explicit-any
+      payment_processor: 'dummy' as any,
+      billing_address_fields: {
+        country: 'required',
+        state: 'required',
+        city: 'optional',
+        postal_code: 'optional',
+        line1: 'optional',
+        line2: 'disabled',
+      },
+    })
+
+    render(
+      <FormWrapper
+        checkout={checkout}
+        {...defaultProps}
+        onForm={(f) => {
+          form = f
+        }}
+        defaultValues={{ customer_billing_address: { country: 'US' } }}
+        locale="en"
+      />,
+    )
+
+    const state = screen.getByTestId('billing-state')
+    expect(state.tagName).toBe('SELECT')
+
+    await act(async () => {
+      fireEvent.change(state, { target: { value: 'US-VA' } })
+    })
+
+    expect(form!.getValues('customer_billing_address.state')).toBe('US-VA')
+    expect(state).toHaveDisplayValue('Virginia')
   })
 
   it('clears billing address errors when country changes', async () => {
@@ -969,6 +1169,82 @@ describe('CheckoutForm', () => {
       fill('Cardholder name', 'Buyer Example')
 
       expect(update).toHaveBeenCalledWith({ customer_name: 'Buyer Example' })
+    })
+
+    it('submits the typed contact details on the first click, while the field is still focused', async () => {
+      const checkout = createCheckout({
+        customer_billing_address: {
+          country: 'US',
+          line1: null,
+          line2: null,
+          postal_code: null,
+          city: null,
+          state: null,
+        },
+      })
+      const confirm = vi.fn(defaultProps.confirm)
+      const ProviderForm = () => {
+        const { form, update, isUpdatePending } = useCheckoutForm()
+        return (
+          <CheckoutForm
+            form={form}
+            checkout={checkout}
+            update={update}
+            confirm={confirm}
+            loading={false}
+            loadingLabel={undefined}
+            isUpdatePending={isUpdatePending}
+            themePreset={{ stripe: {} } as ThemingPresetProps}
+            locale="en"
+          />
+        )
+      }
+      render(
+        <CheckoutContext.Provider
+          value={{
+            checkout,
+            refresh: vi.fn(),
+            update: vi.fn<CheckoutContextProps['update']>(
+              async () =>
+                ({ ok: true, value: checkout }) as Awaited<
+                  ReturnType<CheckoutContextProps['update']>
+                >,
+            ),
+            confirm: vi.fn(),
+            cancelPayment: vi.fn(),
+            client: {} as Client,
+          }}
+        >
+          <CheckoutFormProvider>
+            <ProviderForm />
+          </CheckoutFormProvider>
+        </CheckoutContext.Provider>,
+      )
+      fireEvent.click(screen.getByText('mock ready'))
+      fireEvent.change(screen.getByLabelText('Email'), {
+        target: { value: 'buyer@example.com' },
+      })
+      const name = screen.getByLabelText('Cardholder name')
+      fireEvent.change(name, { target: { value: 'Buyer Example' } })
+      const submit = screen.getByRole('button', { name: 'Pay now' })
+
+      fireEvent.mouseDown(submit)
+      await act(async () => {
+        fireEvent.blur(name)
+      })
+      await act(async () => {
+        fireEvent.mouseUp(submit)
+        fireEvent.click(submit)
+      })
+
+      expect(confirm).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          customer_email: 'buyer@example.com',
+          customer_name: 'Buyer Example',
+        }),
+        null,
+        null,
+      )
     })
 
     it('waits for an address the browser reads as one', () => {

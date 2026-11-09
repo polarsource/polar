@@ -125,13 +125,13 @@ const SelectItem = ({
 }: React.ComponentProps<typeof SelectPrimitive.Item>) => (
   <SelectPrimitive.Item
     className={cn(
-      'focus:bg-accent focus:text-accent-foreground relative flex w-full items-center py-1.5 pr-2 pl-8 text-sm outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50',
+      'focus:bg-accent focus:text-accent-foreground relative flex w-full items-center py-1.5 ps-8 pe-2 text-sm outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50',
       className,
       'cursor-pointer rounded-lg',
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="inset-s-2 absolute flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
         <CheckIcon className="h-4 w-4" />
       </SelectPrimitive.ItemIndicator>
@@ -143,4 +143,57 @@ const SelectItem = ({
 )
 SelectItem.displayName = 'SelectItem'
 
-export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue }
+const coarsePointerQuery = '(pointer: coarse)'
+
+const subscribeToPointer = (onChange: () => void) => {
+  const mediaQuery = window.matchMedia(coarsePointerQuery)
+  mediaQuery.addEventListener('change', onChange)
+  return () => mediaQuery.removeEventListener('change', onChange)
+}
+
+const useCoarsePointer = () =>
+  React.useSyncExternalStore(
+    subscribeToPointer,
+    () => window.matchMedia(coarsePointerQuery).matches,
+    () => false,
+  )
+
+const NativeSelect = ({
+  className,
+  placeholder,
+  value,
+  children,
+  ...props
+}: React.ComponentProps<'select'> & { placeholder?: string }) => (
+  <div className="relative mb-2 w-full">
+    <select
+      className={cn(
+        'peer ring-offset-background data-placeholder:text-muted-foreground focus:ring-ring h-10 w-full appearance-none rounded-md border bg-none px-3 py-0 pe-9 focus:ring-2 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+        'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 cursor-pointer rounded-xl border border-gray-200 bg-white text-black shadow-xs transition-colors hover:border-gray-300 dark:text-white',
+        className,
+      )}
+      value={value ?? ''}
+      data-placeholder={value ? undefined : ''}
+      translate="no"
+      {...props}
+    >
+      {placeholder && (
+        <option value="" disabled>
+          {placeholder}
+        </option>
+      )}
+      {children}
+    </select>
+    <ChevronDownIcon className="peer-data-placeholder:text-muted-foreground inset-e-3.25 pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-black opacity-50 dark:text-white" />
+  </div>
+)
+
+export {
+  NativeSelect,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  useCoarsePointer,
+}

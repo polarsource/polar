@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import NotNullable, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.kit.repository.base import (
@@ -13,7 +13,7 @@ from polar.kit.utils import utc_now
 from polar.models.checkout import Checkout
 from polar.models.checkout_link import CheckoutLink
 from polar.models.checkout_link_product import CheckoutLinkProduct
-from polar.models.dispute import Dispute
+from polar.models.dispute import Dispute, DisputeStatus
 from polar.models.organization import Organization
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_agent_review import OrganizationAgentReview
@@ -35,6 +35,11 @@ from polar.organization_review.schemas import (
     DecisionType,
     ReviewContext,
     ReviewVerdict,
+)
+
+FLAGGED_PRODUCT_NAME_TYPES = (
+    OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_RENAMED,
+    OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT,
 )
 
 
@@ -63,6 +68,7 @@ class OrganizationReviewRepository(
             reviewed_at=reviewed_at,
         )
         self.session.add(agent_review)
+        await self.session.flush()
         return agent_review
 
     async def get_latest_agent_review(
@@ -199,7 +205,28 @@ class OrganizationReviewRepository(
         return row[0], row[1]
 
     async def get_dispute_stats(self, organization_id: UUID) -> tuple[int, int]:
-        """Returns (dispute_count, dispute_amount_cents)."""
+        """Returns (dispute_count, dispute_amount_cents).
+
+        Only counts actual disputes. ChargebackStop alerts (``prevented`` and
+        ``early_warning``) are reported separately by `get_chargeback_stop_stats`.
+        """
+        return await self._get_dispute_stats(
+            organization_id, DisputeStatus.actual_statuses()
+        )
+
+    async def get_chargeback_stop_stats(self, organization_id: UUID) -> tuple[int, int]:
+        """Returns (chargeback_stop_count, chargeback_stop_amount_cents).
+
+        Disputes that never became real: prevented by ChargebackStop or still
+        an early warning.
+        """
+        return await self._get_dispute_stats(
+            organization_id, DisputeStatus.chargeback_stop_statuses()
+        )
+
+    async def _get_dispute_stats(
+        self, organization_id: UUID, statuses: set[DisputeStatus]
+    ) -> tuple[int, int]:
         statement = select(
             func.count(Dispute.id),
             func.coalesce(func.sum(Dispute.amount), 0),
@@ -210,6 +237,7 @@ class OrganizationReviewRepository(
                     ~Payment.is_deleted,
                 )
             ),
+            Dispute.status.in_(statuses),
             ~Dispute.is_deleted,
         )
         result = await self.session.execute(statement)
@@ -425,7 +453,7 @@ class OrganizationReviewRepository(
         """
         cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
-            select(Checkout.return_url)
+            select(NotNullable(Checkout.return_url))
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout.return_url.is_not(None),
@@ -448,7 +476,7 @@ class OrganizationReviewRepository(
         """
         cutoff = utc_now() - timedelta(days=months * 30)
         statement = (
-            select(Checkout._success_url)
+            select(NotNullable(Checkout._success_url))
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout._success_url.is_not(None),
@@ -516,7 +544,38 @@ class OrganizationRiskSignalRepository(
             .where(
                 OrganizationRiskSignal.organization_id == organization_id,
                 OrganizationRiskSignal.risk_level
-                != OrganizationRiskSignal.UNKNOWN_RISK_LEVEL,
+                != OrganizationRiskSignal.RiskLevel.UNKNOWN,
+            )
+            .order_by(OrganizationRiskSignal.created_at.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
+    async def has_flagged_product_name(
+        self, organization_id: UUID, product_id: UUID
+    ) -> bool:
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
+                OrganizationRiskSignal.payload["product_id"].astext == str(product_id),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().first() is not None
+
+    async def list_flagged_product_names(
+        self, organization_id: UUID, *, limit: int = 100
+    ) -> list[OrganizationRiskSignal]:
+        """Name check findings for an organization, most recent first."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                OrganizationRiskSignal.organization_id == organization_id,
+                OrganizationRiskSignal.type.in_(FLAGGED_PRODUCT_NAME_TYPES),
             )
             .order_by(OrganizationRiskSignal.created_at.desc())
             .limit(limit)

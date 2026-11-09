@@ -1,13 +1,20 @@
 import { Effect, Schema } from 'effect'
 import { RequestLog } from './log'
 
-const ToolErrorKind = Schema.Literals(['api', 'script', 'sandbox'])
+const ToolErrorKind = Schema.Literals([
+  'api',
+  'script',
+  'sandbox',
+  'internal',
+  'cancelled',
+])
 export type ToolErrorKind = typeof ToolErrorKind.Type
 
 export class ToolError extends Schema.TaggedError<ToolError>()('ToolError', {
   message: Schema.String,
   kind: Schema.optionalKey(ToolErrorKind),
   status: Schema.optionalKey(Schema.Number),
+  fields: Schema.optionalKey(Schema.Array(Schema.String)),
   cause: Schema.optionalKey(Schema.Defect()),
 }) {
   static fromCause(this: void, cause: unknown, kind?: ToolErrorKind) {
@@ -20,6 +27,8 @@ export class ToolError extends Schema.TaggedError<ToolError>()('ToolError', {
 }
 
 const MAX_RESULT_CHARS = 24_000
+
+const EMPTY_RESULTS = new Set(['', 'null', 'undefined', '[]', '{}', '""'])
 
 const truncate = (text: string) =>
   text.length <= MAX_RESULT_CHARS
@@ -62,12 +71,16 @@ export const makeToolRunner = Effect.gen(function* () {
     log.isError = false
     log.resultChars = text.length
     log.truncated = typeof result === 'string' && text.length > MAX_RESULT_CHARS
+    log.emptyResult = EMPTY_RESULTS.has(text.trim())
     return toolResult(result)
   }
   const onFailure = (error: ToolError) => {
     log.isError = true
     log.errorKind = error.kind
     log.apiStatus = error.status
+    if (error.fields) {
+      log.apiErrorFields = error.fields
+    }
     // Sandbox errors come from the runtime, such as an exceeded CPU limit.
     // Script and API errors can quote customer data, so they stay out.
     if (error.kind === 'sandbox') {
@@ -85,5 +98,9 @@ export const makeToolRunner = Effect.gen(function* () {
         Effect.match({ onSuccess, onFailure }),
       ),
       { signal },
-    )
+    ).catch((cause: unknown) => {
+      log.isError = true
+      log.errorKind = signal.aborted ? 'cancelled' : 'internal'
+      throw cause
+    })
 })

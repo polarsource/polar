@@ -25,8 +25,6 @@ async def create_events_for_fixtures(
     events: list[Event] = []
 
     for sub in subscriptions.values():
-        if sub.started_at is None:
-            continue
         product = next((p for p in products.values() if p.id == sub.product_id), None)
         if product is None:
             continue

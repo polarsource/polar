@@ -3,7 +3,7 @@ import { useListIntegrationsGithubRepositoryBenefitUserRepositories } from '@/ho
 import { useUserSSE } from '@/hooks/sse'
 import { getGitHubRepositoryBenefitAuthorizeURL } from '@/utils/auth'
 import { defaultApiUrl } from '@/utils/domain'
-import RefreshOutlined from '@mui/icons-material/RefreshOutlined'
+import { RefreshOutlined } from '@polar-sh/orbit/icons'
 import { enums, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
@@ -24,7 +24,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { useFormContext, useWatch, useFormState } from 'react-hook-form'
 import { githubRepositoryPermissionDisplayNames } from './utils'
 
 interface GitHubRepositoryBenefitFormProps {
@@ -34,18 +34,13 @@ interface GitHubRepositoryBenefitFormProps {
 export const GitHubRepositoryBenefitForm = ({
   update = false,
 }: GitHubRepositoryBenefitFormProps) => {
-  const {
-    control,
-    watch,
-    formState: { defaultValues },
-    setValue,
-    setError,
-    clearErrors,
-  } = useFormContext<schemas['BenefitGitHubRepositoryCreate']>()
+  const { control, setValue, setError, clearErrors } =
+    useFormContext<schemas['BenefitGitHubRepositoryCreate']>()
+  const { defaultValues } = useFormState({ control })
 
   const pathname = usePathname()
 
-  const description = watch('description')
+  const description = useWatch({ control, name: 'description' })
 
   const { currentUser } = useAuth()
 
@@ -150,7 +145,10 @@ export const GitHubRepositoryBenefitForm = ({
     [repos, setValue],
   )
 
-  const formRepoOwner = watch('properties.repository_owner')
+  const formRepoOwner = useWatch({
+    control,
+    name: 'properties.repository_owner',
+  })
 
   useEffect(() => {
     const org = repositories?.organizations.find(

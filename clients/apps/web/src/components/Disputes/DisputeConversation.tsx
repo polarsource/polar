@@ -7,7 +7,7 @@ import { useSupportCaseChat } from '@/components/SupportCase/useSupportCaseChat'
 import { useReplyToSupportCase, useSupportCase } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Text } from '@polar-sh/orbit'
-import { MessageCircle } from 'lucide-react'
+import { MessageCircle } from '@polar-sh/orbit/icons'
 import { useCallback } from 'react'
 
 const EVENT_LABELS: Record<string, string> = {
@@ -35,7 +35,7 @@ const MerchantAvatar = ({
 
 const SupportAvatar = () => (
   <div className="dark:bg-polar-50 dark:text-polar-900 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-white">
-    <LogoIcon className="h-6 w-6" />
+    <LogoIcon className="h-5 w-5" />
   </div>
 )
 

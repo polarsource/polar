@@ -120,14 +120,17 @@ export const createPerson = async (
   input: CreatePersonInput,
 ): Promise<AttioRecord> => {
   const values: Record<string, unknown> = {
-    name: [
+    email_addresses: [{ email_address: input.email }],
+  }
+  const fullName = `${input.firstName} ${input.lastName}`.trim()
+  if (fullName) {
+    values.name = [
       {
         first_name: input.firstName,
         last_name: input.lastName,
-        full_name: `${input.firstName} ${input.lastName}`.trim(),
+        full_name: fullName,
       },
-    ],
-    email_addresses: [{ email_address: input.email }],
+    ]
   }
   if (input.jobTitle) {
     values.job_title = input.jobTitle

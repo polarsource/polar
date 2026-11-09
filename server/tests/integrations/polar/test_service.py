@@ -219,7 +219,6 @@ def configured(mocker: MockerFixture) -> None:
     settings = mocker.patch("polar.integrations.polar.service.settings")
     settings.POLAR_SELF_ENABLED = True
     settings.POLAR_ORGANIZATION_ID = str(SELF_ORG_ID)
-    settings.POLAR_FREE_PRODUCT_ID = "prod_free"
 
 
 @pytest.fixture
@@ -429,89 +428,6 @@ class TestEnqueueTrackOrganizationReviewUsage:
             cost_usd="0.0123",
             usage_id="usage-123",
         )
-
-    def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=0.5)
-
-        assert enqueue.call_count == 1
-        assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
-
-
-class TestEnqueueTrackCompassAssistantUsage:
-    def _call(
-        self,
-        *,
-        external_customer_id: str = str(ORG_A),
-        cost_usd: Decimal | float | None = Decimal("0.0042"),
-    ) -> None:
-        polar_self.enqueue_track_compass_assistant_usage(
-            external_customer_id=external_customer_id,
-            vendor="openai",
-            model="gpt-5.5",
-            input_tokens=1200,
-            output_tokens=300,
-            cost_usd=cost_usd,
-            usage_id="run-1",
-        )
-
-    def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
-        settings = mocker.patch("polar.integrations.polar.service.settings")
-        settings.POLAR_SELF_ENABLED = False
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call()
-
-        enqueue.assert_not_called()
-
-    def test_tracks_self_organization_usage(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        # Polar's own organization is deliberately not gated out: its Compass
-        # usage is cost-tracked like any merchant's, so Polar's own dashboard
-        # shows its AI costs.
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(external_customer_id=str(SELF_ORG_ID))
-
-        enqueue.assert_called_once()
-
-    def test_noop_when_cost_is_none(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=None)
-
-        enqueue.assert_not_called()
-
-    def test_enqueues_job_with_serialized_cost(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=Decimal("0.0042"))
-
-        enqueue.assert_called_once_with(
-            "polar_self.track_compass_assistant_usage",
-            external_customer_id=str(ORG_A),
-            vendor="openai",
-            model="gpt-5.5",
-            input_tokens=1200,
-            output_tokens=300,
-            cost_usd="0.0042",
-            usage_id="run-1",
-        )
-
-    def test_noop_when_cost_is_zero(
-        self, configured: None, mocker: MockerFixture
-    ) -> None:
-        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
-
-        self._call(cost_usd=Decimal(0))
-
-        enqueue.assert_not_called()
 
     def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
         enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
@@ -1336,6 +1252,7 @@ def _make_product(
             "meter_interval": None,
             "meter_interval_count": None,
             "is_recurring": True,
+            "is_deletable": False,
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
             "metadata": metadata or {},
@@ -2336,18 +2253,7 @@ class TestListOrders:
         with pytest.raises(PolarSelfNotConfigured):
             await polar_self.list_orders(ORG_A)
 
-    async def test_returns_empty_when_customer_not_found(
-        self, configured: None, orders_client_mock: MagicMock
-    ) -> None:
-        orders_client_mock.get_customer_by_external_id_or_none.return_value = None
-
-        items, total = await polar_self.list_orders(ORG_A)
-
-        assert items == []
-        assert total == 0
-        orders_client_mock.list_customer_orders.assert_not_awaited()
-
-    async def test_lists_orders_for_resolved_customer(
+    async def test_lists_orders_by_external_customer_id(
         self, configured: None, orders_client_mock: MagicMock
     ) -> None:
         order = _make_order(id="ord_1")
@@ -2358,10 +2264,11 @@ class TestListOrders:
         assert items == [order]
         assert total == 1
         orders_client_mock.list_customer_orders.assert_awaited_once_with(
-            customer_id=_CUSTOMER_ID,
+            external_customer_id=str(ORG_A),
             page=2,
             limit=20,
         )
+        orders_client_mock.get_customer_by_external_id_or_none.assert_not_awaited()
 
 
 @pytest.mark.anyio

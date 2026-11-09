@@ -70,17 +70,17 @@ async def add_to_buckets(
 
 async def get_bucket_totals(
     redis: Redis,
-    reducer: Reducer,
+    reducer_id: uuid.UUID,
+    func: AggregationFunction,
     bucket_starts: Sequence[datetime],
     identities: Sequence[tuple[uuid.UUID | None, str | None]],
 ) -> list[tuple[int, Decimal, Decimal | None, Decimal | None]]:
     """count, sum, min and max of each of the identities' buckets."""
-    func = reducer.aggregation.func
     async with redis.pipeline(transaction=False) as pipe:
         for bucket_start in bucket_starts:
             for customer_id, external_customer_id in identities:
                 key = get_reducer_bucket_key(
-                    reducer.id, bucket_start, customer_id, external_customer_id
+                    reducer_id, bucket_start, customer_id, external_customer_id
                 )
                 match func:
                     case AggregationFunction.cnt | AggregationFunction.sum:

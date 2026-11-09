@@ -19,6 +19,11 @@ If you use a user (not organization) access token, pass --organization-id.
 The ``BENEFITS`` and ``PRODUCTS`` lists below are the source of truth for the
 Polar self-billing plan catalog and are also imported by the dev seed loader
 (``scripts.seeds_load``) to materialize the same catalog directly in the DB.
+
+``EXTERNAL_BENEFITS`` lists benefits that products reference but that this
+script never creates, because they depend on environment-specific resources
+(e.g. a Slack integration). They are attached when they exist and skipped
+otherwise.
 """
 
 import asyncio
@@ -109,7 +114,11 @@ BENEFITS: list[dict[str, object]] = [
     },
 ]
 
-PRODUCTS: list[dict[str, object]] = [
+# Referenced by products but never created here: they depend on resources that
+# only exist in production (e.g. the Slack integration). Matched by description.
+EXTERNAL_BENEFITS: frozenset[str] = frozenset({"Slack Channel"})
+
+MONTHLY_PRODUCTS: list[dict[str, object]] = [
     {
         "name": "Pro",
         "description": "For entrepreneurs & early teams.",
@@ -135,7 +144,7 @@ PRODUCTS: list[dict[str, object]] = [
             "order": 3,
             "highlight": True,
             "description": "For scaling startups.",
-            "features": "All features on Pro, Prioritized Support",
+            "features": "All features on Pro, Preview access to new features, Prioritized Support",
         },
         "benefits": [
             "Transaction Fee (Tier 3)",
@@ -151,15 +160,42 @@ PRODUCTS: list[dict[str, object]] = [
             "custom": False,
             "order": 4,
             "description": "For fast growing businesses.",
-            "features": "All features on Growth, Slack Channel, P1 Support, Single Sign-On",
+            "features": (
+                "All features on Growth, Preview access to new features, "
+                "Slack Channel, P1 Support, Single Sign-On"
+            ),
         },
         "benefits": [
             "Transaction Fee (Tier 4)",
             "Support (Tier 4)",
             "Preview access to new features",
             "Single Sign-On",
+            "Slack Channel",
         ],
     },
+]
+
+ANNUAL_PRICE_MONTHS = 11
+
+
+def _annual_variant(product: dict[str, object]) -> dict[str, object]:
+    name = product["name"]
+    price_amount = product["price_amount"]
+    metadata = product["metadata"]
+    assert isinstance(name, str)
+    assert isinstance(price_amount, int)
+    assert isinstance(metadata, dict)
+    return {
+        **product,
+        "recurring_interval": "year",
+        "price_amount": price_amount * ANNUAL_PRICE_MONTHS,
+        "metadata": {**metadata, "tier": name},
+    }
+
+
+PRODUCTS: list[dict[str, object]] = [
+    *MONTHLY_PRODUCTS,
+    *(_annual_variant(product) for product in MONTHLY_PRODUCTS),
 ]
 
 
@@ -188,15 +224,15 @@ async def _existing_benefits(
 
 async def _existing_products(
     polar: PolarAsync, organization_id: str | None
-) -> dict[str, Product]:
-    by_name: dict[str, Product] = {}
+) -> dict[tuple[str, str | None], Product]:
+    by_name_and_interval: dict[tuple[str, str | None], Product] = {}
     async for product in polar.products.iter_list(
         page=1,
         limit=100,
         organization_id=organization_id,
     ):
-        by_name[product.name] = product
-    return by_name
+        by_name_and_interval[(product.name, product.recurring_interval)] = product
+    return by_name_and_interval
 
 
 async def _seed_benefits(
@@ -274,18 +310,26 @@ async def _seed_products(
         price_amount = product["price_amount"]
         benefit_descriptions = product["benefits"]
         desired_visibility = product.get("visibility", "public")
+        recurring_interval = product.get("recurring_interval", "month")
         assert isinstance(name, str)
         assert desired_description is None or isinstance(desired_description, str)
         assert isinstance(desired_metadata, dict)
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
         assert desired_visibility in ("draft", "private", "public")
+        assert recurring_interval in ("month", "year")
 
         desired_benefit_ids: list[str] = []
         for description in benefit_descriptions:
             assert isinstance(description, str)
             benefit = benefits_by_description.get(description)
             if benefit is None:
+                if description in EXTERNAL_BENEFITS:
+                    typer.echo(
+                        f"  skip   {name!r} benefit {description!r} "
+                        "(external benefit not found)"
+                    )
+                    continue
                 if dry_run:
                     desired_benefit_ids.append(f"<missing:{description}>")
                     continue
@@ -295,7 +339,7 @@ async def _seed_products(
                 )
             desired_benefit_ids.append(benefit.id)
 
-        current = existing.get(name)
+        current = existing.get((name, recurring_interval))
         if current is None:
             if dry_run:
                 typer.echo(
@@ -314,7 +358,7 @@ async def _seed_products(
             created = await polar.products.create(
                 name=name,
                 description=desired_description,
-                recurring_interval="month",
+                recurring_interval=recurring_interval,
                 prices=[price],
                 metadata=desired_metadata,
                 visibility=desired_visibility,

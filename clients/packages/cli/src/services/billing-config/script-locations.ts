@@ -38,6 +38,8 @@ const FIELD_PATTERNS: Record<string, RegExp> = {
     /\.(count|sum|max|min|avg|unique)\(|(?<![\w.])aggregation(?=\s*:)/,
   unit: /\.unit\(|(?<![\w.])unit(?=\s*:)/,
   custom_label: /\.unit\(|(?<![\w.])custom_label(?=\s*:)/,
+  meter_interval: /\.meterCycle\(|(?<![\w.])meter_interval(?=\s*:)/,
+  meter_interval_count: /\.meterCycle\(|(?<![\w.])meter_interval_count(?=\s*:)/,
 }
 
 const find = (source: string, pattern: RegExp, from: number, to: number) => {
@@ -47,7 +49,7 @@ const find = (source: string, pattern: RegExp, from: number, to: number) => {
     : { offset: from + match.index, length: match[0].length }
 }
 
-type Range = { start: number; end: number }
+export type Range = { start: number; end: number }
 
 const findAll = (source: string, pattern: RegExp, from: number) =>
   [...source.slice(from).matchAll(new RegExp(pattern.source, 'gm'))].map(
@@ -60,7 +62,6 @@ const SECTIONS = [
   'meters',
   'benefits',
   'products',
-  'discounts',
   'webhooks',
 ]
 
@@ -73,7 +74,7 @@ const sectionKey = (source: string, section: string) => {
   return own[columns.indexOf(Math.min(...columns))]
 }
 
-const sectionRange = (source: string, section: string): Range => {
+export const sectionRange = (source: string, section: string): Range => {
   const whole = { start: 0, end: source.length }
   const column = ({ offset }: { offset: number }) => columnOf(source, offset)
   const start = sectionKey(source, section)

@@ -8,11 +8,21 @@ import {
   PosterRule,
 } from './PosterFrame'
 
-const TRANSITIONS: { event: string; access: string; on: boolean }[] = [
-  { event: 'subscription.active', access: 'GRANTED', on: true },
-  { event: 'subscription.past_due', access: 'KEPT', on: true },
-  { event: 'subscription.canceled', access: 'REVOKED', on: false },
-  { event: 'subscription.active', access: 'GRANTED', on: true },
+const TRANSITIONS: {
+  id: string
+  event: string
+  access: string
+  on: boolean
+}[] = [
+  { id: 'start', event: 'subscription.active', access: 'GRANTED', on: true },
+  { id: 'dunning', event: 'subscription.past_due', access: 'KEPT', on: true },
+  {
+    id: 'cancel',
+    event: 'subscription.canceled',
+    access: 'REVOKED',
+    on: false,
+  },
+  { id: 'resume', event: 'subscription.active', access: 'GRANTED', on: true },
 ]
 
 const Marker = ({ on }: { on: boolean }) => (
@@ -33,8 +43,8 @@ export const BenefitsPoster = () => (
     <PosterBody>
       <Box flexDirection="column">
         <PosterHeader>ENTITLEMENTS</PosterHeader>
-        {TRANSITIONS.map(({ event, access, on }, i) => (
-          <Box key={i} flexDirection="column" rowGap="s" paddingTop="s">
+        {TRANSITIONS.map(({ id, event, access, on }) => (
+          <Box key={id} flexDirection="column" rowGap="s" paddingTop="s">
             <PosterRule />
             <Box alignItems="center" columnGap="m">
               <Marker on={on} />

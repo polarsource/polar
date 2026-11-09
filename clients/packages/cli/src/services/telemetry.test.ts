@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { Cause, Effect, Exit, FileSystem, Layer, PlatformError } from 'effect'
 import { CliError, Command } from 'effect/cli'
+import { createColors } from 'picocolors'
 import { AuthError, type PolarEnvironment } from '@/schemas/Auth'
 import { UsedEnvironments } from '@/services/api'
 import {
@@ -233,7 +234,7 @@ describe('outcomes', () => {
           new CliError.ShowHelp({ commandPath: ['polar'], errors: [] }),
         ),
       ),
-    ).toEqual({ outcome: 'success' })
+    ).toEqual({ outcome: 'help' })
     expect(
       outcomeOf(
         Exit.fail(
@@ -249,7 +250,11 @@ describe('outcomes', () => {
           }),
         ),
       ),
-    ).toEqual({ outcome: 'failure', error: 'ShowHelp:UnknownSubcommand' })
+    ).toEqual({
+      outcome: 'failure',
+      error: 'ShowHelp:UnknownSubcommand',
+      errorMessage: 'bogus',
+    })
     expect(outcomeOf(Exit.die(new TypeError('boom')))).toEqual({
       outcome: 'failure',
       error: 'TypeError',
@@ -258,6 +263,18 @@ describe('outcomes', () => {
     expect(outcomeOf(Exit.failCause(Cause.interrupt()))).toEqual({
       outcome: 'interrupted',
     })
+  })
+
+  test('counts --help and -h as help views', () => {
+    expect(outcomeOf(Exit.succeed(1), ['help'])).toEqual({ outcome: 'help' })
+    expect(outcomeOf(Exit.succeed(1), ['json', 'h'])).toEqual({
+      outcome: 'help',
+    })
+    expect(
+      outcomeOf(Exit.fail(new AuthError({ message: 'Not logged in' })), [
+        'help',
+      ]),
+    ).toMatchObject({ outcome: 'failure' })
   })
 
   test('extracts status codes from listen and HTTP errors', () => {
@@ -294,7 +311,21 @@ describe('outcomes', () => {
     })
   })
 
-  test('names the flag or argument behind a usage mistake, never what was typed', () => {
+  test('appends the hint to the message without terminal colors', () => {
+    expect(
+      describeFailure({
+        _tag: 'TriggerError',
+        message: 'The API rejected the request',
+        hint: `${createColors(true).cyan('data.amount')}: Input should be a valid integer`,
+      }),
+    ).toEqual({
+      error: 'TriggerError',
+      errorMessage:
+        'The API rejected the request\ndata.amount: Input should be a valid integer',
+    })
+  })
+
+  test('names the flag, argument or subcommand behind a usage mistake, never a value', () => {
     const usage = (error: CliError.ShowHelp['errors'][number]) =>
       describeFailure(
         new CliError.ShowHelp({ commandPath: ['polar'], errors: [error] }),
@@ -318,15 +349,28 @@ describe('outcomes', () => {
         }),
       ),
     ).toEqual({ error: 'ShowHelp:InvalidValue', errorMessage: 'limit' })
-    expect(
+    const unknown = (subcommand: string) =>
       usage(
         new CliError.UnknownSubcommand({
-          subcommand: 'polar_oat_short',
+          subcommand,
           parent: ['polar'],
           suggestions: [],
         }),
-      ),
-    ).toEqual({ error: 'ShowHelp:UnknownSubcommand' })
+      )
+    expect(unknown('status')).toEqual({
+      error: 'ShowHelp:UnknownSubcommand',
+      errorMessage: 'status',
+    })
+    expect(unknown('polar_oat_short')).toEqual({
+      error: 'ShowHelp:UnknownSubcommand',
+      errorMessage: '<redacted>',
+    })
+    expect(unknown('342c8722-fcad-416b-8232-8877dcf8f90e')).toEqual({
+      error: 'ShowHelp:UnknownSubcommand',
+    })
+    expect(unknown('alice@example.com')).toEqual({
+      error: 'ShowHelp:UnknownSubcommand',
+    })
     expect(
       usage(
         new CliError.UnexpectedArgument({ arguments: ['a private value'] }),
@@ -513,6 +557,7 @@ describe('Telemetry.record', () => {
         os: process.platform,
         arch: process.arch,
         agent: 'claude-code',
+        tty: Boolean(process.stdout.isTTY),
         ci: true,
         build: 'release',
         $process_person_profile: false,

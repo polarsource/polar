@@ -152,6 +152,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -256,6 +257,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "User"
         ],
         "x-speakeasy-group": "organizations",
@@ -359,6 +361,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -466,11 +469,19 @@
             }
           },
           "409": {
-            "description": "Cannot enforce SSO without an enabled connection.",
+            "description": "Cannot enforce SSO without an enabled connection and a verified domain.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SSOEnforcementRequiresConnection"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SSOEnforcementRequiresConnection"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SSORequiresVerifiedDomain"
+                    }
+                  ],
+                  "title": "Response 409 Organizations:Update"
                 }
               }
             }
@@ -487,6 +498,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -597,6 +609,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "customer_id",
@@ -1148,6 +1184,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "status",
@@ -2509,6 +2569,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2599,6 +2660,16 @@
               }
             }
           },
+          "403": {
+            "description": "Organization benefit limit reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -2614,6 +2685,7 @@
         "x-tool-title": "Create Benefit",
         "x-tool-description": "Create a benefit, for example license keys, file downloads or Discord access.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2716,6 +2788,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2860,7 +2933,11 @@
         "x-tool-name": "benefits_update",
         "x-tool-title": "Update Benefit",
         "x-tool-description": "Update a benefit.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -2875,9 +2952,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefits.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"external_id\": \"ext_1337\",\n    \"type\": \"custom\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -2963,6 +3037,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -3090,6 +3165,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -3919,6 +3995,9 @@
         "x-tool-name": "webhooks_create_webhook_endpoint",
         "x-tool-title": "Create Webhook Endpoint",
         "x-tool-description": "Create a webhook endpoint.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -3934,9 +4013,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.createWebhookEndpoint(\n  {\n    \"url\": \"https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0\",\n    \"api_version\": \"2026-10\",\n    \"format\": \"raw\",\n    \"events\": [\n      \"checkout.created\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -4276,16 +4352,16 @@
         "x-tool-name": "webhooks_update_webhook_endpoint",
         "x-tool-title": "Update Webhook Endpoint",
         "x-tool-description": "Update a webhook endpoint.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "webhooks",
         "x-speakeasy-name-override": "update_webhook_endpoint",
-        "x-tool-annotations": [
-          "destructive",
-          "open_world"
-        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -4840,6 +4916,9 @@
         "x-tool-name": "webhooks_redeliver_webhook_event",
         "x-tool-title": "Redeliver Webhook Event",
         "x-tool-description": "Schedule the re-delivery of a webhook event.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -4855,9 +4934,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.webhooks.redeliverWebhookEvent(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -5173,6 +5249,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5262,6 +5339,16 @@
               }
             }
           },
+          "403": {
+            "description": "Organization product limit reached.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -5276,7 +5363,11 @@
         "x-tool-name": "products_create",
         "x-tool-title": "Create Product",
         "x-tool-description": "Create a product.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5291,9 +5382,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -5381,6 +5469,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5508,16 +5597,17 @@
         "x-tool-name": "products_update",
         "x-tool-title": "Update Product",
         "x-tool-description": "Update a product.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
         "x-speakeasy-group": "products",
         "x-speakeasy-name-override": "update",
-        "x-tool-annotations": [
-          "destructive",
-          "open_world"
-        ],
         "x-codeSamples": [
           {
             "lang": "python",
@@ -5622,6 +5712,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5735,7 +5826,12 @@
         "x-tool-name": "products_update_benefits",
         "x-tool-title": "Update Product Benefits",
         "x-tool-description": "Update benefits granted by a product.",
+        "x-tool-annotations": [
+          "destructive",
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -5750,10 +5846,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.updateBenefits(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"benefits\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive",
-          "open_world"
         ]
       }
     },
@@ -5847,6 +5939,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "product_billing_type",
@@ -6363,6 +6479,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "status",
@@ -8116,6 +8256,30 @@
             "description": "Filter by product ID."
           },
           {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
+          },
+          {
             "name": "customer_id",
             "in": "query",
             "required": false,
@@ -8292,6 +8456,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8391,6 +8556,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8493,6 +8659,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -8601,6 +8768,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9091,6 +9259,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9190,6 +9359,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9300,6 +9470,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9410,6 +9581,7 @@
           }
         },
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -9508,6 +9680,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -10262,6 +10435,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "billing_type",
@@ -11119,6 +11316,30 @@
               "description": "Filter by product ID."
             },
             "description": "Filter by product ID."
+          },
+          {
+            "name": "external_product_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "ExternalProductID Filter",
+              "description": "Filter by product external ID."
+            },
+            "description": "Filter by product external ID."
           },
           {
             "name": "billing_type",
@@ -12877,6 +13098,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12950,7 +13172,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutLinkCreate"
+                "$ref": "#/components/schemas/CheckoutLinkCreateProducts"
               }
             }
           }
@@ -12981,6 +13203,7 @@
         "x-tool-title": "Create Checkout Link",
         "x-tool-description": "Create a checkout link.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -12992,11 +13215,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.create(\n    payment_processor='stripe',\n    allow_discount_codes=True,\n    require_billing_address=False,\n    product_price_id='00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.checkout_links.create(\n    payment_processor='stripe',\n    allow_discount_codes=True,\n    require_billing_address=False,\n    products=['00000000-0000-4000-8000-000000000000'],\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.create(\n  {\n    \"payment_processor\": \"stripe\",\n    \"allow_discount_codes\": true,\n    \"require_billing_address\": false,\n    \"product_price_id\": \"00000000-0000-4000-8000-000000000000\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.checkoutLinks.create(\n  {\n    \"payment_processor\": \"stripe\",\n    \"allow_discount_codes\": true,\n    \"require_billing_address\": false,\n    \"products\": [\n      \"00000000-0000-4000-8000-000000000000\"\n    ]\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -13086,6 +13309,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13205,6 +13429,7 @@
         "x-tool-title": "Update Checkout Link",
         "x-tool-description": "Update a checkout link.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -13295,6 +13520,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14129,6 +14355,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14234,6 +14461,7 @@
         "x-tool-title": "Create Discount",
         "x-tool-description": "Create a discount.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14242,11 +14470,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.create(\n    external_id='ext_1337',\n    name='string',\n    type='fixed',\n    duration='once',\n    currency='usd',\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.discounts.create(\n    external_id='ext_1337',\n    name='string',\n    type='fixed',\n    duration='once',\n    amounts={'key': 0},\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"type\": \"fixed\",\n    \"duration\": \"once\",\n    \"currency\": \"usd\"\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.discounts.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"type\": \"fixed\",\n    \"duration\": \"once\",\n    \"amounts\": {\n      \"key\": 0\n    }\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -14337,6 +14565,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14465,6 +14694,7 @@
         "x-tool-title": "Update Discount",
         "x-tool-description": "Update a discount.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -14555,6 +14785,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -15216,6 +15447,9 @@
         "x-tool-name": "customers_update",
         "x-tool-title": "Update Customer",
         "x-tool-description": "Update a customer.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15231,9 +15465,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"email\": \"customer@example.com\",\n    \"external_id\": \"usr_1337\",\n    \"type\": \"team\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -15544,6 +15775,9 @@
         "x-tool-name": "customers_update_external",
         "x-tool-title": "Update Customer by External ID",
         "x-tool-description": "Update a customer by external ID.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -15559,9 +15793,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.updateExternal(\n  \"string\",\n  {\n    \"email\": \"customer@example.com\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -17047,6 +17278,9 @@
         "x-tool-name": "customers_members_update",
         "x-tool-title": "Update Member",
         "x-tool-description": "Update a member of a customer.\n\nOnly name, email and role can be updated.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -17062,9 +17296,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.update(\n  \"00000000-0000-4000-8000-000000000000\",\n  \"00000000-0000-4000-8000-000000000000\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -17422,6 +17653,9 @@
         "x-tool-name": "customers_members_update_external",
         "x-tool-title": "Update Member by External ID",
         "x-tool-description": "Update a member by external ID for a customer identified by its external ID.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -17437,9 +17671,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customers.members.updateExternal(\n  \"string\",\n  \"string\",\n  {\n    \"role\": \"member\"\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "destructive"
         ]
       },
       "delete": {
@@ -22373,6 +22604,9 @@
         "x-tool-name": "customer_seats_assign_seat",
         "x-tool-title": "Assign Seat",
         "x-tool-description": "Assign a seat for a subscription or order.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -22388,9 +22622,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.assignSeat(\n  {\n    \"immediate_claim\": false\n  },\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       },
       "get": {
@@ -22685,6 +22916,9 @@
         "x-tool-name": "customer_seats_resend_invitation",
         "x-tool-title": "Resend Invitation",
         "x-tool-description": "Resend an invitation for a pending customer seat.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
         "x-polar-allowed-subjects": [
           "Organization",
           "User"
@@ -22700,9 +22934,6 @@
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerSeats.resendInvitation(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
-        ],
-        "x-tool-annotations": [
-          "open_world"
         ]
       }
     },
@@ -23586,6 +23817,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -23799,6 +24031,7 @@
           }
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24439,6 +24672,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24543,6 +24777,7 @@
         "x-tool-title": "Create Meter",
         "x-tool-description": "Create a meter.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24652,6 +24887,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24770,6 +25006,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -24889,6 +25126,7 @@
         "x-tool-title": "Update Meter",
         "x-tool-description": "Update a meter.",
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -25721,6 +25959,7 @@
           "idempotent"
         ],
         "x-polar-allowed-subjects": [
+          "Agent",
           "Organization",
           "User"
         ],
@@ -26243,6 +26482,124 @@
           {
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.credits(\n  {\n    \"units\": 100,\n    \"rollover\": false,\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\",\n    \"meter_id\": \"d498a884-e2cd-4d3e-8002-f536468a8b22\"\n  },\n);\nconsole.log(response);\n"
+          }
+        ]
+      }
+    },
+    "/v1/customer-meters/credits/{id}/reverse": {
+      "post": {
+        "tags": [
+          "customer_meters",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Reverse Customer Meter Credit",
+        "description": "Reverse a manual credit, removing the units the customer hasn't used yet.\n\nWorks once per credit, within 7 days and in the current billing period.\nReturns a `meter.credited` event with negative units and\n`parent_id` set to the reversed credit.\n\n**Scopes**: `customers:write`",
+        "operationId": "customer_meters:reverse_credit",
+        "security": [
+          {
+            "oidc": [
+              "customers:write"
+            ]
+          },
+          {
+            "pat": [
+              "customers:write"
+            ]
+          },
+          {
+            "oat": [
+              "customers:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "description": "The ID of the `meter.credited` event returned when the credit was granted.",
+              "title": "Id"
+            },
+            "description": "The ID of the `meter.credited` event returned when the credit was granted."
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Credit reversed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterCreditEvent"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "You don't have permission to manage customers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotPermitted"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Manual credit not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The credit can't be reversed, or the customer meter is being updated: retry shortly.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerMeterCreditNotReversible"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-tool-name": "customer_meters_reverse_credit",
+        "x-tool-title": "Reverse Customer Meter Credit",
+        "x-tool-description": "Reverse a manual credit, removing the units the customer hasn't used yet.\n\nWorks once per credit, within 7 days and in the current billing period.\nReturns a `meter.credited` event with negative units and\n`parent_id` set to the reversed credit.",
+        "x-tool-annotations": [
+          "destructive"
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "customer_meters",
+        "x-speakeasy-name-override": "reverse_credit",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.customer_meters.reverse_credit(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.customerMeters.reverseCredit(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -31547,6 +31904,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitCustomProperties"
           },
@@ -31570,6 +31940,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -32245,6 +32616,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDiscordProperties"
           },
@@ -32268,6 +32652,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -32944,6 +33329,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDownloadablesProperties"
           },
@@ -32967,6 +33365,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -33476,6 +33875,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitFeatureFlagProperties"
           },
@@ -33499,6 +33911,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -33965,6 +34378,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitGitHubRepositoryProperties"
           },
@@ -33988,6 +34414,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -36654,6 +37081,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
           },
@@ -36677,6 +37117,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -37282,6 +37723,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitMeterCreditProperties"
           },
@@ -37305,6 +37759,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -38040,6 +38495,19 @@
             "$ref": "#/components/schemas/BenefitVisibility",
             "description": "The visibility of the benefit in the customer portal."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitSlackSharedChannelProperties"
           },
@@ -38063,6 +38531,7 @@
           "external_id",
           "metadata",
           "visibility",
+          "catalog_id",
           "properties",
           "visibility_configurable"
         ],
@@ -39337,20 +39806,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout.",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -39581,9 +40036,6 @@
               {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                  },
-                  {
                     "$ref": "#/components/schemas/ProductPrice"
                   }
                 ]
@@ -39602,9 +40054,6 @@
                 "additionalProperties": {
                   "items": {
                     "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                      },
                       {
                         "$ref": "#/components/schemas/ProductPrice"
                       }
@@ -39722,7 +40171,6 @@
           "trial_end",
           "organization_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "allow_discount_codes",
           "require_billing_address",
@@ -39843,20 +40291,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -39941,7 +40375,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -40083,20 +40518,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -40181,7 +40602,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -40284,7 +40706,14 @@
         "description": "Confirm a checkout session using a Stripe confirmation token."
       },
       "CheckoutCreate": {
-        "$ref": "#/components/schemas/CheckoutProductsCreate"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CheckoutProductsCreate"
+          },
+          {
+            "$ref": "#/components/schemas/CheckoutProductsExternalCreate"
+          }
+        ]
       },
       "CheckoutCreatedEvent": {
         "properties": {
@@ -40459,22 +40888,6 @@
           "type": {
             "$ref": "#/components/schemas/DiscountType"
           },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "deprecated": true,
-            "examples": [
-              1000
-            ]
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency",
-            "deprecated": true,
-            "examples": [
-              "usd"
-            ]
-          },
           "amounts": {
             "additionalProperties": {
               "type": "integer"
@@ -40515,8 +40928,6 @@
         "required": [
           "duration",
           "type",
-          "amount",
-          "currency",
           "amounts",
           "id",
           "name",
@@ -40536,22 +40947,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/DiscountType"
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "deprecated": true,
-            "examples": [
-              1000
-            ]
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency",
-            "deprecated": true,
-            "examples": [
-              "usd"
-            ]
           },
           "amounts": {
             "additionalProperties": {
@@ -40594,8 +40989,6 @@
           "duration",
           "duration_in_months",
           "type",
-          "amount",
-          "currency",
           "amounts",
           "id",
           "name",
@@ -40955,359 +41348,6 @@
         "title": "CheckoutLink",
         "description": "Checkout link data."
       },
-      "CheckoutLinkCreate": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/CheckoutLinkCreateProductPrice"
-          },
-          {
-            "$ref": "#/components/schemas/CheckoutLinkCreateProduct"
-          },
-          {
-            "$ref": "#/components/schemas/CheckoutLinkCreateProducts"
-          }
-        ]
-      },
-      "CheckoutLinkCreateProduct": {
-        "properties": {
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "payment_processor": {
-            "type": "string",
-            "const": "stripe",
-            "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Optional label to distinguish links internally"
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
-            "default": false
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "payment_processor",
-          "product_id"
-        ],
-        "title": "CheckoutLinkCreateProduct",
-        "description": "Schema to create a new checkout link from a a single product.\n\n**Deprecated**: Use `CheckoutLinkCreateProducts` instead."
-      },
-      "CheckoutLinkCreateProductPrice": {
-        "properties": {
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "payment_processor": {
-            "type": "string",
-            "const": "stripe",
-            "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label",
-            "description": "Optional label to distinguish links internally"
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.",
-            "default": false
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored."
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Preconfigured number of units for unit-based pricing. When set, checkout sessions created from this link are locked to this number of units and the customer won't be able to change it. All products on the link must use unit-based pricing and allow this number of units. If the products no longer accommodate this value when the link is opened, it'll be ignored."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "payment_processor",
-          "product_price_id"
-        ],
-        "title": "CheckoutLinkCreateProductPrice",
-        "description": "Schema to create a new checkout link from a a single product price.\n\n**Deprecated**: Use `CheckoutLinkCreateProducts` instead."
-      },
       "CheckoutLinkCreateProducts": {
         "properties": {
           "metadata": {
@@ -41628,9 +41668,6 @@
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -41990,437 +42027,6 @@
           }
         ]
       },
-      "CheckoutPriceCreate": {
-        "properties": {
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "custom_field_data": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string",
-                  "format": "date-time",
-                  "examples": [
-                    "2026-01-01T00:00:00.000000Z"
-                  ]
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Custom Field Data",
-            "description": "Key-value object storing custom field values."
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout."
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
-            "default": false
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Predefined number of seats (works with seat-based pricing only)"
-          },
-          "min_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Seats",
-            "description": "Minimum number of seats (works with seat-based pricing only)"
-          },
-          "max_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Seats",
-            "description": "Maximum number of seats (works with seat-based pricing only)"
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Predefined number of units (works with unit-based pricing only)"
-          },
-          "min_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Units",
-            "description": "Minimum number of units (works with unit-based pricing only)"
-          },
-          "max_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Units",
-            "description": "Maximum number of units (works with unit-based pricing only)"
-          },
-          "allow_trial": {
-            "type": "boolean",
-            "title": "Allow Trial",
-            "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.",
-            "default": true
-          },
-          "customer_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Id",
-            "description": "ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."
-          },
-          "is_business_customer": {
-            "type": "boolean",
-            "title": "Is Business Customer",
-            "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
-            "default": false
-          },
-          "external_customer_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Customer Id",
-            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
-          },
-          "customer_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the customer.",
-                "examples": [
-                  "John Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Name"
-          },
-          "customer_email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email",
-                "description": "Email address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Email"
-          },
-          "customer_ip_address": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "ipvanyaddress"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Ip Address"
-          },
-          "customer_billing_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Billing Name"
-          },
-          "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "customer_tax_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Tax Id"
-          },
-          "customer_metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Customer Metadata",
-            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "subscription_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subscription Id",
-            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "embed_origin": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embed Origin",
-            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
-                "examples": [
-                  "en",
-                  "en-US",
-                  "fr",
-                  "fr-CA"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "product_price_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout."
-          }
-        },
-        "type": "object",
-        "required": [
-          "product_price_id"
-        ],
-        "title": "CheckoutPriceCreate",
-        "description": "Create a new checkout session from a product price.\n\n**Deprecated**: Use `CheckoutProductsCreate` instead.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
-      },
       "CheckoutProduct": {
         "properties": {
           "id": {
@@ -42560,12 +42166,22 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
+          },
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -42610,455 +42226,13 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "catalog_id",
           "prices",
           "benefits",
           "medias"
         ],
         "title": "CheckoutProduct",
         "description": "Product data for a checkout session."
-      },
-      "CheckoutProductCreate": {
-        "properties": {
-          "trial_interval": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TrialInterval"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The interval unit for the trial period."
-          },
-          "trial_interval_count": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 1000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trial Interval Count",
-            "description": "The number of interval units for the trial period."
-          },
-          "metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Metadata",
-            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "custom_field_data": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "string",
-                  "format": "date-time",
-                  "examples": [
-                    "2026-01-01T00:00:00.000000Z"
-                  ]
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "type": "object",
-            "title": "Custom Field Data",
-            "description": "Key-value object storing custom field values."
-          },
-          "discount_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Discount Id",
-            "description": "ID of the discount to apply to the checkout."
-          },
-          "allow_discount_codes": {
-            "type": "boolean",
-            "title": "Allow Discount Codes",
-            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
-            "default": true
-          },
-          "require_billing_address": {
-            "type": "boolean",
-            "title": "Require Billing Address",
-            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
-            "default": false
-          },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0,
-                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount"
-          },
-          "seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seats",
-            "description": "Predefined number of seats (works with seat-based pricing only)"
-          },
-          "min_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Seats",
-            "description": "Minimum number of seats (works with seat-based pricing only)"
-          },
-          "max_seats": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 10000.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Seats",
-            "description": "Maximum number of seats (works with seat-based pricing only)"
-          },
-          "units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Units",
-            "description": "Predefined number of units (works with unit-based pricing only)"
-          },
-          "min_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Min Units",
-            "description": "Minimum number of units (works with unit-based pricing only)"
-          },
-          "max_units": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 2147483647.0,
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Max Units",
-            "description": "Maximum number of units (works with unit-based pricing only)"
-          },
-          "allow_trial": {
-            "type": "boolean",
-            "title": "Allow Trial",
-            "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.",
-            "default": true
-          },
-          "customer_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Id",
-            "description": "ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."
-          },
-          "is_business_customer": {
-            "type": "boolean",
-            "title": "Is Business Customer",
-            "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
-            "default": false
-          },
-          "external_customer_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "External Customer Id",
-            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
-          },
-          "customer_name": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 256,
-                "description": "The name of the customer.",
-                "examples": [
-                  "John Doe"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Name"
-          },
-          "customer_email": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "email",
-                "description": "Email address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Email"
-          },
-          "customer_ip_address": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "ipvanyaddress"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Ip Address"
-          },
-          "customer_billing_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Billing Name"
-          },
-          "customer_billing_address": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AddressInput",
-                "description": "Billing address of the customer."
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "customer_tax_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Customer Tax Id"
-          },
-          "customer_metadata": {
-            "additionalProperties": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "maxLength": 500,
-                  "minLength": 1
-                },
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "number"
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            "propertyNames": {
-              "maxLength": 40,
-              "minLength": 1
-            },
-            "type": "object",
-            "maxProperties": 50,
-            "title": "Customer Metadata",
-            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
-          },
-          "subscription_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subscription Id",
-            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
-          },
-          "success_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Success Url",
-            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
-          },
-          "return_url": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2083,
-                "minLength": 1,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Return Url",
-            "description": "When set, a back button will be shown in the checkout to return to this URL."
-          },
-          "embed_origin": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Embed Origin",
-            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
-          },
-          "locale": {
-            "anyOf": [
-              {
-                "type": "string",
-                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
-                "examples": [
-                  "en",
-                  "en-US",
-                  "fr",
-                  "fr-CA"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Locale"
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "maxLength": 3,
-                "minLength": 3
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id",
-            "description": "ID of the product to checkout. First available price will be selected."
-          }
-        },
-        "type": "object",
-        "required": [
-          "product_id"
-        ],
-        "title": "CheckoutProductCreate",
-        "description": "Create a new checkout session from a product.\n\n**Deprecated**: Use `CheckoutProductsCreate` instead.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
       },
       "CheckoutProductsCreate": {
         "properties": {
@@ -43346,7 +42520,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -43559,6 +42734,503 @@
         ],
         "title": "CheckoutProductsCreate",
         "description": "Create a new checkout session from a list of products.\nCustomers will be able to switch between those products.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
+      },
+      "CheckoutProductsExternalCreate": {
+        "properties": {
+          "trial_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrialInterval"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The interval unit for the trial period."
+          },
+          "trial_interval_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Interval Count",
+            "description": "The number of interval units for the trial period."
+          },
+          "metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Metadata",
+            "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "custom_field_data": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "string",
+                  "format": "date-time",
+                  "examples": [
+                    "2026-01-01T00:00:00.000000Z"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Custom Field Data",
+            "description": "Key-value object storing custom field values."
+          },
+          "discount_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Id",
+            "description": "ID of the discount to apply to the checkout."
+          },
+          "allow_discount_codes": {
+            "type": "boolean",
+            "title": "Allow Discount Codes",
+            "description": "Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.",
+            "default": true
+          },
+          "require_billing_address": {
+            "type": "boolean",
+            "title": "Require Billing Address",
+            "description": "Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.",
+            "default": false
+          },
+          "amount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0,
+                "description": "Amount in cents, before discounts and taxes. Only useful for custom prices, it'll be ignored for fixed and free prices. "
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount"
+          },
+          "seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seats",
+            "description": "Predefined number of seats (works with seat-based pricing only)"
+          },
+          "min_seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Seats",
+            "description": "Minimum number of seats (works with seat-based pricing only)"
+          },
+          "max_seats": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Seats",
+            "description": "Maximum number of seats (works with seat-based pricing only)"
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Predefined number of units (works with unit-based pricing only)"
+          },
+          "min_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Units",
+            "description": "Minimum number of units (works with unit-based pricing only)"
+          },
+          "max_units": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Units",
+            "description": "Maximum number of units (works with unit-based pricing only)"
+          },
+          "allow_trial": {
+            "type": "boolean",
+            "title": "Allow Trial",
+            "description": "Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.",
+            "default": true
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer."
+          },
+          "is_business_customer": {
+            "type": "boolean",
+            "title": "Is Business Customer",
+            "description": "Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.",
+            "default": false
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set."
+          },
+          "customer_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256,
+                "description": "The name of the customer.",
+                "examples": [
+                  "John Doe"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Name"
+          },
+          "customer_email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email",
+                "description": "Email address of the customer."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Email"
+          },
+          "customer_ip_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "ipvanyaddress"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Ip Address"
+          },
+          "customer_billing_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Billing Name"
+          },
+          "customer_billing_address": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressInput",
+                "description": "Billing address of the customer."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "customer_tax_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Tax Id"
+          },
+          "customer_metadata": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 500,
+                  "minLength": 1
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "propertyNames": {
+              "maxLength": 40,
+              "minLength": 1
+            },
+            "type": "object",
+            "maxProperties": 50,
+            "title": "Customer Metadata",
+            "description": "Key-value object allowing you to store additional information that'll be copied to the created customer.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "subscription_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subscription Id",
+            "description": "ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten."
+          },
+          "success_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Url",
+            "description": "URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id."
+          },
+          "return_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2083,
+                "minLength": 1,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Return Url",
+            "description": "When set, a back button will be shown in the checkout to return to this URL."
+          },
+          "embed_origin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Origin",
+            "description": "If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page."
+          },
+          "locale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "Locale of the customer, given as an IETF BCP 47 language tag, e.g. `en`, `en-US` or `en-GB-oxendict`. If `null` or unsupported, the locale will default to `en`.",
+                "examples": [
+                  "en",
+                  "en-US",
+                  "fr",
+                  "fr-CA"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locale"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentmentCurrency",
+                "maxLength": 3,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "external_products": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "External Products",
+            "description": "List of product external IDs available to select at that checkout. The first one will be selected by default."
+          },
+          "prices": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "items": {
+                    "oneOf": [
+                      {
+                        "$ref": "#/components/schemas/ProductPriceFixedCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceCustomCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceSeatBasedCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceUnitBasedCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceMeteredUnitCreate"
+                      },
+                      {
+                        "$ref": "#/components/schemas/ProductPriceMeteredTiersCreate"
+                      }
+                    ],
+                    "discriminator": {
+                      "propertyName": "amount_type",
+                      "mapping": {
+                        "custom": "#/components/schemas/ProductPriceCustomCreate",
+                        "fixed": "#/components/schemas/ProductPriceFixedCreate",
+                        "metered_tiers": "#/components/schemas/ProductPriceMeteredTiersCreate",
+                        "metered_unit": "#/components/schemas/ProductPriceMeteredUnitCreate",
+                        "seat_based": "#/components/schemas/ProductPriceSeatBasedCreate",
+                        "unit_based": "#/components/schemas/ProductPriceUnitBasedCreate"
+                      }
+                    }
+                  },
+                  "type": "array",
+                  "minItems": 1,
+                  "description": "List of prices for the product. At most one fixed price and one seat-based price may be combined (billed as `fixed + seat_charge`), or a single custom price may stand alone, plus any number of metered prices. A custom price cannot be combined with a fixed or seat-based price."
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prices",
+            "description": "Optional mapping of product external IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used."
+          }
+        },
+        "type": "object",
+        "required": [
+          "external_products"
+        ],
+        "title": "CheckoutProductsExternalCreate",
+        "description": "Create a new checkout session from a list of products,\nreferenced by their external ID.\nCustomers will be able to switch between those products.\n\nMetadata set on the checkout will be copied\nto the resulting order and/or subscription."
       },
       "CheckoutPublic": {
         "properties": {
@@ -43867,20 +43539,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout.",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -44073,9 +43731,6 @@
               {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                  },
-                  {
                     "$ref": "#/components/schemas/ProductPrice"
                   }
                 ]
@@ -44094,9 +43749,6 @@
                 "additionalProperties": {
                   "items": {
                     "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                      },
                       {
                         "$ref": "#/components/schemas/ProductPrice"
                       }
@@ -44188,7 +43840,6 @@
           "trial_end",
           "organization_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "allow_discount_codes",
           "require_billing_address",
@@ -44527,20 +44178,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout.",
-            "deprecated": true
-          },
           "discount_id": {
             "anyOf": [
               {
@@ -44733,9 +44370,6 @@
               {
                 "oneOf": [
                   {
-                    "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                  },
-                  {
                     "$ref": "#/components/schemas/ProductPrice"
                   }
                 ]
@@ -44754,9 +44388,6 @@
                 "additionalProperties": {
                   "items": {
                     "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                      },
                       {
                         "$ref": "#/components/schemas/ProductPrice"
                       }
@@ -44859,7 +44490,6 @@
           "trial_end",
           "organization_id",
           "product_id",
-          "product_price_id",
           "discount_id",
           "allow_discount_codes",
           "require_billing_address",
@@ -44957,20 +44587,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -45055,7 +44671,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -45355,20 +44972,6 @@
             "title": "Product Id",
             "description": "ID of the product to checkout. Must be present in the checkout's product list."
           },
-          "product_price_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid4"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Product Price Id",
-            "description": "ID of the product price to checkout. Must correspond to a price present in the checkout's product list.",
-            "deprecated": true
-          },
           "amount": {
             "anyOf": [
               {
@@ -45453,7 +45056,8 @@
           "customer_billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -45551,8 +45155,7 @@
                 "type": "number"
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Amount",
@@ -45576,7 +45179,6 @@
         "properties": {
           "amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)",
             "title": "Amount",
             "description": "The amount in cents."
           },
@@ -50332,6 +49934,28 @@
         ],
         "title": "CustomerMeterCreditExternalIDConflict"
       },
+      "CustomerMeterCreditNotReversible": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CustomerMeterCreditNotReversible",
+            "title": "Error",
+            "examples": [
+              "CustomerMeterCreditNotReversible"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CustomerMeterCreditNotReversible"
+      },
       "CustomerMeterCreditsExternalIDCreate": {
         "properties": {
           "units": {
@@ -51122,9 +50746,6 @@
             "items": {
               "oneOf": [
                 {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
-                {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
               ]
@@ -51381,20 +51002,13 @@
             "description": "The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."
           },
           "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Started At",
-            "description": "The timestamp when the subscription started."
+            "description": "The timestamp when the subscription started.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "ends_at": {
             "anyOf": [
@@ -52248,7 +51862,8 @@
           "billing_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 256
               },
               {
                 "type": "null"
@@ -52642,9 +52257,6 @@
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -53931,18 +53543,8 @@
             ]
           },
           "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Started At",
             "description": "The timestamp when the subscription started.",
             "examples": [
@@ -54595,20 +54197,13 @@
             "description": "The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."
           },
           "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Started At",
-            "description": "The timestamp when the subscription started."
+            "description": "The timestamp when the subscription started.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "ends_at": {
             "anyOf": [
@@ -54783,9 +54378,6 @@
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -55199,9 +54791,6 @@
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -56621,61 +56210,27 @@
             "title": "Duration In Months",
             "description": "Number of months the discount should be applied.\n\nRequired when `duration` is `repeating`. Must be omitted otherwise.\n\nFor this to work on yearly pricing, you should multiply this by 12.\nFor example, to apply the discount for 2 years, set this to 24."
           },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999999999999.0,
-                "minimum": 0.0,
-                "description": "Fixed amount to discount from the invoice total."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount",
-            "deprecated": true
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "description": "The currency of the fixed amount discount."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": "usd",
-            "deprecated": true
-          },
           "amounts": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "type": "integer",
-                  "maximum": 999999999999.0,
-                  "minimum": 0.0,
-                  "description": "Fixed amount to discount from the invoice total."
-                },
-                "propertyNames": {
-                  "$ref": "#/components/schemas/PresentmentCurrency"
-                },
-                "type": "object",
-                "minProperties": 1,
-                "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amounts"
+            "additionalProperties": {
+              "type": "integer",
+              "maximum": 999999999999.0,
+              "minimum": 0.0,
+              "description": "Fixed amount to discount from the invoice total."
+            },
+            "propertyNames": {
+              "$ref": "#/components/schemas/PresentmentCurrency"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Amounts",
+            "description": "Map of currency to fixed amount to discount from the total. This allows specifying different discount amounts for different currencies."
           }
         },
         "type": "object",
         "required": [
           "name",
-          "duration"
+          "duration",
+          "amounts"
         ],
         "title": "DiscountFixedCreate",
         "description": "Schema to create a fixed amount discount."
@@ -56687,22 +56242,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/DiscountType"
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "deprecated": true,
-            "examples": [
-              1000
-            ]
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency",
-            "deprecated": true,
-            "examples": [
-              "usd"
-            ]
           },
           "amounts": {
             "additionalProperties": {
@@ -56866,8 +56405,6 @@
         "required": [
           "duration",
           "type",
-          "amount",
-          "currency",
           "amounts",
           "created_at",
           "modified_at",
@@ -56894,22 +56431,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/DiscountType"
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "deprecated": true,
-            "examples": [
-              1000
-            ]
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency",
-            "deprecated": true,
-            "examples": [
-              "usd"
-            ]
           },
           "amounts": {
             "additionalProperties": {
@@ -57066,8 +56587,6 @@
         "required": [
           "duration",
           "type",
-          "amount",
-          "currency",
           "amounts",
           "created_at",
           "modified_at",
@@ -57096,22 +56615,6 @@
           },
           "type": {
             "$ref": "#/components/schemas/DiscountType"
-          },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "deprecated": true,
-            "examples": [
-              1000
-            ]
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency",
-            "deprecated": true,
-            "examples": [
-              "usd"
-            ]
           },
           "amounts": {
             "additionalProperties": {
@@ -57276,8 +56779,6 @@
           "duration",
           "duration_in_months",
           "type",
-          "amount",
-          "currency",
           "amounts",
           "created_at",
           "modified_at",
@@ -57309,22 +56810,6 @@
           "type": {
             "$ref": "#/components/schemas/DiscountType"
           },
-          "amount": {
-            "type": "integer",
-            "title": "Amount",
-            "deprecated": true,
-            "examples": [
-              1000
-            ]
-          },
-          "currency": {
-            "type": "string",
-            "title": "Currency",
-            "deprecated": true,
-            "examples": [
-              "usd"
-            ]
-          },
           "amounts": {
             "additionalProperties": {
               "type": "integer"
@@ -57481,8 +56966,6 @@
           "duration",
           "duration_in_months",
           "type",
-          "amount",
-          "currency",
           "amounts",
           "created_at",
           "modified_at",
@@ -58796,33 +58279,6 @@
               }
             ]
           },
-          "amount": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "maximum": 999999999999.0,
-                "minimum": 0.0,
-                "description": "Fixed amount to discount from the invoice total."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Amount",
-            "deprecated": true
-          },
-          "currency": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PresentmentCurrency",
-                "description": "The currency of the fixed amount discount."
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "deprecated": true
-          },
           "amounts": {
             "anyOf": [
               {
@@ -59844,10 +59300,14 @@
               "minLength": 1
             },
             {
-              "type": "integer"
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": -9007199254740991.0
             },
             {
-              "type": "number"
+              "type": "number",
+              "maximum": 9007199254740991.0,
+              "minimum": -9007199254740991.0
             },
             {
               "type": "boolean"
@@ -61532,21 +60992,29 @@
           },
           "input_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Input Tokens",
             "description": "The number of LLM input tokens used for the event."
           },
           "cached_input_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Cached Input Tokens",
             "description": "The number of LLM cached tokens that were used for the event."
           },
           "output_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Output Tokens",
             "description": "The number of LLM output tokens used for the event."
           },
           "total_tokens": {
             "type": "integer",
+            "maximum": 9007199254740991.0,
+            "minimum": -9007199254740991.0,
             "title": "Total Tokens",
             "description": "The total number of LLM tokens used for the event."
           }
@@ -61560,280 +61028,6 @@
           "total_tokens"
         ],
         "title": "LLMMetadata"
-      },
-      "LegacyOrganizationStatus": {
-        "type": "string",
-        "enum": [
-          "created",
-          "under_review",
-          "denied",
-          "active"
-        ],
-        "title": "LegacyOrganizationStatus",
-        "description": "Legacy organization status values kept for backward compatibility in schemas\nusing OrganizationPublicBase."
-      },
-      "LegacyRecurringProductPrice": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/LegacyRecurringProductPriceFixed"
-          },
-          {
-            "$ref": "#/components/schemas/LegacyRecurringProductPriceCustom"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "amount_type",
-          "mapping": {
-            "custom": "#/components/schemas/LegacyRecurringProductPriceCustom",
-            "fixed": "#/components/schemas/LegacyRecurringProductPriceFixed"
-          }
-        }
-      },
-      "LegacyRecurringProductPriceCustom": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object.",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the price."
-          },
-          "source": {
-            "$ref": "#/components/schemas/ProductPriceSource",
-            "description": "The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."
-          },
-          "amount_type": {
-            "type": "string",
-            "const": "custom",
-            "title": "Amount Type"
-          },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency in which the customer will be charged."
-          },
-          "tax_behavior": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TaxBehaviorOption"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
-          },
-          "is_archived": {
-            "type": "boolean",
-            "title": "Is Archived",
-            "description": "Whether the price is archived and no longer available."
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id",
-            "description": "The ID of the product owning the price."
-          },
-          "type": {
-            "type": "string",
-            "const": "recurring",
-            "title": "Type",
-            "description": "The type of the price."
-          },
-          "recurring_interval": {
-            "$ref": "#/components/schemas/RecurringInterval",
-            "description": "The recurring interval of the price."
-          },
-          "minimum_amount": {
-            "type": "integer",
-            "title": "Minimum Amount",
-            "description": "The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'."
-          },
-          "maximum_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Maximum Amount",
-            "description": "The maximum amount the customer can pay."
-          },
-          "preset_amount": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preset Amount",
-            "description": "The initial amount shown to the customer."
-          },
-          "legacy": {
-            "type": "boolean",
-            "const": true,
-            "title": "Legacy",
-            "readOnly": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "source",
-          "amount_type",
-          "price_currency",
-          "tax_behavior",
-          "is_archived",
-          "product_id",
-          "type",
-          "recurring_interval",
-          "minimum_amount",
-          "maximum_amount",
-          "preset_amount",
-          "legacy"
-        ],
-        "title": "LegacyRecurringProductPriceCustom",
-        "description": "A pay-what-you-want recurring price for a product, i.e. a subscription.\n\n**Deprecated**: The recurring interval should be set on the product itself."
-      },
-      "LegacyRecurringProductPriceFixed": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp of the object.",
-            "examples": [
-              "2026-01-01T00:00:00.000000Z"
-            ]
-          },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At",
-            "description": "Last modification timestamp of the object."
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id",
-            "description": "The ID of the price."
-          },
-          "source": {
-            "$ref": "#/components/schemas/ProductPriceSource",
-            "description": "The source of the price . `catalog` is a predefined price, while `ad_hoc` is a price created dynamically on a Checkout session."
-          },
-          "amount_type": {
-            "type": "string",
-            "const": "fixed",
-            "title": "Amount Type"
-          },
-          "price_currency": {
-            "type": "string",
-            "title": "Price Currency",
-            "description": "The currency in which the customer will be charged."
-          },
-          "tax_behavior": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TaxBehaviorOption"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The tax behavior of the price. If null, it defaults to the organization's default tax behavior."
-          },
-          "is_archived": {
-            "type": "boolean",
-            "title": "Is Archived",
-            "description": "Whether the price is archived and no longer available."
-          },
-          "product_id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Product Id",
-            "description": "The ID of the product owning the price."
-          },
-          "type": {
-            "type": "string",
-            "const": "recurring",
-            "title": "Type",
-            "description": "The type of the price."
-          },
-          "recurring_interval": {
-            "$ref": "#/components/schemas/RecurringInterval",
-            "description": "The recurring interval of the price."
-          },
-          "price_amount": {
-            "type": "integer",
-            "title": "Price Amount",
-            "description": "The price in cents."
-          },
-          "legacy": {
-            "type": "boolean",
-            "const": true,
-            "title": "Legacy",
-            "readOnly": true
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "modified_at",
-          "id",
-          "source",
-          "amount_type",
-          "price_currency",
-          "tax_behavior",
-          "is_archived",
-          "product_id",
-          "type",
-          "recurring_interval",
-          "price_amount",
-          "legacy"
-        ],
-        "title": "LegacyRecurringProductPriceFixed",
-        "description": "A recurring price for a product, i.e. a subscription.\n\n**Deprecated**: The recurring interval should be set on the product itself."
       },
       "LicenseKeyActivate": {
         "properties": {
@@ -62807,47 +62001,6 @@
         },
         "type": "object",
         "title": "LicenseKeyUpdate"
-      },
-      "LicenseKeyUser": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
-          },
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "public_name": {
-            "type": "string",
-            "title": "Public Name"
-          },
-          "avatar_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avatar Url"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "public_name"
-        ],
-        "title": "LicenseKeyUser"
       },
       "LicenseKeyValidate": {
         "properties": {
@@ -69313,6 +68466,19 @@
             "format": "uuid4",
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
+          },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
           }
         },
         "type": "object",
@@ -69332,7 +68498,8 @@
           "meter_interval_count",
           "is_recurring",
           "is_archived",
-          "organization_id"
+          "organization_id",
+          "catalog_id"
         ],
         "title": "OrderProduct"
       },
@@ -69728,20 +68895,13 @@
             "description": "The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."
           },
           "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Started At",
-            "description": "The timestamp when the subscription started."
+            "description": "The timestamp when the subscription started.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "ends_at": {
             "anyOf": [
@@ -70141,58 +69301,6 @@
         "type": "object",
         "title": "OrderUpdate",
         "description": "Schema to update an order."
-      },
-      "OrderUser": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
-          },
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "public_name": {
-            "type": "string",
-            "title": "Public Name"
-          },
-          "avatar_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avatar Url"
-          },
-          "github_username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Github Username"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "public_name"
-        ],
-        "title": "OrderUser"
       },
       "OrderVoidedEvent": {
         "properties": {
@@ -71504,7 +70612,7 @@
           "details": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OrganizationDetails"
+                "$ref": "#/components/schemas/OrganizationDetailsInput"
               },
               {
                 "type": "null"
@@ -72171,21 +71279,8 @@
         ],
         "title": "OrganizationCustomerPortalSettings"
       },
-      "OrganizationDetails": {
+      "OrganizationDetailsInput": {
         "properties": {
-          "about": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "About",
-            "description": "Brief information about you and your business.",
-            "deprecated": true
-          },
           "product_description": {
             "anyOf": [
               {
@@ -72214,42 +71309,6 @@
             "title": "Pricing Models",
             "description": "Pricing models used by the organization."
           },
-          "intended_use": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Intended Use",
-            "description": "How the organization will integrate and use Polar.",
-            "deprecated": true
-          },
-          "customer_acquisition": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Customer Acquisition",
-            "description": "Main customer acquisition channels.",
-            "deprecated": true
-          },
-          "future_annual_revenue": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Future Annual Revenue",
-            "description": "Estimated revenue in the next 12 months",
-            "deprecated": true
-          },
           "switching": {
             "type": "boolean",
             "title": "Switching",
@@ -72274,24 +71333,10 @@
             ],
             "title": "Switching From",
             "description": "Which platform the organization is migrating from."
-          },
-          "previous_annual_revenue": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previous Annual Revenue",
-            "description": "Revenue from last year if applicable.",
-            "deprecated": true
           }
         },
         "type": "object",
-        "title": "OrganizationDetails"
+        "title": "OrganizationDetailsInput"
       },
       "OrganizationDisputeSettings": {
         "properties": {
@@ -72381,12 +71426,6 @@
             "description": "If this organization can create and finalize draft orders via the API (off-session charges against a saved payment method).",
             "default": false
           },
-          "meter_cycling_enabled": {
-            "type": "boolean",
-            "title": "Meter Cycling Enabled",
-            "description": "If this organization can set a separate meter cycle on recurring products (a meter interval independent of the billing interval).",
-            "default": false
-          },
           "slack_benefit_enabled": {
             "type": "boolean",
             "title": "Slack Benefit Enabled",
@@ -72417,22 +71456,16 @@
             "description": "If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.",
             "default": false
           },
-          "compass_enabled": {
-            "type": "boolean",
-            "title": "Compass Enabled",
-            "description": "If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard",
-            "default": false
-          },
           "merchant_migration_enabled": {
             "type": "boolean",
             "title": "Merchant Migration Enabled",
             "description": "If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.",
             "default": false
           },
-          "agentic_payments_enabled": {
+          "staged_events_ingest_enabled": {
             "type": "boolean",
-            "title": "Agentic Payments Enabled",
-            "description": "If this organization accepts payments from AI agents through Stripe shared payment tokens.",
+            "title": "Staged Events Ingest Enabled",
+            "description": "If this organization's ingested events are queued in `staged_events` and moved to `events` out of band.",
             "default": false
           },
           "config_as_code_enabled": {
@@ -72729,7 +71762,7 @@
           "details": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/OrganizationDetails"
+                "$ref": "#/components/schemas/OrganizationDetailsInput"
               },
               {
                 "type": "null"
@@ -74337,6 +73370,19 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
+          },
           "external_id": {
             "anyOf": [
               {
@@ -74363,9 +73409,6 @@
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -74418,6 +73461,7 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "catalog_id",
           "external_id",
           "metadata",
           "is_deletable",
@@ -75765,7 +74809,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount",
             "description": "The price per unit in cents."
           }
@@ -75825,8 +74868,7 @@
                 "exclusiveMinimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,5}|(?=[\\d.]{1,18}0*$)\\d{0,5}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Unit Amount",
@@ -76029,14 +75071,6 @@
           "ad_hoc"
         ],
         "title": "ProductPriceSource"
-      },
-      "ProductPriceType": {
-        "type": "string",
-        "enum": [
-          "one_time",
-          "recurring"
-        ],
-        "title": "ProductPriceType"
       },
       "ProductPriceUnitBased": {
         "properties": {
@@ -76919,6 +75953,8 @@
           "service_disruption",
           "satisfaction_guarantee",
           "dispute_prevention",
+          "tax_refund",
+          "vat_reverse_charge_correction",
           "other"
         ],
         "title": "RefundReason"
@@ -77404,6 +76440,28 @@
           "detail"
         ],
         "title": "SSOEnforcementRequiresConnection"
+      },
+      "SSORequiresVerifiedDomain": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "SSORequiresVerifiedDomain",
+            "title": "Error",
+            "examples": [
+              "SSORequiresVerifiedDomain"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "SSORequiresVerifiedDomain"
       },
       "Scope": {
         "type": "string",
@@ -77953,20 +77011,13 @@
             "description": "The timestamp when the subscription was canceled. The subscription might still be active if `cancel_at_period_end` is `true`."
           },
           "started_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time",
-                "examples": [
-                  "2026-01-01T00:00:00.000000Z"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
+            "format": "date-time",
             "title": "Started At",
-            "description": "The timestamp when the subscription started."
+            "description": "The timestamp when the subscription started.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
           },
           "ends_at": {
             "anyOf": [
@@ -78200,9 +77251,6 @@
           "prices": {
             "items": {
               "oneOf": [
-                {
-                  "$ref": "#/components/schemas/LegacyRecurringProductPrice"
-                },
                 {
                   "$ref": "#/components/schemas/ProductPrice"
                 }
@@ -82221,58 +81269,6 @@
         ],
         "title": "SubscriptionUpdatedMetadata"
       },
-      "SubscriptionUser": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid4",
-            "title": "Id"
-          },
-          "email": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Email"
-          },
-          "public_name": {
-            "type": "string",
-            "title": "Public Name"
-          },
-          "avatar_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Avatar Url"
-          },
-          "github_username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Github Username"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "public_name"
-        ],
-        "title": "SubscriptionUser"
-      },
       "SupportCaseAttachmentFileCreate": {
         "properties": {
           "organization_id": {
@@ -82766,7 +81762,6 @@
           },
           "unit_amount": {
             "type": "string",
-            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
             "title": "Unit Amount"
           }
         },
@@ -82799,8 +81794,7 @@
                 "minimum": 0.0
               },
               {
-                "type": "string",
-                "pattern": "^(?!^[-+.]*$)[+-]?0*(?:\\d{0,19}|(?=[\\d.]{1,32}0*$)\\d{0,19}\\.\\d{0,12}0*$)"
+                "type": "string"
               }
             ],
             "title": "Unit Amount"

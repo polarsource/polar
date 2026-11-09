@@ -4,7 +4,7 @@ from uuid import UUID
 import httpx
 import structlog
 
-from polar.auth.models import AuthSubject
+from polar.auth.models import Agent, AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.integrations.slack.client import client as slack_client
 from polar.integrations.slack.repository import SlackAppRepository
@@ -300,7 +300,7 @@ class BenefitSlackSharedChannelService(
 
     async def validate_properties(
         self,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         properties: dict[str, Any],
     ) -> BenefitSlackSharedChannelProperties:

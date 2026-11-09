@@ -12,7 +12,7 @@ export const DesignPartnerSignup = () => (
       backgroundColor="background-secondary"
     >
       <Box color="text-tertiary">
-        <LogoIcon size={56} />
+        <LogoIcon size={44} />
       </Box>
       <Box flexDirection="column" rowGap="m">
         <Text as="h3" variant="heading-xs">
@@ -22,6 +22,10 @@ export const DesignPartnerSignup = () => (
           We&apos;d love to dig into your biggest pain points today and hear
           your thoughts on what we&apos;re building, with early access and a
           direct line to our team as we iterate together.
+        </Text>
+        <Text as="p" variant="body" color="muted">
+          We review every application and will reach out if it looks like a good
+          fit.
         </Text>
       </Box>
     </Box>

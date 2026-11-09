@@ -7,7 +7,7 @@ import {
   differenceInYears,
   parse,
 } from 'date-fns'
-import { formatPercentage, formatScalar } from './formatters'
+import { formatCostAmount, formatPercentage, formatScalar } from './formatters'
 
 /**
  * Converts a Date object to an ISO date string (YYYY-MM-DD) in local timezone.
@@ -39,7 +39,7 @@ export const getFormattedMetricValue = (
     case 'percentage':
       return formatPercentage(value)
     case 'currency_sub_cent':
-      return formatCurrency('subcent')(value, 'usd')
+      return formatCostAmount(value)
   }
 }
 
@@ -496,18 +496,3 @@ export const ALL_METRICS = METRIC_GROUPS.flatMap((g) => g.metrics)
 
 export const metricGroupSlug = (category: string): string =>
   category.toLowerCase().replace(/\s+/g, '-')
-
-const METRIC_SLUG_TO_GROUP_SLUG: Record<string, string> = Object.fromEntries(
-  METRIC_GROUPS.flatMap((g) =>
-    g.metrics.map((m) => [m.slug, metricGroupSlug(g.category)]),
-  ),
-)
-
-/**
- * Resolve a single metric slug (e.g. from a Compass insight) to the analytics
- * page that renders it — the metrics dashboard is grouped by category, so an
- * individual metric links to its group's page. Returns `undefined` for unknown
- * slugs so callers can fall back to the analytics index.
- */
-export const getMetricGroupSlug = (metricSlug: string): string | undefined =>
-  METRIC_SLUG_TO_GROUP_SLUG[metricSlug]

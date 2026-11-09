@@ -1,12 +1,13 @@
 {
   "name": "orbit-playground",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 3333",
     "build": "next build --turbopack",
     "start": "next start -p 3333",
     "gen:props": "node scripts/extract-props.mjs",
+    "gen:icons": "node scripts/extract-icon-usage.mjs",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
     "typecheck": "tsc --noEmit"
@@ -18,8 +19,7 @@
     "@polar-sh/orbit": "workspace:*",
     "@polar-sh/ui": "workspace:*",
     "@stylexjs/stylex": "catalog:",
-    "lucide-react": "catalog:",
-    "next": "^16.3.6",
+    "next": "^16.4.4",
     "next-themes": "catalog:",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -35,6 +35,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@typescript/native": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
     "tailwindcss": "catalog:",
     "ts-morph": "^25.0.1",
     "typescript": "catalog:"

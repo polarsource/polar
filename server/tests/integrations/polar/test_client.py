@@ -1,9 +1,11 @@
+import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from polar.base import PolarServerError
+from polar.base import PolarNetworkError, PolarServerError, deserialize
+from polar.v2026_04.errors import HTTPValidationError as SDKHTTPValidationError
 from polar.v2026_04.errors import (
     MissingInvoiceBillingDetails as SDKMissingInvoiceBillingDetails,
 )
@@ -29,7 +31,10 @@ from polar.integrations.polar.client import (
     PolarSelfClientError,
     PolarSelfClientOperationalError,
 )
-from polar.integrations.polar.exceptions import PolarSelfOrderNotEligible
+from polar.integrations.polar.exceptions import (
+    PolarSelfCustomerNotFound,
+    PolarSelfOrderNotEligible,
+)
 
 
 def _client() -> PolarSelfClient:
@@ -61,6 +66,121 @@ def _not_found() -> SDKResourceNotFound:
         404,
         ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
     )
+
+
+def _validation_error(field: str, msg: str) -> SDKHTTPValidationError:
+    return SDKHTTPValidationError(
+        422,
+        deserialize(
+            {
+                "detail": [
+                    {
+                        "type": "value_error",
+                        "loc": ["body", field],
+                        "msg": msg,
+                        "input": "x",
+                    }
+                ]
+            },
+            SDKHTTPValidationError.error_type,
+        ),
+    )
+
+
+@pytest.mark.anyio
+class TestCustomerSessionErrors:
+    async def test_missing_customer_raises_customer_not_found(
+        self, mocker: MockerFixture
+    ) -> None:
+        organization_id = uuid.uuid4()
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customer_sessions,
+            "create",
+            new=AsyncMock(
+                side_effect=_validation_error(
+                    "external_customer_id", "Customer does not exist."
+                )
+            ),
+        )
+
+        with pytest.raises(PolarSelfCustomerNotFound) as exc_info:
+            await client.portal_get_customer(external_customer_id=str(organization_id))
+
+        assert exc_info.value.organization_id == organization_id
+
+    async def test_missing_member_stays_client_error(
+        self, mocker: MockerFixture
+    ) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customer_sessions,
+            "create",
+            new=AsyncMock(
+                side_effect=_validation_error(
+                    "external_member_id", "Member does not exist for this customer."
+                )
+            ),
+        )
+
+        with pytest.raises(PolarSelfClientError):
+            await client.portal_create_customer_session(
+                external_customer_id=str(uuid.uuid4()), external_member_id="user"
+            )
+
+
+@pytest.mark.anyio
+class TestCreateCustomer:
+    async def test_422_does_not_leak_submitted_values(
+        self, mocker: MockerFixture
+    ) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.customers,
+            "get_external",
+            new=AsyncMock(side_effect=_not_found()),
+        )
+        mocker.patch.object(
+            client._sdk.customers,
+            "create",
+            new=AsyncMock(
+                side_effect=SDKHTTPValidationError(
+                    422,
+                    deserialize(
+                        {
+                            "detail": [
+                                {
+                                    "type": "value_error",
+                                    "loc": ["body", "owner", "email"],
+                                    "msg": "jane.doe@example.com is not valid",
+                                    "input": {
+                                        "email": "jane.doe@example.com",
+                                        "name": "Jane Doe",
+                                    },
+                                }
+                            ]
+                        },
+                        SDKHTTPValidationError.error_type,
+                    ),
+                )
+            ),
+        )
+
+        with pytest.raises(PolarSelfClientError) as exc_info:
+            await client.create_customer(
+                external_id="org",
+                name="Acme",
+                slug="acme",
+                owner_external_id="user",
+                owner_email="jane.doe@example.com",
+                owner_name="Jane Doe",
+            )
+
+        exc: BaseException | None = exc_info.value
+        while exc is not None:
+            assert "jane.doe@example.com" not in str(exc)
+            assert "Jane Doe" not in str(exc)
+            exc = exc.__cause__
 
 
 @pytest.mark.anyio
@@ -214,3 +334,46 @@ class TestListBillingContacts:
 
         with pytest.raises(PolarSelfClientOperationalError):
             await client.list_billing_contacts(customer_id="cus_1")
+
+
+def _failing_iter() -> AsyncIterator[Any]:
+    async def _gen() -> AsyncIterator[Any]:
+        raise PolarNetworkError("ReadTimeout")
+        yield
+
+    return _gen()
+
+
+@pytest.mark.anyio
+class TestNetworkErrorRetry:
+    async def test_retries_once_then_succeeds(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.integrations.polar.client.NETWORK_RETRY_DELAY_SECONDS", 0)
+        client = _client()
+        grant = object()
+        iter_list = mocker.patch.object(
+            client._sdk.benefit_grants,
+            "iter_list",
+            side_effect=[_failing_iter(), _async_iter([grant])],
+        )
+
+        grants = await client.list_customer_benefit_grants(customer_id="cus_1")
+
+        assert grants == [grant]
+        assert iter_list.call_count == 2
+
+    async def test_repeated_network_errors_raise(self, mocker: MockerFixture) -> None:
+        mocker.patch("polar.integrations.polar.client.NETWORK_RETRY_DELAY_SECONDS", 0)
+        client = _client()
+        get = mocker.patch.object(
+            client._sdk.orders,
+            "get",
+            new=AsyncMock(side_effect=PolarNetworkError("ReadTimeout")),
+        )
+
+        with pytest.raises(
+            PolarSelfClientOperationalError,
+            match="get_order failed with network error: PolarNetworkError",
+        ):
+            await client.get_order(order_id="ord_1")
+
+        assert get.await_count == 2

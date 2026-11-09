@@ -7,7 +7,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown } from '@polar-sh/orbit/icons'
 import { useCallback, useMemo, useState } from 'react'
 
 interface WebhookEventTypeSelectProps {
@@ -28,6 +28,8 @@ export const WebhookEventTypeSelect = ({
     () => Object.values(enums.webhookEventTypeValues),
     [],
   )
+
+  const selectedEventTypeSet = new Set(selectedEventTypes)
 
   const filteredEventTypes = useMemo(() => {
     if (!query) return allEventTypes
@@ -110,7 +112,7 @@ export const WebhookEventTypeSelect = ({
                 className="dark:hover:bg-polar-700 flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-gray-50"
               >
                 <Checkbox
-                  checked={selectedEventTypes.includes(eventType)}
+                  checked={selectedEventTypeSet.has(eventType)}
                   onCheckedChange={() => handleToggleEventType(eventType)}
                 />
                 <span className="text-sm">{eventType}</span>

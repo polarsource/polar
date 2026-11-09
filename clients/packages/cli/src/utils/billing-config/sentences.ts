@@ -5,6 +5,7 @@ import {
   aggregation,
   count,
   filter,
+  isSet,
   money,
   name,
   record,
@@ -31,6 +32,9 @@ export const recurrence = (interval: unknown, count: unknown) => {
     ? `per ${name(interval)}`
     : `per ${times} ${name(interval)}s`
 }
+
+export const meterCycle = (interval: unknown, count: unknown) =>
+  isSet(interval) ? recurrence(interval, count) : 'with billing'
 
 const CURRENCIES = ' / '
 
@@ -81,8 +85,11 @@ const pricing = (product: Record<string, unknown>) => {
     .join(CURRENCIES)
   const billed = amounts === '' ? `billed ${cycle}` : `${amounts} ${cycle}`
   const shared = uniform ? taxes[0] : undefined
+  const billing = shared === undefined ? billed : `${billed}, ${shared}`
   return [
-    shared === undefined ? billed : `${billed}, ${shared}`,
+    isSet(product['meter_interval'])
+      ? `${billing}, metered ${meterCycle(product['meter_interval'], product['meter_interval_count'])}`
+      : billing,
     ...tiers.flatMap((price, index) =>
       tierTable(price, tierUnit(price) ?? 'unit', own(fixed.length + index)),
     ),
@@ -277,46 +284,5 @@ export const meterSentence = (input: unknown) => {
       : meter['unit'] === 'token'
         ? [['unit', 'tokens'] as const]
         : []),
-  ])
-}
-
-export const discountValue = (discount: Record<string, unknown>) => {
-  const amounts = record(discount['amounts'])
-  if (discount['type'] === 'fixed' && amounts !== undefined) {
-    const off = Object.entries(amounts)
-      .map(([currency, amount]) => money(amount, currency))
-      .join(CURRENCIES)
-    return `${off} off`
-  }
-  const points = Number(discount['basis_points'])
-  return Number.isFinite(points)
-    ? `${points / 100}% off`
-    : name(discount['basis_points'])
-}
-
-export const discountDuration = (discount: Record<string, unknown>) => {
-  const months = discount['duration_in_months']
-  if (discount['duration'] !== 'repeating') return name(discount['duration'])
-  return months === 1 ? '1 month' : `${count(months)} months`
-}
-
-const optional = (label: string, value: unknown) =>
-  value === undefined || value === null ? [] : [[label, name(value)] as const]
-
-export const discountSentence = (input: unknown) => {
-  const discount = record(input)
-  if (discount === undefined) return undefined
-  const products = Array.isArray(discount['products'])
-    ? discount['products'].map((id) => name(id))
-    : []
-  return fields([
-    ['value', discountValue(discount)],
-    ['duration', discountDuration(discount)],
-    ...optional('code', discount['code']),
-    ['products', products.length === 0 ? 'all' : products.join(', ')],
-    ...optional('redemptions', discount['max_redemptions']),
-    ...optional('per customer', discount['max_redemptions_per_customer']),
-    ...optional('starts', discount['starts_at']),
-    ...optional('ends', discount['ends_at']),
   ])
 }

@@ -8,7 +8,6 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { ListGroup } from '@polar-sh/orbit'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,14 +19,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@polar-sh/ui/components/ui/alert-dialog'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
+import { SettingsGroup, SettingsGroupRow } from './SettingsGroup'
 
 const AccessToken = (props: schemas['PersonalAccessToken']) => {
   const deleteToken = useDeletePersonalAccessToken()
+  const [now] = useState(() => Date.now())
+  const { id, comment } = props
 
   const onDelete = useCallback(async () => {
-    deleteToken.mutateAsync({ id: props.id }).then(({ error }) => {
+    deleteToken.mutateAsync({ id }).then(({ error }) => {
       if (error) {
         toast({
           title: 'Access Token Deletion Failed',
@@ -37,10 +39,10 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
       }
       toast({
         title: 'Access Token Deleted',
-        description: `Access Token ${props.comment} was deleted successfully`,
+        description: `Access Token ${comment} was deleted successfully`,
       })
     })
-  }, [deleteToken, props])
+  }, [deleteToken, id, comment])
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -50,7 +52,7 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
             <h3 className="text-md truncate">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.expires_at ? (
-                new Date(props.expires_at) < new Date() ? (
+                new Date(props.expires_at).getTime() < now ? (
                   <span className="text-red-500 dark:text-red-400">
                     Expired on{' '}
                     <FormattedDateTime
@@ -127,7 +129,7 @@ const AccessTokensSettings = () => {
         </h3>
         <p>
           Personal access tokens can no longer be created. Going forward, use{' '}
-          <strong className="text-gray-700 dark:text-white">
+          <strong className="font-medium text-gray-700 dark:text-white">
             Organization access tokens
           </strong>
           . They work the same, but are scoped to a single organization, so{' '}
@@ -135,21 +137,13 @@ const AccessTokensSettings = () => {
           API calls.
         </p>
       </div>
-      <ListGroup>
-        {tokens.data?.items && tokens.data.items.length > 0 ? (
-          tokens.data?.items.map((token) => (
-            <ListGroup.Item key={token.id}>
-              <AccessToken {...token} />
-            </ListGroup.Item>
-          ))
-        ) : (
-          <ListGroup.Item>
-            <p className="dark:text-polar-400 text-sm text-gray-500">
-              You don&apos;t have any active Personal Access Tokens.
-            </p>
-          </ListGroup.Item>
-        )}
-      </ListGroup>
+      <SettingsGroup>
+        {tokens.data?.items.map((token) => (
+          <SettingsGroupRow key={token.id}>
+            <AccessToken {...token} />
+          </SettingsGroupRow>
+        ))}
+      </SettingsGroup>
     </div>
   )
 }

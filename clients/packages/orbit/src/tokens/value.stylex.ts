@@ -128,6 +128,8 @@ export const lineHeights = stylex.defineVars({
 } as const)
 
 export const fontWeights = stylex.defineVars({
+  light: '300',
+  book: '350',
   regular: '400',
   medium: '500',
   semibold: '600',

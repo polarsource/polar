@@ -9,6 +9,10 @@ export async function resolveDeployer({ github, repo, run, pullRequests }) {
   );
   if (!merged) return trigger?.type === 'User' ? trigger.login : null;
 
+  return resolveMerger({ github, repo, run, pullRequest: merged });
+}
+
+export async function resolveMerger({ github, repo, run, pullRequest }) {
   const { repository } = await github.graphql(`
     query($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
@@ -21,7 +25,7 @@ export async function resolveDeployer({ github, repo, run, pullRequests }) {
         }
       }
     }
-  `, { ...repo, number: merged.number });
+  `, { ...repo, number: pullRequest.number });
   const pr = repository.pullRequest;
   if (pr.mergedBy?.__typename === 'User') return pr.mergedBy.login;
   const mergeBot = pr.mergedBy?.login.replace(/\[bot\]$/, '');

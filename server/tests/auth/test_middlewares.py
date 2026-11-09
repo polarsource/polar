@@ -1,6 +1,7 @@
 import json
 import time
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -18,14 +19,17 @@ from polar.auth.middlewares import AuthSubjectMiddleware, get_auth_subject
 from polar.auth.models import (
     ORGANIZATION_HEADER,
     Anonymous,
+    is_agent,
     is_single_organization_credential,
 )
+from polar.auth.scope import UNCLAIMED_AGENT_SCOPES
 from polar.auth.service import auth as auth_service
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.hash_secrets import HashSecrets
 from polar.kit.utils import utc_now
 from polar.models import (
+    Agent,
     OAuth2Client,
     OAuth2Token,
     Organization,
@@ -33,9 +37,11 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.agent import AgentStatus
 from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.models.user_session_organization import UserSessionOrganization
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
+from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.sub_type import SubType
 from polar.personal_access_token.service import TOKEN_PREFIX
 from polar.postgres import AsyncSession
@@ -77,9 +83,13 @@ async def _create_oauth2_token(
     *,
     user: User | None = None,
     organization: Organization | None = None,
+    agent: Agent | None = None,
 ) -> OAuth2Token:
-    client = OAuth2Client(client_id="polar_ci_test")
-    await save_fixture(client)
+    if agent is None:
+        client = OAuth2Client(client_id="polar_ci_test")
+        await save_fixture(client)
+    else:
+        client = agent.oauth2_client
     token = OAuth2Token(
         client_id=client.client_id,
         token_type="bearer",
@@ -94,6 +104,10 @@ async def _create_oauth2_token(
     if organization is not None:
         token.organization_id = organization.id
         token.sub_type = SubType.organization
+    if agent is not None:
+        token.agent_id = agent.id
+        token.sub_type = SubType.agent
+        token.scope = " ".join(sorted(UNCLAIMED_AGENT_SCOPES))
     await save_fixture(token)
     return token
 
@@ -198,6 +212,54 @@ class TestGetAuthSubjectOAuth2TokenScope:
 
         assert auth_subject.subject == organization
         assert auth_subject.organization_ids is None
+
+
+@pytest.mark.anyio
+class TestGetAuthSubjectAgentToken:
+    async def test_unclaimed(
+        self, save_fixture: SaveFixture, session: AsyncSession, agent: Agent
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
+        await _create_oauth2_token(save_fixture, access_token, agent=agent)
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(access_token), session
+        )
+
+        assert is_agent(auth_subject)
+        assert auth_subject.subject == agent
+        assert auth_subject.scopes == UNCLAIMED_AGENT_SCOPES
+        assert auth_subject.organization_ids is None
+
+    @pytest.mark.parametrize(
+        "update",
+        [
+            pytest.param(
+                {"status": AgentStatus.claimed, "claimed_at": utc_now()},
+                id="claimed",
+            ),
+            pytest.param(
+                {"status": AgentStatus.revoked, "revoked_at": utc_now()},
+                id="revoked",
+            ),
+            pytest.param({"deleted_at": utc_now()}, id="deleted"),
+        ],
+    )
+    async def test_not_unclaimed(
+        self,
+        update: dict[str, Any],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        agent: Agent,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
+        await _create_oauth2_token(save_fixture, access_token, agent=agent)
+        for attribute, value in update.items():
+            setattr(agent, attribute, value)
+        await save_fixture(agent)
+
+        with pytest.raises(InvalidTokenError):
+            await get_auth_subject(_request_with_bearer_token(access_token), session)
 
 
 @pytest.mark.anyio
@@ -387,6 +449,43 @@ class TestGetAuthSubjectRequestedOrganization:
                 session,
             )
 
+    async def test_agent_token_own_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        agent: Agent,
+        organization: Organization,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
+        await _create_oauth2_token(save_fixture, access_token, agent=agent)
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(
+                access_token, requested_organization=organization.id
+            ),
+            session,
+        )
+
+        assert auth_subject.subject == agent
+
+    async def test_agent_token_other_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        agent: Agent,
+        organization_second: Organization,
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
+        await _create_oauth2_token(save_fixture, access_token, agent=agent)
+
+        with pytest.raises(RequestedOrganizationNotAccessible):
+            await get_auth_subject(
+                _request_with_bearer_token(
+                    access_token, requested_organization=organization_second.id
+                ),
+                session,
+            )
+
     async def test_user_session_narrows_to_requested_organization(
         self,
         session: AsyncSession,
@@ -512,7 +611,6 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        redis: Redis,
         user: User,
         organization_second: Organization,
     ) -> None:
@@ -533,7 +631,7 @@ class TestAuthSubjectMiddlewareRequestedOrganization:
         request = _request_with_bearer_token(
             access_token, requested_organization=organization_second.id
         )
-        await AuthSubjectMiddleware(app, redis)(
+        await AuthSubjectMiddleware(app)(
             {**request.scope, "state": {"async_session": session}}, receive, send
         )
 
@@ -611,7 +709,7 @@ class TestAuthSubjectMiddlewareWebSocket:
         async def receive() -> Message:
             return {"type": "websocket.connect"}
 
-        await AuthSubjectMiddleware(app, redis)(
+        await AuthSubjectMiddleware(app)(
             {
                 "type": "websocket",
                 "headers": headers,
@@ -653,6 +751,18 @@ class TestAuthSubjectMiddlewareWebSocket:
 
 @pytest.mark.anyio
 class TestIsSingleOrganizationCredential:
+    async def test_agent_token(
+        self, save_fixture: SaveFixture, session: AsyncSession, agent: Agent
+    ) -> None:
+        access_token = f"{ACCESS_TOKEN_PREFIX[SubType.agent]}test"
+        await _create_oauth2_token(save_fixture, access_token, agent=agent)
+
+        auth_subject = await get_auth_subject(
+            _request_with_bearer_token(access_token), session
+        )
+
+        assert is_single_organization_credential(auth_subject)
+
     async def test_organization_token(
         self,
         save_fixture: SaveFixture,

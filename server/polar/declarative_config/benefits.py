@@ -1,19 +1,15 @@
-from typing import Any
 from uuid import UUID
 
 from polar.benefit.strategies.feature_flag.schemas import (
     BenefitFeatureFlagCreate,
     BenefitFeatureFlagCreateProperties,
-    BenefitFeatureFlagUpdate,
 )
 from polar.benefit.strategies.meter_credit.schemas import (
     BenefitMeterCreditCreate,
     BenefitMeterCreditCreateProperties,
-    BenefitMeterCreditUpdate,
 )
 
 from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
-from .validation import BenefitChange
 
 
 def benefit_create(
@@ -43,23 +39,3 @@ def benefit_create(
         organization_id=organization_id,
         properties=BenefitFeatureFlagCreateProperties(),
     )
-
-
-def benefit_update(
-    change: BenefitChange, meter_ids: dict[str, UUID]
-) -> BenefitFeatureFlagUpdate | BenefitMeterCreditUpdate:
-    update: dict[str, Any] = {
-        "metadata" if name == "user_metadata" else name: value
-        for name, value in change.update_dict.items()
-        if name != "properties"
-    }
-    config = change.config
-    if isinstance(config, ConfigBenefitMeterCredit):
-        if "properties" in change.update_dict:
-            update["properties"] = BenefitMeterCreditCreateProperties(
-                meter_id=meter_ids[config.properties.meter],
-                units=config.properties.units,
-                rollover=config.properties.rollover,
-            )
-        return BenefitMeterCreditUpdate(type=config.type, **update)
-    return BenefitFeatureFlagUpdate(type=config.type, **update)

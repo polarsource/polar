@@ -7,9 +7,11 @@ import structlog
 from sqlalchemy import Select, UnaryExpression, asc, desc
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.authz.service import get_accessible_org_ids
+from polar.auth.permission import OrganizationPermission
+from polar.authz.service import assert_resource_permission, get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.repository import CustomerSeatRepository
@@ -64,7 +66,9 @@ class MemberService:
     ) -> tuple[Sequence[Member], int]:
         """List members with pagination and filtering."""
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids)
 
         if customer_id is not None:
@@ -100,7 +104,9 @@ class MemberService:
             AmbiguousExternalCustomerID: If the external ID matches several customers
         """
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         customer = await self._get_readable_customer(
             session,
             org_ids,
@@ -118,7 +124,7 @@ class MemberService:
     async def _paginate(
         self,
         repository: MemberRepository,
-        statement: Select[tuple[Member]],
+        statement: Select[Member],
         *,
         role: MemberRole | None,
         pagination: PaginationParams,
@@ -127,7 +133,7 @@ class MemberService:
         if role is not None:
             statement = statement.where(Member.role == role)
 
-        order_by_clauses: list[UnaryExpression[Any]] = []
+        order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == MemberSortProperty.created_at:
@@ -180,7 +186,9 @@ class MemberService:
     ) -> Member | None:
         """Get a member by ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         statement = repository.get_statement_by_org_ids(org_ids).where(Member.id == id)
         return await repository.get_one_or_none(statement)
 
@@ -208,7 +216,9 @@ class MemberService:
     ) -> Member | None:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
 
         # Resolve the customer first so an ambiguous external customer ID always
         # surfaces as a 409, regardless of how many members happen to match.
@@ -674,13 +684,18 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If no permission to add members
         """
-        org_ids = await get_accessible_org_ids(session, auth_subject)
+        org_ids = await get_accessible_org_ids(
+            session, auth_subject, permission=OrganizationPermission.customers_read
+        )
         customer = await self._get_readable_customer(
             session,
             org_ids,
             customer_id=customer_id,
             external_customer_id=external_customer_id,
             options=(joinedload(Customer.organization),),
+        )
+        await assert_resource_permission(
+            session, auth_subject, customer, OrganizationPermission.customers_manage
         )
         customer_id = customer.id
 

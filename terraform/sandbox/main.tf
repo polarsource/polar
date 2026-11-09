@@ -7,3 +7,6 @@ provider "render" {
 
 provider "vercel" {
 }
+
+provider "planetscale" {
+}

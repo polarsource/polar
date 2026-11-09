@@ -6,10 +6,8 @@ from fastapi import Depends, Query, Response
 from polar.exceptions import ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
 from polar.models import Order
-from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.order.schemas import OrderID
 from polar.order.service import (
@@ -19,9 +17,7 @@ from polar.order.service import (
 )
 from polar.payment.repository import PaymentRepository
 from polar.postgres import get_db_session
-from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionID
 
 from .. import auth
 from ..schemas.order import (
@@ -32,6 +28,7 @@ from ..schemas.order import (
     CustomerOrderPaymentStatus,
     CustomerOrderReceipt,
     CustomerOrderUpdate,
+    CustomerPortalOrderListParams,
 )
 from ..service.order import (
     CustomerOrderSortProperty,
@@ -78,38 +75,20 @@ ListSorting = Annotated[
 
 @router.get("/", summary="List Orders", response_model=ListResource[CustomerOrder])
 async def list(
+    filters: Annotated[CustomerPortalOrderListParams, Query()],
     auth_subject: auth.CustomerPortalUnionBillingRead,
     pagination: PaginationParamsQuery,
     sorting: ListSorting,
-    product_id: MultipleQueryFilter[ProductID] | None = Query(
-        None, title="ProductID Filter", description="Filter by product ID."
-    ),
-    product_billing_type: MultipleQueryFilter[ProductBillingType] | None = Query(
-        None,
-        title="ProductBillingType Filter",
-        description=(
-            "Filter by product billing type. "
-            "`recurring` will filter data corresponding "
-            "to subscriptions creations or renewals. "
-            "`one_time` will filter data corresponding to one-time purchases."
-        ),
-    ),
-    subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
-        None, title="SubscriptionID Filter", description="Filter by subscription ID."
-    ),
-    query: str | None = Query(
-        None, description="Search by product or organization name."
-    ),
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[CustomerOrder]:
     """List orders of the authenticated customer."""
     results, count = await customer_order_service.list(
         session,
         auth_subject,
-        product_id=product_id,
-        product_billing_type=product_billing_type,
-        subscription_id=subscription_id,
-        query=query,
+        product_id=filters.product_id,
+        product_billing_type=filters.product_billing_type,
+        subscription_id=filters.subscription_id,
+        query=filters.query,
         pagination=pagination,
         sorting=sorting,
     )

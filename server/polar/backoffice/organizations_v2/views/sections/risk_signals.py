@@ -1,10 +1,12 @@
-"""Rendering helpers for external risk signals (e.g. Stripe Radar)."""
+"""Rendering helpers for organization risk signals (Stripe Radar, Polar checks)."""
 
 import json
 import re
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 
+from fastapi import Request
 from tagflow import tag, text
 
 from polar.integrations.stripe.account_risk import (
@@ -13,12 +15,14 @@ from polar.integrations.stripe.account_risk import (
     parse_merchant_payload,
     parse_website_payload,
 )
+from polar.models import Organization
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 
 from ....components import card
 
 _CITATION = re.compile(r"\[(\d+)\]")
 _TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M UTC"
+_TIMELINE_TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S UTC"
 
 
 def _humanize(value: str) -> str:
@@ -40,9 +44,13 @@ def _render_signal_list(signals: Sequence[OrganizationRiskSignal]) -> None:
 
 
 def _render_signal_row(signal: OrganizationRiskSignal) -> None:
-    is_highest = signal.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
-    badge_class = "badge-error" if is_highest else "badge-warning"
-    accent = "border-l-error" if is_highest else "border-l-warning"
+    match signal.risk_level:
+        case OrganizationRiskSignal.RiskLevel.HIGHEST:
+            badge_class, accent = "badge-error", "border-l-error"
+        case OrganizationRiskSignal.RiskLevel.ELEVATED:
+            badge_class, accent = "badge-warning", "border-l-warning"
+        case _:
+            badge_class, accent = "badge-info", "border-l-info"
 
     with tag.div(classes=f"border border-base-200 rounded p-3 border-l-4 {accent}"):
         with tag.div(classes="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1"):
@@ -195,11 +203,99 @@ def render_risk_signals_card(signals: Sequence[OrganizationRiskSignal]) -> None:
                 text("Risk Signals")
             with tag.span(classes="text-sm text-base-content/60"):
                 text(
-                    "Raised by external fraud-detection systems. Only "
-                    "high-severity signals are recorded."
+                    "Raised by Stripe's fraud-detection systems (high-severity "
+                    "only) and by Polar's own checks."
                 )
 
         _render_signal_list(signals)
+
+
+def _render_timeline_entry(time: str, label: str, *, muted: bool = True) -> None:
+    with tag.div(classes="flex items-baseline gap-3"):
+        with tag.span(classes="text-xs text-base-content/60 font-mono shrink-0"):
+            text(time)
+        classes = "text-sm text-base-content/60" if muted else "text-sm"
+        with tag.span(classes=classes):
+            text(label)
+
+
+def _attempt_time(attempt: dict[str, Any]) -> str:
+    flagged_at = attempt.get("flagged_at")
+    if not flagged_at:
+        return "Unknown time"
+    return (
+        datetime.fromisoformat(str(flagged_at))
+        .astimezone(UTC)
+        .strftime(_TIMELINE_TIMESTAMP_FORMAT)
+    )
+
+
+def _render_flagged_name_row(request: Request, signal: OrganizationRiskSignal) -> None:
+    attempts: list[dict[str, Any]] = signal.payload.get("attempts", [])
+    product_name = str(signal.payload.get("product_name", ""))
+    product_id = signal.payload.get("product_id")
+    kept = signal.type == OrganizationRiskSignal.Type.FLAGGED_PRODUCT_NAME_KEPT
+    categories = dict.fromkeys(
+        str(attempt["category"]) for attempt in attempts if not attempt.get("phrase")
+    )
+
+    with tag.div(classes="border-t border-base-200 py-3"):
+        with tag.div(classes="flex flex-wrap items-center gap-2"):
+            if product_id:
+                with tag.a(
+                    href=str(request.url_for("products:get", id=product_id)),
+                    classes="link font-semibold",
+                ):
+                    text(product_name)
+            else:
+                with tag.span(classes="font-semibold"):
+                    text(product_name)
+            if kept:
+                with tag.div(classes="badge badge-sm badge-ghost badge-outline"):
+                    text("Kept flagged name")
+            for category in categories:
+                with tag.div(classes="badge badge-sm badge-warning badge-outline"):
+                    text(_humanize(category))
+        with tag.div(classes="mt-2 space-y-1 border-l border-base-300 pl-3"):
+            for attempt in attempts:
+                _render_timeline_entry(
+                    _attempt_time(attempt), f'Tried "{attempt["name"]}"'
+                )
+            _render_timeline_entry(
+                signal.created_at.strftime(_TIMELINE_TIMESTAMP_FORMAT),
+                f'Created as "{product_name}"',
+                muted=False,
+            )
+
+
+def render_flagged_names_card(
+    request: Request,
+    organization: Organization,
+    signals: Sequence[OrganizationRiskSignal],
+) -> None:
+    """Product names that showed the AUP warning, shown on the Reviews tab."""
+    if not signals:
+        return
+
+    with card(bordered=True):
+        with tag.div(classes="mb-4"):
+            with tag.h2(classes="text-lg font-bold"):
+                text("Flagged product names")
+            with tag.span(classes="text-sm text-base-content/60"):
+                text("Flagged names merchants tried before creating each product.")
+
+        with tag.div(classes="flex flex-wrap items-center gap-4 mb-3 text-sm"):
+            if organization.website and organization.website.startswith("http"):
+                with tag.a(
+                    href=organization.website,
+                    classes="link",
+                    target="_blank",
+                    rel="noopener noreferrer",
+                ):
+                    text(organization.website)
+
+        for signal in signals:
+            _render_flagged_name_row(request, signal)
 
 
 def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None:
@@ -209,7 +305,7 @@ def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None
 
     with tag.div(classes="mb-4"):
         with tag.h3(classes="text-sm font-bold mb-3"):
-            text("External Risk Signals")
+            text("Risk Signals")
         _render_signal_list(signals)
 
 

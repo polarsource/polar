@@ -13,7 +13,7 @@ from polar.models import Event, Organization, UserOrganization
 from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event
+from tests.fixtures.random_objects import create_event, create_event_type
 
 
 @pytest.fixture
@@ -27,6 +27,12 @@ async def event_organization_second(
 @pytest.mark.anyio
 class TestListEvents:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/")
 
         assert response.status_code == 401
@@ -96,6 +102,34 @@ class TestListEvents:
 
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(event2.id)
+
+    @pytest.mark.auth
+    async def test_query_matches_external_id(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        event = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            external_id="ext_evt_123",
+        )
+        await create_event(buffered_save_fixture, organization=organization)
+
+        await flush_tinybird_events()
+
+        response = await client.get(
+            "/v1/events/",
+            params={"organization_id": str(organization.id), "query": "ext_evt_123"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(event.id)
 
     @pytest.mark.auth
     async def test_children_sorting(
@@ -436,6 +470,18 @@ class TestIngest:
 
         assert response.status_code == 200
 
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_can_ingest_events_without_organization_id(
+        self, client: AsyncClient
+    ) -> None:
+        events = [{"name": "event1", "external_customer_id": "CUSTOMER_ID"}]
+
+        response = await client.post("/v1/events/ingest", json={"events": events})
+
+        assert response.status_code == 200
+        assert response.json() == {"inserted": 1, "duplicates": 0}
+
 
 SQLI_PAYLOADS = [
     pytest.param("' OR '1'='1", id="string-breakout"),
@@ -517,8 +563,168 @@ class TestAggregateFieldsValidation:
 
 
 @pytest.mark.anyio
+class TestGetStatisticsByType:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-type")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-type")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_counts_matching_events_per_type(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        upload = await create_event_type(
+            buffered_save_fixture, organization=organization, name="upload"
+        )
+        inference = await create_event_type(
+            buffered_save_fixture, organization=organization, name="inference"
+        )
+        now = utc_now()
+        root = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            name="upload",
+            event_type=upload,
+            timestamp=now - timedelta(minutes=10),
+        )
+        for _ in range(2):
+            await create_event(
+                buffered_save_fixture,
+                organization=organization,
+                name="inference",
+                event_type=inference,
+                parent_id=root.id,
+                root_id=root.id,
+                timestamp=now - timedelta(minutes=9),
+            )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            name="upload",
+            event_type=upload,
+            timestamp=now - timedelta(days=2),
+        )
+
+        await flush_tinybird_events()
+
+        response = await client.get(
+            "/v1/events/statistics/by-type",
+            params={
+                "organization_id": str(organization.id),
+                "start_timestamp": (now - timedelta(hours=1)).isoformat(),
+                "end_timestamp": now.isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        counts = {
+            item["name"]: item["occurrences"] for item in response.json()["items"]
+        }
+        assert counts == {"inference": 2, "upload": 1}
+
+
+@pytest.mark.anyio
+class TestGetHistogram:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/histogram")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_end_before_start(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        now = utc_now()
+        response = await client.get(
+            "/v1/events/statistics/histogram",
+            params={
+                "start_timestamp": now.isoformat(),
+                "end_timestamp": (now - timedelta(minutes=1)).isoformat(),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_minute_buckets(
+        self,
+        buffered_save_fixture: SaveFixture,
+        flush_tinybird_events: Callable[[], Awaitable[None]],
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        start = datetime(2026, 1, 1, 12, 0, 0, tzinfo=UTC)
+        root = await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            timestamp=start + timedelta(minutes=2, seconds=10),
+        )
+        await create_event(
+            buffered_save_fixture, organization=organization, timestamp=start
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            parent_id=root.id,
+            timestamp=start + timedelta(minutes=2, seconds=50),
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            timestamp=start + timedelta(minutes=29, seconds=30),
+        )
+        await create_event(
+            buffered_save_fixture,
+            organization=organization,
+            timestamp=start + timedelta(minutes=31),
+        )
+
+        await flush_tinybird_events()
+
+        response = await client.get(
+            "/v1/events/statistics/histogram",
+            params={
+                "organization_id": str(organization.id),
+                "start_timestamp": start.isoformat(),
+                "end_timestamp": (start + timedelta(minutes=30)).isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["interval_seconds"] == 60
+        counts = [bucket["count"] for bucket in json["buckets"]]
+        assert len(counts) == 30
+        assert counts[0] == 1
+        assert counts[2] == 2
+        assert counts[29] == 1
+        assert sum(counts) == 4
+
+
+@pytest.mark.anyio
 class TestGetStatisticsByProperty:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-property")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/by-property")
 
         assert response.status_code == 401
@@ -531,6 +737,12 @@ class TestGetStatisticsByCustomer:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-customer")
+
+        assert response.status_code == 401
+
 
 @pytest.mark.anyio
 class TestGetStatisticsByVariance:
@@ -539,10 +751,22 @@ class TestGetStatisticsByVariance:
 
         assert response.status_code == 401
 
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/by-variance")
+
+        assert response.status_code == 401
+
 
 @pytest.mark.anyio
 class TestListStatisticsTimeseries:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/events/statistics/timeseries")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get("/v1/events/statistics/timeseries")
 
         assert response.status_code == 401
@@ -580,6 +804,12 @@ class TestListEventNames:
 @pytest.mark.anyio
 class TestGetEvent:
     async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/events/{uuid4()}")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
+    async def test_agent_is_rejected(self, client: AsyncClient) -> None:
         response = await client.get(f"/v1/events/{uuid4()}")
 
         assert response.status_code == 401

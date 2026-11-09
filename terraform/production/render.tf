@@ -11,45 +11,11 @@ resource "render_registry_credential" "ghcr" {
 }
 
 # =============================================================================
-# Remote references that are managed by a different state.
-# =============================================================================
-
-data "tfe_outputs" "sandbox" {
-  organization = "polar-sh"
-  workspace    = "sandbox"
-}
-
-# =============================================================================
 # Locals
 # =============================================================================
 
 locals {
   private_backoffice_hostname = "backoffice.polar.sh"
-  # Database connection info (derived from postgres resource)
-  # db_host          = render_postgres.db.id
-  db_internal_host = render_postgres.db.id
-  db_port          = "5432"
-  # db_name          = render_postgres.db.database_name
-  db_user     = render_postgres.db.database_user
-  db_password = render_postgres.db.connection_info.password
-
-  db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
-
-  # Workloads that reach the database over the public internet: the AWS pgbouncers
-  # fronting the Lambda workers, each behind its VPC's static NAT egress IP.
-  db_ip_allow_list = [
-    {
-      cidr_block  = "${module.egress_ip.public_ip}/32"
-      description = "AWS production NAT egress"
-    },
-    {
-      cidr_block  = "${data.tfe_outputs.sandbox.values.egress_ip}/32"
-      description = "AWS sandbox NAT egress"
-    },
-  ]
-
-  # Read replica connection info
-  read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
   # Redis connection info
   redis_host = var.redis_private_link_host
@@ -87,56 +53,6 @@ resource "render_project" "polar" {
 }
 
 # =============================================================================
-# PostgreSQL Database
-# =============================================================================
-
-resource "render_postgres" "db" {
-  environment_id = render_project.polar.environments["Production"].id
-  name           = "db"
-  database_name  = "polar_cpit"
-  plan           = "pro_64gb"
-  region         = "ohio"
-  version        = "15"
-  disk_size_gb   = 750
-
-  high_availability_enabled = false
-
-  read_replicas = [
-    { name = "polar-read" },
-    { name = "polar-replica" }
-  ]
-
-  ip_allow_list = local.db_ip_allow_list
-
-  lifecycle {
-    prevent_destroy = true
-    ignore_changes = [
-      disk_size_gb,
-      database_name,
-    ]
-  }
-
-  depends_on = [render_registry_credential.ghcr, render_project.polar]
-}
-
-# =============================================================================
-# Redis
-# =============================================================================
-
-resource "render_redis" "redis" {
-  environment_id    = render_project.polar.environments["Production"].id
-  name              = "redis"
-  plan              = "standard"
-  region            = "ohio"
-  max_memory_policy = "noeviction"
-
-  # Empty IP allow list means only private network connections
-  ip_allow_list = []
-
-  depends_on = [render_registry_credential.ghcr, render_project.polar]
-}
-
-# =============================================================================
 # Cloudflare IP Ranges
 # =============================================================================
 
@@ -161,8 +77,9 @@ module "production" {
   registry_credential_id = render_registry_credential.ghcr.id
 
   api_service_config = {
-    postgres_database      = "polar_cpit_p9lf"
-    postgres_read_database = "polar_cpit_p9lf"
+    postgres_database      = module.planetscale.database_name
+    postgres_read_database = module.planetscale.database_name
+    pre_deploy_command     = "env POLAR_POSTGRES_USER=${module.planetscale.app_role_username} POLAR_POSTGRES_PORT=5432 uv run task pre_deploy"
     allowed_hosts          = jsonencode(["polar.sh", local.private_backoffice_hostname])
     cors_origins           = "[\"https://polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "api.polar.sh" }, { name = "buy.polar.sh" }]
@@ -172,16 +89,7 @@ module "production" {
     redis_db               = "1"
   }
 
-  postgres_config = {
-    host          = local.db_internal_host
-    port          = local.db_port
-    user          = local.db_user
-    password      = local.db_password
-    read_host     = local.read_replica.id
-    read_port     = local.db_port
-    read_user     = local.db_user
-    read_password = local.db_password
-  }
+  postgres_config = local.planetscale_postgres_config
 
   redis_config = {
     host = local.redis_host
@@ -227,14 +135,6 @@ module "production" {
       custom_domains     = [{ name = "worker-tinybird.polar.sh" }]
       dramatiq_prom_port = "10002"
     }
-    worker-drain = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 8"
-      custom_domains     = [{ name = "worker-drain.polar.sh" }]
-      dramatiq_prom_port = "10004"
-      redis_host         = render_redis.redis.id
-      redis_port         = "6379"
-      redis_db           = "0"
-    }
     worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
@@ -250,70 +150,7 @@ module "production" {
     s3_bucket_name = local.diagnostics_bucket_name
   }
 
-  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
-}
-
-# =============================================================================
-# PgBouncer
-# =============================================================================
-
-module "pgbouncer" {
-  source = "../modules/pgbouncer"
-
-  environment            = "production"
-  render_environment_id  = render_project.polar.environments["Production"].id
-  registry_credential_id = render_registry_credential.ghcr.id
-
-  database = {
-    host     = local.db_internal_host
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
-  }
-
-  pool_config = {
-    max_client_conn   = "5000"
-    default_pool_size = "50"
-    reserve_pool_size = "10"
-  }
-
-  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
-}
-
-locals {
-  pgbouncer_read_pool_configs = {
-    "polar-read" = {
-      max_client_conn   = "5000"
-      default_pool_size = "50"
-      reserve_pool_size = "10"
-    }
-    "polar-replica" = {
-      max_client_conn   = "1000"
-      default_pool_size = "20"
-      reserve_pool_size = "0"
-    }
-  }
-}
-
-module "pgbouncer_read" {
-  source   = "../modules/pgbouncer"
-  for_each = { for replica in render_postgres.db.read_replicas : replica.name => replica }
-
-  name                   = "pgbouncer-${trimprefix(each.key, "polar-")}"
-  environment            = "production"
-  render_environment_id  = render_project.polar.environments["Production"].id
-  registry_credential_id = render_registry_credential.ghcr.id
-
-  database = {
-    host     = each.value.id
-    port     = local.db_port
-    user     = local.db_user
-    password = local.db_password
-  }
-
-  pool_config = local.pgbouncer_read_pool_configs[each.key]
-
-  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
+  depends_on = [render_registry_credential.ghcr, render_project.polar]
 }
 
 # =============================================================================

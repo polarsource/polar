@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 
-from polar.models import OAuth2Client, User
+from polar.models import Agent, OAuth2Client, User
 from tests.fixtures.database import SaveFixture
 
 from ...conftest import create_oauth2_token
@@ -57,3 +57,28 @@ class TestOAuth2UserInfo:
 
         json = response.json()
         assert json["sub"] == str(user.id)
+
+    async def test_agent(
+        self,
+        method: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        agent: Agent,
+    ) -> None:
+        await create_oauth2_token(
+            save_fixture,
+            client=agent.oauth2_client,
+            access_token="polar_at_a_123",
+            refresh_token=None,
+            scopes=["openid"],
+            agent=agent,
+        )
+
+        response = await client.request(
+            method,
+            "/v1/oauth2/userinfo",
+            headers={"Authorization": "Bearer polar_at_a_123"},
+        )
+
+        assert response.status_code == 200
+        assert response.json() == {"sub": str(agent.id)}

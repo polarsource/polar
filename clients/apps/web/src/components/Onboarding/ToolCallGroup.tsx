@@ -155,13 +155,7 @@ const getToolLabel = (part: DynamicToolUIPart): string => {
   }
 }
 
-export const ToolCallGroup = ({
-  parts,
-  messageId,
-}: {
-  parts: DynamicToolUIPart[]
-  messageId: string
-}) => {
+export const ToolCallGroup = ({ parts }: { parts: DynamicToolUIPart[] }) => {
   const [expanded, setExpanded] = useState(false)
 
   if (parts.length === 0) return null
@@ -173,7 +167,7 @@ export const ToolCallGroup = ({
 
     return (
       <p className="dark:text-polar-500 not-prose flex items-center gap-1 text-gray-500">
-        <LogoIcon size={24} className="-ml-1.5" />
+        <LogoIcon size={20} className="-ml-1" />
         {label}
       </p>
     )
@@ -189,7 +183,7 @@ export const ToolCallGroup = ({
           onClick={() => setExpanded(false)}
           className="dark:text-polar-500 flex items-center gap-1 text-left text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"
         >
-          <LogoIcon size={24} className="-ml-1.5" />
+          <LogoIcon size={20} className="-ml-1" />
           <Box as="span">
             Took {parts.length} action{parts.length === 1 ? '' : 's'} to
             configure your account
@@ -204,11 +198,11 @@ export const ToolCallGroup = ({
           borderColor="border-primary"
           paddingLeft="l"
         >
-          {parts.map((part, index) => {
+          {parts.map((part) => {
             const label = getToolLabel(part)
             return (
               <p
-                key={`${messageId}-tool-${index}`}
+                key={part.toolCallId}
                 className="dark:text-polar-500 flex items-center gap-1 text-sm text-gray-500"
               >
                 {label}
@@ -226,7 +220,7 @@ export const ToolCallGroup = ({
       className="dark:text-polar-500 not-prose flex items-center gap-1 text-left text-gray-500 hover:text-gray-700 dark:hover:text-gray-400"
       disabled={!isComplete}
     >
-      <LogoIcon size={24} className="-ml-1.5" />
+      <LogoIcon size={20} className="-ml-1" />
       {isComplete ? (
         <Box as="span">
           Took {parts.length} action{parts.length === 1 ? '' : 's'} to configure

@@ -4,6 +4,7 @@ import CheckoutStatus from '@/components/CheckoutStatus/CheckoutStatus'
 import CheckoutStatusSelect from '@/components/CheckoutStatusSelect/CheckoutStatusSelect'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductSelect from '@/components/Products/ProductSelect'
+import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
 import { useCheckouts } from '@/hooks/queries/checkouts'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDebouncedCallback } from '@/hooks/utils'
@@ -16,6 +17,7 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Input, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -27,6 +29,7 @@ import React from 'react'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
+  external_product_id: parseAsArrayOf(parseAsString),
   customer_id: parseAsString,
   status: parseAsStringLiteral(enums.checkoutStatusValues),
   query: parseAsString,
@@ -46,12 +49,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     })
 
   const [
-    { product_id: productId, customer_id: customerId, status, query },
+    {
+      product_id: productId,
+      external_product_id: externalProductId,
+      customer_id: customerId,
+      status,
+      query,
+    },
     setFilters,
   ] = useQueryStates(filterParsers)
 
+  const filterByExternalId =
+    !!organization.feature_settings?.config_as_code_enabled && !productId
+  const productFilter = filterByExternalId ? externalProductId : productId
+
   const onProductSelect = (value: string[]) => {
-    setFilters({ product_id: value.length > 0 ? value : null })
+    const selected = value.length > 0 ? value : null
+    setFilters(
+      filterByExternalId
+        ? { product_id: null, external_product_id: selected }
+        : { product_id: selected, external_product_id: null },
+    )
     resetPage()
   }
 
@@ -68,6 +86,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const checkoutsHook = useCheckouts(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
     customer_id: customerId ?? undefined,
     status: status ?? undefined,
     query: query ?? undefined,
@@ -150,7 +169,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           original: { products },
         },
       }) => {
-        return <>{products.map(({ name }) => name).join(', ')}</>
+        return (
+          <span>
+            {products.map((product, index) => (
+              <React.Fragment key={product.id}>
+                {index > 0 && ', '}
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  columnGap="s"
+                >
+                  {product.name}
+                  <ProductVersionLabel
+                    organization={organization}
+                    product={product}
+                  />
+                </Box>
+              </React.Fragment>
+            ))}
+          </span>
+        )
       },
     },
   ]
@@ -172,8 +211,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <ProductSelect
               organization={organization}
               includeArchived
-              value={productId || []}
+              value={productFilter ?? []}
               onChange={onProductSelect}
+              filterByExternalId={filterByExternalId}
             />
           </div>
         </div>

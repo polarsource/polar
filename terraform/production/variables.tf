@@ -2,6 +2,29 @@
 # Variables
 # =============================================================================
 
+variable "planetscale_organization" {
+  description = "PlanetScale organization slug."
+  type        = string
+  sensitive   = true
+}
+
+variable "planetscale_app_password" {
+  description = "Password for the PlanetScale app role returned by module.planetscale.app_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_app_password) > 0
+    error_message = "Set planetscale_app_password before switching production to PlanetScale."
+  }
+}
+
+variable "planetscale_metrics_token" {
+  description = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>."
+  type        = string
+  sensitive   = true
+}
+
 variable "ghcr_auth_token" {
   description = "GitHub Container Registry auth token (Personal Access Token with read:packages scope)"
   type        = string
@@ -352,11 +375,6 @@ variable "polar_organization_id" {
   type        = string
 }
 
-variable "polar_free_product_id" {
-  description = "Polar free-tier product ID"
-  type        = string
-}
-
 variable "polar_scale_product_id" {
   description = "Polar Scale-tier product ID"
   type        = string
@@ -387,7 +405,7 @@ variable "lambda_worker_tailscale_token" {
 }
 
 variable "ec2_tailscale_oauth_client_secret" {
-  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production"
+  description = "Tailscale OAuth client secret with Auth Keys write permission for tag:router and tag:production, and DNS write permission"
   type        = string
   sensitive   = true
 }
@@ -553,18 +571,6 @@ variable "private_backoffice_tailscale_ip" {
   }
 }
 
-variable "render_api_key" {
-  description = "Render API key"
-  type        = string
-  sensitive   = true
-}
-
-variable "backup_alert_slack_bot_token" {
-  description = "Slack bot token for database backup copy failure alerts"
-  type        = string
-  sensitive   = true
-}
-
 variable "linear_api_key" {
   description = "Linear API key"
   type        = string
@@ -582,4 +588,20 @@ variable "linear_payout_amount_mismatch_template_id" {
   description = "Linear payout amount mismatch issue template ID"
   type        = string
   default     = ""
+}
+
+variable "backoffice_google_client_id" {
+  description = "Backoffice Google OAuth client ID"
+  type        = string
+}
+
+variable "backoffice_google_client_secret" {
+  description = "Backoffice Google OAuth client secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "backoffice_google_hosted_domain" {
+  description = "Backoffice Google Workspace hosted domain"
+  type        = string
 }

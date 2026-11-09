@@ -10,6 +10,7 @@ import {
   useEventVarianceStats,
 } from '@/hooks/queries/events'
 import { useMetrics } from '@/hooks/queries/metrics'
+import { buildEventDashboardPath } from '@/utils/event'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -20,15 +21,15 @@ import { TrendBadge } from './TrendBadge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { endOfDay, subDays } from 'date-fns'
 import {
-  AlertTriangle,
   ArrowDownRight,
   ArrowUpRight,
-  BarChart2,
   Bot,
+  ChartNoAxesColumn as BarChart2,
   Minus,
   TrendingUp,
+  TriangleAlert as AlertTriangle,
   Users,
-} from 'lucide-react'
+} from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
@@ -208,6 +209,7 @@ export default function ClientPage({
         )
         .map((r) => ({
           ...r,
+          key: r.customer_id ?? r.external_customer_id ?? 'unattributed',
           total: parseFloat(String(r.totals?.['_cost_amount'] ?? '0')),
           label:
             r.name ??
@@ -482,12 +484,8 @@ export default function ClientPage({
                       : undefined
                     return (
                       <RankedListItem
-                        key={
-                          r.customer_id ?? r.external_customer_id ?? String(i)
-                        }
-                        itemKey={
-                          r.customer_id ?? r.external_customer_id ?? String(i)
-                        }
+                        key={r.key}
+                        itemKey={r.key}
                         rank={i + 1}
                         share={r.share}
                         onSelect={
@@ -565,7 +563,10 @@ export default function ClientPage({
                     return (
                       <Link
                         key={s.event_id}
-                        href={`/dashboard/${organization.slug}/analytics/events/${s.event_id}`}
+                        href={buildEventDashboardPath(
+                          organization.slug,
+                          s.event_id,
+                        )}
                         className="dark:border-polar-700 dark:hover:bg-polar-800 flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4 transition-colors hover:bg-gray-50 dark:bg-transparent"
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -782,10 +783,8 @@ export default function ClientPage({
                 <RankedList>
                   {customerRows.map((r, i) => (
                     <RankedListItem
-                      key={r.customer_id ?? r.external_customer_id ?? String(i)}
-                      itemKey={
-                        r.customer_id ?? r.external_customer_id ?? String(i)
-                      }
+                      key={r.key}
+                      itemKey={r.key}
                       rank={i + 1}
                       share={r.share}
                       onSelect={

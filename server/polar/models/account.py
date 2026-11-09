@@ -1,4 +1,5 @@
 from datetime import timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -122,13 +123,13 @@ class Account(RecordModel):
 
     def calculate_fee_in_cents(self, amount_in_cents: int) -> int:
         basis_points, fixed, _ = self.platform_fee
-        fee_in_cents = (amount_in_cents * (basis_points / 10_000)) + fixed
+        fee_in_cents = Decimal(amount_in_cents) * basis_points / 10_000 + fixed
         # Apply same logic as Stripe fee rounding
         return polar_round(fee_in_cents)
 
     def calculate_subscription_fee_in_cents(self, amount_in_cents: int) -> int:
         _, _, subscription_fee_basis_points = self.platform_fee
-        fee_in_cents = amount_in_cents * (subscription_fee_basis_points / 10_000)
+        fee_in_cents = Decimal(amount_in_cents) * subscription_fee_basis_points / 10_000
         # Apply same logic as Stripe fee rounding
         return polar_round(fee_in_cents)
 

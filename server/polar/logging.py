@@ -12,6 +12,8 @@ from polar.observability.task_logging import TaskLogFilter
 
 Logger = structlog.stdlib.BoundLogger
 
+get_logger = logging.getLogger
+
 
 def _map_critical_to_fatal(
     logger: logging.Logger, method_name: str, event_dict: dict[str, Any]

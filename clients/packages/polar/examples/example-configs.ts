@@ -243,6 +243,7 @@ export const pricingConfig = defineConfig({
           .cap(usd(500), eur(475)),
       )
       .recurring(3, 'months')
+      .meterCycle('monthly')
       .trial(1, 'month'),
     devices: product('Devices')
       .prices(
@@ -254,25 +255,5 @@ export const pricingConfig = defineConfig({
           .label('device', 'devices'),
       )
       .recurring('yearly'),
-  }),
-  // Percentages take at most 2 decimals; amounts use the same money helpers as prices.
-  // A discount without .products() applies to every product.
-  discounts: ({ discount }) => ({
-    launch: discount('Launch 20%')
-      .percent(20)
-      .repeating(3, 'months')
-      .code('LAUNCH20')
-      .products('team')
-      .maxRedemptions(500)
-      .ends('2026-12-31')
-      .metadata({ campaign: 'launch' }),
-    welcome: discount('Welcome $10')
-      .amount(usd(10), eur(9))
-      .once()
-      .perCustomer(1),
-    annual: discount('Annual devices')
-      .percent(15)
-      .repeating(1, 'year')
-      .products('devices'),
   }),
 })

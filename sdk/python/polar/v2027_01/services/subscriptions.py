@@ -51,6 +51,7 @@ class SubscriptionsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         discount_id: str | builtins.list[str] | None = None,
@@ -79,6 +80,7 @@ class SubscriptionsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             discount_id: Filter by discount ID.
@@ -111,6 +113,7 @@ class SubscriptionsSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "discount_id": discount_id,
@@ -141,6 +144,7 @@ class SubscriptionsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         discount_id: str | builtins.list[str] | None = None,
@@ -169,6 +173,7 @@ class SubscriptionsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             discount_id: Filter by discount ID.
@@ -201,6 +206,7 @@ class SubscriptionsSync(SyncServiceBase):
             response = self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 discount_id=discount_id,
@@ -291,6 +297,7 @@ class SubscriptionsSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
         cancel_at_period_end: bool | None = None,
         started_after: str | None = None,
@@ -310,6 +317,7 @@ class SubscriptionsSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             status: Filter by subscription status.
             cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
             started_after: Only include subscriptions started after this date. Must include a UTC offset.
@@ -333,6 +341,7 @@ class SubscriptionsSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "status": status,
                 "cancel_at_period_end": cancel_at_period_end,
                 "started_after": started_after,
@@ -585,6 +594,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         discount_id: str | builtins.list[str] | None = None,
@@ -613,6 +623,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             discount_id: Filter by discount ID.
@@ -645,6 +656,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "customer_id": customer_id,
                 "external_customer_id": external_customer_id,
                 "discount_id": discount_id,
@@ -675,6 +687,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         customer_id: str | builtins.list[str] | None = None,
         external_customer_id: str | builtins.list[str] | None = None,
         discount_id: str | builtins.list[str] | None = None,
@@ -703,6 +716,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             customer_id: Filter by customer ID.
             external_customer_id: Filter by customer external ID.
             discount_id: Filter by discount ID.
@@ -735,6 +749,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             response = await self.list(
                 organization_id=organization_id,
                 product_id=product_id,
+                external_product_id=external_product_id,
                 customer_id=customer_id,
                 external_customer_id=external_customer_id,
                 discount_id=discount_id,
@@ -826,6 +841,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         product_id: str | builtins.list[str] | None = None,
+        external_product_id: str | builtins.list[str] | None = None,
         status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
         cancel_at_period_end: bool | None = None,
         started_after: str | None = None,
@@ -845,6 +861,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             product_id: Filter by product ID.
+            external_product_id: Filter by product external ID.
             status: Filter by subscription status.
             cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
             started_after: Only include subscriptions started after this date. Must include a UTC offset.
@@ -868,6 +885,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "product_id": product_id,
+                "external_product_id": external_product_id,
                 "status": status,
                 "cancel_at_period_end": cancel_at_period_end,
                 "started_after": started_after,

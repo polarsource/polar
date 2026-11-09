@@ -4,6 +4,8 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 import { docsCSP, ENVIRONMENT, nonEmbeddedCSP, oauth2CSP } from './src/csp.mjs'
 
+const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1'
+
 // Vercel services deployments: deployment URLs change with
 // every deployment, so derive base from the deployment's own URL
 const VERCEL_SERVICES =
@@ -26,11 +28,17 @@ const defaultFrontendHostname = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL
 const nextConfig = {
   allowedDevOrigins: ['127.0.0.1', '*.taildbff7b.ts.net'],
   reactStrictMode: true,
+  reactCompiler: true,
   experimental: {
     useTypeScriptCli: false,
+    optimizePackageImports: ['@polar-sh/orbit/icons'],
   },
   transpilePackages: ['shiki', '@polar-sh/checkout', '@polar-sh/orbit'],
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+
+  ...(TYPE_CHECKED_IN_CI && {
+    typescript: { ignoreBuildErrors: true },
+  }),
 
   outputFileTracingIncludes: {
     '/onboarding/validate-description': [
@@ -191,6 +199,11 @@ const nextConfig = {
           },
         ],
       },
+      {
+        source: '/auth.md',
+        destination: `${process.env.NEXT_PUBLIC_API_URL}/auth.md`,
+        permanent: false,
+      },
 
       // Logged-in user redirections
       {
@@ -297,6 +310,11 @@ const nextConfig = {
         destination: '/dashboard/:organization/analytics/costs',
         permanent: true,
       },
+      {
+        source: '/dashboard/:organization/analytics/metrics/:metric',
+        destination: '/dashboard/:organization/analytics/metrics#:metric',
+        permanent: false,
+      },
 
       // Account Settings Redirects
       {
@@ -308,7 +326,7 @@ const nextConfig = {
       // Access tokens redirect
       {
         source: '/settings/tokens',
-        destination: '/account/developer',
+        destination: '/dashboard/account/developer',
         permanent: false,
       },
 
@@ -327,7 +345,7 @@ const nextConfig = {
       // Fallback blog redirect
       {
         source: '/:path*',
-        destination: 'https://polar.sh/polarsource',
+        destination: 'https://polar.sh/blog',
         has: [
           {
             type: 'host',

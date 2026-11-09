@@ -13,6 +13,7 @@ import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
 
 const planUrl = 'https://sandbox-api.polar.sh/v1/config/plan'
+const organizationUrl = 'https://sandbox-api.polar.sh/v1/organizations/org-1'
 
 const acme: ActiveOrganization = {
   id: 'org-1',
@@ -125,6 +126,127 @@ describe('plan', () => {
         location: { line: 5, column: 52, length: 2 },
       },
     ])
+  })
+
+  test('lists removals, in place of the deprecated entry', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'benefit',
+          external_id: 'support',
+          action: 'unchanged',
+          diff: [],
+        },
+      ],
+      removed: [
+        { resource: 'benefit', external_id: 'support', reason: 'deprecated' },
+        { resource: 'product', external_id: 'legacy', reason: 'missing' },
+      ],
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries).toEqual([
+      {
+        section: 'benefits',
+        id: 'support',
+        action: 'removed',
+        reason: 'deprecated',
+        diff: [],
+      },
+      {
+        section: 'products',
+        id: 'legacy',
+        action: 'removed',
+        reason: 'missing',
+        diff: [],
+      },
+    ])
+  })
+
+  test('prices without a currency get the organization default', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'product',
+          external_id: 'starter',
+          action: 'created',
+          diff: [
+            {
+              field: 'prices',
+              before: null,
+              after: [
+                { amount_type: 'fixed', price_amount: 1000 },
+                {
+                  amount_type: 'metered_unit',
+                  meter: 'api-calls',
+                  unit_amount: '0.5',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      issues: [],
+    })
+    api.routes[`GET ${organizationUrl}`] = Response.json({
+      default_presentment_currency: 'eur',
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries[0]?.diff).toEqual([
+      {
+        field: 'prices',
+        before: null,
+        after: [
+          { amount_type: 'fixed', price_amount: 1000, price_currency: 'eur' },
+          {
+            amount_type: 'metered_unit',
+            meter: 'api-calls',
+            unit_amount: '0.5',
+            price_currency: 'eur',
+          },
+        ],
+      },
+    ])
+  })
+
+  test('skips the organization lookup when every price has a currency', async () => {
+    const prices = [
+      { amount_type: 'fixed', price_currency: 'usd', price_amount: 1000 },
+    ]
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [
+        {
+          resource: 'product',
+          external_id: 'starter',
+          action: 'created',
+          diff: [{ field: 'prices', before: null, after: prices }],
+        },
+      ],
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.entries[0]?.diff).toEqual([
+      { field: 'prices', before: null, after: prices },
+    ])
+    expect(api.urls()).toEqual([planUrl])
+  })
+
+  test('keeps the catalog the plan publishes', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      catalog: { before: { id: 'catalog-1', name: 'v1' }, name: 'v2' },
+      issues: [],
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.catalog).toEqual({ before: { name: 'v1' }, name: 'v2' })
   })
 
   test('turns 422 structural errors into issues with no changes', async () => {

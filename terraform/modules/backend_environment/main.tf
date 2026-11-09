@@ -7,6 +7,12 @@ locals {
     POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = var.google_secrets.service_account_json
   }
 
+  backoffice_google_secrets = {
+    POLAR_BACKOFFICE_GOOGLE_CLIENT_ID     = var.google_secrets.backoffice_client_id
+    POLAR_BACKOFFICE_GOOGLE_CLIENT_SECRET = var.google_secrets.backoffice_client_secret
+    POLAR_BACKOFFICE_GOOGLE_HOSTED_DOMAIN = var.google_secrets.backoffice_hosted_domain
+  }
+
   pydantic_ai_gateway_secrets = {
     POLAR_PYDANTIC_AI_GATEWAY_API_KEY = var.pydantic_ai_gateway_secrets.api_key
   }
@@ -33,6 +39,10 @@ locals {
       POLAR_TAX_RECORD_PROCESSOR                 = var.backend_config.tax_record_processor
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
     },
+    { for name, value in {
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = var.backend_config.database_statement_cache_size
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = var.backend_config.database_prepared_statement_cache_size
+    } : name => tostring(value) if value != null },
     var.backend_config.backoffice_host != null ? {
       POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
     } : {},
@@ -52,6 +62,7 @@ locals {
 
   backend_secrets = merge(
     {
+      POLAR_MCP_OAUTH2_CLIENT_ID  = var.backend_secrets.mcp_oauth2_client_id
       POLAR_DISCORD_BOT_TOKEN     = var.backend_secrets.discord_bot_token
       POLAR_DISCORD_CLIENT_ID     = var.backend_secrets.discord_client_id
       POLAR_DISCORD_CLIENT_SECRET = var.backend_secrets.discord_client_secret
@@ -176,7 +187,7 @@ locals {
     } : {},
   ) : {}
 
-  slo_report_environment_variables = var.slo_report_config != null ? {
+  slo_report_environment_variables = try(var.slo_report_config.slack_channel, null) != null ? {
     POLAR_SLACK_CHANNEL = var.slo_report_config.slack_channel
   } : {}
 
@@ -199,7 +210,6 @@ locals {
 
   polar_self_environment_variables = var.polar_self_config != null ? {
     POLAR_POLAR_ORGANIZATION_ID  = var.polar_self_config.organization_id
-    POLAR_POLAR_FREE_PRODUCT_ID  = var.polar_self_config.free_product_id
     POLAR_POLAR_API_URL          = var.polar_self_config.api_url
     POLAR_POLAR_SCALE_PRODUCT_ID = var.polar_self_config.scale_product_id
   } : {}
@@ -211,6 +221,7 @@ locals {
 
   environment_groups = {
     google              = local.google_secrets
+    backoffice_google   = local.backoffice_google_secrets
     pydantic_ai_gateway = local.pydantic_ai_gateway_secrets
     backend = merge(
       local.backend_environment_variables,
@@ -244,6 +255,7 @@ locals {
 
   secret_environment_variables = merge(
     local.google_secrets,
+    local.backoffice_google_secrets,
     local.pydantic_ai_gateway_secrets,
     local.backend_secrets,
     local.backend_production_secrets,

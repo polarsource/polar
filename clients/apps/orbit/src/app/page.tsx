@@ -1,6 +1,6 @@
 import { Box } from '@polar-sh/orbit/Box'
 import { Grid, GridItem, Text } from '@polar-sh/orbit'
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { OrbitingSpheres } from '@/components/OrbitingSpheres'
 import { componentItems, foundationItems } from '@/lib/registry'

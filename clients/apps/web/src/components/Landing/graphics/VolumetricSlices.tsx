@@ -143,7 +143,11 @@ const compile = (gl: WebGLRenderingContext, type: number, src: string) => {
   return s
 }
 
-const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
+const linkAndUseProgram = (
+  gl: WebGLRenderingContext,
+  vs: string,
+  fs: string,
+) => {
   const p = gl.createProgram()!
   gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs))
   gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs))
@@ -151,6 +155,7 @@ const link = (gl: WebGLRenderingContext, vs: string, fs: string) => {
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
     throw new Error(gl.getProgramInfoLog(p) ?? 'program link error')
   }
+  gl.useProgram(p)
   return p
 }
 
@@ -192,8 +197,7 @@ export const VolumetricSlices = () => {
     const ro = new ResizeObserver(resize)
     ro.observe(canvas)
 
-    const prog = link(gl, VS, FS)
-    gl.useProgram(prog)
+    const prog = linkAndUseProgram(gl, VS, FS)
 
     const aQuad = gl.getAttribLocation(prog, 'a_quad')
     const uSliceZ = gl.getUniformLocation(prog, 'u_sliceZ')

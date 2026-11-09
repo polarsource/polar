@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { customerKey, parseEvent, getProperty } from "./event";
+import { customerKey, parseEvent, getPropertyReader } from "./event";
 import {
   BUCKET_SIZE,
   getBucketStart,
@@ -22,6 +22,7 @@ const event = {
 };
 const reducer = (func: "count" | "sum" | "min" | "max" | "avg"): Reducer => ({
   id: "tokens",
+  kind: "usage",
   filter: { conjunction: "and", clauses: [] },
   aggregation: func === "count" ? { func } : { func, property: "tokens" },
 });
@@ -34,7 +35,7 @@ describe("reduction", () => {
       timestamp: "2026-10-12T12:00:00.123456Z",
     });
     expect(precise.timestamp).toBe(1791806400123456);
-    expect(getProperty(precise, "timestamp")).toBe(1791806400);
+    expect(getPropertyReader("timestamp")(precise)).toBe(1791806400);
     expect(getBucketStart(BUCKET_SIZE - 1)).toBe(0);
     expect(getBucketStart(BUCKET_SIZE)).toBe(BUCKET_SIZE);
     expect(getBucketStart(-1)).toBe(-BUCKET_SIZE);
@@ -86,7 +87,7 @@ describe("reduction", () => {
       timestamp: "1969-12-31T23:59:59.500Z",
     });
     expect(getBucketStart(fractional.timestamp)).toBe(-BUCKET_SIZE);
-    expect(getProperty(fractional, "timestamp")).toBe(-0);
+    expect(getPropertyReader("timestamp")(fractional)).toBe(-0);
   });
 
   it("matches nested filters and ignores missing properties", () => {
@@ -110,9 +111,16 @@ describe("reduction", () => {
     expect(getMatcher({ property: "nested.flag", operator: "gt", value: false })(event)).toBe(
       false,
     );
-    expect(getProperty(event, "metadata.__proto__.toString")).toBeUndefined();
-    expect(getProperty(event, "timestamp")).toBe(event.timestamp / 1_000_000);
+    expect(getPropertyReader("metadata.__proto__.toString")(event)).toBeUndefined();
+    expect(getPropertyReader("timestamp")(event)).toBe(event.timestamp / 1_000_000);
   });
+
+  it.each(["and", "or"] as const)(
+    "matches every event with an empty %s, like Polar",
+    (conjunction) => {
+      expect(getMatcher({ conjunction, clauses: [] })(event)).toBe(true);
+    },
+  );
 
   it.each([
     [true, 1, true],
@@ -127,6 +135,39 @@ describe("reduction", () => {
     const sample = { ...event, metadata: { value: actual } };
     expect(getMatcher({ property: "value", operator: "eq", value: expected })(sample)).toBe(equal);
     expect(getMatcher({ property: "value", operator: "ne", value: expected })(sample)).toBe(!equal);
+  });
+
+  it.each([
+    ["gpt-4o-mini", "4o", true],
+    ["gpt-4o-mini", "claude", false],
+    ["gpt-4o-mini", "GPT", false],
+    ["100%_done", "%_", true],
+  ] as const)("checks whether %s contains %s like Polar", (actual, expected, contained) => {
+    const sample = { ...event, metadata: { value: actual } };
+    expect(getMatcher({ property: "value", operator: "like", value: expected })(sample)).toBe(
+      contained,
+    );
+    expect(getMatcher({ property: "value", operator: "not_like", value: expected })(sample)).toBe(
+      !contained,
+    );
+  });
+
+  it.each([
+    [1234, "23"],
+    [true, "true"],
+    ["1234", 23],
+    ["true", true],
+  ] as const)(
+    "matches neither like nor not_like when %s or %s is not a string",
+    (actual, expected) => {
+      const sample = { ...event, metadata: { value: actual } };
+      for (const operator of ["like", "not_like"] as const)
+        expect(getMatcher({ property: "value", operator, value: expected })(sample)).toBe(false);
+    },
+  );
+
+  it.each(["like", "not_like"] as const)("ignores missing properties for %s", (operator) => {
+    expect(getMatcher({ property: "missing", operator, value: "a" })(event)).toBe(false);
   });
 
   it("rejects ambiguous customers, timezone-free timestamps, and non-finite reductions", () => {
@@ -147,5 +188,9 @@ describe("reduction", () => {
         0,
       ),
     ).toThrow();
+  });
+
+  it("matches no local event against a credit reducer", () => {
+    expect(reduce(withMatchers([{ ...reducer("sum"), kind: "credit" }]), [event], 0)).toEqual([]);
   });
 });

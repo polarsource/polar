@@ -19,7 +19,10 @@ export class Organizations extends Context.Service<
     listAll: Effect.Effect<ActiveOrganization[], AuthError>
     selected: Effect.Effect<OrganizationSelection | undefined, AuthError>
     select: (selection: OrganizationSelection) => Effect.Effect<void, AuthError>
-    resolve: (id?: string) => Effect.Effect<ActiveOrganization, AuthError>
+    resolve: (
+      id?: string,
+      environment?: PolarEnvironment,
+    ) => Effect.Effect<ActiveOrganization, AuthError>
   }
 >()('Organizations') {}
 
@@ -92,9 +95,11 @@ export const layer = Layer.effect(
           environment,
         }
       })
-    const find = (reference: string) =>
+    const find = (reference: string, environment?: PolarEnvironment) =>
       Effect.gen(function* () {
         const lookup = isUuid(reference) ? get : getBySlug
+        if (environment !== undefined)
+          return yield* lookup(reference, environment)
         const available = yield* auth.environments
         if (available.length === 0) {
           return yield* new AuthError({
@@ -129,9 +134,9 @@ export const layer = Layer.effect(
           yield* auth.resolve(selection.environment)
           yield* config.setActiveOrganization(selection)
         }),
-      resolve: (id) =>
+      resolve: (id, environment) =>
         Effect.gen(function* () {
-          if (id) return yield* find(id)
+          if (id) return yield* find(id, environment)
           if (yield* auth.override) {
             const organizations = yield* listAll
             if (organizations.length === 1) return organizations[0]!

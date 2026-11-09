@@ -1,8 +1,5 @@
 import collections.abc
-import os
-import subprocess
-import tempfile
-import time
+import itertools
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
@@ -24,7 +21,7 @@ REDUCERS = ["tokens", "calls", "cost"]
 
 
 def state_key(identity: str) -> str:
-    return f"outpost:state:{identity}"
+    return f"outpost:v1:state:{identity}"
 
 
 def identity_of(buckets: int) -> str:
@@ -35,9 +32,27 @@ def key_of(buckets: int) -> str:
     return state_key(identity_of(buckets))
 
 
-# An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count.
+# An event of 7 units in the given bucket: what WRITE_BUCKET takes after the key count. Each
+# call brings a new external_id, as events do; the same one would be a duplicate and write nothing.
+_ids = itertools.count(1)
+
+
 def write_args(identity: str, bucket_start: int) -> list[str | int]:
-    return [state_key(identity), identity, CHANNEL, EPOCH, bucket_start, 1, 7, 7, 7]
+    pending_key = f"outpost:v1:pending:{identity}:{bucket_start}"
+    return [
+        state_key(identity),
+        pending_key,
+        identity,
+        CHANNEL,
+        EPOCH,
+        bucket_start,
+    ] + [
+        1,
+        7,
+        7,
+        7,
+        f"event-{next(_ids)}",
+    ]
 
 
 def seed_state(redis: Redis, identity: str, buckets: int) -> None:
@@ -45,42 +60,16 @@ def seed_state(redis: Redis, identity: str, buckets: int) -> None:
 
 
 @pytest.fixture(scope="module")
-def redis() -> collections.abc.Iterator[Redis]:
-    with tempfile.TemporaryDirectory(prefix="polar-outpost-bench-") as directory:
-        socket = os.path.join(directory, "redis.sock")
-        process = subprocess.Popen(
-            [
-                "redis-server",
-                "--port",
-                "0",
-                "--unixsocket",
-                socket,
-                "--save",
-                "",
-                "--appendonly",
-                "no",
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        try:
-            deadline = time.monotonic() + 5
-            while not os.path.exists(socket):
-                if process.poll() is not None or time.monotonic() > deadline:
-                    raise RuntimeError("redis-server did not start")
-                time.sleep(0.01)
-            # No coroutine can be benchmarked (see the `loop` fixture in conftest.py): the sync
-            # client stands in for redis.asyncio; both share the connection and parser code.
-            client = Redis(unix_socket_path=socket)
-            for buckets in BUCKET_COUNTS:
-                seed_state(client, identity_of(buckets), buckets)
-            for reducer in REDUCERS:
-                seed_state(client, f"external:alice:{reducer}", 1)
-            yield client
-            client.close()
-        finally:
-            process.terminate()
-            process.wait()
+def redis(redis_socket: str) -> collections.abc.Iterator[Redis]:
+    # No coroutine can be benchmarked (see the `loop` fixture in conftest.py): the sync client
+    # stands in for redis.asyncio; both share the connection and parser code.
+    client = Redis(unix_socket_path=redis_socket)
+    for buckets in BUCKET_COUNTS:
+        seed_state(client, identity_of(buckets), buckets)
+    for reducer in REDUCERS:
+        seed_state(client, f"external:alice:{reducer}", 1)
+    yield client
+    client.close()
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)
@@ -90,9 +79,12 @@ def test_write_bucket_one_event(
     newest_bucket_start = COLD_UNTIL + (buckets - 1) * BUCKET_SIZE
     # The client loads each script once and calls it by hash.
     sha = redis.script_load(WRITE_BUCKET_SCRIPT)
-    benchmark(
-        redis.evalsha, sha, 1, *write_args(identity_of(buckets), newest_bucket_start)
-    )
+    identity = identity_of(buckets)
+
+    def write() -> None:
+        redis.evalsha(sha, 2, *write_args(identity, newest_bucket_start))
+
+    benchmark(write)
 
 
 def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) -> None:
@@ -102,7 +94,7 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
         pipeline = redis.pipeline(transaction=False)
         for reducer in REDUCERS:
             identity = f"external:alice:{reducer}"
-            pipeline.evalsha(sha, 1, *write_args(identity, COLD_UNTIL))
+            pipeline.evalsha(sha, 2, *write_args(identity, COLD_UNTIL))
         pipeline.execute()
 
     benchmark(write)
@@ -119,8 +111,8 @@ def test_apply_snapshot(
     benchmark: BenchmarkFixture, redis: Redis, buckets: int
 ) -> None:
     sha = redis.script_load(APPLY_SNAPSHOT_SCRIPT)
-    # Same cold_until and version as the seeded state: the script rescans every field and
-    # rewrites the cold summary, but seals no bucket, so the state keeps its size.
+    # The seeded snapshot again, as every instance gets each of Polar's: the script scans
+    # every field, finds nothing to change and writes only the version.
     benchmark(
         redis.evalsha,
         sha,
@@ -131,8 +123,6 @@ def test_apply_snapshot(
         EPOCH,
         COLD_UNTIL,
         COLD_UNTIL + 1,
-        "meter",
-        1_000_000,
         1000,
         123456,
         1,

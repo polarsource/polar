@@ -25,6 +25,10 @@ from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.customer.schemas.state import CustomerState
+from polar.declarative_config.guard import (
+    DeclarativeConfigManaged,
+    assert_catalog_editable,
+)
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
@@ -183,6 +187,8 @@ class WebhookService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         create_schema: WebhookEndpointCreate,
+        *,
+        declarative_config: bool = False,
     ) -> WebhookEndpoint:
         repository = WebhookEndpointRepository.from_session(session)
         organization = await get_payload_organization(
@@ -194,6 +200,8 @@ class WebhookService:
             organization.id,
             OrganizationPermission.organization_manage,
         )
+        if not declarative_config and organization.is_config_as_code_enabled:
+            raise DeclarativeConfigManaged()
         secret: str
         secret_generated_at: datetime.datetime | None
         if (
@@ -225,10 +233,13 @@ class WebhookService:
         *,
         endpoint: WebhookEndpoint,
         update_schema: WebhookEndpointUpdate,
+        declarative_config: bool = False,
     ) -> WebhookEndpoint:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
+        if not declarative_config:
+            await assert_catalog_editable(session, endpoint.organization_id)
         repository = WebhookEndpointRepository.from_session(session)
 
         is_enabling = update_schema.enabled is True and not endpoint.enabled
@@ -285,6 +296,7 @@ class WebhookService:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
+        await assert_catalog_editable(session, endpoint.organization_id)
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.soft_delete(endpoint)
 
@@ -1000,7 +1012,7 @@ class WebhookService:
             if updated_count < batch_size:
                 break
 
-    async def archive_delivery_payloads(
+    async def delete_expired_deliveries(
         self,
         session: AsyncSession,
         older_than: datetime.datetime,
@@ -1008,27 +1020,22 @@ class WebhookService:
         sleep_seconds: float = 0.1,
     ) -> int:
         repository = WebhookDeliveryRepository.from_session(session)
-        cursor: tuple[datetime.datetime, UUID] | None = None
-        total_scrubbed = 0
+        total_deleted = 0
 
         while True:
-            page = await repository.get_scrubbable_response_page(
-                older_than=older_than, limit=batch_size, after=cursor
+            ids = await repository.get_expired_ids(
+                older_than=older_than, limit=batch_size
             )
-            if not page:
+            if not ids:
                 break
 
-            await repository.scrub_responses([id for id, _ in page])
+            total_deleted += await repository.delete_by_ids(ids)
             await session.commit()
-
-            total_scrubbed += len(page)
-            last_id, last_created_at = page[-1]
-            cursor = (last_created_at, last_id)
 
             if sleep_seconds > 0:
                 await asyncio.sleep(sleep_seconds)
 
-        return total_scrubbed
+        return total_deleted
 
     async def _get_event_target_endpoints(
         self,

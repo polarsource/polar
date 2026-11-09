@@ -13,7 +13,7 @@ import { toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Alert, Avatar } from '@polar-sh/orbit'
-import { Coins } from 'lucide-react'
+import { Coins } from '@polar-sh/orbit/icons'
 import { useMemo } from 'react'
 
 const cost = (stat: CustomerStatItem) =>

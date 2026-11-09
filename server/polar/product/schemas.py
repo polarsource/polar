@@ -1,11 +1,14 @@
 import builtins
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
     AfterValidator,
+    AwareDatetime,
+    BaseModel,
     BeforeValidator,
     Discriminator,
     Field,
@@ -49,16 +52,18 @@ from polar.kit.schemas import (
     IDSchema,
     Int32,
     MergeJSONSchema,
+    MultipleQueryFilter,
     Schema,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
 )
 from polar.kit.trial import TrialConfigurationInputMixin, TrialConfigurationOutputMixin
-from polar.kit.versioning import Version
+from polar.kit.versioning import QuerySchema, Version
 from polar.kit.visibility import Visibility
 from polar.meter.unit import MeterUnit
 from polar.models import Benefit as BenefitModel
+from polar.models.catalog import CatalogStatus
 from polar.models.product import ProductVisibility
 from polar.models.product_price import (
     ProductPriceAmountType,
@@ -844,22 +849,30 @@ class ProductPriceBase(TimestampedSchema):
     )
     product_id: UUID4 = Field(description="The ID of the product owning the price.")
 
-    type: SkipJsonSchema[ProductPriceType] = Field(
-        validation_alias=AliasChoices("legacy_type", "type"),
-        deprecated=(
-            "This field is actually set from Product. "
-            "It's only kept for backward compatibility."
+    type: Annotated[
+        SkipJsonSchema[ProductPriceType],
+        Version(up_to=V2026_10),
+        Field(
+            validation_alias=AliasChoices("legacy_type", "type"),
+            deprecated=(
+                "This field is actually set from Product. "
+                "It's only kept for backward compatibility."
+            ),
         ),
-    )
-    recurring_interval: SkipJsonSchema[SubscriptionRecurringInterval | None] = Field(
-        validation_alias=AliasChoices(
-            "legacy_recurring_interval", "recurring_interval"
+    ]
+    recurring_interval: Annotated[
+        SkipJsonSchema[SubscriptionRecurringInterval | None],
+        Version(up_to=V2026_10),
+        Field(
+            validation_alias=AliasChoices(
+                "legacy_recurring_interval", "recurring_interval"
+            ),
+            deprecated=(
+                "This field is actually set from Product. "
+                "It's only kept for backward compatibility."
+            ),
         ),
-        deprecated=(
-            "This field is actually set from Product. "
-            "It's only kept for backward compatibility."
-        ),
-    )
+    ]
 
 
 class ProductPriceFixedBase(ProductPriceBase):
@@ -1094,7 +1107,7 @@ def _get_discriminator_value(v: Any) -> Literal["legacy", "new"]:
 
 
 ProductPrice = Annotated[
-    Annotated[LegacyRecurringProductPrice, Tag("legacy")]
+    Annotated[LegacyRecurringProductPrice, Tag("legacy"), Version(up_to=V2026_10)]
     | Annotated[NewProductPrice, Tag("new")],
     Discriminator(_get_discriminator_value),
 ]
@@ -1156,7 +1169,27 @@ ProductMediaList = Annotated[
 ]
 
 
-class Product(MetadataOutputMixin, ExternalIDOutputMixin, ProductBase):
+class ProductVersionOutputMixin(BaseModel):
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the product. "
+                "None for products not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the product."),
+    ]
+
+
+class Product(
+    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+):
     """
     A product.
     """
@@ -1196,3 +1229,88 @@ BenefitPublicList = Annotated[
     BeforeValidator(_filter_benefit_public_list),
     Field(description="List of benefits granted by the product."),
 ]
+
+
+class ProductNameCheckRequest(Schema):
+    name: str = Field(min_length=1, max_length=64)
+
+
+class ProductNameCheck(Schema):
+    category: str | None = Field(
+        description="Acceptable Use Policy category the name suggests, if any."
+    )
+    phrase: str | None = Field(
+        description="The exact phrase that matched, when a word-list rule flagged it."
+    )
+
+
+class ProductListParams(QuerySchema):
+    id: MultipleQueryFilter[ProductID] | None = Field(
+        None, title="ProductID Filter", description="Filter by product ID."
+    )
+    external_id: Annotated[
+        MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None, title="ExternalID Filter", description="Filter by product external ID."
+    )
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    )
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="CatalogStatus Filter",
+        description="Filter by catalog status.",
+    )
+    query: str | None = Field(None, description="Filter by product name.")
+    is_archived: bool | None = Field(None, description="Filter on archived products.")
+    is_recurring: bool | None = Field(
+        None,
+        description="Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned. ",
+    )
+    benefit_id: MultipleQueryFilter[BenefitID] | None = Field(
+        None,
+        title="BenefitID Filter",
+        description="Filter products granting specific benefit.",
+    )
+    visibility: builtins.list[ProductVisibility] | None = Field(
+        default=None, description="Filter by visibility."
+    )
+
+
+def _flagged_at_to_utc(value: datetime) -> datetime:
+    try:
+        return value.astimezone(UTC)
+    except OverflowError as e:
+        raise ValueError("Timestamp is out of range.") from e
+
+
+class ProductFlaggedNameAttempt(Schema):
+    name: str = Field(
+        min_length=1,
+        max_length=64,
+        description="A name that showed the Acceptable Use Policy warning.",
+    )
+    category: str = Field(
+        max_length=100, description="Category the name check returned for it."
+    )
+    phrase: str | None = Field(
+        default=None,
+        max_length=64,
+        description="The word-list phrase that matched, if any.",
+    )
+    flagged_at: Annotated[AwareDatetime, AfterValidator(_flagged_at_to_utc)] = Field(
+        description="When the name check first flagged this name, from the browser."
+    )
+
+
+class ProductFlaggedNameReport(Schema):
+    attempts: list[ProductFlaggedNameAttempt] = Field(
+        min_length=1,
+        max_length=50,
+        description="Flagged names tried before create, in the order they were typed.",
+    )

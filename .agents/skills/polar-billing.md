@@ -288,7 +288,7 @@ handle_failure(payment)  # Update order status
 **File:** `server/polar/refund/service.py`
 
 ```python
-create(order, amount, reason, revoke_benefits)
+create(order, amount, tax_amount, reason, revoke_benefits)
 upsert_from_stripe(stripe_refund)
 # Also enqueues chargeback prevention notice for dispute_prevention refunds
 ```
@@ -597,7 +597,7 @@ BillingEntry(
 ```
 1. Subscription canceled or order refunded
 2. enqueue_benefits_grants(task="revoke")
-3. For each granted benefit:
+3. For each granted or pending (action-required) benefit:
    - Enqueue benefit.revoke task
 4. benefit.revoke task:
    - Call strategy.revoke() (type-specific)

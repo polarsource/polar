@@ -11,16 +11,20 @@ transferring and non-transferring products.
 import asyncio
 from collections import defaultdict
 from collections.abc import Sequence
+from copy import deepcopy
 from functools import wraps
 from uuid import UUID
 
 import typer
 from rich import print
 from rich.table import Table
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import ColumnElement, and_, false, func, or_, select, union_all, update
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql.selectable import CompoundSelect
 
 from polar.kit.db.postgres import create_async_sessionmaker
+from polar.kit.utils import utc_now
+from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -29,23 +33,41 @@ from polar.models import (
     CheckoutLink,
     CheckoutLinkProduct,
     Customer,
+    CustomerSeat,
     CustomerSession,
     Discount,
+    DiscountProduct,
     DiscountRedemption,
     Downloadable,
     Event,
     LicenseKey,
+    Member,
     Order,
+    Payment,
     PaymentMethod,
     Product,
     ProductBenefit,
+    ProductPrice,
+    Refund,
     Subscription,
+    SubscriptionUpdate,
     TrialRedemption,
 )
+from polar.models.discount import DiscountFixed, DiscountPercentage, DiscountType
+from polar.models.member import MemberRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, create_async_engine
 
 cli = typer.Typer()
+
+type DiscountReference = (
+    Checkout
+    | Order
+    | Subscription
+    | SubscriptionUpdate
+    | BillingEntry
+    | DiscountRedemption
+)
 
 
 def typer_async(f):  # type: ignore
@@ -83,6 +105,8 @@ class ProductTransferService:
         self.target_organization_id = target_organization_id
         self.products: Sequence[Product] = []
         self.benefits_to_transfer: Sequence[Benefit] = []
+        self.benefits_to_split: Sequence[Benefit] = []
+        self.new_benefits_map: dict[UUID, Benefit] = {}
         self.customers_to_split: Sequence[Customer] = []
         self.customers_to_transfer: Sequence[Customer] = []
         self.customers_to_merge: list[
@@ -92,6 +116,7 @@ class ProductTransferService:
         self.discounts_to_split: Sequence[Discount] = []
         self.checkout_links_to_update: Sequence[CheckoutLink] = []
         self.new_customers_map: dict[UUID, Customer] = {}
+        self.new_discounts_map: dict[UUID, Discount] = {}
         self.events_to_transfer: Sequence[Event] = []
         self.transfer_stats: dict[str, int] = defaultdict(int)
 
@@ -152,9 +177,15 @@ class ProductTransferService:
         print("[bold yellow]🔍 Analyzing affected data...[/bold yellow]")
 
         # Find all benefits used by the transferring products
+        product_ids = [p.id for p in self.products]
         product_benefit_ids_result = await session.execute(
-            select(ProductBenefit.benefit_id).where(
-                ProductBenefit.product_id.in_([p.id for p in self.products])
+            union_all(
+                select(ProductBenefit.benefit_id).where(
+                    ProductBenefit.product_id.in_(product_ids)
+                ),
+                select(BenefitGrant.benefit_id)
+                .where(self._transferred_benefit_grants())
+                .distinct(),
             )
         )
         product_benefit_ids = product_benefit_ids_result.scalars().all()
@@ -167,7 +198,29 @@ class ProductTransferService:
                 )
             )
         )
-        self.benefits_to_transfer = benefits_result.scalars().all()
+        benefits = benefits_result.scalars().all()
+        retained_benefit_ids = set(
+            await session.scalars(
+                union_all(
+                    select(ProductBenefit.benefit_id).where(
+                        ProductBenefit.benefit_id.in_(product_benefit_ids),
+                        ProductBenefit.product_id.notin_(product_ids),
+                    ),
+                    select(BenefitGrant.benefit_id)
+                    .where(
+                        BenefitGrant.benefit_id.in_(product_benefit_ids),
+                        ~func.coalesce(self._transferred_benefit_grants(), false()),
+                    )
+                    .distinct(),
+                )
+            )
+        )
+        self.benefits_to_transfer = [
+            benefit for benefit in benefits if benefit.id not in retained_benefit_ids
+        ]
+        self.benefits_to_split = [
+            benefit for benefit in benefits if benefit.id in retained_benefit_ids
+        ]
 
         # Find all customers who have orders/subscriptions for these products
         customer_ids_with_transferring_products_result = await session.execute(
@@ -286,6 +339,7 @@ class ProductTransferService:
 
         self.transfer_stats["products"] = len(self.products)
         self.transfer_stats["benefits"] = len(self.benefits_to_transfer)
+        self.transfer_stats["benefits_to_split"] = len(self.benefits_to_split)
         self.transfer_stats["customers_to_split"] = len(self.customers_to_split)
         self.transfer_stats["customers_to_transfer"] = len(self.customers_to_transfer)
         self.transfer_stats["discounts_to_transfer"] = len(self.discounts_to_transfer)
@@ -294,93 +348,109 @@ class ProductTransferService:
             self.checkout_links_to_update
         )
 
+    def _transferred_benefit_grants(self) -> ColumnElement[bool]:
+        product_ids = [product.id for product in self.products]
+        return or_(
+            BenefitGrant.order_id.in_(
+                select(Order.id).where(Order.product_id.in_(product_ids))
+            ),
+            BenefitGrant.subscription_id.in_(
+                select(Subscription.id).where(Subscription.product_id.in_(product_ids))
+            ),
+        )
+
+    def _discount_reference_filters(
+        self,
+    ) -> list[tuple[type[DiscountReference], ColumnElement[bool]]]:
+        product_ids = [p.id for p in self.products]
+        subscription_ids = select(Subscription.id).where(
+            Subscription.product_id.in_(product_ids)
+        )
+        checkout_ids = select(Checkout.id).where(Checkout.product_id.in_(product_ids))
+        return [
+            (Checkout, Checkout.product_id.in_(product_ids)),
+            (Order, Order.product_id.in_(product_ids)),
+            (Subscription, Subscription.product_id.in_(product_ids)),
+            (
+                SubscriptionUpdate,
+                SubscriptionUpdate.subscription_id.in_(subscription_ids),
+            ),
+            (
+                BillingEntry,
+                BillingEntry.product_price_id.in_(
+                    select(ProductPrice.id).where(
+                        ProductPrice.product_id.in_(product_ids)
+                    )
+                ),
+            ),
+            (
+                DiscountRedemption,
+                or_(
+                    DiscountRedemption.checkout_id.in_(checkout_ids),
+                    DiscountRedemption.subscription_id.in_(subscription_ids),
+                ),
+            ),
+        ]
+
     async def _analyze_discounts(self, session: AsyncSession) -> None:
-        """Analyze discounts affected by the transfer."""
-        # Find all discounts used by checkouts/orders/subscriptions for transferring products
-        discount_redemptions_result = await session.execute(
-            select(DiscountRedemption.discount_id)
-            .join(Checkout, Checkout.id == DiscountRedemption.checkout_id)
-            .where(Checkout.product_id.in_([p.id for p in self.products]))
-        )
-        discount_ids_from_checkouts = discount_redemptions_result.scalars().all()
-
-        # Also check subscriptions
-        discount_redemptions_subs_result = await session.execute(
-            select(DiscountRedemption.discount_id)
-            .join(Subscription, Subscription.id == DiscountRedemption.subscription_id)
-            .where(Subscription.product_id.in_([p.id for p in self.products]))
-        )
-        discount_ids_from_subscriptions = (
-            discount_redemptions_subs_result.scalars().all()
-        )
-
-        all_discount_ids_used = {
-            *discount_ids_from_checkouts,
-            *discount_ids_from_subscriptions,
-        }
-
-        if not all_discount_ids_used:
+        if not self.products:
             return
 
-        # Get the actual discount objects
-        discounts_result = await session.execute(
-            select(Discount).where(Discount.id.in_(all_discount_ids_used))
+        product_ids = [p.id for p in self.products]
+        references = self._discount_reference_filters()
+        transferring_discount_ids: CompoundSelect[tuple[UUID | None]] = union_all(
+            select(DiscountProduct.discount_id).where(
+                DiscountProduct.product_id.in_(product_ids)
+            ),
+            *(
+                select(model.discount_id).where(condition)
+                for model, condition in references
+            ),
         )
-        all_discounts = discounts_result.scalars().all()
-
-        # Find discounts that are also used by non-transferring products (need splitting)
-        non_transferring_product_ids_result = await session.execute(
-            select(Product.id).where(
-                and_(
-                    Product.organization_id == self.source_organization_id,
-                    Product.id.notin_([p.id for p in self.products]),
+        discounts = (
+            await session.scalars(
+                select(Discount).where(
+                    Discount.organization_id == self.source_organization_id,
+                    or_(
+                        Discount.id.in_(transferring_discount_ids),
+                        and_(~Discount.discount_products.any(), ~Discount.is_deleted),
+                    ),
+                )
+            )
+        ).all()
+        discount_ids = [discount.id for discount in discounts]
+        remaining_references: CompoundSelect[tuple[UUID | None]] = union_all(
+            select(DiscountProduct.discount_id).where(
+                DiscountProduct.discount_id.in_(discount_ids),
+                DiscountProduct.product_id.notin_(product_ids),
+            ),
+            select(CheckoutLink.discount_id).where(
+                CheckoutLink.discount_id.in_(discount_ids),
+                CheckoutLink.organization_id == self.source_organization_id,
+            ),
+            *(
+                select(model.discount_id).where(
+                    model.discount_id.in_(discount_ids),
+                    ~func.coalesce(condition, false()),
+                )
+                for model, condition in references
+            ),
+        )
+        remaining_discount_ids = set(
+            await session.scalars(
+                select(Discount.id).where(
+                    Discount.id.in_(discount_ids),
+                    Discount.id.in_(remaining_references),
                 )
             )
         )
-        non_transferring_product_ids = (
-            non_transferring_product_ids_result.scalars().all()
-        )
-
-        discounts_to_split = []
         discounts_to_transfer = []
-
-        for discount in all_discounts:
-            # Check if this discount is used by non-transferring products
-            discount_redemptions_non_transferring_result = await session.execute(
-                select(DiscountRedemption.id)
-                .where(
-                    and_(
-                        DiscountRedemption.discount_id == discount.id,
-                        or_(
-                            DiscountRedemption.checkout_id.in_(
-                                select(Checkout.id).where(
-                                    Checkout.product_id.in_(
-                                        non_transferring_product_ids
-                                    )
-                                )
-                            ),
-                            DiscountRedemption.subscription_id.in_(
-                                select(Subscription.id).where(
-                                    Subscription.product_id.in_(
-                                        non_transferring_product_ids
-                                    )
-                                )
-                            ),
-                        ),
-                    )
-                )
-                .limit(1)
-            )
-            is_used_by_non_transferring = (
-                discount_redemptions_non_transferring_result.scalar_one_or_none()
-                is not None
-            )
-
-            if is_used_by_non_transferring:
+        discounts_to_split = []
+        for discount in discounts:
+            if not discount.discount_products or discount.id in remaining_discount_ids:
                 discounts_to_split.append(discount)
             else:
                 discounts_to_transfer.append(discount)
-
         self.discounts_to_transfer = discounts_to_transfer
         self.discounts_to_split = discounts_to_split
 
@@ -461,18 +531,18 @@ class ProductTransferService:
         )
 
         # Check if a customer with the same email already exists in target organization
-        existing_customer_result = await session.execute(
-            select(Customer).where(
-                and_(
-                    Customer.email == original_customer.email,
-                    Customer.organization_id == self.target_organization_id,
-                    Customer.deleted_at.is_(
-                        None
-                    ),  # Only consider non-deleted customers
+        existing_customer = None
+        if original_customer.email is not None:
+            existing_customer_result = await session.execute(
+                select(Customer).where(
+                    and_(
+                        Customer.email == original_customer.email,
+                        Customer.organization_id == self.target_organization_id,
+                        Customer.deleted_at.is_(None),
+                    )
                 )
             )
-        )
-        existing_customer = existing_customer_result.scalar_one_or_none()
+            existing_customer = existing_customer_result.scalar_one_or_none()
 
         if existing_customer:
             # Use existing customer instead of creating a new one
@@ -490,14 +560,15 @@ class ProductTransferService:
             organization_id=self.target_organization_id,
             email=original_customer.email,
             email_verified=original_customer.email_verified,
+            type=original_customer.type,
             name=original_customer.name,
             billing_name=original_customer.billing_name,
             billing_address=original_customer.billing_address,
             tax_id=original_customer.tax_id,
             short_id=new_short_id,
-            stripe_customer_id=None,  # Will be created if needed
+            stripe_customer_id=original_customer.stripe_customer_id,
             external_id=None,  # Can be set later if needed
-            metadata=original_customer.metadata,
+            user_metadata=original_customer.user_metadata.copy(),
         )
 
         session.add(new_customer)
@@ -527,67 +598,76 @@ class ProductTransferService:
         await session.flush()
 
     async def split_discounts(self, session: AsyncSession) -> None:
-        """Handle discounts that are used by both transferring and non-transferring products."""
-        if not self.discounts_to_split:
-            print("[bold blue]ℹ️  No discounts to split[/bold blue]")
-            return
-
-        print("[bold yellow]🔄 Splitting discounts...[/bold yellow]")
-
+        product_ids = {p.id for p in self.products}
         for discount in self.discounts_to_split:
-            print(
-                f"[bold blue]🏷️  Splitting discount {discount.code or discount.name}[/bold blue]"
-            )
-
-            # Create a new discount in the target organization with the same properties
-            new_discount = Discount(
+            restricted = bool(discount.discount_products)
+            transferring_products = [
+                association.product
+                for association in discount.discount_products
+                if association.product_id in product_ids
+            ]
+            new_discount = DiscountType(discount.type).get_model()(
                 organization_id=self.target_organization_id,
                 name=discount.name,
                 type=discount.type,
-                code=discount.code,  # Keep the same code for consistency
+                code=discount.code,
+                external_id=discount.external_id,
+                user_metadata=discount.user_metadata.copy(),
                 starts_at=discount.starts_at,
                 ends_at=discount.ends_at,
                 max_redemptions=discount.max_redemptions,
+                max_redemptions_per_customer=discount.max_redemptions_per_customer,
                 duration=discount.duration,
                 duration_in_months=discount.duration_in_months,
-                redemptions_count=0,  # Reset redemption count for the new discount
+                deleted_at=discount.deleted_at,
+                discount_products=[
+                    DiscountProduct(product=product)
+                    for product in transferring_products
+                ],
             )
+            if isinstance(new_discount, DiscountFixed):
+                assert isinstance(discount, DiscountFixed)
+                new_discount.amounts = discount.amounts.copy()
+            elif isinstance(new_discount, DiscountPercentage):
+                assert isinstance(discount, DiscountPercentage)
+                new_discount.basis_points = discount.basis_points
+
+            discount.discount_products = [
+                association
+                for association in discount.discount_products
+                if association.product_id not in product_ids
+            ]
+            # Empty restrictions would otherwise make these discounts organization-wide.
+            if restricted:
+                if not discount.discount_products and discount.deleted_at is None:
+                    discount.deleted_at = utc_now()
+                if not transferring_products and new_discount.deleted_at is None:
+                    new_discount.deleted_at = utc_now()
 
             session.add(new_discount)
-            await session.flush()  # Get the new discount ID
+            await session.flush()
+            self.new_discounts_map[discount.id] = new_discount
 
-            # Update discount redemptions for transferring products to use the new discount
-            # Find redemptions linked to transferring products
-            redemptions_to_update_result = await session.execute(
-                select(DiscountRedemption).where(
-                    and_(
-                        DiscountRedemption.discount_id == discount.id,
-                        or_(
-                            DiscountRedemption.checkout_id.in_(
-                                select(Checkout.id).where(
-                                    Checkout.product_id.in_(
-                                        [p.id for p in self.products]
-                                    )
-                                )
-                            ),
-                            DiscountRedemption.subscription_id.in_(
-                                select(Subscription.id).where(
-                                    Subscription.product_id.in_(
-                                        [p.id for p in self.products]
-                                    )
-                                )
-                            ),
-                        ),
-                    )
+            for model, condition in self._discount_reference_filters():
+                updated_ids = await session.scalars(
+                    update(model)
+                    .where(model.discount_id == discount.id, condition)
+                    .values(discount_id=new_discount.id)
+                    .returning(model.id)
                 )
-            )
-            redemptions_to_update = redemptions_to_update_result.scalars().all()
+                self.transfer_stats[f"{model.__tablename__}_discount_updated"] += len(
+                    updated_ids.all()
+                )
 
-            for redemption in redemptions_to_update:
-                redemption.discount_id = new_discount.id
-                session.add(redemption)
-                self.transfer_stats["discount_redemptions_updated"] += 1
-
+            for current_discount in (discount, new_discount):
+                current_discount.redemptions_count = (
+                    await session.scalar(
+                        select(func.count(DiscountRedemption.id)).where(
+                            DiscountRedemption.discount_id == current_discount.id
+                        )
+                    )
+                    or 0
+                )
             self.transfer_stats["discounts_split"] += 1
 
         await session.flush()
@@ -606,18 +686,18 @@ class ProductTransferService:
             )
 
             # Check if a customer with the same email already exists in target organization
-            existing_customer_result = await session.execute(
-                select(Customer).where(
-                    and_(
-                        Customer.email == customer.email,
-                        Customer.organization_id == self.target_organization_id,
-                        Customer.deleted_at.is_(
-                            None
-                        ),  # Only consider non-deleted customers
+            existing_customer = None
+            if customer.email is not None:
+                existing_customer_result = await session.execute(
+                    select(Customer).where(
+                        and_(
+                            Customer.email == customer.email,
+                            Customer.organization_id == self.target_organization_id,
+                            Customer.deleted_at.is_(None),
+                        )
                     )
                 )
-            )
-            existing_customer = existing_customer_result.scalar_one_or_none()
+                existing_customer = existing_customer_result.scalar_one_or_none()
 
             if existing_customer:
                 # Customer with same email exists in target org - this is a merge scenario
@@ -711,18 +791,18 @@ class ProductTransferService:
                     session.add(customer_session)
                     self.transfer_stats["customer_sessions_updated"] += 1
 
-                # Update payment methods for this customer
-                payment_methods_result = await session.execute(
-                    select(PaymentMethod).where(
-                        PaymentMethod.customer_id == customer.id
-                    )
+                await self.copy_payment_methods(
+                    session, customer, existing_customer, subscriptions_to_update
                 )
-                payment_methods_to_update = payment_methods_result.scalars().all()
+                await self.transfer_customer_references(
+                    session, customer, existing_customer, split=False
+                )
 
-                for payment_method in payment_methods_to_update:
-                    payment_method.customer_id = existing_customer.id
-                    session.add(payment_method)
-                    self.transfer_stats["payment_methods_updated"] += 1
+                await session.execute(
+                    update(CustomerSeat)
+                    .where(CustomerSeat.customer_id == customer.id)
+                    .values(customer_id=existing_customer.id)
+                )
 
                 # Soft delete the source customer since they shouldn't exist in source org anymore
                 customer.deleted_at = func.now()
@@ -738,6 +818,17 @@ class ProductTransferService:
                 session.add(customer)
                 self.transfer_stats["customers_transferred_directly"] += 1
 
+            member_ids = await session.scalars(
+                update(Member)
+                .where(Member.customer_id == customer.id)
+                .values(
+                    customer_id=(existing_customer or customer).id,
+                    organization_id=self.target_organization_id,
+                )
+                .returning(Member.id)
+            )
+            self.transfer_stats["members_transferred"] += len(member_ids.all())
+
         await session.flush()
 
     async def split_customers(self, session: AsyncSession) -> None:
@@ -750,6 +841,74 @@ class ProductTransferService:
 
         for customer in self.customers_to_split:
             new_customer = await self.create_new_customer_for_split(session, customer)
+            members = await session.scalars(
+                select(Member).where(Member.customer_id == customer.id)
+            )
+            target_members = list(
+                await MemberRepository.from_session(session).list_by_customer(
+                    new_customer.id
+                )
+            )
+            member_map: dict[UUID, Member] = {}
+            for member in members:
+                if member.deleted_at is None:
+                    matches = [
+                        target_member
+                        for target_member in target_members
+                        if target_member.email.lower() == member.email.lower()
+                        or (
+                            member.external_id is not None
+                            and target_member.external_id == member.external_id
+                        )
+                    ]
+                    if len(matches) > 1:
+                        raise CustomerSplitError(
+                            f"Member {member.id} matches different target members "
+                            "by email and external ID."
+                        )
+                    if matches:
+                        matched_member = matches[0]
+                        if (
+                            member.external_id is not None
+                            and matched_member.external_id is not None
+                            and member.external_id != matched_member.external_id
+                        ) or matched_member in member_map.values():
+                            raise CustomerSplitError(
+                                f"Member {member.id} has a conflicting target identity."
+                            )
+                        if matched_member.external_id is None:
+                            matched_member.external_id = member.external_id
+                        matched_member._oauth_accounts = {
+                            **member.oauth_accounts,
+                            **matched_member.oauth_accounts,
+                        }
+                        member_map[member.id] = matched_member
+                        self.transfer_stats["members_reused"] += 1
+                        continue
+                    if member.role == MemberRole.owner and any(
+                        target_member.role == MemberRole.owner
+                        for target_member in target_members
+                    ):
+                        raise CustomerSplitError(
+                            f"Customer {new_customer.id} already has a different owner; "
+                            f"cannot copy owner member {member.id}."
+                        )
+                new_member = Member(
+                    customer=new_customer,
+                    organization_id=self.target_organization_id,
+                    email=member.email,
+                    name=member.name,
+                    external_id=member.external_id,
+                    role=member.role,
+                    _oauth_accounts=member.oauth_accounts.copy(),
+                    deleted_at=member.deleted_at,
+                )
+                session.add(new_member)
+                member_map[member.id] = new_member
+                if new_member.deleted_at is None:
+                    target_members.append(new_member)
+                self.transfer_stats["members_copied"] += 1
+            await session.flush()
 
             # Update all orders for transferring products to use the new customer
             orders_result = await session.execute(
@@ -793,6 +952,7 @@ class ProductTransferService:
                         BenefitGrant.benefit_id.in_(
                             [b.id for b in self.benefits_to_transfer]
                         ),
+                        self._transferred_benefit_grants(),
                     )
                 )
             )
@@ -800,6 +960,8 @@ class ProductTransferService:
 
             for grant in benefit_grants_to_update:
                 grant.customer_id = new_customer.id
+                if grant.member_id is not None:
+                    grant.member_id = member_map[grant.member_id].id
                 session.add(grant)
                 self.transfer_stats["benefit_grants_updated"] += 1
 
@@ -818,6 +980,8 @@ class ProductTransferService:
 
             for license_key in license_keys_to_update:
                 license_key.customer_id = new_customer.id
+                if license_key.member_id is not None:
+                    license_key.member_id = member_map[license_key.member_id].id
                 license_key.organization_id = self.target_organization_id
                 session.add(license_key)
                 self.transfer_stats["license_keys_updated"] += 1
@@ -837,8 +1001,27 @@ class ProductTransferService:
 
             for downloadable in downloadables_to_update:
                 downloadable.customer_id = new_customer.id
+                if downloadable.member_id is not None:
+                    downloadable.member_id = member_map[downloadable.member_id].id
                 session.add(downloadable)
                 self.transfer_stats["downloadables_updated"] += 1
+
+            seats = await session.scalars(
+                select(CustomerSeat).where(
+                    CustomerSeat.customer_id == customer.id,
+                    or_(
+                        CustomerSeat.subscription_id.in_(
+                            [s.id for s in subscriptions_to_update]
+                        ),
+                        CustomerSeat.order_id.in_([o.id for o in orders_to_update]),
+                    ),
+                )
+            )
+            for seat in seats:
+                seat.customer_id = new_customer.id
+                if seat.member_id is not None:
+                    seat.member_id = member_map[seat.member_id].id
+                self.transfer_stats["customer_seats_updated"] += 1
 
             # Update billing entries for transferring products
             billing_entries_result = await session.execute(
@@ -858,29 +1041,123 @@ class ProductTransferService:
                 session.add(billing_entry)
                 self.transfer_stats["billing_entries_updated"] += 1
 
-            # Update customer sessions for this customer
-            customer_sessions_result = await session.execute(
-                select(CustomerSession).where(
-                    CustomerSession.customer_id == customer.id
+            await self.copy_payment_methods(
+                session, customer, new_customer, subscriptions_to_update
+            )
+            await self.transfer_customer_references(
+                session, customer, new_customer, split=True
+            )
+
+    async def transfer_customer_references(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        target_customer: Customer,
+        *,
+        split: bool,
+    ) -> None:
+        product_ids = [product.id for product in self.products]
+        order_ids = select(Order.id).where(Order.product_id.in_(product_ids))
+        checkout_ids = select(Checkout.id).where(Checkout.product_id.in_(product_ids))
+        payment_ids = select(Payment.id).where(
+            or_(Payment.order_id.in_(order_ids), Payment.checkout_id.in_(checkout_ids))
+        )
+
+        for model, product_condition in (
+            (Refund, Refund.payment_id.in_(payment_ids)),
+            (TrialRedemption, TrialRedemption.product_id.in_(product_ids)),
+        ):
+            statement = update(model).where(model.customer_id == customer.id)
+            if split:
+                statement = statement.where(product_condition)
+            updated_ids = await session.scalars(
+                statement.values(customer_id=target_customer.id).returning(model.id)
+            )
+            self.transfer_stats[f"{model.__tablename__}_updated"] += len(
+                updated_ids.all()
+            )
+
+        for reference_model in (Checkout, Event):
+            if split and reference_model is Event:
+                continue
+            customer_condition = reference_model.customer_id == customer.id
+            if customer.external_id is not None:
+                customer_condition = or_(
+                    customer_condition,
+                    and_(
+                        reference_model.customer_id.is_(None),
+                        reference_model.external_customer_id == customer.external_id,
+                        reference_model.organization_id == self.source_organization_id,
+                    ),
+                )
+            statement = update(reference_model).where(customer_condition)
+            if split:
+                statement = statement.where(Checkout.product_id.in_(product_ids))
+            await session.execute(
+                statement.values(
+                    customer_id=target_customer.id,
+                    external_customer_id=target_customer.external_id,
                 )
             )
-            customer_sessions_to_update = customer_sessions_result.scalars().all()
 
-            for customer_session in customer_sessions_to_update:
-                customer_session.customer_id = new_customer.id
-                session.add(customer_session)
-                self.transfer_stats["customer_sessions_updated"] += 1
+    async def copy_payment_methods(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        target_customer: Customer,
+        subscriptions: Sequence[Subscription],
+    ) -> None:
+        if customer.stripe_customer_id is not None:
+            if target_customer.stripe_customer_id not in (
+                None,
+                customer.stripe_customer_id,
+            ):
+                raise CustomerSplitError(
+                    f"Customer {target_customer.id} has a different Stripe customer ID"
+                )
+            target_customer.stripe_customer_id = customer.stripe_customer_id
 
-            # Update payment methods for this customer
-            payment_methods_result = await session.execute(
-                select(PaymentMethod).where(PaymentMethod.customer_id == customer.id)
+        target_methods = await session.scalars(
+            select(PaymentMethod).where(PaymentMethod.customer_id == target_customer.id)
+        )
+        target_methods_by_processor_id = {
+            (method.processor, method.processor_id): method for method in target_methods
+        }
+        payment_methods = await session.scalars(
+            select(PaymentMethod).where(PaymentMethod.customer_id == customer.id)
+        )
+        payment_method_map: dict[UUID, PaymentMethod] = {}
+        for payment_method in payment_methods:
+            target_method = target_methods_by_processor_id.get(
+                (payment_method.processor, payment_method.processor_id)
             )
-            payment_methods_to_update = payment_methods_result.scalars().all()
+            if target_method is None:
+                target_method = PaymentMethod(
+                    customer=target_customer,
+                    processor=payment_method.processor,
+                    processor_id=payment_method.processor_id,
+                    type=payment_method.type,
+                    method_metadata=payment_method.method_metadata.copy(),
+                    deleted_at=payment_method.deleted_at,
+                )
+                session.add(target_method)
+                self.transfer_stats["payment_methods_copied"] += 1
+            payment_method_map[payment_method.id] = target_method
 
-            for payment_method in payment_methods_to_update:
-                payment_method.customer_id = new_customer.id
-                session.add(payment_method)
-                self.transfer_stats["payment_methods_updated"] += 1
+        await session.flush()
+        for subscription in subscriptions:
+            if subscription.payment_method_id is not None:
+                subscription.payment_method = payment_method_map[
+                    subscription.payment_method_id
+                ]
+        if (
+            target_customer.default_payment_method_id is None
+            and customer.default_payment_method_id is not None
+        ):
+            target_customer.default_payment_method = payment_method_map[
+                customer.default_payment_method_id
+            ]
+        await session.flush()
 
     async def transfer_events(self, session: AsyncSession) -> None:
         """Transfer events for directly transferred customers."""
@@ -899,6 +1176,106 @@ class ProductTransferService:
 
         await session.flush()
 
+    async def split_benefits(self, session: AsyncSession) -> None:
+        for benefit in self.benefits_to_split:
+            new_benefit = Benefit(
+                organization_id=self.target_organization_id,
+                type=benefit.type,
+                description=benefit.description,
+                is_tax_applicable=benefit.is_tax_applicable,
+                selectable=benefit.selectable,
+                deletable=benefit.deletable,
+                visibility=benefit.visibility,
+                external_id=benefit.external_id,
+                properties=deepcopy(benefit.properties),
+                user_metadata=deepcopy(benefit.user_metadata),
+                deleted_at=benefit.deleted_at,
+            )
+            session.add(new_benefit)
+            await session.flush()
+            grants = (
+                await session.scalars(
+                    select(BenefitGrant).where(
+                        BenefitGrant.benefit_id == benefit.id,
+                        self._transferred_benefit_grants(),
+                    )
+                )
+            ).all()
+            retained_grants = (
+                await session.scalars(
+                    select(BenefitGrant).where(
+                        BenefitGrant.benefit_id == benefit.id,
+                        ~func.coalesce(self._transferred_benefit_grants(), false()),
+                    )
+                )
+            ).all()
+            key_ids = {
+                UUID(str(key_id))
+                for grant in grants
+                if (key_id := grant.properties.get("license_key_id")) is not None
+            }
+            if any(
+                UUID(str(key_id)) in key_ids
+                for grant in retained_grants
+                if (key_id := grant.properties.get("license_key_id")) is not None
+            ):
+                raise TransferValidationError(
+                    f"Benefit {benefit.id} has a license key shared by transferred "
+                    "and retained grants; it cannot be moved without changing access."
+                )
+            await session.execute(
+                update(LicenseKey)
+                .where(LicenseKey.benefit_id == benefit.id, LicenseKey.id.in_(key_ids))
+                .values(
+                    benefit_id=new_benefit.id,
+                    organization_id=self.target_organization_id,
+                )
+            )
+
+            transferred_scopes = {
+                (grant.customer_id, grant.member_id) for grant in grants
+            }
+            retained_scopes = {
+                (grant.customer_id, grant.member_id) for grant in retained_grants
+            }
+            downloadables = await session.scalars(
+                select(Downloadable).where(Downloadable.benefit_id == benefit.id)
+            )
+            for downloadable in downloadables:
+                scope = (downloadable.customer_id, downloadable.member_id)
+                if scope not in transferred_scopes:
+                    continue
+                if scope in retained_scopes:
+                    session.add(
+                        Downloadable(
+                            benefit_id=new_benefit.id,
+                            customer_id=downloadable.customer_id,
+                            member_id=downloadable.member_id,
+                            file_id=downloadable.file_id,
+                            status=downloadable.status,
+                            downloaded=downloadable.downloaded,
+                            last_downloaded_at=downloadable.last_downloaded_at,
+                            deleted_at=downloadable.deleted_at,
+                        )
+                    )
+                else:
+                    downloadable.benefit_id = new_benefit.id
+
+            for grant in grants:
+                grant.benefit_id = new_benefit.id
+            await session.execute(
+                update(ProductBenefit)
+                .where(
+                    ProductBenefit.benefit_id == benefit.id,
+                    ProductBenefit.product_id.in_([p.id for p in self.products]),
+                )
+                .values(benefit_id=new_benefit.id)
+            )
+            self.new_benefits_map[benefit.id] = new_benefit
+            self.benefits_to_transfer = [*self.benefits_to_transfer, new_benefit]
+            self.transfer_stats["benefits_split"] += 1
+        await session.flush()
+
     async def transfer_benefits(self, session: AsyncSession) -> None:
         """Transfer benefits to the target organization."""
         if not self.benefits_to_transfer:
@@ -912,6 +1289,11 @@ class ProductTransferService:
             session.add(benefit)  # Ensure benefit is tracked by session
             self.transfer_stats["benefits_transferred"] += 1
 
+        await session.execute(
+            update(LicenseKey)
+            .where(LicenseKey.benefit_id.in_([b.id for b in self.benefits_to_transfer]))
+            .values(organization_id=self.target_organization_id)
+        )
         await session.flush()
 
     async def transfer_products(self, session: AsyncSession) -> None:
@@ -933,6 +1315,30 @@ class ProductTransferService:
         """Update all entities related to the transferred products."""
         print("[bold yellow]🔄 Updating related entities...[/bold yellow]")
 
+        product_ids = [p.id for p in self.products]
+        order_ids = select(Order.id).where(Order.product_id.in_(product_ids))
+        checkout_ids = select(Checkout.id).where(Checkout.product_id.in_(product_ids))
+        payment_condition = or_(
+            Payment.order_id.in_(order_ids), Payment.checkout_id.in_(checkout_ids)
+        )
+        payment_ids = select(Payment.id).where(payment_condition)
+
+        for model, condition in (
+            (Order, Order.product_id.in_(product_ids)),
+            (Subscription, Subscription.product_id.in_(product_ids)),
+            (Payment, payment_condition),
+            (Refund, Refund.payment_id.in_(payment_ids)),
+        ):
+            updated_ids = await session.scalars(
+                update(model)
+                .where(condition)
+                .values(organization_id=self.target_organization_id)
+                .returning(model.id)
+            )
+            self.transfer_stats[f"{model.__tablename__}_organization_updated"] += len(
+                updated_ids.all()
+            )
+
         # Update checkouts that reference the transferring products
         result = await session.execute(
             select(Checkout).where(
@@ -945,21 +1351,6 @@ class ProductTransferService:
             checkout.organization_id = self.target_organization_id
             session.add(checkout)  # Ensure checkout is tracked by session
             self.transfer_stats["checkouts_updated"] += 1
-
-        # Update trial redemptions
-        result = await session.execute(
-            select(TrialRedemption).where(
-                TrialRedemption.product_id.in_([p.id for p in self.products])
-            )
-        )
-        trial_redemptions_to_update = result.scalars().all()
-
-        for trial_redemption in trial_redemptions_to_update:
-            # Trial redemption organization is derived from customer, which should already be updated
-            session.add(
-                trial_redemption
-            )  # Ensure trial redemption is tracked by session
-            self.transfer_stats["trial_redemptions_updated"] += 1
 
         # Update checkout links by removing transferring products
         await self._update_checkout_links(session)
@@ -1028,12 +1419,13 @@ class ProductTransferService:
 
         # Check that discounts were split correctly (new discounts created in target org)
         if self.discounts_to_split:
-            # Find all new discounts created in target organization with similar names
             result = await session.execute(
                 select(Discount.id).where(
                     and_(
                         Discount.organization_id == self.target_organization_id,
-                        Discount.name.in_([d.name for d in self.discounts_to_split]),
+                        Discount.id.in_(
+                            [d.id for d in self.new_discounts_map.values()]
+                        ),
                     )
                 )
             )
@@ -1146,6 +1538,8 @@ class ProductTransferService:
 
             # Split discounts (those used by both transferring and non-transferring products)
             await self.split_discounts(session)
+
+            await self.split_benefits(session)
 
             # Transfer customers directly (those with only transferring products)
             await self.transfer_customers_directly(session)

@@ -148,6 +148,30 @@ class Customer(MetadataMixin, RecordModel):
             postgresql_using="gin",
         ),
         Index(
+            "ix_customers_email_trgm",
+            "email",
+            postgresql_using="gin",
+            postgresql_ops={"email": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_customers_name_trgm",
+            "name",
+            postgresql_using="gin",
+            postgresql_ops={"name": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_customers_billing_name_trgm",
+            "billing_name",
+            postgresql_using="gin",
+            postgresql_ops={"billing_name": "gin_trgm_ops"},
+        ),
+        Index(
+            "ix_customers_external_id_trgm",
+            "external_id",
+            postgresql_using="gin",
+            postgresql_ops={"external_id": "gin_trgm_ops"},
+        ),
+        Index(
             "ix_customers_deleted_at_id",
             "deleted_at",
             "id",
@@ -223,6 +247,9 @@ class Customer(MetadataMixin, RecordModel):
     invoice_next_number: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     receipt_next_number: Mapped[int] = mapped_column(
         Integer, nullable=False, default=1, server_default="1"
+    )
+    credit_note_next_number: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1
     )
 
     organization_id: Mapped[UUID] = mapped_column(

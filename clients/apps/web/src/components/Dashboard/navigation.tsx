@@ -1,22 +1,24 @@
 import { AppealCaseUnreadBadge } from '@/components/Organization/HumanReviewCase/AppealCaseUnreadBadge'
 import { PolarHog, usePostHog } from '@/hooks/posthog'
-import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
-import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
-import CodeOutlined from '@mui/icons-material/CodeOutlined'
-import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
-import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
-import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
-import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
-import GavelOutlined from '@mui/icons-material/GavelOutlined'
-import HiveOutlined from '@mui/icons-material/HiveOutlined'
-import LinkOutlined from '@mui/icons-material/LinkOutlined'
-import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
-import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
-import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
-import TrendingUp from '@mui/icons-material/TrendingUp'
-import TuneOutlined from '@mui/icons-material/TuneOutlined'
+import { ManagedAsCodeNavIndicator } from './ManagedAsCodeNavIndicator'
+import {
+  AllInclusiveOutlined,
+  AttachMoneyOutlined,
+  CodeOutlined,
+  DiamondOutlined,
+  DiscountOutlined,
+  DonutLargeOutlined,
+  GavelOutlined,
+  HiveOutlined,
+  LinkOutlined,
+  PeopleAltOutlined,
+  ShoppingBagOutlined,
+  ShoppingCart,
+  SpaceDashboardOutlined,
+  TrendingUpFilled as TrendingUp,
+  TuneOutlined,
+} from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
-import { ShoppingCart } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { useMemo } from 'react'
 
@@ -39,6 +41,7 @@ export type Route = {
   readonly selectedMatchFallback?: boolean
   readonly checkIsActive?: (currentPath: string) => boolean
   readonly extra?: React.ReactNode
+  readonly trailing?: React.ReactNode
 }
 
 export type SubRouteWithActive = SubRoute & { readonly isActive: boolean }
@@ -162,22 +165,12 @@ export const useAccountRoutes = (): RouteWithActive[] => {
 const generalRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'home',
-    title: 'Home',
+    title: 'Overview',
     icon: <SpaceDashboardOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}`,
     checkIsActive: (currentRoute: string) =>
       currentRoute === `/dashboard/${org?.slug}`,
     if: true,
-  },
-  {
-    id: 'compass',
-    title: 'Compass',
-    icon: <ExploreOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/compass`,
-    checkIsActive: (currentRoute: string): boolean => {
-      return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
-    },
-    if: !!org?.feature_settings?.compass_enabled,
   },
   {
     id: 'new-products',
@@ -188,6 +181,9 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/products`)
     },
     if: true,
+    trailing: org?.feature_settings?.config_as_code_enabled ? (
+      <ManagedAsCodeNavIndicator />
+    ) : undefined,
     subs: [
       {
         title: 'Catalogue',
@@ -301,7 +297,7 @@ const accountRoutesList = (): Route[] => [
   },
   {
     id: 'developer',
-    title: 'Developer',
+    title: 'OAuth Apps',
     link: `/dashboard/account/developer`,
     icon: <CodeOutlined fontSize="inherit" />,
     if: true,
@@ -346,37 +342,5 @@ const organizationRoutesList = (
     link: `/dashboard/${org?.slug}/settings`,
     icon: <TuneOutlined fontSize="inherit" />,
     if: true,
-    subs: [
-      {
-        title: 'Preferences',
-        link: `/dashboard/${org?.slug}/settings`,
-      },
-      {
-        title: 'Billing',
-        link: `/dashboard/${org?.slug}/settings/billing`,
-      },
-      {
-        title: 'Members',
-        link: `/dashboard/${org?.slug}/settings/members`,
-      },
-      {
-        title: 'Webhooks',
-        link: `/dashboard/${org?.slug}/settings/webhooks`,
-      },
-      {
-        title: 'Custom Fields',
-        link: `/dashboard/${org?.slug}/settings/custom-fields`,
-      },
-      {
-        title: 'Single Sign-On',
-        link: `/dashboard/${org?.slug}/settings/sso`,
-        if: !!org?.feature_settings?.sso_enabled,
-      },
-      {
-        title: 'Migrations',
-        link: `/dashboard/${org?.slug}/settings/migrations`,
-        if: !!org?.feature_settings?.merchant_migration_enabled,
-      },
-    ],
   },
 ]

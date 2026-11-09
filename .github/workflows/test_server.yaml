@@ -76,12 +76,12 @@ jobs:
       #       mypy-
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -139,6 +139,10 @@ jobs:
         image: tinybirdco/tinybird-local:latest
         ports:
           - 7181:7181
+        env:
+          TB_LOCAL_CSV_WORKERS: 1
+          TB_LOCAL_MCP: false
+          TB_LOCAL_KAFKA: false
         options: >-
           --health-cmd "curl -sf http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s
@@ -158,6 +162,21 @@ jobs:
           tb fmt --diff --no-color datasources/*.datasource pipes/*.pipe endpoints/*.pipe
           tb build
           tb test run
+
+  # Required by the migrations-lock ruleset, toggled by migrations-lock.yml / migrations-unlock.yml
+  no-migrations:
+    name: "Server: No migrations"
+    needs: changes
+    if: >-
+      vars.MIGRATIONS_LOCKED == 'true' &&
+      (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if migrations changed
+        if: needs.changes.outputs.migrations == 'true'
+        run: |
+          echo "::error::This change contains database migrations, which are currently locked."
+          exit 1
 
   migration-check:
     name: "Server: Migration Check 📚"
@@ -343,12 +362,12 @@ jobs:
         run: git fetch --depth=1 origin "$BASE_SHA"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -363,14 +382,14 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
-    name: "Server: Tests 🐍 (${{ matrix.shard }}/4)"
+    name: "Server: Tests 🐍 (${{ matrix.shard }}/2)"
     needs: changes
     if: needs.changes.outputs.server == 'true'
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+        shard: [1, 2]
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
@@ -403,25 +422,15 @@ jobs:
         ports:
           - 6379:6379
 
-      minio:
-        image: bitnamilegacy/minio:2024.5.28
-        ports:
-          - 9000:9000
-          - 9001:9001
-        env:
-          MINIO_ROOT_USER: polar
-          MINIO_ROOT_PASSWORD: polarpolar
-        options: >-
-          --health-cmd "curl -I http://127.0.0.1:9000/minio/health/live"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
       tinybird:
         image: tinybirdco/tinybird-local:latest
         ports:
           - 7181:7181
           - 7182:7182
+        env:
+          TB_LOCAL_CSV_WORKERS: 1
+          TB_LOCAL_MCP: false
+          TB_LOCAL_KAFKA: false
         options: >-
           --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s
@@ -430,19 +439,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7.0.1
-
-      - name: 💿 MinIO Setup
-        working-directory: ./server/.minio
-        env:
-          MINIO_HOST: 127.0.0.1
-          MINIO_ROOT_USER: polar
-          MINIO_ROOT_PASSWORD: polarpolar
-          ACCESS_KEY: polar-development
-          SECRET_ACCESS_KEY: polar123456789
-          BUCKET_NAME: polar-s3
-          BUCKET_TESTING_NAME: testing-polar-s3
-          POLICY_FILE: policy.json
-        run: bash github.sh
 
       - name: 📬 Restore emails renderer
         id: emails
@@ -470,12 +466,12 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm build
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -522,7 +518,7 @@ jobs:
 
       - name: 🐍 Run tests (pytest)
         working-directory: ./server
-        run: uv run pytest --splits 4 --group ${{ matrix.shard }} -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: uv run pytest --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
 
       - name: 💾 Save test durations
         if: github.event_name == 'push'

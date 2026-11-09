@@ -55,7 +55,7 @@ const CheckoutBenefits = ({
   }
 
   return (
-    <div className="flex w-full flex-col gap-4 text-left">
+    <div className="flex w-full flex-col gap-4 text-start">
       <List className="rounded-3xl">
         {benefitGrants?.items.map((benefitGrant) => (
           <ListItem

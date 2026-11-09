@@ -1584,7 +1584,7 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
     # The harness commits shared seed data once for speed, so it can't use the
     # worker database that regular tests rely on transaction rollbacks to isolate.
     database_id = f"{worker_id}_tinybird_metrics"
-    sync_database_url = get_database_url(database_id, "psycopg2")
+    sync_database_url = get_database_url(database_id, "psycopg")
 
     if database_exists(sync_database_url):
         drop_database(sync_database_url)

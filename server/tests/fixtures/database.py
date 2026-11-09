@@ -55,7 +55,7 @@ def clone_template_database(sync_database_url: str) -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def initialize_test_database(worker_id: str) -> Iterator[None]:
-    sync_database_url = get_database_url(worker_id, "psycopg2")
+    sync_database_url = get_database_url(worker_id, "psycopg")
 
     if database_exists(sync_database_url):
         drop_database(sync_database_url)

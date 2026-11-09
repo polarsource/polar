@@ -87,7 +87,7 @@ jobs:
         uses: actions/github-script@v9
         env:
           SLACK_BOT_TOKEN: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL: C093CJXJXPT
+          SLACK_CHANNEL: C092KH96Q23
           REVIEWER_SLACK_ID: U06QWNPA23V
           REPORT: ${{ steps.collect.outputs.report }}
           WINDOW_START: ${{ steps.collect.outputs.window_start }}
@@ -164,7 +164,7 @@ jobs:
           errors: true
           payload: |
             {
-              "channel": "C093CJXJXPT",
+              "channel": "C092KH96Q23",
               "text": "Unapproved merges report failed",
               "blocks": [
                 {

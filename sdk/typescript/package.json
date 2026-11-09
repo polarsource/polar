@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "0.0.0",
+  "version": "1.0.3-alpha.7",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -36,14 +36,14 @@
         "default": "./dist/index.cjs"
       }
     },
-    "./ingestion": {
+    "./metering": {
       "import": {
-        "types": "./dist/ingestion/index.d.mts",
-        "default": "./dist/ingestion/index.mjs"
+        "types": "./dist/metering/index.d.mts",
+        "default": "./dist/metering/index.mjs"
       },
       "require": {
-        "types": "./dist/ingestion/index.d.cts",
-        "default": "./dist/ingestion/index.cjs"
+        "types": "./dist/metering/index.d.cts",
+        "default": "./dist/metering/index.cjs"
       }
     },
     "./outpost": {
@@ -223,25 +223,24 @@
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/otlp-transformer": "^0.223.0",
     "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
     "@types/node": "^24.13.6",
-    "@types/ws": "^8.18.1",
     "ioredis": "^5.11.0",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
     "standardwebhooks": "^1.0.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9",
-    "ws": "^8.21.0"
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/otlp-transformer": "^0.223.0",
     "@opentelemetry/resources": "^2.12.0",
+    "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
-    "ioredis": "^5.11.0",
-    "ws": "^8.21.0"
+    "ioredis": "^5.11.0"
   },
   "peerDependenciesMeta": {
     "@opentelemetry/api": {
@@ -253,13 +252,13 @@
     "@opentelemetry/resources": {
       "optional": true
     },
+    "@opentelemetry/sdk-metrics": {
+      "optional": true
+    },
     "@opentelemetry/sdk-trace": {
       "optional": true
     },
     "ioredis": {
-      "optional": true
-    },
-    "ws": {
       "optional": true
     }
   },

@@ -1,0 +1,294 @@
+---
+title: "Versioning"
+description: "How products and benefits get versions for organizations using declarative config."
+---
+
+<Info>
+
+**Created**: 2026-10-06
+
+**Last Updated**: 2026-10-21
+
+**Author**: Petru Rares Sincraian
+</Info>
+
+## Summary
+
+We want to let agents start making changes on the Polar side. Agents will write config files to create products, benefits, and meters. But we want agents to do that safely, for merchants and for customers.
+
+To achieve that, we propose to follow some design principles:
+
+1. Every change goes into a **draft catalog**. When it's published, it becomes the **live catalog**. Every new checkout goes through the live catalog.
+2. Every change in a product or benefit gets a **new row with a new ID**. Old rows don't change, and existing orders and subscriptions keep pointing to them.
+3. **Full freeze.** No change reaches existing customers until the merchant explicitly moves them to the new version.
+
+Versioning is only enabled for organizations that use declarative config (config as code). For them, changes from the config and from the dashboard go to a draft first. Organizations without declarative config keep today's behavior: dashboard changes are live right away, and there is no versioning.
+
+This doc covers what we ship first. Migrations as config (selectors, scheduling, cancel) get their own design doc, but we need them before the public launch.
+
+## Current state
+
+Today, changes behave differently depending on what changes:
+
+| Change | Effect on existing customers |
+|---|---|
+| Product price | Old price is archived. Existing subscriptions keep it. Merchants move them with the subscription update endpoint |
+| Product name, description, media | Changed in place, for everyone |
+| Benefit properties (e.g. license key activation limit) | Changed in place. Existing grants are updated |
+| Meter credit units | Every subscription gets the new amount at its next renewal |
+| Benefits added to or removed from a product | Granted or revoked for subscriptions, one-time orders, and seats |
+| Meter filter or aggregation | Locked once its billing cursor moves, even if nothing was billed |
+
+Prices are the only thing that is frozen per customer today. Everything else follows the product.
+
+## Goals
+
+- Provide a unified approach to updating billing entities for organizations using declarative config.
+- Make billing changes in a safe and predictable way: nothing changes for an existing customer without an explicit action.
+- Allow merchants to move existing customers to the latest version.
+
+## Out of scope
+
+- Customer notifications related to billing changes.
+- Migrations as config (selectors, scheduling, cancel). They get their own design doc, built on the move endpoints described here.
+- Meter versioning. Meters work as today: their filter and aggregation are locked once the billing cursor moves. To count usage differently, the merchant creates a new meter with a new `external_id`.
+- Discount versioning. Discounts are not part of the draft and work as today. Only their product restrictions follow the live catalog (see [References](#references)).
+- Multiple drafts or branches, to compare and simulate catalogs. One draft is only to keep things simple for now, there is no technical limit to have several.
+
+## Options
+
+| Option | We pick it? |
+|---|---|
+| **Catalogs**: immutable rows grouped by a Catalog entity | Yes |
+| **Stable ids with version tables**: the product id never changes, versions live in a second table | No. Better compatibility, but two models for every resource. We cover compatibility with `external_id` and with re-pointing at publish (see [References](#references)) |
+| **One catalog version per customer** | No. Purchases made at different times can't live side by side |
+| **New logical_id attribute** | No. `external_id` already plays this role |
+| **No versioning**: the merchant writes `pro_v2` | No. The merchant has to manage versions by hand |
+
+## Solution
+
+There are only 4 concepts that make all of this possible:
+
+1. **Catalog.** It contains the full list of products and benefits at a point in time. It is identified by a hash, not a number, and has a state: `draft`, `live`, or `archived`. Every organization has one live catalog and at most one draft.
+   - Like git, we store the full hash, unique per organization, and show the shortest prefix that is unique in the organization (6 characters). The examples below use 4 characters to keep them short.
+   - The hash is computed from the previous published hash and the catalog content. So every published catalog gets a new hash, even if it goes back to an older definition.
+   - Hashes don't have an order, so history is sorted by `published_at`.
+2. **Copy-on-write** for products and benefits. Every change creates a new row in the draft catalog. Once the catalog is published, those rows are locked.
+3. **`external_id` is the stable name.** It is required for every product, benefit, and meter. All rows with the same `external_id` are versions of one resource. Each row stores the catalog where it was created.
+4. **`is_current`.** It is `true` for rows in the live catalog. It is a fast way to filter current entities and new sales. Only one row per `external_id` can be current, with a unique index on `(organization_id, external_id) WHERE is_current`. Catalog membership (`catalog_products`, `catalog_benefits`) is the source of truth, and `is_current` is only updated when a catalog is published.
+
+### What we store
+
+ACME sells Pro at $20 and Starter at $10 in catalog `a1f3`. Then they change Pro to $25 and publish catalog `9c2e`. Starter didn't change, so its row is reused.
+
+`catalogs`
+
+| id | status | published_at |
+|---|---|---|
+| `a1f3` | `archived` | Oct 1 |
+| `9c2e` | `live` | Oct 20 |
+
+`products`
+
+| id | external_id | created in | price | is_current |
+|---|---|---|---|---|
+| `prod_A` | `pro` | `a1f3` | $20 | `false` |
+| `prod_B` | `pro` | `9c2e` | $25 | `true` |
+| `prod_C` | `starter` | `a1f3` | $10 | `true` |
+
+`catalog_products`
+
+| catalog | external_id | product |
+|---|---|---|
+| `a1f3` | `pro` | `prod_A` |
+| `a1f3` | `starter` | `prod_C` |
+| `9c2e` | `pro` | `prod_B` |
+| `9c2e` | `starter` | `prod_C` |
+
+`subscriptions`
+
+| id | product_id | pays |
+|---|---|---|
+| `sub_1` (bought in `a1f3`) | `prod_A` | $20, until moved |
+| `sub_2` (bought in `9c2e`) | `prod_B` | $25 |
+
+Things to notice:
+
+- `prod_A` still exists and still costs $20. Reading `prod_A` always returns the $20 definition. An old id never redirects to the new one.
+- `prod_C` was created in `a1f3` and reused in `9c2e`, and it is still current.
+- A purchase reads its own row directly. We never search "which version does this customer have".
+
+### What creates a new row
+
+| Change at publication | Result |
+|---|---|
+| Any change to a product, including its name | New product row |
+| Benefits added to or removed from a product | New product row |
+| Any change to a benefit | New benefit row, plus new rows for the products granting it |
+| Same definitions applied again | No new catalog |
+
+A benefit change creates new product rows because the benefit links are part of the product. Today, grants are rebuilt from the product benefits on reactivation, seat claims, product changes, and more. If we edited `prod_A`'s links in place, some existing customers would get the new benefit and others not.
+
+The plan and the review screen show why each dependent product changed:
+
+```text
+~ pro       prod_A → prod_B · benefit discord-role changed
+```
+
+### Main flows
+
+#### Making a change
+
+Products and benefits can be changed from the config or from the dashboard. Both edit the same draft.
+
+From the config:
+
+```tsx
+import { defineConfig, usd } from "@polar-sh/polar"
+
+export default defineConfig({
+  meters: () => ({}),
+  products: ({ product, fixed }) => ({
+    pro: product("Pro").prices(fixed().amount(usd(25))).recurring("monthly"), // was usd(20)
+  }),
+})
+```
+
+```text
+~ catalog   a1f3 → 9c2e
+~ pro       prod_A → prod_B · price $20.00 → $25.00 · 168 subscriptions stay on prod_A
+```
+
+There are two ways to apply:
+
+- `apply` uploads the draft. A member reviews it in the dashboard, then publishes or discards it. This is the default, and the flow for changes proposed by agents.
+- `apply --publish` uploads the draft and publishes it in one transaction.
+
+From the dashboard, the flow is: edit → save draft → review → publish. On the dashboard we show that the change is only in the draft.
+
+There are some rules:
+
+- The dashboard changes the current draft step by step. `apply` replaces the whole draft with the new definition, in the same draft catalog, so the merchant can apply many times while iterating.
+- If the draft changed in the dashboard since the last `apply` or `pull`, `apply` fails. `apply --force` replaces it anyway. There is no automatic merge: to keep the dashboard changes, the merchant can `pull` the draft into the config first.
+- Every dashboard save sends the draft revision it was based on. A save based on an old revision fails.
+- Publishing is atomic, and checks that the draft was built on the current live catalog. If another publish happened first, it fails, and the merchant applies the changes again on top of the new live catalog.
+- Draft rows have `is_current = false`, like an archived version, so they cannot be sold. A row is a draft when it is only in the draft catalog. API endpoints don't return it unless the draft is asked for.
+- Every draft is complete and valid: it is the full next catalog, including dependent products.
+- There is no revert. To go back, the merchant applies the old definition, which publishes a new catalog with a new hash.
+
+#### New sales
+
+Every new checkout only uses the live catalog, identified by `is_current`:
+
+```sql
+SELECT * FROM products
+WHERE organization_id = :organization_id
+  AND external_id = 'pro'
+  AND is_current = true;
+```
+
+Checkout sessions created before a publish keep the row they were created with.
+
+#### Removing an entity
+
+Removing an entity means it is not in the next catalog. When publishing, we set it to `is_current = false`. Existing purchases keep their rows, as with archiving today.
+
+#### Moving customers
+
+Publishing never moves existing customers. Moving them is an explicit action, with two endpoints:
+
+- **Subscriptions.** A bulk subscription update. It changes each subscription to the target row with the requested proration behavior (`next_period`, or `immediate` with `prorate` or `invoice`), like today's subscription update. It runs in the background, in batches, and skips subscriptions that can't move.
+- **One-time orders.** A new endpoint that moves an order's benefits to a target product row. The order itself doesn't change.
+
+Today, a product change revokes the benefits that are not on the new product and grants the new ones. With versioning, every benefit edit is a new row, so this would reissue license keys and remove Discord roles. Instead, grants are **re-pointed by benefit `external_id`**: we keep the grant, point it to the new benefit row, and update it like an in-place benefit edit today. Only benefits that were added or removed are granted or revoked.
+
+Example: the License key benefit allows 3 activations (`ben_1`). Catalog `9c2e` allows 5 (`ben_2`):
+
+| | Before move | After move |
+|---|---|---|
+| Grant | `grant_1` → `ben_1` | `grant_1` → `ben_2` |
+| License key | `ABC-123`, 2 devices active | `ABC-123`, 2 devices active |
+| Activation limit | 3 | 5 |
+
+Meter credits are the exception, because they are consumed. Like today's subscription update, a move settles the old usage, revokes the old credit grant, and grants the new credits. Extra usage is billed at the new price.
+
+#### What changes for merchants
+
+| | Today | With declarative config |
+|---|---|---|
+| Change a price | Old prices are archived. Existing subscriptions keep them | New product row. Existing subscriptions keep the old row |
+| Change a product name or description | Changes for all customers | New product row. Existing customers keep the old row |
+| Change a benefit | Changes for all customers | New benefit row and new rows for products granting it. Existing grants keep the old definition |
+| Change meter credit units | Applies to every subscription at its next renewal | Applies only to new purchases and moved customers |
+| Change a meter | Locked once its billing cursor moves | Same. Create a new meter instead |
+| Product id after a change | Same id | New id. `external_id` stays the same |
+| Edit from the dashboard | Live right away | Saved in the draft. Live when the draft is published |
+| Past one-time buyers | Get benefit changes automatically | Get them only when moved |
+| Move existing customers | Subscription update, one by one | Bulk subscription update, and an endpoint for one-time orders |
+
+### Adoption
+
+Existing organizations that want to opt in run `polar init`. It assigns an `external_id` to every product, benefit, and meter, and generates a config where the first `plan` shows no changes. The current state becomes the first live catalog, and existing purchases keep their rows and prices.
+
+### References
+
+References made by merchants follow the live catalog. References made by purchases stay pinned to their row.
+
+| Reference | Follows |
+|---|---|
+| Subscriptions, orders, benefit grants, open checkout sessions | Pinned row |
+| Checkout links | Live catalog. Moved to the new row at publish |
+| Discounts restricted to products | Live catalog. Moved to the new row at publish |
+| Checkout creation through the API | Accepts product `external_id`, resolved to the live row |
+
+Discounts already applied to existing subscriptions or checkouts don't change.
+
+Merchant code that stores raw product IDs goes stale after a publish. The docs tell merchants using declarative config to use `external_id`.
+
+### API surface
+
+- List endpoints return only current rows by default. With `catalog=draft`, they return the rows of the draft catalog instead.
+- `GET /products/{id}` and `GET /benefits/{id}` return any published row, so a subscription's `product_id` or a grant's `benefit_id` can always be read.
+- Publishing fires `product.created` and `benefit.created` for each new row, and `product.updated` and `benefit.updated` for rows that leave the live catalog. Payloads include `external_id`, so consumers can tell a new version from a new product.
+
+## Security considerations
+
+- **Data in and out:** config from merchants and agents, and plan reports with counts and amounts.
+- **Who can access it:** the existing read and write scopes. Publishing a draft and moving customers check permissions again. Moving subscriptions needs `subscriptions:write`. Moving one-time orders needs its own write permission.
+- **Data we store:** draft and published rows, and catalogs. No new personal data.
+- **Risks:** an agent moves many customers to higher prices. Mitigations: agents propose drafts that a member publishes, publishing never moves customers, and moves are explicit.
+
+## Appendix: Milestones
+
+**POC goal.** Prove the core loop on one internal organization:
+
+1. Change Pro from $20 to $25 in config.
+2. `plan` shows `prod_A → prod_B`. `apply --publish` publishes a new catalog.
+3. A new checkout sells `prod_B` at $25.
+4. The old subscription stays on `prod_A` at $20.
+5. A bulk subscription update (`next_period` only) moves it to `prod_B` at its next renewal.
+
+**Milestones**
+
+| Milestone | Goal | Depends on | Done when |
+|---|---|---|---|
+| M0 Design doc | Features and architecture agreed | — | Design doc reviewed |
+| M1 POC | The core loop above | M0 | Demo passes on an internal organization |
+| M2 Benefits | Benefit versioning, new product rows, grant re-pointing, one-time order moves | M1 | A license key and an OAuth benefit move without being reissued |
+| M3 Dashboard drafts | `apply` uploads a draft, dashboard edits, `pull`, review, diff, publish, discard, history | M1 | An agent proposes a draft, a member edits and publishes it |
+| M4 References and API | Re-pointing at publish, `external_id` on checkout, webhooks, `immediate` moves | M1 | Checkout links and discounts sell the live row after a publish |
+| M5 Migrations | Migrations as config, in their own design doc | M2, M4 | Needed before the public launch |
+
+## Appendix: How others do it
+
+| Provider | When the price changes | Existing customers | How to move them |
+|---|---|---|---|
+| Stripe | A new price is created, the old one is deactivated | Keep the old price | By hand, or with subscription schedules |
+| Orb | A new plan version is created | Stay on their version | Migrations, that can be scheduled and canceled |
+| Metronome | The rate card changes from a date | Stay on their rate card | By editing each contract |
+| Lago | The plan is edited in place | **Are repriced right away** | A new plan, and then a migration |
+| Chargebee | Only new subscriptions get the new price | Keep the old price | A bulk update tool |
+| Autumn | A new version is created, if the plan has customers | Stay on their version | Migrations from the CLI |
+| `void` branch (our prototype) | The whole config gets a new version | Stay on their version | Not possible |
+| **Polar today** | Old prices are archived, other fields change in place | Keep the old price, but get the other changes | Subscription update, one by one |
+| **This design** | A new catalog with new rows for changes | Keep their rows | Bulk subscription update and one-time order moves |

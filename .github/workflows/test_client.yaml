@@ -158,9 +158,51 @@ jobs:
       - name: 🛠️ Build
         run: pnpm build
 
+  cli-binary:
+    name: "Client: CLI Binary 📦"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: clients/packages/cli
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          package_json_file: clients/package.json
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: clients/pnpm-lock.yaml
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: clients/packages/cli/package.json
+
+      - name: 📦 Install the CLI dependency graph
+        run: pnpm --dir ../.. install --filter @polar-sh/cli... --frozen-lockfile --ignore-scripts
+
+      - name: 🛠️ Build @polar-sh/polar
+        run: pnpm --dir ../.. --filter @polar-sh/polar build
+
+      - name: 📦 Build binary
+        run: bun build ./src/cli.ts --compile --no-compile-autoload-dotenv --no-compile-autoload-bunfig --define POLAR_CLI_BUILD='"release"' --target=bun-linux-x64 --outfile polar
+
+      - name: 💨 Smoke test binary
+        env:
+          POLAR_CLI_TELEMETRY_OPTOUT: "1"
+        run: ./polar --version
+
   status:
     name: "Client: Tests 🎨"
-    needs: [changes, checks, test-web, test-packages, build]
+    needs: [changes, checks, test-web, test-packages, build, cli-binary]
     if: always()
     runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:

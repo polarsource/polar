@@ -4,11 +4,8 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-import anyio
 import httpx
-import httpx_ws
 import pytest
-from fastapi import FastAPI
 from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
     ExportMetricsServiceRequest,
@@ -20,7 +17,6 @@ from opentelemetry.proto.common.v1.common_pb2 import AnyValue
 from pytest_mock import MockerFixture
 from sqlalchemy import event as sqlalchemy_event
 
-from polar.auth.dependencies import _get_auth_subject_factory
 from polar.auth.scope import Scope
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import UniqueAggregation
@@ -49,70 +45,6 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_reducer,
 )
-
-
-@pytest.mark.anyio
-@pytest.mark.websocket
-class TestOutpost:
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.events_read})
-    )
-    async def test_insufficient_scope(self, client: httpx.AsyncClient) -> None:
-        with pytest.raises(httpx_ws.WebSocketUpgradeError) as exc:
-            async with httpx_ws.aconnect_ws("/v1/outpost/", client=client):
-                pass
-        assert exc.value.response.status_code == 403
-        assert exc.value.response.json()["error"] == "insufficient_scope"
-        assert 'scope="events:write"' in exc.value.response.headers["WWW-Authenticate"]
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="organization", scopes={Scope.events_write})
-    )
-    async def test_connection(self, app: FastAPI, client: httpx.AsyncClient) -> None:
-        app.dependency_overrides.pop(
-            _get_auth_subject_factory(frozenset({Organization}))
-        )
-        websocket: httpx_ws.AsyncWebSocketSession
-        async with httpx_ws.aconnect_ws(
-            "/v1/outpost/", client=client, headers={"Authorization": "Bearer test"}
-        ) as websocket:
-            message = await websocket.receive_json()
-
-            assert message["type"] == "connection"
-            assert uuid.UUID(message["payload"]["id"])
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_request_answered_while_an_earlier_one_is_handled(
-        self, client: httpx.AsyncClient, mocker: MockerFixture
-    ) -> None:
-        released = anyio.Event()
-        handle_incoming_message = outpost_service.handle_incoming_message
-
-        async def handle(*args: typing.Any) -> None:
-            if json.loads(args[2])["type"] == "meter_usage":
-                await released.wait()
-            await handle_incoming_message(*args)
-
-        mocker.patch.object(outpost_service, "handle_incoming_message", handle)
-
-        async with httpx_ws.aconnect_ws("/v1/outpost/", client=client) as websocket:  # type: ignore[var-annotated]
-            await websocket.receive_json()
-            await websocket.send_json(
-                {
-                    "type": "meter_usage",
-                    "payload": {
-                        "reducer_id": str(uuid.uuid4()),
-                        "external_customer_id": "alice",
-                    },
-                }
-            )
-            await websocket.send_json({"type": "configuration"})
-            try:
-                response = await websocket.receive_json(timeout=2)
-            finally:
-                released.set()
-
-        assert response["type"] == "configuration"
 
 
 async def _append_change(

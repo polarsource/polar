@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
-from anyio import create_memory_object_stream
 from pytest_codspeed import BenchmarkFixture
 
 from polar.kit.db.postgres import AsyncSession
@@ -19,14 +18,10 @@ from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import (
     Changes,
-    ConfirmedOutgoingMessage,
     ConfirmedOutgoingMessagePayload,
     ConfirmIncomingMessageExternalCustomerPayload,
     MeterUsageIncomingMessageExternalCustomerPayload,
-    MeterUsageOutgoingMessage,
     MeterUsageOutgoingMessagePayload,
-    OutgoingMessage,
-    to_epoch_microseconds,
 )
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.service import outpost as outpost_service
@@ -88,46 +83,6 @@ async def seed_pending(
     )
     await session.flush()
     return reducer
-
-
-@pytest.mark.parametrize("ids", [1, 100, 1000])
-def test_confirm_pending(
-    benchmark: BenchmarkFixture,
-    run: Run[typing.Any],
-    session: AsyncSession,
-    save_fixture: SaveFixture,
-    organization: Organization,
-    ids: int,
-) -> None:
-    bucket_start = get_reducer_bucket_start(utc_now()) - REDUCER_BUCKET_SIZE
-    reducer = run(seed_pending(session, save_fixture, organization, bucket_start))
-    payload = json.dumps(
-        {
-            "type": "confirm",
-            "payload": {
-                "reducer_id": str(reducer.id),
-                "external_customer_id": "customer-0",
-                "bucket_start": to_epoch_microseconds(bucket_start),
-                "ids": [f"event-{index * 10}" for index in range(ids)],
-            },
-        }
-    )
-    send_stream, receive_stream = create_memory_object_stream[OutgoingMessage](1)
-
-    def confirm() -> OutgoingMessage:
-        run(
-            outpost_service.handle_incoming_message(
-                session, organization, payload, send_stream
-            )
-        )
-        return receive_stream.receive_nowait()
-
-    message = confirm()
-    assert isinstance(message, ConfirmedOutgoingMessage)
-    assert len(message.payload.ids) == ids
-    assert message.payload.snapshot.customer_exists
-    analyze(run, session)
-    benchmark(confirm)
 
 
 @pytest.mark.parametrize("ids", [1, 100, 1000])
@@ -195,45 +150,6 @@ async def seed_customer_buckets(
         )
     await session.flush()
     return reducer
-
-
-def test_request_credit_usage(
-    benchmark: BenchmarkFixture,
-    run: Run[typing.Any],
-    session: AsyncSession,
-    save_fixture: SaveFixture,
-    organization: Organization,
-) -> None:
-    reducer = run(
-        seed_customer_buckets(session, save_fixture, organization, ReducerKind.credit)
-    )
-    payload = json.dumps(
-        {
-            "type": "meter_usage",
-            "payload": {
-                "reducer_id": str(reducer.id),
-                "external_customer_id": "customer-0",
-            },
-        }
-    )
-    send_stream, receive_stream = create_memory_object_stream[OutgoingMessage](3)
-
-    def request() -> list[OutgoingMessage]:
-        run(
-            outpost_service.handle_incoming_message(
-                session, organization, payload, send_stream
-            )
-        )
-        return [receive_stream.receive_nowait() for _ in range(3)]
-
-    messages = request()
-    assert all(
-        isinstance(message, MeterUsageOutgoingMessage)
-        and (message.payload.count, message.payload.sum) == (100, 100)
-        for message in messages
-    )
-    analyze(run, session)
-    benchmark(request)
 
 
 @pytest.mark.parametrize("kind", [ReducerKind.usage, ReducerKind.credit])

@@ -1,16 +1,12 @@
 import typing
 from datetime import UTC, datetime
-from enum import StrEnum
 
 from pydantic import (
     UUID4,
-    BaseModel,
     BeforeValidator,
     ConfigDict,
-    Discriminator,
     Field,
     PlainSerializer,
-    TypeAdapter,
 )
 
 from polar.kit.schemas import Schema
@@ -44,24 +40,6 @@ CONFIRM_MAX_IDS = 1000
 METER_USAGE_MAX_IDENTITIES = 500
 
 
-class MessageBase(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-
-class IncomingMessageType(StrEnum):
-    configuration = "configuration"
-    meter_usage = "meter_usage"
-    confirm = "confirm"
-
-
-class IncomingMessageBase(MessageBase):
-    type: IncomingMessageType
-
-
-class ConfigurationIncomingMessage(IncomingMessageBase):
-    type: typing.Literal[IncomingMessageType.configuration]
-
-
 class MeterUsageIncomingMessagePayloadBase(Schema):
     reducer_id: UUID4
 
@@ -88,11 +66,6 @@ class MeterUsageIncomingPayload(Schema):
     )
 
 
-class MeterUsageIncomingMessage(IncomingMessageBase):
-    type: typing.Literal[IncomingMessageType.meter_usage]
-    payload: MeterUsageIncomingMessagePayload
-
-
 class ConfirmIncomingMessagePayloadBase(Schema):
     reducer_id: UUID4
     bucket_start: EpochMicroseconds
@@ -113,42 +86,6 @@ type ConfirmIncomingMessagePayload = (
 )
 
 
-class ConfirmIncomingMessage(IncomingMessageBase):
-    type: typing.Literal[IncomingMessageType.confirm]
-    payload: ConfirmIncomingMessagePayload
-
-
-type IncomingMessage = typing.Annotated[
-    ConfigurationIncomingMessage | MeterUsageIncomingMessage | ConfirmIncomingMessage,
-    Discriminator("type"),
-]
-
-IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessage)
-
-
-# ---
-
-
-class OutgoingMessageType(StrEnum):
-    connection = "connection"
-    configuration = "configuration"
-    meter_usage = "meter_usage"
-    confirmed = "confirmed"
-
-
-class OutgoingMessageBase(MessageBase):
-    type: OutgoingMessageType
-
-
-class ConnectionOutgoingMessagePayload(MessageBase):
-    id: UUID4
-
-
-class ConnectionOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.connection]
-    payload: ConnectionOutgoingMessagePayload
-
-
 class ConfigurationReducer(Schema):
     id: UUID4
     kind: ReducerKind
@@ -160,11 +97,6 @@ class ConfigurationReducer(Schema):
 class ConfigurationOutgoingMessagePayload(Schema):
     organization_id: UUID4
     reducers: list[ConfigurationReducer]
-
-
-class ConfigurationOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.configuration]
-    payload: ConfigurationOutgoingMessagePayload
 
 
 class MeterUsageOutgoingMessagePayload(Schema):
@@ -181,11 +113,6 @@ class MeterUsageOutgoingMessagePayload(Schema):
     sum: float
     min: float | None
     max: float | None
-
-
-class MeterUsageOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.meter_usage]
-    payload: MeterUsageOutgoingMessagePayload
 
 
 class ConfirmedOutgoingMessagePayload(Schema):
@@ -215,19 +142,3 @@ class Changes(Schema):
     """The organization's reducers changed: fetch the configuration again."""
     next_poll_in: int
     """Seconds until the next pull."""
-
-
-class ConfirmedOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.confirmed]
-    payload: ConfirmedOutgoingMessagePayload
-
-
-type OutgoingMessage = typing.Annotated[
-    ConnectionOutgoingMessage
-    | ConfigurationOutgoingMessage
-    | MeterUsageOutgoingMessage
-    | ConfirmedOutgoingMessage,
-    Discriminator("type"),
-]
-
-OutgoingMessageAdapter: TypeAdapter[OutgoingMessage] = TypeAdapter(OutgoingMessage)

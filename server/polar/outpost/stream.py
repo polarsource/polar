@@ -1,11 +1,9 @@
-import collections.abc
 import datetime
 import functools
 import json
 import typing
 import uuid
 
-import anyio
 from pydantic import GetCoreSchemaHandler, TypeAdapter
 from pydantic_core import CoreSchema, core_schema
 
@@ -81,10 +79,6 @@ class Cursor:
 CHANGES_RETENTION = datetime.timedelta(hours=1)
 
 
-def _get_channel(organization_id: uuid.UUID) -> str:
-    return f"outpost:{organization_id}"
-
-
 def get_changes_key(organization_id: uuid.UUID) -> str:
     return f"outpost:changes:{organization_id}"
 
@@ -98,14 +92,6 @@ _events: TypeAdapter[OutpostEvent] = TypeAdapter(OutpostEvent)
 
 def _decode(data: str | bytes) -> OutpostEvent:
     return _events.validate_json(data)
-
-
-async def publish(
-    redis: Redis,
-    organization_id: uuid.UUID,
-    event: OutpostEvent,
-) -> None:
-    await redis.publish(_get_channel(organization_id), _encode(event))
 
 
 async def read_changes(
@@ -132,30 +118,10 @@ async def read_changes(
 
 
 def enqueue(organization_id: uuid.UUID, event: OutpostEvent) -> None:
-    """Publish the event and append it to the organization's changes once the
-    transaction committed."""
-    job_queue_manager = JobQueueManager.get()
-    job_queue_manager.publish(_get_channel(organization_id), _encode(event))
-    job_queue_manager.append(
+    """Append the event to the organization's changes once the transaction
+    committed."""
+    JobQueueManager.get().append(
         get_changes_key(organization_id),
         {"event": _encode(event)},
         retention=CHANGES_RETENTION,
     )
-
-
-async def subscribe(
-    redis: Redis,
-    organization_id: uuid.UUID,
-) -> collections.abc.AsyncGenerator[OutpostEvent]:
-    pubsub = redis.pubsub()
-    try:
-        await pubsub.subscribe(_get_channel(organization_id))
-        while True:
-            message = await pubsub.get_message(
-                ignore_subscribe_messages=True, timeout=1.0
-            )
-            if message is not None:
-                yield _decode(message["data"])
-    finally:
-        with anyio.CancelScope(shield=True):
-            await pubsub.close()

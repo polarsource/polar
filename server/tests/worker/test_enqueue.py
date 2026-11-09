@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import uuid4
 
 import dramatiq
@@ -21,7 +22,7 @@ class TestFlush:
         CorrelationID.set()
         jqm = JobQueueManager()
         jqm.enqueue_job("customer.state_changed", uuid4())
-        jqm.publish("channel", "message")
+        jqm.append("stream", {"field": "value"}, retention=timedelta(hours=1))
         await jqm.flush(dramatiq.get_broker(), redis)
 
         assert await redis.llen("dramatiq:high_priority") == 1

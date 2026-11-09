@@ -4,7 +4,6 @@ from typing import Any
 import httpx
 import pytest
 from fastapi import FastAPI
-from httpx_ws.transport import ASGIWebSocketTransport
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.types import Receive, Scope, Send
 
@@ -73,8 +72,6 @@ async def client(
     sessionmaker = async_sessionmaker(bind=session.bind, expire_on_commit=False)
 
     async def app_with_state(scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] == "websocket":
-            scope.setdefault("extensions", {})["websocket.http.response"] = {}
         scope.setdefault("state", {}).update(
             auth_subject=auth_subject, async_sessionmaker=sessionmaker
         )
@@ -83,11 +80,7 @@ async def client(
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=auto_expunge,
-        transport=(
-            ASGIWebSocketTransport(app=app_with_state)
-            if request.node.get_closest_marker("websocket") is not None
-            else httpx.ASGITransport(app=app_with_state)
-        ),
+        transport=httpx.ASGITransport(app=app_with_state),
         base_url="http://test",
         headers={VERSION_HEADER: str(api_version)} if api_version is not None else {},
     ) as client:

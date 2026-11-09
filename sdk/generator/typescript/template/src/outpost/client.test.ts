@@ -17,10 +17,11 @@ import {
   type OutpostOptions,
   PolarOutpostError,
   UnavailableRedisError,
+  isSampled,
 } from "./client";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
-import { TELEMETRY_ENV } from "./telemetry";
+import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
 import { startRedisServer, type RedisServer } from "./testing";
 
 const { exported, metrics } = vi.hoisted(() => ({
@@ -97,6 +98,11 @@ let resetChanges = false;
 let configurationChanged = false;
 let configurationRequests = 0;
 let configurationStatus = 200;
+// The telemetry relays Polar received: their path and body.
+const telemetryRequests: { path: string; body: string }[] = [];
+let telemetryStatus = 200;
+let telemetryDelay = 0;
+let telemetryAnswered = 0;
 let configurationDelay = 0;
 const changeRequests: (string | null)[] = [];
 let changesStatus = 200;
@@ -198,7 +204,7 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
   expect(request.headers["polar-organization"]).toBe("org");
   let data = "";
   for await (const chunk of request) data += chunk;
-  const body = data ? JSON.parse(data) : undefined;
+  const body = data && request.headers["content-type"]?.includes("json") ? JSON.parse(data) : undefined;
   if (refuseConnections) return respond(response, {}, 401);
   const url = new URL(request.url!, "http://polar");
   switch (`${request.method} ${url.pathname}`) {
@@ -212,6 +218,14 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
       setTimeout(() => respond(response, configuration), configurationDelay);
       return;
     }
+    case "POST /v1/outpost/telemetry":
+    case "POST /v1/outpost/telemetry/metrics":
+      telemetryRequests.push({ path: url.pathname, body: data });
+      setTimeout(() => {
+        telemetryAnswered += 1;
+        respond(response, {}, telemetryStatus);
+      }, telemetryDelay);
+      return;
     case "POST /v1/outpost/meter-usage": {
       const identities: Record<string, unknown>[] = body.identities;
       meterUsageRequests.push(...identities);
@@ -304,6 +318,10 @@ beforeEach(async () => {
   configurationChanged = false;
   configurationRequests = 0;
   configurationStatus = 200;
+  telemetryRequests.length = 0;
+  telemetryStatus = 200;
+  telemetryDelay = 0;
+  telemetryAnswered = 0;
   configurationDelay = 0;
   changeRequests.length = 0;
   changesStatus = 200;
@@ -721,6 +739,104 @@ it("reloads a configuration another token of the organization pulled", async () 
   await puller["pull"]();
   snapshot = aliceSnapshot;
   expect(await other.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
+});
+
+it("sends the fleet's telemetry in one relay of each kind after a pull", async () => {
+  const fleet = await Promise.all(Array.from({ length: 3 }, () => start()));
+  for (const [index, outpost] of fleet.entries()) {
+    outpost["outbox"].spans.push(Buffer.from(`spans-${index};`));
+    outpost["outbox"].metrics.push(Buffer.from(`metrics-${index};`));
+    await outpost.flushTelemetry();
+  }
+  await fleet[0]["pull"]();
+  await fleet[0].flush();
+  expect(telemetryRequests).toEqual([
+    { path: "/v1/outpost/telemetry", body: "spans-0;spans-1;spans-2;" },
+    { path: "/v1/outpost/telemetry/metrics", body: "metrics-0;metrics-1;metrics-2;" },
+  ]);
+});
+
+it("keeps the fleet's telemetry for the next pull when Polar fails the relay", async () => {
+  const outpost = await start();
+  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  outpost["outbox"].metrics.push(Buffer.from("metrics;"));
+  await outpost.flushTelemetry();
+  telemetryStatus = 503;
+  await outpost["pull"]();
+  await outpost.flush();
+  telemetryStatus = 200;
+  telemetryRequests.length = 0;
+  await outpost["pull"]();
+  await outpost.flush();
+  expect(telemetryRequests).toEqual([
+    { path: "/v1/outpost/telemetry", body: "spans;" },
+    { path: "/v1/outpost/telemetry/metrics", body: "metrics;" },
+  ]);
+});
+
+it("lets a read that waits for a pull go before the telemetry relay ends", async () => {
+  await seed();
+  const outpost = await start({ snapshotTimeout: 2_000 });
+  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  await outpost.flushTelemetry();
+  telemetryDelay = 500;
+  const started = performance.now();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
+  expect(performance.now() - started).toBeLessThan(300);
+  await outpost.flush();
+  expect(telemetryRequests).toHaveLength(1);
+});
+
+it("keeps the exports written while a relay is in flight", async () => {
+  const outpost = await start();
+  outpost["outbox"].spans.push(...Array.from({ length: 1000 }, (_, index) => Buffer.from(`old-${index};`)));
+  await outpost.flushTelemetry();
+  telemetryDelay = 200;
+  const pulling = outpost["pull"]();
+  await vi.waitFor(() => expect(telemetryRequests).toHaveLength(1));
+  outpost["outbox"].spans.push(Buffer.from("new;"));
+  await outpost.flushTelemetry();
+  await pulling;
+  await outpost.flush();
+  expect(await redis.lrange(`outpost:v1:${organization}:telemetry:spans`, 0, -1)).toEqual(["new;"]);
+});
+
+it("waits in flush for the relay a pull in flight starts", async () => {
+  const outpost = await start();
+  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  await outpost.flushTelemetry();
+  telemetryDelay = 200;
+  void outpost["pull"]();
+  await outpost.flush();
+  expect(telemetryAnswered).toBe(1);
+});
+
+it("keeps its telemetry for the next flush when Redis fails the write", async () => {
+  const outpost = await start();
+  const instance = outpost["redis"]!;
+  const pipeline = instance.pipeline.bind(instance);
+  vi.spyOn(instance, "pipeline").mockImplementationOnce(() => {
+    const failing = pipeline();
+    failing.exec = () => Promise.reject(new Error("Connection is closed."));
+    return failing;
+  });
+  outpost["outbox"].spans.push(Buffer.from("spans;"));
+  await outpost.flushTelemetry();
+  await outpost.flushTelemetry();
+  expect(await redis.lrange(`outpost:v1:${organization}:telemetry:spans`, 0, -1)).toEqual([
+    "spans;",
+  ]);
+});
+
+it("marks the spans its sample keeps with the sample rate", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start();
+  await outpost.meter(meter);
+  expect(exported.length).toBeGreaterThan(0);
+  for (const span of exported)
+    expect(span.attributes[SAMPLE_RATE_ATTRIBUTE]).toBe(
+      isSampled(span.spanContext().traceId) ? 10 : undefined,
+    );
 });
 
 it("pulls in the background once due, and waits for it once stale", async () => {

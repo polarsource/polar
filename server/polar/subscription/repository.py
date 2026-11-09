@@ -28,7 +28,9 @@ from polar.authz.repository import select_accessible_org_ids
 from polar.email.deduplication import (
     subscription_renewal_reminder_key_sql,
     subscription_trial_conversion_reminder_key_sql,
+    subscription_trial_payment_method_required_key_sql,
 )
+from polar.email.schemas import EmailTemplate
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -587,15 +589,30 @@ class SubscriptionRepository(
         one_day_from_now = now + timedelta(days=1)
         three_days_from_now = now + timedelta(days=3)
 
-        # Dedup: NOT EXISTS in email_logs for this subscription + template
+        # Dedup: NOT EXISTS in email_logs for this subscription + trial end, under
+        # either template: the payment-method-required email replaces the
+        # conversion reminder for trials without a payment method.
         dedup_subquery = (
             select(EmailLog.id)
             .where(
-                EmailLog.email_template == "subscription_trial_conversion_reminder",
-                EmailLog.deduplication_key
-                == subscription_trial_conversion_reminder_key_sql(
-                    Subscription.id, Subscription.trial_end
-                ),
+                or_(
+                    and_(
+                        EmailLog.email_template
+                        == EmailTemplate.subscription_trial_conversion_reminder,
+                        EmailLog.deduplication_key
+                        == subscription_trial_conversion_reminder_key_sql(
+                            Subscription.id, Subscription.trial_end
+                        ),
+                    ),
+                    and_(
+                        EmailLog.email_template
+                        == EmailTemplate.subscription_trial_payment_method_required,
+                        EmailLog.deduplication_key
+                        == subscription_trial_payment_method_required_key_sql(
+                            Subscription.id, Subscription.trial_end
+                        ),
+                    ),
+                )
             )
             .correlate(Subscription)
             .exists()

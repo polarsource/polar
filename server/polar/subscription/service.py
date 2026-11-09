@@ -43,6 +43,7 @@ from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.deduplication import (
     subscription_renewal_reminder_key,
     subscription_trial_conversion_reminder_key,
+    subscription_trial_payment_method_required_key,
 )
 from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import enqueue_email_template
@@ -4594,6 +4595,23 @@ class SubscriptionService:
             return
         if subscription.trial_end is None:
             return
+        if (
+            subscription.payment_method_id is None
+            and subscription.customer.default_payment_method_id is None
+        ):
+            return await self._send_customer_email(
+                session,
+                subscription,
+                subject_template=(
+                    "Add a payment method to keep your {product.name} subscription"
+                ),
+                template_name="subscription_trial_payment_method_required",
+                extra_context={"trial_end_date": format_date(subscription.trial_end)},
+                deduplication_key=subscription_trial_payment_method_required_key(
+                    subscription.id, subscription.trial_end.date()
+                ),
+                portal_path="portal/settings",
+            )
         conversion_date = format_date(subscription.trial_end)
         return await self._send_customer_email(
             session,
@@ -4620,11 +4638,13 @@ class SubscriptionService:
             "subscription_renewal_reminder",
             "subscription_revoked",
             "subscription_trial_conversion_reminder",
+            "subscription_trial_payment_method_required",
             "subscription_uncanceled",
             "subscription_updated",
         ],
         extra_context: dict[str, Any] | None = None,
         deduplication_key: str | None = None,
+        portal_path: str = "portal",
     ) -> None:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
@@ -4646,7 +4666,12 @@ class SubscriptionService:
         # Read-default to enabled: the key is absent from the stored settings of
         # organizations created before this template existed, and is materialized
         # only when an admin next edits their notification settings.
-        if not organization.customer_email_settings.get(template_name, True):
+        email_setting = (
+            "subscription_trial_conversion_reminder"
+            if template_name == "subscription_trial_payment_method_required"
+            else template_name
+        )
+        if not organization.customer_email_settings.get(email_setting, True):
             return
 
         customer = subscription.customer
@@ -4680,7 +4705,7 @@ class SubscriptionService:
                     }
                 )
                 portal_url = settings.generate_frontend_url(
-                    f"/{organization.slug}/portal?{query_string}"
+                    f"/{organization.slug}/{portal_path}?{query_string}"
                 )
 
                 email = EmailAdapter.validate_python(

@@ -96,6 +96,9 @@ export const CheckoutLinkForm = ({
         return_url: checkoutLink.return_url ?? '',
         discount_id: checkoutLink.discount_id ?? '',
         seats: checkoutLink.seats ?? null,
+        trial_payment_setup_required: checkoutLink.trial_interval
+          ? (checkoutLink.trial_payment_setup_required ?? true)
+          : null,
       }
     }
 

@@ -390,14 +390,12 @@ class Checkout(
         return self.total_amount > 0 and self.trial_end is None
 
     @property
-    def is_trial_without_payment_method(self) -> bool:
-        return (
-            self.trial_end is not None and not self.active_trial_payment_setup_required
-        )
-
-    @property
     def is_payment_setup_required(self) -> bool:
-        return self.has_future_charges and not self.is_trial_without_payment_method
+        if not self.has_future_charges:
+            return False
+        if self.trial_end is not None:
+            return self.active_trial_payment_setup_required
+        return True
 
     @property
     def has_future_charges(self) -> bool:

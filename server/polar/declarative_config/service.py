@@ -1,4 +1,4 @@
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 from uuid import UUID
@@ -13,12 +13,16 @@ from polar.authz.service import assert_organization_permission
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
-from polar.catalog.repository import CatalogRepository
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogProductRepository,
+    CatalogRepository,
+)
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Benefit, Organization, Product, User
+from polar.models import Agent, Benefit, Catalog, Organization, Product, User
 from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -244,6 +248,28 @@ def _removed_external_ids(
     )
 
 
+_INTERVAL_FIELDS = (
+    "recurring_interval",
+    "recurring_interval_count",
+    "meter_interval",
+    "meter_interval_count",
+)
+
+
+def _keeps_intervals(
+    change: ProductChange, draft_product: Product, meter_ids: dict[str, UUID]
+) -> bool:
+    """Whether the draft's row can take the config in place: a product's
+    intervals can't be updated. Against live, changing them is an error."""
+    if change.existing is not None:
+        return True
+    created = products.product_create(change.config, None, meter_ids)
+    return all(
+        getattr(draft_product, name) == getattr(created, name, None)
+        for name in _INTERVAL_FIELDS
+    )
+
+
 class DeclarativeConfigService:
     async def init(
         self,
@@ -390,6 +416,11 @@ class DeclarativeConfigService:
         removed_products, removed_benefits = _removed_external_ids(removed)
         if draft is not None and publish:
             await catalog_service.discard_draft(session, draft)
+        draft_benefits, draft_products = (
+            await self._get_draft_rows(session, draft, config)
+            if draft is not None and not publish
+            else ({}, {})
+        )
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
             session,
@@ -415,6 +446,7 @@ class DeclarativeConfigService:
             organization,
             changes.benefits,
             meter_ids,
+            draft_benefits,
             draft=not publish,
         )
         product_results, new_products = await self._apply_products(
@@ -424,6 +456,7 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
+            draft_products,
             draft=not publish,
         )
         catalog: ConfigCatalogChange | None = None
@@ -850,6 +883,38 @@ class DeclarativeConfigService:
             )
         return results, meter_ids
 
+    async def _get_draft_rows(
+        self, session: AsyncSession, draft: Catalog, config: Config
+    ) -> tuple[dict[str, Benefit], dict[str, Product]]:
+        """The rows the draft created, by `external_id`. Applying to the draft
+        again updates them in place."""
+        benefits = await CatalogBenefitRepository.from_session(
+            session
+        ).get_benefits_by_external_ids(
+            draft.id,
+            [benefit.external_id for benefit in config.benefits],
+            options=BenefitRepository.from_session(session).get_eager_options(),
+        )
+        products = await CatalogProductRepository.from_session(
+            session
+        ).get_products_by_external_ids(
+            draft.id,
+            [product.external_id for product in config.products],
+            options=ProductRepository.from_session(session).get_eager_options(),
+        )
+        return (
+            {
+                benefit.external_id: benefit
+                for benefit in benefits
+                if benefit.external_id is not None and benefit.catalog_id == draft.id
+            },
+            {
+                product.external_id: product
+                for product in products
+                if product.external_id is not None and product.catalog_id == draft.id
+            },
+        )
+
     async def _apply_benefits(
         self,
         session: AsyncSession,
@@ -858,16 +923,35 @@ class DeclarativeConfigService:
         organization: Organization,
         changes: Sequence[BenefitChange],
         meter_ids: dict[str, UUID],
+        draft_benefits: Mapping[str, Benefit],
         *,
         draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Benefit]]:
         repository = BenefitRepository.from_session(session)
+        meter_external_ids = {
+            str(id): external_id for external_id, id in meter_ids.items()
+        }
         results: list[ConfigResult] = []
         benefit_ids: dict[str, UUID] = {}
         new_benefits: dict[str, Benefit] = {}
         for change in changes:
             benefit = change.existing
-            if benefit is None or change.update_dict:
+            draft_benefit = draft_benefits.get(change.config.external_id)
+            if draft_benefit is not None and (benefit is None or change.update_dict):
+                benefit = draft_benefit
+                if validation.benefit_update_dict(
+                    benefit, change.config, meter_external_ids
+                ):
+                    await benefit_service.update(
+                        session,
+                        redis,
+                        benefit,
+                        benefits.benefit_update(change.config, meter_ids),
+                        auth_subject,
+                        declarative_config=True,
+                    )
+                new_benefits[change.config.external_id] = benefit
+            elif benefit is None or change.update_dict:
                 try:
                     async with session.begin_nested():
                         # A draft's new row isn't current, so the live one stays.
@@ -938,6 +1022,7 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
+        draft_products: Mapping[str, Product],
         *,
         draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
@@ -953,8 +1038,39 @@ class DeclarativeConfigService:
             config = change.config
             product = change.existing
             copy_on_write = product is not None and bool(change.update_dict)
+            draft_product = draft_products.get(config.external_id)
+            in_place = (
+                draft_product
+                if draft_product is not None
+                and (product is None or copy_on_write)
+                and _keeps_intervals(change, draft_product, meter_ids)
+                else None
+            )
             try:
-                if product is None or copy_on_write:
+                if in_place is not None:
+                    product = in_place
+                    fields = validation.product_update_dict(
+                        product, config, external_ids
+                    )
+                    product_update = products.product_update(config, meter_ids, fields)
+                    if product_update.model_fields_set:
+                        product = await product_service.update(
+                            session,
+                            product,
+                            product_update,
+                            auth_subject,
+                            declarative_config=True,
+                        )
+                    if "benefits" in fields:
+                        await product_service.update_benefits(
+                            session,
+                            product,
+                            [benefit_ids[benefit] for benefit in config.benefits],
+                            auth_subject,
+                            notify=False,
+                            declarative_config=True,
+                        )
+                elif product is None or copy_on_write:
                     try:
                         async with session.begin_nested():
                             if product is not None and not draft:
@@ -998,7 +1114,11 @@ class DeclarativeConfigService:
                         if _constraint_name(e) != _PRODUCT_EXTERNAL_ID_INDEX:
                             raise
                         raise ConfigProductConflict() from e
-                if (change.existing is None or copy_on_write) and config.benefits:
+                if (
+                    in_place is None
+                    and (change.existing is None or copy_on_write)
+                    and config.benefits
+                ):
                     await product_service.update_benefits(
                         session,
                         product,
@@ -1009,7 +1129,7 @@ class DeclarativeConfigService:
                     )
             except PolarRequestValidationError as e:
                 raise products.product_error(e, change.index, external_ids) from e
-            if change.existing is None or copy_on_write:
+            if in_place is None and (change.existing is None or copy_on_write):
                 await product_service.notify_created(session, product)
                 if change.existing is not None and not draft:
                     await product_service.notify_retired(session, change.existing)

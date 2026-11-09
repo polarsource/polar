@@ -20,6 +20,7 @@ const options: TableOptions = {
     { cells: ['Basic'], value: 'basic' },
     { cells: ['Pro'], value: 'pro_seats' },
     { cells: ['Team'], value: 'team_seats' },
+    { cells: ['Scale'], value: 'scale_seats' },
   ],
   validate: (values) => values.map(() => undefined),
 }
@@ -52,7 +53,7 @@ const filtered = run(initial, [
 describe('editTable', () => {
   test('keeps editing the same row after it stops matching the filter', () => {
     const state = run(filtered, [key('u', true), char('x')])
-    expect(state.values).toEqual(['basic', 'x', 'team_seats'])
+    expect(state.values).toEqual(['basic', 'x', 'team_seats', 'scale_seats'])
   })
 
   test('keeps the caret on the edited row after it stops matching', () => {
@@ -66,12 +67,27 @@ describe('editTable', () => {
       key('backspace'),
       char('x'),
     ])
-    expect(state.values).toEqual(['basic', 'pro_seats', 'teamxts'])
+    expect(state.values).toEqual([
+      'basic',
+      'pro_seats',
+      'teamxts',
+      'scale_seats',
+    ])
+  })
+
+  test('stays on the edited row when the previous pin is released', () => {
+    const state = run(filtered, [
+      key('u', true),
+      key('down'),
+      key('u', true),
+      char('y'),
+    ])
+    expect(state.values).toEqual(['basic', '', 'y', 'scale_seats'])
   })
 
   test('drops the pinned row once the filter changes', () => {
     const state = run(filtered, [key('u', true), key('return'), char('a')])
     expect(state.pinned).toBeUndefined()
-    expect(state.values).toEqual(['basic', '', 'team_seats'])
+    expect(state.values).toEqual(['basic', '', 'team_seats', 'scale_seats'])
   })
 })

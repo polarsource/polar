@@ -178,6 +178,14 @@ export const process =
         }),
       )
     const beep = Effect.succeed(Action.Beep())
+    const edit = (index: number, patch: Partial<State>) => {
+      const pinned = { ...state, ...patch, pinned: index }
+      return next({
+        ...patch,
+        pinned: index,
+        cursor: visibleRows(options, pinned).indexOf(index),
+      })
+    }
     const move = (cursor: number) =>
       next(state.filtering ? { cursor } : { cursor, back: 0 })
     switch (input.key.name) {
@@ -219,7 +227,7 @@ export const process =
         const index = visibleRows(options, state)[state.cursor]!
         const values = [...state.values]
         values[index] = options.rows[index]!.value
-        return next({ values, pinned: index, back: 0 })
+        return edit(index, { values, back: 0 })
       }
     }
     if (input.key.ctrl && input.key.name === 'f') {
@@ -248,7 +256,7 @@ export const process =
     if (field === undefined) return beep
     const values = [...state.values]
     values[index] = field.text
-    return next({ values, pinned: index, back: field.back })
+    return edit(index, { values, back: field.back })
   }
 
 const initial = (options: TableOptions) =>

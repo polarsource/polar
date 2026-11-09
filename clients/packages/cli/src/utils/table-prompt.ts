@@ -19,8 +19,9 @@ export interface TableOptions {
   readonly accept?: (text: string) => string | undefined
 }
 
-interface State {
+export interface State {
   readonly values: ReadonlyArray<string>
+  readonly pinned: number | undefined
   readonly cursor: number
   readonly back: number
   readonly top: number
@@ -45,6 +46,7 @@ const visibleRows = (options: TableOptions, state: State) => {
   const query = state.query.trim().toLowerCase()
   return options.rows.flatMap((row, index) =>
     query === '' ||
+    index === state.pinned ||
     [...row.cells, state.values[index]!].some((cell) =>
       cell.toLowerCase().includes(query),
     )
@@ -159,8 +161,12 @@ const frame = (options: TableOptions, state: State) => {
   ].map((text) => line(text, state.columns))
 }
 
-const process =
-  (options: TableOptions) => (input: Terminal.UserInput, state: State) => {
+export const process =
+  (options: TableOptions) =>
+  (
+    input: Terminal.UserInput,
+    state: State,
+  ): Effect.Effect<Prompt.Action<State, ReadonlyArray<string>>> => {
     const count = visibleRows(options, state).length
     const next = (patch: Partial<State>) =>
       Effect.succeed(
@@ -203,6 +209,7 @@ const process =
           return next({
             filtering: false,
             query: '',
+            pinned: undefined,
             cursor: 0,
             top: 0,
             back: 0,
@@ -212,7 +219,7 @@ const process =
         const index = visibleRows(options, state)[state.cursor]!
         const values = [...state.values]
         values[index] = options.rows[index]!.value
-        return next({ values, back: 0 })
+        return next({ values, pinned: index, back: 0 })
       }
     }
     if (input.key.ctrl && input.key.name === 'f') {
@@ -223,7 +230,13 @@ const process =
       if (field === undefined) return beep
       return field.text === state.query
         ? next({ back: field.back })
-        : next({ query: field.text, back: field.back, cursor: 0, top: 0 })
+        : next({
+            query: field.text,
+            pinned: undefined,
+            back: field.back,
+            cursor: 0,
+            top: 0,
+          })
     }
     if (count === 0) return beep
     const index = visibleRows(options, state)[state.cursor]!
@@ -235,7 +248,7 @@ const process =
     if (field === undefined) return beep
     const values = [...state.values]
     values[index] = field.text
-    return next({ values, back: field.back })
+    return next({ values, pinned: index, back: field.back })
   }
 
 const initial = (options: TableOptions) =>
@@ -245,6 +258,7 @@ const initial = (options: TableOptions) =>
     const rows = yield* terminal.rows
     return {
       values: options.rows.map((row) => row.value),
+      pinned: undefined,
       cursor: 0,
       back: 0,
       top: 0,

@@ -1,5 +1,6 @@
 export { polarClient } from './client'
 export { polar } from './server'
+export type { PolarBetterAuthPlugin } from './server'
 export type {
   PolarOrganizationCustomerCreateParams,
   PolarOrganizationOptions,

@@ -8,6 +8,7 @@ from typing import Any, cast
 import dramatiq
 import pytest
 from logfire.testing import CaptureLogfire
+from opentelemetry.sdk.trace import ReadableSpan
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -2137,20 +2138,78 @@ class TestLogCustomerMeterComparison:
                 count=2, total=Decimal(11), minimum=Decimal(1), maximum=Decimal(10)
             )
 
+        async def get_legacy_usage() -> float:
+            raise AssertionError("legacy usage shouldn't be read again")
+
         await reducer_service.log_customer_meter_comparison(
-            session, redis, customer_meter, get_late_usage
+            session, redis, customer_meter, get_late_usage, get_legacy_usage
         )
 
-        [span] = [
-            span
-            for span in capfire.exporter.exported_spans
-            if span.name == "Compare customer meter with reducer"
-            and span.attributes is not None
-            and span.attributes.get("logfire.span_type") == "span"
-        ]
+        span = get_comparison_span(capfire)
         assert span.attributes is not None
         assert span.attributes["match"] is True
         assert json.loads(cast(str, span.attributes["reducer"]))["late_events"] == 2
+
+    @pytest.mark.parametrize(
+        ("legacy_usage_after", "match"), [(12.0, True), (9.0, True), (8.0, False)]
+    )
+    async def test_bounds_usage_ingested_after_the_legacy_read(
+        self,
+        capfire: CaptureLogfire,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        legacy_usage_after: float,
+        match: bool,
+    ) -> None:
+        meter = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+        await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            consumed_units=Decimal(5),
+            credited_units=0,
+            balance=Decimal(-5),
+        )
+        await save_fixture(customer_meter)
+
+        async def get_late_usage() -> UsageSummary:
+            return UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
+
+        async def get_legacy_usage() -> float:
+            return legacy_usage_after
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter, get_late_usage, get_legacy_usage
+        )
+
+        span = get_comparison_span(capfire)
+        assert span.attributes is not None
+        assert span.attributes["match"] is match
+        legacy = json.loads(cast(str, span.attributes["legacy"]))
+        assert legacy["consumed_units_after_reducer"] == f"{legacy_usage_after:g}"
+
+
+def get_comparison_span(capfire: CaptureLogfire) -> ReadableSpan:
+    [span] = [
+        span
+        for span in capfire.exporter.exported_spans
+        if span.name == "Compare customer meter with reducer"
+        and span.attributes is not None
+        and span.attributes.get("logfire.span_type") == "span"
+    ]
+    return span
 
 
 @pytest.mark.anyio

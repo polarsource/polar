@@ -4,6 +4,7 @@ import dataclasses
 import datetime
 import functools
 import hashlib
+import json
 import math
 import time
 import types
@@ -436,6 +437,9 @@ class Outpost:
         self._read_state: AsyncScript | None = None
         self._redis_available = False
         self._prefix = KEY_VERSION
+        # The configuration's revision in the pull hash, as of the configuration this
+        # instance runs.
+        self._configuration_revision: int | None = None
 
     @classmethod
     def create(
@@ -451,6 +455,7 @@ class Outpost:
             raise RuntimeError("Outpost is already connected")
         self._configured = anyio.Event()
         self._pull_retry_at = 0.0
+        self._configuration_revision = None
         self._failure = None
         if self._telemetry:
             self._tracer_provider = create_tracer_provider(self._client)
@@ -1015,14 +1020,54 @@ class Outpost:
     def _pull_lock_key(self) -> str:
         return f"{self._prefix}:pull:lock"
 
-    async def _configure(self) -> None:
-        configuration: Configuration = await self._request(
-            "GET", "/v1/outpost/configuration"
+    @property
+    def _configuration_key(self) -> str:
+        """A new instance reads its token's configuration from Redis instead of Polar.
+        The key hashes the token: Redis never sees it."""
+        headers = self._client.headers
+        sent = [
+            str(self._client.base_url.join("/v1/outpost/configuration")),
+            headers.get("authorization"),
+            headers.get("polar-organization"),
+        ]
+        # Compact, as JSON.stringify writes it: both SDKs share the key.
+        identity = hashlib.sha256(
+            json.dumps(sent, separators=(",", ":")).encode()
+        ).hexdigest()
+        return f"{KEY_VERSION}:configuration:{identity}"
+
+    async def _configure(
+        self, source: typing.Literal["redis", "polar", "either"] = "either"
+    ) -> bool:
+        """From "redis", the organization's copy: each token reloads it once the pull
+        hash says the configuration changed. False when Redis holds none."""
+        redis = self._require_redis()
+        key = (
+            f"{self._prefix}:configuration"
+            if source == "redis"
+            else self._configuration_key
         )
-        self._prefix = f"{KEY_VERSION}:{configuration['organization_id']}"
+        stored = None if source == "polar" else await redis.get(key)
+        if not stored and source == "redis":
+            return False
+        configuration: Configuration = (
+            json.loads(stored)
+            if stored
+            else await self._request("GET", "/v1/outpost/configuration")
+        )
+        prefix = f"{KEY_VERSION}:{configuration['organization_id']}"
+        if not stored:
+            dumped = json.dumps(configuration)
+            await redis.set(self._configuration_key, dumped)
+            # Only the pull writes the organization's copy: a fetch at start may be
+            # older than it.
+            if source == "polar":
+                await redis.set(f"{prefix}:configuration", dumped)
+        self._prefix = prefix
         self._reducers = configuration["reducers"]
         self._matchers = with_matchers(self._reducers)
         self._configured.set()
+        return True
 
     async def _refresh(self) -> None:
         """Starts the pull once due and no other instance pulled since. Waits for it, at
@@ -1043,9 +1088,14 @@ class Outpost:
         return now - self._pulled_at >= self._pull_interval and now >= self._pull_retry_at
 
     async def _load_pull(self) -> None:
-        pulled_at, next_poll_in, retry_at = await self._require_redis().hmget(
-            self._pull_key, "pulled_at", "next_poll_in", "retry_at"
+        pulled_at, next_poll_in, retry_at, revision = await self._require_redis().hmget(
+            self._pull_key, "pulled_at", "next_poll_in", "retry_at", "configuration"
         )
+        # Another instance pulled a new configuration, maybe while this one started.
+        # Redis holds it; once Redis lost it, the next read tries again.
+        configured = None if revision is None else int(revision)
+        if configured != self._configuration_revision and await self._configure("redis"):
+            self._configuration_revision = configured
         self._pulled_at = float(pulled_at) / 1000 if pulled_at else 0.0
         self._pull_interval = (
             float(next_poll_in) / 1000 if next_poll_in else PULL_INTERVAL
@@ -1162,7 +1212,10 @@ class Outpost:
                 if changes["reset"]:
                     await self._reset()
                 if changes["configuration_changed"]:
-                    await self._configure()
+                    await self._configure("polar")
+                    self._configuration_revision = await redis.hincrby(
+                        self._pull_key, "configuration", 1
+                    )
                 # Each customer's snapshots apply in order; customers apply side by side.
                 customers: dict[tuple[str, str | None, str | None], list[Snapshot]] = {}
                 for snapshot in changes["changes"]:

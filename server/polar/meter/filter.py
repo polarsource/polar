@@ -51,7 +51,7 @@ class FilterClause(BaseModel):
     def get_sql_clause(self, model: type[Any]) -> ColumnExpressionArgument[bool]:
         if self.property in model._filterable_fields:
             allowed_type, attr = model._filterable_fields[self.property]
-            if not isinstance(self.value, allowed_type):
+            if type(self.value) is not allowed_type:
                 return false()
             if (
                 self.operator in (FilterOperator.like, FilterOperator.not_like)
@@ -71,20 +71,25 @@ class FilterClause(BaseModel):
                 self._get_comparison_clause(attr.as_string(), self.value),
             )
 
+        # Like `matches`, values of different types are never equal.
+        type_mismatch = true() if self.operator == FilterOperator.ne else false()
         return case(
             # The property is a string, compare it with the value as a string
             (
                 func.jsonb_typeof(attr) == "string",
-                self._get_comparison_clause(attr.as_string(), self._get_str_value()),
+                self._get_comparison_clause(attr.as_string(), self.value)
+                if isinstance(self.value, str)
+                # Otherwise it's a type mismatch
+                else type_mismatch,
             ),
             # The property is a number
             (
                 func.jsonb_typeof(attr) == "number",
                 # Compare it with the value if it's a number
-                self._get_comparison_clause(attr.as_float(), self._get_number_value())
-                if isinstance(self.value, int | float)
-                # Otherwise return false
-                else false(),
+                self._get_comparison_clause(attr.as_float(), self.value)
+                if isinstance(self.value, int) and not isinstance(self.value, bool)
+                # Otherwise it's a type mismatch
+                else type_mismatch,
             ),
             # The property is a boolean
             (
@@ -92,9 +97,10 @@ class FilterClause(BaseModel):
                 # Compare it with the value if it's a boolean
                 self._get_comparison_clause(attr.as_boolean(), self.value)
                 if isinstance(self.value, bool)
-                # Otherwise return false
-                else false(),
+                # Otherwise it's a type mismatch
+                else type_mismatch,
             ),
+            (func.jsonb_typeof(attr).in_(("object", "array")), type_mismatch),
         )
 
     def _get_comparison_clause(self, attr: Any, value: str | int | bool) -> Any:
@@ -116,18 +122,6 @@ class FilterClause(BaseModel):
             return ~attr.contains(value, autoescape=True)
         raise ValueError(f"Unsupported operator: {self.operator}")
 
-    def _get_str_value(self) -> str:
-        if isinstance(self.value, bool):
-            return "t" if self.value else "f"
-        return str(self.value)
-
-    def _get_number_value(self) -> int:
-        if isinstance(self.value, str):
-            raise ValueError("Cannot convert string to number")
-        if isinstance(self.value, bool):
-            return 1 if self.value else 0
-        return self.value
-
     def matches(self, event: Event) -> bool:
         if self.property == "name":
             if not isinstance(self.value, str):
@@ -138,7 +132,7 @@ class FilterClause(BaseModel):
                 return False
             actual_value = event.source
         elif self.property == "timestamp":
-            if not isinstance(self.value, int):
+            if type(self.value) is not int:
                 return False
             actual_value = int(event.timestamp.timestamp())
         else:
@@ -149,6 +143,8 @@ class FilterClause(BaseModel):
         return self._compare(actual_value, self.value)
 
     def _compare(self, actual: Any, expected: str | int | bool) -> bool:
+        if isinstance(actual, bool) != isinstance(expected, bool):
+            return self.operator == FilterOperator.ne
         try:
             if self.operator == FilterOperator.eq:
                 return actual == expected

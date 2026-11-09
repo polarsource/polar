@@ -31,6 +31,7 @@ from redis.exceptions import (
     RedisError,
 )
 from redis.exceptions import ConnectionError as RedisConnectionError
+from redis.exceptions import ResponseError as RedisResponseError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
 from polar.base import PolarError
@@ -49,6 +50,8 @@ from polar.outpost.reducer import (
     with_matchers,
 )
 from polar.outpost.telemetry import (
+    SAMPLE_RATE_ATTRIBUTE,
+    Outbox,
     create_meter_provider,
     create_tracer_provider,
     is_telemetry_enabled,
@@ -228,6 +231,9 @@ SNAPSHOT_TIMEOUT = {{ outpost_constants.snapshot_timeout / 1000 }}
 CONFIRM_TIMEOUT = {{ outpost_constants.confirm_timeout / 1000 }}
 CONFIRM_BATCH = {{ outpost_constants.confirm_batch }}
 REPORT_INTERVAL = {{ outpost_constants.report_interval / 1000 }}
+SPAN_SAMPLE_RATE = {{ outpost_constants.span_sample_rate }}
+TELEMETRY_CAP = {{ outpost_constants.telemetry_cap }}
+RELAY_LOCK_TTL = {{ outpost_constants.relay_lock_ttl / 1000 }}
 POLL_INTERVAL = {{ outpost_constants.poll_interval / 1000 }}
 REDIS_RECONNECT_DELAY = {{ outpost_constants.redis_reconnect_delay / 1000 }}
 MAX_REDIS_RECONNECT_DELAY = {{ outpost_constants.max_redis_reconnect_delay / 1000 }}
@@ -404,6 +410,10 @@ class _Confirmation:
     confirmed: dict[int, list[str]] = dataclasses.field(default_factory=dict)
 
 
+def is_sampled(trace_id: int) -> bool:
+    return (trace_id & 0xFFFFFFFF) % SPAN_SAMPLE_RATE == 0
+
+
 class Outpost:
     def __init__(
         self,
@@ -433,6 +443,7 @@ class Outpost:
         self._matchers: list[ReducerMatcher] = []
         # The fetches in flight, by identity: each event is set once its fetch ends.
         self._requesting: dict[str, anyio.Event] = {}
+        self._outbox = Outbox()
         self._queued: list[str] = []
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
@@ -444,6 +455,7 @@ class Outpost:
         self._pulled_at = 0.0
         self._pull_interval = PULL_INTERVAL
         self._pulling: anyio.Event | None = None
+        self._relaying: anyio.Event | None = None
         self._pull_retry_at = 0.0
         self._read_state: AsyncScript | None = None
         self._redis_available = False
@@ -473,9 +485,9 @@ class Outpost:
         self._resets = None
         self._failure = None
         if self._telemetry:
-            self._tracer_provider = create_tracer_provider(self._client)
+            self._tracer_provider = create_tracer_provider(self._outbox)
             self._tracer = self._tracer_provider.get_tracer("polar.outpost")
-            self._meter_provider = create_meter_provider(self._client)
+            self._meter_provider = create_meter_provider(self._outbox)
             meter = self._meter_provider.get_meter("polar.outpost")
             self._ingest_duration = meter.create_histogram(
                 "outpost.ingest.duration", unit="s"
@@ -536,6 +548,10 @@ class Outpost:
         try:
             try:
                 await self.flush()
+                # Their last exports land in the outbox, which the shared Redis takes
+                # before it closes.
+                await self._shutdown_telemetry()
+                await self._push_telemetry()
             finally:
                 if self._tasks is not None:
                     self._tasks.cancel_scope.cancel()
@@ -775,18 +791,81 @@ class Outpost:
         with anyio.fail_after(timeout):
             if self._pulling is not None:
                 await self._pulling.wait()
+            if self._relaying is not None:
+                await self._relaying.wait()
             for fetching in list(self._requesting.values()):
                 await fetching.wait()
             async with self._applying:
                 pass
 
     async def flush_telemetry(self) -> bool:
+        """Hands this instance's telemetry to the shared Redis, where the next pull
+        sends it to Polar."""
         tracer_provider = self._tracer_provider
         meter_provider = self._meter_provider
         if tracer_provider is None or meter_provider is None:
             return True
         flushed = await anyio.to_thread.run_sync(tracer_provider.force_flush)
-        return await anyio.to_thread.run_sync(meter_provider.force_flush) and flushed
+        flushed = await anyio.to_thread.run_sync(meter_provider.force_flush) and flushed
+        await self._push_telemetry()
+        return flushed
+
+    async def _push_telemetry(self) -> None:
+        spans, metrics = self._outbox.take()
+        if self._redis is None or not (spans or metrics):
+            return
+        try:
+            async with self._redis.pipeline(transaction=False) as pipeline:
+                for kind, exports in (("spans", spans), ("metrics", metrics)):
+                    if not exports:
+                        continue
+                    key = self._telemetry_key(kind)
+                    pipeline.rpush(key, *exports)
+                    # A fleet that stops pulling keeps its newest exports only.
+                    pipeline.ltrim(key, -TELEMETRY_CAP, -1)
+                await pipeline.execute()
+        except RedisError:
+            self._outbox.put_back(spans, metrics, TELEMETRY_CAP)
+
+    def _telemetry_key(self, kind: str) -> str:
+        return f"{self._prefix}:telemetry:{kind}"
+
+    async def _relay_telemetry(self) -> None:
+        """The pulling instance relays the fleet's telemetry, one request of each kind:
+        protobuf messages concatenate into one whose repeated fields add up."""
+        if self._tracer_provider is None:
+            return
+        redis = self._require_redis()
+        lock = f"{self._prefix}:telemetry:lock"
+        token = uuid.uuid4().hex
+        if not await redis.set(lock, token, px=int(RELAY_LOCK_TTL * 1000), nx=True):
+            return
+        try:
+            for kind, path in (
+                ("spans", "/v1/outpost/telemetry"),
+                ("metrics", "/v1/outpost/telemetry/metrics"),
+            ):
+                key = self._telemetry_key(kind)
+                batch = f"{key}:relaying"
+                # A batch Polar failed goes first; otherwise the list moves aside, and
+                # exports written meanwhile start a new one.
+                if not await redis.exists(batch):
+                    with contextlib.suppress(RedisResponseError):
+                        await redis.rename(key, batch)
+                exports = typing.cast(list[bytes], await redis.lrange(batch, 0, -1))
+                if not exports:
+                    continue
+                response = await self._client.post(
+                    path,
+                    content=b"".join(exports),
+                    headers={"Content-Type": "application/x-protobuf"},
+                )
+                # One Polar refused would be refused again.
+                if response.status_code < 500 and response.status_code != 429:
+                    await redis.delete(batch)
+        finally:
+            with contextlib.suppress(RedisError):
+                await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token)
 
     async def _read(
         self, customer: str, reducers: list[Reducer]
@@ -898,6 +977,8 @@ class Outpost:
         span = self._tracer.start_span(
             name, context=otel_context.Context(), attributes=attributes
         )
+        if is_sampled(span.get_span_context().trace_id):
+            span.set_attribute(SAMPLE_RATE_ATTRIBUTE, SPAN_SAMPLE_RATE)
         try:
             yield span
         except Exception as e:
@@ -1128,6 +1209,7 @@ class Outpost:
         while True:
             await anyio.sleep(REPORT_INTERVAL)
             await self._report_redis_size()
+            await self.flush_telemetry()
 
     def _lose_redis(self, error: Exception) -> None:
         """Reads and writes fail fast until Redis answers again."""
@@ -1436,6 +1518,19 @@ class Outpost:
             if not released:
                 with contextlib.suppress(RedisError):
                     await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._pull_lock_key, lock)
+        # In the background: a read that waits for the pull does not wait for telemetry.
+        if self._relaying is None and self._tasks is not None:
+            self._relaying = anyio.Event()
+            self._tasks.start_soon(self._relay_in_background, self._relaying)
+
+    async def _relay_in_background(self, done: anyio.Event) -> None:
+        try:
+            # Telemetry is best effort: no failure of it stops Outpost.
+            with contextlib.suppress(Exception):
+                await self._relay_telemetry()
+        finally:
+            self._relaying = None
+            done.set()
 
     def _fail_unless_transient(self, error: Exception) -> None:
         if not _is_connection_error(error):

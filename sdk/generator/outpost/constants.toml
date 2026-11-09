@@ -15,6 +15,12 @@ confirm_timeout = 2000
 confirm_batch = 1000
 # How often an instance reports the size of its Redis to telemetry.
 report_interval = 30000
+# One span in this many goes to Polar for the others; spans with an error or a drift always go.
+span_sample_rate = 10
+# Exports each telemetry list in Redis keeps while no instance pulls.
+telemetry_cap = 1000
+# How long a relay holds the telemetry lock: two relays at their timeout, with room to spare.
+relay_lock_ttl = 30000
 # How often a read waiting for a cold customer's snapshot, or for another instance's pull, reads
 # Redis again.
 poll_interval = 25

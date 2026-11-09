@@ -46,7 +46,14 @@ import {
   RELEASE_LOCK_SCRIPT,
   EXTEND_LOCK_SCRIPT,
 } from "./scripts";
-import { createMeterProvider, createTracerProvider, isTelemetryEnabled } from "./telemetry";
+import {
+  createMeterProvider,
+  createTracerProvider,
+  isTelemetryEnabled,
+  Outbox,
+  relay,
+  SAMPLE_RATE_ATTRIBUTE,
+} from "./telemetry";
 
 // Shared by every Outpost SDK: sdk/generator/outpost/constants.toml says what each one means.
 const KEY_VERSION = "{{ outpost_constants.key_version }}";
@@ -55,6 +62,9 @@ const SNAPSHOT_TIMEOUT = {{ outpost_constants.snapshot_timeout }};
 const CONFIRM_TIMEOUT = {{ outpost_constants.confirm_timeout }};
 const CONFIRM_BATCH = {{ outpost_constants.confirm_batch }};
 const REPORT_INTERVAL = {{ outpost_constants.report_interval }};
+const SPAN_SAMPLE_RATE = {{ outpost_constants.span_sample_rate }};
+const TELEMETRY_CAP = {{ outpost_constants.telemetry_cap }};
+const RELAY_LOCK_TTL = {{ outpost_constants.relay_lock_ttl }};
 const POLL_INTERVAL = {{ outpost_constants.poll_interval }};
 const REDIS_RECONNECT_DELAY = {{ outpost_constants.redis_reconnect_delay }};
 const MAX_REDIS_RECONNECT_DELAY = {{ outpost_constants.max_redis_reconnect_delay }};
@@ -333,6 +343,9 @@ const recordError = (span: Span, error: unknown): void => {
   span.setStatus({ code: SpanStatusCode.ERROR });
 };
 
+export const isSampled = (traceId: string): boolean =>
+  Number.parseInt(traceId.slice(-8), 16) % SPAN_SAMPLE_RATE === 0;
+
 const customerArguments = (customer: string): Customer => {
   const separator = customer.indexOf(":");
   return {
@@ -368,6 +381,7 @@ export class Outpost {
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly requesting = new Map<string, Promise<void>>();
+  private readonly outbox = new Outbox();
   private queued: { identity: string; done: () => void }[] = [];
   private fetchTimer?: ReturnType<typeof setTimeout>;
   private isConfigured = false;
@@ -377,6 +391,7 @@ export class Outpost {
   private pulledAt = 0;
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
+  private relaying?: Promise<void>;
   private pullRetryAt = 0;
   // The configuration's revision in the pull hash, as of the configuration this instance runs.
   private configurationRevision: number | null = null;
@@ -411,9 +426,9 @@ export class Outpost {
     this.isConfigured = false;
     this.messages = Promise.resolve();
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
-      this.tracerProvider = createTracerProvider(this.options.client);
+      this.tracerProvider = createTracerProvider(this.outbox);
       this.tracer = this.tracerProvider.getTracer("polar.outpost");
-      this.meterProvider = createMeterProvider(this.options.client);
+      this.meterProvider = createMeterProvider(this.outbox);
       const meter = this.meterProvider.getMeter("polar.outpost");
       this.ingestDuration = meter.createHistogram("outpost.ingest.duration", { unit: "s" });
       this.ingestBuckets = meter.createCounter("outpost.ingest.buckets");
@@ -480,7 +495,10 @@ export class Outpost {
       this.pullTimer = setInterval(() => {
         if (!this.failure) void this.refresh().catch(() => {});
       }, PULL_CHECK_INTERVAL);
-      this.refreshTimer = setInterval(() => void this.reportRedisSize(), REPORT_INTERVAL);
+      this.refreshTimer = setInterval(() => {
+        void this.reportRedisSize();
+        void this.flushTelemetry();
+      }, REPORT_INTERVAL);
       this.requireRedis();
       return this;
     } catch (error) {
@@ -495,6 +513,19 @@ export class Outpost {
     await this.flush();
     const redis = this.redis;
     if (redis) this.event("outpost.redis.disconnect");
+    const tracerProvider = this.tracerProvider;
+    const meterProvider = this.meterProvider;
+    this.tracerProvider = undefined;
+    this.tracer = undefined;
+    this.meterProvider = undefined;
+    this.ingestDuration = undefined;
+    this.ingestBuckets = undefined;
+    this.readDuration = undefined;
+    this.redisMemory = undefined;
+    this.redisKeys = undefined;
+    // Their last exports land in the outbox, which the shared Redis takes before it closes.
+    await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
+    await this.pushTelemetry();
     this._connectionId = undefined;
     this.redis = undefined;
     // disconnect() stops a connection that is not up without ever emitting "end".
@@ -507,17 +538,6 @@ export class Outpost {
     this.requesting.clear();
     this.reducers = [];
     this.matchers = [];
-    const tracerProvider = this.tracerProvider;
-    const meterProvider = this.meterProvider;
-    this.tracerProvider = undefined;
-    this.tracer = undefined;
-    this.meterProvider = undefined;
-    this.ingestDuration = undefined;
-    this.ingestBuckets = undefined;
-    this.readDuration = undefined;
-    this.redisMemory = undefined;
-    this.redisKeys = undefined;
-    await Promise.all([tracerProvider?.shutdown(), meterProvider?.shutdown()]);
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -675,10 +695,67 @@ export class Outpost {
   /** Wait for the pull in flight: a serverless function must not freeze in the middle of it. */
   async flush(): Promise<void> {
     await Promise.allSettled([this.pulling, this.messages, ...this.requesting.values()]);
+    // The pull that just ended may have started one.
+    await this.relaying;
   }
 
+  // Hands this instance's telemetry to the shared Redis, where the next pull sends it to Polar.
   async flushTelemetry(): Promise<void> {
     await Promise.all([this.tracerProvider?.forceFlush(), this.meterProvider?.forceFlush()]);
+    await this.pushTelemetry();
+  }
+
+  private async pushTelemetry(): Promise<void> {
+    const spans = this.outbox.spans.splice(0);
+    const metrics = this.outbox.metrics.splice(0);
+    if (!this.redis || (!spans.length && !metrics.length)) return;
+    const pipeline = this.redis.pipeline();
+    for (const [key, exports] of [
+      [this.telemetryKey("spans"), spans],
+      [this.telemetryKey("metrics"), metrics],
+    ] as const) {
+      if (!exports.length) continue;
+      pipeline.rpush(key, ...exports.map((body) => Buffer.from(body)));
+      // A fleet that stops pulling keeps its newest exports only.
+      pipeline.ltrim(key, -TELEMETRY_CAP, -1);
+    }
+    const results = await pipeline.exec().catch(() => null);
+    if (results !== null && !results.some(([error]) => error)) return;
+    // Redis lost the write: the exports wait for the next flush, the newest at most.
+    this.outbox.spans = [...spans, ...this.outbox.spans].slice(-TELEMETRY_CAP);
+    this.outbox.metrics = [...metrics, ...this.outbox.metrics].slice(-TELEMETRY_CAP);
+  }
+
+  private telemetryKey(kind: "spans" | "metrics"): string {
+    return `${this.prefix}:telemetry:${kind}`;
+  }
+
+  // The instance that pulled sends the fleet's telemetry: one relay of each kind per pull.
+  private async relayTelemetry(): Promise<void> {
+    if (!this.tracerProvider) return;
+    const redis = this.requireRedis();
+    const lock = `${this.prefix}:telemetry:lock`;
+    const token = randomUUID();
+    if (!(await redis.set(lock, token, "PX", RELAY_LOCK_TTL, "NX"))) return;
+    try {
+      for (const [kind, path] of [
+        ["spans", "/v1/outpost/telemetry"],
+        ["metrics", "/v1/outpost/telemetry/metrics"],
+      ] as const) {
+        const key = this.telemetryKey(kind);
+        const batch = `${key}:relaying`;
+        // A batch Polar failed goes first; otherwise the list moves aside, and exports written
+        // meanwhile start a new one.
+        if (!(await redis.exists(batch))) await redis.rename(key, batch).catch(() => {});
+        const exports = await redis.lrangeBuffer(batch, 0, -1);
+        if (!exports.length) continue;
+        const status = await relay(this.options.client, path, Buffer.concat(exports));
+        // One Polar refused would be refused again.
+        if (status < 500 && status !== 429) await redis.del(batch);
+      }
+    } finally {
+      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token).catch(() => {});
+    }
   }
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
@@ -960,6 +1037,12 @@ export class Outpost {
       span.setAttributes({ "outpost.pull.pages": pages, "outpost.pull.applied": applied });
       if (!released) await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.pullLockKey, lock).catch(() => {});
     }
+    // In the background: a read that waits for the pull does not wait for telemetry.
+    this.relaying ??= this.relayTelemetry()
+      .catch(() => {})
+      .finally(() => {
+        this.relaying = undefined;
+      });
   }
 
   // Snapshots and what they trigger run one at a time, in order.
@@ -1128,12 +1211,15 @@ export class Outpost {
 
   private startSpan(name: string, attributes: Attributes = {}): Span {
     if (!this.tracer) return trace.wrapSpanContext(INVALID_SPAN_CONTEXT);
-    return this.tracer.startSpan(name, {
+    const span = this.tracer.startSpan(name, {
       root: true,
       attributes: this._connectionId
         ? { ...attributes, "outpost.connection_id": this._connectionId }
         : attributes,
     });
+    if (isSampled(span.spanContext().traceId))
+      span.setAttribute(SAMPLE_RATE_ATTRIBUTE, SPAN_SAMPLE_RATE);
+    return span;
   }
 
   private async trace<T>(

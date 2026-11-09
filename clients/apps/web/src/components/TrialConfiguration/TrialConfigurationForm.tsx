@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
   Switch,
-  Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -65,7 +64,7 @@ export const TrialConfigurationForm = ({
   return (
     <Box flexDirection="column" rowGap="l">
       <Box alignItems="center" justifyContent="between" columnGap="s">
-        <Text as="h3">Free Trial Configuration</Text>
+        <h3>Free Trial Configuration</h3>
         <Button
           type="button"
           variant="secondary"
@@ -76,8 +75,8 @@ export const TrialConfigurationForm = ({
         </Button>
       </Box>
       {!trialEnabled && (
-        <Box alignItems="center" minHeight={40}>
-          <Text color="muted">No trial configured</Text>
+        <Box alignItems="center" minHeight={40} color="text-secondary">
+          No trial configured
         </Box>
       )}
       {trialEnabled && (

@@ -431,10 +431,6 @@ class TestHandleSuccess:
             },
             None,
         )
-        mocker.patch(
-            "polar.integrations.stripe.payment.stripe_service.get_setup_intent",
-            return_value=intent,
-        )
         enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
 
         with pytest.raises(NotConfirmedCheckout):
@@ -588,7 +584,7 @@ class TestHandleSuccess:
         ).scalar_one()
         assert redemption.payment_method_fingerprint == "trial_fingerprint"
 
-    @pytest.mark.parametrize("reason", ["expired", "replaced", "trial_abuse"])
+    @pytest.mark.parametrize("reason", ["expired", "replaced"])
     async def test_outdated_setup_intent(
         self,
         mocker: MockerFixture,
@@ -612,14 +608,9 @@ class TestHandleSuccess:
                 "metadata": {
                     "organization_id": str(checkout.organization_id),
                     "checkout_id": str(checkout.id),
-                    "polar_trial_abuse_detected": "true",
                 },
             },
             None,
-        )
-        mocker.patch(
-            "polar.integrations.stripe.payment.stripe_service.get_setup_intent",
-            return_value=intent,
         )
         save_method = mocker.patch(
             "polar.integrations.stripe.payment.payment_method_service.upsert_from_stripe_intent"

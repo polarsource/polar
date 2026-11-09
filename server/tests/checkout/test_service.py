@@ -1704,6 +1704,43 @@ class TestCreate:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
+    async def test_customer_trial_already_redeemed(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product_recurring_trial: Product,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+        assert customer.email is not None
+        await create_trial_redemption(
+            save_fixture, customer=customer, customer_email=customer.email
+        )
+        stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
+            client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
+        )
+
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[product_recurring_trial.id], customer_id=customer.id
+            ),
+            auth_subject,
+        )
+
+        assert checkout.allow_trial is False
+        assert checkout.trial_end is None
+        assert checkout.active_trial_interval is None
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
     async def test_valid_team_customer_skips_name_prefill(
         self,
         stripe_service_mock: MagicMock,
@@ -2936,6 +2973,31 @@ class TestCheckoutLinkCreate:
         assert checkout.trial_interval == TrialInterval.day
         assert checkout.trial_interval_count == 7
         assert checkout.trial_end is not None
+
+    async def test_query_prefill_customer_email_trial_already_redeemed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_recurring_trial: Product,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+        assert customer.email is not None
+        await create_trial_redemption(
+            save_fixture, customer=customer, customer_email=customer.email
+        )
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_recurring_trial]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, query_prefill={"customer_email": customer.email}
+        )
+
+        assert checkout.allow_trial is False
+        assert checkout.trial_end is None
 
     async def test_query_prefill_discount_code_invalid(
         self,
@@ -4721,6 +4783,37 @@ class TestUpdate:
         assert updated_checkout.active_trial_interval is None
         assert updated_checkout.active_trial_interval_count is None
 
+    async def test_trial_already_redeemed_email(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_recurring_trial: Product,
+        customer: Customer,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+        await create_trial_redemption(
+            save_fixture, customer=customer, customer_email="customer@example.com"
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_recurring_trial],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+        )
+        assert checkout.trial_end is not None
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdatePublic(customer_email="Customer@example.com"),
+        )
+
+        assert updated_checkout.allow_trial is False
+        assert updated_checkout.trial_end is None
+        assert updated_checkout.active_trial_interval is None
+
     async def test_multi_currencies_product_change_same_currency(
         self,
         save_fixture: SaveFixture,
@@ -6075,11 +6168,13 @@ class TestConfirm:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
         )
+        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
+            payment_method_preview=payment_method
+        )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
             id="STRIPE_INTENT_ID",
             client_secret="CLIENT_SECRET",
             status="succeeded",
-            payment_method=payment_method,
         )
         checkout = await checkout_service.confirm(
             session,
@@ -6137,14 +6232,10 @@ class TestConfirm:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
         )
-        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
-            id="STRIPE_INTENT_ID",
-            client_secret="CLIENT_SECRET",
-            status="succeeded",
-            payment_method=SimpleNamespace(
+        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
+            payment_method_preview=SimpleNamespace(
                 card=SimpleNamespace(fingerprint=fingerprint)
-            ),
-            metadata={},
+            )
         )
 
         with pytest.raises(TrialAlreadyRedeemed):
@@ -6161,6 +6252,8 @@ class TestConfirm:
                     }
                 ),
             )
+
+        stripe_service_mock.create_setup_intent.assert_not_called()
 
     async def test_discount_per_customer_limit_reached(
         self,

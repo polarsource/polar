@@ -742,6 +742,7 @@ class CheckoutService:
 
         checkout = await self._update_ip_country(session, checkout, ip_country)
         checkout = await self._update_trial_end(checkout)
+        checkout = await self._disable_redeemed_trial(session, checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -1057,6 +1058,7 @@ class CheckoutService:
 
         checkout = await self._update_ip_country(session, checkout, ip_country)
         checkout = await self._update_trial_end(checkout)
+        checkout = await self._disable_redeemed_trial(session, checkout)
 
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -1079,6 +1081,7 @@ class CheckoutService:
         checkout = await self._update_checkout(
             session, checkout, checkout_update, ip_geolocation_client
         )
+        checkout = await self._disable_redeemed_trial(session, checkout)
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         # Swallow incomplete tax calculation error: require it only on confirm
@@ -1186,6 +1189,10 @@ class CheckoutService:
                     checkout.discount is not None
                     and checkout.discount.max_redemptions_per_customer is not None
                 )
+                or (
+                    checkout.trial_end is not None
+                    and checkout.organization.prevent_trial_abuse
+                )
             )
         ):
             try:
@@ -1272,10 +1279,22 @@ class CheckoutService:
                     "customer_id": stripe_customer_id,
                 }
 
-                # Enforce the per-customer discount redemption limit *before* creating
-                # any payment intent, so we never charge a customer we're about to
-                # reject. The card fingerprint is read from the confirmation token's
-                # payment method preview (no intent/charge required yet).
+                # Enforce the per-customer discount redemption limit and trial abuse
+                # prevention *before* creating any payment intent, so we never charge
+                # or set up a customer we're about to reject. The card fingerprint is
+                # read from the confirmation token's payment method preview.
+                payment_method_fingerprint: str | None = None
+                if (
+                    confirmation_token is not None
+                    and confirmation_token.payment_method_preview is not None
+                ):
+                    payment_method_fingerprint = get_fingerprint(
+                        typing.cast(
+                            stripe_lib.PaymentMethod,
+                            confirmation_token.payment_method_preview,
+                        )
+                    )
+
                 if (
                     checkout.discount is not None
                     and checkout.discount.max_redemptions_per_customer is not None
@@ -1285,17 +1304,6 @@ class CheckoutService:
                     customer_repository = CustomerRepository.from_session(session)
                     await customer_repository.get_by_id(customer.id, for_update=True)
 
-                    payment_method_fingerprint: str | None = None
-                    if (
-                        confirmation_token is not None
-                        and confirmation_token.payment_method_preview is not None
-                    ):
-                        payment_method_fingerprint = get_fingerprint(
-                            typing.cast(
-                                stripe_lib.PaymentMethod,
-                                confirmation_token.payment_method_preview,
-                            )
-                        )
                     if await discount_service.check_per_customer_limit_reached(
                         session,
                         checkout.discount,
@@ -1304,6 +1312,22 @@ class CheckoutService:
                         payment_method_fingerprint=payment_method_fingerprint,
                     ):
                         raise DiscountRedemptionLimitReached(checkout)
+
+                # Skip for team customers without email — no email to check against
+                if (
+                    checkout.trial_end is not None
+                    and checkout.organization.prevent_trial_abuse
+                    and not (
+                        customer.type == CustomerType.team and customer.email is None
+                    )
+                    and await trial_redemption_service.check_trial_already_redeemed(
+                        session,
+                        checkout.organization,
+                        customer_email=customer.email,
+                        payment_method_fingerprint=payment_method_fingerprint,
+                    )
+                ):
+                    raise TrialAlreadyRedeemed(checkout)
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:
@@ -1416,43 +1440,6 @@ class CheckoutService:
                             "intent_status": intent.status,
                         }
 
-                # Check for trial abuse
-                # Skip for team customers without email — no email to check against
-                if (
-                    checkout.trial_end is not None
-                    and checkout.organization.prevent_trial_abuse
-                    and not (
-                        customer.type == CustomerType.team and customer.email is None
-                    )
-                ):
-                    trial_already_redeemed = (
-                        await trial_redemption_service.check_trial_already_redeemed(
-                            session,
-                            checkout.organization,
-                            customer=customer,
-                            payment_method_fingerprint=get_fingerprint(
-                                typing.cast(
-                                    stripe_lib.PaymentMethod, intent.payment_method
-                                )
-                            )
-                            if (intent and intent.payment_method)
-                            else None,
-                        )
-                    )
-                    if trial_already_redeemed:
-                        # Mark the intent with metadata so we can discard the webhook event associated
-                        if intent is not None:
-                            trial_intent_metadata = intent.metadata or {}
-                            trial_intent_metadata["polar_trial_abuse_detected"] = "true"
-                            if isinstance(intent, stripe_lib.SetupIntent):
-                                await stripe_service.modify_setup_intent(
-                                    intent.id, metadata=trial_intent_metadata
-                                )
-                            elif isinstance(intent, stripe_lib.PaymentIntent):
-                                await stripe_service.modify_payment_intent(
-                                    intent.id, metadata=trial_intent_metadata
-                                )
-                        raise TrialAlreadyRedeemed(checkout)
         else:
             raise NotImplementedError()
 
@@ -2879,6 +2866,29 @@ class CheckoutService:
         if trial_interval is not None and trial_interval_count is not None:
             checkout.trial_end = trial_interval.get_end(utc_now(), trial_interval_count)
         else:
+            checkout.trial_end = None
+
+        return checkout
+
+    async def _disable_redeemed_trial(
+        self, session: AsyncSession, checkout: Checkout
+    ) -> Checkout:
+        if checkout.trial_end is None or not checkout.organization.prevent_trial_abuse:
+            return checkout
+
+        customer_email = (
+            checkout.customer.email
+            if checkout.customer is not None
+            else checkout.customer_email
+        )
+        with session.no_autoflush:
+            trial_already_redeemed = (
+                await trial_redemption_service.check_trial_already_redeemed(
+                    session, checkout.organization, customer_email=customer_email
+                )
+            )
+        if trial_already_redeemed:
+            checkout.allow_trial = False
             checkout.trial_end = None
 
         return checkout

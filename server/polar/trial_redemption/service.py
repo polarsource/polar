@@ -10,17 +10,17 @@ class TrialRedemptionService:
         session: AsyncSession,
         organization: Organization,
         *,
-        customer: Customer,
+        customer_email: str | None,
         product: Product | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
-        if customer.email is None:
+        if customer_email is None:
             return False
 
         repository = TrialRedemptionRepository.from_session(session)
         trial_redemption = await repository.get_first_by_organization_and_hints(
             organization.id,
-            customer_email=normalize_email(customer.email),
+            customer_email=normalize_email(customer_email),
             product=product.id if product else None,
             payment_method_fingerprint=payment_method_fingerprint,
         )

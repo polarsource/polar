@@ -72,6 +72,7 @@ class BillingEntryService:
         ],
         *,
         cutoff: datetime,
+        reducer_cutoff: datetime,
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
         await repository.lock_pending_by_subscription(subscription.id)
@@ -131,14 +132,14 @@ class BillingEntryService:
                 organization_id=str(subscription.customer.organization_id),
                 subscription_id=str(subscription.id),
                 order_id=str(order_id),
-                cutoff=cutoff,
+                cutoff=reducer_cutoff,
             ) as span:
                 quantities = await billing_interval_service.bill_usage(
                     session,
                     subscription,
                     set(consumed_units),
                     order_id=order_id,
-                    cutoff=cutoff,
+                    cutoff=reducer_cutoff,
                 )
                 reducer_net_units = {
                     meter_id: max(Decimal(0), usage - credits)
@@ -180,6 +181,7 @@ class BillingEntryService:
         *,
         include_metered: bool = True,
         cutoff: datetime | None = None,
+        reducer_cutoff: datetime | None = None,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         cutoff = cutoff or utc_now()
         return self._create_order_items(
@@ -189,6 +191,7 @@ class BillingEntryService:
                 session, subscription, include_metered=include_metered, cutoff=cutoff
             ),
             cutoff=cutoff,
+            reducer_cutoff=reducer_cutoff or cutoff,
         )
 
     def create_metered_order_items_from_pending(
@@ -212,6 +215,7 @@ class BillingEntryService:
                 session, subscription, cutoff=cutoff, price_ids=price_ids
             ),
             cutoff=cutoff,
+            reducer_cutoff=cutoff,
         )
 
     async def compute_pending_subscription_line_items(

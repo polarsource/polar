@@ -1,11 +1,11 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import CostsPage from './CostsPage'
+import FeaturesPage from './FeaturesPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Costs', // " | Polar is added by the template"
+    title: 'Features', // " | Polar is added by the template"
   }
 }
 
@@ -19,5 +19,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  return <CostsPage organization={organization} />
+  return <FeaturesPage organization={organization} />
 }

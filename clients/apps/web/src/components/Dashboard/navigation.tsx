@@ -4,6 +4,7 @@ import { ManagedAsCodeNavIndicator } from './ManagedAsCodeNavIndicator'
 import {
   AllInclusiveOutlined,
   AttachMoneyOutlined,
+  BoltOutlined,
   CodeOutlined,
   DiamondOutlined,
   DiscountOutlined,
@@ -226,20 +227,30 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     id: 'analytics',
     title: 'Analytics',
     icon: <TrendingUp fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/analytics`,
+    link: `/dashboard/${org?.slug}/analytics/metrics`,
+    checkIsActive: (currentRoute: string): boolean =>
+      currentRoute === `/dashboard/${org?.slug}/analytics` ||
+      currentRoute.startsWith(`/dashboard/${org?.slug}/analytics/metrics`),
+    if: true,
+  },
+  {
+    id: 'usage',
+    title: 'Usage',
+    icon: <BoltOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/analytics/features`,
+    checkIsActive: (currentRoute: string): boolean =>
+      ['features', 'events'].some((page) =>
+        currentRoute.startsWith(`/dashboard/${org?.slug}/analytics/${page}`),
+      ),
     if: true,
     subs: [
       {
-        title: 'Metrics',
-        link: `/dashboard/${org?.slug}/analytics/metrics`,
+        title: 'Features',
+        link: `/dashboard/${org?.slug}/analytics/features`,
       },
       {
         title: 'Events',
         link: `/dashboard/${org?.slug}/analytics/events`,
-      },
-      {
-        title: 'Costs',
-        link: `/dashboard/${org?.slug}/analytics/costs`,
       },
     ],
   },

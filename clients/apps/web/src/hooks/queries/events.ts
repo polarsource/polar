@@ -135,41 +135,6 @@ export const useEventTypeStats = (
     retry: defaultRetry,
   })
 
-export const useEventHierarchyStats = (
-  organizationId: string,
-  parameters: Omit<
-    NonNullable<
-      operations['events:list_statistics_timeseries']['parameters']['query']
-    >,
-    'organization_id' | 'timezone'
-  >,
-  enabled: boolean = true,
-) => {
-  const timezone = Intl.DateTimeFormat().resolvedOptions()
-    .timeZone as operations['events:list_statistics_timeseries']['parameters']['query']['timezone']
-  return useQuery({
-    queryKey: [
-      'eventHierarchyStats',
-      organizationId,
-      { timezone, ...(parameters || {}) },
-    ],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/events/statistics/timeseries', {
-          params: {
-            query: {
-              organization_id: organizationId,
-              timezone,
-              ...(parameters || {}),
-            },
-          },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled,
-  })
-}
-
 type HistogramParameters = Omit<
   NonNullable<operations['events:get_histogram']['parameters']['query']>,
   'organization_id'

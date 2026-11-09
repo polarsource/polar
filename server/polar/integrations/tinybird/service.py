@@ -19,6 +19,7 @@ from sqlalchemy import (
     ColumnElement,
     DateTime,
     Float,
+    Integer,
     MetaData,
     String,
     Table,
@@ -34,6 +35,7 @@ from sqlalchemy.sql import Select
 from sqlalchemy.sql.util import ClauseAdapter
 
 from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.kit.db.postgres import AsyncReadSession
 from polar.logging import Logger
 from polar.meter.aggregation import Aggregation, PropertyAggregation
@@ -127,6 +129,13 @@ events_table = Table(
     Column("timestamp", DateTime),
     Column("cost_amount", Float),
     Column("cost_currency", String),
+    Column("amount", Integer),
+    Column("net_amount", Integer),
+    Column("refunded_amount", Integer),
+    Column("currency", String),
+    Column("product_id", String),
+    Column("recurring_interval", String),
+    Column("recurring_interval_count", Integer),
     Column("llm_vendor", String),
     Column("llm_model", String),
     Column("llm_input_tokens", Float),
@@ -198,6 +207,68 @@ class TinybirdPropertyGroupStats:
     occurrences: int
     customers: int
     totals: dict[str, float]
+
+
+@dataclass
+class TinybirdFeatureCustomerStat:
+    name: str
+    customer_id: str | None
+    external_customer_id: str | None
+    occurrences: int
+    cost: float
+    input_tokens: int
+    output_tokens: int
+
+
+@dataclass
+class TinybirdCustomerOrder:
+    """A paid order, or a refund as a negative amount."""
+
+    customer_id: str | None
+    external_customer_id: str | None
+    product_id: str | None
+    timestamp: datetime
+    amount: int
+    recurring_interval: str | None
+    recurring_interval_count: int | None
+
+
+@dataclass
+class TinybirdFeatureStep:
+    name: str
+    occurrences: int
+    cost: float
+    input_tokens: int
+    output_tokens: int
+
+
+@dataclass
+class TinybirdFeatureUse:
+    id: str
+    timestamp: datetime
+    customer_id: str | None
+    external_customer_id: str | None
+    cost: float
+
+
+@dataclass
+class TinybirdFeatureModel:
+    vendor: str
+    model: str
+    calls: int
+    cost: float
+    input_tokens: int
+    output_tokens: int
+
+
+@dataclass
+class TinybirdFeaturePeriod:
+    name: str
+    bucket: datetime
+    occurrences: int
+    cost: float
+    input_tokens: int
+    output_tokens: int
 
 
 @dataclass
@@ -950,7 +1021,9 @@ class TinybirdEventsQuery:
             label = field_path.replace(".", "_")
             ae_col = self._get_agg_col_for_table(ae, field_path)
             agg_columns.append(
-                func.coalesce(func.sum(ae_col), 0.0).label(f"{label}_total")
+                func.coalesce(func.toFloat64(func.sum(ae_col)), 0.0).label(
+                    f"{label}_total"
+                )
             )
 
         org_filter_values = self._organization_ids
@@ -1312,6 +1385,300 @@ class TinybirdEventsQuery:
                 )
             )
         return results
+
+    @staticmethod
+    def _bucket(column: Any, interval: str, timezone: str) -> Any:
+        tz = sqlalchemy.literal(timezone, String)
+        return func.toDateTime(func.date_trunc(interval, column, tz), tz).label(
+            "bucket"
+        )
+
+    async def get_feature_steps(self, cost_field: str) -> list[TinybirdFeatureStep]:
+        """Count and sum the cost of the events below the root events, per name."""
+        re = events_table.alias("re")
+        ae = events_table.alias("ae")
+        org_ids = self._organization_ids
+        cost = self._get_agg_col_for_table(ae, cost_field)
+        statement = (
+            sqlalchemy.select(
+                ae.c.name.label("name"),
+                func.count().label("occurrences"),
+                func.sum(cost).label("cost"),
+                func.sum(ae.c.llm_input_tokens).label("input_tokens"),
+                func.sum(ae.c.llm_output_tokens).label("output_tokens"),
+            )
+            .select_from(
+                re.join(
+                    ae,
+                    and_(
+                        ae.c.root_id == re.c.id,
+                        ae.c.organization_id.in_(org_ids),
+                        ae.c.id != re.c.id,
+                    ),
+                )
+            )
+            .where(
+                re.c.organization_id.in_(org_ids),
+                re.c.parent_id.is_(None),
+                re.c.source == EventSource.user.value,
+                *(_adapt_filter_to_alias(f, re) for f in self._filters),
+            )
+            .group_by(ae.c.name)
+            .order_by(literal_column("cost").desc())
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return [
+            TinybirdFeatureStep(
+                name=row["name"],
+                occurrences=int(row.get("occurrences", 0) or 0),
+                cost=float(row.get("cost", 0) or 0),
+                input_tokens=int(row.get("input_tokens", 0) or 0),
+                output_tokens=int(row.get("output_tokens", 0) or 0),
+            )
+            for row in rows
+        ]
+
+    async def get_feature_median_cost(self, cost_field: str) -> float:
+        """Median cost of one root event's tree."""
+        per_root = self._build_per_root_subquery([cost_field])
+        label = f"{cost_field.replace('.', '_')}_total"
+        statement: Select[Any] = sqlalchemy.select(
+            literal_column(f"quantile(0.5)(per_root.{label})").label("median")
+        ).select_from(per_root)
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return float(rows[0].get("median", 0) or 0) if rows else 0.0
+
+    async def get_feature_costliest_uses(
+        self, cost_field: str, minimum: float, limit: int
+    ) -> list[TinybirdFeatureUse]:
+        """Root events whose tree cost at least `minimum`, costliest first."""
+        per_root = self._build_per_root_subquery([cost_field])
+        cost = per_root.c[f"{cost_field.replace('.', '_')}_total"]
+        statement = (
+            sqlalchemy.select(
+                per_root.c.root_id.label("root_id"),
+                per_root.c.root_timestamp.label("root_timestamp"),
+                per_root.c.customer_id.label("customer_id"),
+                per_root.c.external_customer_id.label("external_customer_id"),
+                cost.label("cost"),
+            )
+            .where(cost >= minimum)
+            .order_by(cost.desc())
+            .limit(limit)
+        )
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return [
+            TinybirdFeatureUse(
+                id=str(row["root_id"]),
+                timestamp=_parse_datetime(row["root_timestamp"]),
+                customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                external_customer_id=row.get("external_customer_id") or None,
+                cost=float(row.get("cost", 0) or 0),
+            )
+            for row in rows
+        ]
+
+    async def get_feature_models(self, cost_field: str) -> list[TinybirdFeatureModel]:
+        """Count the LLM calls in the root events' trees and sum their tokens
+        and cost, per vendor and model."""
+        re = events_table.alias("re")
+        ae = events_table.alias("ae")
+        org_ids = self._organization_ids
+        cost = self._get_agg_col_for_table(ae, cost_field)
+        statement = (
+            sqlalchemy.select(
+                ae.c.llm_vendor.label("vendor"),
+                ae.c.llm_model.label("model"),
+                func.count().label("calls"),
+                func.sum(cost).label("cost"),
+                func.sum(ae.c.llm_input_tokens).label("input_tokens"),
+                func.sum(ae.c.llm_output_tokens).label("output_tokens"),
+            )
+            .select_from(
+                re.join(
+                    ae,
+                    and_(ae.c.root_id == re.c.id, ae.c.organization_id.in_(org_ids)),
+                )
+            )
+            .where(
+                re.c.organization_id.in_(org_ids),
+                re.c.parent_id.is_(None),
+                re.c.source == EventSource.user.value,
+                ae.c.llm_model.is_not(None),
+                *(_adapt_filter_to_alias(f, re) for f in self._filters),
+            )
+            .group_by(ae.c.llm_vendor, ae.c.llm_model)
+            .order_by(literal_column("cost").desc())
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return [
+            TinybirdFeatureModel(
+                vendor=row.get("vendor") or "",
+                model=row["model"],
+                calls=int(row.get("calls", 0) or 0),
+                cost=float(row.get("cost", 0) or 0),
+                input_tokens=int(row.get("input_tokens", 0) or 0),
+                output_tokens=int(row.get("output_tokens", 0) or 0),
+            )
+            for row in rows
+        ]
+
+    async def get_feature_periods(
+        self, cost_field: str, interval: str, timezone: str
+    ) -> list[TinybirdFeaturePeriod]:
+        """Count root events and sum their trees' cost and tokens per root
+        event name and period."""
+        per_root = self._build_per_root_subquery(
+            [cost_field, "_llm.input_tokens", "_llm.output_tokens"]
+        )
+        cost = per_root.c[f"{cost_field.replace('.', '_')}_total"]
+        bucket = self._bucket(per_root.c.root_timestamp, interval, timezone)
+        statement = (
+            sqlalchemy.select(
+                per_root.c.root_name.label("name"),
+                bucket,
+                func.count().label("occurrences"),
+                func.sum(cost).label("cost"),
+                func.sum(per_root.c["_llm_input_tokens_total"]).label("input_tokens"),
+                func.sum(per_root.c["_llm_output_tokens_total"]).label("output_tokens"),
+            )
+            .select_from(per_root)
+            .group_by(per_root.c.root_name, bucket)
+            .order_by(bucket)
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return [
+            TinybirdFeaturePeriod(
+                name=row["name"],
+                bucket=_parse_datetime(row["bucket"]),
+                occurrences=int(row.get("occurrences", 0) or 0),
+                cost=float(row.get("cost", 0) or 0),
+                input_tokens=int(row.get("input_tokens", 0) or 0),
+                output_tokens=int(row.get("output_tokens", 0) or 0),
+            )
+            for row in rows
+        ]
+
+    async def get_feature_customer_stats(
+        self, cost_field: str
+    ) -> list[TinybirdFeatureCustomerStat]:
+        """Count root events and sum their trees' cost per root event name
+        and customer."""
+        per_root = self._build_per_root_subquery(
+            [cost_field, "_llm.input_tokens", "_llm.output_tokens"]
+        )
+        cost = per_root.c[f"{cost_field.replace('.', '_')}_total"]
+        statement = (
+            sqlalchemy.select(
+                per_root.c.root_name.label("name"),
+                per_root.c.customer_id.label("customer_id"),
+                per_root.c.external_customer_id.label("external_customer_id"),
+                func.count().label("occurrences"),
+                func.sum(cost).label("cost"),
+                func.sum(per_root.c["_llm_input_tokens_total"]).label("input_tokens"),
+                func.sum(per_root.c["_llm_output_tokens_total"]).label("output_tokens"),
+            )
+            .select_from(per_root)
+            .group_by(
+                per_root.c.root_name,
+                per_root.c.customer_id,
+                per_root.c.external_customer_id,
+            )
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return [
+            TinybirdFeatureCustomerStat(
+                name=row["name"],
+                customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                external_customer_id=row.get("external_customer_id") or None,
+                occurrences=int(row.get("occurrences", 0) or 0),
+                cost=float(row.get("cost", 0) or 0),
+                input_tokens=int(row.get("input_tokens", 0) or 0),
+                output_tokens=int(row.get("output_tokens", 0) or 0),
+            )
+            for row in rows
+        ]
+
+    async def get_customer_orders(
+        self, currency: str, start: datetime, end: datetime
+    ) -> list[TinybirdCustomerOrder]:
+        """Paid orders whose billing period overlaps the window, and refunds
+        made in it, so subscription revenue can be spread over its period."""
+        timestamp = events_table.c.timestamp
+        interval = events_table.c.recurring_interval
+        count = func.coalesce(events_table.c.recurring_interval_count, 1)
+        period_end = func.multiIf(
+            interval == "day",
+            func.addDays(timestamp, count),
+            interval == "week",
+            func.addWeeks(timestamp, count),
+            interval == "month",
+            func.addMonths(timestamp, count),
+            interval == "year",
+            func.addYears(timestamp, count),
+            timestamp,
+        )
+        window_start = start.astimezone(UTC).replace(tzinfo=None)
+        window_end = end.astimezone(UTC).replace(tzinfo=None)
+        paid = events_table.c.name == SystemEvent.order_paid.value
+        statement = sqlalchemy.select(
+            events_table.c.customer_id,
+            events_table.c.external_customer_id,
+            events_table.c.product_id,
+            timestamp.label("timestamp"),
+            func.if_(
+                paid,
+                func.coalesce(events_table.c.net_amount, events_table.c.amount, 0),
+                -func.coalesce(events_table.c.refunded_amount, 0),
+            ).label("amount"),
+            func.if_(paid, interval, None).label("recurring_interval"),
+            func.if_(paid, events_table.c.recurring_interval_count, None).label(
+                "recurring_interval_count"
+            ),
+        ).where(
+            self._get_organization_filter(),
+            events_table.c.source == EventSource.system.value,
+            events_table.c.currency == currency,
+            timestamp < window_end,
+            or_(
+                and_(
+                    paid,
+                    or_(timestamp >= window_start, period_end > window_start),
+                ),
+                and_(
+                    events_table.c.name == SystemEvent.order_refunded.value,
+                    timestamp >= window_start,
+                ),
+            ),
+            *self._filters,
+        )
+
+        sql, params = _compile(statement)
+        rows = await client.query(sql, parameters=params, db_statement=sql)
+        return [
+            TinybirdCustomerOrder(
+                customer_id=str(row["customer_id"]) if row.get("customer_id") else None,
+                external_customer_id=row.get("external_customer_id") or None,
+                product_id=str(row["product_id"]) if row.get("product_id") else None,
+                timestamp=_parse_datetime(row["timestamp"]),
+                amount=int(row.get("amount", 0) or 0),
+                recurring_interval=row.get("recurring_interval") or None,
+                recurring_interval_count=int(row["recurring_interval_count"])
+                if row.get("recurring_interval_count")
+                else None,
+            )
+            for row in rows
+        ]
 
     async def get_customer_stats(
         self,

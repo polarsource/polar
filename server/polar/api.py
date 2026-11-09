@@ -25,6 +25,7 @@ from polar.email_update.endpoints import router as email_update_router
 from polar.event.endpoints import router as event_router
 from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
+from polar.feature_breakdown.endpoints import router as feature_breakdown_router
 from polar.feedback.endpoints import router as feedback_router
 from polar.file.endpoints import router as files_router
 from polar.integrations.chargeback_stop.endpoints import (
@@ -135,6 +136,7 @@ router.include_router(cli_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
+router.include_router(feature_breakdown_router)
 # /license-keys
 router.include_router(license_key_router)
 # /checkout-links

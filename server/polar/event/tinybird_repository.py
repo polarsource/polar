@@ -3,10 +3,16 @@ from datetime import datetime
 from uuid import UUID
 
 from polar.integrations.tinybird.service import (
+    TinybirdCustomerOrder,
     TinybirdCustomerStat,
     TinybirdEventsQuery,
     TinybirdEventTypesQuery,
     TinybirdEventTypeStats,
+    TinybirdFeatureCustomerStat,
+    TinybirdFeatureModel,
+    TinybirdFeaturePeriod,
+    TinybirdFeatureStep,
+    TinybirdFeatureUse,
     TinybirdPropertyGroupStats,
     TinybirdTimeseriesStats,
     TinybirdVarianceStat,
@@ -356,6 +362,115 @@ class TinybirdEventRepository:
             numeric_metadata_property=numeric_metadata_property,
         )
         return await tinybird_query.get_totals_stats(aggregate_fields)
+
+    async def get_customer_orders(
+        self,
+        *,
+        organization_id: UUID,
+        currency: str,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+    ) -> list[TinybirdCustomerOrder]:
+        return await TinybirdEventsQuery([organization_id]).get_customer_orders(
+            currency, start_timestamp, end_timestamp
+        )
+
+    async def get_feature_steps(
+        self,
+        *,
+        organization_id: UUID,
+        name: str,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        cost_field: str = "_cost.amount",
+    ) -> list[TinybirdFeatureStep]:
+        tinybird_query = TinybirdEventsQuery([organization_id])
+        tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        tinybird_query.filter_names([name])
+        return await tinybird_query.get_feature_steps(cost_field)
+
+    def _feature_query(
+        self,
+        organization_id: UUID,
+        name: str,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+    ) -> TinybirdEventsQuery:
+        tinybird_query = TinybirdEventsQuery([organization_id])
+        tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        tinybird_query.filter_names([name])
+        return tinybird_query
+
+    async def get_feature_median_cost(
+        self,
+        *,
+        organization_id: UUID,
+        name: str,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        cost_field: str = "_cost.amount",
+    ) -> float:
+        return await self._feature_query(
+            organization_id, name, start_timestamp, end_timestamp
+        ).get_feature_median_cost(cost_field)
+
+    async def get_feature_costliest_uses(
+        self,
+        *,
+        organization_id: UUID,
+        name: str,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        minimum: float,
+        limit: int,
+        cost_field: str = "_cost.amount",
+    ) -> list[TinybirdFeatureUse]:
+        return await self._feature_query(
+            organization_id, name, start_timestamp, end_timestamp
+        ).get_feature_costliest_uses(cost_field, minimum, limit)
+
+    async def get_feature_models(
+        self,
+        *,
+        organization_id: UUID,
+        name: str,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        cost_field: str = "_cost.amount",
+    ) -> list[TinybirdFeatureModel]:
+        tinybird_query = TinybirdEventsQuery([organization_id])
+        tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        tinybird_query.filter_names([name])
+        return await tinybird_query.get_feature_models(cost_field)
+
+    async def get_feature_periods(
+        self,
+        *,
+        organization_id: UUID,
+        name: str | None,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        interval: str,
+        timezone: str,
+        cost_field: str = "_cost.amount",
+    ) -> list[TinybirdFeaturePeriod]:
+        tinybird_query = TinybirdEventsQuery([organization_id])
+        tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        if name is not None:
+            tinybird_query.filter_names([name])
+        return await tinybird_query.get_feature_periods(cost_field, interval, timezone)
+
+    async def get_feature_customer_stats(
+        self,
+        *,
+        organization_id: UUID,
+        start_timestamp: datetime,
+        end_timestamp: datetime,
+        cost_field: str = "_cost.amount",
+    ) -> list[TinybirdFeatureCustomerStat]:
+        tinybird_query = TinybirdEventsQuery([organization_id])
+        tinybird_query.filter_timestamp_range(start_timestamp, end_timestamp)
+        return await tinybird_query.get_feature_customer_stats(cost_field)
 
     async def get_customer_stats(
         self,

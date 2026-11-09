@@ -839,12 +839,12 @@ def _build_user_cost_span_events(
         vendor_config: dict[str, Any],
         extra_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        cost = (
+        cost_cents = 100 * (
             input_tokens / 1_000_000 * vendor_config["input_cost_per_m"]
             + output_tokens / 1_000_000 * vendor_config["output_cost_per_m"]
         )
         metadata: dict[str, Any] = {
-            "_cost": {"amount": round(cost, 6), "currency": "usd"},
+            "_cost": {"amount": round(cost_cents, 6), "currency": "usd"},
             "_llm": {
                 "vendor": vendor_config["vendor"],
                 "model": vendor_config["model"],
@@ -873,7 +873,7 @@ def _build_user_cost_span_events(
         extra_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         metadata: dict[str, Any] = {
-            "_cost": {"amount": round(cost_amount, 6), "currency": "usd"},
+            "_cost": {"amount": round(cost_amount * 100, 6), "currency": "usd"},
         }
         if extra_metadata:
             metadata.update(extra_metadata)

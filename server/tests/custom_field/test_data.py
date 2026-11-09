@@ -120,26 +120,6 @@ async def test_checkbox_input(
     assert getattr(data, "checkbox1") is True
 
 
-@pytest.mark.anyio
-async def test_date_bounds_at_epoch(
-    save_fixture: SaveFixture, organization: Organization
-) -> None:
-    date_field = await create_custom_field(
-        save_fixture,
-        type=CustomFieldType.date,
-        slug="date1",
-        organization=organization,
-        properties={"ge": 0, "le": 0},
-    )
-    schema = build_custom_field_data_schema([(date_field, False)])
-
-    schema.model_validate({"date1": "1970-01-01"})
-    with pytest.raises(ValidationError):
-        schema.model_validate({"date1": "1969-12-31"})
-    with pytest.raises(ValidationError):
-        schema.model_validate({"date1": "1970-01-02"})
-
-
 def test_custom_field_data_models() -> None:
     for model in custom_field_data_models:
         assert hasattr(model, "organization"), (

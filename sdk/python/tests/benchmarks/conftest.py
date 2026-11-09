@@ -7,11 +7,11 @@ import subprocess
 import tempfile
 import time
 import typing
+import uuid
 
 import httpx
 import pytest
 
-from polar.outpost import telemetry
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import Reducer
 
@@ -80,7 +80,10 @@ def polar_server(
             response: typing.Any = {"organization_id": "org", "reducers": reducers}
         elif scope["path"] == "/v1/outpost/meter-usage":
             response = (
-                [{"customer_exists": True, **snapshot, **json.loads(body)}]
+                [
+                    {"customer_exists": True, **snapshot, **identity}
+                    for identity in json.loads(body)["identities"]
+                ]
                 if snapshot is not None
                 else []
             )
@@ -122,8 +125,11 @@ def outpost(
     reducers: list[Reducer],
     snapshot: dict[str, typing.Any] | None,
 ) -> collections.abc.Iterator[Outpost]:
+    # Each module configures its own reducers on the session's Redis: a token of its own
+    # keeps another module's stored configuration out.
     client = httpx.AsyncClient(
         base_url="http://polar.test",
+        headers={"Authorization": f"Bearer {uuid.uuid4()}"},
         transport=httpx.ASGITransport(polar_server(reducers, snapshot)),
     )
     outpost = Outpost(f"unix://{redis_socket}", client=client)
@@ -135,15 +141,13 @@ def outpost(
             ready.set_result(None)
             await stop.wait()
 
-    # Telemetry records as in production; only its export to Polar stays on the machine.
-    with pytest.MonkeyPatch.context() as monkeypatch:
-        monkeypatch.setattr(telemetry._Relay, "_post", lambda self, body: True)
-        held = loop.create_task(hold())
-        loop.run_until_complete(
-            asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
-        )
-        if held.done():
-            held.result()
-        yield outpost
-        stop.set()
-        loop.run_until_complete(held)
+    # Telemetry records as in production, into the fake Polar's Redis.
+    held = loop.create_task(hold())
+    loop.run_until_complete(
+        asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
+    )
+    if held.done():
+        held.result()
+    yield outpost
+    stop.set()
+    loop.run_until_complete(held)

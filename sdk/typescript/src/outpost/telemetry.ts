@@ -1,3 +1,4 @@
+import { SpanStatusCode } from "@opentelemetry/api";
 import {
   ProtobufMetricsSerializer,
   ProtobufTraceSerializer,
@@ -39,60 +40,43 @@ export const METRIC_VIEWS: ViewOptions[] = [
   },
 ];
 type ExportResult = Parameters<Parameters<SpanExporter["export"]>[1]>[0];
+// Set on the spans a sample keeps: each stands for this many spans without an error or a drift.
+export const SAMPLE_RATE_ATTRIBUTE = "outpost.sample_rate";
 
 export const isTelemetryEnabled = (telemetry: boolean): boolean =>
   telemetry && process.env[TELEMETRY_ENV] !== "0";
 
-// The OTLP exporter merges OTEL_EXPORTER_OTLP_HEADERS into its requests:
-// the application's own exporter credentials would reach Polar.
-const post = (
-  url: string,
-  headers: Headers,
-  body: Uint8Array | undefined,
-  resultCallback: (result: ExportResult) => void,
-): void => {
-  if (!body) return resultCallback({ code: 1 });
-  fetch(url, {
-    method: "POST",
-    headers,
-    body: new Uint8Array(body),
-    signal: AbortSignal.timeout(10_000),
-  })
-    .then((response) => resultCallback({ code: response.ok ? 0 : 1 }))
-    .catch((error: unknown) =>
-      resultCallback({
-        code: 1,
-        error: error instanceof Error ? error : new Error(String(error)),
-      }),
-    );
-};
+/** The serialized exports an instance holds until it hands them to the shared Redis. */
+export class Outbox {
+  spans: Uint8Array[] = [];
+  metrics: Uint8Array[] = [];
+}
 
-export class RelaySpanExporter implements SpanExporter {
-  constructor(
-    private readonly url: string,
-    private readonly headers: Headers,
-  ) {}
+const kept = (span: ReadableSpan): boolean =>
+  span.attributes[SAMPLE_RATE_ATTRIBUTE] !== undefined ||
+  span.status.code === SpanStatusCode.ERROR ||
+  span.attributes["outpost.snapshot.delta"] === true;
+
+export class OutboxSpanExporter implements SpanExporter {
+  constructor(private readonly outbox: Outbox) {}
 
   export(spans: ReadableSpan[], resultCallback: (result: ExportResult) => void): void {
-    post(this.url, this.headers, ProtobufTraceSerializer.serializeRequest(spans), resultCallback);
+    const exported = spans.filter(kept);
+    const body = exported.length ? ProtobufTraceSerializer.serializeRequest(exported) : undefined;
+    if (body) this.outbox.spans.push(body);
+    resultCallback({ code: 0 });
   }
 
   async shutdown(): Promise<void> {}
 }
 
-export class RelayMetricExporter implements PushMetricExporter {
-  constructor(
-    private readonly url: string,
-    private readonly headers: Headers,
-  ) {}
+export class OutboxMetricExporter implements PushMetricExporter {
+  constructor(private readonly outbox: Outbox) {}
 
   export(metrics: ResourceMetrics, resultCallback: (result: ExportResult) => void): void {
-    post(
-      this.url,
-      this.headers,
-      ProtobufMetricsSerializer.serializeRequest(metrics),
-      resultCallback,
-    );
+    const body = ProtobufMetricsSerializer.serializeRequest(metrics);
+    if (body) this.outbox.metrics.push(body);
+    resultCallback({ code: 0 });
   }
 
   selectAggregationTemporality(_instrument: InstrumentType): AggregationTemporality {
@@ -118,6 +102,25 @@ const relayTarget = (
   return [url, headers];
 };
 
+/**
+ * Sends serialized exports in one request: protobuf messages concatenate into one. The OTLP
+ * exporters would merge OTEL_EXPORTER_OTLP_HEADERS and send the application's credentials to Polar.
+ */
+export const relay = async (
+  client: Pick<ClientBase, "buildRequest">,
+  path: string,
+  body: Uint8Array,
+): Promise<number> => {
+  const [url, headers] = relayTarget(client, path);
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: new Uint8Array(body),
+    signal: AbortSignal.timeout(10_000),
+  });
+  return response.status;
+};
+
 const resource = () =>
   resourceFromAttributes({
     "service.name": "outpost",
@@ -125,25 +128,21 @@ const resource = () =>
     "telemetry.sdk.language": "nodejs",
   });
 
-export const createTracerProvider = (client: Pick<ClientBase, "buildRequest">): TracerProvider => {
-  const [url, headers] = relayTarget(client, "/v1/outpost/telemetry");
-  return new TracerProvider({
+export const createTracerProvider = (outbox: Outbox): TracerProvider =>
+  new TracerProvider({
     resource: resource(),
     sampler: new AlwaysOnSampler(),
-    spanProcessors: [new BatchSpanProcessor({ exporter: new RelaySpanExporter(url, headers) })],
+    spanProcessors: [new BatchSpanProcessor({ exporter: new OutboxSpanExporter(outbox) })],
   });
-};
 
-export const createMeterProvider = (client: Pick<ClientBase, "buildRequest">): MeterProvider => {
-  const [url, headers] = relayTarget(client, "/v1/outpost/telemetry/metrics");
-  return new MeterProvider({
+export const createMeterProvider = (outbox: Outbox): MeterProvider =>
+  new MeterProvider({
     resource: resource(),
     views: METRIC_VIEWS,
     readers: [
       new PeriodicExportingMetricReader({
-        exporter: new RelayMetricExporter(url, headers),
+        exporter: new OutboxMetricExporter(outbox),
         exportIntervalMillis: EXPORT_INTERVAL,
       }),
     ],
   });
-};

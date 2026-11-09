@@ -1,11 +1,9 @@
 # Constants every Outpost SDK shares: the generator renders them into each one.
 # Durations are in milliseconds.
 
-# Every key and the channel carry the layout version. A new layout takes a new version,
+# Every key carries the layout version. A new layout takes a new version,
 # starts cold from Polar's snapshot and never reads the previous keys.
 key_version = "outpost:v1"
-# Customer states an instance keeps in memory.
-cache_size = 1024
 # How long an operation waits on Redis or Polar before giving up.
 timeout = 5000
 # How long a cold read waits for the customer's first snapshot.
@@ -15,8 +13,17 @@ snapshot_timeout = 5000
 confirm_timeout = 2000
 # Pending ids per confirm request: Polar refuses a bigger one.
 confirm_batch = 1000
-# How often an instance reloads its states from Redis and reports to telemetry.
-sync_interval = 30000
+# How often an instance reports the size of its Redis to telemetry.
+report_interval = 30000
+# One span in this many goes to Polar for the others; spans with an error or a drift always go.
+span_sample_rate = 10
+# Exports each telemetry list in Redis keeps while no instance pulls.
+telemetry_cap = 1000
+# How long a relay holds the telemetry lock: two relays at their timeout, with room to spare.
+relay_lock_ttl = 30000
+# How often a read waiting for a cold customer's snapshot, or for another instance's pull, reads
+# Redis again.
+poll_interval = 25
 redis_reconnect_delay = 100
 max_redis_reconnect_delay = 2000
 # Polar sets the interval with each pull; this one holds until the first.
@@ -28,6 +35,17 @@ pull_lock_ttl = 10000
 pull_retry_delay = 1000
 max_pull_retry_delay = 30000
 pull_limit = 500
+# Identities per meter usage request: Polar refuses a bigger one.
+snapshot_batch = 500
+# How long an instance gathers the cold customers its reads ask for before asking Polar.
+fetch_batch_window = 10
+# Batches of cold customers the instance holding the queue asks Polar for at once.
+fetch_concurrency = 3
+# A batch of cold customers that fails at once is asked for again this long later, twice as
+# long after each failure, while its reads still wait.
+fetch_retry_delay = 100
+# Customers of a pulled page whose snapshots apply side by side; each one's apply in order.
+pull_concurrency = 16
 pull_check_interval = 1000
 # A reducer bucket, in microseconds.
 bucket_size = 300000000

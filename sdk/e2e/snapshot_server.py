@@ -53,7 +53,9 @@ class SnapshotServer:
             return JSONResponse(self.configuration)
         if route == "POST /v1/outpost/meter-usage":
             payload = await request.json()
-            return JSONResponse([self._snapshot(payload)])
+            return JSONResponse(
+                [self._snapshot(identity) for identity in payload["identities"]]
+            )
         if route == "POST /v1/outpost/confirm":
             payload = await request.json()
             return JSONResponse(

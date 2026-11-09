@@ -2,7 +2,7 @@ import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
-import { BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encodeState } from "./benchmark";
+import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
@@ -45,9 +45,6 @@ describe("APPLY_SNAPSHOT", () => {
             applySnapshotSha,
             1,
             key,
-            identityOf(buckets),
-            CHANNEL,
-            EPOCH,
             cutoff,
             cutoff + 1,
             1000,

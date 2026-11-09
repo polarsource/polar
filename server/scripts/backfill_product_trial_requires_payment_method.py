@@ -33,7 +33,10 @@ async def backfill_product_trial_requires_payment_method(
     await run_batched_update(
         (
             update(Product)
-            .values(trial_requires_payment_method=True)
+            .values(
+                trial_requires_payment_method=True,
+                modified_at=Product.modified_at,
+            )
             .where(
                 Product.id.in_(
                     select(Product.id)

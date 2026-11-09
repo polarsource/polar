@@ -1,4 +1,6 @@
 import uuid
+from collections import Counter
+from collections.abc import Awaitable, Callable
 from decimal import Decimal
 from typing import Any, get_args
 from uuid import UUID
@@ -85,6 +87,7 @@ from polar.product.tiers import Tiers
 from polar.redis import Redis
 from polar.version import CURRENT_API_VERSION, V2026_04
 from polar.webhook.repository import WebhookEndpointRepository
+from polar.webhook.service import webhook as webhook_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -4944,3 +4947,168 @@ class TestCatalogDrafts:
             await CatalogRepository.from_session(session).get_draft(organization.id)
             is None
         )
+
+
+_CATALOG_EVENTS = {
+    WebhookEventType.product_created,
+    WebhookEventType.product_updated,
+    WebhookEventType.benefit_created,
+    WebhookEventType.benefit_updated,
+}
+
+type SentWebhook = tuple[WebhookEventType, UUID, str | None, bool]
+
+
+@pytest.fixture
+def sent_webhooks(mocker: MockerFixture) -> list[SentWebhook]:
+    """Catalog webhooks with `external_id` and `is_current` as they were when sent."""
+    sent: list[SentWebhook] = []
+    send: Callable[..., Awaitable[Any]] = webhook_service.send
+
+    async def record(
+        session: AsyncSession,
+        target: Organization,
+        event: WebhookEventType,
+        data: Any,
+        **payload_fields: object,
+    ) -> Any:
+        if event in _CATALOG_EVENTS:
+            sent.append((event, data.id, data.external_id, data.is_current))
+        return await send(session, target, event, data, **payload_fields)
+
+    mocker.patch.object(webhook_service, "send", side_effect=record)
+    return sent
+
+
+@pytest.mark.anyio
+@pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+@pytest.mark.usefixtures("config_as_code_enabled")
+class TestCatalogWebhooks:
+    initial = Config.model_validate(
+        {
+            "benefits": [BETA_BENEFIT],
+            "products": [{**MONTHLY_PRO, "benefits": ["beta"]}, PACK_PRODUCT],
+        }
+    )
+    changed = Config.model_validate(
+        {
+            "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+            "products": [{**MONTHLY_PRO, "benefits": ["beta"]}],
+        }
+    )
+
+    async def _current(
+        self, session: AsyncSession, organization: Organization
+    ) -> tuple[UUID, UUID, UUID]:
+        [beta] = await BenefitRepository.from_session(session).get_all_by_external_ids(
+            organization.id, ["beta"]
+        )
+        products = {
+            product.external_id: product.id
+            for product in await ProductRepository.from_session(
+                session
+            ).get_all_by_external_ids(organization.id, ["pro", "pack"])
+        }
+        return beta.id, products["pro"], products["pack"]
+
+    async def test_apply_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        sent_webhooks: list[SentWebhook],
+    ) -> None:
+        await declarative_config_service.apply(
+            session, redis, auth_subject, self.initial
+        )
+        old_beta, old_pro, pack = await self._current(session, organization)
+        sent_webhooks.clear()
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, self.changed
+        )
+
+        [new_beta] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        [new_pro] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert Counter(sent_webhooks) == Counter(
+            [
+                (WebhookEventType.benefit_created, new_beta.id, "beta", True),
+                (WebhookEventType.benefit_updated, old_beta, "beta", False),
+                (WebhookEventType.product_created, new_pro.id, "pro", True),
+                (WebhookEventType.product_updated, old_pro, "pro", False),
+                (WebhookEventType.product_updated, pack, "pack", False),
+            ]
+        )
+
+    async def test_draft_save_and_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        sent_webhooks: list[SentWebhook],
+    ) -> None:
+        await declarative_config_service.apply(
+            session, redis, auth_subject, self.initial
+        )
+        old_beta, old_pro, pack = await self._current(session, organization)
+        sent_webhooks.clear()
+
+        result = await declarative_config_service.apply(
+            session, redis, auth_subject, self.changed, publish=False
+        )
+
+        assert result.catalog is not None
+        draft = await catalog_service.resolve(
+            session, organization, result.catalog.after.id
+        )
+        assert draft is not None
+        new_beta = (
+            await catalog_service.get_catalog_benefits(session, organization, draft)
+        )["beta"]
+        [new_pro] = [
+            member.product
+            for member in await CatalogProductRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+        ]
+        assert Counter(sent_webhooks) == Counter(
+            [
+                (WebhookEventType.benefit_created, new_beta.id, "beta", False),
+                (WebhookEventType.product_created, new_pro.id, "pro", False),
+            ]
+        )
+        sent_webhooks.clear()
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert Counter(sent_webhooks) == Counter(
+            [
+                (WebhookEventType.benefit_updated, old_beta, "beta", False),
+                (WebhookEventType.product_updated, old_pro, "pro", False),
+                (WebhookEventType.product_updated, pack, "pack", False),
+            ]
+        )
+
+    async def test_unchanged_sends_nothing(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        sent_webhooks: list[SentWebhook],
+    ) -> None:
+        await declarative_config_service.apply(
+            session, redis, auth_subject, self.initial
+        )
+        sent_webhooks.clear()
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, self.initial
+        )
+
+        assert sent_webhooks == []

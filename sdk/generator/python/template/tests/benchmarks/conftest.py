@@ -81,7 +81,10 @@ def polar_server(
             response: typing.Any = {"organization_id": "org", "reducers": reducers}
         elif scope["path"] == "/v1/outpost/meter-usage":
             response = (
-                [{"customer_exists": True, **snapshot, **json.loads(body)}]
+                [
+                    {"customer_exists": True, **snapshot, **identity}
+                    for identity in json.loads(body)["identities"]
+                ]
                 if snapshot is not None
                 else []
             )

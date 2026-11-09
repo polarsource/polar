@@ -27,7 +27,7 @@ polar agent setup [flags]
 | Flag | Type | Description |
 | --- | --- | --- |
 | `--status` | `boolean` | Show what is set up without changing anything |
-| `--yes`, `-y` | `boolean` | Set up every detected agent without asking |
+| `--confirm`, `-c` | `boolean` | Set up every detected agent without asking |
 | `--force` | `boolean` | Reinstall even when an agent is already set up |
 | `--client` | `choice` | Only set up this agent (choices: claude-code, codex, cursor) |
 | `--skills` | `choice` | Also install the Polar skills into .agents/skills of this directory (project) or your home directory (global), for agents without a Polar plugin (choices: project, global) |
@@ -56,5 +56,5 @@ polar agent setup --skills project
 
 Set up every detected agent without asking, for scripts
 ```bash
-polar agent setup --yes --json
+polar agent setup --confirm --json
 ```

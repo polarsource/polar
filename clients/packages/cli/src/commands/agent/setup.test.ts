@@ -113,8 +113,8 @@ describe('agent setup', () => {
     expect(cli.installed).toEqual([])
   })
 
-  test('--yes sets up every detected client and skips the ones already set up', async () => {
-    const cli = run(['--yes'], {
+  test('--confirm sets up every detected client and skips the ones already set up', async () => {
+    const cli = run(['--confirm'], {
       statuses: [
         client('claude-code', { installed: true }),
         client('codex'),
@@ -182,7 +182,7 @@ describe('agent setup', () => {
     expect(cli.installed).toEqual([])
   })
 
-  test('needs --yes to set up every agent with --json in a terminal', async () => {
+  test('needs --confirm to set up every agent with --json in a terminal', async () => {
     const cli = run(
       ['--json'],
       { statuses: [client('codex')] },
@@ -196,7 +196,7 @@ describe('agent setup', () => {
   })
 
   test('reports a failed client, keeps going and exits non-zero', async () => {
-    const cli = run(['--yes'], {
+    const cli = run(['--confirm'], {
       statuses: [
         client('claude-code', { problem: 'Update Claude Code.' }),
         client('codex'),

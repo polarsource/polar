@@ -12,6 +12,7 @@ import {
 } from '@/schemas/AgentSetup'
 import { AgentSetup } from '@/services/agent-setup/service'
 import { output } from '@/utils/command'
+import { confirm } from '@/utils/flags'
 import {
   describeClient,
   errorDetail,
@@ -28,9 +29,7 @@ const status = Flag.Boolean('status').pipe(
   Flag.withDefault(false),
   Flag.withDescription('Show what is set up without changing anything'),
 )
-const yes = Flag.Boolean('yes').pipe(
-  Flag.withAlias('y'),
-  Flag.withDefault(false),
+const confirmAll = confirm.pipe(
   Flag.withDescription('Set up every detected agent without asking'),
 )
 const force = Flag.Boolean('force').pipe(
@@ -101,7 +100,7 @@ const select = (
   detected: ReadonlyArray<ClientStatus>,
   only: Client | undefined,
   scope: SkillScope | undefined,
-  yes: boolean,
+  confirm: boolean,
 ) =>
   Effect.gen(function* () {
     const { callingAgent: agent } = yield* AgentSetup
@@ -126,13 +125,13 @@ const select = (
       )
       return { targets: [], scopes: [scope ?? 'project'] }
     }
-    if (yes || only || !(yield* interactive)) {
+    if (confirm || only || !(yield* interactive)) {
       return { targets: detected, scopes }
     }
     if (json) {
       return yield* new AgentSetupError({
         message: 'Choose what to set up',
-        hint: 'Pass --yes to set up every detected agent, or --client to pick one.',
+        hint: 'Pass --confirm to set up every detected agent, or --client to pick one.',
       })
     }
     yield* note(ui.blank)
@@ -229,7 +228,7 @@ const installedSkills = Effect.gen(function* () {
 
 interface Input {
   readonly status: boolean
-  readonly yes: boolean
+  readonly confirm: boolean
   readonly force: boolean
   readonly client: Option.Option<Client>
   readonly skills: Option.Option<SkillScope>
@@ -266,7 +265,7 @@ const runSetup = (input: Input) =>
       detected,
       only,
       Option.getOrUndefined(input.skills),
-      input.yes,
+      input.confirm,
     )
     const steps = [
       ...(yield* Effect.forEach(selection.targets, (target) =>
@@ -281,7 +280,7 @@ const runSetup = (input: Input) =>
 
 export const setup = Command.make('setup', {
   status,
-  yes,
+  confirm: confirmAll,
   force,
   client,
   skills,
@@ -309,7 +308,7 @@ export const setup = Command.make('setup', {
         'Install the Polar skills into .agents/skills for any other agent',
     },
     {
-      command: 'polar agent setup --yes --json',
+      command: 'polar agent setup --confirm --json',
       description: 'Set up every detected agent without asking, for scripts',
     },
   ]),

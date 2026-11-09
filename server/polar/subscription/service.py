@@ -1302,9 +1302,6 @@ class SubscriptionService:
             if trial_expired:
                 subscription.canceled_at = ended_at
                 subscription.ends_at = ended_at
-                subscription.customer_cancellation_reason = (
-                    CustomerCancellationReason.trial_expired
-                )
                 subscription.pause_at_period_end = False
                 subscription.resumes_at = None
             subscription.ended_at = ended_at

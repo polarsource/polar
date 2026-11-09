@@ -2400,10 +2400,7 @@ class TestCycle:
             )
 
         assert updated_subscription.status == SubscriptionStatus.canceled
-        assert (
-            updated_subscription.customer_cancellation_reason
-            == CustomerCancellationReason.trial_expired
-        )
+        assert updated_subscription.customer_cancellation_reason is None
         assert updated_subscription.ended_at is not None
         assert updated_subscription.canceled_at == updated_subscription.ended_at
         assert updated_subscription.ends_at == updated_subscription.ended_at

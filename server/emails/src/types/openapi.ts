@@ -1116,7 +1116,6 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
-      | 'trial_expired'
     /** CustomerEmailChangedNotificationEmail */
     CustomerEmailChangedNotificationEmail: {
       /**

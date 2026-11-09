@@ -10,9 +10,12 @@ variable "environment" {
 
 variable "google_secrets" {
   type = object({
-    client_id            = string
-    client_secret        = string
-    service_account_json = string
+    client_id                = string
+    client_secret            = string
+    service_account_json     = string
+    backoffice_client_id     = string
+    backoffice_client_secret = string
+    backoffice_hosted_domain = string
   })
   sensitive = true
 }

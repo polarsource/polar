@@ -1,4 +1,5 @@
 from polar.auth import tasks as auth
+from polar.backoffice.auth import tasks as backoffice_auth
 from polar.benefit import tasks as benefit
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
@@ -49,6 +50,7 @@ from polar.webhook import tasks as webhook
 
 __all__ = [
     "auth",
+    "backoffice_auth",
     "benefit",
     "chargeback_stop",
     "checkout",

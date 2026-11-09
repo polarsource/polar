@@ -508,3 +508,19 @@ variable "slo_report_slack_bot_token" {
   sensitive   = true
   default     = ""
 }
+
+variable "backoffice_google_client_id" {
+  description = "Backoffice Google OAuth client ID"
+  type        = string
+}
+
+variable "backoffice_google_client_secret" {
+  description = "Backoffice Google OAuth client secret"
+  type        = string
+  sensitive   = true
+}
+
+variable "backoffice_google_hosted_domain" {
+  description = "Backoffice Google Workspace hosted domain"
+  type        = string
+}

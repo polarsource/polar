@@ -1,7 +1,6 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 import {
-  PLUGIN,
   claude,
   codex,
   detectPlugin,
@@ -47,14 +46,16 @@ describe('installPlugin', () => {
     const { exec, calls } = fakeExec({
       'claude plugin marketplace list --json': ok([{ name: 'other' }]),
       'claude plugin marketplace add polarsource/agent-toolkit': ok(),
-      [`claude plugin install ${PLUGIN}`]: ok(),
-      'claude plugin list --json': ok([{ id: PLUGIN, version: '0.1.0' }]),
+      [`claude plugin install ${claude.plugin}`]: ok(),
+      'claude plugin list --json': ok([
+        { id: claude.plugin, version: '0.1.0' },
+      ]),
     })
     await Effect.runPromise(installPlugin(claude, exec, false))
     expect(calls).toEqual([
       'claude plugin marketplace list --json',
       'claude plugin marketplace add polarsource/agent-toolkit',
-      `claude plugin install ${PLUGIN}`,
+      `claude plugin install ${claude.plugin}`,
       'claude plugin list --json',
     ])
   })
@@ -63,31 +64,41 @@ describe('installPlugin', () => {
     const { exec, calls } = fakeExec({
       'claude plugin marketplace list --json': ok([{ name: 'polar' }]),
       'claude plugin marketplace update polar': ok(),
-      [`claude plugin update ${PLUGIN}`]: ok(),
-      'claude plugin list --json': ok([{ id: PLUGIN }]),
+      [`claude plugin update ${claude.plugin}`]: ok(),
+      'claude plugin list --json': ok([{ id: claude.plugin }]),
     })
     await Effect.runPromise(installPlugin(claude, exec, true))
     expect(calls).toContain('claude plugin marketplace update polar')
-    expect(calls).toContain(`claude plugin update ${PLUGIN}`)
+    expect(calls).toContain(`claude plugin update ${claude.plugin}`)
+  })
+
+  test('installs into Codex from its official marketplace', async () => {
+    const { exec, calls } = fakeExec({
+      'codex plugin add polar@openai-curated-remote': ok(),
+      'codex plugin list --json': ok({
+        installed: [{ pluginId: 'polar@openai-curated-remote' }],
+      }),
+    })
+    await Effect.runPromise(installPlugin(codex, exec, false))
+    expect(calls).toEqual([
+      'codex plugin add polar@openai-curated-remote',
+      'codex plugin list --json',
+    ])
   })
 
   test('fails when Codex exits 0 but the plugin is still missing', async () => {
     const { exec } = fakeExec({
-      'codex plugin marketplace list --json': ok({
-        marketplaces: [{ name: 'polar' }],
-      }),
-      'codex plugin marketplace upgrade polar': ok(),
-      [`codex plugin add ${PLUGIN}`]: ok(),
+      [`codex plugin add ${codex.plugin}`]: ok(),
       'codex plugin list --json': ok({
-        installed: [{ pluginId: PLUGIN, installed: false }],
+        installed: [{ pluginId: codex.plugin, installed: false }],
       }),
     })
     const error = await Effect.runPromise(
       Effect.flip(installPlugin(codex, exec, false)),
     )
     expect(error.message).toBe(
-      `Codex reported success but ${PLUGIN} is not installed`,
+      `Codex reported success but ${codex.plugin} is not installed`,
     )
-    expect(error.hint).toContain(`codex plugin add ${PLUGIN}`)
+    expect(error.hint).toContain(`codex plugin add ${codex.plugin}`)
   })
 })

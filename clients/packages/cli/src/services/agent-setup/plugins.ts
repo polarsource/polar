@@ -7,9 +7,6 @@ import {
 import type { Exec } from '@/services/updater'
 import { TOOLKIT_REPOSITORY } from '@/services/agent-setup/skills'
 
-const MARKETPLACE = 'polar'
-export const PLUGIN = `polar@${MARKETPLACE}`
-
 const LIST_TIMEOUT = 15_000
 const INSTALL_TIMEOUT = 3 * 60_000
 
@@ -38,20 +35,14 @@ const CodexPlugins = Schema.Struct({
     encode: SchemaGetter.forbiddenEncoding,
   }),
 )
-const CodexMarketplaces = Schema.Struct({ marketplaces: Marketplaces }).pipe(
-  Schema.decodeTo(Marketplaces, {
-    decode: SchemaGetter.transform(({ marketplaces }) => marketplaces),
-    encode: SchemaGetter.forbiddenEncoding,
-  }),
-)
 
 export interface PluginClient {
   readonly client: Client
   readonly name: string
   readonly binary: string
+  readonly plugin: string
+  readonly marketplace?: string
   readonly plugins: Schema.Codec<typeof Plugins.Type, unknown>
-  readonly marketplaces: Schema.Codec<typeof Marketplaces.Type, unknown>
-  readonly refresh: 'update' | 'upgrade'
   readonly install: (installed: boolean) => 'install' | 'update' | 'add'
 }
 
@@ -59,9 +50,9 @@ export const claude: PluginClient = {
   client: 'claude-code',
   name: 'Claude Code',
   binary: 'claude',
+  plugin: 'polar@polar',
+  marketplace: 'polar',
   plugins: Plugins,
-  marketplaces: Marketplaces,
-  refresh: 'update',
   install: (installed) => (installed ? 'update' : 'install'),
 }
 
@@ -69,9 +60,8 @@ export const codex: PluginClient = {
   client: 'codex',
   name: 'Codex',
   binary: 'codex',
+  plugin: 'polar@openai-curated-remote',
   plugins: CodexPlugins,
-  marketplaces: CodexMarketplaces,
-  refresh: 'upgrade',
   install: () => 'add',
 }
 
@@ -124,7 +114,7 @@ const installedPlugin = (spec: PluginClient, exec: Exec) =>
     Effect.map((plugins) =>
       plugins.find(
         (plugin) =>
-          plugin.installed !== false && plugin.id.toLowerCase() === PLUGIN,
+          plugin.installed !== false && plugin.id.toLowerCase() === spec.plugin,
       ),
     ),
   )
@@ -164,26 +154,29 @@ export const installPlugin = (
   installed: boolean,
 ) =>
   Effect.gen(function* () {
-    const marketplaces = yield* runJson(
-      exec,
-      pluginCommand(spec, 'marketplace', 'list', '--json'),
-      spec.marketplaces,
-    ).pipe(Effect.orElseSucceed(() => []))
-    yield* run(
-      exec,
-      marketplaces.some(({ name }) => name === MARKETPLACE)
-        ? pluginCommand(spec, 'marketplace', spec.refresh, MARKETPLACE)
-        : pluginCommand(spec, 'marketplace', 'add', TOOLKIT_REPOSITORY),
-      INSTALL_TIMEOUT,
-    )
-    const install = pluginCommand(spec, spec.install(installed), PLUGIN)
+    const { marketplace } = spec
+    if (marketplace) {
+      const marketplaces = yield* runJson(
+        exec,
+        pluginCommand(spec, 'marketplace', 'list', '--json'),
+        Marketplaces,
+      ).pipe(Effect.orElseSucceed(() => []))
+      yield* run(
+        exec,
+        marketplaces.some(({ name }) => name === marketplace)
+          ? pluginCommand(spec, 'marketplace', 'update', marketplace)
+          : pluginCommand(spec, 'marketplace', 'add', TOOLKIT_REPOSITORY),
+        INSTALL_TIMEOUT,
+      )
+    }
+    const install = pluginCommand(spec, spec.install(installed), spec.plugin)
     yield* run(exec, install, INSTALL_TIMEOUT)
     const plugin = yield* installedPlugin(spec, exec).pipe(
       Effect.orElseSucceed(() => undefined),
     )
     if (!plugin) {
       return yield* new AgentSetupError({
-        message: `${spec.name} reported success but ${PLUGIN} is not installed`,
+        message: `${spec.name} reported success but ${spec.plugin} is not installed`,
         hint: `Run ${install.join(' ')} to see the underlying error.`,
       })
     }

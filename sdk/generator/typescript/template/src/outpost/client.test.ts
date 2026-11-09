@@ -111,7 +111,10 @@ let ingested = new Set<string>();
 let answerConfirm = true;
 let confirmSnapshot: Record<string, unknown> | undefined;
 const confirmRequests: Record<string, unknown>[] = [];
+// Each identity asked for, and the size of each meter usage request.
 const meterUsageRequests: Record<string, unknown>[] = [];
+const meterUsageBatches: number[] = [];
+let meterUsageStatus = 200;
 const outposts: Outpost[] = [];
 
 const creditReducer = (id: string, meterId: string): Reducer => ({
@@ -205,19 +208,26 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
       return;
     }
     case "POST /v1/outpost/meter-usage": {
-      meterUsageRequests.push(body);
+      const identities: Record<string, unknown>[] = body.identities;
+      meterUsageRequests.push(...identities);
+      meterUsageBatches.push(identities.length);
+      if (meterUsageStatus !== 200) return respond(response, {}, meterUsageStatus);
       if (!snapshot) return respond(response, []);
-      const reducerId: string = body.reducer_id;
-      const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
-      const { delay = 0, ...override } = reducerSnapshots[reducerId] ?? {};
-      const payload = {
-        customer_exists: true,
-        ...snapshot,
-        ...(kind === "credit" && creditSnapshot(credited, snapshot.version as number)),
-        reducer_id: reducerId,
-        ...override,
-      };
-      setTimeout(() => respond(response, [payload]), delay);
+      let delay = 0;
+      const payloads = identities.map(({ reducer_id }) => {
+        const reducerId = reducer_id as string;
+        const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
+        const { delay: wait = 0, ...override } = reducerSnapshots[reducerId] ?? {};
+        delay = Math.max(delay, wait);
+        return {
+          customer_exists: true,
+          ...snapshot,
+          ...(kind === "credit" && creditSnapshot(credited, snapshot!.version as number)),
+          reducer_id: reducerId,
+          ...override,
+        };
+      });
+      setTimeout(() => respond(response, payloads), delay);
       return;
     }
     case "POST /v1/outpost/confirm": {
@@ -282,6 +292,8 @@ beforeEach(async () => {
   changeRequests.length = 0;
   changesStatus = 200;
   meterUsageRequests.length = 0;
+  meterUsageBatches.length = 0;
+  meterUsageStatus = 200;
   credited = 100;
   reducerSnapshots = {};
   ingested = new Set();
@@ -544,13 +556,59 @@ it("skips a pulled snapshot of a customer nobody reads", async () => {
   expect(await redis.exists(key)).toBe(0);
 });
 
-it("drops every snapshot once Polar's changes went past their retention", async () => {
+it("serves a state a reset left unconfirmed while Polar confirms it", async () => {
   await seed();
   const outpost = await start();
   await outpost.actor(customer);
+  snapshot = aliceSnapshot;
   resetChanges = true;
   await outpost["pull"]();
-  expect(await redis.hget(key, "cold_until")).toBeNull();
+  expect(meterUsageBatches).toEqual([]);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
+  await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(3));
+  await outpost.flush();
+  const asked = meterUsageBatches.length;
+  await outpost.meter(meter);
+  await outpost.flush();
+  expect(meterUsageBatches).toHaveLength(asked);
+});
+
+it("asks Polar again for a snapshot it asked for before a reset", async () => {
+  const outpost = await start();
+  snapshot = aliceSnapshot;
+  reducerSnapshots = { tokens: { delay: 100 } };
+  const asked = () => meterUsageRequests.filter(({ reducer_id }) => reducer_id === "tokens").length;
+  const read = outpost.actor(customer);
+  await vi.waitFor(() => expect(asked()).toBe(1));
+  resetChanges = true;
+  await outpost["pull"]();
+  await read;
+  await outpost.flush();
+  await outpost.meter(meter);
+  await outpost.flush();
+  expect(asked()).toBe(2);
+});
+
+it("reads a customer Polar no longer knows after a reset as unknown", async () => {
+  await seed();
+  const outpost = await start();
+  await outpost.actor(customer);
+  snapshot = { ...aliceSnapshot, customer_exists: false };
+  resetChanges = true;
+  await outpost["pull"]();
+  await vi.waitFor(async () => expect(await outpost.meter(meter)).toBeNull());
+});
+
+it("asks Polar again on the next read for a state it could not revalidate", async () => {
+  await seed();
+  const outpost = await start();
+  await outpost.actor(customer);
+  meterUsageStatus = 503;
+  resetChanges = true;
+  await outpost["pull"]();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
+  await outpost.flush();
+  meterUsageStatus = 200;
   snapshot = aliceSnapshot;
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(3));
 });
@@ -920,9 +978,9 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
   const outpost = await start();
   await outpost.actor(customer);
   await vi.waitFor(async () => expect((await outpost.meter(meter))?.consumed_units).toBe(10));
-  await outpost["receiveSnapshot"]({ ...snapshot, customer_exists: true, customer_id: "alice", sum: 999 } as never, false);
+  await outpost["receiveSnapshot"]({ ...snapshot, customer_exists: true, customer_id: "alice", sum: 999 } as never, false, null);
   expect((await outpost.meter(meter))?.consumed_units).toBe(10);
-  await outpost["receiveSnapshot"]({ ...snapshot, customer_exists: true, version: 1791807000000001, sum: 999 } as never, false);
+  await outpost["receiveSnapshot"]({ ...snapshot, customer_exists: true, version: 1791807000000001, sum: 999 } as never, false, null);
   expect((await outpost.meter(meter))?.consumed_units).toBe(10);
   await outpost["receiveSnapshot"]({
         ...snapshot,
@@ -932,7 +990,7 @@ it("orders same-cutoff corrections at microsecond precision and keeps null extre
         sum: 0,
         min: null,
         max: null,
-      } as never, false);
+      } as never, false, null);
   expect((await outpost.meter(meter))?.consumed_units).toBe(0);
   expect(await redis.hget(key, "cold:min")).toBeNull();
   expect(await redis.hget(key, "cold:max")).toBeNull();
@@ -972,7 +1030,7 @@ it("preserves microsecond cutoffs and counts a late write as pending", async () 
         sum: 2,
         min: 2,
         max: 2,
-      } as never, false);
+      } as never, false, null);
   expect((await outpost.meter(meter))?.consumed_units).toBe(6);
   expect(await redis.hget(key, "cold_until")).toBe(String(bucket + 1));
   expect(await redis.hget(key, `bucket:${bucket}:sum`)).toBeNull();
@@ -1636,7 +1694,7 @@ const receiveCredits = (outpost: Outpost, units: number, version: number) =>
         customer_exists: true,
         reducer_id: "credits",
         ...creditSnapshot(units, version),
-      } as never, false);
+      } as never, false, null);
 
 it("reads the balance as the credits less the usage", async () => {
   snapshot = aliceSnapshot;

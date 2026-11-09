@@ -1,6 +1,7 @@
 import { homedir } from 'node:os'
 import { Context, Effect, FileSystem, Layer } from 'effect'
 import { HttpClient } from 'effect/http'
+import type { ChildProcessSpawner } from 'effect/process'
 import type {
   AgentSetupError,
   Client,
@@ -61,7 +62,9 @@ export const layer = Layer.effect(
   AgentSetup,
   Effect.gen(function* () {
     const services = yield* Effect.context<
-      FileSystem.FileSystem | HttpClient.HttpClient
+      | FileSystem.FileSystem
+      | HttpClient.HttpClient
+      | ChildProcessSpawner.ChildProcessSpawner
     >()
     const env = yield* Environment
     const paths = { home: homedir(), cwd: process.cwd() }
@@ -85,7 +88,9 @@ export const layer = Layer.effect(
     const detectClient = (client: Client) => {
       const plugin = plugins[client]
       if (plugin) {
-        return detectPlugin(plugin, exec, Bun.which(plugin.binary))
+        return detectPlugin(plugin, exec, Bun.which(plugin.binary)).pipe(
+          Effect.provideContext(services),
+        )
       }
       return detectCursor(
         paths.home,
@@ -103,7 +108,11 @@ export const layer = Layer.effect(
         Effect.forEach(clients, detectClient, { concurrency: 'unbounded' }),
       setUp: (status) => {
         const plugin = plugins[status.client]
-        if (plugin) return installPlugin(plugin, exec, status.installed)
+        if (plugin) {
+          return installPlugin(plugin, exec, status.installed).pipe(
+            Effect.provideContext(services),
+          )
+        }
         return configureCursorMcp(paths.home).pipe(
           Effect.andThen(installSkillsAt(cursorSkills)),
           Effect.provideContext(services),

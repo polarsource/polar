@@ -1,4 +1,5 @@
-import { Data, Effect, Schema, SchemaGetter } from 'effect'
+import { Effect, Schema, SchemaGetter } from 'effect'
+import type { ChildProcessSpawner } from 'effect/process'
 import {
   AgentSetupError,
   type Client,
@@ -9,12 +10,6 @@ import { TOOLKIT_REPOSITORY } from '@/services/agent-setup/skills'
 
 const LIST_TIMEOUT = 15_000
 const INSTALL_TIMEOUT = 3 * 60_000
-
-const seconds = (timeoutMs: number) => `${timeoutMs / 1000}s`
-
-class PluginTimeout extends Data.TaggedError('PluginTimeout')<{
-  message: string
-}> {}
 
 const Plugins = Schema.Array(
   Schema.Struct({
@@ -80,13 +75,9 @@ const lastLine = (output: string) =>
 
 const run = (exec: Exec, command: ReadonlyArray<string>, timeoutMs: number) =>
   exec(command, { timeoutMs }).pipe(
-    Effect.mapError((error) => new AgentSetupError({ message: error.message })),
-    Effect.filterOrFail(
-      (result) => !result.timedOut,
-      () =>
-        new PluginTimeout({
-          message: `${command.join(' ')} did not respond within ${seconds(timeoutMs)}`,
-        }),
+    Effect.catchTag(
+      'UpdaterError',
+      (error) => new AgentSetupError({ message: error.message }),
     ),
     Effect.filterOrFail(
       (result) => result.code === 0,
@@ -136,7 +127,11 @@ export const detectPlugin = (
   spec: PluginClient,
   exec: Exec,
   executable: string | null,
-): Effect.Effect<ClientStatus> => {
+): Effect.Effect<
+  ClientStatus,
+  never,
+  ChildProcessSpawner.ChildProcessSpawner
+> => {
   const base = { client: spec.client, name: spec.name }
   if (!executable) {
     return Effect.succeed({ ...base, detected: false, installed: false })
@@ -150,12 +145,12 @@ export const detectPlugin = (
         ...(plugin?.version ? { version: plugin.version } : {}),
       }),
     ),
-    Effect.catchTag('PluginTimeout', () =>
+    Effect.catchTag('ExecTimeoutError', () =>
       Effect.succeed<ClientStatus>({
         ...base,
         detected: true,
         installed: false,
-        problem: `${spec.name} did not respond within ${seconds(LIST_TIMEOUT)}.`,
+        problem: `${spec.name} did not respond within ${LIST_TIMEOUT / 1000}s.`,
       }),
     ),
     Effect.orElseSucceed(
@@ -203,7 +198,7 @@ export const installPlugin = (
     }
   }).pipe(
     Effect.catchTag(
-      'PluginTimeout',
+      'ExecTimeoutError',
       ({ message }) => new AgentSetupError({ message }),
     ),
   )

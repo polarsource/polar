@@ -1,6 +1,16 @@
 import path from 'node:path'
-import { Context, Data, Effect, FileSystem, Layer, Schema } from 'effect'
+import {
+  Context,
+  Data,
+  Effect,
+  FileSystem,
+  Layer,
+  Schema,
+  Stream,
+} from 'effect'
 import { HttpClient, HttpClientResponse } from 'effect/http'
+import type { PlatformError } from 'effect/PlatformError'
+import { ChildProcess, ChildProcessSpawner } from 'effect/process'
 import { isJson } from '@/utils/output'
 
 export const PACKAGE_NAME = '@polar-sh/cli'
@@ -20,7 +30,6 @@ export interface ProcessResult {
   readonly code: number
   readonly stdout: string
   readonly stderr: string
-  readonly timedOut?: boolean
 }
 
 export interface ExecOptions {
@@ -28,49 +37,64 @@ export interface ExecOptions {
   readonly inherit?: boolean
 }
 
+export class ExecTimeoutError extends Data.TaggedError('ExecTimeoutError')<{
+  message: string
+}> {}
+
 export type Exec = (
   command: ReadonlyArray<string>,
   options?: ExecOptions,
-) => Effect.Effect<ProcessResult, UpdaterError>
+) => Effect.Effect<
+  ProcessResult,
+  UpdaterError | ExecTimeoutError,
+  ChildProcessSpawner.ChildProcessSpawner
+>
 
-const text = (stream: unknown) =>
-  stream instanceof ReadableStream
-    ? new Response(stream).text()
-    : Promise.resolve('')
+const text = (stream: Stream.Stream<Uint8Array, PlatformError>) =>
+  stream.pipe(Stream.decodeText, Stream.mkString)
 
 export const exec: Exec = (
   command,
   { timeoutMs = 10_000, inherit = false } = {},
-) =>
-  Effect.tryPromise({
-    try: async () => {
-      const child = Bun.spawn([...command], {
+) => {
+  const [name = '', ...args] = command
+  const output = inherit ? 'inherit' : 'pipe'
+  return Effect.gen(function* () {
+    const spawner = yield* ChildProcessSpawner.ChildProcessSpawner
+    const handle = yield* spawner.spawn(
+      ChildProcess.make(name, args, {
         stdin: inherit ? 'inherit' : 'ignore',
-        stdout: inherit ? 'inherit' : 'pipe',
-        stderr: inherit ? 'inherit' : 'pipe',
-      })
-      let timedOut = false
-      const timer = setTimeout(() => {
-        timedOut = true
-        child.kill()
-      }, timeoutMs)
-      try {
-        const [stdout, stderr, code] = await Promise.all([
-          text(child.stdout),
-          text(child.stderr),
-          child.exited,
-        ])
-        return { code, stdout, stderr, timedOut }
-      } finally {
-        clearTimeout(timer)
-      }
-    },
-    catch: (cause) =>
-      new UpdaterError({
-        message: `Failed to run ${command.join(' ')}`,
-        cause,
+        stdout: output,
+        stderr: output,
+        // A detached child can't read the terminal or receive Ctrl-C from it.
+        detached: !inherit,
       }),
-  })
+    )
+    const [stdout, stderr, code] = yield* Effect.all(
+      [text(handle.stdout), text(handle.stderr), handle.exitCode],
+      { concurrency: 'unbounded' },
+    )
+    return { code, stdout, stderr }
+  }).pipe(
+    Effect.scoped,
+    Effect.mapError(
+      (cause) =>
+        new UpdaterError({
+          message: `Failed to run ${command.join(' ')}`,
+          cause,
+        }),
+    ),
+    Effect.timeoutOrElse({
+      duration: timeoutMs,
+      orElse: () =>
+        Effect.fail(
+          new ExecTimeoutError({
+            message: `${command.join(' ')} did not respond within ${timeoutMs / 1000}s`,
+          }),
+        ),
+    }),
+  )
+}
 
 interface Manifest {
   readonly name?: string
@@ -121,7 +145,11 @@ const listsPackage = (output: string) =>
 export const detectMethod = (
   run: Exec = exec,
   executable: string = process.execPath,
-): Effect.Effect<Method | undefined, never, FileSystem.FileSystem> =>
+): Effect.Effect<
+  Method | undefined,
+  never,
+  FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
+> =>
   Effect.gen(function* () {
     if (!(yield* installedPackage(executable))) return 'binary'
     const results = yield* Effect.forEach(
@@ -215,7 +243,11 @@ export const upgradeWithPackageManager = (
   run: Exec = exec,
   executable: string = process.execPath,
   platform: NodeJS.Platform = process.platform,
-): Effect.Effect<void, UpdaterError, FileSystem.FileSystem> =>
+): Effect.Effect<
+  void,
+  UpdaterError,
+  FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
+> =>
   Effect.gen(function* () {
     const command = upgradeCommand(method, version)
     const inherit = !(yield* isJson)
@@ -223,6 +255,11 @@ export const upgradeWithPackageManager = (
     const result = yield* Effect.ensuring(
       run(command, { inherit, timeoutMs: 5 * 60_000 }),
       release,
+    ).pipe(
+      Effect.catchTag(
+        'ExecTimeoutError',
+        ({ message }) => new UpdaterError({ message }),
+      ),
     )
     if (result.code !== 0) {
       return yield* new UpdaterError({
@@ -250,18 +287,18 @@ export class Updater extends Context.Service<
 export const layer = Layer.effect(
   Updater,
   Effect.gen(function* () {
-    const fs = yield* FileSystem.FileSystem
+    const services = yield* Effect.context<
+      FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
+    >()
     const http = yield* HttpClient.HttpClient
     return Updater.of({
-      detect: detectMethod().pipe(
-        Effect.provideService(FileSystem.FileSystem, fs),
-      ),
+      detect: detectMethod().pipe(Effect.provideContext(services)),
       latest: latestPackageVersion.pipe(
         Effect.provideService(HttpClient.HttpClient, http),
       ),
       upgrade: (method, version) =>
         upgradeWithPackageManager(method, version).pipe(
-          Effect.provideService(FileSystem.FileSystem, fs),
+          Effect.provideContext(services),
         ),
     })
   }),

@@ -95,6 +95,9 @@ let organization = "org-1";
 let changes: Record<string, unknown>[] = [];
 let resetChanges = false;
 let configurationChanged = false;
+let configurationRequests = 0;
+let configurationStatus = 200;
+let configurationDelay = 0;
 const changeRequests: (string | null)[] = [];
 let changesStatus = 200;
 let cursor = 0;
@@ -181,7 +184,9 @@ const respond = (response: ServerResponse, body: unknown, status = 200): void =>
 
 // Polar's side of Outpost: the configuration, the snapshots, the confirmations and the changes.
 const answer = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
-  expect(request.headers.authorization).toBe("Bearer test-token");
+  // Each organization's token: organizations can share a Redis.
+  const token = request.headers.authorization;
+  expect(["Bearer test-token", "Bearer other-token", "Bearer org-2-token"]).toContain(token);
   expect(request.headers["polar-organization"]).toBe("org");
   let data = "";
   for await (const chunk of request) data += chunk;
@@ -189,8 +194,16 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
   if (refuseConnections) return respond(response, {}, 401);
   const url = new URL(request.url!, "http://polar");
   switch (`${request.method} ${url.pathname}`) {
-    case "GET /v1/outpost/configuration":
-      return respond(response, { organization_id: organization, reducers });
+    case "GET /v1/outpost/configuration": {
+      configurationRequests += 1;
+      if (configurationStatus !== 200) return respond(response, {}, configurationStatus);
+      const configuration = {
+        organization_id: token === "Bearer org-2-token" ? "org-2" : organization,
+        reducers,
+      };
+      setTimeout(() => respond(response, configuration), configurationDelay);
+      return;
+    }
     case "POST /v1/outpost/meter-usage": {
       meterUsageRequests.push(body);
       if (!snapshot) return respond(response, []);
@@ -263,6 +276,9 @@ beforeEach(async () => {
   changes = [];
   resetChanges = false;
   configurationChanged = false;
+  configurationRequests = 0;
+  configurationStatus = 200;
+  configurationDelay = 0;
   changeRequests.length = 0;
   changesStatus = 200;
   meterUsageRequests.length = 0;
@@ -559,6 +575,89 @@ it("fetches the configuration again when Polar changed it", async () => {
   expect(await outpost.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
 });
 
+it("reads the configuration another instance kept in Redis, without asking Polar", async () => {
+  await start();
+  await start();
+  expect(configurationRequests).toBe(1);
+});
+
+it("reloads the configuration another instance pulled", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const puller = await start();
+  const other = await start();
+  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+  configurationChanged = true;
+  await puller["pull"]();
+  vi.advanceTimersByTime(30_000);
+  snapshot = aliceSnapshot;
+  expect(await other.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
+  expect(configurationRequests).toBe(2);
+});
+
+it("reloads a configuration another instance pulled while this one started", async () => {
+  await start();
+  const outpost = new Outpost(redisServer.socket, { client: core, snapshotTimeout: 100 });
+  outposts.push(outpost);
+  const configure = outpost["configure"].bind(outpost);
+  outpost["configure"] = async (...args: Parameters<typeof configure>) => {
+    const configured = await configure(...args);
+    if (args.length) return configured;
+    // Another instance pulls a new configuration before this one reads the pull hash.
+    reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+    const pulled = JSON.stringify({ organization_id: organization, reducers });
+    const [stored] = await redis.keys("outpost:v1:configuration:*");
+    await redis.set(stored, pulled);
+    await redis.set(`outpost:v1:${organization}:configuration`, pulled);
+    await redis.hincrby(`outpost:v1:${organization}:pull`, "configuration", 1);
+    return configured;
+  };
+  await outpost.start();
+  snapshot = aliceSnapshot;
+  expect(await outpost.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
+});
+
+it("keeps its configuration while the stored one is gone, without asking Polar", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  await seed();
+  const outpost = await start();
+  const [stored] = await redis.keys("outpost:v1:configuration:*");
+  await redis.del(stored, `outpost:v1:${organization}:configuration`);
+  await redis.hincrby(`outpost:v1:${organization}:pull`, "configuration", 1);
+  configurationStatus = 503;
+  vi.advanceTimersByTime(30_000);
+  expect((await outpost.meter(meter))?.consumed_units).toBe(10);
+  await outpost.flush();
+  expect(configurationRequests).toBe(1);
+});
+
+it("keeps the organization's configuration a pull wrote while another instance started", async () => {
+  const puller = await start();
+  configurationDelay = 100;
+  const starting = start({
+    client: new ClientBase({ ...core["options"], accessToken: "other-token" }),
+  });
+  await vi.waitFor(() => expect(configurationRequests).toBe(2));
+  configurationDelay = 0;
+  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+  configurationChanged = true;
+  await puller["pull"]();
+  await starting;
+  const stored = JSON.parse((await redis.get(`outpost:v1:${organization}:configuration`))!);
+  expect(stored.reducers.map((reducer: Reducer) => reducer.id)).toContain("requests");
+});
+
+it("reloads a configuration another token of the organization pulled", async () => {
+  const puller = await start();
+  const other = await start({
+    client: new ClientBase({ ...core["options"], accessToken: "other-token" }),
+  });
+  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+  configurationChanged = true;
+  await puller["pull"]();
+  snapshot = aliceSnapshot;
+  expect(await other.meter({ ...customer, meter_id: "requests" })).not.toBeNull();
+});
+
 it("pulls in the background once due, and waits for it once stale", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   snapshot = aliceSnapshot;
@@ -731,8 +830,9 @@ it("keeps two organizations apart on one Redis", async () => {
   await seed();
   const first = await start();
   await first.actor(customer);
-  organization = "org-2";
-  const second = await start();
+  const second = await start({
+    client: new ClientBase({ ...core["options"], accessToken: "org-2-token" }),
+  });
   resetChanges = true;
   await second["pull"]();
   expect(await redis.hget(key, "cold_until")).toBe(String(bucket));

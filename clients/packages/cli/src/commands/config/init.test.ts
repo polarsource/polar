@@ -42,7 +42,7 @@ interface Setup {
   organizations?: ActiveOrganization[]
   selected?: boolean
   sessions?: ActiveOrganization['environment'][]
-  install?: boolean
+  install?: ReadonlyArray<string>
   installs?: boolean
   unkeyed?: Unkeyed[]
   catalog?: ConfigExport
@@ -100,7 +100,7 @@ const run = async (
                 imported: { meters: 0, benefits: 0, products: named.length },
                 keyed: named,
                 skipped: [],
-                install: setup.install ? INSTALL : undefined,
+                install: setup.install,
                 installDirectory: setup.install ? target.directory : undefined,
                 already_enabled: setup.alreadyEnabled ?? false,
               } satisfies Prepared
@@ -109,7 +109,8 @@ const run = async (
             installed.push({ command, cwd })
             return Effect.succeed({
               ok: setup.installs ?? true,
-              output: setup.installs === false ? 'ERR_PNPM_FETCH_404' : '',
+              stdout: '',
+              stderr: setup.installs === false ? 'ERR_PNPM_FETCH_404' : '',
             })
           },
           disable: () => Effect.die('unused'),
@@ -153,7 +154,7 @@ describe('polar config init', () => {
       [],
       {},
       {
-        install: true,
+        install: INSTALL,
       },
     )
 
@@ -183,7 +184,7 @@ describe('polar config init', () => {
   })
 
   test('keeps the install command in the next steps when it fails or is skipped', async () => {
-    const failed = await run([], {}, { install: true, installs: false })
+    const failed = await run([], {}, { install: INSTALL, installs: false })
     expect(failed.output).toContain(
       '✖ Installing @polar-sh/polar\n    pnpm add @polar-sh/polar',
     )
@@ -192,7 +193,7 @@ describe('polar config init', () => {
       'Install the config package: pnpm add @polar-sh/polar',
     )
 
-    const skipped = await run(['--skip-install'], {}, { install: true })
+    const skipped = await run(['--skip-install'], {}, { install: INSTALL })
     expect(skipped.installed).toEqual([])
     expect(skipped.output).toContain(
       'Install the config package: pnpm add @polar-sh/polar',
@@ -224,7 +225,7 @@ describe('polar config init', () => {
     const { installed, output, terminal } = await run(
       [],
       { interactive: true, input: [keys.enter] },
-      { install: true },
+      { install: INSTALL },
     )
 
     expect(terminal).not.toContain('Which format do you want?')
@@ -319,7 +320,7 @@ describe('polar config init', () => {
   })
 
   test('prints the result and the next steps as JSON', async () => {
-    const { output } = await run(['--json'], {}, { install: true })
+    const { output } = await run(['--json'], {}, { install: INSTALL })
 
     expect(JSON.parse(output)).toEqual({
       status: 'written',

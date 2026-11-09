@@ -9,21 +9,27 @@ import {
 } from '@/schemas/Auth'
 import {
   BillingConfigError,
-  DEFAULT_CONFIG_FILES,
   ExternalIdAssignment,
+  FORMATS,
   InitResult,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
-import { BillingConfig, type Run } from '@/services/billing-config/service'
+import {
+  BillingConfig,
+  output as ranOutput,
+  type Run,
+} from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { SKIP_REASONS } from '@/utils/billing-config/catalog'
 import { nameResources, parseExternalIds } from '@/utils/billing-config/name'
-import { findProjectRoot, PACKAGE } from '@/utils/billing-config/project'
 import { plural } from '@/utils/billing-config/problems'
+import {
+  DEFAULT_CONFIG_FILES,
+  projectRoot,
+} from '@/utils/billing-config/languages'
 import { banner } from '@/utils/logo'
 import { confirm, select } from '@/utils/prompt'
 import { section, target } from '@/utils/billing-config/review'
-import { FORMATS } from '@/utils/billing-config/templates'
 import { output } from '@/utils/command'
 import {
   confirm as confirmFlag,
@@ -53,7 +59,7 @@ const format = Flag.Literals('format', FORMATS).pipe(
 const skipInstall = Flag.Boolean('skip-install').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
-    `Do not install ${PACKAGE}, which a TypeScript config imports`,
+    'Do not install the package a TypeScript config imports, @polar-sh/polar',
   ),
 )
 
@@ -202,16 +208,21 @@ const resolveOrganization = (
   })
 
 const projectDirectory = (fs: FileSystem.FileSystem) =>
-  Effect.map(
-    findProjectRoot(fs, process.cwd()),
-    (root) => root ?? process.cwd(),
-  )
+  Effect.map(projectRoot(fs, process.cwd()), (root) => root ?? process.cwd())
 
-const confirmInstall = (command: string, prompt: boolean, skip: boolean) =>
+const packageOf = (command: ReadonlyArray<string>) => command.at(-1)!
+
+const confirmInstall = (
+  command: ReadonlyArray<string>,
+  prompt: boolean,
+  skip: boolean,
+) =>
   skip
     ? Effect.succeed(false)
     : prompt
-      ? confirm(`Install ${PACKAGE} with ${ui.command(command)} now?`)
+      ? confirm(
+          `Install ${packageOf(command)} with ${ui.command(command.join(' '))} now?`,
+        )
       : Effect.succeed(true)
 
 const configCommand = (command: 'plan' | 'apply', file: string) =>
@@ -270,9 +281,12 @@ const skippedLines = (skipped: Written['skipped']) =>
 const installLines = (install: Written['install']) =>
   install === undefined
     ? []
-    : install.status === 'installed'
-      ? [['Package', `${PACKAGE} installed`] as const]
-      : [['Package', `${PACKAGE} not installed`] as const]
+    : [
+        [
+          'Package',
+          `${packageOf(install.command.split(' '))} ${install.status === 'installed' ? 'installed' : 'not installed'}`,
+        ] as const,
+      ]
 
 const alreadyEnabledLines = (result: Written) =>
   result.already_enabled
@@ -509,14 +523,15 @@ const installPackage = (
   Effect.gen(function* () {
     if (command === undefined) return undefined
     const text = command.join(' ')
-    if (!(yield* confirmInstall(text, prompt, skip))) {
+    if (!(yield* confirmInstall(command, prompt, skip))) {
       return { command: text, status: 'skipped' } as const
     }
-    yield* progress.start(`Installing ${PACKAGE}`)
+    yield* progress.start(`Installing ${packageOf(command)}`)
     const ran = yield* run(command, directory)
     yield* ran.ok ? progress.finish(text) : progress.fail(text)
-    if (!ran.ok && ran.output) {
-      yield* say([ui.blank, ...ran.output.split('\n').map(ui.step)])
+    const printed = ranOutput(ran)
+    if (!ran.ok && printed) {
+      yield* say([ui.blank, ...printed.split('\n').map(ui.step)])
     }
     return { command: text, status: ran.ok ? 'installed' : 'failed' } as const
   })

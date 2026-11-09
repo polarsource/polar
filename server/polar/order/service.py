@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import func, select
-from sqlalchemy.orm import contains_eager, joinedload, raiseload, selectinload
+from sqlalchemy.orm import joinedload
 
 from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
@@ -407,26 +407,7 @@ class OrderService:
             statement.join(Customer, Order.customer_id == Customer.id)
             .join(Order.discount, isouter=True)
             .join(Order.product, isouter=True)
-            .options(
-                contains_eager(Order.customer),
-                contains_eager(Order.product).options(
-                    raiseload(Product.prices), raiseload(Product.product_benefits)
-                ),
-                contains_eager(Order.discount).options(
-                    raiseload(Discount.organization),
-                    raiseload(Discount.discount_products),
-                ),
-                joinedload(Order.subscription).options(
-                    joinedload(Subscription.customer),
-                    raiseload(Subscription.discount),
-                ),
-                selectinload(Order.items)
-                .joinedload(OrderItem.product_price)
-                .joinedload(ProductPrice.product)
-                .options(
-                    raiseload(Product.prices), raiseload(Product.product_benefits)
-                ),
-            )
+            .options(*repository.get_list_eager_options())
         )
 
         if organization_id is not None:

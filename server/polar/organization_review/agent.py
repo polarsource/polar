@@ -1,5 +1,6 @@
 import asyncio
 import time
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import cast
 from urllib.parse import urlparse
@@ -9,10 +10,12 @@ import structlog
 
 from polar.kit.http import SSRFBlockedError, resolve_and_validate_ip
 from polar.models.organization import Organization
+from polar.models.organization_email import OrganizationEmail
 from polar.organization.repository import OrganizationRepository
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
+from polar.organization_email.repository import OrganizationEmailRepository
 from polar.organization_review.collectors.payout_account import (
     collect_payout_account_data,
 )
@@ -85,9 +88,14 @@ async def run_organization_review(
         session, organization
     )
     verified_domains = [d.domain for d in organization_domains if d.verified_at]
+    organization_emails = await OrganizationEmailRepository.from_session(
+        session
+    ).get_history_by_organization(organization.id)
 
     try:
-        snapshot = await _collect_data(organization, context, verified_domains)
+        snapshot = await _collect_data(
+            organization, context, verified_domains, organization_emails
+        )
         appeal_updates: dict[str, str] = {}
         if appeal_reason is not None:
             appeal_updates["appeal_reason"] = appeal_reason
@@ -445,9 +453,10 @@ async def _collect_data(
     organization: Organization,
     context: ReviewContext,
     verified_domains: list[str],
+    organization_emails: Sequence[OrganizationEmail] = (),
 ) -> DataSnapshot:
     # Organization data — pure transformation, no I/O
-    org_data = collect_organization_data(organization)
+    org_data = collect_organization_data(organization, organization_emails)
 
     # Run all collectors in parallel.
     # Each DB-bound collector creates its own session so queries

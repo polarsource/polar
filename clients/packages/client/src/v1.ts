@@ -32020,6 +32020,7 @@ export interface components {
       | 'identity.rejected'
       | 'identity.personal_email'
       | 'identity.domain_mismatch'
+      | 'identity.email_unverified'
       | 'product_url.unreachable'
       | 'payout_account.requirements_due'
       | 'payout_account.payouts_disabled'
@@ -74278,6 +74279,7 @@ export const organizationReviewCheckReasonValues: ReadonlyArray<
   'identity.rejected',
   'identity.personal_email',
   'identity.domain_mismatch',
+  'identity.email_unverified',
   'product_url.unreachable',
   'payout_account.requirements_due',
   'payout_account.payouts_disabled',

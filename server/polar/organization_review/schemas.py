@@ -231,12 +231,22 @@ class UsageInfo(Schema):
 # --- Collector output schemas ---
 
 
+class SupportEmailChange(Schema):
+    domain: str
+    replaced_at: datetime
+
+
 class OrganizationData(Schema):
     id: str | None = None
     name: str
     slug: str
     website: str | None = None
     email: str | None = None
+    email_verified: bool = False
+    previous_emails: list[SupportEmailChange] = Field(
+        default_factory=list,
+        description="Domains of earlier support emails, newest first.",
+    )
     about: str | None = None
     product_description: str | None = None
     selling_categories: list[str] = Field(default_factory=list)

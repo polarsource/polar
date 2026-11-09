@@ -885,6 +885,7 @@ class OrganizationReviewCheckReason(StrEnum):
     IDENTITY_REJECTED = "identity.rejected"
     IDENTITY_PERSONAL_EMAIL = "identity.personal_email"
     IDENTITY_DOMAIN_MISMATCH = "identity.domain_mismatch"
+    IDENTITY_EMAIL_UNVERIFIED = "identity.email_unverified"
 
     # Product URL
     PRODUCT_URL_UNREACHABLE = "product_url.unreachable"

@@ -811,7 +811,17 @@ class ReviewAnalyzer:
             else:
                 parts.append(f"Website: {org.website}")
         if org.email:
-            parts.append(f"Org Support Email Domain: {org.email.rpartition('@')[2]}")
+            verification = "verified by code" if org.email_verified else "not verified"
+            parts.append(
+                f"Org Support Email Domain: {org.email.rpartition('@')[2]} "
+                f"({verification})"
+            )
+        if org.previous_emails:
+            changes = ", ".join(
+                f"{e.domain} (replaced {e.replaced_at:%Y-%m-%d})"
+                for e in org.previous_emails
+            )
+            parts.append(f"Previous Support Email Domains: {changes}")
         if org.about:
             parts.append(f"About: {org.about}")
         if org.product_description:

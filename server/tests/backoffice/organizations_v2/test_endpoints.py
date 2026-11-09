@@ -11,7 +11,12 @@ from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
 from polar.kit.utils import utc_now
-from polar.models import BackofficeUser, OrganizationDomain, PayoutAccount
+from polar.models import (
+    BackofficeUser,
+    OrganizationDomain,
+    OrganizationEmail,
+    PayoutAccount,
+)
 from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
@@ -734,6 +739,51 @@ class TestOverviewLazyCards:
         assert "Checkout Links" in response.text
         assert "Payout Account" in response.text
         assert "<html" not in response.text
+
+    async def test_setup_checklist_support_email_not_verified(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@acme.com"
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Not verified" in response.text
+
+    async def test_setup_checklist_support_email_verified_with_history(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@acme.com"
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationEmail(
+                organization=organization,
+                email="old@acme.com",
+                created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            )
+        )
+        await save_fixture(
+            OrganizationEmail(
+                organization=organization,
+                email="support@acme.com",
+                verified_at=utc_now(),
+            )
+        )
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/overview/setup-checklist"
+        )
+
+        assert "Verified" in response.text
+        assert "Previous: old@acme.com until" in response.text
 
     async def test_setup_checklist_website_domain_not_verified(
         self,

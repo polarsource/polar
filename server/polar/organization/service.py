@@ -2166,7 +2166,7 @@ class OrganizationService:
             self._build_payout_account_check(payout_account),
             self._build_product_description_check(organization),
             await product_url_task,
-            self._build_email_check(organization),
+            await self._build_email_check(session, organization),
             self._build_socials_check(organization),
         ]
 
@@ -2221,38 +2221,43 @@ class OrganizationService:
             key=key, status=OrganizationReviewCheckStatus.PASSED
         )
 
-    def _build_email_check(self, organization: Organization) -> OrganizationReviewCheck:
+    async def _build_email_check(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> OrganizationReviewCheck:
         key = OrganizationReviewCheckKey.IDENTITY_EMAIL
         if not organization.email:
             return self._not_started_check(key)
+
+        reasons: list[OrganizationReviewCheckReason] = []
+        if not await organization_email_service.is_verified(session, organization):
+            reasons.append(OrganizationReviewCheckReason.IDENTITY_EMAIL_UNVERIFIED)
 
         try:
             email_domain = email_validator.validate_email(
                 organization.email, check_deliverability=False
             ).domain
         except email_validator.EmailNotValidError:
+            email_domain = None
+
+        if email_domain:
+            website_domain = _website_domain(organization.website)
+            if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
+                reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
+            if (
+                website_domain
+                and not _email_domain_matches_website(email_domain, website_domain)
+                and not _is_hosted_website_domain(website_domain)
+            ):
+                reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
+
+        if not reasons:
             return self._passed_check(key)
-
-        website_domain = _website_domain(organization.website)
-        reasons: list[OrganizationReviewCheckReason] = []
-
-        if email_domain in settings.PERSONAL_EMAIL_DOMAINS:
-            reasons.append(OrganizationReviewCheckReason.IDENTITY_PERSONAL_EMAIL)
-
-        if (
-            website_domain
-            and not _email_domain_matches_website(email_domain, website_domain)
-            and not _is_hosted_website_domain(website_domain)
-        ):
-            reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
-
-        if reasons:
-            return OrganizationReviewCheck(
-                key=key,
-                status=OrganizationReviewCheckStatus.WARNING,
-                reasons=reasons,
-            )
-        return self._passed_check(key)
+        status = (
+            OrganizationReviewCheckStatus.PENDING
+            if OrganizationReviewCheckReason.IDENTITY_EMAIL_UNVERIFIED in reasons
+            else OrganizationReviewCheckStatus.WARNING
+        )
+        return OrganizationReviewCheck(key=key, status=status, reasons=reasons)
 
     async def _build_product_url_check(
         self, organization: Organization

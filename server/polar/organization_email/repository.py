@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -24,12 +25,19 @@ class OrganizationEmailRepository(
             OrganizationEmail.organization_id == organization_id
         )
 
+    def get_history_statement(self, organization_id: UUID) -> Select[OrganizationEmail]:
+        return self.get_statement_by_organization(organization_id).order_by(
+            OrganizationEmail.created_at.desc()
+        )
+
     async def get_latest_by_organization(
         self, organization_id: UUID
     ) -> OrganizationEmail | None:
-        statement = (
-            self.get_statement_by_organization(organization_id)
-            .order_by(OrganizationEmail.created_at.desc())
-            .limit(1)
+        return await self.get_one_or_none(
+            self.get_history_statement(organization_id).limit(1)
         )
-        return await self.get_one_or_none(statement)
+
+    async def get_history_by_organization(
+        self, organization_id: UUID
+    ) -> Sequence[OrganizationEmail]:
+        return await self.get_all(self.get_history_statement(organization_id))

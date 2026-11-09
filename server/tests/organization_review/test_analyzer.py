@@ -29,6 +29,7 @@ from polar.organization_review.schemas import (
     RiskSignalData,
     RiskSignalEntry,
     SetupData,
+    SupportEmailChange,
     UrlRedirectInfo,
     WebhookEndpointData,
     WebsiteData,
@@ -511,3 +512,47 @@ class TestAnalyzeReraisesOnError:
             await review_analyzer.analyze(
                 _minimal_snapshot(), context=ReviewContext.SUBMISSION
             )
+
+
+class TestBuildPromptSupportEmail:
+    def _snapshot(
+        self,
+        *,
+        email_verified: bool = False,
+        previous_emails: list[SupportEmailChange] | None = None,
+    ) -> DataSnapshot:
+        return _minimal_snapshot().model_copy(
+            update={
+                "organization": OrganizationData(
+                    name="Test Org",
+                    slug="test-org",
+                    email="support@acme.com",
+                    email_verified=email_verified,
+                    previous_emails=previous_emails or [],
+                )
+            }
+        )
+
+    def test_not_verified(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(self._snapshot())
+
+        assert "Org Support Email Domain: acme.com (not verified)" in prompt
+        assert "Previous Support Email Domains" not in prompt
+
+    def test_verified_with_history(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(
+            self._snapshot(
+                email_verified=True,
+                previous_emails=[
+                    SupportEmailChange(
+                        domain="gmail.com",
+                        replaced_at=datetime(2026, 11, 1, tzinfo=UTC),
+                    )
+                ],
+            )
+        )
+
+        assert "Org Support Email Domain: acme.com (verified by code)" in prompt
+        assert (
+            "Previous Support Email Domains: gmail.com (replaced 2026-11-01)" in prompt
+        )

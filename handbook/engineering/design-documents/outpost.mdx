@@ -7,14 +7,14 @@ description: "Local reduction of meter usage in the SDK: a Redis state per custo
 
 **Created**: 2026-10-23
 
-**Last Updated**: 2026-10-23
+**Last Updated**: 2026-11-09
 
 **Author**: Maxime Bourdon
 </Info>
 
 ## Summary
 
-Outpost lets a merchant read a customer's meter balance from a Redis they own, right after they track an event, without a request to Polar. The SDK reduces each event into 5-minute buckets in Redis with Lua scripts, every instance of the merchant's application shares that state through Redis pub/sub, and Polar sends snapshots of its own totals over a WebSocket. A snapshot replaces the local buckets it covers; the events Polar has not stored yet stay counted as pending. Polar remains the source of truth for billing.
+Outpost lets a merchant read a customer's meter balance from a Redis they own, right after they track an event, without a request to Polar. The SDK reduces each event into 5-minute buckets in Redis with Lua scripts, every instance of the merchant's application shares that state through Redis pub/sub, and one instance at a time pulls from Polar a snapshot of its own totals for each customer whose usage changed. A snapshot replaces the local buckets it covers; the events Polar has not stored yet stay counted as pending. Polar remains the source of truth for billing.
 
 This document describes what ships in the SDKs today (TypeScript and Python, both built from the same Lua scripts), the Polar side that serves them, and the failure modes.
 
@@ -28,21 +28,24 @@ Merchants who bill by usage check a balance before they serve a request. Polar's
 
 | Component | Where | Role |
 |---|---|---|
-| `Outpost` client | `sdk/typescript/src/outpost`, `sdk/python/polar/outpost` | Reduces events into Redis, serves reads, applies snapshots, relays telemetry. `polar.metering()` returns a `Metering`, which batches events for ingestion; with `outpost` set, it starts one `Outpost`, which holds the Redis connections and the WebSocket for every event and read that go through that `Metering`. |
+| `Outpost` client | `sdk/typescript/src/outpost`, `sdk/python/polar/outpost` | Reduces events into Redis, serves reads, applies snapshots, relays telemetry. `polar.metering()` returns a `Metering`, which batches events for ingestion; with `outpost` set, it starts one `Outpost`, which holds the Redis connections for every event and read that go through that `Metering`, and pulls Polar's changes. |
 | Lua scripts | `sdk/generator/outpost/*.lua`, copied byte for byte into both SDKs | `READ_STATE`, `WRITE_BUCKET`, `CONFIRM`, `APPLY_SNAPSHOT`. Every change to the state is one script call. |
-| Merchant's Redis | The merchant's own | Holds one hash per customer and reducer, one pending hash per bucket, one pub/sub channel. |
+| Merchant's Redis | The merchant's own | Holds one hash per customer and reducer, one pending hash per bucket, the pull's cursor and lock, the pub/sub channels. |
 | Reducers | `server/polar/reducer` | Polar's own 5-minute buckets per meter and customer: hot in Polar's Redis, synced to `reducer_buckets` in Postgres at bucket close, sealed before billing. |
-| Outpost WebSocket | `server/polar/outpost`, `GET /v1/outpost/` | Sends the reducer configuration, answers snapshot and confirmation requests, pushes a snapshot when a customer's bucket syncs, takes a late event, or when the customer meter is recomputed, which a credit grant triggers. |
+| Change log | `server/polar/outpost/stream.py`, the Redis stream `outpost:changes:<organization_id>` in Polar's Redis | One entry per change, written once its transaction commits: `reducer_bucket` when a customer's bucket syncs, takes a late event, or when the customer meter is recomputed, which a credit grant triggers; `configuration` when a meter's reducers change. Entries older than an hour are trimmed. |
+| Outpost API | `server/polar/outpost`, `/v1/outpost/…` | `GET /changes` turns a page of the change log into one snapshot per customer and reducer, read from Postgres. `GET /configuration` returns the reducers, `POST /meter-usage` the snapshots of the customers asked, `POST /confirm` the pending ids a snapshot counts. |
 | Telemetry relay | `POST /v1/outpost/telemetry`, `/telemetry/metrics` | Forwards the SDK's OTLP traces and metrics to Logfire, tagged with the organization. |
 
 ### The state in Redis
 
-Keys carry the layout version, `v1` today. A new layout takes the next version, starts from Polar's snapshot and never reads the previous keys.
+Keys start with the layout version, `outpost:v1` today, then the organization id, which the table leaves out. A new layout takes the next version, starts from Polar's snapshot and never reads the previous keys.
 
 | Key | Content | Lifetime |
 |---|---|---|
 | `outpost:v1:state:<identity>` | A hash: see the fields below | 24 h after the last script touched it |
 | `outpost:v1:pending:<identity>:<bucket_start>` | A hash: `external_id` to the event's value, or empty for a count | 65 min after the last write |
+| `outpost:v1:pull` | A hash: the cursor Polar returned with the last page applied, when the last pull ran, the interval Polar set to the next one, the backoff after a failure | No expiry |
+| `outpost:v1:pull:lock` | The token of the instance pulling | 10 s, renewed after each snapshot applied |
 | `outpost:v1:<db>:updates` | Pub/sub channel: `{customer, bucket}` after a write, `{customer, state}` after a confirmation or a snapshot | No storage |
 
 `<identity>` is `external:<external_customer_id>:<reducer_id>` or `customer:<customer_id>:<reducer_id>`. Bucket starts are microseconds since the epoch, floored to 5 minutes.
@@ -113,8 +116,8 @@ sequenceDiagram
     alt customer not in memory
         O->>R: READ_STATE
         R-->>O: state
-        O->>P: meter_usage {meter_id, customer}
-        P-->>O: meter_usage snapshot
+        O->>P: POST /v1/outpost/meter-usage {identities}
+        P-->>O: a snapshot per identity of the customer
         O->>R: APPLY_SNAPSHOT
     end
     O->>O: consumed = cold + pending before cold_until + buckets after
@@ -125,7 +128,7 @@ The first read of a customer waits for the snapshot up to `snapshotTimeout` (5 s
 
 ### Snapshots, syncs and seals
 
-Polar reduces every event it ingests into the same 5-minute buckets. The current bucket lives in Polar's Redis; `reducer_bucket.sync` writes it to Postgres when it closes, and a late event lands in its closed bucket in Postgres at ingest. Both publish a `reducer_bucket` event, as does a customer meter recomputed after a credit grant, and the WebSocket handler answers it with a snapshot for that customer. Billing seals a customer's buckets eleven minutes after its cutoff, once every event has reached Postgres; a sealed bucket is billed as it stands, and an event that arrives later starts a new generation of it.
+Polar reduces every event it ingests into the same 5-minute buckets. The current bucket lives in Polar's Redis; `reducer_bucket.sync` writes it to Postgres when it closes, and a late event lands in its closed bucket in Postgres at ingest. Both log a `reducer_bucket` change, as does a customer meter recomputed after a credit grant. The next pull turns it into a snapshot for that customer. Billing seals a customer's buckets eleven minutes after its cutoff, once every event has reached Postgres; a sealed bucket is billed as it stands, and an event that arrives later starts a new generation of it.
 
 ```mermaid
 sequenceDiagram
@@ -133,20 +136,24 @@ sequenceDiagram
     participant O as Outpost
     participant R as Merchant Redis
 
-    Note over P: bucket closes, reducer_bucket.sync runs
-    P-->>O: meter_usage {cold_until, count, sum, credited_units, version}
+    Note over P: bucket closes, reducer_bucket.sync logs a change
+    O->>P: GET /v1/outpost/changes {cursor}
+    P-->>O: changes: a snapshot per customer and reducer {cold_until, count, sum, version}, cursor
     O->>R: HKEYS of the pending hashes before cold_until
-    O->>P: confirm {reducer_id, bucket_start, ids}
-    P-->>O: confirmed {ids stored, snapshot}
+    O->>P: POST /v1/outpost/confirm {reducer_id, bucket_start, ids}
+    P-->>O: the ids stored, and a snapshot that counts them
     O->>R: CONFIRM the stored ids, then APPLY_SNAPSHOT
     Note over O: unanswered after confirmTimeout: APPLY_SNAPSHOT with the events still pending
+    O->>R: save the cursor
 ```
 
 A snapshot's `cold_until` is the end of the last bucket Polar has fully synced, looking back an hour at most. `count`, `sum`, `min` and `max` cover everything before it, read from Postgres in the same transaction as the confirmed ids, so they count exactly those. The SDK asks Polar which of its pending events the snapshot counts before it applies it; the ones Polar has not stored stay pending, and keep adding to the balance, for an hour at most.
 
+An instance pulls once the interval Polar set has passed since the last pull, 30 seconds today, on a timer or on a read. It takes the pull lock in the merchant's Redis first, so one instance of the fleet pulls at a time; the others wait for its result on the channel. It applies each page's snapshots, saves the cursor, and pulls the next page at once while `has_more` is set. A read waits for the pull only once the last one is two intervals old. A page with `configuration_changed` makes the client fetch the reducers again. A cursor older than half an hour, half the change log's retention, gets `reset`: the client clears `cold_until` from every state, and each customer asks Polar for a snapshot at its next read.
+
 ### Telemetry
 
-The SDK records one histogram per local write and read (`outpost.ingest.duration`, `outpost.read.duration`, with the outcome), a counter of buckets written, a span per report of syncs received and applied, spans for connections and reconnections, and a span per snapshot with the local and Polar totals it replaced (`outpost.snapshot.received`). Every record names the meter and the customer identity, never an event's metadata. The SDK exports every 30 seconds through the relay, which forwards to Logfire with the organization and the SDK version. The `outpost` dashboard in the `polar` Logfire project reads them. `telemetry: false` or `POLAR_OUTPOST_TELEMETRY=0` turns it off.
+The SDK records one histogram per local write and read (`outpost.ingest.duration`, `outpost.read.duration`, with the outcome), a counter of buckets written, a span per report of syncs received and applied, spans for Redis connections and disconnections, a span per pull with its pages and the snapshots it applied (`outpost.pull`), and a span per snapshot with the local and Polar totals it replaced (`outpost.snapshot.received`). Every record names the meter and the customer identity, never an event's metadata. The SDK exports every 30 seconds through the relay, which forwards to Logfire with the organization and the SDK version. The `outpost` dashboard in the `polar` Logfire project reads them. `telemetry: false` or `POLAR_OUTPOST_TELEMETRY=0` turns it off.
 
 ## Goals
 
@@ -160,9 +167,10 @@ The SDK records one histogram per local write and read (`outpost.ingest.duration
 | Situation | What happens | What the merchant sees |
 |---|---|---|
 | Redis unreachable | `track()` and `meter()` raise `UnavailableRedisError` at once; the client reconnects with a backoff from 100 ms to 2 s and reloads every cached state once back. The event is already queued for Polar. | Writes and reads fail until Redis is back; nothing is lost. |
-| Polar unreachable | The WebSocket reconnects with a backoff; the client requests the configuration again, and each customer's snapshot the next time it touches that customer. Reads keep serving from the last totals plus local events. | Reads work; a first read of an unknown customer fails at once. |
+| Polar unreachable | A failed pull backs off from 1 s to 30 s, for the whole fleet, and the next one starts again from the same cursor. Reads keep serving from the last totals plus local events. | Reads work; a first read of an unknown customer fails at once. |
+| No pull for half an hour | The change log may have dropped entries the cursor has not reached: Polar answers `reset`, and the client asks again for each customer's snapshot at its next read. | One cold read per customer. |
 | Polar behind on ingestion | A snapshot counts fewer events than the local buckets; the ones still pending keep adding to the balance. Polar's next snapshot catches up. | Nothing: the local balance stays correct. |
-| Late events into a closed bucket | Counted locally as pending; Polar adds them to the closed bucket and sends a new snapshot. | Nothing: the local balance includes them at once. |
+| Late events into a closed bucket | Counted locally as pending; Polar adds them to the closed bucket and logs a change, which the next pull turns into a new snapshot. | Nothing: the local balance includes them at once. |
 | Duplicate or retried event | `HSETNX` on the pending hash makes the second write a no-op. | Nothing: the event counts once. |
 | State expired after 24 h idle | The next read creates the hash and asks for a snapshot. | One cold read. |
 | Instance restart | Nothing to rebuild: the state is in Redis. | Nothing: reads and writes resume on the shared state. |

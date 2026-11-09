@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import (
     UUID4,
+    AfterValidator,
     AliasChoices,
     AliasPath,
     ConfigDict,
@@ -38,6 +39,19 @@ from polar.subscription.schemas import (
 from polar.version import V2026_10
 
 from .organization import CustomerOrganization
+
+
+def _validate_customer_cancellation_reason(
+    value: CustomerCancellationReason,
+) -> CustomerCancellationReason:
+    if value == CustomerCancellationReason.trial_expired:
+        raise ValueError("This cancellation reason can't be set by customers.")
+    return value
+
+
+CustomerSubmittedCancellationReason = Annotated[
+    CustomerCancellationReason, AfterValidator(_validate_customer_cancellation_reason)
+]
 
 
 class CustomerSubscriptionProduct(ProductBase):
@@ -163,7 +177,7 @@ class CustomerSubscriptionCancel(Schema):
         ),
     )
 
-    cancellation_reason: CustomerCancellationReason | None = Field(
+    cancellation_reason: CustomerSubmittedCancellationReason | None = Field(
         None,
         description=inspect.cleandoc(
             """
@@ -186,7 +200,7 @@ class CustomerSubscriptionCancel(Schema):
 
 
 class CustomerSubscriptionRevoke(Schema):
-    cancellation_reason: CustomerCancellationReason | None = Field(
+    cancellation_reason: CustomerSubmittedCancellationReason | None = Field(
         None, description="Customer's reason for cancellation."
     )
     cancellation_comment: str | None = Field(

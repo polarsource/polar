@@ -54,6 +54,7 @@ async def create_recorded_subscription(
     *,
     status: SubscriptionStatus = SubscriptionStatus.active,
     cancel_at_period_end: bool = False,
+    payment_method: PaymentMethod | None = None,
 ) -> Subscription:
     subscription = await create_subscription(
         save_fixture,
@@ -63,6 +64,7 @@ async def create_recorded_subscription(
         started_at=START,
         current_period_start=START,
         cancel_at_period_end=cancel_at_period_end,
+        payment_method=payment_method,
     )
     await billing_interval_service.record_subscription(
         session, subscription, effective_at=START
@@ -192,6 +194,7 @@ class TestCycle:
         save_fixture: SaveFixture,
         product_recurring_metered: Product,
         customer: Customer,
+        payment_method: PaymentMethod,
     ) -> None:
         subscription = await create_recorded_subscription(
             session,
@@ -199,6 +202,7 @@ class TestCycle:
             product_recurring_metered,
             customer,
             status=SubscriptionStatus.trialing,
+            payment_method=payment_method,
         )
         cycle_at = subscription.current_period_end
         price_id = product_recurring_metered.prices[0].id

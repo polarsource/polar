@@ -45938,7 +45938,8 @@
           "too_complex",
           "too_expensive",
           "unused",
-          "other"
+          "other",
+          "trial_expired"
         ],
         "title": "CustomerCancellationReason"
       },

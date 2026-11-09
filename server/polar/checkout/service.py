@@ -154,7 +154,7 @@ if typing.TYPE_CHECKING:
 
 log: Logger = structlog.get_logger()
 
-US_ZIP_CODE_REGEX = re.compile(r"\d{5}([- ]?\d{4})?")
+US_ZIP_CODE_REGEX = re.compile(r"[0-9]{5}([- ]?[0-9]{4})?")
 
 
 class CheckoutError(PolarError): ...

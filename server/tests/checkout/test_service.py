@@ -3736,7 +3736,7 @@ class TestUpdate:
             ),
         )
 
-        calculate_tax_mock.calculate.assert_not_called()
+        calculate_tax_mock.assert_not_called()
         assert checkout.tax_amount is None
 
     @pytest.mark.parametrize(

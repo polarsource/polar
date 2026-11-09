@@ -38,7 +38,7 @@ DEFAULT_IGNORED_ACTORS: frozenset[str] = frozenset(
     {
         # Requires Stripe API call to look up charge details for balance transactions
         "order.balance",
-        # Uploads invoice PDF to S3/MinIO
+        # Uploads invoice PDF to S3
         "order.invoice",
         # Tinybird analytics ingestion
         "tinybird.ingest",

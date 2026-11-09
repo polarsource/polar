@@ -92,7 +92,6 @@ dev = [
   "freezegun>=1.5.1",
   "fakeredis[lua]>=2.36.1",
   "pytest-xdist[psutil]>=3.8.0",
-  "minio>=7.2.9",
   "locust>=2.44.1",
   "dramatiq[watch]>=2.2.1",
   "pydantic-evals>=1.103.0",

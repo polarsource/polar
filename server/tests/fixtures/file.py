@@ -1,36 +1,32 @@
 import base64
 import hashlib
 import mimetypes
-from collections.abc import Iterable
+from collections.abc import Iterator
 from functools import cached_property
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from uuid import UUID
 
-import boto3
 import pytest
-from botocore.config import Config
-from httpx import AsyncClient, Response
-from minio import Minio
+from botocore.stub import ANY, Stubber
+from httpx import Response
 
 from polar.config import settings
-from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.file.schemas import (
     DownloadableFileCreate,
     FileUpload,
-    FileUploadCompleted,
     ProductMediaFileCreate,
 )
 from polar.file.service import file as file_service
+from polar.integrations.aws.s3.client import client as s3_client
 from polar.integrations.aws.s3.schemas import (
     S3FileCreateMultipart,
     S3FileCreatePart,
-    S3FileUploadCompleted,
     S3FileUploadCompletedPart,
-    S3FileUploadPart,
 )
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models import File, Organization
 from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
@@ -77,16 +73,27 @@ class TestFile:
             raise RuntimeError("Using an unrecognizable test file")
         return mimetype
 
-    def get_chunk(self, part: S3FileUploadPart) -> bytes:
-        return self.data[part.chunk_start : part.chunk_end]
-
-    #####################################################################
-    # CREATE
-    #####################################################################
+    def stub_create(self, s3_stub: Stubber, service: FileServiceTypes) -> None:
+        s3_stub.add_response(
+            "create_multipart_upload",
+            {"UploadId": "test-upload"},
+            {
+                "Bucket": S3_SERVICES[service].bucket,
+                "Key": ANY,
+                "ContentType": self.mime_type,
+                "ChecksumAlgorithm": "SHA256",
+                "Metadata": ANY,
+            },
+        )
 
     async def create(
-        self, session: AsyncSession, organization: Organization, parts: int = 1
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        s3_stub: Stubber,
+        parts: int = 1,
     ) -> FileUpload:
+        self.stub_create(s3_stub, FileServiceTypes.downloadable)
         return await file_service.generate_presigned_upload(
             session,
             organization=organization,
@@ -156,146 +163,91 @@ class TestFile:
         assert len(valid.upload.parts) == parts
         return valid
 
-    #####################################################################
-    # UPLOAD
-    #####################################################################
-
-    async def upload(self, created: FileUpload) -> list[S3FileUploadCompletedPart]:
+    def completed_parts(self, created: FileUpload) -> list[S3FileUploadCompletedPart]:
         completed = []
+        bucket = S3_SERVICES[created.service].bucket
         for part in created.upload.parts:
-            uploaded = await self.upload_part(
-                created.upload.id,
-                part=part,
+            url = urlparse(part.url)
+            params = parse_qs(url.query)
+            assert unquote(url.path) == f"/{bucket}/{created.path}"
+            assert params["partNumber"] == [str(part.number)]
+            assert params["uploadId"] == [created.upload.id]
+            assert params["X-Amz-Signature"][0]
+            assert params["X-Amz-Expires"] == [str(settings.S3_FILES_PRESIGN_TTL)]
+            assert "x-amz-checksum-sha256" in params["X-Amz-SignedHeaders"][0].split(
+                ";"
             )
-            completed.append(uploaded)
+            assert part.headers["x-amz-checksum-sha256"] == part.checksum_sha256_base64
+            completed.append(
+                S3FileUploadCompletedPart(
+                    number=part.number,
+                    checksum_etag=f'"part-{part.number}"',
+                    checksum_sha256_base64=part.checksum_sha256_base64,
+                )
+            )
         return completed
 
-    async def upload_part(
+    def stub_complete(
         self,
-        upload_id: str,
-        part: S3FileUploadPart,
-    ) -> S3FileUploadCompletedPart:
-        upload_url = part.url
-        url = urlparse(upload_url)
-        params = parse_qs(url.query)
-
-        def p(name: str) -> str:
-            return params[name][0]
-
-        assert int(p("partNumber")) == part.number
-        assert p("uploadId") == upload_id
-        assert p("X-Amz-Signature")
-        assert int(p("X-Amz-Expires")) == settings.S3_FILES_PRESIGN_TTL
-
-        chunk = self.get_chunk(part)
-        response = await self.put_upload(upload_url, chunk, part.headers)
-
-        assert response.status_code == 200
-        etag = response.headers.get("ETag")
-        assert etag
-        return S3FileUploadCompletedPart(
-            number=part.number,
-            checksum_etag=etag,
-            checksum_sha256_base64=part.checksum_sha256_base64,
-        )
-
-    async def put_upload(
-        self, upload_url: str, chunk: bytes, headers: dict[str, Any]
-    ) -> Response:
-        async with AsyncClient() as minio_client:
-            return await minio_client.put(upload_url, content=chunk, headers=headers)
-
-    #####################################################################
-    # COMPLETE
-    #####################################################################
-
-    async def complete(
-        self,
-        session: AsyncSession,
+        s3_stub: Stubber,
         created: FileUpload,
-        uploaded: list[S3FileUploadCompletedPart],
-    ) -> File:
-        repository = FileRepository.from_session(session)
-        file = await repository.get_by_id(created.id)
-        assert file is not None
-        completed = await file_service.complete_upload(
-            session,
-            file=file,
-            completed_schema=FileUploadCompleted(
-                id=created.upload.id, path=created.path, parts=uploaded
-            ),
+        parts: list[S3FileUploadCompletedPart],
+    ) -> dict[str, Any]:
+        checksum = hashlib.sha256(
+            b"".join(
+                hashlib.sha256(self.data[part.chunk_start : part.chunk_end]).digest()
+                for part in created.upload.parts
+            )
         )
-
-        assert completed.id == created.id
-        assert completed.is_uploaded is True
-        s3_service = S3_SERVICES[completed.service]
-        s3_object = s3_service.get_object_or_raise(completed.path)
-        metadata = s3_object["Metadata"]
-
-        assert s3_object["ETag"] == completed.checksum_etag
-        assert metadata["polar-id"] == str(completed.id)
-        assert metadata["polar-organization-id"] == str(completed.organization_id)
-        assert metadata["polar-name"] == completed.name
-        assert metadata["polar-size"] == str(self.size)
-        assert s3_object["ContentLength"] == self.size
-        assert s3_object["ContentType"] == self.mime_type
-
-        digests = []
-        for part in uploaded:
-            checksum_sha256_base64 = part.checksum_sha256_base64
-            if checksum_sha256_base64:
-                digests.append(base64.b64decode(checksum_sha256_base64))
-
-        valid_s3_checksum = S3FileUploadCompleted.generate_base64_multipart_checksum(
-            digests
+        object_params = {
+            "Bucket": S3_SERVICES[created.service].bucket,
+            "Key": created.path,
+        }
+        s3_stub.add_response(
+            "complete_multipart_upload",
+            {"VersionId": "uploaded-version"},
+            {
+                **object_params,
+                "UploadId": created.upload.id,
+                "MultipartUpload": {
+                    "Parts": [
+                        {
+                            "PartNumber": part.number,
+                            "ETag": part.checksum_etag,
+                            "ChecksumSHA256": part.checksum_sha256_base64,
+                        }
+                        for part in parts
+                    ]
+                },
+                "ChecksumSHA256": base64.b64encode(checksum.digest()).decode(),
+            },
         )
-        # S3 stores checksums as <Checksum>-<PartCount>
-        assert s3_object["ChecksumSHA256"].split("-")[0] == valid_s3_checksum
-        return completed
+        head = {
+            "ContentType": self.mime_type,
+            "ContentLength": self.size,
+            "ETag": '"completed-upload"',
+            "LastModified": utc_now(),
+            "VersionId": "uploaded-version",
+            "Metadata": {
+                "polar-id": str(created.id),
+                "polar-organization-id": str(created.organization_id),
+                "polar-name": self.name,
+                "polar-size": str(created.size),
+                "polar-sha256-base64": self.base64,
+                "polar-sha256-hex": self.hex,
+            },
+        }
+        s3_stub.add_response(
+            "head_object", head, {**object_params, "VersionId": "uploaded-version"}
+        )
+        return head
 
 
-@pytest.fixture(scope="session", autouse=True)
-def empty_test_bucket(worker_id: str) -> Iterable[Any]:
-    if not settings.S3_ENDPOINT_URL:
-        raise RuntimeError("S3_ENDPOINT_URL not set")
-
-    if not settings.S3_ENDPOINT_URL.startswith("http://127.0.0.1:9000"):
-        raise RuntimeError("S3_ENDPOINT_URL not local development")
-
-    if not settings.S3_FILES_BUCKET_NAME.startswith("testing"):
-        raise RuntimeError("S3_FILES_BUCKET_NAME not a test bucket")
-
-    bucket_name = f"{settings.S3_FILES_BUCKET_NAME}-{worker_id}"
-    client = Minio(
-        endpoint=settings.S3_ENDPOINT_URL.removeprefix("http://").removeprefix(
-            "https://"
-        ),
-        access_key=settings.MINIO_USER,
-        secret_key=settings.MINIO_PWD,
-        secure=False,
-    )
-
-    if client.bucket_exists(bucket_name):
-        client.remove_bucket(bucket_name)
-    client.make_bucket(bucket_name)
-
-    s3 = boto3.resource(
-        "s3",
-        endpoint_url=settings.S3_ENDPOINT_URL,
-        # Use MinIO development (admin) credentials
-        aws_access_key_id=settings.MINIO_USER,
-        aws_secret_access_key=settings.MINIO_PWD,
-        config=Config(
-            signature_version=settings.AWS_SIGNATURE_VERSION,
-        ),
-    )
-
-    bucket = s3.Bucket(bucket_name)
-
-    yield bucket
-
-    bucket.object_versions.delete()
-    client.remove_bucket(bucket_name)
+@pytest.fixture(autouse=True)
+def s3_stub() -> Iterator[Stubber]:
+    with Stubber(s3_client) as stub:
+        yield stub
+        stub.assert_no_pending_responses()
 
 
 async def uploaded_fixture(
@@ -303,10 +255,23 @@ async def uploaded_fixture(
     organization: Organization,
     file: TestFile,
 ) -> File:
-    created = await file.create(session, organization)
-    uploaded = await file.upload(created)
-    completed = await file.complete(session, created, uploaded)
-    return completed
+    file_id = generate_uuid()
+    record = File(
+        id=file_id,
+        organization=organization,
+        service=FileServiceTypes.downloadable,
+        name=file.name,
+        path=f"downloadable/{organization.id}/{file_id}/{file.name}",
+        mime_type=file.mime_type,
+        size=file.size,
+        checksum_sha256_base64=file.base64,
+        checksum_sha256_hex=file.hex,
+        is_enabled=True,
+        is_uploaded=True,
+    )
+    session.add(record)
+    await session.flush()
+    return record
 
 
 @pytest.fixture
@@ -339,11 +304,6 @@ async def uploaded_logo_jpg(session: AsyncSession, organization: Organization) -
 @pytest.fixture
 def malicious_svg() -> TestFile:
     return TestFile("malicious.svg")
-
-
-@pytest.fixture
-def malformed_svg() -> TestFile:
-    return TestFile("malformed.svg")
 
 
 @pytest.fixture

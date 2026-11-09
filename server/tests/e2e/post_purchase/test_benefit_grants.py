@@ -307,7 +307,6 @@ class TestBenefitGrants:
         product_with_downloadable: Product,
         app: FastAPI,
     ) -> None:
-        # Given a product with a downloadable file benefit (real file in MinIO)
         # When the customer purchases it
         result = await complete_purchase(
             client,

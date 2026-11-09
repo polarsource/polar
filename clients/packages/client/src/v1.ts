@@ -14084,7 +14084,7 @@ export interface components {
        * Changes
        * @description A snapshot of each customer and reducer that changed since the cursor.
        */
-      changes: components['schemas']['MeterUsageOutgoingMessagePayload'][]
+      changes: components['schemas']['Snapshot'][]
       /**
        * Cursor
        * @description Pull the next changes after this one.
@@ -17529,8 +17529,8 @@ export interface components {
        */
       api_version: '2026-04' | '2026-10' | '2027-01'
     }
-    /** ConfigurationOutgoingMessagePayload */
-    ConfigurationOutgoingMessagePayload: {
+    /** Configuration */
+    Configuration: {
       /**
        * Organization Id
        * Format: uuid4
@@ -17557,37 +17557,8 @@ export interface components {
       /** Meter Ids */
       meter_ids: string[]
     }
-    /** ConfirmIncomingMessageCustomerPayload */
-    ConfirmIncomingMessageCustomerPayload: {
-      /**
-       * Reducer Id
-       * Format: uuid4
-       */
-      reducer_id: string
-      bucket_start: components['schemas']['EpochMicroseconds-Input']
-      /** Ids */
-      ids: string[]
-      /**
-       * Customer Id
-       * Format: uuid4
-       */
-      customer_id: string
-    }
-    /** ConfirmIncomingMessageExternalCustomerPayload */
-    ConfirmIncomingMessageExternalCustomerPayload: {
-      /**
-       * Reducer Id
-       * Format: uuid4
-       */
-      reducer_id: string
-      bucket_start: components['schemas']['EpochMicroseconds-Input']
-      /** Ids */
-      ids: string[]
-      /** External Customer Id */
-      external_customer_id: string
-    }
-    /** ConfirmedOutgoingMessagePayload */
-    ConfirmedOutgoingMessagePayload: {
+    /** Confirmation */
+    Confirmation: {
       /**
        * Reducer Id
        * Format: uuid4
@@ -17600,7 +17571,7 @@ export interface components {
       bucket_start: components['schemas']['EpochMicroseconds-Output']
       /** Ids */
       ids: string[]
-      snapshot: components['schemas']['MeterUsageOutgoingMessagePayload']
+      snapshot: components['schemas']['Snapshot']
     }
     /** CostMetadata */
     'CostMetadata-Input': {
@@ -19412,6 +19383,22 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
+    /** CustomerConfirmRequest */
+    CustomerConfirmRequest: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
     CustomerCreate:
       | components['schemas']['CustomerIndividualCreate']
       | components['schemas']['CustomerTeamCreate']
@@ -20060,6 +20047,19 @@ export interface components {
       | '-credited_units'
       | 'balance'
       | '-balance'
+    /** CustomerMeterUsageIdentity */
+    CustomerMeterUsageIdentity: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+    }
     /** CustomerNotReady */
     CustomerNotReady: {
       /**
@@ -24802,6 +24802,29 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ExternalCustomerConfirmRequest */
+    ExternalCustomerConfirmRequest: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      bucket_start: components['schemas']['EpochMicroseconds-Input']
+      /** Ids */
+      ids: string[]
+      /** External Customer Id */
+      external_customer_id: string
+    }
+    /** ExternalCustomerMeterUsageIdentity */
+    ExternalCustomerMeterUsageIdentity: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** External Customer Id */
+      external_customer_id: string
+    }
     /** Feedback */
     Feedback: {
       /**
@@ -27754,60 +27777,13 @@ export interface components {
        */
       is_archived?: boolean | null
     }
-    /** MeterUsageIncomingMessageCustomerPayload */
-    MeterUsageIncomingMessageCustomerPayload: {
-      /**
-       * Reducer Id
-       * Format: uuid4
-       */
-      reducer_id: string
-      /**
-       * Customer Id
-       * Format: uuid4
-       */
-      customer_id: string
-    }
-    /** MeterUsageIncomingMessageExternalCustomerPayload */
-    MeterUsageIncomingMessageExternalCustomerPayload: {
-      /**
-       * Reducer Id
-       * Format: uuid4
-       */
-      reducer_id: string
-      /** External Customer Id */
-      external_customer_id: string
-    }
-    MeterUsageIncomingMessagePayload:
-      | components['schemas']['MeterUsageIncomingMessageCustomerPayload']
-      | components['schemas']['MeterUsageIncomingMessageExternalCustomerPayload']
-    /** MeterUsageIncomingPayload */
-    MeterUsageIncomingPayload: {
+    MeterUsageIdentity:
+      | components['schemas']['CustomerMeterUsageIdentity']
+      | components['schemas']['ExternalCustomerMeterUsageIdentity']
+    /** MeterUsageRequest */
+    MeterUsageRequest: {
       /** Identities */
-      identities: components['schemas']['MeterUsageIncomingMessagePayload'][]
-    }
-    /** MeterUsageOutgoingMessagePayload */
-    MeterUsageOutgoingMessagePayload: {
-      /**
-       * Reducer Id
-       * Format: uuid4
-       */
-      reducer_id: string
-      /** Customer Id */
-      customer_id: string | null
-      /** External Customer Id */
-      external_customer_id: string | null
-      /** Customer Exists */
-      customer_exists: boolean
-      version: components['schemas']['EpochMicroseconds-Output']
-      cold_until: components['schemas']['EpochMicroseconds-Output']
-      /** Count */
-      count: number
-      /** Sum */
-      sum: number
-      /** Min */
-      min: number | null
-      /** Max */
-      max: number | null
+      identities: components['schemas']['MeterUsageIdentity'][]
     }
     /**
      * Metric
@@ -36887,6 +36863,30 @@ export interface components {
        * @description Active, non-bot users in the connected Slack workspace.
        */
       users: components['schemas']['SlackWorkspaceUser'][]
+    }
+    /** Snapshot */
+    Snapshot: {
+      /**
+       * Reducer Id
+       * Format: uuid4
+       */
+      reducer_id: string
+      /** Customer Id */
+      customer_id: string | null
+      /** External Customer Id */
+      external_customer_id: string | null
+      /** Customer Exists */
+      customer_exists: boolean
+      version: components['schemas']['EpochMicroseconds-Output']
+      cold_until: components['schemas']['EpochMicroseconds-Output']
+      /** Count */
+      count: number
+      /** Sum */
+      sum: number
+      /** Min */
+      min: number | null
+      /** Max */
+      max: number | null
     }
     /** SourceAccountAlreadyMigrated */
     SourceAccountAlreadyMigrated: {
@@ -64813,7 +64813,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ConfigurationOutgoingMessagePayload']
+          'application/json': components['schemas']['Configuration']
         }
       }
     }
@@ -64827,7 +64827,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['MeterUsageIncomingPayload']
+        'application/json': components['schemas']['MeterUsageRequest']
       }
     }
     responses: {
@@ -64837,7 +64837,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MeterUsageOutgoingMessagePayload'][]
+          'application/json': components['schemas']['Snapshot'][]
         }
       }
       /** @description Reducer not found. */
@@ -64870,8 +64870,8 @@ export interface operations {
     requestBody: {
       content: {
         'application/json':
-          | components['schemas']['ConfirmIncomingMessageCustomerPayload']
-          | components['schemas']['ConfirmIncomingMessageExternalCustomerPayload']
+          | components['schemas']['CustomerConfirmRequest']
+          | components['schemas']['ExternalCustomerConfirmRequest']
       }
     }
     responses: {
@@ -64881,7 +64881,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['ConfirmedOutgoingMessagePayload']
+          'application/json': components['schemas']['Confirmation']
         }
       }
       /** @description Reducer not found. */

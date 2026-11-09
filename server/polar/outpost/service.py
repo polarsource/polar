@@ -32,13 +32,13 @@ from polar.reducer.service import reducer as reducer_service
 from . import stream
 from .schemas import (
     Changes,
-    ConfigurationOutgoingMessagePayload,
-    ConfirmedOutgoingMessagePayload,
-    ConfirmIncomingMessageCustomerPayload,
-    ConfirmIncomingMessagePayload,
-    MeterUsageIncomingMessageCustomerPayload,
-    MeterUsageIncomingMessagePayload,
-    MeterUsageOutgoingMessagePayload,
+    Configuration,
+    Confirmation,
+    ConfirmRequest,
+    CustomerConfirmRequest,
+    CustomerMeterUsageIdentity,
+    MeterUsageIdentity,
+    Snapshot,
 )
 from .stream import MAX_SEQUENCE, Cursor, ReducerBucketOutpostEvent
 
@@ -166,14 +166,14 @@ class OutpostService:
 
     async def get_configuration(
         self, session: AsyncReadSession, organization: Organization
-    ) -> ConfigurationOutgoingMessagePayload:
+    ) -> Configuration:
         reducer_repository = ReducerRepository.from_session(session)
         reducers = await reducer_repository.get_all_active_by_organization_and_kinds(
             organization.id,
             tuple(ReducerKind),
             options=(selectinload(Reducer.meter_reducers),),
         )
-        return ConfigurationOutgoingMessagePayload.model_validate(
+        return Configuration.model_validate(
             {
                 "organization_id": organization.id,
                 "reducers": [
@@ -188,8 +188,8 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        payloads: Sequence[MeterUsageIncomingMessagePayload],
-    ) -> list[MeterUsageOutgoingMessagePayload]:
+        payloads: Sequence[MeterUsageIdentity],
+    ) -> list[Snapshot]:
         """The snapshots of every identity of the requested customers, reading the
         customers once for all reducers."""
         reducers = {
@@ -205,7 +205,7 @@ class OutpostService:
             if payload.reducer_id not in reducers:
                 raise ResourceNotFound()
             identity: Identity
-            if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
+            if isinstance(payload, CustomerMeterUsageIdentity):
                 identity = (payload.customer_id, None)
             else:
                 identity = (None, payload.external_customer_id)
@@ -215,7 +215,7 @@ class OutpostService:
             organization,
             [identity for identities in requested.values() for identity in identities],
         )
-        snapshots: list[MeterUsageOutgoingMessagePayload] = []
+        snapshots: list[Snapshot] = []
         for reducer_id, identities in requested.items():
             snapshots += await self._get_meter_usage(
                 session,
@@ -235,8 +235,8 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        payload: ConfirmIncomingMessagePayload,
-    ) -> ConfirmedOutgoingMessagePayload:
+        payload: ConfirmRequest,
+    ) -> Confirmation:
         """The requested ids stored so far, with the meter's snapshot read from the same
         database snapshot: it counts exactly those."""
         with logfire.span(
@@ -256,7 +256,7 @@ class OutpostService:
             ).get_active_by_id_and_kinds(payload.reducer_id, (ReducerKind.usage,))
             if reducer is None or reducer.organization_id != organization.id:
                 raise ResourceNotFound()
-            if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
+            if isinstance(payload, CustomerConfirmRequest):
                 identity: Identity = (payload.customer_id, None)
             else:
                 identity = (None, payload.external_customer_id)
@@ -275,7 +275,7 @@ class OutpostService:
             )
             if not snapshots:
                 raise ResourceNotFound()
-            return ConfirmedOutgoingMessagePayload(
+            return Confirmation(
                 reducer_id=payload.reducer_id,
                 customer_id=identity[0],
                 external_customer_id=identity[1],
@@ -291,7 +291,7 @@ class OutpostService:
         session: AsyncReadSession,
         organization: Organization,
         events: Sequence[ReducerBucketOutpostEvent],
-    ) -> list[MeterUsageOutgoingMessagePayload]:
+    ) -> list[Snapshot]:
         if not events:
             return []
         reducers = {
@@ -364,7 +364,7 @@ class OutpostService:
         session: AsyncReadSession,
         reducer: Reducer,
         customers: Mapping[Identity, Customer | None],
-    ) -> list[MeterUsageOutgoingMessagePayload]:
+    ) -> list[Snapshot]:
         if isinstance(reducer.aggregation, UniqueAggregation):
             return []
 
@@ -400,7 +400,7 @@ class OutpostService:
                 (customer_id, external_customer_id)
             ]
             payloads.append(
-                MeterUsageOutgoingMessagePayload(
+                Snapshot(
                     reducer_id=reducer.id,
                     customer_id=customer_id,
                     external_customer_id=external_customer_id,

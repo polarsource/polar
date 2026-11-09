@@ -14,11 +14,11 @@ from . import stream
 from .auth import OutpostWrite
 from .schemas import (
     Changes,
-    ConfigurationOutgoingMessagePayload,
-    ConfirmedOutgoingMessagePayload,
-    ConfirmIncomingMessagePayload,
-    MeterUsageIncomingPayload,
-    MeterUsageOutgoingMessagePayload,
+    Configuration,
+    Confirmation,
+    ConfirmRequest,
+    MeterUsageRequest,
+    Snapshot,
 )
 from .service import outpost as outpost_service
 
@@ -48,25 +48,25 @@ ReducerNotFound = {
 }
 
 
-@router.get("/configuration", response_model=ConfigurationOutgoingMessagePayload)
+@router.get("/configuration", response_model=Configuration)
 async def configuration(
     auth_subject: OutpostWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> ConfigurationOutgoingMessagePayload:
+) -> Configuration:
     """The reducers Outpost runs."""
     return await outpost_service.get_configuration(session, auth_subject.subject)
 
 
 @router.post(
     "/meter-usage",
-    response_model=list[MeterUsageOutgoingMessagePayload],
+    response_model=list[Snapshot],
     responses={404: ReducerNotFound},
 )
 async def meter_usage(
-    payload: MeterUsageIncomingPayload,
+    payload: MeterUsageRequest,
     auth_subject: OutpostWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> list[MeterUsageOutgoingMessagePayload]:
+) -> list[Snapshot]:
     """The snapshot of every identity of each requested customer."""
     return await outpost_service.get_requested_meter_usage(
         session, auth_subject.subject, payload.identities
@@ -75,14 +75,14 @@ async def meter_usage(
 
 @router.post(
     "/confirm",
-    response_model=ConfirmedOutgoingMessagePayload,
+    response_model=Confirmation,
     responses={404: ReducerNotFound},
 )
 async def confirm(
-    payload: ConfirmIncomingMessagePayload,
+    payload: ConfirmRequest,
     auth_subject: OutpostWrite,
     sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
-) -> ConfirmedOutgoingMessagePayload:
+) -> Confirmation:
     """The pending ids Polar counts, with the snapshot that counts them."""
     # Its own session in REPEATABLE READ (see comment in service.py)
     # so that the ids and the totals come from one snapshot.

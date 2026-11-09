@@ -40,50 +40,44 @@ CONFIRM_MAX_IDS = 1000
 METER_USAGE_MAX_IDENTITIES = 500
 
 
-class MeterUsageIncomingMessagePayloadBase(Schema):
+class MeterUsageIdentityBase(Schema):
     reducer_id: UUID4
 
 
-class MeterUsageIncomingMessageCustomerPayload(MeterUsageIncomingMessagePayloadBase):
+class CustomerMeterUsageIdentity(MeterUsageIdentityBase):
     customer_id: UUID4
 
 
-class MeterUsageIncomingMessageExternalCustomerPayload(
-    MeterUsageIncomingMessagePayloadBase
-):
+class ExternalCustomerMeterUsageIdentity(MeterUsageIdentityBase):
     external_customer_id: str
 
 
-type MeterUsageIncomingMessagePayload = (
-    MeterUsageIncomingMessageCustomerPayload
-    | MeterUsageIncomingMessageExternalCustomerPayload
+type MeterUsageIdentity = (
+    CustomerMeterUsageIdentity | ExternalCustomerMeterUsageIdentity
 )
 
 
-class MeterUsageIncomingPayload(Schema):
-    identities: list[MeterUsageIncomingMessagePayload] = Field(
+class MeterUsageRequest(Schema):
+    identities: list[MeterUsageIdentity] = Field(
         min_length=1, max_length=METER_USAGE_MAX_IDENTITIES
     )
 
 
-class ConfirmIncomingMessagePayloadBase(Schema):
+class ConfirmRequestBase(Schema):
     reducer_id: UUID4
     bucket_start: EpochMicroseconds
     ids: list[str] = Field(max_length=CONFIRM_MAX_IDS)
 
 
-class ConfirmIncomingMessageCustomerPayload(ConfirmIncomingMessagePayloadBase):
+class CustomerConfirmRequest(ConfirmRequestBase):
     customer_id: UUID4
 
 
-class ConfirmIncomingMessageExternalCustomerPayload(ConfirmIncomingMessagePayloadBase):
+class ExternalCustomerConfirmRequest(ConfirmRequestBase):
     external_customer_id: str
 
 
-type ConfirmIncomingMessagePayload = (
-    ConfirmIncomingMessageCustomerPayload
-    | ConfirmIncomingMessageExternalCustomerPayload
-)
+type ConfirmRequest = CustomerConfirmRequest | ExternalCustomerConfirmRequest
 
 
 class ConfigurationReducer(Schema):
@@ -94,12 +88,12 @@ class ConfigurationReducer(Schema):
     meter_ids: list[UUID4]
 
 
-class ConfigurationOutgoingMessagePayload(Schema):
+class Configuration(Schema):
     organization_id: UUID4
     reducers: list[ConfigurationReducer]
 
 
-class MeterUsageOutgoingMessagePayload(Schema):
+class Snapshot(Schema):
     reducer_id: UUID4
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
@@ -115,7 +109,7 @@ class MeterUsageOutgoingMessagePayload(Schema):
     max: float | None
 
 
-class ConfirmedOutgoingMessagePayload(Schema):
+class Confirmation(Schema):
     reducer_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
@@ -123,13 +117,13 @@ class ConfirmedOutgoingMessagePayload(Schema):
     # The requested ids the snapshot counts; the rest stay pending.
     ids: list[str]
     # Read in the same transaction as the ids, so the two agree.
-    snapshot: MeterUsageOutgoingMessagePayload
+    snapshot: Snapshot
 
 
 class Changes(Schema):
     model_config = ConfigDict(use_attribute_docstrings=True)
 
-    changes: list[MeterUsageOutgoingMessagePayload]
+    changes: list[Snapshot]
     """A snapshot of each customer and reducer that changed since the cursor."""
     cursor: str
     """Pull the next changes after this one."""

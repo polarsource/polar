@@ -18,10 +18,10 @@ from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.outpost.schemas import (
     Changes,
-    ConfirmedOutgoingMessagePayload,
-    ConfirmIncomingMessageExternalCustomerPayload,
-    MeterUsageIncomingMessageExternalCustomerPayload,
-    MeterUsageOutgoingMessagePayload,
+    Confirmation,
+    ExternalCustomerConfirmRequest,
+    ExternalCustomerMeterUsageIdentity,
+    Snapshot,
 )
 from polar.outpost.service import SYNCED_LOOKBACK
 from polar.outpost.service import outpost as outpost_service
@@ -96,14 +96,14 @@ def test_confirm(
 ) -> None:
     bucket_start = get_reducer_bucket_start(utc_now()) - REDUCER_BUCKET_SIZE
     reducer = run(seed_pending(session, save_fixture, organization, bucket_start))
-    payload = ConfirmIncomingMessageExternalCustomerPayload(
+    payload = ExternalCustomerConfirmRequest(
         reducer_id=reducer.id,
         external_customer_id="customer-0",
         bucket_start=bucket_start,
         ids=[f"event-{index * 10}" for index in range(ids)],
     )
 
-    def confirm() -> ConfirmedOutgoingMessagePayload:
+    def confirm() -> Confirmation:
         return run(outpost_service.confirm(session, organization, payload))
 
     confirmation = confirm()
@@ -163,12 +163,12 @@ def test_request_meter_usage(
 ) -> None:
     reducer = run(seed_customer_buckets(session, save_fixture, organization, kind))
     payloads = [
-        MeterUsageIncomingMessageExternalCustomerPayload(
+        ExternalCustomerMeterUsageIdentity(
             reducer_id=reducer.id, external_customer_id="customer-0"
         )
     ]
 
-    def request() -> list[MeterUsageOutgoingMessagePayload]:
+    def request() -> list[Snapshot]:
         return run(
             outpost_service.get_requested_meter_usage(session, organization, payloads)
         )

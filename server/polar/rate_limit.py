@@ -74,6 +74,16 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="email-update",
         ),
     ],
+    "^/v1/organizations/[^/]+/email/(send-code|verify)": [
+        Rule(minute=6, hour=12, block_time=900, zone="organization-email"),
+        Rule(
+            group=RateLimitGroup.web,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="organization-email",
+        ),
+    ],
     "^/v1/customer-portal/customers/me/email-update/(request|check|verify)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-email-update"),
     ],

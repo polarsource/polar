@@ -79,6 +79,9 @@ from polar.organization.service import (
     PayoutAccountAlreadyLinked,
 )
 from polar.organization.service import organization as organization_service
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
+)
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.repository import (
     OrganizationReviewRepository,
@@ -793,6 +796,47 @@ class TestUpdateWebsite:
             if call.args and call.args[0] == "organization.sync_payout_account_website"
         ]
         assert sync_calls == []
+
+
+@pytest.mark.anyio
+class TestUpdateEmail:
+    @pytest.mark.auth
+    async def test_change_records_unverified_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(email="support@acme.com")
+        )
+
+        current = await organization_email_service.get_current(session, organization)
+        assert current is not None
+        assert current.email == "support@acme.com"
+        assert current.verified_at is None
+
+    @pytest.mark.auth
+    async def test_unchanged_email_records_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@acme.com"
+        await save_fixture(organization)
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(email="support@acme.com")
+        )
+
+        assert (
+            await organization_email_service.get_current(session, organization) is None
+        )
 
 
 @pytest.mark.anyio

@@ -82,6 +82,9 @@ from polar.oauth2.service.oauth2_token import (
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
+)
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
 )
@@ -699,8 +702,12 @@ class OrganizationService:
             )
 
         previous_website = organization.website
+        previous_email = organization.email
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if organization.email != previous_email:
+            await organization_email_service.track_change(session, organization)
 
         if organization.website != previous_website:
             enqueue_job(

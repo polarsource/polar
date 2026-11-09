@@ -1539,6 +1539,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/email/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Email Status
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organization_email:get_organization_email']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/email/send-code': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Send Organization Email Code
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_email:send_organization_email_code']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/organizations/{id}/email/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Verify Organization Email
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['organization_email:verify_organization_email']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/': {
     parameters: {
       query?: never
@@ -25338,6 +25398,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** InvalidVerificationCode */
+    InvalidVerificationCode: {
+      /**
+       * Error
+       * @example InvalidVerificationCode
+       * @constant
+       */
+      error: 'InvalidVerificationCode'
+      /** Detail */
+      detail: string
+    }
     /**
      * KrCardPayment
      * @description Schema of a payment with a South Korean card payment method.
@@ -31100,6 +31171,43 @@ export interface components {
       error: 'OrganizationDomainVerifiedElsewhere'
       /** Detail */
       detail: string
+    }
+    /** OrganizationEmailMissing */
+    OrganizationEmailMissing: {
+      /**
+       * Error
+       * @example OrganizationEmailMissing
+       * @constant
+       */
+      error: 'OrganizationEmailMissing'
+      /** Detail */
+      detail: string
+    }
+    /** OrganizationEmailStatus */
+    OrganizationEmailStatus: {
+      /**
+       * Email
+       * @description Public support email.
+       */
+      email: string | null
+      /**
+       * Verified
+       * @description Whether the merchant confirmed this email with a code.
+       */
+      verified: boolean
+      /**
+       * Code Pending
+       * @description Whether a code sent to this email is still valid and unused.
+       */
+      code_pending: boolean
+    }
+    /** OrganizationEmailVerify */
+    OrganizationEmailVerify: {
+      /**
+       * Code
+       * @description The code received by email.
+       */
+      code: string
     }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
@@ -46250,6 +46358,146 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationDomainVerifiedElsewhere']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_email:get_organization_email': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationEmailStatus']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_email:send_organization_email_code': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationEmailMissing']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organization_email:verify_organization_email': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OrganizationEmailVerify']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationEmailStatus']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['InvalidVerificationCode']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

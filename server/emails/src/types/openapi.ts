@@ -2358,6 +2358,27 @@ export interface components {
       /** Auto Accept Below Amount */
       auto_accept_below_amount: number | null
     }
+    /** OrganizationEmailVerificationEmail */
+    OrganizationEmailVerificationEmail: {
+      /**
+       * Template
+       * @default organization_email_verification
+       * @constant
+       */
+      template: 'organization_email_verification'
+      props: components['schemas']['OrganizationEmailVerificationProps']
+    }
+    /** OrganizationEmailVerificationProps */
+    OrganizationEmailVerificationProps: {
+      /** Email */
+      email: string
+      /** Code */
+      code: string
+      /** Code Lifetime Minutes */
+      code_lifetime_minutes: number
+      /** Organization Name */
+      organization_name: string
+    }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
       /**

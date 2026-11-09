@@ -366,6 +366,15 @@ class TestEndpointRules:
                     "email-update",
                 ),
                 (
+                    [
+                        "/v1/organizations/org-id/email/send-code",
+                        "/v1/organizations/org-id/email/verify",
+                    ],
+                    "POST",
+                    [RateLimitGroup.default, RateLimitGroup.web],
+                    "organization-email",
+                ),
+                (
                     ["/v1/refunds", "/v1/refunds/"],
                     "POST",
                     [

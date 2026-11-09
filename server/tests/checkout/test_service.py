@@ -3716,6 +3716,8 @@ class TestUpdate:
             {"country": "US"},
             {"country": "US", "state": "NY"},
             {"country": "US", "postal_code": "10001"},
+            {"country": "US", "state": "NY", "postal_code": "1000"},
+            {"country": "US", "state": "NY", "postal_code": "Wilmington"},
             {"country": "CA"},
         ],
     )

@@ -1,4 +1,5 @@
 import contextlib
+import re
 import typing
 import uuid
 from collections.abc import AsyncGenerator, Mapping, Sequence
@@ -152,6 +153,8 @@ if typing.TYPE_CHECKING:
 
 
 log: Logger = structlog.get_logger()
+
+US_ZIP_CODE_REGEX = re.compile(r"\d{5}(-?\d{4})?")
 
 
 class CheckoutError(PolarError): ...
@@ -2783,6 +2786,13 @@ class CheckoutService:
                     and billing_address.postal_code is None
                 ):
                     raise TaxCalculationLogicalError("Postal code is required.")
+                if (
+                    billing_address.country == "US"
+                    and billing_address.postal_code is not None
+                    and US_ZIP_CODE_REGEX.fullmatch(billing_address.postal_code.strip())
+                    is None
+                ):
+                    raise TaxCalculationLogicalError("Invalid ZIP code.")
 
                 (
                     tax_calculation,

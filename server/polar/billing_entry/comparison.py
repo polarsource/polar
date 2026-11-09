@@ -112,9 +112,14 @@ async def compare(
         return Comparison(legacy=legacy, reducer=reducer, adjustments={})
     try:
         async with session.begin_nested():
-            adjustments = await _get_usage_adjustments(
-                session, subscription, meter, order_item_ids, cutoff=cutoff
-            )
+            adjustments = {
+                **await _get_usage_adjustments(
+                    session, subscription, meter, order_item_ids, cutoff=cutoff
+                ),
+                **await _get_credit_adjustments(
+                    session, subscription, meter, cutoff=cutoff
+                ),
+            }
     except Exception:
         log.exception(
             "Failed to explain the reducer comparison",
@@ -186,3 +191,26 @@ async def _get_usage_adjustments(
         "deferred_usage": Adjustment(usage=-Decimal(str(deferred_usage))),
         "carried_over_usage": Adjustment(usage=Decimal(str(carried_over_usage))),
     }
+
+
+async def _get_credit_adjustments(
+    session: AsyncSession,
+    subscription: Subscription,
+    meter: Meter,
+    *,
+    cutoff: datetime,
+) -> dict[str, Adjustment]:
+    repository = EventRepository.from_session(session)
+    reset = await repository.get_latest_meter_reset(
+        subscription.customer, meter.id, cutoff=cutoff
+    )
+    deferred = await repository.get_pending_meter_credits(
+        subscription.id,
+        meter.id,
+        since=reset.timestamp if reset is not None else None,
+        until=cutoff,
+    )
+    deferred_credits = sum(
+        (Decimal(event.user_metadata["units"]) for event in deferred), Decimal(0)
+    )
+    return {"deferred_credits": Adjustment(credits=-deferred_credits)}

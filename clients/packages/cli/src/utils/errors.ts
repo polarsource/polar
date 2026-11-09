@@ -2,6 +2,7 @@ import type { ApiCommandError } from '@polar-sh/cli-commands'
 import type { ListenError } from '@/services/listen'
 import type { TriggerError } from '@/schemas/Trigger'
 import type { UpdateError } from '@/services/update'
+import type { AgentSetupError } from '@/schemas/AgentSetup'
 import type { AuthError } from '@/schemas/Auth'
 import type { BillingConfigError } from '@/schemas/BillingConfig'
 import type { GitHubReleaseError } from '@/services/github-releases'
@@ -11,6 +12,7 @@ import type { PullRequestCommentError } from '@/services/pull-request-comment'
 import * as ui from '@/utils/ui'
 
 type CommandError =
+  | AgentSetupError
   | ApiCommandError
   | AuthError
   | BillingConfigError
@@ -48,6 +50,7 @@ const isCommandError = (error: unknown): error is CommandError =>
   error !== null &&
   '_tag' in error &&
   [
+    'AgentSetupError',
     'ApiCommandError',
     'AuthError',
     'BillingConfigError',
@@ -94,6 +97,7 @@ export const describeError = (error: unknown): ErrorDescription => {
       return error.hint
         ? { title: error.message, hint: error.hint }
         : { title: error.message }
+    case 'AgentSetupError':
     case 'ApiCommandError':
     case 'TriggerError':
     case 'PullRequestCommentError':

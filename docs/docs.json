@@ -180,6 +180,7 @@
                     "group": "CLI commands",
                     "pages": [
                       "integrate/cli/reference/auth",
+                      "integrate/cli/reference/agent",
                       "integrate/cli/reference/webhook",
                       "integrate/cli/reference/update"
                     ]

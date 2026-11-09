@@ -8,6 +8,7 @@ import { stdoutConsole } from '@/utils/console'
 import { Environment as JsonEnvironment } from '@/utils/json'
 import { isJsonFlag, reportedError } from '@/utils/errors'
 import * as ApiRuntime from '@/api-runtime'
+import * as AgentSetup from '@/services/agent-setup/service'
 import * as Auth from '@/services/auth'
 import * as BillingConfig from '@/services/billing-config/service'
 import * as Credentials from '@/services/credentials'
@@ -51,6 +52,9 @@ const triggerLayer = Trigger.layer.pipe(
 const updaterLayer = Updater.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)),
 )
+const agentSetupLayer = AgentSetup.layer.pipe(
+  Layer.provide(Layer.mergeAll(BunServices.layer, FetchHttpClient.layer)),
+)
 const telemetryLayer = Telemetry.layer.pipe(
   Layer.provide(Layer.mergeAll(BunServices.layer, Telemetry.detachedSender)),
 )
@@ -58,6 +62,7 @@ const services = Layer.mergeAll(
   ApiRuntime.layer.pipe(
     Layer.provide(Layer.mergeAll(polarLayer, organizationsLayer)),
   ),
+  agentSetupLayer,
   authLayer,
   billingConfigLayer,
   Deliveries.layer,

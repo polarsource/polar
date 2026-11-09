@@ -9,13 +9,15 @@ import {
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { BunFileSystem } from '@effect/platform-bun'
+import { BunServices } from '@effect/platform-bun'
 import { Effect, type FileSystem } from 'effect'
+import type { ChildProcessSpawner } from 'effect/process'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import {
   PACKAGE_NAME,
   REGISTRY_URL,
   type Exec,
+  ExecTimeoutError,
   UpdaterError,
   detectMethod,
   exec,
@@ -26,8 +28,13 @@ import {
 } from '@/services/updater'
 import { fakeHttp } from '@/utils/test-utils/http'
 
-const run = <A, E>(effect: Effect.Effect<A, E, FileSystem.FileSystem>) =>
-  Effect.runPromise(effect.pipe(Effect.provide(BunFileSystem.layer)))
+const run = <A, E>(
+  effect: Effect.Effect<
+    A,
+    E,
+    FileSystem.FileSystem | ChildProcessSpawner.ChildProcessSpawner
+  >,
+) => Effect.runPromise(effect.pipe(Effect.provide(BunServices.layer)))
 
 const fakeExec =
   (outputs: Record<string, string | Error>, calls: string[][] = []): Exec =>
@@ -329,17 +336,31 @@ describe('upgradeWithPackageManager', () => {
 
 describe('exec', () => {
   test('captures output and exit code', async () => {
-    const result = await Effect.runPromise(
-      exec([process.execPath, '--version']),
-    )
+    const result = await run(exec([process.execPath, '--version']))
 
     expect(result.code).toBe(0)
     expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/)
   })
 
+  test('kills a command that outlives its timeout', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'polar-exec-'))
+    const pidFile = join(dir, 'pid')
+    const script = `await Bun.write(${JSON.stringify(pidFile)}, String(process.pid)); await Bun.sleep(10_000)`
+
+    const error = await run(
+      Effect.flip(exec([process.execPath, '-e', script], { timeoutMs: 500 })),
+    )
+
+    expect(error).toBeInstanceOf(ExecTimeoutError)
+    expect(error.message).toMatch(/did not respond within 0\.5s$/)
+    const pid = Number(await Bun.file(pidFile).text())
+    expect(() => process.kill(pid, 0)).toThrow()
+    await rm(dir, { recursive: true, force: true })
+  })
+
   test('fails when the command cannot be started', async () => {
-    await expect(
-      Effect.runPromise(exec(['polar-test-missing-command-xyz'])),
-    ).rejects.toThrow('Failed to run polar-test-missing-command-xyz')
+    await expect(run(exec(['polar-test-missing-command-xyz']))).rejects.toThrow(
+      'Failed to run polar-test-missing-command-xyz',
+    )
   })
 })

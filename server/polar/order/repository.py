@@ -16,7 +16,7 @@ from sqlalchemy import (
     select,
     update,
 )
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import contains_eager, joinedload, raiseload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
@@ -557,21 +557,43 @@ class OrderRepository(
         return statement
 
     def get_eager_options(
-        self,
-        *,
-        customer_load: "_AbstractLoad | None" = None,
-        product_load: "_AbstractLoad | None" = None,
-        discount_load: "_AbstractLoad | None" = None,
+        self, *, product_load: "_AbstractLoad | None" = None
     ) -> Options:
         return (
-            customer_load if customer_load else joinedload(Order.customer),
+            joinedload(Order.customer),
             joinedload(Order.organization),
-            discount_load if discount_load else joinedload(Order.discount),
+            joinedload(Order.discount),
             product_load if product_load else joinedload(Order.product),
             joinedload(Order.subscription).joinedload(Subscription.customer),
             selectinload(Order.items)
             .joinedload(OrderItem.product_price)
             .joinedload(ProductPrice.product),
+        )
+
+    def get_list_eager_options(self) -> Options:
+        """
+        Options for statements joining `Order.customer`, `Order.discount` and
+        `Order.product`, that only load what the `Order` schema serializes.
+        """
+        skip_product_collections = (
+            raiseload(Product.prices),
+            raiseload(Product.product_benefits),
+        )
+        return (
+            contains_eager(Order.customer),
+            contains_eager(Order.product).options(*skip_product_collections),
+            contains_eager(Order.discount).options(
+                selectinload(Discount.organization),
+                raiseload(Discount.discount_products),
+            ),
+            joinedload(Order.subscription).options(
+                joinedload(Subscription.customer),
+                raiseload(Subscription.discount),
+            ),
+            selectinload(Order.items)
+            .joinedload(OrderItem.product_price)
+            .joinedload(ProductPrice.product)
+            .options(*skip_product_collections),
         )
 
     def get_sorting_clause(self, property: OrderSortProperty) -> SortingClause:

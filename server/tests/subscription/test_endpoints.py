@@ -20,6 +20,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.models.product_price import ProductPriceSeatUnit
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
@@ -36,6 +37,7 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_customer,
     create_customer_seat,
+    create_discount,
     create_meter,
     create_order,
     create_product,
@@ -93,6 +95,37 @@ class TestListSubscriptions:
             assert "user" in item
             assert "customer" in item
             assert item["user"]["id"] == item["customer"]["id"]
+
+    @pytest.mark.auth
+    async def test_fixed_discount(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+
+        response = await client.get("/v1/subscriptions/")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        item_discount = json["items"][0]["discount"]
+        assert item_discount["amount"] == 1000
+        assert item_discount["currency"] == "usd"
 
     @pytest.mark.auth
     async def test_metadata(

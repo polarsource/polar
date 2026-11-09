@@ -6,8 +6,8 @@ import {
   BillingConfigError,
   type ConfigDocument,
   ConfigExport,
-  DEFAULT_CONFIG_FILES,
   type ExternalIdAssignment,
+  type Format,
   ValidationErrors,
 } from '@/schemas/BillingConfig'
 import { apiUrl, withOrganization } from '@/services/api'
@@ -19,18 +19,15 @@ import {
 } from '@/services/billing-config/api'
 import { type Unkeyed, unkeyed } from '@/utils/billing-config/keys'
 import {
-  detectPackageManager,
+  DEFAULT_CONFIG_FILES,
   exists,
-  findProjectRoot,
-  installCommand,
-  isInstalled,
-} from '@/utils/billing-config/project'
-import {
-  DEFAULT_FILES,
-  type Format,
-  formatOf,
-  renderConfig,
-} from '@/utils/billing-config/templates'
+  type Language,
+  languageAt,
+  languageFor,
+  LANGUAGES,
+  projectRootFor,
+  writableLanguageOf,
+} from '@/utils/billing-config/languages'
 
 export interface InitTarget {
   readonly directory: string
@@ -48,41 +45,6 @@ export interface Prepared {
   readonly installDirectory: string | undefined
   readonly already_enabled: boolean
 }
-
-export interface Ran {
-  readonly ok: boolean
-  readonly output: string
-}
-
-export type Run = (
-  command: ReadonlyArray<string>,
-  cwd: string,
-) => Effect.Effect<Ran>
-
-const text = (stream: unknown) =>
-  stream instanceof ReadableStream
-    ? new Response(stream).text()
-    : Promise.resolve('')
-
-export const run: Run = (command, cwd) =>
-  Effect.tryPromise(async () => {
-    const child = Bun.spawn([...command], {
-      cwd,
-      stdin: 'ignore',
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const [stdout, stderr, code] = await Promise.all([
-      text(child.stdout),
-      text(child.stderr),
-      child.exited,
-    ])
-    return { ok: code === 0, output: `${stdout}${stderr}`.trim() }
-  }).pipe(
-    Effect.orElseSucceed(
-      (): Ran => ({ ok: false, output: `Could not run ${command[0]}` }),
-    ),
-  )
 
 const EXPORT_SCOPES = [
   'organizations:read',
@@ -226,20 +188,20 @@ const resolveTarget = (
 ) =>
   Effect.gen(function* () {
     if (target.file !== undefined) {
-      const format = formatOf(target.file)
-      if (format === undefined) {
+      const language = writableLanguageOf(target.file)
+      if (language === undefined) {
         return yield* new BillingConfigError({
           message: `${target.file} is not a file init can write`,
-          hint: 'Use a .ts or .json path.',
+          hint: `Use a ${LANGUAGES.map(({ extension }) => extension).join(', ')} path.`,
         })
       }
-      if (target.format !== undefined && target.format !== format) {
+      if (target.format !== undefined && target.format !== language.format) {
         return yield* new BillingConfigError({
-          message: `${target.file} is a .${format} file, but --format is ${target.format}`,
+          message: `${target.file} is a ${language.extension} file, but --format is ${target.format}`,
           hint: 'Drop --format or change the file extension.',
         })
       }
-      return { path: resolve(target.file), format }
+      return { path: resolve(target.file), language }
     }
     for (const existing of DEFAULT_CONFIG_FILES) {
       const path = join(target.directory, existing)
@@ -247,12 +209,14 @@ const resolveTarget = (
         return yield* alreadyExists(path, organization)
       }
     }
-    const format =
-      target.format ??
-      ((yield* exists(fs, join(target.directory, 'package.json')))
-        ? 'ts'
-        : 'json')
-    return { path: join(target.directory, DEFAULT_FILES[format]), format }
+    const language =
+      target.format !== undefined
+        ? languageFor(target.format)
+        : ((yield* languageAt(fs, target.directory)) ?? languageFor('json'))
+    return {
+      path: join(target.directory, language.defaultFiles[0]!),
+      language,
+    }
   })
 
 const write = (fs: FileSystem.FileSystem, path: string, content: string) =>
@@ -270,16 +234,19 @@ const write = (fs: FileSystem.FileSystem, path: string, content: string) =>
 
 const packageToInstall = (
   fs: FileSystem.FileSystem,
-  format: Format,
+  language: Language,
   path: string,
 ) =>
   Effect.gen(function* () {
     const none = { install: undefined, installDirectory: undefined }
-    if (format !== 'ts') return none
-    const root = yield* findProjectRoot(fs, dirname(path))
-    if (root === undefined || (yield* isInstalled(fs, root))) return none
+    const { installer } = language
+    if (installer === undefined) return none
+    const root = yield* projectRootFor(fs, dirname(path), language)
+    if (root === undefined || (yield* installer.installed(fs, root))) {
+      return none
+    }
     return {
-      install: installCommand(yield* detectPackageManager(fs, root)),
+      install: yield* installer.command(fs, root),
       installDirectory: root,
     }
   })
@@ -297,7 +264,7 @@ export const init =
     name: NameResources<E, R>,
   ) =>
     Effect.gen(function* () {
-      const { path, format } = yield* resolveTarget(fs, target, organization)
+      const { path, language } = yield* resolveTarget(fs, target, organization)
       if (yield* exists(fs, path)) {
         return yield* alreadyExists(path, organization)
       }
@@ -313,10 +280,10 @@ export const init =
       if (keyed.length > 0) {
         exported = yield* exportConfig(clients, organization)
       }
-      yield* write(fs, path, yield* renderConfig(format, exported.config))
+      yield* write(fs, path, yield* language.render(exported.config))
       return {
         file: display(path),
-        format,
+        format: language.format,
         imported: {
           meters: count(exported.config, 'meters'),
           benefits: count(exported.config, 'benefits'),
@@ -325,6 +292,6 @@ export const init =
         keyed,
         skipped: exported.skipped.filter(({ reason }) => reason !== 'archived'),
         already_enabled: alreadyEnabled,
-        ...(yield* packageToInstall(fs, format, path)),
+        ...(yield* packageToInstall(fs, language, path)),
       } satisfies Prepared
     })

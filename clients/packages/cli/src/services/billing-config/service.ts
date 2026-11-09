@@ -17,22 +17,20 @@ import {
   type InitTarget,
   type NameResources,
   type Prepared,
-  type Ran,
-  run,
 } from '@/services/billing-config/init'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
 import { prune } from '@/services/billing-config/prune'
 import { catalogs, publish } from '@/services/billing-config/publish'
 import { authenticatedClient } from '@/services/client'
+import { type Ran, run } from '@/utils/run'
 
 export type {
   InitTarget,
   NameResources,
   Prepared,
-  Ran,
-  Run,
 } from '@/services/billing-config/init'
+export { output, type Ran, type Run } from '@/utils/run'
 
 export class BillingConfig extends Context.Service<
   BillingConfig,

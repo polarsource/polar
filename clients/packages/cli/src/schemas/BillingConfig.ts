@@ -3,16 +3,9 @@ import { Data, Schema } from 'effect'
 export const NO_CONFIG_FILE =
   'No billing config file found in the current directory'
 
-export const DEFAULT_CONFIG_FILES = [
-  'polar.config.ts',
-  'polar.config.mts',
-  'polar.config.cts',
-  'polar.config.js',
-  'polar.config.mjs',
-  'polar.config.cjs',
-  'polar.config.json',
-  'polar.json',
-] as const
+export const FORMATS = ['ts', 'json'] as const
+export const Format = Schema.Literals(FORMATS)
+export type Format = typeof Format.Type
 
 const IssueSeverity = Schema.Literals(['error', 'warning'])
 
@@ -235,7 +228,7 @@ export type ExternalIdAssignment = typeof ExternalIdAssignment.Type
 
 export const InitResult = Schema.Struct({
   file: Schema.String,
-  format: Schema.Literals(['ts', 'json']),
+  format: Format,
   imported: Schema.Struct({
     meters: Schema.Finite,
     benefits: Schema.Finite,

@@ -4,7 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem } from 'effect'
-import { loadFailure, loader } from '@/services/billing-config/load'
+import { loader } from '@/services/billing-config/load'
+import { loadFailure } from '@/utils/billing-config/languages/typescript'
+import type { Run } from '@/utils/run'
 
 const source = [
   '{',
@@ -17,17 +19,17 @@ const source = [
   '}',
 ].join('\n')
 
-const load = (file?: string) =>
+const load = (file?: string, run?: Run) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      return yield* loader(yield* FileSystem.FileSystem)(file)
+      return yield* loader(yield* FileSystem.FileSystem, run)(file)
     }).pipe(Effect.provide(BunServices.layer)),
   )
 
 let directory: string
 
 beforeEach(async () => {
-  directory = await mkdtemp(join(tmpdir(), 'polar-config-'))
+  directory = await mkdtemp(join(tmpdir(), 'polar-sdk-'))
 })
 
 afterEach(async () => {
@@ -114,9 +116,9 @@ describe('load', () => {
   })
 
   test('rejects unsupported file types', async () => {
-    const error = await failure(load(await write('config = {}', 'polar.py')))
+    const error = await failure(load(await write('meters: []', 'polar.yaml')))
     expect(error.message).toContain('is not a supported config file')
-    expect(error.hint).toContain('.json, .ts or .js')
+    expect(error.hint).toBe('Use a .ts, .json or .js file.')
   })
 
   test('reports invalid JSON', async () => {

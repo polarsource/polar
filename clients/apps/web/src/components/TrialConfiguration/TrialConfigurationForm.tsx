@@ -2,6 +2,7 @@
 
 import { enums, schemas } from '@polar-sh/client'
 import {
+  Button,
   Input,
   Select,
   SelectContent,
@@ -9,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
   Switch,
+  Text,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -45,7 +47,7 @@ export const TrialConfigurationForm = ({
   const count = useWatch({ control, name: 'trial_interval_count' })
 
   const [trialEnabled, setTrialEnabled] = useState<boolean>(!!count)
-  const onTrialToggle = (enabled: boolean) => {
+  const setTrial = (enabled: boolean) => {
     if (!enabled) {
       setValue('trial_interval', null)
       setValue('trial_interval_count', null)
@@ -62,28 +64,24 @@ export const TrialConfigurationForm = ({
 
   return (
     <Box flexDirection="column" rowGap="l">
-      <FormItem>
-        <Box alignItems="center" justifyContent="between" columnGap="s">
-          <FormLabel htmlFor="trial-enable">Free trial period</FormLabel>
-          <FormControl>
-            <Switch
-              id="trial-enable"
-              checked={trialEnabled}
-              onCheckedChange={onTrialToggle}
-            />
-          </FormControl>
-        </Box>
-      </FormItem>
-      {trialEnabled && (
-        <Box
-          flexDirection="column"
-          rowGap="l"
-          padding="l"
-          borderRadius="l"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
+      <Box alignItems="center" justifyContent="between" columnGap="s">
+        <Text as="h3">Free Trial Configuration</Text>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setTrial(!trialEnabled)}
         >
+          {trialEnabled ? 'Remove Trial' : 'Configure Trial'}
+        </Button>
+      </Box>
+      {!trialEnabled && (
+        <Box alignItems="center" minHeight={40}>
+          <Text color="muted">No trial configured</Text>
+        </Box>
+      )}
+      {trialEnabled && (
+        <Box flexDirection="column" rowGap="l">
           <Box
             flexDirection={{ base: 'column', lg: 'row' }}
             alignItems={{ base: 'stretch', lg: 'center' }}

@@ -113,7 +113,6 @@ class CustomerCancellationReason(StrEnum):
     too_expensive = "too_expensive"
     unused = "unused"
     other = "other"
-    trial_expired = "trial_expired"
 
 
 class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):

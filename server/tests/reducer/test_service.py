@@ -21,6 +21,7 @@ from polar.meter.aggregation import (
 )
 from polar.models import (
     Customer,
+    CustomerMeter,
     Event,
     Meter,
     MeterReducer,
@@ -2069,6 +2070,87 @@ def build_credit_event(meter_id: uuid.UUID, units: int) -> Event:
         source=EventSource.system,
         user_metadata={"meter_id": str(meter_id), "units": units, "rollover": False},
     )
+
+
+@pytest.mark.anyio
+class TestLogCustomerMeterComparison:
+    @pytest.fixture(autouse=True)
+    def now(self, mocker: MockerFixture) -> None:
+        mocker.patch(
+            "polar.reducer.service.utc_now",
+            return_value=BUCKET_START + timedelta(minutes=1),
+        )
+        mocker.patch("polar.reducer.service.enqueue_job")
+
+    @pytest.mark.parametrize(
+        ("aggregation", "legacy_consumed_units"),
+        [
+            (CountAggregation(), Decimal(5)),
+            (SUM_TOKENS, Decimal(20)),
+            (
+                PropertyAggregation(func=AggregationFunction.avg, property="tokens"),
+                Decimal(4),
+            ),
+            (
+                PropertyAggregation(func=AggregationFunction.min, property="tokens"),
+                Decimal(1),
+            ),
+            (
+                PropertyAggregation(func=AggregationFunction.max, property="tokens"),
+                Decimal(10),
+            ),
+        ],
+    )
+    async def test_merges_late_usage_on_mismatch(
+        self,
+        capfire: CaptureLogfire,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        aggregation: Aggregation,
+        legacy_consumed_units: Decimal,
+    ) -> None:
+        meter = await rollup_tokens(
+            save_fixture, session, redis, organization, aggregation
+        )
+        await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            consumed_units=legacy_consumed_units,
+            credited_units=0,
+            balance=-legacy_consumed_units,
+        )
+        await save_fixture(customer_meter)
+
+        async def get_late_usage() -> UsageSummary:
+            return UsageSummary(
+                count=2, total=Decimal(11), minimum=Decimal(1), maximum=Decimal(10)
+            )
+
+        await reducer_service.log_customer_meter_comparison(
+            session, redis, customer_meter, get_late_usage
+        )
+
+        [span] = [
+            span
+            for span in capfire.exporter.exported_spans
+            if span.name == "Compare customer meter with reducer"
+            and span.attributes is not None
+            and span.attributes.get("logfire.span_type") == "span"
+        ]
+        assert span.attributes is not None
+        assert span.attributes["match"] is True
+        assert json.loads(cast(str, span.attributes["reducer"]))["late_events"] == 2
 
 
 @pytest.mark.anyio

@@ -1,6 +1,6 @@
 import math
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any, assert_never
@@ -585,6 +585,23 @@ class ReducerService:
         meter_id: UUID,
     ) -> tuple[Decimal | None, Decimal | None]:
         """The customer's consumed and credited units since the meter's latest reset."""
+        usage, credited_units = await self._get_customer_meter_usage(
+            session, redis, customer, meter_id
+        )
+        if usage is None:
+            return None, credited_units
+        function, summary = usage
+        return finalize_quantity(summary, function), credited_units
+
+    async def _get_customer_meter_usage(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer: Customer,
+        meter_id: UUID,
+    ) -> tuple[tuple[AggregationFunction, UsageSummary] | None, Decimal | None]:
+        """The aggregation function and summary of the customer's usage since the
+        meter's latest reset, and its credited units."""
         identities = get_customer_identities(customer)
         current_bucket_start = get_reducer_bucket_start(utc_now())
         previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
@@ -621,13 +638,20 @@ class ReducerService:
             if active_bucket_starts
             else []
         )
-        consumed_units = _get_quantity(
-            aggregation.func, [*usage_cold_agg_values, *hot_agg_values]
+        summary = merge_summaries(
+            [
+                UsageSummary(*agg_values)
+                for agg_values in [*usage_cold_agg_values, *hot_agg_values]
+            ]
         )
-        return consumed_units, credited_units
+        return (aggregation.func, summary), credited_units
 
     async def log_customer_meter_comparison(
-        self, session: AsyncReadSession, redis: Redis, customer_meter: CustomerMeter
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer_meter: CustomerMeter,
+        get_late_usage: Callable[[], Awaitable[UsageSummary]],
     ) -> None:
         if isinstance(customer_meter.meter.aggregation, UniqueAggregation):
             return
@@ -638,14 +662,27 @@ class ReducerService:
             customer_meter_id=str(customer_meter.id),
             aggregation=str(customer_meter.meter.aggregation.func),
         ) as span:
+            consumed_units: Decimal | None = None
+            late_usage: UsageSummary | None = None
+            consumed_units_with_late_usage: Decimal | None = None
             try:
                 async with session.begin_nested():
-                    (
-                        consumed_units,
-                        credited_units,
-                    ) = await self.get_customer_meter_units(
+                    usage, credited_units = await self._get_customer_meter_usage(
                         session, redis, customer, customer_meter.meter_id
                     )
+                    if usage is not None:
+                        function, summary = usage
+                        consumed_units = finalize_quantity(summary, function)
+                        # Legacy counts usage ingested since the reset, the reducer
+                        # usage timestamped since it: when they differ, merge in the
+                        # usage ingested since the reset but timestamped before it.
+                        if not math.isclose(
+                            consumed_units, customer_meter.consumed_units
+                        ):
+                            late_usage = await get_late_usage()
+                            consumed_units_with_late_usage = finalize_quantity(
+                                merge_summaries([summary, late_usage]), function
+                            )
             except Exception:
                 log.exception(
                     "Failed to compare customer meter with reducer",
@@ -665,6 +702,12 @@ class ReducerService:
                     "consumed_units": _format_units(consumed_units)
                     if consumed_units is not None
                     else None,
+                    "late_events": late_usage.count if late_usage is not None else None,
+                    "consumed_units_with_late_usage": _format_units(
+                        consumed_units_with_late_usage
+                    )
+                    if consumed_units_with_late_usage is not None
+                    else None,
                     "credited_units": _format_units(credited_units)
                     if credited_units is not None
                     else None,
@@ -674,7 +717,12 @@ class ReducerService:
                 "match",
                 consumed_units is not None
                 and credited_units is not None
-                and math.isclose(consumed_units, customer_meter.consumed_units)
+                and math.isclose(
+                    consumed_units
+                    if consumed_units_with_late_usage is None
+                    else consumed_units_with_late_usage,
+                    customer_meter.consumed_units,
+                )
                 and math.isclose(credited_units, customer_meter.credited_units),
             )
 

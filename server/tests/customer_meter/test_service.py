@@ -24,6 +24,7 @@ from polar.models import (
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.types import UsageSummary
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
@@ -957,6 +958,68 @@ class TestUpdateCustomerMeter:
         assert customer_meter is not None
         assert customer_meter.consumed_units == Decimal(200)
         assert updated is True
+
+
+@pytest.mark.anyio
+class TestGetLateUsage:
+    async def test_ingested_after_reset_timestamped_before(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        reset_timestamp = utc_now() - timedelta(hours=1)
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp,
+            ingested_at=reset_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp - timedelta(hours=7),
+            ingested_at=reset_timestamp + timedelta(minutes=15),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp + timedelta(minutes=1),
+            ingested_at=reset_timestamp + timedelta(minutes=15),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 5, "model": "lite"},
+        )
+
+        assert await customer_meter_service._get_late_usage(
+            session, customer, meter
+        ) == UsageSummary(
+            count=1, total=Decimal(20), minimum=Decimal(20), maximum=Decimal(20)
+        )
+
+    async def test_without_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await create_event(
+            save_fixture,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+
+        assert await customer_meter_service._get_late_usage(
+            session, customer, meter
+        ) == UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
 
 
 @pytest.mark.anyio

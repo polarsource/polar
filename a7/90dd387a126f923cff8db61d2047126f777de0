@@ -1,0 +1,24 @@
+clients/packages/cli/src/commands/agent/setup.test.ts
+  s_0ba65dcc236a7d::t_e5f8ff496812b2 116-117,185,199
+clients/packages/cli/src/commands/agent/setup.ts
+  s_0ba65dcc236a7d::t_e5f8ff496812b2 103,128,134,231,268,311
+  s_0ba65dcc236a7d::t_ea85c8671efc00 15,32,283
+docs/integrate/cli/reference/agent.mdx
+  s_0ba65dcc236a7d::t_ea85c8671efc00 30,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a790dd387a126f923cff8db61d2047126f777de0",
+  "prompts": {},
+  "sessions": {
+    "s_0ba65dcc236a7d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d7e7301b-be90-46d4-8d95-3b846915cc62",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

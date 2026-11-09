@@ -49,9 +49,10 @@ from polar.outpost.client import (
     _NotReadyError,
     _number,
     decode_state,
+    is_sampled,
 )
 from polar.outpost.reducer import BUCKET_SIZE, get_bucket_start
-from polar.outpost.telemetry import TELEMETRY_ENV
+from polar.outpost.telemetry import SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV
 
 _ids = itertools.count(1)
 TIMESTAMP = "2026-10-12T12:00:00Z"
@@ -115,7 +116,7 @@ def exported_spans(monkeypatch: pytest.MonkeyPatch) -> list[ReadableSpan]:
 
     monkeypatch.delenv(TELEMETRY_ENV, raising=False)
     monkeypatch.setattr(
-        "polar.outpost.telemetry.RelaySpanExporter", lambda *_: Exporter()
+        "polar.outpost.telemetry.OutboxSpanExporter", lambda *_: Exporter()
     )
     monkeypatch.setattr(
         "polar.outpost.telemetry.BatchSpanProcessor", SimpleSpanProcessor
@@ -146,7 +147,7 @@ def exported_metrics(monkeypatch: pytest.MonkeyPatch) -> list[MetricsData]:
             pass
 
     monkeypatch.setattr(
-        "polar.outpost.telemetry.RelayMetricExporter", lambda *_: Exporter()
+        "polar.outpost.telemetry.OutboxMetricExporter", lambda *_: Exporter()
     )
     return exported
 
@@ -249,6 +250,18 @@ def confirmations() -> dict[str, typing.Any]:
     return {"answer": True, "snapshot": None}
 
 
+# The telemetry relays Polar received: their path and body.
+@pytest.fixture
+def telemetry_requests() -> list[tuple[str, bytes]]:
+    return []
+
+
+# Polar's answer to a telemetry relay, and how long it holds it back in seconds.
+@pytest.fixture
+def telemetry_status() -> dict[str, float]:
+    return {"status": 200, "delay": 0}
+
+
 # Polar's answer to a meter usage request, the size of each request, and the most
 # requests it held at once.
 @pytest.fixture
@@ -275,6 +288,8 @@ async def polar_client(
     confirmations: dict[str, typing.Any],
     configuration_status: dict[str, float],
     meter_usage: dict[str, typing.Any],
+    telemetry_requests: list[tuple[str, bytes]],
+    telemetry_status: dict[str, float],
 ) -> collections.abc.AsyncIterator[httpx.AsyncClient]:
     def identity(body: dict[str, typing.Any]) -> str:
         kind = "customer" if "customer_id" in body else "external"
@@ -295,7 +310,8 @@ async def polar_client(
             data += message.get("body", b"")
             if not message.get("more_body"):
                 break
-        body: typing.Any = json.loads(data) if data else None
+        json_body = b"json" in dict(scope["headers"]).get(b"content-type", b"")
+        body: typing.Any = json.loads(data) if data and json_body else None
 
         async def respond(answer: typing.Any, status: int = 200) -> None:
             await send(
@@ -321,6 +337,13 @@ async def polar_client(
                 answer["organization_id"] = "org-2"
             await anyio.sleep(configuration_status["delay"])
             return await respond(answer)
+        if route in (
+            "POST /v1/outpost/telemetry",
+            "POST /v1/outpost/telemetry/metrics",
+        ):
+            telemetry_requests.append((scope["path"], data))
+            await anyio.sleep(telemetry_status["delay"])
+            return await respond({}, int(telemetry_status["status"]))
         if route == "POST /v1/outpost/meter-usage":
             meter_usage["batches"].append(len(body["identities"]))
             answers = []
@@ -1341,6 +1364,166 @@ async def test_reloads_a_configuration_another_token_of_the_organization_pulled(
             await other.meter(meter_id="requests", external_customer_id="alice")
             is not None
         )
+
+
+@pytest.mark.anyio
+async def test_sends_the_fleets_telemetry_in_one_relay_of_each_kind_after_a_pull(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    telemetry_requests: list[tuple[str, bytes]],
+) -> None:
+    url, _ = redis_connection
+    async with (
+        Outpost(url, client=polar_client) as first,
+        Outpost(url, client=polar_client) as second,
+        Outpost(url, client=polar_client) as third,
+    ):
+        for index, outpost in enumerate((first, second, third)):
+            outpost._outbox.add("spans", f"spans-{index};".encode())
+            outpost._outbox.add("metrics", f"metrics-{index};".encode())
+            await outpost.flush_telemetry()
+        await first._pull()
+        await first.flush()
+        assert telemetry_requests == [
+            ("/v1/outpost/telemetry", b"spans-0;spans-1;spans-2;"),
+            ("/v1/outpost/telemetry/metrics", b"metrics-0;metrics-1;metrics-2;"),
+        ]
+
+
+@pytest.mark.anyio
+async def test_keeps_the_fleets_telemetry_for_the_next_pull_when_polar_fails_the_relay(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    telemetry_requests: list[tuple[str, bytes]],
+    telemetry_status: dict[str, float],
+) -> None:
+    url, _ = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+        outpost._outbox.add("spans", b"spans;")
+        outpost._outbox.add("metrics", b"metrics;")
+        await outpost.flush_telemetry()
+        telemetry_status["status"] = 503
+        await outpost._pull()
+        await outpost.flush()
+        telemetry_status["status"] = 200
+        telemetry_requests.clear()
+        await outpost._pull()
+        await outpost.flush()
+        assert telemetry_requests == [
+            ("/v1/outpost/telemetry", b"spans;"),
+            ("/v1/outpost/telemetry/metrics", b"metrics;"),
+        ]
+
+
+@pytest.mark.anyio
+async def test_lets_a_read_that_waits_for_a_pull_go_before_the_telemetry_relay_ends(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    telemetry_requests: list[tuple[str, bytes]],
+    telemetry_status: dict[str, float],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.SNAPSHOT_TIMEOUT", 2)
+    await redis.hset(
+        "outpost:v1:org-1:state:external:alice:tokens",
+        mapping={"cold_until": BUCKET, "cold:sum": 10},
+    )
+    await _credit(redis, 100)
+    async with Outpost(url, client=polar_client) as outpost:
+        outpost._outbox.add("spans", b"spans;")
+        await outpost.flush_telemetry()
+        telemetry_status["delay"] = 0.5
+        started = anyio.current_time()
+        assert await _consumed(outpost) == 10
+        assert anyio.current_time() - started < 0.3
+        await outpost.flush()
+    assert len(telemetry_requests) == 1
+
+
+@pytest.mark.anyio
+async def test_keeps_the_exports_written_while_a_relay_is_in_flight(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    telemetry_requests: list[tuple[str, bytes]],
+    telemetry_status: dict[str, float],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.TELEMETRY_CAP", 3)
+    async with Outpost(url, client=polar_client) as outpost:
+        for index in range(3):
+            outpost._outbox.add("spans", f"old-{index};".encode())
+        await outpost.flush_telemetry()
+        telemetry_status["delay"] = 0.2
+        async with anyio.create_task_group() as tasks:
+            tasks.start_soon(outpost._pull)
+            with anyio.fail_after(1):
+                while not telemetry_requests:
+                    await anyio.sleep(0.01)
+            outpost._outbox.add("spans", b"new;")
+            await outpost.flush_telemetry()
+        await outpost.flush()
+        assert await redis.lrange("outpost:v1:org-1:telemetry:spans", 0, -1) == [
+            b"new;"
+        ]
+
+
+@pytest.mark.anyio
+async def test_keeps_its_telemetry_for_the_next_flush_when_redis_fails_the_write(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    url, redis = redis_connection
+
+    class FailingPipeline:
+        async def __aenter__(self) -> typing.Self:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            pass
+
+        def rpush(self, *args: object) -> None:
+            pass
+
+        def ltrim(self, *args: object) -> None:
+            pass
+
+        async def execute(self) -> None:
+            raise RedisConnectionError("Connection closed by server.")
+
+    async with Outpost(url, client=polar_client) as outpost:
+        assert outpost._redis is not None
+        monkeypatch.setattr(
+            outpost._redis, "pipeline", lambda **kwargs: FailingPipeline()
+        )
+        outpost._outbox.add("spans", b"spans;")
+        await outpost.flush_telemetry()
+        monkeypatch.delattr(outpost._redis, "pipeline")
+        await outpost.flush_telemetry()
+        assert await redis.lrange("outpost:v1:org-1:telemetry:spans", 0, -1) == [
+            b"spans;"
+        ]
+
+
+@pytest.mark.anyio
+async def test_marks_the_spans_its_sample_keeps_with_the_sample_rate(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    exported_spans: list[ReadableSpan],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice:tokens"] = ALICE_SNAPSHOT
+    snapshots["external:alice:credits"] = ALICE_CREDITS
+    async with Outpost(url, client=polar_client) as outpost:
+        await outpost.meter(external_customer_id="alice", meter_id="meter")
+    assert exported_spans
+    for span in exported_spans:
+        assert span.context is not None
+        expected = 10 if is_sampled(span.context.trace_id) else None
+        assert (span.attributes or {}).get(SAMPLE_RATE_ATTRIBUTE) == expected
 
 
 @pytest.mark.anyio

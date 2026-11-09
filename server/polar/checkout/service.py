@@ -84,7 +84,7 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
@@ -2768,6 +2768,22 @@ class CheckoutService:
 
         if checkout.customer_billing_address is not None:
             try:
+                # Don't hit the tax processor with an address we already know
+                # is incomplete, e.g. a country-only address from IP geolocation
+                billing_address = checkout.customer_billing_address
+                billing_address_fields = checkout.billing_address_fields
+                if (
+                    billing_address_fields["state"] == BillingAddressFieldMode.required
+                    and billing_address.state is None
+                ):
+                    raise TaxCalculationLogicalError("State is required.")
+                if (
+                    billing_address_fields["postal_code"]
+                    == BillingAddressFieldMode.required
+                    and billing_address.postal_code is None
+                ):
+                    raise TaxCalculationLogicalError("Postal code is required.")
+
                 (
                     tax_calculation,
                     tax_processor,

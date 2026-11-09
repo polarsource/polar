@@ -1,3 +1,4 @@
+import BillingMigrationNotice from '../components/BillingMigrationNotice'
 import {
   Button,
   FooterCustomer,
@@ -14,6 +15,7 @@ export function SubscriptionTrialPaymentMethodRequired({
   product,
   url,
   trial_end_date,
+  previous_billing_provider,
 }: schemas['SubscriptionTrialPaymentMethodRequiredProps']) {
   return (
     <WrapperOrganization
@@ -35,6 +37,12 @@ export function SubscriptionTrialPaymentMethodRequired({
         Add a payment method before then to continue on the paid plan.
         Otherwise, your subscription will end when the trial ends.
       </Text>
+      {previous_billing_provider && organization.name && (
+        <BillingMigrationNotice
+          organizationName={organization.name}
+          previousBillingProvider={previous_billing_provider}
+        />
+      )}
       <Button href={url}>Add payment method</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
@@ -50,6 +58,7 @@ SubscriptionTrialPaymentMethodRequired.PreviewProps = {
     status: 'trialing',
   },
   trial_end_date: 'March 17, 2026',
+  previous_billing_provider: 'Stripe',
   url: 'https://polar.sh/acme-inc/portal',
 }
 

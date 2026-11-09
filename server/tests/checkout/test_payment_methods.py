@@ -59,6 +59,7 @@ def test_get_payment_mode(
         ("payment", "CN", "cny", ["card", "link", "alipay", "wechat_pay"]),
         ("subscription", "CN", "usd", ["card", "link"]),
         ("payment", "IN", "inr", ["card", "link", "upi"]),
+        ("subscription", "US", "inr", ["card", "link", "upi"]),
         ("payment", "HK", "usd", ["card", "link", "alipay", "wechat_pay"]),
         ("payment", "MO", "cny", ["card", "link", "alipay", "wechat_pay"]),
         (
@@ -80,7 +81,7 @@ def test_get_payment_method_types(
 ) -> None:
     assert (
         get_payment_method_types(
-            mode=mode, country=country, currency=currency, amount=1000
+            mode=mode, country=country, currency=currency, amount=10_000
         )
         == expected
     )
@@ -118,6 +119,10 @@ def test_payment_method_rule_amount_limits(
         ("AT", "eur", 100, ["card", "link", "eps"]),
         ("NL", "eur", 1, ["card", "link", "ideal"]),
         ("NL", "eur", 100_000_000, ["card", "link"]),
+        ("IN", "inr", 4696, ["card", "link"]),
+        ("IN", "inr", 4697, ["card", "link", "upi"]),
+        ("IN", "inr", 10_000_000, ["card", "link", "upi"]),
+        ("IN", "inr", 10_000_001, ["card", "link"]),
         ("KR", "krw", 674, ["card", "link"]),
         (
             "KR",

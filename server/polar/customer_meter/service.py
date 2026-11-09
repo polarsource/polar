@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
+from functools import partial
 from typing import Any
 
 import logfire
@@ -42,6 +43,7 @@ from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
+from polar.reducer.types import UsageSummary
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -145,7 +147,10 @@ class CustomerMeterService:
             )
             if meter_updated and customer_meter is not None:
                 await reducer_service.log_customer_meter_comparison(
-                    session, redis, customer_meter
+                    session,
+                    redis,
+                    customer_meter,
+                    partial(self._get_late_usage, session, customer, meter),
                 )
             updated = updated or meter_updated
 
@@ -719,6 +724,62 @@ class CustomerMeterService:
         outer_agg = self._get_outer_aggregation(meter, union_subquery.c.value)
         result = await session.scalar(select(func.coalesce(outer_agg, 0)))
         return result or 0.0
+
+    async def _get_late_usage(
+        self, session: AsyncSession, customer: Customer, meter: Meter
+    ) -> UsageSummary:
+        """Summary of the usage ingested since the meter's latest reset but
+        timestamped before it."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+        if meter_reset_event is None:
+            return UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
+
+        value_column = self._get_raw_aggregation_column(meter)
+        values = union_all(
+            *(
+                self._build_events_statement(
+                    event_repository,
+                    customer,
+                    meter,
+                    meter_reset_event,
+                    by_external_id=by_external_id,
+                    include_system_events=False,
+                )
+                .where(
+                    Event.source == EventSource.user,
+                    Event.timestamp < meter_reset_event.timestamp,
+                )
+                .with_only_columns(value_column.label("value"))
+                for by_external_id in (False, True)
+                if not by_external_id or customer.external_id is not None
+            )
+        ).subquery()
+
+        if not isinstance(meter.aggregation, PropertyAggregation):
+            count = await session.scalar(select(func.count()).select_from(values))
+            return UsageSummary(
+                count=count or 0, total=Decimal(0), minimum=None, maximum=None
+            )
+
+        count, total, minimum, maximum = (
+            await session.execute(
+                select(
+                    func.count(),
+                    func.coalesce(func.sum(values.c.value), 0),
+                    func.min(values.c.value),
+                    func.max(values.c.value),
+                )
+            )
+        ).one()
+        return UsageSummary(
+            count=count,
+            total=Decimal(total),
+            minimum=None if minimum is None else Decimal(minimum),
+            maximum=None if maximum is None else Decimal(maximum),
+        )
 
     def _get_raw_aggregation_column(self, meter: Meter) -> Any:
         if isinstance(meter.aggregation, PropertyAggregation):

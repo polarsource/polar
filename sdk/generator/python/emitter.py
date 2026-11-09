@@ -145,6 +145,8 @@ class PythonEmitter(EmitterBase):
             ("polar", "config", "config.py"),
             ("polar", "config", "definitions.py"),
             ("polar", "config", "meters.py"),
+            ("polar", "config", "money.py"),
+            ("polar", "config", "prices.py"),
             ("polar", "config", "types.py"),
             ("polar", "py.typed"),
             ("polar", "webhooks.py"),

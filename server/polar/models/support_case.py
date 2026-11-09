@@ -247,6 +247,18 @@ class SupportCaseParticipant(RecordModel):
 
     __tablename__ = "support_case_participants"
     __table_args__ = (
+        CheckConstraint(
+            "(kind = 'platform' "
+            "AND backoffice_platform_user_id IS NOT NULL "
+            "AND organization_id IS NULL AND customer_id IS NULL) "
+            "OR (kind = 'merchant' AND organization_id IS NOT NULL "
+            "AND backoffice_platform_user_id IS NULL "
+            "AND customer_id IS NULL) "
+            "OR (kind = 'customer' AND customer_id IS NOT NULL "
+            "AND backoffice_platform_user_id IS NULL "
+            "AND organization_id IS NULL)",
+            name="subject_matches_kind",
+        ),
         # At most one live participant per subject within a case.
         Index(
             "ix_support_case_participants_unique_organization",

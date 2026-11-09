@@ -253,19 +253,23 @@ Index(
 
 class SupportCaseParticipant(RecordModel):
     """A party to a case: the platform (staff), the merchant (org), or a
-    customer. The subject column is determined by ``kind`` — exactly one is
-    set. ``last_read_at`` backs unread state and notification targeting.
+    customer. The subject is determined by ``kind``. Platform participants
+    may carry both staff IDs during the transition. ``last_read_at`` tracks
+    unread state and notification targeting.
     """
 
     __tablename__ = "support_case_participants"
     __table_args__ = (
         CheckConstraint(
-            "(kind = 'platform' AND platform_user_id IS NOT NULL "
+            "(kind = 'platform' "
+            "AND (platform_user_id IS NOT NULL OR backoffice_platform_user_id IS NOT NULL) "
             "AND organization_id IS NULL AND customer_id IS NULL) "
             "OR (kind = 'merchant' AND organization_id IS NOT NULL "
-            "AND platform_user_id IS NULL AND customer_id IS NULL) "
+            "AND platform_user_id IS NULL AND backoffice_platform_user_id IS NULL "
+            "AND customer_id IS NULL) "
             "OR (kind = 'customer' AND customer_id IS NOT NULL "
-            "AND platform_user_id IS NULL AND organization_id IS NULL)",
+            "AND platform_user_id IS NULL AND backoffice_platform_user_id IS NULL "
+            "AND organization_id IS NULL)",
             name="subject_matches_kind",
         ),
         # At most one live participant per subject within a case.
@@ -283,6 +287,15 @@ class SupportCaseParticipant(RecordModel):
             unique=True,
             postgresql_where=text(
                 "platform_user_id IS NOT NULL AND deleted_at IS NULL"
+            ),
+        ),
+        Index(
+            "ix_support_case_participants_unique_backoffice_user",
+            "case_id",
+            "backoffice_platform_user_id",
+            unique=True,
+            postgresql_where=text(
+                "backoffice_platform_user_id IS NOT NULL AND deleted_at IS NULL"
             ),
         ),
         Index(

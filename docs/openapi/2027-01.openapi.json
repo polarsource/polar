@@ -73579,6 +73579,11 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "trial_payment_setup_required": {
+            "type": "boolean",
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."
+          },
           "catalog_id": {
             "anyOf": [
               {
@@ -73675,6 +73680,7 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "trial_payment_setup_required",
           "catalog_id",
           "is_current",
           "external_id",
@@ -74068,6 +74074,12 @@
             ],
             "title": "Trial Interval Count",
             "description": "The number of interval units for the trial period."
+          },
+          "trial_payment_setup_required": {
+            "type": "boolean",
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.",
+            "default": true
           },
           "recurring_interval": {
             "$ref": "#/components/schemas/RecurringInterval",
@@ -75754,6 +75766,18 @@
               }
             ],
             "title": "Attached Custom Fields"
+          },
+          "trial_payment_setup_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."
           }
         },
         "type": "object",

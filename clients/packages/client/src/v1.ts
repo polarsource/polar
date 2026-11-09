@@ -34424,6 +34424,11 @@ export interface components {
        */
       organization_id: string
       /**
+       * Trial Payment Setup Required
+       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+       */
+      trial_payment_setup_required: boolean
+      /**
        * Catalog Id
        * @description ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
        */
@@ -34637,6 +34642,12 @@ export interface components {
        * @description The number of interval units for the trial period.
        */
       trial_interval_count?: number | null
+      /**
+       * Trial Payment Setup Required
+       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+       * @default true
+       */
+      trial_payment_setup_required: boolean
       /** @description The recurring interval of the product. */
       recurring_interval: components['schemas']['RecurringInterval']
       /**
@@ -35896,6 +35907,11 @@ export interface components {
       attached_custom_fields?:
         | components['schemas']['AttachedCustomFieldCreate'][]
         | null
+      /**
+       * Trial Payment Setup Required
+       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+       */
+      trial_payment_setup_required?: boolean | null
     }
     /**
      * Visibility

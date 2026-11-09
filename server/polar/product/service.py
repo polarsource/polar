@@ -665,9 +665,19 @@ class ProductService:
         if update_schema.is_archived:
             product = await self._archive(session, product)
 
+        if update_schema.trial_payment_setup_required is not None:
+            product.trial_payment_setup_required = (
+                update_schema.trial_payment_setup_required
+            )
+
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
-            exclude={"prices", "medias", "attached_custom_fields"},
+            exclude={
+                "prices",
+                "medias",
+                "attached_custom_fields",
+                "trial_payment_setup_required",
+            },
             by_alias=True,
         ).items():
             setattr(product, attr, value)

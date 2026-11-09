@@ -81,12 +81,22 @@ class TestPlatformParticipant:
         first_read = utc_now()
         legacy_user_id = user.id if legacy_participant_exists else None
 
-        first = await repository.upsert_platform_read(
-            case.id, legacy_user_id, staff.id, read_at=first_read
-        )
+        if legacy_participant_exists:
+            first = SupportCaseParticipant(
+                case=case,
+                kind=SupportCaseParticipantKind.platform,
+                platform_user=user,
+                backoffice_platform_user=staff,
+                last_read_at=first_read,
+            )
+            await save_fixture(first)
+        else:
+            first = await repository.upsert_platform_read(
+                case.id, staff.id, read_at=first_read
+            )
         latest_read = first_read + timedelta(seconds=1)
         updated = await repository.upsert_platform_read(
-            case.id, None, staff.id, read_at=latest_read
+            case.id, staff.id, read_at=latest_read
         )
 
         assert updated.id == first.id

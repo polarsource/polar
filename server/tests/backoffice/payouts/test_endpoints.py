@@ -9,10 +9,10 @@ from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.enums import PayoutAccountType
 from polar.models import Account, Organization, User
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.models.payout_attempt import PayoutAttemptStatus
-from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout, create_payout_account
@@ -20,12 +20,11 @@ from tests.fixtures.random_objects import create_payout, create_payout_account
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
 ) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=backoffice_app),

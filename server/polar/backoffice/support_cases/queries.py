@@ -13,7 +13,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, and_, func, or_, select
 
-from polar.models import BackofficeUser, Dispute, Organization, User
+from polar.models import BackofficeUser, Dispute, Organization
 from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -100,7 +100,8 @@ def cases_statement(
         .where(
             SupportCaseParticipant.case_id == SupportCase.id,
             SupportCaseParticipant.kind == SupportCaseParticipantKind.platform,
-            SupportCaseParticipant.platform_user_id == viewer_user_id,
+            SupportCaseParticipant.backoffice_platform_user_id.is_not(None),
+            SupportCaseParticipant.backoffice_platform_user_id == viewer_user_id,
             SupportCaseParticipant.deleted_at.is_(None),
         )
         .scalar_subquery()
@@ -115,7 +116,7 @@ def cases_statement(
             SupportCase,
             Organization,
             is_open.label("is_open"),
-            func.coalesce(BackofficeUser.email, User.email).label("assignee_email"),
+            BackofficeUser.email.label("assignee_email"),
             awaiting_platform.label("awaiting_platform"),
             unread.label("unread"),
             Dispute.status.label("dispute_status"),
@@ -125,7 +126,6 @@ def cases_statement(
         )
         .join(Organization, Organization.id == SupportCase.organization_id)
         .outerjoin(Dispute, DisputeSupportCase.dispute_id == Dispute.id)
-        .outerjoin(User, SupportCase.assigned_user_id == User.id)
         .outerjoin(
             BackofficeUser, SupportCase.backoffice_assigned_user_id == BackofficeUser.id
         )
@@ -141,9 +141,11 @@ def cases_statement(
     elif status == "needs_action":
         statement = statement.where(needs_action)
     if assigned == "me" and assigned_user_id is not None:
-        statement = statement.where(SupportCase.assigned_user_id == assigned_user_id)
+        statement = statement.where(
+            SupportCase.backoffice_assigned_user_id == assigned_user_id
+        )
     elif assigned == "unassigned":
-        statement = statement.where(SupportCase.assigned_user_id.is_(None))
+        statement = statement.where(SupportCase.backoffice_assigned_user_id.is_(None))
     if case_type in _TYPE_FILTERS:
         statement = statement.where(SupportCase.type == case_type)
     disputes_enabled = Organization.feature_settings["disputes_enabled"].as_boolean()

@@ -6,10 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.backoffice_user.repository import BackofficeUserRepository
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
-from polar.models import Customer, Dispute, File, Order
+from polar.models import BackofficeUser, Customer, Dispute, File, Order
 from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -41,7 +40,7 @@ class SupportCaseService:
         case: CaseT,
         *,
         author_kind: SupportCaseMessageAuthorKind,
-        author_user: User | None = None,
+        author_user: User | BackofficeUser | None = None,
         audience: Sequence[SupportCaseAudience] = (),
     ) -> CaseT:
         """Persist a (typed) case and emit its ``opened`` event atomically."""
@@ -147,7 +146,7 @@ class SupportCaseService:
         return attachment
 
     async def mark_read(
-        self, session: AsyncSession, case: SupportCase, *, user: User
+        self, session: AsyncSession, case: SupportCase, *, user: BackofficeUser
     ) -> SupportCaseParticipant:
         """Record that a staff member has read the case up to now.
 
@@ -156,11 +155,8 @@ class SupportCaseService:
         and the latest reader across staff is shown in the list.
         """
         repository = SupportCaseParticipantRepository.from_session(session)
-        backoffice_user = await BackofficeUserRepository.from_session(
-            session
-        ).get_or_create_by_email(user.email)
         return await repository.upsert_platform_read(
-            case.id, user.id, backoffice_user.id, read_at=datetime.now(UTC)
+            case.id, user.id, read_at=datetime.now(UTC)
         )
 
     async def add_participant(
@@ -170,22 +166,16 @@ class SupportCaseService:
         kind: SupportCaseParticipantKind,
         *,
         organization: Organization | None = None,
-        platform_user: User | None = None,
+        backoffice_platform_user: BackofficeUser | None = None,
         customer: Customer | None = None,
     ) -> SupportCaseParticipant:
         repository = SupportCaseParticipantRepository.from_session(session)
-        backoffice_user = None
-        if platform_user is not None and kind == SupportCaseParticipantKind.platform:
-            backoffice_user = await BackofficeUserRepository.from_session(
-                session
-            ).get_or_create_by_email(platform_user.email)
         return await repository.create(
             SupportCaseParticipant(
                 case=case,
                 kind=kind,
                 organization=organization,
-                platform_user=platform_user,
-                backoffice_platform_user=backoffice_user,
+                backoffice_platform_user=backoffice_platform_user,
                 customer=customer,
             ),
             flush=True,
@@ -198,26 +188,20 @@ class SupportCaseService:
         *,
         author_kind: SupportCaseMessageAuthorKind,
         type: SupportCaseMessageType = SupportCaseMessageType.chat,
-        author_user: User | None = None,
+        author_user: User | BackofficeUser | None = None,
         body: str | None = None,
         audience: Sequence[SupportCaseAudience] = (),
     ) -> SupportCaseMessage:
         repository = SupportCaseMessageRepository.from_session(session)
-        backoffice_author = None
-        if (
-            author_user is not None
-            and author_kind == SupportCaseMessageAuthorKind.platform
-        ):
-            backoffice_author = await BackofficeUserRepository.from_session(
-                session
-            ).get_or_create_by_email(author_user.email)
         return await repository.create(
             SupportCaseMessage(
                 case=case,
                 type=type,
                 author_kind=author_kind,
-                author_user=author_user,
-                backoffice_author_user=backoffice_author,
+                author_user=author_user if isinstance(author_user, User) else None,
+                backoffice_author_user=author_user
+                if isinstance(author_user, BackofficeUser)
+                else None,
                 body=body,
                 audience=list(audience),
             ),
@@ -230,7 +214,7 @@ class SupportCaseService:
         case: SupportCase,
         *,
         author_kind: SupportCaseMessageAuthorKind,
-        author_user: User | None = None,
+        author_user: User | BackofficeUser | None = None,
         body: str | None = None,
         audience: Sequence[SupportCaseAudience] = (),
     ) -> SupportCaseMessage:
@@ -249,16 +233,13 @@ class SupportCaseService:
         session: AsyncSession,
         case: SupportCase,
         *,
-        assignee: User,
+        assignee: BackofficeUser,
     ) -> SupportCaseMessage:
         """Set the case's current owner and record an internal event.
 
         Advisory: overwrites any existing assignee without checking for one.
         """
-        case.backoffice_assigned_user = await BackofficeUserRepository.from_session(
-            session
-        ).get_or_create_by_email(assignee.email)
-        case.assigned_user = assignee
+        case.backoffice_assigned_user = assignee
         return await self.post_message(
             session,
             case,
@@ -272,10 +253,9 @@ class SupportCaseService:
         session: AsyncSession,
         case: SupportCase,
         *,
-        actor: User,
+        actor: BackofficeUser,
     ) -> SupportCaseMessage:
         """Clear the case's owner and record an internal event."""
-        case.assigned_user = None
         case.backoffice_assigned_user = None
         return await self.post_message(
             session,

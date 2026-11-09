@@ -50,6 +50,7 @@ from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
     Agent,
+    BackofficeUser,
     Customer,
     Organization,
     OrganizationRiskSignal,
@@ -1476,7 +1477,7 @@ class OrganizationService:
         *,
         reason: str | None = None,
         internal_note: str | None = None,
-        staff_user: User,
+        staff_user: BackofficeUser,
     ) -> Organization:
         """Backoffice override to re-activate a DENIED or BLOCKED organization.
 
@@ -1815,7 +1816,7 @@ class OrganizationService:
         organization: Organization,
         *,
         actor_type: ActorType,
-        reviewer_id: uuid.UUID | None = None,
+        backoffice_reviewer: BackofficeUser | None = None,
         enqueue_review: bool = True,
     ) -> Organization:
         self.set_status(organization, OrganizationStatus.REVIEW)
@@ -1830,7 +1831,7 @@ class OrganizationService:
         await review_repository.save_review_decision(
             organization_id=organization.id,
             actor_type=actor_type,
-            reviewer_id=reviewer_id,
+            backoffice_reviewer=backoffice_reviewer,
             decision=DecisionType.ESCALATE,
             review_context=ReviewContext.MANUAL,
         )
@@ -2601,7 +2602,7 @@ class OrganizationService:
         session: AsyncSession,
         organization: Organization,
         *,
-        staff_user: User | None = None,
+        staff_user: BackofficeUser | None = None,
         reason: str | None = None,
     ) -> OrganizationReview:
         """Deny an organization's appeal and keep payment access blocked.

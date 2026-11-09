@@ -2,6 +2,7 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.models import Organization, User
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessageAuthorKind,
@@ -209,20 +210,24 @@ class TestAssignment:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         # The audience must stay empty: assignment is platform-only churn and
         # must never surface in the merchant-visible thread.
         case = await create_appeal_case(save_fixture, organization)
 
-        assigned = await support_case_service.assign(session, case, assignee=user)
-        assert case.assigned_user_id == user.id
+        assigned = await support_case_service.assign(
+            session, case, assignee=backoffice_user
+        )
+        assert case.assigned_user_id is None
         assert case.backoffice_assigned_user_id is not None
         assert assigned.backoffice_author_user_id == case.backoffice_assigned_user_id
         assert assigned.type == SupportCaseMessageType.assigned
         assert assigned.audience == []
 
-        released = await support_case_service.unassign(session, case, actor=user)
+        released = await support_case_service.unassign(
+            session, case, actor=backoffice_user
+        )
         assert case.assigned_user_id is None
         assert case.backoffice_assigned_user_id is None
         assert released.backoffice_author_user_id == assigned.backoffice_author_user_id
@@ -237,17 +242,21 @@ class TestMarkRead:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         case = await create_appeal_case(save_fixture, organization)
 
-        first = await support_case_service.mark_read(session, case, user=user)
+        first = await support_case_service.mark_read(
+            session, case, user=backoffice_user
+        )
         assert first.kind == SupportCaseParticipantKind.platform
-        assert first.platform_user_id == user.id
+        assert first.platform_user_id is None
         assert first.backoffice_platform_user_id is not None
         assert first.last_read_at is not None
 
-        second = await support_case_service.mark_read(session, case, user=user)
+        second = await support_case_service.mark_read(
+            session, case, user=backoffice_user
+        )
         assert second.id == first.id
         assert second.last_read_at is not None
         assert second.last_read_at >= first.last_read_at

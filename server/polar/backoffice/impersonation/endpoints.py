@@ -23,7 +23,7 @@ from polar.models import (
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 
-from ..dependencies import get_admin
+from ..dependencies import get_legacy_admin
 from ..responses import HXRedirectResponse
 
 router = BackofficeRouter()
@@ -35,7 +35,7 @@ router = BackofficeRouter()
 )
 async def start_impersonation(
     request: Request,
-    admin_session: UserSession = Depends(get_admin),
+    admin_session: UserSession = Depends(get_legacy_admin),
     user_id: str = Form(),
     organization_id: str | None = Form(default=None),
     session: AsyncSession = Depends(get_db_session),

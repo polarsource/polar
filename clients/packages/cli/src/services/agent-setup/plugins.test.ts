@@ -39,6 +39,25 @@ describe('detectPlugin', () => {
       problem: 'Update Codex to a version with plugin support.',
     })
   })
+
+  test('reports a timeout instead of asking for an upgrade', async () => {
+    const { exec } = fakeExec({
+      'codex plugin list --json': {
+        code: 143,
+        stdout: '',
+        stderr: '',
+        timedOut: true,
+      },
+    })
+    const status = await Effect.runPromise(
+      detectPlugin(codex, exec, '/bin/codex'),
+    )
+    expect(status).toMatchObject({
+      detected: true,
+      installed: false,
+      problem: 'Codex did not respond within 15s.',
+    })
+  })
 })
 
 describe('installPlugin', () => {
@@ -100,5 +119,23 @@ describe('installPlugin', () => {
       `Codex reported success but ${codex.plugin} is not installed`,
     )
     expect(error.hint).toContain(`codex plugin add ${codex.plugin}`)
+  })
+
+  test('reports a timed-out install as a timeout', async () => {
+    const { exec } = fakeExec({
+      [`codex plugin add ${codex.plugin}`]: {
+        code: 143,
+        stdout: '',
+        stderr: '',
+        timedOut: true,
+      },
+    })
+    const error = await Effect.runPromise(
+      Effect.flip(installPlugin(codex, exec, false)),
+    )
+    expect(error).toMatchObject({
+      _tag: 'AgentSetupError',
+      message: `codex plugin add ${codex.plugin} did not respond within 180s`,
+    })
   })
 })

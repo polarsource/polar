@@ -20,6 +20,7 @@ export interface ProcessResult {
   readonly code: number
   readonly stdout: string
   readonly stderr: string
+  readonly timedOut?: boolean
 }
 
 export interface ExecOptions {
@@ -48,14 +49,18 @@ export const exec: Exec = (
         stdout: inherit ? 'inherit' : 'pipe',
         stderr: inherit ? 'inherit' : 'pipe',
       })
-      const timer = setTimeout(() => child.kill(), timeoutMs)
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        child.kill()
+      }, timeoutMs)
       try {
         const [stdout, stderr, code] = await Promise.all([
           text(child.stdout),
           text(child.stderr),
           child.exited,
         ])
-        return { code, stdout, stderr }
+        return { code, stdout, stderr, timedOut }
       } finally {
         clearTimeout(timer)
       }

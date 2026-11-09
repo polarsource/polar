@@ -335,6 +335,18 @@ describe('exec', () => {
 
     expect(result.code).toBe(0)
     expect(result.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/)
+    expect(result.timedOut).toBe(false)
+  })
+
+  test('kills a command that outlives its timeout', async () => {
+    const result = await Effect.runPromise(
+      exec([process.execPath, '-e', 'await Bun.sleep(10_000)'], {
+        timeoutMs: 50,
+      }),
+    )
+
+    expect(result.timedOut).toBe(true)
+    expect(result.code).not.toBe(0)
   })
 
   test('fails when the command cannot be started', async () => {

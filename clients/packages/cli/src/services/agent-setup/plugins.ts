@@ -1,4 +1,4 @@
-import { Effect, Schema, SchemaGetter } from 'effect'
+import { Data, Effect, Schema, SchemaGetter } from 'effect'
 import {
   AgentSetupError,
   type Client,
@@ -9,6 +9,12 @@ import { TOOLKIT_REPOSITORY } from '@/services/agent-setup/skills'
 
 const LIST_TIMEOUT = 15_000
 const INSTALL_TIMEOUT = 3 * 60_000
+
+const seconds = (timeoutMs: number) => `${timeoutMs / 1000}s`
+
+class PluginTimeout extends Data.TaggedError('PluginTimeout')<{
+  message: string
+}> {}
 
 const Plugins = Schema.Array(
   Schema.Struct({
@@ -76,6 +82,13 @@ const run = (exec: Exec, command: ReadonlyArray<string>, timeoutMs: number) =>
   exec(command, { timeoutMs }).pipe(
     Effect.mapError((error) => new AgentSetupError({ message: error.message })),
     Effect.filterOrFail(
+      (result) => !result.timedOut,
+      () =>
+        new PluginTimeout({
+          message: `${command.join(' ')} did not respond within ${seconds(timeoutMs)}`,
+        }),
+    ),
+    Effect.filterOrFail(
       (result) => result.code === 0,
       (result) =>
         new AgentSetupError({
@@ -137,6 +150,14 @@ export const detectPlugin = (
         ...(plugin?.version ? { version: plugin.version } : {}),
       }),
     ),
+    Effect.catchTag('PluginTimeout', () =>
+      Effect.succeed<ClientStatus>({
+        ...base,
+        detected: true,
+        installed: false,
+        problem: `${spec.name} did not respond within ${seconds(LIST_TIMEOUT)}.`,
+      }),
+    ),
     Effect.orElseSucceed(
       (): ClientStatus => ({
         ...base,
@@ -180,4 +201,9 @@ export const installPlugin = (
         hint: `Run ${install.join(' ')} to see the underlying error.`,
       })
     }
-  })
+  }).pipe(
+    Effect.catchTag(
+      'PluginTimeout',
+      ({ message }) => new AgentSetupError({ message }),
+    ),
+  )

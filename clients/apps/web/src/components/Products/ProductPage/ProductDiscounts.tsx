@@ -85,6 +85,7 @@ export const ProductDiscounts = ({
           icon={<DiscountOutlined fontSize="medium" />}
           title="No discounts"
           description="No discounts currently apply to this product"
+          fill
         />
       ) : (
         <Box flexDirection="column" gap="l">

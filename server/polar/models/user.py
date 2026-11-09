@@ -17,6 +17,7 @@ from sqlalchemy import (
     Text,
     Uuid,
     and_,
+    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -185,7 +186,9 @@ class User(RecordModel):
         ),
     )
 
-    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_admin: Mapped[bool | None] = mapped_column(
+        Boolean, nullable=True, default=False, server_default=false()
+    )
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)
     email_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

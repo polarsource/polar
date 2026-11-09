@@ -583,6 +583,7 @@ class OrderRepository(
             contains_eager(Order.customer),
             contains_eager(Order.product).options(*skip_product_collections),
             contains_eager(Order.discount).options(
+                selectinload(Discount.organization),
                 raiseload(Discount.discount_products),
             ),
             joinedload(Order.subscription).options(

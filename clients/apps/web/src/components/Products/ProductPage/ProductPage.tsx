@@ -218,15 +218,17 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
                 </DropdownMenuItem>
                 {!product.is_archived && (
                   <>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        router.push(
-                          `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
-                        )
-                      }}
-                    >
-                      Integrate Checkout
-                    </DropdownMenuItem>
+                    {product.is_current && (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push(
+                            `/dashboard/${organization.slug}/onboarding/integrate?productId=${product.id}`,
+                          )
+                        }}
+                      >
+                        Integrate Checkout
+                      </DropdownMenuItem>
+                    )}
                     {!managedAsCode && (
                       <>
                         <DropdownMenuSeparator />

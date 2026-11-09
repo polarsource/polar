@@ -161,19 +161,22 @@ export const writeSkills = (directory: string, skills: ReadonlyArray<Skill>) =>
           }
           const destination = path.join(directory, name)
           const previous = `${staging}.previous`
-          const replacing = yield* fs.rename(destination, previous).pipe(
-            Effect.as(true),
-            Effect.orElseSucceed(() => false),
-          )
-          yield* fs
-            .rename(staging, destination)
-            .pipe(
-              Effect.tapError(() =>
-                replacing
-                  ? fs.rename(previous, destination).pipe(Effect.ignore)
-                  : Effect.void,
-              ),
+          const replacing = yield* Effect.gen(function* () {
+            const replacing = yield* fs.rename(destination, previous).pipe(
+              Effect.as(true),
+              Effect.orElseSucceed(() => false),
             )
+            yield* fs
+              .rename(staging, destination)
+              .pipe(
+                Effect.tapError(() =>
+                  replacing
+                    ? fs.rename(previous, destination).pipe(Effect.ignore)
+                    : Effect.void,
+                ),
+              )
+            return replacing
+          }).pipe(Effect.uninterruptible)
           if (replacing) {
             yield* fs
               .remove(previous, { recursive: true, force: true })

@@ -50,7 +50,7 @@ SubscriptionTrialPaymentMethodRequired.PreviewProps = {
     status: 'trialing',
   },
   trial_end_date: 'March 17, 2026',
-  url: 'https://polar.sh/acme-inc/portal/settings',
+  url: 'https://polar.sh/acme-inc/portal',
 }
 
 export default SubscriptionTrialPaymentMethodRequired

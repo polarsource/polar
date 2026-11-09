@@ -5,7 +5,6 @@ from polar.email.deduplication import (
     payment_method_expiration_reminder_key,
     subscription_renewal_reminder_key,
     subscription_trial_conversion_reminder_key,
-    subscription_trial_payment_method_required_key,
 )
 
 _ID = UUID("01942f38-d81f-7cd7-a40e-a80ae5e3cecd")
@@ -29,11 +28,4 @@ def test_subscription_trial_conversion_reminder_key() -> None:
     assert (
         subscription_trial_conversion_reminder_key(_ID, date(2026, 12, 31))
         == f"subscription_trial_conversion_reminder:{_ID}:2026-12-31"
-    )
-
-
-def test_subscription_trial_payment_method_required_key() -> None:
-    assert (
-        subscription_trial_payment_method_required_key(_ID, date(2026, 12, 31))
-        == f"subscription_trial_payment_method_required:{_ID}:2026-12-31"
     )

@@ -43,7 +43,6 @@ from polar.email.billing_migration import previous_billing_provider_for_notice
 from polar.email.deduplication import (
     subscription_renewal_reminder_key,
     subscription_trial_conversion_reminder_key,
-    subscription_trial_payment_method_required_key,
 )
 from polar.email.schemas import EmailAdapter, EmailTemplate
 from polar.email.sender import enqueue_email_template
@@ -4607,10 +4606,9 @@ class SubscriptionService:
                 ),
                 template_name="subscription_trial_payment_method_required",
                 extra_context={"trial_end_date": format_date(subscription.trial_end)},
-                deduplication_key=subscription_trial_payment_method_required_key(
+                deduplication_key=subscription_trial_conversion_reminder_key(
                     subscription.id, subscription.trial_end.date()
                 ),
-                portal_path="portal/settings",
             )
         conversion_date = format_date(subscription.trial_end)
         return await self._send_customer_email(
@@ -4644,7 +4642,6 @@ class SubscriptionService:
         ],
         extra_context: dict[str, Any] | None = None,
         deduplication_key: str | None = None,
-        portal_path: str = "portal",
     ) -> None:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
@@ -4705,7 +4702,7 @@ class SubscriptionService:
                     }
                 )
                 portal_url = settings.generate_frontend_url(
-                    f"/{organization.slug}/{portal_path}?{query_string}"
+                    f"/{organization.slug}/portal?{query_string}"
                 )
 
                 email = EmailAdapter.validate_python(

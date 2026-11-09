@@ -8569,13 +8569,13 @@ class TestSendTrialConversionReminderEmail:
         email = enqueue_email_mock.call_args[0][0]
         assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
         assert email.props.trial_end_date == "March 17, 2026"
-        assert f"/{organization.slug}/portal/settings?" in email.props.url
+        assert f"/{organization.slug}/portal?" in email.props.url
         kwargs = enqueue_email_mock.call_args.kwargs
         assert kwargs["subject"] == (
             f"Add a payment method to keep your {product.name} subscription"
         )
         assert kwargs["deduplication_key"] == (
-            f"subscription_trial_payment_method_required:{subscription.id}:2026-03-17"
+            f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
         )
 
     async def test_with_subscription_payment_method(

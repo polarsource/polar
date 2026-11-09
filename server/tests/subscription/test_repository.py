@@ -7,7 +7,6 @@ from sqlalchemy import update
 from polar.email.deduplication import (
     subscription_renewal_reminder_key,
     subscription_trial_conversion_reminder_key,
-    subscription_trial_payment_method_required_key,
 )
 from polar.enums import EmailSender, SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
@@ -534,7 +533,7 @@ class TestGetSubscriptionsNeedingTrialConversionReminder:
         await _create_sent_reminder_log(
             save_fixture,
             email_template="subscription_trial_payment_method_required",
-            deduplication_key=subscription_trial_payment_method_required_key(
+            deduplication_key=subscription_trial_conversion_reminder_key(
                 subscription.id, trial_end.date()
             ),
         )

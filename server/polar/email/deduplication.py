@@ -41,15 +41,6 @@ def subscription_trial_conversion_reminder_key(
     )
 
 
-def subscription_trial_payment_method_required_key(
-    subscription_id: UUID, trial_end: date
-) -> str:
-    return (
-        f"{EmailTemplate.subscription_trial_payment_method_required}"
-        f":{subscription_id}:{trial_end.isoformat()}"
-    )
-
-
 def payment_method_expiration_reminder_key_sql(
     payment_method_id: ColumnExpressionArgument[Any],
     exp_year: ColumnExpressionArgument[Any],
@@ -80,17 +71,6 @@ def subscription_trial_conversion_reminder_key_sql(
 ) -> ColumnElement[str]:
     return _subscription_date_key_sql(
         EmailTemplate.subscription_trial_conversion_reminder, subscription_id, trial_end
-    )
-
-
-def subscription_trial_payment_method_required_key_sql(
-    subscription_id: ColumnExpressionArgument[Any],
-    trial_end: ColumnExpressionArgument[Any],
-) -> ColumnElement[str]:
-    return _subscription_date_key_sql(
-        EmailTemplate.subscription_trial_payment_method_required,
-        subscription_id,
-        trial_end,
     )
 
 

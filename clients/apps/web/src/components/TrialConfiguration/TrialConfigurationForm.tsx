@@ -158,7 +158,12 @@ export const TrialConfigurationForm = ({
             name="trial_payment_setup_required"
             render={({ field }) => (
               <FormItem>
-                <Box alignItems="center" justifyContent="between" columnGap="m">
+                <Box
+                  alignItems="center"
+                  justifyContent="between"
+                  columnGap="m"
+                  minHeight={40}
+                >
                   <FormLabel htmlFor="trial-payment-setup-required">
                     Require credit card up front
                   </FormLabel>

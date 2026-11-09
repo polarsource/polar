@@ -107,7 +107,10 @@ class OutboxMetricExporter(MetricExporter):
         )
 
     def export(
-        self, metrics_data: MetricsData, timeout_millis: float = 10_000, **kwargs: typing.Any
+        self,
+        metrics_data: MetricsData,
+        timeout_millis: float = 10_000,
+        **kwargs: typing.Any,
     ) -> MetricExportResult:
         self._outbox.add("metrics", encode_metrics(metrics_data).SerializeToString())
         return MetricExportResult.SUCCESS

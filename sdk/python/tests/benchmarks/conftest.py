@@ -12,7 +12,6 @@ import uuid
 import httpx
 import pytest
 
-from polar.outpost import telemetry
 from polar.outpost.client import Outpost
 from polar.outpost.reducer import Reducer
 
@@ -142,15 +141,13 @@ def outpost(
             ready.set_result(None)
             await stop.wait()
 
-    # Telemetry records as in production; only its export to Polar stays on the machine.
-    with pytest.MonkeyPatch.context() as monkeypatch:
-        monkeypatch.setattr(telemetry._Relay, "_post", lambda self, body: True)
-        held = loop.create_task(hold())
-        loop.run_until_complete(
-            asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
-        )
-        if held.done():
-            held.result()
-        yield outpost
-        stop.set()
-        loop.run_until_complete(held)
+    # Telemetry records as in production, into the fake Polar's Redis.
+    held = loop.create_task(hold())
+    loop.run_until_complete(
+        asyncio.wait({ready, held}, return_when=asyncio.FIRST_COMPLETED)
+    )
+    if held.done():
+        held.result()
+    yield outpost
+    stop.set()
+    loop.run_until_complete(held)

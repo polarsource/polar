@@ -1,8 +1,8 @@
 import collections.abc
 import os
-from typing import Any
+import threading
+import typing
 
-import httpx
 from opentelemetry.exporter.otlp.proto.common.metrics_encoder import encode_metrics
 from opentelemetry.exporter.otlp.proto.common.trace_encoder import encode_spans
 from opentelemetry.sdk.metrics import Counter, Histogram, MeterProvider
@@ -22,11 +22,11 @@ from opentelemetry.sdk.trace.export import (
     SpanExportResult,
 )
 from opentelemetry.sdk.trace.sampling import ALWAYS_ON
+from opentelemetry.trace import StatusCode
 
 from polar import __version__
 
 TELEMETRY_ENV = "POLAR_OUTPOST_TELEMETRY"
-FORWARDED_HEADERS = ("Authorization", "Polar-Organization")
 EXPORT_INTERVAL_MILLIS = 30_000
 METRIC_VIEWS = [
     View(
@@ -40,45 +40,64 @@ METRIC_VIEWS = [
 ]
 
 
+# Set on the spans a sample keeps: each stands for this many spans without an error or
+# a drift.
+SAMPLE_RATE_ATTRIBUTE = "outpost.sample_rate"
+
+
 def is_telemetry_enabled(telemetry: bool) -> bool:
     return telemetry and os.environ.get(TELEMETRY_ENV) != "0"
 
 
-class _Relay:
-    # The OTLP exporters merge OTEL_EXPORTER_OTLP_HEADERS into their requests:
-    # the application's own exporter credentials would reach Polar.
+class Outbox:
+    """The serialized exports an instance holds until it hands them to the shared
+    Redis. The exporters fill it from their own threads."""
 
-    def __init__(self, url: str, headers: dict[str, str]) -> None:
-        self._url = url
-        self._client = httpx.Client(
-            headers={**headers, "Content-Type": "application/x-protobuf"},
-            timeout=10.0,
-        )
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self.spans: list[bytes] = []
+        self.metrics: list[bytes] = []
 
-    def _post(self, body: bytes) -> bool:
-        try:
-            response = self._client.post(self._url, content=body)
-        except httpx.HTTPError:
-            return False
-        return response.is_success
+    def add(self, kind: typing.Literal["spans", "metrics"], body: bytes) -> None:
+        with self._lock:
+            getattr(self, kind).append(body)
 
-    def _close(self) -> None:
-        self._client.close()
+    def take(self) -> tuple[list[bytes], list[bytes]]:
+        with self._lock:
+            spans, self.spans = self.spans, []
+            metrics, self.metrics = self.metrics, []
+        return spans, metrics
+
+    def put_back(self, spans: list[bytes], metrics: list[bytes], cap: int) -> None:
+        """Exports the shared Redis did not take wait for the next flush, the newest at
+        most."""
+        with self._lock:
+            self.spans = (spans + self.spans)[-cap:]
+            self.metrics = (metrics + self.metrics)[-cap:]
 
 
-class RelaySpanExporter(_Relay, SpanExporter):
+def _kept(span: ReadableSpan) -> bool:
+    attributes = span.attributes or {}
+    return (
+        attributes.get(SAMPLE_RATE_ATTRIBUTE) is not None
+        or span.status.status_code == StatusCode.ERROR
+        or attributes.get("outpost.snapshot.delta") is True
+    )
+
+
+class OutboxSpanExporter(SpanExporter):
+    def __init__(self, outbox: Outbox) -> None:
+        self._outbox = outbox
+
     def export(self, spans: collections.abc.Sequence[ReadableSpan]) -> SpanExportResult:
-        if self._post(encode_spans(spans).SerializeToString()):
-            return SpanExportResult.SUCCESS
-        return SpanExportResult.FAILURE
-
-    def shutdown(self) -> None:
-        self._close()
+        if kept := [span for span in spans if _kept(span)]:
+            self._outbox.add("spans", encode_spans(kept).SerializeToString())
+        return SpanExportResult.SUCCESS
 
 
-class RelayMetricExporter(_Relay, MetricExporter):
-    def __init__(self, url: str, headers: dict[str, str]) -> None:
-        _Relay.__init__(self, url, headers)
+class OutboxMetricExporter(MetricExporter):
+    def __init__(self, outbox: Outbox) -> None:
+        self._outbox = outbox
         MetricExporter.__init__(
             self,
             preferred_temporality={
@@ -88,25 +107,19 @@ class RelayMetricExporter(_Relay, MetricExporter):
         )
 
     def export(
-        self, metrics_data: MetricsData, timeout_millis: float = 10_000, **kwargs: Any
+        self,
+        metrics_data: MetricsData,
+        timeout_millis: float = 10_000,
+        **kwargs: typing.Any,
     ) -> MetricExportResult:
-        if self._post(encode_metrics(metrics_data).SerializeToString()):
-            return MetricExportResult.SUCCESS
-        return MetricExportResult.FAILURE
+        self._outbox.add("metrics", encode_metrics(metrics_data).SerializeToString())
+        return MetricExportResult.SUCCESS
 
     def force_flush(self, timeout_millis: float = 10_000) -> bool:
         return True
 
-    def shutdown(self, timeout_millis: float = 30_000, **kwargs: Any) -> None:
-        self._close()
-
-
-def _relay_target(client: httpx.AsyncClient, path: str) -> tuple[str, dict[str, str]]:
-    return str(client.base_url.join(path)), {
-        name: client.headers[name]
-        for name in FORWARDED_HEADERS
-        if name in client.headers
-    }
+    def shutdown(self, timeout_millis: float = 30_000, **kwargs: typing.Any) -> None:
+        pass
 
 
 def _resource() -> Resource:
@@ -119,17 +132,14 @@ def _resource() -> Resource:
     )
 
 
-def create_tracer_provider(client: httpx.AsyncClient) -> TracerProvider:
-    exporter = RelaySpanExporter(*_relay_target(client, "/v1/outpost/telemetry"))
+def create_tracer_provider(outbox: Outbox) -> TracerProvider:
     provider = TracerProvider(resource=_resource(), sampler=ALWAYS_ON)
-    provider.add_span_processor(BatchSpanProcessor(exporter))
+    provider.add_span_processor(BatchSpanProcessor(OutboxSpanExporter(outbox)))
     return provider
 
 
-def create_meter_provider(client: httpx.AsyncClient) -> MeterProvider:
-    exporter = RelayMetricExporter(
-        *_relay_target(client, "/v1/outpost/telemetry/metrics")
-    )
+def create_meter_provider(outbox: Outbox) -> MeterProvider:
+    exporter = OutboxMetricExporter(outbox)
     reader = PeriodicExportingMetricReader(
         exporter, export_interval_millis=EXPORT_INTERVAL_MILLIS
     )

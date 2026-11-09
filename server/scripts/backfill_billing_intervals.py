@@ -2,7 +2,8 @@
 
 Subscriptions created before interval recording was deployed have no intervals,
 so their reducer usage compares as 0. This records each one's current billing
-state, starting from when that state took effect.
+state, starting from when that state took effect. A paused subscription also
+gets its last active period, which its resume bills.
 
     uv run python -m scripts.backfill_billing_intervals --dry-run
     uv run python -m scripts.backfill_billing_intervals
@@ -16,7 +17,8 @@ import typer
 from sqlalchemy import Select, exists, func, select
 from sqlalchemy.orm import with_polymorphic
 
-from polar.billing_interval.service import USAGE_POLICIES
+from polar.billing_interval.repository import BillingIntervalRepository
+from polar.billing_interval.service import USAGE_POLICIES, derive_meter_billing_states
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import (
@@ -28,6 +30,7 @@ from polar.models import (
     Subscription,
     SubscriptionProductPrice,
 )
+from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import create_async_engine
 
@@ -94,6 +97,30 @@ def get_effective_at(subscription: Subscription) -> datetime:
     return subscription.current_period_start
 
 
+async def record_active_period(
+    session: AsyncSession, subscription: Subscription, *, until: datetime
+) -> None:
+    """Records the charge intervals of a paused subscription's last active
+    period, from its current period start, which pausing doesn't advance."""
+    if subscription.current_period_start >= until:
+        return
+    repository = BillingIntervalRepository.from_session(session)
+    for state in derive_meter_billing_states(subscription):
+        await repository.create(
+            BillingInterval(
+                organization_id=subscription.organization_id,
+                subscription=subscription,
+                customer_id=subscription.customer_id,
+                meter_id=state.meter_id,
+                product_price_id=state.product_price_id,
+                period_start=subscription.current_period_start,
+                period_end=until,
+                usage_policy=UsagePolicy.charge,
+            ),
+            flush=True,
+        )
+
+
 async def backfill_batch(
     session: AsyncSession, *, after_id: UUID | None, limit: int, dry_run: bool
 ) -> tuple[int, UUID | None]:
@@ -103,8 +130,11 @@ async def backfill_batch(
     )
     for subscription in subscriptions:
         if not dry_run:
+            effective_at = get_effective_at(subscription)
+            if subscription.status == SubscriptionStatus.paused:
+                await record_active_period(session, subscription, until=effective_at)
             await billing_interval_service.record_subscription(
-                session, subscription, effective_at=get_effective_at(subscription)
+                session, subscription, effective_at=effective_at
             )
     return len(subscriptions), subscriptions[-1].id if subscriptions else None
 

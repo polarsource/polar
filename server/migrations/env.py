@@ -9,11 +9,26 @@ from polar.config import settings
 from polar.models import Model
 
 # Columns removed from the models but still in the database until dropped by hand.
-UNMAPPED_COLUMNS: set[tuple[str, str]] = set()
+UNMAPPED_COLUMNS: set[tuple[str, str]] = {
+    ("organization_review_feedback", "reviewer_id"),
+    ("support_case_participants", "platform_user_id"),
+    ("support_cases", "assigned_user_id"),
+    ("users", "is_admin"),
+}
 
 
 def include_object(object, name, type_, reflected, compare_to):
     if type_ == "column" and (object.table.name, name) in UNMAPPED_COLUMNS:
+        return False
+    if (
+        reflected
+        and compare_to is None
+        and type_ in ("index", "foreign_key_constraint")
+        and any(
+            (object.table.name, column.name) in UNMAPPED_COLUMNS
+            for column in object.columns
+        )
+    ):
         return False
     if (
         type_ == "index"

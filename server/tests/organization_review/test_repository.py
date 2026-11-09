@@ -486,7 +486,7 @@ class TestSaveReviewDecision:
         assert decision.review_context == ReviewContext.THRESHOLD
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 15.0
-        assert decision.reviewer_id is None
+        assert decision.backoffice_reviewer_id is None
         assert decision.is_current is True
 
     async def test_human_decision(

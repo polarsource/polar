@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from polar.kit.utils import utc_now
-from polar.models import BackofficeUser, Customer, Organization, Product, User
+from polar.models import BackofficeUser, Customer, Organization, Product
 from polar.models.support_case import (
     DisputeSupportCase,
     ReviewAppealSupportCase,
@@ -65,60 +65,28 @@ class TestGetById:
 
 @pytest.mark.anyio
 class TestPlatformParticipant:
-    @pytest.mark.parametrize("legacy_participant_exists", [False, True])
     async def test_backoffice_upsert_preserves_participant(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        user: User,
-        legacy_participant_exists: bool,
+        backoffice_user: BackofficeUser,
     ) -> None:
         case = await create_appeal_case(save_fixture, organization)
-        staff = BackofficeUser(email=user.email)
-        await save_fixture(staff)
         repository = SupportCaseParticipantRepository.from_session(session)
         first_read = utc_now()
-        legacy_user_id = user.id if legacy_participant_exists else None
+        first = await repository.upsert_platform_read(
+            case.id, backoffice_user.id, read_at=first_read
+        )
 
-        if legacy_participant_exists:
-            first = SupportCaseParticipant(
-                case=case,
-                kind=SupportCaseParticipantKind.platform,
-                platform_user=user,
-                backoffice_platform_user=staff,
-                last_read_at=first_read,
-            )
-            await save_fixture(first)
-        else:
-            first = await repository.upsert_platform_read(
-                case.id, staff.id, read_at=first_read
-            )
         latest_read = first_read + timedelta(seconds=1)
         updated = await repository.upsert_platform_read(
-            case.id, staff.id, read_at=latest_read
+            case.id, backoffice_user.id, read_at=latest_read
         )
 
         assert updated.id == first.id
-        assert updated.platform_user_id == legacy_user_id
-        assert updated.backoffice_platform_user_id == staff.id
+        assert updated.backoffice_platform_user_id == backoffice_user.id
         assert updated.last_read_at == latest_read
-
-    async def test_legacy_only_participant_is_still_valid(
-        self,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user: User,
-    ) -> None:
-        case = await create_appeal_case(save_fixture, organization)
-        participant = SupportCaseParticipant(
-            case=case, kind=SupportCaseParticipantKind.platform, platform_user=user
-        )
-
-        await save_fixture(participant)
-
-        assert participant.platform_user_id == user.id
-        assert participant.backoffice_platform_user_id is None
 
     @pytest.mark.parametrize(
         "kind",

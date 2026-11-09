@@ -17,7 +17,6 @@ from sqlalchemy import (
     Text,
     Uuid,
     and_,
-    false,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -184,10 +183,6 @@ class User(RecordModel):
         Index(
             "ix_users_email_case_insensitive", func.lower(Column("email")), unique=True
         ),
-    )
-
-    is_admin: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True, default=False, server_default=false()
     )
 
     email: Mapped[str] = mapped_column(String(320), nullable=False)

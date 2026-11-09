@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from polar.models.backoffice_user import BackofficeUser
     from polar.models.organization import Organization
     from polar.models.organization_agent_review import OrganizationAgentReview
-    from polar.models.user import User
 
 
 class OrganizationReviewFeedback(RecordModel):
@@ -48,13 +47,6 @@ class OrganizationReviewFeedback(RecordModel):
     agent_review_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("organization_agent_reviews.id", ondelete="cascade"),
-        nullable=True,
-        index=True,
-    )
-
-    reviewer_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("users.id", ondelete="cascade"),
         nullable=True,
         index=True,
     )
@@ -113,10 +105,6 @@ class OrganizationReviewFeedback(RecordModel):
             lazy="raise",
             back_populates="review_feedbacks",
         )
-
-    @declared_attr
-    def reviewer(cls) -> Mapped["User"]:
-        return relationship("User", lazy="raise")
 
     @declared_attr
     def backoffice_reviewer(cls) -> Mapped["BackofficeUser | None"]:

@@ -210,7 +210,6 @@ class OrganizationDict(TypedDict):
     details: NotRequired[OrganizationDetails]
     products: NotRequired[list["ProductDict"]]
     benefits: NotRequired[dict[str, "BenefitDict"]]
-    is_admin: NotRequired[bool]
     feature_settings: NotRequired[dict[str, bool]]
     customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
@@ -1690,7 +1689,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
             "website": "https://polar.sh",
             "bio": "The admin organization of Polar",
             "status": OrganizationStatus.ACTIVE,
-            "is_admin": True,
             "feature_settings": {
                 "sso_enabled": True,
             },
@@ -1836,8 +1834,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
         await user_repository.update(
             user,
             update_dict={
-                # Start with the user being admin, so that we can create daily and weekly products
-                "is_admin": True,
                 "identity_verification_status": IdentityVerificationStatus.verified,
                 "identity_verification_id": f"vs_{org_data['slug']}_test",
             },
@@ -2321,13 +2317,6 @@ async def _create_simple_fixture_graph(session: AsyncSession) -> None:
                     session.add(seat)
 
                 await session.flush()
-
-        # Downgrade user from admin (for non-admin users)
-        # Preserve admin status if already granted by a previous organization
-        await user_repository.update(
-            user,
-            update_dict={"is_admin": user.is_admin or org_data.get("is_admin", False)},
-        )
 
     subscribed = await _subscribe_seeded_orgs_to_polar_self(session)
     if subscribed:
@@ -2884,7 +2873,6 @@ async def create_single_org_seed(
     await user_repository.update(
         user,
         update_dict={
-            "is_admin": True,
             "identity_verification_status": IdentityVerificationStatus.verified,
             "identity_verification_id": f"vs_{slug}_test",
         },

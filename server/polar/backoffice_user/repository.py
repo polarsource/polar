@@ -8,13 +8,6 @@ from polar.models import BackofficeUser
 class BackofficeUserRepository(RepositoryBase[BackofficeUser]):
     model = BackofficeUser
 
-    async def get_or_create_by_email(self, email: str) -> BackofficeUser:
-        email = email.strip().lower()
-        user = await self._get_by_email(email)
-        if user is not None:
-            return user
-        return await self.create(BackofficeUser(email=email), flush=True)
-
     async def provision(self, provider_id: str, email: str) -> BackofficeUser | None:
         email = email.strip().lower()
         by_provider = await self.get_one_or_none(

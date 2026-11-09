@@ -1,8 +1,8 @@
 """add trial_payment_setup_required
 
 Revision ID: 92af1cf638cc
-Revises: e9bc66a27bbd
-Create Date: 2026-11-09 14:36:18.502088
+Revises: 145cc87944da
+Create Date: 2026-11-09 15:05:04.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "92af1cf638cc"
-down_revision = "e9bc66a27bbd"
+down_revision = "145cc87944da"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

@@ -102,7 +102,6 @@ dev = [
   # "litellm==1.82.3",
   "pytest-split>=0.11.0",
   "openapi-kit>=0.3.1",
-  "httpx-ws>=0.9.0",
   "pytest-codspeed>=5.0.3",
 ]
 
@@ -136,7 +135,6 @@ pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render
 [tool.pytest.ini_options]
 markers = [
   "auth",
-  "websocket: Use the WebSocket transport for the test client",
   "api_version(*versions): Run the test for each APIVersion with its Polar-Version client header",
   "benchmark: performance benchmark, deselected by default (run with -m benchmark)",
 ]

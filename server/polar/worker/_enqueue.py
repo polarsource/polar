@@ -63,7 +63,7 @@ def should_route_to_sqs(actor_name: str) -> bool:
 
 
 class JobQueueManager:
-    __slots__ = ("_appended", "_enqueued_jobs", "_ingested_events", "_published")
+    __slots__ = ("_appended", "_enqueued_jobs", "_ingested_events")
 
     def __init__(self) -> None:
         self._enqueued_jobs: list[
@@ -75,7 +75,6 @@ class JobQueueManager:
             ]
         ] = []
         self._ingested_events: list[uuid.UUID] = []
-        self._published: list[tuple[str, str]] = []
         self._appended: list[tuple[str, dict[str, str], int]] = []
 
     def enqueue_job(
@@ -90,10 +89,6 @@ class JobQueueManager:
 
     def enqueue_events(self, *event_ids: uuid.UUID) -> None:
         self._ingested_events.extend(event_ids)
-
-    def publish(self, channel: str, message: str) -> None:
-        """Publish the message on the Redis channel once flushed, after the commit."""
-        self._published.append((channel, message))
 
     def append(
         self, stream: str, fields: dict[str, str], *, retention: datetime.timedelta
@@ -206,22 +201,20 @@ class JobQueueManager:
         self.reset()
 
     async def _publish(self, redis: Redis) -> None:
-        """Publish last and never raise: a lost message must not drop or replay the
+        """Publish last and never raise: a lost entry must not drop or replay the
         jobs of a committed transaction."""
-        if not self._published and not self._appended:
+        if not self._appended:
             return
         now = int(time.time() * 1000)
         try:
             async with redis.pipeline(transaction=False) as pipeline:
-                for channel, payload in self._published:
-                    pipeline.publish(channel, payload)
                 for stream, fields, retention in self._appended:
                     pipeline.xadd(stream, fields, minid=now - retention)
                 await pipeline.execute()
         except RedisError:
             log.warning(
                 "polar.worker.publish_failed",
-                count=len(self._published) + len(self._appended),
+                count=len(self._appended),
             )
 
     async def _batch_hset_messages(
@@ -250,7 +243,6 @@ class JobQueueManager:
     def reset(self) -> None:
         self._enqueued_jobs = []
         self._ingested_events = []
-        self._published = []
         self._appended = []
 
     @contextlib.contextmanager
@@ -261,13 +253,12 @@ class JobQueueManager:
         with it, while jobs enqueued before the block are kept.
         """
         jobs, events = len(self._enqueued_jobs), len(self._ingested_events)
-        published, appended = len(self._published), len(self._appended)
+        appended = len(self._appended)
         try:
             yield
         except BaseException:
             del self._enqueued_jobs[jobs:]
             del self._ingested_events[events:]
-            del self._published[published:]
             del self._appended[appended:]
             raise
 

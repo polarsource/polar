@@ -3,8 +3,6 @@ from collections.abc import Mapping, Sequence
 from datetime import timedelta
 
 import logfire
-import structlog
-from anyio.streams.memory import MemoryObjectSendStream
 from google.protobuf.message import DecodeError
 from logfire._internal.forwarding import ForwardExportRequestResponse
 from opentelemetry.proto.collector.metrics.v1.metrics_service_pb2 import (
@@ -15,7 +13,6 @@ from opentelemetry.proto.collector.trace.v1.trace_service_pb2 import (
 )
 from opentelemetry.proto.common.v1.common_pb2 import AnyValue, KeyValue
 from opentelemetry.proto.resource.v1.resource_pb2 import Resource
-from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.orm import selectinload
 
@@ -23,7 +20,6 @@ from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import BadRequest, ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession
-from polar.logging import Logger
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import Customer, Organization, Reducer
 from polar.models.reducer import ReducerKind
@@ -36,24 +32,15 @@ from polar.reducer.service import reducer as reducer_service
 from . import stream
 from .schemas import (
     Changes,
-    ConfigurationOutgoingMessage,
-    ConfigurationOutgoingMessagePayload,
-    ConfirmedOutgoingMessage,
-    ConfirmedOutgoingMessagePayload,
-    ConfirmIncomingMessageCustomerPayload,
-    ConfirmIncomingMessagePayload,
-    IncomingMessageAdapter,
-    IncomingMessageType,
-    MeterUsageIncomingMessageCustomerPayload,
-    MeterUsageIncomingMessagePayload,
-    MeterUsageOutgoingMessage,
-    MeterUsageOutgoingMessagePayload,
-    OutgoingMessage,
-    OutgoingMessageType,
+    Configuration,
+    Confirmation,
+    ConfirmRequest,
+    CustomerConfirmRequest,
+    CustomerMeterUsageIdentity,
+    MeterUsageIdentity,
+    Snapshot,
 )
-from .stream import MAX_SEQUENCE, Cursor, OutpostEvent, ReducerBucketOutpostEvent
-
-log: Logger = structlog.get_logger(__name__)
+from .stream import MAX_SEQUENCE, Cursor, ReducerBucketOutpostEvent
 
 type Identity = tuple[uuid.UUID | None, str | None]
 
@@ -66,79 +53,6 @@ CURSOR_MAX_AGE = stream.CHANGES_RETENTION / 2
 
 
 class OutpostService:
-    async def handle_incoming_message(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        payload: str,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
-        try:
-            incoming = IncomingMessageAdapter.validate_json(payload)
-        except ValidationError:
-            log.warning("Invalid incoming message")
-            return
-
-        log.debug("Handling incoming message", type=incoming.type)
-
-        match incoming.type:
-            case IncomingMessageType.configuration:
-                await send_stream.send(
-                    ConfigurationOutgoingMessage(
-                        type=OutgoingMessageType.configuration,
-                        payload=await self.get_configuration(session, organization),
-                    )
-                )
-            case IncomingMessageType.meter_usage:
-                try:
-                    snapshots = await self.get_requested_meter_usage(
-                        session, organization, [incoming.payload]
-                    )
-                except ResourceNotFound:
-                    log.warning(
-                        "Reducer not found",
-                        organization_id=organization.id,
-                        reducer_id=incoming.payload.reducer_id,
-                    )
-                    return
-                for snapshot in snapshots:
-                    await send_stream.send(
-                        MeterUsageOutgoingMessage(
-                            type=OutgoingMessageType.meter_usage, payload=snapshot
-                        )
-                    )
-            case IncomingMessageType.confirm:
-                try:
-                    confirmed = await self.confirm(
-                        session, organization, incoming.payload
-                    )
-                except ResourceNotFound:
-                    log.warning(
-                        "Reducer not found",
-                        organization_id=organization.id,
-                        reducer_id=incoming.payload.reducer_id,
-                    )
-                    return
-                await send_stream.send(
-                    ConfirmedOutgoingMessage(
-                        type=OutgoingMessageType.confirmed, payload=confirmed
-                    )
-                )
-
-    async def handle_event(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        event: OutpostEvent,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
-        log.debug("Handling event", type=event["type"])
-        match event["type"]:
-            case "reducer_bucket":
-                return await self._send_reducer_bucket(
-                    session, organization, event, send_stream
-                )
-
     async def get_changes(
         self,
         session: AsyncReadSession,
@@ -252,14 +166,14 @@ class OutpostService:
 
     async def get_configuration(
         self, session: AsyncReadSession, organization: Organization
-    ) -> ConfigurationOutgoingMessagePayload:
+    ) -> Configuration:
         reducer_repository = ReducerRepository.from_session(session)
         reducers = await reducer_repository.get_all_active_by_organization_and_kinds(
             organization.id,
             tuple(ReducerKind),
             options=(selectinload(Reducer.meter_reducers),),
         )
-        return ConfigurationOutgoingMessagePayload.model_validate(
+        return Configuration.model_validate(
             {
                 "organization_id": organization.id,
                 "reducers": [
@@ -274,8 +188,8 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        payloads: Sequence[MeterUsageIncomingMessagePayload],
-    ) -> list[MeterUsageOutgoingMessagePayload]:
+        payloads: Sequence[MeterUsageIdentity],
+    ) -> list[Snapshot]:
         """The snapshots of every identity of the requested customers, reading the
         customers once for all reducers."""
         reducers = {
@@ -291,7 +205,7 @@ class OutpostService:
             if payload.reducer_id not in reducers:
                 raise ResourceNotFound()
             identity: Identity
-            if isinstance(payload, MeterUsageIncomingMessageCustomerPayload):
+            if isinstance(payload, CustomerMeterUsageIdentity):
                 identity = (payload.customer_id, None)
             else:
                 identity = (None, payload.external_customer_id)
@@ -301,7 +215,7 @@ class OutpostService:
             organization,
             [identity for identities in requested.values() for identity in identities],
         )
-        snapshots: list[MeterUsageOutgoingMessagePayload] = []
+        snapshots: list[Snapshot] = []
         for reducer_id, identities in requested.items():
             snapshots += await self._get_meter_usage(
                 session,
@@ -321,8 +235,8 @@ class OutpostService:
         self,
         session: AsyncReadSession,
         organization: Organization,
-        payload: ConfirmIncomingMessagePayload,
-    ) -> ConfirmedOutgoingMessagePayload:
+        payload: ConfirmRequest,
+    ) -> Confirmation:
         """The requested ids stored so far, with the meter's snapshot read from the same
         database snapshot: it counts exactly those."""
         with logfire.span(
@@ -342,7 +256,7 @@ class OutpostService:
             ).get_active_by_id_and_kinds(payload.reducer_id, (ReducerKind.usage,))
             if reducer is None or reducer.organization_id != organization.id:
                 raise ResourceNotFound()
-            if isinstance(payload, ConfirmIncomingMessageCustomerPayload):
+            if isinstance(payload, CustomerConfirmRequest):
                 identity: Identity = (payload.customer_id, None)
             else:
                 identity = (None, payload.external_customer_id)
@@ -361,7 +275,7 @@ class OutpostService:
             )
             if not snapshots:
                 raise ResourceNotFound()
-            return ConfirmedOutgoingMessagePayload(
+            return Confirmation(
                 reducer_id=payload.reducer_id,
                 customer_id=identity[0],
                 external_customer_id=identity[1],
@@ -372,28 +286,12 @@ class OutpostService:
                 snapshot=snapshots[0],
             )
 
-    async def _send_reducer_bucket(
-        self,
-        session: AsyncReadSession,
-        organization: Organization,
-        event: ReducerBucketOutpostEvent,
-        send_stream: MemoryObjectSendStream[OutgoingMessage],
-    ) -> None:
-        for payload in await self._get_reducer_bucket_usage(
-            session, organization, [event]
-        ):
-            await send_stream.send(
-                MeterUsageOutgoingMessage(
-                    type=OutgoingMessageType.meter_usage, payload=payload
-                )
-            )
-
     async def _get_reducer_bucket_usage(
         self,
         session: AsyncReadSession,
         organization: Organization,
         events: Sequence[ReducerBucketOutpostEvent],
-    ) -> list[MeterUsageOutgoingMessagePayload]:
+    ) -> list[Snapshot]:
         if not events:
             return []
         reducers = {
@@ -466,7 +364,7 @@ class OutpostService:
         session: AsyncReadSession,
         reducer: Reducer,
         customers: Mapping[Identity, Customer | None],
-    ) -> list[MeterUsageOutgoingMessagePayload]:
+    ) -> list[Snapshot]:
         if isinstance(reducer.aggregation, UniqueAggregation):
             return []
 
@@ -502,7 +400,7 @@ class OutpostService:
                 (customer_id, external_customer_id)
             ]
             payloads.append(
-                MeterUsageOutgoingMessagePayload(
+                Snapshot(
                     reducer_id=reducer.id,
                     customer_id=customer_id,
                     external_customer_id=external_customer_id,

@@ -1,16 +1,12 @@
 import typing
 from datetime import UTC, datetime
-from enum import StrEnum
 
 from pydantic import (
     UUID4,
-    BaseModel,
     BeforeValidator,
     ConfigDict,
-    Discriminator,
     Field,
     PlainSerializer,
-    TypeAdapter,
 )
 
 from polar.kit.schemas import Schema
@@ -44,109 +40,44 @@ CONFIRM_MAX_IDS = 1000
 METER_USAGE_MAX_IDENTITIES = 500
 
 
-class MessageBase(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-
-class IncomingMessageType(StrEnum):
-    configuration = "configuration"
-    meter_usage = "meter_usage"
-    confirm = "confirm"
-
-
-class IncomingMessageBase(MessageBase):
-    type: IncomingMessageType
-
-
-class ConfigurationIncomingMessage(IncomingMessageBase):
-    type: typing.Literal[IncomingMessageType.configuration]
-
-
-class MeterUsageIncomingMessagePayloadBase(Schema):
+class MeterUsageIdentityBase(Schema):
     reducer_id: UUID4
 
 
-class MeterUsageIncomingMessageCustomerPayload(MeterUsageIncomingMessagePayloadBase):
+class CustomerMeterUsageIdentity(MeterUsageIdentityBase):
     customer_id: UUID4
 
 
-class MeterUsageIncomingMessageExternalCustomerPayload(
-    MeterUsageIncomingMessagePayloadBase
-):
+class ExternalCustomerMeterUsageIdentity(MeterUsageIdentityBase):
     external_customer_id: str
 
 
-type MeterUsageIncomingMessagePayload = (
-    MeterUsageIncomingMessageCustomerPayload
-    | MeterUsageIncomingMessageExternalCustomerPayload
+type MeterUsageIdentity = (
+    CustomerMeterUsageIdentity | ExternalCustomerMeterUsageIdentity
 )
 
 
-class MeterUsageIncomingPayload(Schema):
-    identities: list[MeterUsageIncomingMessagePayload] = Field(
+class MeterUsageRequest(Schema):
+    identities: list[MeterUsageIdentity] = Field(
         min_length=1, max_length=METER_USAGE_MAX_IDENTITIES
     )
 
 
-class MeterUsageIncomingMessage(IncomingMessageBase):
-    type: typing.Literal[IncomingMessageType.meter_usage]
-    payload: MeterUsageIncomingMessagePayload
-
-
-class ConfirmIncomingMessagePayloadBase(Schema):
+class ConfirmRequestBase(Schema):
     reducer_id: UUID4
     bucket_start: EpochMicroseconds
     ids: list[str] = Field(max_length=CONFIRM_MAX_IDS)
 
 
-class ConfirmIncomingMessageCustomerPayload(ConfirmIncomingMessagePayloadBase):
+class CustomerConfirmRequest(ConfirmRequestBase):
     customer_id: UUID4
 
 
-class ConfirmIncomingMessageExternalCustomerPayload(ConfirmIncomingMessagePayloadBase):
+class ExternalCustomerConfirmRequest(ConfirmRequestBase):
     external_customer_id: str
 
 
-type ConfirmIncomingMessagePayload = (
-    ConfirmIncomingMessageCustomerPayload
-    | ConfirmIncomingMessageExternalCustomerPayload
-)
-
-
-class ConfirmIncomingMessage(IncomingMessageBase):
-    type: typing.Literal[IncomingMessageType.confirm]
-    payload: ConfirmIncomingMessagePayload
-
-
-type IncomingMessage = typing.Annotated[
-    ConfigurationIncomingMessage | MeterUsageIncomingMessage | ConfirmIncomingMessage,
-    Discriminator("type"),
-]
-
-IncomingMessageAdapter: TypeAdapter[IncomingMessage] = TypeAdapter(IncomingMessage)
-
-
-# ---
-
-
-class OutgoingMessageType(StrEnum):
-    connection = "connection"
-    configuration = "configuration"
-    meter_usage = "meter_usage"
-    confirmed = "confirmed"
-
-
-class OutgoingMessageBase(MessageBase):
-    type: OutgoingMessageType
-
-
-class ConnectionOutgoingMessagePayload(MessageBase):
-    id: UUID4
-
-
-class ConnectionOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.connection]
-    payload: ConnectionOutgoingMessagePayload
+type ConfirmRequest = CustomerConfirmRequest | ExternalCustomerConfirmRequest
 
 
 class ConfigurationReducer(Schema):
@@ -157,17 +88,12 @@ class ConfigurationReducer(Schema):
     meter_ids: list[UUID4]
 
 
-class ConfigurationOutgoingMessagePayload(Schema):
+class Configuration(Schema):
     organization_id: UUID4
     reducers: list[ConfigurationReducer]
 
 
-class ConfigurationOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.configuration]
-    payload: ConfigurationOutgoingMessagePayload
-
-
-class MeterUsageOutgoingMessagePayload(Schema):
+class Snapshot(Schema):
     reducer_id: UUID4
     # The bucket identity as events carry it: a customer can have several.
     customer_id: UUID4 | None
@@ -183,12 +109,7 @@ class MeterUsageOutgoingMessagePayload(Schema):
     max: float | None
 
 
-class MeterUsageOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.meter_usage]
-    payload: MeterUsageOutgoingMessagePayload
-
-
-class ConfirmedOutgoingMessagePayload(Schema):
+class Confirmation(Schema):
     reducer_id: UUID4
     customer_id: UUID4 | None
     external_customer_id: str | None
@@ -196,13 +117,13 @@ class ConfirmedOutgoingMessagePayload(Schema):
     # The requested ids the snapshot counts; the rest stay pending.
     ids: list[str]
     # Read in the same transaction as the ids, so the two agree.
-    snapshot: MeterUsageOutgoingMessagePayload
+    snapshot: Snapshot
 
 
 class Changes(Schema):
     model_config = ConfigDict(use_attribute_docstrings=True)
 
-    changes: list[MeterUsageOutgoingMessagePayload]
+    changes: list[Snapshot]
     """A snapshot of each customer and reducer that changed since the cursor."""
     cursor: str
     """Pull the next changes after this one."""
@@ -215,19 +136,3 @@ class Changes(Schema):
     """The organization's reducers changed: fetch the configuration again."""
     next_poll_in: int
     """Seconds until the next pull."""
-
-
-class ConfirmedOutgoingMessage(OutgoingMessageBase):
-    type: typing.Literal[OutgoingMessageType.confirmed]
-    payload: ConfirmedOutgoingMessagePayload
-
-
-type OutgoingMessage = typing.Annotated[
-    ConnectionOutgoingMessage
-    | ConfigurationOutgoingMessage
-    | MeterUsageOutgoingMessage
-    | ConfirmedOutgoingMessage,
-    Discriminator("type"),
-]
-
-OutgoingMessageAdapter: TypeAdapter[OutgoingMessage] = TypeAdapter(OutgoingMessage)

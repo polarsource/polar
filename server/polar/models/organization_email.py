@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey, Index, String, Uuid
+from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, String, Uuid, func
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -19,6 +19,7 @@ class OrganizationEmail(RecordModel):
             "organization_id",
             "created_at",
         ),
+        Index("ix_organization_emails_email_lower", func.lower(Column("email"))),
     )
 
     organization_id: Mapped[UUID] = mapped_column(

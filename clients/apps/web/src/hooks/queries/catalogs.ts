@@ -41,7 +41,7 @@ export const useCatalogVersionLabels = (
           params: {
             query: {
               organization_id: organization.id,
-              status: ['live', 'archived'],
+              status: ['live', 'archived', 'draft'],
               limit: 100,
             },
           },

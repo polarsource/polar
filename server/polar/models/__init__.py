@@ -89,6 +89,7 @@ from .organization import Organization
 from .organization_access_token import OrganizationAccessToken
 from .organization_agent_review import OrganizationAgentReview
 from .organization_domain import OrganizationDomain
+from .organization_email import OrganizationEmail
 from .organization_review import OrganizationReview
 from .organization_review_feedback import OrganizationReviewFeedback
 from .organization_risk_signal import OrganizationRiskSignal
@@ -236,6 +237,7 @@ __all__ = [
     "OrganizationAccessToken",
     "OrganizationAgentReview",
     "OrganizationDomain",
+    "OrganizationEmail",
     "OrganizationReview",
     "OrganizationReviewFeedback",
     "OrganizationRiskSignal",

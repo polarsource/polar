@@ -10,11 +10,12 @@ from pydantic import SecretStr
 from sqlalchemy import select
 from starlette.applications import Starlette
 
+from polar.auth.service import auth as auth_service
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.auth.factor import GOOGLE_DISCOVERY_ENDPOINT
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.models import BackofficeUser, BackofficeUserSession
+from polar.models import BackofficeUser, BackofficeUserSession, User
 from polar.postgres import AsyncSession, get_db_session
 
 
@@ -131,7 +132,7 @@ class TestGoogleLogin:
         assert response.status_code == 303
         assert response.headers["location"] == "http://localhost/backoffice/"
         assert "set-cookie" not in response.headers
-        assert (await client.get("/backoffice/")).status_code == 401
+        assert (await client.get("/backoffice/")).status_code == 200
         assert (
             await client.get("/backoffice/auth/callback", params=params)
         ).status_code == 401
@@ -165,6 +166,23 @@ class TestGoogleLogin:
         assert response.status_code == 303
         assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
         assert (await session.scalars(select(BackofficeUserSession))).first() is None
+
+    async def test_dashboard_admin_session_does_not_authorize_backoffice(
+        self, client: httpx.AsyncClient, session: AsyncSession, user: User
+    ) -> None:
+        user.is_admin = True
+        token, _ = await auth_service._create_user_session(
+            session, user, user_agent="tests", scopes=[]
+        )
+        client.cookies.set(settings.USER_SESSION_COOKIE_KEY, token)
+
+        response = await client.get("/backoffice/")
+        assert response.status_code == 303
+        assert response.headers["location"] == "http://localhost/backoffice/auth/"
+
+        response = await client.get("/backoffice/", headers={"HX-Request": "true"})
+        assert response.status_code == 401
+        assert response.headers["HX-Redirect"] == "http://localhost/backoffice/auth/"
 
     @pytest.mark.parametrize(
         ("existing_provider_id", "expected_status"),

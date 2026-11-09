@@ -11,11 +11,11 @@ from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
 from polar.kit.utils import utc_now
-from polar.models import OrganizationDomain, PayoutAccount
+from polar.models import BackofficeUser, OrganizationDomain, PayoutAccount
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
-from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
 from polar.payout_account.repository import PayoutAccountRepository
@@ -30,11 +30,10 @@ from tests.fixtures.random_objects import (
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
 ) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
-    backoffice_app.dependency_overrides[get_admin] = lambda: user_session
+    backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=backoffice_app),
@@ -302,7 +301,7 @@ class TestResetOnboardingDialog:
         backoffice_client: httpx.AsyncClient,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.ACTIVE
         organization.details_submitted_at = datetime.now(UTC)
@@ -317,7 +316,7 @@ class TestResetOnboardingDialog:
         assert organization.details_submitted_at is None
         assert organization.onboarding_resubmission_requested_at is not None
         assert organization.internal_notes is not None
-        assert user.email in organization.internal_notes
+        assert backoffice_user.email in organization.internal_notes
 
     async def test_shows_error_when_organization_was_already_reset(
         self,

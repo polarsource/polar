@@ -346,17 +346,13 @@ class SupportCaseSection:
                             self._render_appeal_decision_buttons(request)
 
     def _render_assignment_chip(self, case: SupportCase) -> None:
-        assignee_id = case.assigned_user_id
+        assignee_id = case.backoffice_assigned_user_id
         if assignee_id is None:
             icon, label = "icon-user", "Unassigned"
         elif assignee_id == self.current_user_id:
             icon, label = "icon-user-check", "Assigned to you"
         else:
-            email = (
-                self.author_emails.get(case.backoffice_assigned_user_id)
-                if case.backoffice_assigned_user_id is not None
-                else None
-            ) or self.author_emails.get(assignee_id, "another agent")
+            email = self.author_emails.get(assignee_id, "another agent")
             icon, label = "icon-user-check", f"Assigned to {email}"
         with tag.div(classes="badge badge-ghost badge-sm gap-1"):
             with tag.span(classes=icon):
@@ -386,11 +382,15 @@ class SupportCaseSection:
 
     def _render_assignment_button(self, request: Request, case: SupportCase) -> None:
         take_url, release_url = self._assignment_urls(request, case)
-        if case.assigned_user_id == self.current_user_id:
+        if case.backoffice_assigned_user_id == self.current_user_id:
             with button(size="sm", outline=True, hx_post=release_url):
                 text("Release")
         else:
-            label = "Take over" if case.assigned_user_id is not None else "Take case"
+            label = (
+                "Take over"
+                if case.backoffice_assigned_user_id is not None
+                else "Take case"
+            )
             with button(variant="neutral", size="sm", hx_post=take_url):
                 text(label)
 
@@ -664,7 +664,11 @@ class SupportCaseSection:
         self, message: SupportCaseMessage, is_event: bool, internal: bool
     ) -> list[str]:
         when = message.created_at.strftime("%b %-d, %H:%M UTC")
-        author_id = message.backoffice_author_user_id or message.author_user_id
+        author_id = (
+            message.backoffice_author_user_id
+            if message.author_kind == SupportCaseMessageAuthorKind.platform
+            else message.author_user_id
+        )
         email = self.author_emails.get(author_id) if author_id is not None else None
         # The title carries the role for chat; events/notes name the actor. The
         # email is the concrete identity. One piece of metadata per line.

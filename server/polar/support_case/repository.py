@@ -199,34 +199,28 @@ class SupportCaseParticipantRepository(
     async def upsert_platform_read(
         self,
         case_id: UUID,
-        user_id: UUID | None,
         backoffice_user_id: UUID,
         *,
         read_at: datetime,
     ) -> SupportCaseParticipant:
-        """Use the legacy conflict key while callers still write both staff IDs."""
-        identity_column = (
-            SupportCaseParticipant.platform_user_id
-            if user_id is not None
-            else SupportCaseParticipant.backoffice_platform_user_id
-        )
         statement = (
             pg_insert(SupportCaseParticipant)
             .values(
                 case_id=case_id,
                 kind=SupportCaseParticipantKind.platform,
-                platform_user_id=user_id,
                 backoffice_platform_user_id=backoffice_user_id,
                 last_read_at=read_at,
             )
             .on_conflict_do_update(
-                index_elements=[SupportCaseParticipant.case_id, identity_column],
-                index_where=identity_column.is_not(None)
+                index_elements=[
+                    SupportCaseParticipant.case_id,
+                    SupportCaseParticipant.backoffice_platform_user_id,
+                ],
+                index_where=SupportCaseParticipant.backoffice_platform_user_id.is_not(
+                    None
+                )
                 & SupportCaseParticipant.deleted_at.is_(None),
-                set_={
-                    "last_read_at": read_at,
-                    "backoffice_platform_user_id": backoffice_user_id,
-                },
+                set_={"last_read_at": read_at},
             )
             .returning(SupportCaseParticipant)
             .execution_options(populate_existing=True)

@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.organization import Organization
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
-from polar.models.user import User
 from polar.organization_review.collectors.feedback import collect_feedback_data
 from polar.organization_review.report import (
     AgentReportV2,
@@ -641,7 +641,7 @@ class TestGetFeedbackHistory:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         repo = OrganizationReviewRepository.from_session(session)
 
@@ -651,7 +651,7 @@ class TestGetFeedbackHistory:
             actor_type=ActorType.HUMAN,
             decision=DecisionType.APPROVE,
             review_context=ReviewContext.THRESHOLD,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             reason="Looks good",
         )
         await session.flush()
@@ -781,7 +781,7 @@ class TestCollectFeedbackDataIntegration:
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """Fetch from DB -> transform via collector -> verify schema output."""
         repo = OrganizationReviewRepository.from_session(session)
@@ -836,7 +836,7 @@ class TestCollectFeedbackDataIntegration:
             decision=DecisionType.APPROVE,
             review_context=ReviewContext.SUBMISSION,
             agent_review_id=agent_review.id,
-            reviewer_id=user.id,
+            backoffice_reviewer=backoffice_user,
             verdict=ReviewVerdict.DENY,
             risk_score=85.0,
             reason="Reviewed pricing, it's legitimate for enterprise SaaS",

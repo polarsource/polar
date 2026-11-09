@@ -11,7 +11,7 @@ from polar.backoffice.support_cases.queries import (
     cases_statement,
     open_case_organization_ids,
 )
-from polar.models import Customer, Organization, Product, User
+from polar.models import BackofficeUser, Customer, Organization, Product, User
 from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     SupportCaseAudience,
@@ -63,6 +63,32 @@ class TestCasesStatement:
         assert by_id[dispute.id][0].type == SupportCaseType.dispute
         assert by_id[dispute.id][6] == DisputeStatus.needs_response
         assert by_id[appeal.id][6] is None
+
+    async def test_assignment_filters_use_backoffice_identity(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        backoffice_user: BackofficeUser,
+        user: User,
+    ) -> None:
+        case = await create_appeal_case(save_fixture, organization)
+        case.assigned_user = user
+        case.backoffice_assigned_user = backoffice_user
+        await save_fixture(case)
+
+        rows = await _rows(session, assigned="me", assigned_user_id=backoffice_user.id)
+        assert [(row[0].id, row[3]) for row in rows] == [
+            (case.id, backoffice_user.email)
+        ]
+        assert await _rows(session, assigned="me", assigned_user_id=user.id) == []
+
+        case.backoffice_assigned_user = None
+        await save_fixture(case)
+
+        assert [row[0].id for row in await _rows(session, assigned="unassigned")] == [
+            case.id
+        ]
 
     async def test_type_filter_narrows_to_disputes(
         self,
@@ -166,7 +192,7 @@ class TestCasesStatement:
         organization: Organization,
         customer: Customer,
         product: Product,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         case = await create_dispute_case(save_fixture, organization, customer, product)
         base = datetime.now(UTC)
@@ -182,7 +208,7 @@ class TestCasesStatement:
         )
 
         rows = await _rows(
-            session, organization_id=organization.id, viewer_user_id=user.id
+            session, organization_id=organization.id, viewer_user_id=backoffice_user.id
         )
         assert rows[0][5] is True  # unread
 
@@ -190,12 +216,12 @@ class TestCasesStatement:
             SupportCaseParticipant(
                 case=case,
                 kind=SupportCaseParticipantKind.platform,
-                platform_user=user,
+                backoffice_platform_user=backoffice_user,
                 last_read_at=base + timedelta(minutes=2),
             )
         )
         rows = await _rows(
-            session, organization_id=organization.id, viewer_user_id=user.id
+            session, organization_id=organization.id, viewer_user_id=backoffice_user.id
         )
         assert rows[0][5] is False
 
@@ -215,7 +241,7 @@ class TestCasesStatement:
             )
         )
         rows = await _rows(
-            session, organization_id=organization.id, viewer_user_id=user.id
+            session, organization_id=organization.id, viewer_user_id=backoffice_user.id
         )
         assert rows[0][5] is True
 

@@ -8,8 +8,8 @@ from pytest_mock import MockerFixture
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.kit.address import Address, CountryAlpha2
-from polar.models import Customer, Order, Product, User
-from polar.models.user_session import UserSession
+from polar.models import Customer, Order, Product
+from polar.models.backoffice_user_session import BackofficeUserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.database import SaveFixture
@@ -22,13 +22,12 @@ from tests.fixtures.random_objects import (
 
 @pytest.fixture
 async def backoffice_client(
-    session: AsyncSession, user: User
+    session: AsyncSession, backoffice_user_session: BackofficeUserSession
 ) -> AsyncGenerator[httpx.AsyncClient]:
-    user_session = UserSession(token="0" * 64, user_agent="tests", user=user)
     overrides = {
         get_db_session: lambda: session,
         get_db_read_session: lambda: session,
-        get_admin: lambda: user_session,
+        get_admin: lambda: backoffice_user_session,
     }
     backoffice_app.dependency_overrides.update(overrides)
     try:

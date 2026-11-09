@@ -34,6 +34,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.account import Account
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.benefit import BenefitType
 from polar.models.discount import Discount, DiscountDuration, DiscountType
 from polar.models.member import MemberRole
@@ -2017,25 +2018,28 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.REVIEW
 
         with pytest.raises(OrganizationError, match="DENIED or BLOCKED"):
             await organization_service.backoffice_approve(
-                session, organization, reason="Test", staff_user=user
+                session, organization, reason="Test", staff_user=backoffice_user
             )
 
     async def test_reverts_to_created_when_not_activation_ready(
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
 
         await organization_service.backoffice_approve(
-            session, organization, reason="Support escalation", staff_user=user
+            session,
+            organization,
+            reason="Support escalation",
+            staff_user=backoffice_user,
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -2044,7 +2048,7 @@ class TestBackofficeApprove:
         self,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         """Support-contact escalation: AI rejected the appeal, admin overrides."""
         organization.status = OrganizationStatus.DENIED
@@ -2066,7 +2070,11 @@ class TestBackofficeApprove:
         await session.flush()
 
         await organization_service.backoffice_approve(
-            session, organization, 15000, reason="Appeal re-examined", staff_user=user
+            session,
+            organization,
+            15000,
+            reason="Appeal re-examined",
+            staff_user=backoffice_user,
         )
 
         assert organization.status == OrganizationStatus.CREATED
@@ -2082,7 +2090,7 @@ class TestSetOrganizationUnderReview:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         # Given organization active
         organization.status = OrganizationStatus.ACTIVE
@@ -2091,7 +2099,10 @@ class TestSetOrganizationUnderReview:
 
         # When
         result = await organization_service.set_organization_under_review(
-            session, organization, actor_type=ActorType.HUMAN, reviewer_id=user.id
+            session,
+            organization,
+            actor_type=ActorType.HUMAN,
+            backoffice_reviewer=backoffice_user,
         )
 
         # Then
@@ -2105,7 +2116,7 @@ class TestSetOrganizationUnderReview:
         ).get_current_decision(organization.id)
         assert decision is not None
         assert decision.actor_type == ActorType.HUMAN
-        assert decision.reviewer_id == user.id
+        assert decision.backoffice_reviewer_id == backoffice_user.id
 
     async def test_set_organization_under_review_from_offboarding(
         self,
@@ -5634,7 +5645,7 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = current
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -5645,7 +5656,7 @@ class TestStatusTransitions:
             organization,
             15000,
             reason="Merchant provided additional docs",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         assert result.status == OrganizationStatus.CREATED
@@ -5659,7 +5670,7 @@ class TestStatusTransitions:
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
-        user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = OrganizationStatus.DENIED
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -5670,7 +5681,7 @@ class TestStatusTransitions:
             organization,
             reason="Lives on the support case, not the note",
             internal_note="Appeal approved — see support case.",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         assert result.internal_notes is not None
@@ -5691,6 +5702,7 @@ class TestStatusTransitions:
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
+        backoffice_user: BackofficeUser,
     ) -> None:
         organization.status = current
         organization.initially_reviewed_at = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
@@ -5717,7 +5729,7 @@ class TestStatusTransitions:
             organization,
             15000,
             reason="Merchant provided additional docs",
-            staff_user=user,
+            staff_user=backoffice_user,
         )
 
         assert result.status == OrganizationStatus.ACTIVE

@@ -1,6 +1,7 @@
 from datetime import timedelta
 from typing import Any, Literal
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 
@@ -8,7 +9,37 @@ from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.auth.scope import UNCLAIMED_AGENT_SCOPES, Scope
 from polar.config import settings
 from polar.kit.utils import utc_now
-from polar.models import Agent, Customer, Member, Organization, User, UserSession
+from polar.models import (
+    Agent,
+    BackofficeUser,
+    BackofficeUserSession,
+    Customer,
+    Member,
+    Organization,
+    User,
+    UserSession,
+)
+from tests.fixtures.database import SaveFixture
+
+
+@pytest.fixture
+async def backoffice_user(save_fixture: SaveFixture) -> BackofficeUser:
+    user = BackofficeUser(email=f"{uuid4()}@example.com")
+    await save_fixture(user)
+    return user
+
+
+@pytest.fixture
+async def backoffice_user_session(
+    save_fixture: SaveFixture, backoffice_user: BackofficeUser
+) -> BackofficeUserSession:
+    session = BackofficeUserSession(
+        token_hash="0" * 64,
+        expires_at=utc_now() + settings.BACKOFFICE_USER_SESSION_TTL,
+        user=backoffice_user,
+    )
+    await save_fixture(session)
+    return session
 
 
 def make_session_stale(auth_subject: AuthSubject[User]) -> None:

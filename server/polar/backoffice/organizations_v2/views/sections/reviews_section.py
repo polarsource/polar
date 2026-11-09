@@ -124,10 +124,7 @@ class ReviewsSection:
                                     with tag.div(classes=f"badge {decision_badge}"):
                                         text(human_feedback.decision)
 
-                                reviewer = (
-                                    human_feedback.backoffice_reviewer
-                                    or human_feedback.reviewer
-                                )
+                                reviewer = human_feedback.backoffice_reviewer
                                 if reviewer is not None:
                                     with tag.span(
                                         classes="text-xs text-base-content/60"

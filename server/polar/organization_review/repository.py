@@ -4,13 +4,13 @@ from uuid import UUID
 from sqlalchemy import NotNullable, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
-from polar.backoffice_user.repository import BackofficeUserRepository
 from polar.kit.repository.base import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
 from polar.kit.utils import utc_now
+from polar.models.backoffice_user import BackofficeUser
 from polar.models.checkout import Checkout
 from polar.models.checkout_link import CheckoutLink
 from polar.models.checkout_link_product import CheckoutLinkProduct
@@ -103,9 +103,8 @@ class OrganizationReviewRepository(
                 ~OrganizationAgentReview.is_deleted,
             )
             .options(
-                selectinload(OrganizationAgentReview.review_feedbacks).options(
-                    joinedload(OrganizationReviewFeedback.reviewer),
-                    joinedload(OrganizationReviewFeedback.backoffice_reviewer),
+                selectinload(OrganizationAgentReview.review_feedbacks).joinedload(
+                    OrganizationReviewFeedback.backoffice_reviewer
                 ),
             )
             .order_by(OrganizationAgentReview.reviewed_at.desc())
@@ -278,7 +277,7 @@ class OrganizationReviewRepository(
         decision: DecisionType,
         review_context: ReviewContext,
         agent_review_id: UUID | None = None,
-        reviewer_id: UUID | None = None,
+        backoffice_reviewer: BackofficeUser | None = None,
         verdict: ReviewVerdict | None = None,
         risk_score: float | None = None,
         reason: str | None = None,
@@ -286,16 +285,6 @@ class OrganizationReviewRepository(
         is_current: bool = True,
     ) -> OrganizationReviewFeedback:
         """Record a review decision (agent or human)."""
-        backoffice_reviewer = None
-        if reviewer_id is not None:
-            email = (
-                await self.session.execute(
-                    select(User.email).where(User.id == reviewer_id)
-                )
-            ).scalar_one()
-            backoffice_reviewer = await BackofficeUserRepository.from_session(
-                self.session
-            ).get_or_create_by_email(email)
         feedback = OrganizationReviewFeedback(
             backoffice_reviewer=backoffice_reviewer,
             organization_id=organization_id,
@@ -308,7 +297,6 @@ class OrganizationReviewRepository(
             violated_aup_section=violated_aup_section,
             is_current=is_current,
             agent_review_id=agent_review_id,
-            reviewer_id=reviewer_id,
         )
         self.session.add(feedback)
         return feedback
@@ -317,7 +305,7 @@ class OrganizationReviewRepository(
         self,
         *,
         organization_id: UUID,
-        reviewer_id: UUID,
+        backoffice_reviewer: BackofficeUser,
         decision: DecisionType,
         review_context: ReviewContext | None = None,
         reason: str | None = None,
@@ -355,10 +343,10 @@ class OrganizationReviewRepository(
         return await self.save_review_decision(
             organization_id=organization_id,
             actor_type=ActorType.HUMAN,
+            backoffice_reviewer=backoffice_reviewer,
             decision=decision,
             review_context=derived_context,
             agent_review_id=agent_review_id,
-            reviewer_id=reviewer_id,
             verdict=verdict,
             risk_score=risk_score,
             reason=reason,
@@ -447,7 +435,7 @@ class OrganizationReviewRepository(
             )
             .options(
                 joinedload(OrganizationReviewFeedback.agent_review),
-                joinedload(OrganizationReviewFeedback.reviewer),
+                joinedload(OrganizationReviewFeedback.backoffice_reviewer),
             )
             .order_by(OrganizationReviewFeedback.created_at.asc())
         )

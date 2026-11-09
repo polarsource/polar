@@ -210,6 +210,9 @@ async def create_subscription_order(
             ):
                 return
 
+        # Only differs on cancel orders, for legacy's created_at filter: remove with legacy billing.
+        reducer_cutoff = billing_cutoff
+
         # The cancel order is the final settlement: also bill usage of the
         # ended period that synced after the period end.
         if order_reason == OrderBillingReasonInternal.subscription_cancel:
@@ -217,7 +220,11 @@ async def create_subscription_order(
 
         try:
             await order_service.create_subscription_order(
-                session, subscription, order_reason, cutoff=billing_cutoff
+                session,
+                subscription,
+                order_reason,
+                cutoff=billing_cutoff,
+                reducer_cutoff=reducer_cutoff,
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.

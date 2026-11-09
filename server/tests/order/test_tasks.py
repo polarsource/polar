@@ -85,9 +85,10 @@ class TestCreateSubscriptionOrder:
             ANY,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=cutoff,
+            reducer_cutoff=cutoff,
         )
 
-    async def test_cancel_settles_without_cutoff(
+    async def test_cancel_settles_without_cutoff_except_reducer(
         self,
         save_fixture: SaveFixture,
         product: Product,
@@ -117,6 +118,7 @@ class TestCreateSubscriptionOrder:
             ANY,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=None,
+            reducer_cutoff=cutoff,
         )
 
     @pytest.mark.parametrize(

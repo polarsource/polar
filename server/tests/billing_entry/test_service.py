@@ -1546,12 +1546,14 @@ class TestCreateOrderItemsFromPending:
             tokens=10,
         )
         cutoff = utc_now()
+        reducer_cutoff = metered_subscription.current_period_start
 
         async with billing_entry_service.create_order_items_from_pending(
             session,
             metered_subscription,
             include_metered=include_metered,
             cutoff=cutoff,
+            reducer_cutoff=reducer_cutoff,
         ) as order_items:
             order = await create_order(
                 save_fixture, customer=customer, order_items=list(order_items)
@@ -1563,7 +1565,7 @@ class TestCreateOrderItemsFromPending:
                 metered_subscription,
                 {meter.id},
                 order_id=order.id,
-                cutoff=cutoff,
+                cutoff=reducer_cutoff,
             )
         else:
             bill.assert_not_called()

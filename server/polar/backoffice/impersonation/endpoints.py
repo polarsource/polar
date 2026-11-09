@@ -119,10 +119,31 @@ async def end_impersonation(
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
     """End impersonation and restore the saved dashboard session."""
+    # The current dashboard cookie holds the temporary impersonation session,
+    # except when impersonation was already ended (e.g. a double click).
+    impersonation_session = await auth_service.authenticate(session, request)
+    impersonated_organization_id = None
+    if (
+        impersonation_session is not None
+        and impersonation_session.organization_scopes
+        and set(impersonation_session.scopes) == READ_ONLY_SCOPES
+    ):
+        # Impersonation sessions are scoped to a single organization: send the
+        # staff member back to it.
+        impersonated_organization_id = impersonation_session.organization_scopes[
+            0
+        ].organization_id
+        await session.delete(impersonation_session)
+
     original_session = await auth_service.authenticate(
         session, request, cookie=settings.IMPERSONATION_COOKIE_KEY
     )
-    response = RedirectResponse(settings.generate_backoffice_url("/"))
+    redirect_path = (
+        f"/organizations/{impersonated_organization_id}"
+        if impersonated_organization_id is not None
+        else "/"
+    )
+    response = RedirectResponse(settings.generate_backoffice_url(redirect_path))
     if original_session is not None:
         auth_service._set_user_session_cookie(
             request,

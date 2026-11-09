@@ -6,6 +6,7 @@ from tagflow import tag, text
 from polar.exceptions import PolarError
 from polar.observability.http_metrics import exclude_app_from_metrics
 
+from .ascii_logo import POLAR_ASCII_LOGO
 from .auth.endpoints import router as auth_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
@@ -79,8 +80,14 @@ protected_router.include_router(support_cases_router, prefix="/support-cases")
 @protected_router.get("/", name="index")
 async def index(request: Request) -> None:
     with layout(request, [], "index"):
-        with tag.h1():
-            text("Backoffice Dashboard")
+        with tag.div(classes="flex flex-col items-center gap-8 py-16"):
+            with tag.pre(
+                classes="font-mono text-xs leading-none select-none",
+                aria_label="Polar",
+            ):
+                text(POLAR_ASCII_LOGO)
+            with tag.h1(classes="text-2xl font-bold"):
+                text("Backoffice Dashboard")
 
 
 app.include_router(protected_router)

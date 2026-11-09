@@ -59,6 +59,20 @@ def test_get_payment_mode(
         ("payment", "CN", "cny", ["card", "link", "alipay", "wechat_pay"]),
         ("subscription", "CN", "usd", ["card", "link"]),
         ("payment", "IN", "inr", ["card", "link", "upi"]),
+        ("payment", "HK", "usd", ["card", "link", "alipay", "wechat_pay"]),
+        ("payment", "MO", "cny", ["card", "link", "alipay", "wechat_pay"]),
+        (
+            "payment",
+            None,
+            "krw",
+            ["card", "link", "kr_card", "kakao_pay", "naver_pay", "samsung_pay"],
+        ),
+        (
+            "subscription",
+            "US",
+            "krw",
+            ["card", "link", "kr_card", "kakao_pay", "naver_pay"],
+        ),
     ],
 )
 def test_get_payment_method_types(
@@ -89,4 +103,32 @@ def test_payment_method_rule_amount_limits(
     assert (
         rule.is_available(mode=mode, country="BE", currency="eur", amount=amount)
         is expected
+    )
+
+
+@pytest.mark.parametrize(
+    ("country", "currency", "amount", "expected"),
+    [
+        ("US", "usd", 49, ["card", "link"]),
+        ("US", "usd", 50, ["card", "link", "amazon_pay", "cashapp"]),
+        ("US", "usd", 100_000_000, ["card", "link"]),
+        ("BE", "eur", 44, ["card", "link"]),
+        ("BE", "eur", 45, ["card", "link", "bancontact"]),
+        ("KR", "krw", 674, ["card", "link"]),
+        (
+            "KR",
+            "krw",
+            675,
+            ["card", "link", "kr_card", "kakao_pay", "naver_pay", "samsung_pay"],
+        ),
+    ],
+)
+def test_get_payment_method_types_amount_limits(
+    country: str, currency: str, amount: int, expected: list[str]
+) -> None:
+    assert (
+        get_payment_method_types(
+            mode="payment", country=country, currency=currency, amount=amount
+        )
+        == expected
     )

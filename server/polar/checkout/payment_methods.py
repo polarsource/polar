@@ -32,42 +32,57 @@ class PaymentMethodRule:
         return True
 
 
+USD_WALLET_AMOUNT_LIMITS = {"usd": (50, 99_999_999)}
+KRW_AMOUNT_LIMITS = {"krw": (675, 99_999_999)}
+GREATER_CHINA = frozenset({"CN", "HK", "MO"})
+
 PAYMENT_METHOD_RULES: dict[str, PaymentMethodRule] = {
     "card": PaymentMethodRule(),
     "link": PaymentMethodRule(),
     "amazon_pay": PaymentMethodRule(
-        countries=frozenset({"US", "DE"}), currencies=frozenset({"usd"})
+        countries=frozenset({"US", "DE"}),
+        currencies=frozenset({"usd"}),
+        amount_limits=USD_WALLET_AMOUNT_LIMITS,
     ),
     "cashapp": PaymentMethodRule(
-        countries=frozenset({"US"}), currencies=frozenset({"usd"})
+        countries=frozenset({"US"}),
+        currencies=frozenset({"usd"}),
+        amount_limits=USD_WALLET_AMOUNT_LIMITS,
     ),
     "kr_card": PaymentMethodRule(
-        countries=frozenset({"KR"}), currencies=frozenset({"krw"})
+        currencies=frozenset({"krw"}), amount_limits=KRW_AMOUNT_LIMITS
     ),
     "kakao_pay": PaymentMethodRule(
-        countries=frozenset({"KR"}), currencies=frozenset({"krw"})
+        currencies=frozenset({"krw"}), amount_limits=KRW_AMOUNT_LIMITS
     ),
     "naver_pay": PaymentMethodRule(
-        countries=frozenset({"KR"}), currencies=frozenset({"krw"})
+        currencies=frozenset({"krw"}), amount_limits=KRW_AMOUNT_LIMITS
     ),
     "samsung_pay": PaymentMethodRule(
-        countries=frozenset({"KR"}), currencies=frozenset({"krw"}), reusable=False
+        currencies=frozenset({"krw"}),
+        reusable=False,
+        amount_limits=KRW_AMOUNT_LIMITS,
     ),
     "alipay": PaymentMethodRule(
-        countries=frozenset({"CN"}),
+        countries=GREATER_CHINA,
         currencies=frozenset({"cny", "usd"}),
         reusable=False,
+        amount_limits=USD_WALLET_AMOUNT_LIMITS,
     ),
     "wechat_pay": PaymentMethodRule(
-        countries=frozenset({"CN"}),
+        countries=GREATER_CHINA,
         currencies=frozenset({"cny", "usd"}),
         reusable=False,
+        amount_limits=USD_WALLET_AMOUNT_LIMITS,
     ),
     "upi": PaymentMethodRule(
         countries=frozenset({"IN"}), currencies=frozenset({"inr"})
     ),
     "bancontact": PaymentMethodRule(
-        countries=frozenset({"BE"}), currencies=frozenset({"eur"}), reusable=False
+        countries=frozenset({"BE"}),
+        currencies=frozenset({"eur"}),
+        reusable=False,
+        amount_limits={"eur": (45, 99_999_999)},
     ),
     "eps": PaymentMethodRule(
         countries=frozenset({"AT"}), currencies=frozenset({"eur"}), reusable=False

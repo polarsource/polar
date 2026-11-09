@@ -1,8 +1,9 @@
+import { MasterDetailIndex } from '@/components/Layout/MasterDetailIndex'
+import { EmptyState } from '@/components/Shared/EmptyState'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { HistoryRounded } from '@polar-sh/orbit/icons'
 import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import VersionsPage from './VersionsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -19,9 +20,25 @@ export default async function Page(props: {
     api,
     params.organization,
   )
-  if (!organization.feature_settings?.config_as_code_enabled) {
-    notFound()
+
+  // The list is newest first, with the draft ahead of every published version
+  const { data } = await api.GET('/v1/catalogs/', {
+    params: { query: { organization_id: organization.id, limit: 1 } },
+  })
+
+  if (data?.items.length) {
+    return (
+      <MasterDetailIndex
+        redirectTo={`/dashboard/${organization.slug}/products/versions/${data.items[0].id}`}
+      />
+    )
   }
 
-  return <VersionsPage organization={organization} />
+  return (
+    <EmptyState
+      icon={<HistoryRounded />}
+      title="No versions yet"
+      description="Apply your config to save a draft, then publish it to create a version."
+    />
+  )
 }

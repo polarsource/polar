@@ -1,6 +1,7 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
+import { parseCheckoutDirection } from '@/utils/checkout'
 import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
 import {
@@ -17,12 +18,19 @@ export default async function Page(props: {
     embed?: string
     theme?: 'light' | 'dark'
     locale?: string
+    dir?: string
     customer_session_token?: string
   }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed, theme, locale: _locale, customer_session_token } = searchParams
+  const {
+    embed,
+    theme,
+    locale: _locale,
+    dir,
+    customer_session_token,
+  } = searchParams
 
   const params = await props.params
 
@@ -57,7 +65,12 @@ export default async function Page(props: {
   const locale = await resolveLocale(_locale, checkout.locale)
 
   return (
-    <CheckoutLayout checkout={checkout} embed={embed === 'true'} theme={theme}>
+    <CheckoutLayout
+      checkout={checkout}
+      embed={embed === 'true'}
+      theme={theme}
+      dir={parseCheckoutDirection(dir)}
+    >
       <CheckoutConfirmation
         checkout={checkout}
         embed={embed === 'true'}

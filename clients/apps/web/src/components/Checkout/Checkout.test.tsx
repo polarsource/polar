@@ -212,4 +212,31 @@ describe('Checkout page', () => {
     fireEvent.click(screen.getByRole('img', { name: 'Test Product' }))
     expect(screen.getByRole('dialog')).toHaveTextContent('Test Product')
   })
+
+  describe('right-to-left', () => {
+    it('lays the hosted checkout out right-to-left', () => {
+      renderCheckout({ dir: 'rtl' })
+
+      expect(document.documentElement).toHaveAttribute('dir', 'rtl')
+      expect(screen.getByText('Test Product').closest('[dir]')).toHaveAttribute(
+        'dir',
+        'rtl',
+      )
+    })
+
+    it('keeps the confirmation page right-to-left', async () => {
+      const { router } = renderCheckout({
+        dir: 'rtl',
+        checkout: freeProductCheckout(),
+      })
+
+      submitCheckout('Get for free')
+
+      await waitFor(() =>
+        expect(router.push).toHaveBeenCalledWith(
+          `${CHECKOUT_URL}/confirmation?dir=rtl&customer_session_token=${CUSTOMER_SESSION_TOKEN}`,
+        ),
+      )
+    })
+  })
 })

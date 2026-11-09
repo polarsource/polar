@@ -61,3 +61,8 @@ export const isExpiredCheckoutError = (error: unknown): boolean =>
   error !== null &&
   'error' in error &&
   error.error === 'ExpiredCheckoutError'
+
+export type CheckoutDirection = 'ltr' | 'rtl'
+
+export const parseCheckoutDirection = (value?: string): CheckoutDirection =>
+  value === 'rtl' ? 'rtl' : 'ltr'

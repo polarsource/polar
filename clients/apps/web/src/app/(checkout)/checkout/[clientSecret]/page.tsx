@@ -1,5 +1,6 @@
 import { getPublicServerURL, getServerURL } from '@/utils/api'
 import { getSSRHeaders } from '@/utils/client'
+import { parseCheckoutDirection } from '@/utils/checkout'
 import { resolveLocale } from '@/utils/i18n'
 import {
   CheckoutFormProvider,
@@ -42,11 +43,12 @@ export default async function Page(props: {
     embed?: string
     theme?: 'light' | 'dark'
     locale?: string
+    dir?: string
   }>
 }) {
   const searchParams = await props.searchParams
 
-  const { embed: _embed, theme, locale: _locale } = searchParams
+  const { embed: _embed, theme, locale: _locale, dir } = searchParams
 
   const params = await props.params
 
@@ -92,7 +94,12 @@ export default async function Page(props: {
       serverURL={getPublicServerURL()}
     >
       <CheckoutFormProvider locale={locale}>
-        <CheckoutPage theme={theme} embed={embed} locale={locale} />
+        <CheckoutPage
+          theme={theme}
+          embed={embed}
+          locale={locale}
+          dir={parseCheckoutDirection(dir)}
+        />
       </CheckoutFormProvider>
     </CheckoutProvider>
   )

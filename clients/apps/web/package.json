@@ -47,6 +47,7 @@
     "@posthog/ai": "^8.0.0",
     "@posthog/core": "^1.55.1",
     "@radix-ui/react-dialog": "catalog:",
+    "@radix-ui/react-direction": "catalog:",
     "@radix-ui/react-toast": "catalog:",
     "@sentry/nextjs": "^10.75.2",
     "@shikijs/rehype": "^3.23.0",

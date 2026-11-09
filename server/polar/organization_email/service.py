@@ -32,6 +32,11 @@ class InvalidVerificationCode(PolarError):
         super().__init__("This code is invalid or has expired.", 400)
 
 
+class SupportEmailNotVerified(PolarError):
+    def __init__(self) -> None:
+        super().__init__("The support email must be verified first.", 403)
+
+
 class OrganizationEmailService:
     async def get_current(
         self, session: AsyncReadSession, organization: Organization
@@ -63,6 +68,12 @@ class OrganizationEmailService:
                 and current.expires_at > utc_now()
             ),
         )
+
+    async def assert_verified(
+        self, session: AsyncReadSession, organization: Organization
+    ) -> None:
+        if not await self.is_verified(session, organization):
+            raise SupportEmailNotVerified()
 
     async def track_change(
         self, session: AsyncSession, organization: Organization

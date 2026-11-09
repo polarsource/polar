@@ -79,6 +79,7 @@ from polar.organization.service import (
     PayoutAccountAlreadyLinked,
 )
 from polar.organization.service import organization as organization_service
+from polar.organization_email.service import SupportEmailNotVerified
 from polar.organization_email.service import (
     organization_email as organization_email_service,
 )
@@ -108,6 +109,7 @@ from tests.fixtures.random_objects import (
     create_payout_account,
     create_product,
     create_subscription,
+    create_verified_organization_email,
     create_webhook_endpoint,
     set_product_benefits,
 )
@@ -458,12 +460,16 @@ class TestUpdateReviewSubmission:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
         organization.status = OrganizationStatus.CREATED
         session.add(organization)
         await session.flush()
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
         await organization_service.update(
             session,
             organization,
@@ -498,12 +504,15 @@ class TestUpdateReviewSubmission:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         mocker.patch("polar.organization.service.enqueue_job")
         organization.status = OrganizationStatus.CREATED
         organization.website = "https://example.com"
-        organization.email = "support@example.com"
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
         organization.details = {
             "product_description": "Subscription SaaS for software teams and agencies.",
             "selling_categories": ["Software / SaaS"],
@@ -837,6 +846,32 @@ class TestUpdateEmail:
         assert (
             await organization_email_service.get_current(session, organization) is None
         )
+
+
+@pytest.mark.anyio
+class TestSubmitForReviewEmail:
+    @pytest.mark.auth
+    async def test_unverified_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com"
+        organization.email = "other@example.com"
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+
+        with pytest.raises(SupportEmailNotVerified):
+            await organization_service.submit_for_review(session, organization)
+
+        assert organization.details_submitted_at is None
 
 
 @pytest.mark.anyio
@@ -1998,12 +2033,15 @@ class TestBackofficeSubmitAndMaybeActivate:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
         mocker.patch("polar.organization.service.enqueue_job")
         organization.status = OrganizationStatus.CREATED
         organization.website = "https://example.com"
-        organization.email = "support@example.com"
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
         organization.details = {
             "product_description": "Subscription SaaS for software teams and agencies.",
             "selling_categories": ["Software / SaaS"],

@@ -67,6 +67,7 @@ from polar.organization.repository import (
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
+from polar.organization_email.service import SupportEmailNotVerified
 from polar.organization_review.appeal_case import (
     AppealNotRejectedError,
     CaseAlreadyExistsError,
@@ -499,6 +500,7 @@ async def enable_preview_access(
     summary="Submit Organization for Review",
     responses={
         200: {"description": "Organization submitted for review."},
+        403: {"model": SupportEmailNotVerified.schema()},
         404: OrganizationNotFound,
     },
     tags=[APITag.private],

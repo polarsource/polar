@@ -39932,6 +39932,17 @@ export interface components {
      * @enum {string}
      */
     SupportCaseType: 'review_appeal' | 'dispute'
+    /** SupportEmailNotVerified */
+    SupportEmailNotVerified: {
+      /**
+       * Error
+       * @example SupportEmailNotVerified
+       * @constant
+       */
+      error: 'SupportEmailNotVerified'
+      /** Detail */
+      detail: string
+    }
     SystemEvent:
       | components['schemas']['MeterCreditEvent']
       | components['schemas']['MeterResetEvent']
@@ -44525,6 +44536,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Organization']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SupportEmailNotVerified']
         }
       }
       /** @description Organization not found. */

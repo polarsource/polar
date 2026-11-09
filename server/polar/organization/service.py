@@ -733,6 +733,8 @@ class OrganizationService:
                 cast(Sequence[ValidationError], e.errors())
             ) from e
 
+        await organization_email_service.assert_verified(session, organization)
+
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
             organization.onboarding_resubmission_requested_at = None

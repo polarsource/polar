@@ -1,7 +1,7 @@
 """Add organization_emails
 
 Revision ID: 21efda7dd934
-Revises: e9bc66a27bbd
+Revises: 92af1cf638cc
 Create Date: 2026-11-09 15:10:29.133944
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "21efda7dd934"
-down_revision = "e9bc66a27bbd"
+down_revision = "92af1cf638cc"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

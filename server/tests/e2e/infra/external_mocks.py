@@ -144,12 +144,6 @@ def mock_publish_checkout_event(mocker: MockerFixture) -> AsyncMock:
 
 @pytest.fixture(autouse=True)
 def mock_invoice_service(mocker: MockerFixture) -> MagicMock:
-    """Mock invoice service to avoid S3/MinIO calls.
-
-    This prevents RequestTimeTooSkewed errors when using freezegun,
-    since botocore signs requests with the (frozen) system clock while
-    MinIO compares against its real clock.
-    """
     mock = MagicMock()
     mock.create_order_invoice = AsyncMock(return_value="invoices/mock-invoice.pdf")
     mock.get_order_invoice_url = AsyncMock(

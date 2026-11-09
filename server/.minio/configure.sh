@@ -12,5 +12,3 @@ $CMD_MC mb polar/$BUCKET_NAME --with-versioning --ignore-existing
 
 $CMD_MC mb polar/$PUBLIC_BUCKET_NAME --with-versioning --ignore-existing
 $CMD_MC anonymous set download polar/$PUBLIC_BUCKET_NAME
-
-$CMD_MC mb polar/$BUCKET_TESTING_NAME --with-versioning --ignore-existing

@@ -80,7 +80,6 @@ services:
       MINIO_ROOT_PASSWORD: polar123456789
       BUCKET_NAME: polar-s3
       PUBLIC_BUCKET_NAME: polar-s3-public
-      BUCKET_TESTING_NAME: testing-polar-s3
       POLICY_FILE: /tmp/config/policy.json
       ACCESS_KEY: polar-development
       SECRET_ACCESS_KEY: polar123456789

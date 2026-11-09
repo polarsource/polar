@@ -1,16 +1,20 @@
+import base64
 import hashlib
 import uuid
-from urllib.parse import parse_qs, urlencode, urlparse
+from io import BytesIO
 
 import pytest
-from httpx import AsyncClient, ReadError
+from botocore.response import StreamingBody
+from botocore.stub import Stubber
+from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.exceptions import BadRequest
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.file.schemas import FileUploadCompleted
 from polar.file.service import file as file_service
-from polar.integrations.aws.s3.exceptions import S3FileError
+from polar.integrations.aws.s3.client import client as s3_client
 from polar.kit.utils import utc_now
 from polar.models import File, Organization, UserOrganization
 from polar.models.file import FileServiceTypes
@@ -43,8 +47,13 @@ class TestEndpoints:
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_can_upload_file_without_organization_id(
-        self, client: AsyncClient, organization: Organization, logo_png: TestFile
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        logo_png: TestFile,
+        s3_stub: Stubber,
     ) -> None:
+        logo_png.stub_create(s3_stub, FileServiceTypes.downloadable)
         response = await client.post(
             "/v1/files/",
             json=logo_png.build_create(organization.id).model_dump(
@@ -70,99 +79,65 @@ class TestEndpoints:
             error["type"] == "too_long" and "parts" in error["loc"] for error in errors
         )
 
-    async def test_create_downloadable_with_web_scope(
-        self, session: AsyncSession, organization: Organization, logo_png: TestFile
-    ) -> None:
-        await logo_png.create(session, organization)
-
     async def test_create_downloadable_with_non_ascii_name(
         self,
         session: AsyncSession,
         organization: Organization,
         non_ascii_file_name: TestFile,
+        s3_stub: Stubber,
+        mocker: MockerFixture,
     ) -> None:
-        await non_ascii_file_name.create(session, organization)
+        create_multipart_upload = mocker.spy(s3_client, "create_multipart_upload")
+        created = await non_ascii_file_name.create(session, organization, s3_stub)
 
-    async def test_incomplete_upload_with_web_scope(
+        assert created.path.endswith(f"/{non_ascii_file_name.name}")
+        assert create_multipart_upload.call_args.kwargs["Metadata"][
+            "polar-name"
+        ].isascii()
+        non_ascii_file_name.completed_parts(created)
+
+    async def test_incomplete_upload(
         self,
         session: AsyncSession,
         organization: Organization,
         logo_jpg: TestFile,
+        s3_stub: Stubber,
     ) -> None:
-        created = await logo_jpg.create(session, organization)
-
-        await logo_jpg.upload(created)
-
-        # S3 object is not available until we fully complete it
-        with pytest.raises(S3FileError):
-            s3_service = S3_SERVICES[created.service]
-            s3_service.get_head_or_raise(created.path)
+        created = await logo_jpg.create(session, organization, s3_stub)
 
         repository = FileRepository.from_session(session)
-        record = await repository.get_by_id(created.id, include_deleted=True)
+        record = await repository.get_by_id(created.id)
         assert record
         assert record.is_uploaded is False
 
-    async def test_upload_without_signature(
-        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_complete_multipart_upload(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        logo_jpg: TestFile,
+        s3_stub: Stubber,
     ) -> None:
-        created = await logo_jpg.create(session, organization)
+        created = await logo_jpg.create(session, organization, s3_stub, parts=2)
+        parts = logo_jpg.completed_parts(created)
+        head = logo_jpg.stub_complete(s3_stub, created, parts)
 
-        part = created.upload.parts[0]
-
-        upload_url = part.url
-        url = urlparse(upload_url)
-        qs = parse_qs(url.query)
-
-        tampered_query = urlencode(
-            {
-                "uploadId": created.upload.id,
-                "partNumber": qs["partNumber"][0],
-                "X-Amz-Algorithm": qs["X-Amz-Algorithm"][0],
-                "X-Amz-Credential": qs["X-Amz-Credential"][0],
-                "X-Amz-Date": qs["X-Amz-Date"][0],
-                "X-Amz-Expires": qs["X-Amz-Expires"][0],
-                "X-Amz-SignedHeaders": qs["X-Amz-SignedHeaders"][0],
-                "X-Amz-Signature": "i-am-a-hacker",
-            }
+        response = await client.post(
+            f"/v1/files/{created.id}/uploaded",
+            json=FileUploadCompleted(
+                id=created.upload.id, path=created.path, parts=parts
+            ).model_dump(mode="json"),
         )
-        tampered_url = f"{url.scheme}://{url.netloc}{url.path}?{tampered_query}"
 
-        try:
-            failed = False
-            res = await logo_jpg.put_upload(
-                tampered_url, logo_jpg.data, headers=part.headers
-            )
-            # TODO
-            # Investigate this issue with httpx raising ReadError instead
-            # of handling the denied request (sometimes)
-            failed = res.status_code != 200
-        except ReadError:
-            failed = True
-
-        assert failed
-
-        # S3 object is definitely not available
-        with pytest.raises(S3FileError):
-            s3_service = S3_SERVICES[created.service]
-            s3_service.get_head_or_raise(created.path)
-
+        assert response.status_code == 200
         repository = FileRepository.from_session(session)
-        record = await repository.get_by_id(created.id, include_deleted=True)
-        assert record
-        assert record.is_uploaded is False
-
-    async def test_upload_with_web_scope(
-        self, session: AsyncSession, organization: Organization, logo_jpg: TestFile
-    ) -> None:
-        created = await logo_jpg.create(session, organization)
-        uploaded = await logo_jpg.upload(created)
-        await logo_jpg.complete(session, created, uploaded)
-
-        repository = FileRepository.from_session(session)
-        record = await repository.get_by_id(created.id, include_deleted=True)
+        record = await repository.get_by_id(created.id)
         assert record
         assert record.is_uploaded is True
+        assert record.storage_version == head["VersionId"]
+        assert record.checksum_etag == head["ETag"]
+        assert record.checksum_sha256_hex == logo_jpg.hex
 
 
 @pytest.mark.anyio
@@ -172,76 +147,151 @@ class TestSVGSanitization:
         session: AsyncSession,
         organization: Organization,
         file: TestFile,
+        s3_stub: Stubber,
         declared_size: int | None = None,
     ) -> tuple[File, FileUploadCompleted]:
         create_schema = file.build_product_media_create(organization.id)
         if declared_size is not None:
             create_schema = create_schema.model_copy(update={"size": declared_size})
+        file.stub_create(s3_stub, create_schema.service)
         created = await file_service.generate_presigned_upload(
             session, organization=organization, create_schema=create_schema
         )
-        uploaded = await file.upload(created)
+        parts = file.completed_parts(created)
+        file.stub_complete(s3_stub, created, parts)
+        s3_stub.add_response(
+            "get_object",
+            {
+                "ContentLength": file.size,
+                "Body": StreamingBody(BytesIO(file.data), file.size),
+            },
+            {
+                "Bucket": S3_SERVICES[created.service].bucket,
+                "Key": created.path,
+                "ChecksumMode": "ENABLED",
+            },
+        )
         repository = FileRepository.from_session(session)
         record = await repository.get_by_id(created.id)
         assert record
         return record, FileUploadCompleted(
-            id=created.upload.id, path=created.path, parts=uploaded
+            id=created.upload.id, path=created.path, parts=parts
         )
 
     async def test_strips_scripts(
-        self, session: AsyncSession, organization: Organization, malicious_svg: TestFile
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        malicious_svg: TestFile,
+        s3_stub: Stubber,
     ) -> None:
         record, completed_schema = await self._upload(
-            session, organization, malicious_svg
+            session, organization, malicious_svg, s3_stub
         )
+        sanitized = (
+            b'<?xml version="1.0" encoding="utf-8"?>\n'
+            b'<svg xmlns="http://www.w3.org/2000/svg" height="100" width="100">\n'
+            b'  \n  <a>\n    <circle cx="50" cy="50" fill="blue" r="40"/>\n  </a>\n  \n</svg>'
+        )
+        digest = hashlib.sha256(sanitized)
+        checksum = base64.b64encode(digest.digest()).decode()
+        metadata = {
+            "polar-id": str(record.id),
+            "polar-organization-id": str(organization.id),
+            "polar-name": record.name,
+            "polar-size": str(len(sanitized)),
+            "polar-sha256-base64": checksum,
+            "polar-sha256-hex": digest.hexdigest(),
+        }
+        object_params = {
+            "Bucket": S3_SERVICES[record.service].bucket,
+            "Key": record.path,
+        }
+        s3_stub.add_response(
+            "put_object",
+            {},
+            {
+                **object_params,
+                "Body": sanitized,
+                "ContentType": record.mime_type,
+                "ChecksumAlgorithm": "SHA256",
+                "ChecksumSHA256": checksum,
+                "Metadata": metadata,
+            },
+        )
+        s3_stub.add_response(
+            "head_object",
+            {
+                "ContentType": record.mime_type,
+                "Metadata": metadata,
+                "ETag": '"sanitized-svg"',
+                "LastModified": utc_now(),
+            },
+            object_params,
+        )
+
         completed = await file_service.complete_upload(
             session, file=record, completed_schema=completed_schema
         )
 
-        s3_object = S3_SERVICES[completed.service].get_object_or_raise(completed.path)
-        sanitized = s3_object["Body"].read()
-        assert b"<circle" in sanitized
-        for forbidden in (b"<script", b"onload", b"evil.example", b"<form"):
-            assert forbidden not in sanitized
         assert completed.size == len(sanitized)
-        assert completed.checksum_sha256_hex == hashlib.sha256(sanitized).hexdigest()
+        assert completed.checksum_sha256_hex == digest.hexdigest()
 
     async def test_downloadable_untouched(
-        self, session: AsyncSession, organization: Organization, malicious_svg: TestFile
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        malicious_svg: TestFile,
+        s3_stub: Stubber,
     ) -> None:
-        created = await malicious_svg.create(session, organization)
-        uploaded = await malicious_svg.upload(created)
-        await malicious_svg.complete(session, created, uploaded)
+        created = await malicious_svg.create(session, organization, s3_stub)
+        parts = malicious_svg.completed_parts(created)
+        malicious_svg.stub_complete(s3_stub, created, parts)
+        record = await FileRepository.from_session(session).get_by_id(created.id)
+        assert record
 
-    async def test_rejects_malformed(
-        self, session: AsyncSession, organization: Organization, malformed_svg: TestFile
+        completed = await file_service.complete_upload(
+            session,
+            file=record,
+            completed_schema=FileUploadCompleted(
+                id=created.upload.id, path=created.path, parts=parts
+            ),
+        )
+
+        assert completed.checksum_sha256_hex == malicious_svg.hex
+        assert completed.is_uploaded
+
+    @pytest.mark.parametrize(
+        ("asset", "declared_size", "error"),
+        [
+            ("malformed.svg", None, "Invalid SVG file"),
+            ("malicious.svg", 1, "larger than its declared size"),
+        ],
+    )
+    async def test_rejects_invalid_upload(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        s3_stub: Stubber,
+        asset: str,
+        declared_size: int | None,
+        error: str,
     ) -> None:
         record, completed_schema = await self._upload(
-            session, organization, malformed_svg
+            session, organization, TestFile(asset), s3_stub, declared_size
         )
-        with pytest.raises(BadRequest):
+        s3_stub.add_response(
+            "delete_object",
+            {},
+            {"Bucket": S3_SERVICES[record.service].bucket, "Key": record.path},
+        )
+
+        with pytest.raises(BadRequest, match=error):
             await file_service.complete_upload(
                 session, file=record, completed_schema=completed_schema
             )
 
         assert record.is_uploaded is False
-        with pytest.raises(S3FileError):
-            S3_SERVICES[record.service].get_head_or_raise(record.path)
-
-    async def test_rejects_larger_than_declared(
-        self, session: AsyncSession, organization: Organization, malicious_svg: TestFile
-    ) -> None:
-        record, completed_schema = await self._upload(
-            session, organization, malicious_svg, declared_size=1
-        )
-        with pytest.raises(BadRequest):
-            await file_service.complete_upload(
-                session, file=record, completed_schema=completed_schema
-            )
-
-        assert record.is_uploaded is False
-        with pytest.raises(S3FileError):
-            S3_SERVICES[record.service].get_head_or_raise(record.path)
 
 
 @pytest.mark.anyio
@@ -482,8 +532,14 @@ class TestDelete:
         session: AsyncSession,
         organization: Organization,
         logo_png: TestFile,
+        s3_stub: Stubber,
     ) -> None:
-        created = await logo_png.create(session, organization)
+        created = await logo_png.create(session, organization, s3_stub)
+        s3_stub.add_response(
+            "delete_object",
+            {},
+            {"Bucket": S3_SERVICES[created.service].bucket, "Key": created.path},
+        )
 
         response = await client.delete(f"/v1/files/{created.id}")
 

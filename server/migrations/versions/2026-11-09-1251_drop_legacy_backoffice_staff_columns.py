@@ -18,6 +18,7 @@ depends_on: tuple[str] | None = None
 
 PARTICIPANTS = "support_case_participants"
 SUBJECT_CHECK = "support_case_participants_subject_matches_kind_check"
+NEW_SUBJECT_CHECK = f"{SUBJECT_CHECK}_new"
 
 BACKOFFICE_SUBJECT = (
     "(kind = 'platform' AND backoffice_platform_user_id IS NOT NULL "
@@ -43,9 +44,32 @@ TRANSITION_SUBJECT = (
 
 def upgrade() -> None:
     op.execute("SET LOCAL lock_timeout = '5s'")
+    op.drop_constraint(
+        op.f(NEW_SUBJECT_CHECK), PARTICIPANTS, type_="check", if_exists=True
+    )
+    op.create_check_constraint(
+        op.f(NEW_SUBJECT_CHECK),
+        PARTICIPANTS,
+        BACKOFFICE_SUBJECT,
+        postgresql_not_valid=True,
+    )
+
+    # Release the exclusive lock and validate before dropping any legacy data.
+    with op.get_context().autocommit_block():
+        op.execute("SET lock_timeout = '5s'")
+        try:
+            op.execute(
+                f"ALTER TABLE {PARTICIPANTS} VALIDATE CONSTRAINT {NEW_SUBJECT_CHECK}"
+            )
+        finally:
+            op.execute("RESET lock_timeout")
+
+    op.execute("SET LOCAL lock_timeout = '5s'")
     op.drop_constraint(op.f(SUBJECT_CHECK), PARTICIPANTS, type_="check")
     op.drop_column("support_case_participants", "platform_user_id")
-    op.create_check_constraint(op.f(SUBJECT_CHECK), PARTICIPANTS, BACKOFFICE_SUBJECT)
+    op.execute(
+        f"ALTER TABLE {PARTICIPANTS} RENAME CONSTRAINT {NEW_SUBJECT_CHECK} TO {SUBJECT_CHECK}"
+    )
     op.drop_column("organization_review_feedback", "reviewer_id")
     op.drop_column("support_cases", "assigned_user_id")
     op.drop_column("users", "is_admin")

@@ -591,7 +591,6 @@ class CustomerMeterService:
         cutoff: datetime | None = None,
         *,
         include_system_events: bool = True,
-        timestamped_before_reset: bool = False,
     ) -> Select[Event]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
@@ -612,10 +611,6 @@ class CustomerMeterService:
                 Event.ingested_at
                 >= min(meter_reset_event.timestamp, meter_reset_event.ingested_at)
             )
-            if timestamped_before_reset:
-                statement = statement.where(
-                    Event.timestamp < meter_reset_event.timestamp
-                )
 
         if cutoff is not None:
             statement = statement.where(Event.timestamp < cutoff)
@@ -752,9 +747,11 @@ class CustomerMeterService:
                     meter_reset_event,
                     by_external_id=by_external_id,
                     include_system_events=False,
-                    timestamped_before_reset=True,
                 )
-                .where(Event.source == EventSource.user)
+                .where(
+                    Event.source == EventSource.user,
+                    Event.timestamp < meter_reset_event.timestamp,
+                )
                 .with_only_columns(value_column.label("value"))
                 for by_external_id in (False, True)
                 if not by_external_id or customer.external_id is not None

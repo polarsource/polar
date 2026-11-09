@@ -413,6 +413,7 @@ local state = redis.call('HGETALL', KEYS[1])
 local fields = {}
 for i = 1, #state, 2 do fields[state[i]] = state[i + 1] end
 -- The pull's reset count when Polar answered: a read after the next reset asks Polar again.
+-- Recorded even for an older snapshot it rejects: Redis then holds a newer one than Polar's answer.
 if ARGV[7] and fields['reset'] ~= ARGV[7] then
     if ARGV[7] == '' then
         redis.call('HDEL', KEYS[1], 'reset')

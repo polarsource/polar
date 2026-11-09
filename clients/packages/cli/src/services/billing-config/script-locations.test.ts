@@ -21,7 +21,39 @@ const input = {
   meters: [{ external_id: 'tool_calls' }, { external_id: 'tokens' }],
 }
 
+const polarfile = [
+  'from polar.config import Config, Meter, MeterSet, eq',
+  '',
+  '',
+  'class Meters(MeterSet):',
+  '    tool_calls = Meter("Tool Calls", on="tool_call")',
+  '    tokens = Meter("Tokens", where=eq("name", "tool_call"), sum="tokens")',
+  '',
+  '',
+  'config = Config(meters=Meters)',
+  '',
+].join('\n')
+
 describe('locateInScript', () => {
+  test('finds sections and entries in a Python config', () => {
+    expect(locateInScript(polarfile, input, ['meters'], undefined)).toEqual({
+      line: 4,
+      column: 1,
+      length: 23,
+    })
+    expect(
+      locateInScript(
+        polarfile,
+        input,
+        ['meters', 1, 'filter', 'clauses', 0, 'value'],
+        'tool_call',
+      ),
+    ).toEqual({ line: 6, column: 47, length: 11 })
+    expect(
+      locateInScript(polarfile, input, ['meters', 1, 'aggregation'], undefined),
+    ).toEqual({ line: 6, column: 61, length: 3 })
+  })
+
   test('points at the offending value inside the right entry', () => {
     expect(
       locateInScript(

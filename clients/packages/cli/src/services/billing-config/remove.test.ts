@@ -29,7 +29,67 @@ const script = [
   '',
 ].join('\n')
 
+const polarfile = [
+  'from polar.config import BenefitSet, Config, Flag, Meter, MeterSet, Metered, Product, ProductSet, usd',
+  '',
+  '',
+  'class Meters(MeterSet):',
+  '    # Replaced by pears',
+  '    apples = Meter("Apples", on="apple", deprecated=True)',
+  '    pears = Meter("Pears }", on="pear")',
+  '',
+  '',
+  'class Benefits(BenefitSet):',
+  '    beta = Flag("Beta", deprecated=True)',
+  '    support = Flag("Support")',
+  '',
+  '',
+  'class Products(ProductSet):',
+  '    legacy = Product(',
+  '        prices=[Metered(Meters.apples, usd(0.01))],',
+  '        recurring="monthly",',
+  '        grants=[Benefits.beta],',
+  '        deprecated=True,',
+  '    )',
+  '    pro = Product(prices=[Metered(Meters.pears, usd(0.01))], recurring="monthly")',
+  '',
+  '',
+  'config = Config(meters=Meters, benefits=Benefits, products=Products)',
+  '',
+].join('\n')
+
 describe('removeFromScript', () => {
+  test('removes attributes from the Python set classes', () => {
+    const { source, missing } = removeFromScript(polarfile, [
+      { section: 'meters', id: 'apples' },
+      { section: 'benefits', id: 'beta' },
+      { section: 'products', id: 'legacy' },
+    ])
+    expect(missing).toEqual([])
+    expect(source).toBe(
+      [
+        'from polar.config import BenefitSet, Config, Flag, Meter, MeterSet, Metered, Product, ProductSet, usd',
+        '',
+        '',
+        'class Meters(MeterSet):',
+        '    # Replaced by pears',
+        '    pears = Meter("Pears }", on="pear")',
+        '',
+        '',
+        'class Benefits(BenefitSet):',
+        '    support = Flag("Support")',
+        '',
+        '',
+        'class Products(ProductSet):',
+        '    pro = Product(prices=[Metered(Meters.pears, usd(0.01))], recurring="monthly")',
+        '',
+        '',
+        'config = Config(meters=Meters, benefits=Benefits, products=Products)',
+        '',
+      ].join('\n'),
+    )
+  })
+
   test('removes whole entries and leaves the rest untouched', () => {
     const { source, missing } = removeFromScript(script, [
       { section: 'meters', id: 'apples' },

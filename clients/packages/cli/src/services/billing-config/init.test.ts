@@ -277,6 +277,49 @@ describe('init', () => {
     expect((await run({ format: 'json' })).file).toBe('polar.config.json')
   })
 
+  test('writes polarfile.py for a Python project and installs with pip or uv', async () => {
+    await writeFile(
+      join(directory, 'pyproject.toml'),
+      '[project]\nname = "app"\n',
+    )
+
+    const result = await run()
+
+    expect(result).toMatchObject({
+      file: 'polarfile.py',
+      format: 'py',
+      install: ['pip', 'install', 'polar-sdk'],
+      installDirectory: directory,
+    })
+    expect(await read('polarfile.py')).toContain('class Products(ProductSet):')
+    expect(await read('polarfile.py')).toContain(
+      'config = Config(meters=Meters, benefits=Benefits, products=Products)',
+    )
+
+    await writeFile(join(directory, 'uv.lock'), '')
+    expect((await run({ file: 'b.py' })).install).toEqual([
+      'uv',
+      'add',
+      'polar-sdk',
+    ])
+  })
+
+  test('has nothing to install once pyproject.toml declares polar-sdk', async () => {
+    await writeFile(
+      join(directory, 'pyproject.toml'),
+      '[project]\ndependencies = ["polar-sdk>=1.0"]\n',
+    )
+
+    expect((await run()).install).toBeUndefined()
+  })
+
+  test('prefers TypeScript when a project has both manifests', async () => {
+    await project()
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    expect((await run()).format).toBe('ts')
+  })
+
   test('refuses when the directory already has a config file', async () => {
     await writeFile(join(directory, 'polar.json'), '{}')
 
@@ -424,6 +467,14 @@ describe('init', () => {
       await run({ format: 'ts' })
 
       expect(await read('polar.config.ts')).toContain('cafe_plan: product(')
+    })
+
+    test('does not write an existing catalog as Python yet', async () => {
+      const error = await failure(run({ format: 'py' }))
+
+      expect(error.message).toBe('This config cannot be written as Python yet')
+      expect(error.hint).toContain('Pass --format json instead.')
+      await expect(read('polarfile.py')).rejects.toThrow()
     })
 
     test('reports why the external IDs were rejected and writes nothing', async () => {

@@ -24,7 +24,7 @@ const span = (
 const PARAMETERS = /^\s*:\s*(?:async\s*)?\([^)]*\)\s*=>/
 
 const keyPattern = (key: string) =>
-  new RegExp(`(?<=^|[\\s{,[(])(['"\`]?)${escape(key)}\\1(?=\\s*[:,\\]])`, 'm')
+  new RegExp(`(?<=^|[\\s{,[(])(['"\`]?)${escape(key)}\\1(?=\\s*[:,\\]=])`, 'm')
 
 const literalPattern = (value: unknown) =>
   typeof value === 'string'
@@ -32,14 +32,16 @@ const literalPattern = (value: unknown) =>
     : new RegExp(`(?<![\\w.])${escape(String(value))}(?![\\w.])`)
 
 const FIELD_PATTERNS: Record<string, RegExp> = {
-  name: /displayName|(?<![\w.])name(?=\s*:)/,
-  filter: /\.where\(|\.on\(|(?<![\w.])filter(?=\s*:)/,
+  name: /displayName|(?<![\w.])name(?=\s*[:=])/,
+  filter: /\.where\(|\.on\(|(?<![\w.])(?:filter|on|where)(?=\s*[:=])/,
   aggregation:
-    /\.(count|sum|max|min|avg|unique)\(|(?<![\w.])aggregation(?=\s*:)/,
-  unit: /\.unit\(|(?<![\w.])unit(?=\s*:)/,
-  custom_label: /\.unit\(|(?<![\w.])custom_label(?=\s*:)/,
-  meter_interval: /\.meterCycle\(|(?<![\w.])meter_interval(?=\s*:)/,
-  meter_interval_count: /\.meterCycle\(|(?<![\w.])meter_interval_count(?=\s*:)/,
+    /\.(count|sum|max|min|avg|unique)\(|(?<![\w.])(?:aggregation|sum|max|min|avg|unique)(?=\s*[:=])/,
+  unit: /\.unit\(|(?<![\w.])unit(?=\s*[:=])/,
+  custom_label: /\.unit\(|(?<![\w.])(?:custom_label|label)(?=\s*[:=])/,
+  meter_interval:
+    /\.meterCycle\(|(?<![\w.])(?:meter_interval|meter_cycle)(?=\s*[:=])/,
+  meter_interval_count:
+    /\.meterCycle\(|(?<![\w.])(?:meter_interval_count|meter_cycle)(?=\s*[:=])/,
 }
 
 const find = (source: string, pattern: RegExp, from: number, to: number) => {
@@ -68,7 +70,78 @@ const SECTIONS = [
 const columnOf = (source: string, offset: number) =>
   offset - source.lastIndexOf('\n', offset - 1)
 
+const SET_CLASSES: Record<string, string> = {
+  settings: 'SettingsSet',
+  meters: 'MeterSet',
+  benefits: 'BenefitSet',
+  products: 'ProductSet',
+  webhooks: 'WebhookSet',
+}
+
+const classPattern = (section: string) =>
+  new RegExp(
+    `^([ \\t]*)class\\s+\\w+\\s*\\(\\s*${SET_CLASSES[section]}\\s*\\)\\s*:[^\\n]*\\n`,
+    'm',
+  )
+
+const indentOf = (line: string) => /^[ \t]*/.exec(line)![0].length
+
+const classBody = (source: string, section: string): Range | undefined => {
+  if (!(section in SET_CLASSES)) return undefined
+  const header = classPattern(section).exec(source)
+  if (header === null) return undefined
+  const start = header.index + header[0].length
+  const indent = header[1]!.length
+  let end = start
+  for (const line of source.slice(start).split('\n')) {
+    if (line.trim() !== '' && indentOf(line) <= indent) break
+    end += line.length + 1
+  }
+  return { start, end: Math.min(end, source.length) }
+}
+
+const ASSIGNMENT = /^([ \t]+)([A-Za-z_]\w*)\s*=/
+
+export const classBodyEntries = (
+  source: string,
+  section: string,
+): Map<string, Range> | undefined => {
+  const body = classBody(source, section)
+  if (body === undefined) return undefined
+  const lines = source.slice(body.start, body.end).split('\n')
+  const first = lines.find((line) => line.trim() !== '')
+  const indent = first === undefined ? 0 : indentOf(first)
+  const entries = new Map<string, Range>()
+  let offset = body.start
+  let contentEnd = body.start
+  let current: { key: string; start: number } | undefined
+  const close = () => {
+    if (current !== undefined) {
+      entries.set(current.key, { start: current.start, end: contentEnd })
+    }
+  }
+  for (const line of lines) {
+    const match = ASSIGNMENT.exec(line)
+    if (match !== null && match[1]!.length === indent) {
+      close()
+      current = { key: match[2]!, start: offset }
+    }
+    if (line.trim() !== '') contentEnd = offset + line.length
+    offset += line.length + 1
+  }
+  close()
+  return entries
+}
+
 const sectionKey = (source: string, section: string) => {
+  const header =
+    section in SET_CLASSES ? classPattern(section).exec(source) : null
+  if (header !== null) {
+    return {
+      offset: header.index + header[1]!.length,
+      length: header[0].trimEnd().length - header[1]!.length,
+    }
+  }
   const own = findAll(source, keyPattern(section), 0)
   const columns = own.map(({ offset }) => columnOf(source, offset))
   return own[columns.indexOf(Math.min(...columns))]
@@ -76,6 +149,8 @@ const sectionKey = (source: string, section: string) => {
 
 export const sectionRange = (source: string, section: string): Range => {
   const whole = { start: 0, end: source.length }
+  const body = classBody(source, section)
+  if (body !== undefined) return body
   const column = ({ offset }: { offset: number }) => columnOf(source, offset)
   const start = sectionKey(source, section)
   if (start === undefined) return whole

@@ -44,7 +44,7 @@ import * as ui from '@/utils/ui'
 
 const file = Argument.String('file').pipe(
   Argument.withDescription(
-    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar.config.json otherwise',
+    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polarfile.py at the root of a Python project, polar.config.json otherwise',
   ),
   Argument.optional,
 )
@@ -52,14 +52,14 @@ const file = Argument.String('file').pipe(
 const format = Flag.Literals('format', FORMATS).pipe(
   Flag.optional,
   Flag.withDescription(
-    'Write TypeScript (ts) or JSON (json). Detected from your project when omitted: ts when there is a package.json, json otherwise',
+    'Write TypeScript (ts), Python (py) or JSON (json). Detected from your project when omitted: ts when there is a package.json, py when there is a pyproject.toml, json otherwise',
   ),
 )
 
 const skipInstall = Flag.Boolean('skip-install').pipe(
   Flag.withDefault(false),
   Flag.withDescription(
-    'Do not install the package a TypeScript config imports, @polar-sh/polar',
+    'Do not install the package a TypeScript or Python config imports: @polar-sh/polar or polar-sdk',
   ),
 )
 
@@ -387,6 +387,11 @@ export const init = Command.make('init', {
     {
       command: 'polar config init --org acme --format json',
       description: 'Write a JSON config for another organization',
+    },
+    {
+      command: 'polar config init --format py',
+      description:
+        'Write polarfile.py, a Python config typed by the polar-sdk package',
     },
     {
       command: 'polar config init --json --confirm',

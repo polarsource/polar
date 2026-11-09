@@ -1,5 +1,6 @@
 import { applyEdits, modify } from 'jsonc-parser'
 import {
+  classBodyEntries,
   type Range,
   sectionRange,
 } from '@/services/billing-config/script-locations'
@@ -10,7 +11,7 @@ export interface Removal {
 }
 
 const STRINGS_AND_COMMENTS =
-  /\/\/[^\n]*|\/\*[\s\S]*?\*\/|(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g
+  /\/\/[^\n]*|#[^\n]*|\/\*[\s\S]*?\*\/|(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g
 
 // Same offsets as the source, with comments and string contents blanked so their brackets don't count
 const codeOnly = (source: string) =>
@@ -66,6 +67,8 @@ const trim = (code: string, { start, end }: Range): Range => {
 // or as `[external_id, definition]` tuples when the generator can't keep the key order
 const sectionEntries = (source: string, section: string) => {
   const code = codeOnly(source)
+  const inClass = classBodyEntries(code, section)
+  if (inClass !== undefined) return inClass
   const range = sectionRange(source, section)
   const body = code.slice(range.start, range.end)
   const returned = /^\s*\{/.test(body)

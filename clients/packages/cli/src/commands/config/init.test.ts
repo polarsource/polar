@@ -219,6 +219,18 @@ describe('polar config init', () => {
       file: 'billing/polar.json',
       format: 'json',
     })
+    expect((await run(['--format', 'py'])).calls[0]!.target.format).toBe('py')
+  })
+
+  test('names the Python package it installs', async () => {
+    const { output } = await run(
+      [],
+      {},
+      { install: ['uv', 'add', 'polar-sdk'] },
+    )
+
+    expect(output).toContain('✔ Installing polar-sdk\n    uv add polar-sdk')
+    expect(output).toMatch(/Package {7}polar-sdk installed/)
   })
 
   test('only asks before installing in a terminal', async () => {

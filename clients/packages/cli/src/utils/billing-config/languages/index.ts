@@ -7,12 +7,13 @@ import {
   findUp,
   type Language,
 } from '@/utils/billing-config/languages/language'
+import { python } from '@/utils/billing-config/languages/python'
 import { typescript } from '@/utils/billing-config/languages/typescript'
 
 export type { Language } from '@/utils/billing-config/languages/language'
 export { exists } from '@/utils/billing-config/languages/language'
 
-export const LANGUAGES: ReadonlyArray<Language> = [typescript, json]
+export const LANGUAGES: ReadonlyArray<Language> = [typescript, python, json]
 
 const byFormat = Object.fromEntries(
   LANGUAGES.map((language) => [language.format, language]),

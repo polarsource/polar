@@ -3,6 +3,7 @@ import pathlib
 from generator.ir import (
     APIIR,
     APIVersion,
+    EnumRef,
     Field,
     Model,
     ModelRef,
@@ -121,3 +122,58 @@ def test_emit_output_model_with_fields_and_additional_properties(
         "    str | int | float | bool,\n"
         ")"
     ) in outputs
+
+
+def test_emit_config_module_exporting_everything_the_config_reaches(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = Model(
+        name="Config",
+        fields=[
+            Field(
+                name="meters",
+                type=ModelRef(kind="model", name="ConfigMeter"),
+                required=False,
+            )
+        ],
+    )
+    meter = Model(
+        name="ConfigMeter",
+        fields=[
+            Field(
+                name="filter", type=ModelRef(kind="model", name="Filter"), required=True
+            )
+        ],
+    )
+    filter = Model(
+        name="Filter",
+        fields=[
+            Field(
+                name="conjunction",
+                type=EnumRef(kind="enum", name="FilterConjunction"),
+                required=True,
+            )
+        ],
+    )
+    unrelated = Model(name="ProductCreate", fields=[])
+    api = APIVersion(
+        version="2026-04",
+        servers=[],
+        services=[],
+        input_models=[config, meter, filter, unrelated],
+        output_models=[],
+        webhooks=[],
+        enums=[],
+        input_unions=[],
+        output_unions=[],
+    )
+
+    PythonEmitter(APIIR(versions=[api]), "2026-10").emit(tmp_path)
+
+    module = (tmp_path / "polar" / "config" / "types.py").read_text()
+    assert (
+        "from polar.v2026_04.inputs import (\n    Config,\n    ConfigMeter,\n    Filter,\n)"
+        in module
+    )
+    assert "from polar.v2026_04.literals import (\n    FilterConjunction,\n)" in module
+    assert "ProductCreate" not in module

@@ -415,6 +415,17 @@ def _default_is_private_operation(operation: op.Operation) -> bool:
     return "private" in (operation.tags or [])
 
 
+type IsModelOnlyOperationFilter = typing.Callable[[op.Operation], bool]
+
+
+def _default_is_model_only_operation(operation: op.Operation) -> bool:
+    return False
+
+
+def is_config_operation(operation: op.Operation) -> bool:
+    return "config" in (operation.tags or [])
+
+
 type ServiceKeyGetter = typing.Callable[[op.Operation], list[str]]
 
 
@@ -1102,6 +1113,7 @@ def _generate_ir_version(
     spec: op.OpenAPI,
     *,
     is_private_operation: IsPrivateOperationFilter = _default_is_private_operation,
+    is_model_only_operation: IsModelOnlyOperationFilter = _default_is_model_only_operation,
     get_service_key: ServiceKeyGetter = _default_get_service_key,
     get_method_name: MethodNameGetter = _default_get_method_name,
     normalize_model_name: ModelNameNormalizer = _default_model_name_normalizer,
@@ -1109,6 +1121,9 @@ def _generate_ir_version(
 ) -> APIVersion:
     """
     Generate an intermediate representation of a single OpenAPI spec version.
+
+    Private operations are left out, but the request body models of those for which
+    `is_model_only_operation` holds are still emitted as input models.
     """
     servers = [
         Server(
@@ -1143,6 +1158,20 @@ def _generate_ir_version(
         for path, path_item in spec.paths.items():
             for http_method, operation in _get_operations(path_item):
                 if is_private_operation(operation):
+                    model_only_body = (
+                        _get_body_schema_raw(operation, spec)
+                        if is_model_only_operation(operation)
+                        else None
+                    )
+                    if model_only_body is not None:
+                        _convert_typeref(
+                            model_only_body,
+                            component_schemas,
+                            inline_schemas,
+                            referenced_names,
+                            input_names,
+                            normalize_model_name=normalize_model_name,
+                        )
                     continue
 
                 if operation.operationId in operation_ids:
@@ -1492,6 +1521,7 @@ def _get_api_version_sorting_key(spec: op.OpenAPI) -> tuple[int, int]:
 def generate_ir(
     *specs: op.OpenAPI,
     is_private_operation: IsPrivateOperationFilter = _default_is_private_operation,
+    is_model_only_operation: IsModelOnlyOperationFilter = _default_is_model_only_operation,
     get_service_key: ServiceKeyGetter = _default_get_service_key,
     get_method_name: MethodNameGetter = _default_get_method_name,
     normalize_model_name: ModelNameNormalizer = _default_model_name_normalizer,
@@ -1505,6 +1535,7 @@ def generate_ir(
         _generate_ir_version(
             spec,
             is_private_operation=is_private_operation,
+            is_model_only_operation=is_model_only_operation,
             get_service_key=get_service_key,
             get_method_name=get_method_name,
             normalize_model_name=normalize_model_name,

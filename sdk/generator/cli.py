@@ -7,7 +7,7 @@ import openapi_pydantic as op
 
 from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
 from generator.emitter import Prerelease
-from generator.ir import generate_ir
+from generator.ir import generate_ir, is_config_operation
 from generator.release import regenerate_openapi, release_sdk
 from python.emitter import PythonEmitter
 
@@ -135,7 +135,9 @@ elif args.command == "generate":
     match language:
         case "python":
             emitter = PythonEmitter(
-                generate_ir(*specs), args.version, prerelease=prerelease
+                generate_ir(*specs, is_model_only_operation=is_config_operation),
+                args.version,
+                prerelease=prerelease,
             )
         case "typescript":
             from typescript.emitter import TypeScriptEmitter

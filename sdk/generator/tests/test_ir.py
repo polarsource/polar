@@ -5,7 +5,7 @@ import typing
 import openapi_pydantic as op
 import pytest
 
-from generator.ir import generate_ir
+from generator.ir import generate_ir, is_config_operation
 
 _STRING = {"kind": "primitive", "type": "string"}
 
@@ -2952,3 +2952,75 @@ def test_inline_enums_sharing_a_title_keep_their_own_values() -> None:
             assert enums[reason["name"]] == values
         else:
             assert [variant["value"] for variant in reason["variants"]] == values
+
+
+def test_private_model_only_operations_keep_their_body_models() -> None:
+    spec = op.OpenAPI.model_validate(
+        {
+            "openapi": "3.1.0",
+            "info": {"title": "Test API", "version": "2026-10"},
+            "paths": {
+                "/config/plan": {
+                    "post": {
+                        "operationId": "config:plan",
+                        "tags": ["config", "private"],
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Config"}
+                                }
+                            },
+                        },
+                        "responses": {"204": {"description": "Success"}},
+                    }
+                },
+                "/internal": {
+                    "post": {
+                        "operationId": "internal:create",
+                        "tags": ["private"],
+                        "requestBody": {
+                            "required": True,
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Internal"}
+                                }
+                            },
+                        },
+                        "responses": {"204": {"description": "Success"}},
+                    }
+                },
+            },
+            "components": {
+                "schemas": {
+                    "Config": {
+                        "type": "object",
+                        "title": "Config",
+                        "properties": {
+                            "meters": {
+                                "type": "array",
+                                "items": {"$ref": "#/components/schemas/ConfigMeter"},
+                            }
+                        },
+                    },
+                    "ConfigMeter": {
+                        "type": "object",
+                        "title": "ConfigMeter",
+                        "properties": {"name": {"type": "string"}},
+                        "required": ["name"],
+                    },
+                    "Internal": {
+                        "type": "object",
+                        "title": "Internal",
+                        "properties": {"name": {"type": "string"}},
+                    },
+                }
+            },
+        }
+    )
+
+    version = generate_ir(spec, is_model_only_operation=is_config_operation).versions[0]
+
+    assert version.services == []
+    assert [model.name for model in version.input_models] == ["Config", "ConfigMeter"]
+    assert generate_ir(spec).versions[0].input_models == []

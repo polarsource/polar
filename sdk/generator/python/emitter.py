@@ -1,4 +1,5 @@
 import pathlib
+import typing
 
 from generator.casing import to_snake_case
 from generator.emitter import EmitterBase, Prerelease
@@ -25,6 +26,7 @@ from python.utils import format_default_value, format_default_value_dataclass
 from typescript.types import collect_enum_names
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
+CONFIG_MODEL = "Config"
 BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
 
 
@@ -80,6 +82,17 @@ class PythonEmitter(EmitterBase):
         _pep440: dict[str, str] = {"alpha": "a", "beta": "b", "rc": "rc"}
         return f"{self.version}{_pep440[self.prerelease.label]}{self.prerelease.number}"
 
+    def get_context(self) -> dict[str, typing.Any]:
+        latest = self.ir.versions[-1]
+        config_models, config_enums = self._get_config_exports(latest)
+        return {
+            **super().get_context(),
+            "latest": self.get_version_string(latest),
+            "latest_api_version": latest.version,
+            "config_models": config_models,
+            "config_enums": config_enums,
+        }
+
     def emit(self, root_directory: pathlib.Path | str) -> None:
         """Emit the Python SDK files to the specified root directory."""
         root_directory = self.ensure_directory(root_directory)
@@ -127,6 +140,12 @@ class PythonEmitter(EmitterBase):
                 "SKILL.md",
             ),
             ("polar", "base.py"),
+            ("polar", "config", "__init__.py"),
+            ("polar", "config", "__main__.py"),
+            ("polar", "config", "config.py"),
+            ("polar", "config", "definitions.py"),
+            ("polar", "config", "meters.py"),
+            ("polar", "config", "types.py"),
             ("polar", "py.typed"),
             ("polar", "webhooks.py"),
             ("polar", "logging.py"),
@@ -143,6 +162,7 @@ class PythonEmitter(EmitterBase):
             ("polar", "outpost", "telemetry.py"),
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),
+            ("tests", "test_config.py"),
             ("tests", "metering", "__init__.py"),
             ("tests", "metering", "conftest.py"),
             ("tests", "metering", "test_metering.py"),
@@ -297,6 +317,30 @@ class PythonEmitter(EmitterBase):
                 "imports": self._get_service_imports(service, api),
             },
         )
+
+    def _get_config_exports(self, api: APIVersion) -> tuple[list[str], list[str]]:
+        """Input models, unions and enums reachable from the billing `Config`."""
+        models = {model.name: model for model in api.input_models}
+        unions = {union.name: union for union in api.input_unions}
+        if CONFIG_MODEL not in models:
+            return [], []
+        reachable: set[str] = set()
+        enums: set[str] = set()
+        pending = [CONFIG_MODEL]
+        while pending:
+            name = pending.pop()
+            if name in reachable:
+                continue
+            reachable.add(name)
+            types = (
+                [field.type for field in models[name].fields]
+                if name in models
+                else list(unions[name].variants)
+            )
+            for type_ref in types:
+                pending.extend(_collect_type_ref_names(type_ref, api))
+                collect_enum_imports(type_ref, enums, api)
+        return sorted(reachable), sorted(enums)
 
     def _get_input_enum_imports(self, api: APIVersion) -> set[str]:
         enum_imports: set[str] = set()

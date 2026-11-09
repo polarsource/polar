@@ -130,9 +130,8 @@ class CustomField(MetadataMixin, RecordModel):
         nullable=True,
         default=None,
     )
-    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced later.
     is_current: Mapped[bool] = mapped_column(
-        Boolean, nullable=True, default=True, server_default=text("true")
+        Boolean, nullable=False, default=True, server_default=text("true")
     )
 
     @declared_attr

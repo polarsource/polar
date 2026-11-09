@@ -154,7 +154,7 @@ if typing.TYPE_CHECKING:
 
 log: Logger = structlog.get_logger()
 
-US_ZIP_CODE_REGEX = re.compile(r"\d{5}(-?\d{4})?")
+US_ZIP_CODE_REGEX = re.compile(r"\d{5}([- ]?\d{4})?")
 
 
 class CheckoutError(PolarError): ...
@@ -2777,7 +2777,7 @@ class CheckoutService:
                 billing_address_fields = checkout.billing_address_fields
                 if (
                     billing_address_fields["state"] == BillingAddressFieldMode.required
-                    and billing_address.state is None
+                    and not billing_address.has_state()
                 ):
                     raise TaxCalculationLogicalError("State is required.")
                 if (

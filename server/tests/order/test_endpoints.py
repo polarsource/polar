@@ -9,12 +9,14 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_discount,
     create_order,
     create_product,
     create_product_unit_based,
@@ -74,6 +76,39 @@ class TestListOrders:
 
         json = response.json()
         assert json["pagination"]["total_count"] == len(orders)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.orders_read}),
+    )
+    async def test_fixed_discount(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        await create_order(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+
+        response = await client.get("/v1/orders/")
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        item_discount = json["items"][0]["discount"]
+        assert item_discount["amount"] == 1000
+        assert item_discount["currency"] == "usd"
 
     @pytest.mark.auth
     async def test_metadata_filter(

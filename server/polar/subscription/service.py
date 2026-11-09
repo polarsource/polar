@@ -689,7 +689,6 @@ class SubscriptionService:
                 selectinload(Product.attached_custom_fields),
             ),
             contains_eager(Subscription.discount).options(
-                raiseload(Discount.organization),
                 raiseload(Discount.discount_products),
             ),
             contains_eager(Subscription.customer),

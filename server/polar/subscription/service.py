@@ -10,7 +10,13 @@ from urllib.parse import urlencode
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
+from sqlalchemy.orm import (
+    contains_eager,
+    joinedload,
+    raiseload,
+    selectinload,
+    undefer,
+)
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -682,7 +688,10 @@ class SubscriptionService:
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),
             ),
-            contains_eager(Subscription.discount),
+            contains_eager(Subscription.discount).options(
+                raiseload(Discount.organization),
+                raiseload(Discount.discount_products),
+            ),
             contains_eager(Subscription.customer),
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
             joinedload(Subscription.pending_update),

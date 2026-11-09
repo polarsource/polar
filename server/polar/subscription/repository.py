@@ -592,6 +592,12 @@ class SubscriptionRepository(
         dedup_subquery = (
             select(EmailLog.id)
             .where(
+                EmailLog.email_template.in_(
+                    (
+                        "subscription_trial_conversion_reminder",
+                        "subscription_trial_payment_method_required",
+                    )
+                ),
                 EmailLog.deduplication_key
                 == subscription_trial_conversion_reminder_key_sql(
                     Subscription.id, Subscription.trial_end

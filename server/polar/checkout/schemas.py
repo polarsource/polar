@@ -888,9 +888,11 @@ class CheckoutPublic(CheckoutBase):
     discount: CheckoutDiscount | None
     organization: CheckoutOrganization
     attached_custom_fields: list[AttachedCustomField] | None
-    payment_method_types: list[str] = Field(
-        description="Payment method types to offer in the payment form."
-    )
+    payment_method_types: Annotated[
+        list[str],
+        Version(starting_from=V2027_01),
+        Field(description="Payment method types to offer in the payment form."),
+    ]
 
 
 class CheckoutPublicConfirmed(CheckoutPublic):

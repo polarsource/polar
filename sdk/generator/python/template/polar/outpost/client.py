@@ -276,6 +276,8 @@ class ReducerState:
     buckets: dict[int, BucketStatistics]
     # The part of each bucket Polar has not confirmed yet.
     pending: dict[int, BucketStatistics]
+    # The pull's reset count when Polar last answered for it.
+    confirmed_after_resets: int | None = None
 
 
 def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
@@ -283,6 +285,7 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
     cold = BucketStatistics()
     buckets: dict[int, BucketStatistics] = {}
     pending: dict[int, BucketStatistics] = {}
+    confirmed_after_resets: int | None = None
     # The statistics each `<group>:<statistic>` field writes to, by group: `cold` and every
     # `bucket:<start>` or `pending:<start>` seen so far.
     groups: dict[str, BucketStatistics] = {"cold": cold}
@@ -299,6 +302,8 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
             if not separator:
                 if field == "cold_until":
                     cold_until = int(value)
+                elif field == "reset":
+                    confirmed_after_resets = int(value)
                 continue
             kind, _, timestamp = group.partition(":")
             if kind == "bucket" or kind == "pending":
@@ -313,6 +318,7 @@ def decode_state(values: collections.abc.Sequence[str | bytes]) -> ReducerState:
         cold=cold,
         buckets=buckets,
         pending=pending,
+        confirmed_after_resets=confirmed_after_resets,
     )
 
 
@@ -440,6 +446,9 @@ class Outpost:
         # The configuration's revision in the pull hash, as of the configuration this
         # instance runs.
         self._configuration_revision: int | None = None
+        # How many times Polar's changes went past their retention, as of the last read
+        # of the pull hash.
+        self._resets: int | None = None
 
     @classmethod
     def create(
@@ -456,6 +465,7 @@ class Outpost:
         self._configured = anyio.Event()
         self._pull_retry_at = 0.0
         self._configuration_revision = None
+        self._resets = None
         self._failure = None
         if self._telemetry:
             self._tracer_provider = create_tracer_provider(self._client)
@@ -781,13 +791,17 @@ class Outpost:
         deadline = anyio.current_time() + SNAPSHOT_TIMEOUT
         states = await self._load(customer, reducers)
         # Polar sends no snapshot without a connection.
-        if all(map(_is_ready, states)) or not self.connected:
+        if not self.connected:
             return states
+        # A state confirmed before the last reset serves the read while Polar confirms
+        # it again.
         fetches = [
             self._fetch(customer, reducer)
             for reducer, state in zip(reducers, states, strict=True)
-            if not _is_ready(state)
+            if not _is_ready(state) or self._is_stale(state)
         ]
+        if all(map(_is_ready, states)):
+            return states
         with anyio.move_on_after(deadline - anyio.current_time()):
             for fetched in fetches:
                 await fetched.wait()
@@ -811,7 +825,12 @@ class Outpost:
                 pipeline.hget(
                     self._missing_key(f"{customer}:{reducer['id']}"), "retry_at"
                 )
+            pipeline.hget(self._pull_key, "reset")
             results = await pipeline.execute(raise_on_error=False)
+        resets = results.pop()
+        if isinstance(resets, Exception):
+            raise resets
+        self._resets = None if resets is None else int(resets)
         now = time.time() * 1000
         states: list[ReducerState | None] = []
         for key, state, retry_at in zip(keys, results[::2], results[1::2], strict=True):
@@ -825,6 +844,9 @@ class Outpost:
                 None if retry_at and float(retry_at) > now else decode_state(state)
             )
         return states
+
+    def _is_stale(self, state: ReducerState | None) -> bool:
+        return state is not None and state.confirmed_after_resets != self._resets
 
     def _find_reducer(
         self, kind: typing.Literal["usage", "credit"], meter_id: str
@@ -939,14 +961,19 @@ class Outpost:
             )
             if not locked:
                 return
+            resets = self._resets
             snapshots: list[Snapshot] = await self._request(
                 "POST",
                 "/v1/outpost/meter-usage",
-                json={**self._customer_arguments(customer), "reducer_id": reducer["id"]},
+                json={
+                    "identities": [
+                        {**self._customer_arguments(customer), "reducer_id": reducer["id"]}
+                    ]
+                },
             )
             async with self._applying:
                 for snapshot in snapshots:
-                    await self._receive_snapshot(snapshot, pulled=False)
+                    await self._receive_snapshot(snapshot, pulled=False, resets=resets)
         except Exception as error:  # noqa: BLE001
             self._fail_unless_transient(error)
         finally:
@@ -1088,8 +1115,19 @@ class Outpost:
         return now - self._pulled_at >= self._pull_interval and now >= self._pull_retry_at
 
     async def _load_pull(self) -> None:
-        pulled_at, next_poll_in, retry_at, revision = await self._require_redis().hmget(
-            self._pull_key, "pulled_at", "next_poll_in", "retry_at", "configuration"
+        (
+            pulled_at,
+            next_poll_in,
+            retry_at,
+            revision,
+            resets,
+        ) = await self._require_redis().hmget(
+            self._pull_key,
+            "pulled_at",
+            "next_poll_in",
+            "retry_at",
+            "configuration",
+            "reset",
         )
         # Another instance pulled a new configuration, maybe while this one started.
         # Redis holds it; once Redis lost it, the next read tries again.
@@ -1101,6 +1139,7 @@ class Outpost:
             float(next_poll_in) / 1000 if next_poll_in else PULL_INTERVAL
         )
         self._pull_retry_at = float(retry_at) / 1000 if retry_at else 0.0
+        self._resets = None if resets is None else int(resets)
 
     async def _wait_for_pull(self) -> None:
         """Another instance holds the pull: it has ended, pulled or failed, once its lock
@@ -1210,7 +1249,7 @@ class Outpost:
                     raise
                 pages += 1
                 if changes["reset"]:
-                    await self._reset()
+                    self._resets = await redis.hincrby(self._pull_key, "reset", 1)
                 if changes["configuration_changed"]:
                     await self._configure("polar")
                     self._configuration_revision = await redis.hincrby(
@@ -1230,20 +1269,22 @@ class Outpost:
                 limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
 
                 async def apply(
-                    snapshots: list[Snapshot], limiter: anyio.CapacityLimiter
+                    snapshots: list[Snapshot],
+                    limiter: anyio.CapacityLimiter,
+                    resets: int | None,
                 ) -> None:
                     nonlocal applied
                     async with limiter:
                         for snapshot in snapshots:
                             if await self._receive_snapshot(
-                                snapshot, pulled=True, renew=renew
+                                snapshot, pulled=True, resets=resets, renew=renew
                             ):
                                 applied += 1
                                 await renew()
 
                 async with self._applying, anyio.create_task_group() as group:
                     for snapshots in customers.values():
-                        group.start_soon(apply, snapshots, limiter)
+                        group.start_soon(apply, snapshots, limiter, self._resets)
                 now = int(time.time() * 1000)
                 next_poll_in = changes["next_poll_in"]
                 committed = await self._commit_pull(
@@ -1271,16 +1312,6 @@ class Outpost:
                 with contextlib.suppress(RedisError):
                     await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._pull_lock_key, lock)
 
-    async def _reset(self) -> None:
-        """Polar's changes went past its retention: no snapshot can be trusted any more."""
-        redis = self._require_redis()
-        async with redis.pipeline(transaction=False) as pipeline:
-            async for key in redis.scan_iter(match=f"{self._prefix}:state:*", count=1000):
-                pipeline.hdel(key, "cold_until", "snapshot_version")
-                if len(pipeline) >= 1000:
-                    await pipeline.execute()
-            await pipeline.execute()
-
     def _fail_unless_transient(self, error: Exception) -> None:
         if not _is_connection_error(error):
             self._fail(error)
@@ -1297,10 +1328,11 @@ class Outpost:
         snapshot: Snapshot,
         *,
         pulled: bool,
+        resets: int | None,
         renew: collections.abc.Callable[[], collections.abc.Awaitable[None]] | None = None,
     ) -> bool:
-        """Applies a snapshot of Polar's, unless it was pulled for a customer nobody here
-        reads."""
+        """Applies Polar's snapshot, unless pulled for a customer nobody here reads.
+        `resets` is the reset count when asked: after another reset, reads ask again."""
         if not any(reducer["id"] == snapshot["reducer_id"] for reducer in self._reducers):
             return False
         if (
@@ -1340,6 +1372,7 @@ class Outpost:
             confirmation.snapshot if confirmation is not None else snapshot,
             confirmation,
             answered=answered,
+            resets=resets,
         )
         return True
 
@@ -1410,6 +1443,7 @@ class Outpost:
         confirmation: _Confirmation | None = None,
         *,
         answered: bool = False,
+        resets: int | None,
     ) -> None:
         """Settles the confirmed events and applies the snapshot in one transaction: a
         read sees the bucket either fully local or as Polar's total plus what is still
@@ -1426,6 +1460,7 @@ class Outpost:
             snapshot["sum"],
             snapshot["min"] if snapshot["min"] is not None else "",
             snapshot["max"] if snapshot["max"] is not None else "",
+            resets if resets is not None else "",
         ]
         confirmed = {
             bucket_start: ids

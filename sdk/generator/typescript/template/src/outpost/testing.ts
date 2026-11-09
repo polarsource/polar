@@ -68,7 +68,15 @@ export const startPolarServer = async (
     if (url.pathname === "/v1/outpost/configuration")
       return body({ organization_id: "org", reducers });
     if (url.pathname === "/v1/outpost/meter-usage")
-      return body(snapshot ? [{ customer_exists: true, ...snapshot, ...JSON.parse(data) }] : []);
+      return body(
+        snapshot
+          ? (JSON.parse(data).identities as Record<string, unknown>[]).map((identity) => ({
+              customer_exists: true,
+              ...snapshot,
+              ...identity,
+            }))
+          : [],
+      );
     if (url.pathname === "/v1/outpost/changes")
       return body({
         changes: [],

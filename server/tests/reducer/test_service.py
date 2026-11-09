@@ -3,7 +3,7 @@ import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import dramatiq
 import pytest
@@ -1964,10 +1964,19 @@ class TestGetCustomerMeterUnits:
     @pytest.mark.parametrize(
         ("since", "split", "expected"),
         [
-            (BUCKET_START + timedelta(seconds=20), False, 5),
-            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20), False, 12),
-            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20), True, 12),
-            (BUCKET_START - timedelta(hours=1) + timedelta(seconds=20), False, 9),
+            (BUCKET_START + timedelta(seconds=20), None, 5),
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20), None, 12),
+            (
+                BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20),
+                "event_identity",
+                12,
+            ),
+            (
+                BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20),
+                "other_identity",
+                12,
+            ),
+            (BUCKET_START - timedelta(hours=1) + timedelta(seconds=20), None, 9),
         ],
     )
     async def test_usage_after_reset_within_its_slot(
@@ -1977,7 +1986,7 @@ class TestGetCustomerMeterUnits:
         redis: Redis,
         organization: Organization,
         since: datetime,
-        split: bool,
+        split: Literal["event_identity", "other_identity"] | None,
         expected: int,
     ) -> None:
         meter = await rollup_tokens(
@@ -2004,22 +2013,24 @@ class TestGetCustomerMeterUnits:
             metadata={"tokens": 5},
         )
         await reducer_service.rollup(session, redis, organization.id, [event])
-        if split:
+        if split is not None:
             reducer = await ReducerRepository.from_session(
                 session
             ).get_by_meter_and_kind(meter.id, ReducerKind.usage)
             assert reducer is not None
+            event_identity = split == "event_identity"
             await save_fixture(
                 ReducerBucket(
                     organization=organization,
                     reducer=reducer,
-                    external_customer_id="external",
+                    customer_id=None if event_identity else customer.id,
+                    external_customer_id="external" if event_identity else None,
                     bucket_start=since,
                     bucket_end=get_reducer_bucket_start(since) + REDUCER_BUCKET_SIZE,
-                    count=1,
-                    sum=Decimal(5),
-                    min=Decimal(5),
-                    max=Decimal(5),
+                    count=1 if event_identity else 0,
+                    sum=Decimal(5 if event_identity else 0),
+                    min=Decimal(5) if event_identity else None,
+                    max=Decimal(5) if event_identity else None,
                 )
             )
 

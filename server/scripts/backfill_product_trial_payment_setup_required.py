@@ -26,7 +26,7 @@ def typer_async(f):  # type: ignore
 
 @cli.command()
 @typer_async
-async def backfill_product_trial_requires_payment_method(
+async def backfill_product_trial_payment_setup_required(
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
@@ -34,13 +34,13 @@ async def backfill_product_trial_requires_payment_method(
         (
             update(Product)
             .values(
-                trial_requires_payment_method=True,
+                trial_payment_setup_required=True,
                 modified_at=Product.modified_at,
             )
             .where(
                 Product.id.in_(
                     select(Product.id)
-                    .where(Product.trial_requires_payment_method.is_(None))
+                    .where(Product.trial_payment_setup_required.is_(None))
                     .limit(limit_bindparam())
                 ),
             )

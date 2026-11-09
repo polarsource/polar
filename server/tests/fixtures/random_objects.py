@@ -1379,6 +1379,7 @@ async def create_trialing_subscription(
     discount: Discount | None = None,
     user_metadata: dict[str, Any] | None = None,
     scheduler_locked_at: datetime | None = None,
+    payment_method: PaymentMethod | None = None,
 ) -> Subscription:
     now = utc_now()
     trial_start = now
@@ -1400,6 +1401,7 @@ async def create_trialing_subscription(
         trial_end=trial_end,
         user_metadata=user_metadata or {},
         scheduler_locked_at=scheduler_locked_at,
+        payment_method=payment_method,
     )
 
 

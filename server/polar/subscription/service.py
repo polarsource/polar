@@ -105,7 +105,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.discount import DiscountPercentage
+from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -535,14 +535,22 @@ class SubscriptionUpdateContext:
             )
 
         match self._billing_effect:
+            # Explicitly ending a trial converts it, even without a payment
+            # method: only the scheduled trial end expires it.
             case "cycle":
-                await self.service.cycle(self.session, self, self.subscription)
+                await self.service.cycle(
+                    self.session,
+                    self,
+                    self.subscription,
+                    expire_trial_without_payment_method=False,
+                )
             case "cycle_sync":
                 await self.service.cycle(
                     self.session,
                     self,
                     self.subscription,
                     payment_mode=PaymentMode.sync,
+                    expire_trial_without_payment_method=False,
                 )
             case "invoice":
                 await self.service._create_subscription_update_order(
@@ -1240,6 +1248,7 @@ class SubscriptionService:
         update_cycle_dates: bool = True,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
+        expire_trial_without_payment_method: bool = True,
     ) -> Subscription:
         if not subscription.billable:
             raise NotBillableSubscription(subscription)
@@ -1256,7 +1265,11 @@ class SubscriptionService:
             return await repository.release_scheduler_lock(subscription)
 
         cycle_at = subscription.current_period_end
-        revoke = subscription.cancel_at_period_end
+        trial_expired = (
+            expire_trial_without_payment_method
+            and self._is_trial_expiring_without_payment_method(subscription)
+        )
+        revoke = subscription.cancel_at_period_end or trial_expired
 
         # Subscription is due to pause: it enters the paused state at the end of
         # its current period instead of renewing. Benefits are revoked and no
@@ -1283,7 +1296,18 @@ class SubscriptionService:
 
         # Subscription is due to cancel, revoke it
         if revoke:
-            subscription.ended_at = utc_now()
+            ended_at = utc_now()
+            # A trial without a payment method can't convert: end it instead of
+            # billing a first order that could only go into dunning.
+            if trial_expired:
+                subscription.canceled_at = ended_at
+                subscription.ends_at = ended_at
+                subscription.customer_cancellation_reason = (
+                    CustomerCancellationReason.trial_expired
+                )
+                subscription.pause_at_period_end = False
+                subscription.resumes_at = None
+            subscription.ended_at = ended_at
             subscription.status = SubscriptionStatus.canceled
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
@@ -1386,6 +1410,11 @@ class SubscriptionService:
             session, subscription, reset_at=reset_at, include_meter_credits=not revoke
         )
 
+        # A trial that never converted has nothing to bill: usage isn't billed
+        # during the trial, and the customer has no payment method to charge.
+        if trial_expired:
+            return subscription
+
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
         elif previous_status == SubscriptionStatus.trialing:
@@ -1411,6 +1440,31 @@ class SubscriptionService:
             )
 
         return subscription
+
+    def _is_trial_expiring_without_payment_method(
+        self, subscription: Subscription
+    ) -> bool:
+        if not subscription.trialing or subscription.cancel_at_period_end:
+            return False
+        if (
+            subscription.payment_method_id is not None
+            or subscription.customer.default_payment_method_id is not None
+        ):
+            return False
+        # Mirror checkout, which doesn't ask for a payment method when the
+        # subscription costs nothing: free prices, pay-what-you-want at 0, or a
+        # forever 100% discount. Converting those creates a paid 0-amount order.
+        has_metered_prices = any(
+            is_metered_price(price) for price in subscription.prices
+        )
+        if subscription.amount == 0 and not has_metered_prices:
+            return False
+        discount = subscription.discount
+        return not (
+            isinstance(discount, DiscountPercentage)
+            and discount.duration == DiscountDuration.forever
+            and discount.basis_points == 10_000
+        )
 
     def _clear_expired_discount(
         self,

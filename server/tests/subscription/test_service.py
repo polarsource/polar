@@ -2221,12 +2221,14 @@ class TestCycle:
         product: Product,
         customer: Customer,
         organization: Organization,
+        payment_method: PaymentMethod,
     ) -> None:
         subscription = await create_trialing_subscription(
             save_fixture,
             product=product,
             customer=customer,
             scheduler_locked_at=utc_now(),
+            payment_method=payment_method,
         )
         previous_trial_start = subscription.trial_start
         previous_trial_end = subscription.trial_end
@@ -2371,6 +2373,172 @@ class TestCycle:
             "expected exactly one SubscriptionRevokedEmail from cycle()"
         )
 
+    async def test_trial_end_without_payment_method(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert (
+            updated_subscription.customer_cancellation_reason
+            == CustomerCancellationReason.trial_expired
+        )
+        assert updated_subscription.ended_at is not None
+        assert updated_subscription.canceled_at == updated_subscription.ended_at
+        assert updated_subscription.ends_at == updated_subscription.ended_at
+        assert updated_subscription.past_due_at is None
+        assert updated_subscription.current_period_end == previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="revoke",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+        assert all(
+            mock_call.args[0] != "order.create_subscription_order"
+            for mock_call in enqueue_job_mock.call_args_list
+        )
+        order_repository = OrderRepository.from_session(session)
+        assert await order_repository.get_all_by_subscription(subscription.id) == []
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_canceled,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_revoked,
+            organization,
+            updated_subscription,
+        )
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_cycled
+        )
+        enqueue_email_mock.assert_called_once()
+        assert isinstance(enqueue_email_mock.call_args[0][0], SubscriptionRevokedEmail)
+
+    async def test_trial_end_with_customer_default_payment_method(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+    ) -> None:
+        customer.default_payment_method = payment_method
+        await save_fixture(customer)
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_current_period_end = subscription.current_period_end
+        assert previous_current_period_end is not None
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.customer_cancellation_reason is None
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=previous_current_period_end.isoformat(),
+        )
+
+    async def test_trial_end_free_product_without_payment_method(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.ended_at is None
+
+    async def test_trial_end_forever_full_discount_without_payment_method(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked_at=utc_now(),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.active
+        assert updated_subscription.ended_at is None
+
     @freeze_time("2024-04-28 12:00:00")
     async def test_trial_end_rebases_anchor_to_trial_end_day(
         self,
@@ -2380,6 +2548,7 @@ class TestCycle:
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        payment_method: PaymentMethod,
     ) -> None:
         subscription = await create_trialing_subscription(
             save_fixture,
@@ -2388,6 +2557,7 @@ class TestCycle:
             trial_interval=TrialInterval.day,
             trial_interval_count=7,
             scheduler_locked_at=utc_now(),
+            payment_method=payment_method,
         )
         assert subscription.anchor_day == 28
         assert subscription.trial_start == datetime(2024, 4, 28, 12, 0, 0, tzinfo=UTC)
@@ -8100,6 +8270,32 @@ class TestUpdateTrial:
             webhook_service_send_mock, WebhookEventType.subscription_cycled
         )
 
+    async def test_trialing_subscription_ending_now_without_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        nested = await session.begin_nested()
+
+        with pytest.raises(PaymentFailed):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_trial(
+                    session, ctx, subscription, trial_end="now"
+                )
+
+        await nested.rollback()
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.customer_cancellation_reason is None
+
     async def test_trialing_subscription_ending_now(
         self,
         session: AsyncSession,
@@ -8372,9 +8568,13 @@ class TestUpdateTrial:
         product: Product,
         product_second: Product,
         customer: Customer,
+        payment_method: PaymentMethod,
     ) -> None:
         subscription = await create_trialing_subscription(
-            save_fixture, product=product, customer=customer
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
         )
         assert subscription.trial_end is not None
         original_trial_end = subscription.trial_end

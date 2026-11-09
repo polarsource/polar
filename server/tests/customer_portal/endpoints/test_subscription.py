@@ -451,6 +451,30 @@ class TestCustomerSubscriptionUpdateCancel:
         assert updated_subscription["customer_cancellation_reason"] == reason
         assert updated_subscription["customer_cancellation_comment"] == comment
 
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_trial_expired_reason_rejected(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json={
+                "cancel_at_period_end": True,
+                "cancellation_reason": "trial_expired",
+            },
+        )
+
+        assert response.status_code == 422
+
 
 @pytest.mark.anyio
 class TestSubscriptionUpdateUncancel:

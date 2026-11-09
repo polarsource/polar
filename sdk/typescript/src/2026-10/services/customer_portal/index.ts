@@ -1,4 +1,4 @@
-import type { PolarCore } from "../../../base";
+import type { ClientBase } from "../../../base";
 
 import { createBenefitGrantsService } from "./benefit_grants";
 import { createCustomerMetersService } from "./customer_meters";
@@ -13,7 +13,7 @@ import { createSeatsService } from "./seats";
 import { createSubscriptionsService } from "./subscriptions";
 import { createWalletsService } from "./wallets";
 
-export function createCustomerPortalService(client: PolarCore) {
+export function createCustomerPortalService(client: ClientBase) {
   return {
     benefitGrants: createBenefitGrantsService(client),
     customers: createCustomersService(client),

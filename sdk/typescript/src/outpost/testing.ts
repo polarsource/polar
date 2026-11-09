@@ -8,7 +8,7 @@ import { vi } from "vitest";
 
 import type { Reducer } from "./reducer";
 
-import { PolarCore } from "../base";
+import { ClientBase } from "../base";
 
 export interface RedisServer {
   socket: string;
@@ -46,7 +46,7 @@ export const startRedisServer = async (): Promise<RedisServer> => {
 };
 
 export interface PolarServer {
-  client: PolarCore;
+  client: ClientBase;
   stop(): Promise<void>;
 }
 
@@ -86,7 +86,7 @@ export const startPolarServer = async (
   const address = server.address();
   if (typeof address === "string" || !address) throw new Error("Missing server address");
   return {
-    client: new PolarCore({
+    client: new ClientBase({
       baseUrl: `http://127.0.0.1:${address.port}`,
       accessToken: "bench-token",
       version: "2026-10",

@@ -1,4 +1,4 @@
-import { PolarCore, ClientOptions, resolveBaseUrl } from "../base";
+import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
 import { createMetering, type MeteringOptions } from "../metering/client";
 {% for service in api.services %}
 import { create{{ service.name }}Service } from "./services/{{ service.name | snake }}";
@@ -20,7 +20,7 @@ export interface PolarOptions
 }
 
 export function createPolarCore(options: PolarOptions) {
-  return new PolarCore({
+  return new ClientBase({
     ...options,
     baseUrl: resolveBaseUrl(
       SERVERS,
@@ -31,7 +31,7 @@ export function createPolarCore(options: PolarOptions) {
   });
 }
 
-export type { PolarCore };
+export type PolarCore = ReturnType<typeof createPolarCore>;
 
 export function createPolar(options: PolarOptions) {
   const client = createPolarCore(options);

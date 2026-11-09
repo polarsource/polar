@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   Event,
   EventName,
@@ -15,7 +15,7 @@ import type {
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
-export const listEvents = (client: PolarCore) => {
+export const listEvents = (client: ClientBase) => {
   /**
    * List events.
    *
@@ -80,7 +80,7 @@ export const listEvents = (client: PolarCore) => {
     );
   };
 };
-export const listNamesEvents = (client: PolarCore) => {
+export const listNamesEvents = (client: ClientBase) => {
   /**
    * List event names.
    *
@@ -144,7 +144,7 @@ export const listNamesEvents = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListNamesEvents = (client: PolarCore) => {
+export const iterListNamesEvents = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -175,7 +175,7 @@ export const iterListNamesEvents = (client: PolarCore) => {
     }
   };
 };
-export const getEvents = (client: PolarCore) => {
+export const getEvents = (client: ClientBase) => {
   /**
    * Get an event by ID.
    *
@@ -209,7 +209,7 @@ export const getEvents = (client: PolarCore) => {
     });
   };
 };
-export const ingestEvents = (client: PolarCore) => {
+export const ingestEvents = (client: ClientBase) => {
   /**
    * Ingest batch of events.
    *
@@ -239,7 +239,7 @@ export const ingestEvents = (client: PolarCore) => {
   };
 };
 
-export function createEventsService(client: PolarCore) {
+export function createEventsService(client: ClientBase) {
   return {
     list: listEvents(client),
     listNames: listNamesEvents(client),

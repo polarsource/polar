@@ -1,9 +1,9 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type { ListResourcePayment, Payment, PaymentSortProperty, PaymentStatus } from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listPayments = (client: PolarCore) => {
+export const listPayments = (client: ClientBase) => {
   /**
    * List payments.
    *
@@ -65,7 +65,7 @@ export const listPayments = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListPayments = (client: PolarCore) => {
+export const iterListPayments = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -98,7 +98,7 @@ export const iterListPayments = (client: PolarCore) => {
     }
   };
 };
-export const getPayments = (client: PolarCore) => {
+export const getPayments = (client: ClientBase) => {
   /**
    * Get a payment by ID.
    *
@@ -133,7 +133,7 @@ export const getPayments = (client: PolarCore) => {
   };
 };
 
-export function createPaymentsService(client: PolarCore) {
+export function createPaymentsService(client: ClientBase) {
   return {
     list: listPayments(client),
     get: getPayments(client),

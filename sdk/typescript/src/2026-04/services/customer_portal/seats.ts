@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../../base";
+import type { ClientBase, RequestOptions } from "../../../base";
 import type {
   CustomerSeat,
   CustomerSeatAssign,
@@ -26,7 +26,7 @@ import {
   HTTPValidationError,
 } from "../../errors";
 
-export const listSeatsSeats = (client: PolarCore) => {
+export const listSeatsSeats = (client: ClientBase) => {
   /**
    * **Scopes**: `customer_portal:read` `customer_portal:write`
    *
@@ -69,7 +69,7 @@ export const listSeatsSeats = (client: PolarCore) => {
     });
   };
 };
-export const assignSeatSeats = (client: PolarCore) => {
+export const assignSeatSeats = (client: ClientBase) => {
   /**
    *
    * @param body - Request body
@@ -107,7 +107,7 @@ export const assignSeatSeats = (client: PolarCore) => {
     });
   };
 };
-export const revokeSeatSeats = (client: PolarCore) => {
+export const revokeSeatSeats = (client: ClientBase) => {
   /**
    *
    * @param seat_id
@@ -142,7 +142,7 @@ export const revokeSeatSeats = (client: PolarCore) => {
     });
   };
 };
-export const resendInvitationSeats = (client: PolarCore) => {
+export const resendInvitationSeats = (client: ClientBase) => {
   /**
    *
    * @param seat_id
@@ -179,7 +179,7 @@ export const resendInvitationSeats = (client: PolarCore) => {
     });
   };
 };
-export const listClaimedSubscriptionsSeats = (client: PolarCore) => {
+export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
   /**
    * List all subscriptions where the authenticated customer has claimed a seat.
    *
@@ -234,7 +234,7 @@ export const listClaimedSubscriptionsSeats = (client: PolarCore) => {
  * @throws {CustomerPortalSeatsListClaimedSubscriptions401Error} Authentication required
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListClaimedSubscriptionsSeats = (client: PolarCore) => {
+export const iterListClaimedSubscriptionsSeats = (client: ClientBase) => {
   return async function* (
     query?: {
       page?: number;
@@ -263,7 +263,7 @@ export const iterListClaimedSubscriptionsSeats = (client: PolarCore) => {
   };
 };
 
-export function createSeatsService(client: PolarCore) {
+export function createSeatsService(client: ClientBase) {
   return {
     listSeats: listSeatsSeats(client),
     assignSeat: assignSeatSeats(client),

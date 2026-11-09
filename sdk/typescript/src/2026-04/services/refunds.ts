@@ -1,9 +1,9 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type { ListResourceRefund, Refund, RefundCreate, RefundSortProperty } from "../models";
 
 import { HTTPValidationError, RefundedAlready } from "../errors";
 
-export const listRefunds = (client: PolarCore) => {
+export const listRefunds = (client: ClientBase) => {
   /**
    * List refunds.
    *
@@ -65,7 +65,7 @@ export const listRefunds = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListRefunds = (client: PolarCore) => {
+export const iterListRefunds = (client: ClientBase) => {
   return async function* (
     query?: {
       id?: string | string[] | null;
@@ -98,7 +98,7 @@ export const iterListRefunds = (client: PolarCore) => {
     }
   };
 };
-export const createRefunds = (client: PolarCore) => {
+export const createRefunds = (client: ClientBase) => {
   /**
    * Create a refund.
    *
@@ -125,7 +125,7 @@ export const createRefunds = (client: PolarCore) => {
   };
 };
 
-export function createRefundsService(client: PolarCore) {
+export function createRefundsService(client: ClientBase) {
   return {
     list: listRefunds(client),
     create: createRefunds(client),

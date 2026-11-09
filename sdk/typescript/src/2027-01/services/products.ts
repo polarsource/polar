@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   ListResourceProduct,
   MetadataQuery,
@@ -17,7 +17,7 @@ import {
   ResourceNotFound,
 } from "../errors";
 
-export const listProducts = (client: PolarCore) => {
+export const listProducts = (client: ClientBase) => {
   /**
    * List products.
    *
@@ -83,7 +83,7 @@ export const listProducts = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListProducts = (client: PolarCore) => {
+export const iterListProducts = (client: ClientBase) => {
   return async function* (
     query?: {
       id?: string | string[] | null;
@@ -118,7 +118,7 @@ export const iterListProducts = (client: PolarCore) => {
     }
   };
 };
-export const createProducts = (client: PolarCore) => {
+export const createProducts = (client: ClientBase) => {
   /**
    * Create a product.
    *
@@ -142,7 +142,7 @@ export const createProducts = (client: PolarCore) => {
     });
   };
 };
-export const getProducts = (client: PolarCore) => {
+export const getProducts = (client: ClientBase) => {
   /**
    * Get a product by ID.
    *
@@ -176,7 +176,7 @@ export const getProducts = (client: PolarCore) => {
     });
   };
 };
-export const deleteProducts = (client: PolarCore) => {
+export const deleteProducts = (client: ClientBase) => {
   /**
    * Delete a product.
    *
@@ -217,7 +217,7 @@ export const deleteProducts = (client: PolarCore) => {
     });
   };
 };
-export const updateProducts = (client: PolarCore) => {
+export const updateProducts = (client: ClientBase) => {
   /**
    * Update a product.
    *
@@ -258,7 +258,7 @@ export const updateProducts = (client: PolarCore) => {
     });
   };
 };
-export const updateBenefitsProducts = (client: PolarCore) => {
+export const updateBenefitsProducts = (client: ClientBase) => {
   /**
    * Update benefits granted by a product.
    *
@@ -300,7 +300,7 @@ export const updateBenefitsProducts = (client: PolarCore) => {
   };
 };
 
-export function createProductsService(client: PolarCore) {
+export function createProductsService(client: ClientBase) {
   return {
     list: listProducts(client),
     create: createProducts(client),

@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../../base";
+import type { ClientBase, RequestOptions } from "../../../base";
 import type {
   CustomerWallet,
   CustomerWalletSortProperty,
@@ -7,7 +7,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 
-export const listWallets = (client: PolarCore) => {
+export const listWallets = (client: ClientBase) => {
   /**
    * List wallets of the authenticated customer.
    *
@@ -57,7 +57,7 @@ export const listWallets = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListWallets = (client: PolarCore) => {
+export const iterListWallets = (client: ClientBase) => {
   return async function* (
     query?: {
       page?: number;
@@ -83,7 +83,7 @@ export const iterListWallets = (client: PolarCore) => {
     }
   };
 };
-export const getWallets = (client: PolarCore) => {
+export const getWallets = (client: ClientBase) => {
   /**
    * Get a wallet by ID for the authenticated customer.
    *
@@ -116,7 +116,7 @@ export const getWallets = (client: PolarCore) => {
   };
 };
 
-export function createWalletsService(client: PolarCore) {
+export function createWalletsService(client: ClientBase) {
   return {
     list: listWallets(client),
     get: getWallets(client),

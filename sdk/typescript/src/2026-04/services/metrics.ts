@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   MetricDashboardCreate,
   MetricDashboardSchema,
@@ -12,7 +12,7 @@ import type {
 
 import { HTTPValidationError } from "../errors";
 
-export const getMetrics = (client: PolarCore) => {
+export const getMetrics = (client: ClientBase) => {
   /**
    * Get metrics about your orders and subscriptions.
    *
@@ -61,7 +61,7 @@ export const getMetrics = (client: PolarCore) => {
     });
   };
 };
-export const exportMetrics = (client: PolarCore) => {
+export const exportMetrics = (client: ClientBase) => {
   /**
    * Export metrics as a CSV file.
    *
@@ -114,7 +114,7 @@ export const exportMetrics = (client: PolarCore) => {
     });
   };
 };
-export const limitsMetrics = (client: PolarCore) => {
+export const limitsMetrics = (client: ClientBase) => {
   /**
    * Get the interval limits for the metrics endpoint.
    *
@@ -140,7 +140,7 @@ export const limitsMetrics = (client: PolarCore) => {
     return client.parseResponse<MetricsLimits>(response, "json", {});
   };
 };
-export const listDashboardsMetrics = (client: PolarCore) => {
+export const listDashboardsMetrics = (client: ClientBase) => {
   /**
    * List user-defined metric dashboards.
    *
@@ -177,7 +177,7 @@ export const listDashboardsMetrics = (client: PolarCore) => {
     });
   };
 };
-export const createDashboardMetrics = (client: PolarCore) => {
+export const createDashboardMetrics = (client: ClientBase) => {
   /**
    * Create a user-defined metric dashboard.
    *
@@ -210,7 +210,7 @@ export const createDashboardMetrics = (client: PolarCore) => {
     });
   };
 };
-export const getDashboardMetrics = (client: PolarCore) => {
+export const getDashboardMetrics = (client: ClientBase) => {
   /**
    * Get a user-defined metric dashboard by ID.
    *
@@ -242,7 +242,7 @@ export const getDashboardMetrics = (client: PolarCore) => {
     });
   };
 };
-export const deleteDashboardMetrics = (client: PolarCore) => {
+export const deleteDashboardMetrics = (client: ClientBase) => {
   /**
    * Delete a user-defined metric dashboard.
    *
@@ -274,7 +274,7 @@ export const deleteDashboardMetrics = (client: PolarCore) => {
     });
   };
 };
-export const updateDashboardMetrics = (client: PolarCore) => {
+export const updateDashboardMetrics = (client: ClientBase) => {
   /**
    * Update a user-defined metric dashboard.
    *
@@ -312,7 +312,7 @@ export const updateDashboardMetrics = (client: PolarCore) => {
   };
 };
 
-export function createMetricsService(client: PolarCore) {
+export function createMetricsService(client: ClientBase) {
   return {
     get: getMetrics(client),
     export: exportMetrics(client),

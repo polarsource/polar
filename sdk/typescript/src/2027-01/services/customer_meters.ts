@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   CustomerMeter,
   CustomerMeterCreditsExternalIDCreate,
@@ -16,7 +16,7 @@ import {
   ResourceNotFound,
 } from "../errors";
 
-export const listCustomerMeters = (client: PolarCore) => {
+export const listCustomerMeters = (client: ClientBase) => {
   /**
    * List customer meters.
    *
@@ -80,7 +80,7 @@ export const listCustomerMeters = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListCustomerMeters = (client: PolarCore) => {
+export const iterListCustomerMeters = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -111,7 +111,7 @@ export const iterListCustomerMeters = (client: PolarCore) => {
     }
   };
 };
-export const getCustomerMeters = (client: PolarCore) => {
+export const getCustomerMeters = (client: ClientBase) => {
   /**
    * Get a customer meter by ID.
    *
@@ -145,7 +145,7 @@ export const getCustomerMeters = (client: PolarCore) => {
     });
   };
 };
-export const creditsCustomerMeters = (client: PolarCore) => {
+export const creditsCustomerMeters = (client: ClientBase) => {
   /**
    * Manually grant credits on a customer meter.
    *
@@ -186,7 +186,7 @@ export const creditsCustomerMeters = (client: PolarCore) => {
     });
   };
 };
-export const reverseCreditCustomerMeters = (client: PolarCore) => {
+export const reverseCreditCustomerMeters = (client: ClientBase) => {
   /**
    * Reverse a manual credit, removing the units the customer hasn't used yet.
    *
@@ -229,7 +229,7 @@ export const reverseCreditCustomerMeters = (client: PolarCore) => {
   };
 };
 
-export function createCustomerMetersService(client: PolarCore) {
+export function createCustomerMetersService(client: ClientBase) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),

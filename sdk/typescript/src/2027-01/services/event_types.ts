@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   EventSource,
   EventType,
@@ -10,7 +10,7 @@ import type {
 
 import { EventTypesUpdate404Error, HTTPValidationError } from "../errors";
 
-export const listEventTypes = (client: PolarCore) => {
+export const listEventTypes = (client: ClientBase) => {
   /**
    * List event types with aggregated statistics.
    *
@@ -78,7 +78,7 @@ export const listEventTypes = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListEventTypes = (client: PolarCore) => {
+export const iterListEventTypes = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -111,7 +111,7 @@ export const iterListEventTypes = (client: PolarCore) => {
     }
   };
 };
-export const updateEventTypes = (client: PolarCore) => {
+export const updateEventTypes = (client: ClientBase) => {
   /**
    * Update an event type's label.
    *
@@ -151,7 +151,7 @@ export const updateEventTypes = (client: PolarCore) => {
   };
 };
 
-export function createEventTypesService(client: PolarCore) {
+export function createEventTypesService(client: ClientBase) {
   return {
     list: listEventTypes(client),
     update: updateEventTypes(client),

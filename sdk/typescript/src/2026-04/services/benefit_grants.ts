@@ -1,9 +1,9 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type { BenefitGrant, BenefitGrantSortProperty, ListResourceBenefitGrant } from "../models";
 
 import { HTTPValidationError } from "../errors";
 
-export const listBenefitGrants = (client: PolarCore) => {
+export const listBenefitGrants = (client: ClientBase) => {
   /**
    * List benefit grants across all benefits accessible to the authenticated subject.
    *
@@ -65,7 +65,7 @@ export const listBenefitGrants = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListBenefitGrants = (client: PolarCore) => {
+export const iterListBenefitGrants = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -96,7 +96,7 @@ export const iterListBenefitGrants = (client: PolarCore) => {
   };
 };
 
-export function createBenefitGrantsService(client: PolarCore) {
+export function createBenefitGrantsService(client: ClientBase) {
   return {
     list: listBenefitGrants(client),
     iterList: iterListBenefitGrants(client),

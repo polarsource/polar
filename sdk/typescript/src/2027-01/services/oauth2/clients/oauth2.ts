@@ -1,9 +1,9 @@
-import type { PolarCore, RequestOptions } from "../../../../base";
+import type { ClientBase, RequestOptions } from "../../../../base";
 import type { OAuth2ClientConfiguration, OAuth2ClientConfigurationUpdate } from "../../../models";
 
 import { HTTPValidationError } from "../../../errors";
 
-export const createClientOauth2 = (client: PolarCore) => {
+export const createClientOauth2 = (client: ClientBase) => {
   /**
    * Create an OAuth2 client.
    *
@@ -34,7 +34,7 @@ export const createClientOauth2 = (client: PolarCore) => {
     });
   };
 };
-export const getClientOauth2 = (client: PolarCore) => {
+export const getClientOauth2 = (client: ClientBase) => {
   /**
    * Get an OAuth2 client by Client ID.
    *
@@ -64,7 +64,7 @@ export const getClientOauth2 = (client: PolarCore) => {
     });
   };
 };
-export const updateClientOauth2 = (client: PolarCore) => {
+export const updateClientOauth2 = (client: ClientBase) => {
   /**
    * Update an OAuth2 client.
    *
@@ -99,7 +99,7 @@ export const updateClientOauth2 = (client: PolarCore) => {
     });
   };
 };
-export const deleteClientOauth2 = (client: PolarCore) => {
+export const deleteClientOauth2 = (client: ClientBase) => {
   /**
    * Delete an OAuth2 client.
    *
@@ -130,7 +130,7 @@ export const deleteClientOauth2 = (client: PolarCore) => {
   };
 };
 
-export function createOauth2Service(client: PolarCore) {
+export function createOauth2Service(client: ClientBase) {
   return {
     createClient: createClientOauth2(client),
     getClient: getClientOauth2(client),

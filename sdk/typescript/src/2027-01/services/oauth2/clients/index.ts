@@ -1,8 +1,8 @@
-import type { PolarCore } from "../../../../base";
+import type { ClientBase } from "../../../../base";
 
 import { createOauth2Service } from "./oauth2";
 
-export function createClientsService(client: PolarCore) {
+export function createClientsService(client: ClientBase) {
   return {
     oauth2: createOauth2Service(client),
   };

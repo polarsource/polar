@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../../base";
+import type { ClientBase, RequestOptions } from "../../../base";
 import type {
   BenefitType,
   CustomerBenefitGrant,
@@ -9,7 +9,7 @@ import type {
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../../errors";
 
-export const listBenefitGrants = (client: PolarCore) => {
+export const listBenefitGrants = (client: ClientBase) => {
   /**
    * List benefits grants of the authenticated customer.
    *
@@ -77,7 +77,7 @@ export const listBenefitGrants = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListBenefitGrants = (client: PolarCore) => {
+export const iterListBenefitGrants = (client: ClientBase) => {
   return async function* (
     query?: {
       query?: string | null;
@@ -110,7 +110,7 @@ export const iterListBenefitGrants = (client: PolarCore) => {
     }
   };
 };
-export const getBenefitGrants = (client: PolarCore) => {
+export const getBenefitGrants = (client: ClientBase) => {
   /**
    * Get a benefit grant by ID for the authenticated customer.
    *
@@ -144,7 +144,7 @@ export const getBenefitGrants = (client: PolarCore) => {
     });
   };
 };
-export const updateBenefitGrants = (client: PolarCore) => {
+export const updateBenefitGrants = (client: ClientBase) => {
   /**
    * Update a benefit grant for the authenticated customer.
    *
@@ -186,7 +186,7 @@ export const updateBenefitGrants = (client: PolarCore) => {
   };
 };
 
-export function createBenefitGrantsService(client: PolarCore) {
+export function createBenefitGrantsService(client: ClientBase) {
   return {
     list: listBenefitGrants(client),
     get: getBenefitGrants(client),

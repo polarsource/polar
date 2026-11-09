@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   CustomerCancellationReason,
   ListResourceSubscription,
@@ -22,7 +22,7 @@ import {
   SubscriptionsUpdate409Error,
 } from "../errors";
 
-export const listSubscriptions = (client: PolarCore) => {
+export const listSubscriptions = (client: ClientBase) => {
   /**
    * List subscriptions.
    *
@@ -107,7 +107,7 @@ export const listSubscriptions = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListSubscriptions = (client: PolarCore) => {
+export const iterListSubscriptions = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -150,7 +150,7 @@ export const iterListSubscriptions = (client: PolarCore) => {
     }
   };
 };
-export const createSubscriptions = (client: PolarCore) => {
+export const createSubscriptions = (client: ClientBase) => {
   /**
    * Create a subscription programmatically.
    *
@@ -188,7 +188,7 @@ export const createSubscriptions = (client: PolarCore) => {
     });
   };
 };
-export const exportSubscriptions = (client: PolarCore) => {
+export const exportSubscriptions = (client: ClientBase) => {
   /**
    * Export subscriptions as a CSV file.
    *
@@ -239,7 +239,7 @@ export const exportSubscriptions = (client: PolarCore) => {
     });
   };
 };
-export const getSubscriptions = (client: PolarCore) => {
+export const getSubscriptions = (client: ClientBase) => {
   /**
    * Get a subscription by ID.
    *
@@ -273,7 +273,7 @@ export const getSubscriptions = (client: PolarCore) => {
     });
   };
 };
-export const revokeSubscriptions = (client: PolarCore) => {
+export const revokeSubscriptions = (client: ClientBase) => {
   /**
    * Revoke a subscription, i.e cancel immediately.
    *
@@ -311,7 +311,7 @@ export const revokeSubscriptions = (client: PolarCore) => {
     });
   };
 };
-export const updateSubscriptions = (client: PolarCore) => {
+export const updateSubscriptions = (client: ClientBase) => {
   /**
    * Update a subscription.
    *
@@ -357,7 +357,7 @@ export const updateSubscriptions = (client: PolarCore) => {
   };
 };
 
-export function createSubscriptionsService(client: PolarCore) {
+export function createSubscriptionsService(client: ClientBase) {
   return {
     list: listSubscriptions(client),
     create: createSubscriptions(client),

@@ -1,4 +1,4 @@
-import type { PolarCore{% if service.methods %}, RequestOptions{% endif %} } from "{{ base_import }}";
+import type { ClientBase{% if service.methods %}, RequestOptions{% endif %} } from "{{ base_import }}";
 {% if imports.models %}
 import type { {% for name in imports.models %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %} } from "{{ models_import }}";
 {% endif %}
@@ -11,7 +11,7 @@ import { create{{ sub_service.name }}Service } from "./{{ sub_service.name | sna
 
 {% for method in service.methods %}
 export const {{ method.name | exported_operation_name(service.name) }} = (
-  client: PolarCore,
+  client: ClientBase,
 ) => {
 /**
 {% if method.description %}
@@ -107,7 +107,7 @@ export const {{ method.name | exported_operation_name(service.name) }} = (
 {% endfor %}
 */
 export const {{ method.name | exported_paginator_name(service.name) }} = (
-  client: PolarCore,
+  client: ClientBase,
 ) => {
   return async function* (
     {% for param in method.path_params %}
@@ -171,7 +171,7 @@ export const {{ method.name | exported_paginator_name(service.name) }} = (
 {% endif %}
 {% endfor %}
 
-export function create{{ service.name }}Service(client: PolarCore) {
+export function create{{ service.name }}Service(client: ClientBase) {
   return {
     {% for method in service.methods %}
     {{ method.name | operation_name }}: {{ method.name | exported_operation_name(service.name) }}(client),{% endfor %}

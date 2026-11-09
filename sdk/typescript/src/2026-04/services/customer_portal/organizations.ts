@@ -1,9 +1,9 @@
-import type { PolarCore, RequestOptions } from "../../../base";
+import type { ClientBase, RequestOptions } from "../../../base";
 import type { CustomerOrganizationData } from "../../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 
-export const getOrganizations = (client: PolarCore) => {
+export const getOrganizations = (client: ClientBase) => {
   /**
    * Get a customer portal's organization by slug.
    *
@@ -39,7 +39,7 @@ export const getOrganizations = (client: PolarCore) => {
   };
 };
 
-export function createOrganizationsService(client: PolarCore) {
+export function createOrganizationsService(client: ClientBase) {
   return {
     get: getOrganizations(client),
   };

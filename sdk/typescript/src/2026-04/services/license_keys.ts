@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   LicenseKeyActivate,
   LicenseKeyActivationCreated,
@@ -23,7 +23,7 @@ import {
   Unauthorized,
 } from "../errors";
 
-export const listLicenseKeys = (client: PolarCore) => {
+export const listLicenseKeys = (client: ClientBase) => {
   /**
    * Get license keys connected to the given organization & filters.
    *
@@ -87,7 +87,7 @@ export const listLicenseKeys = (client: PolarCore) => {
  * @throws {ResourceNotFound} License key not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListLicenseKeys = (client: PolarCore) => {
+export const iterListLicenseKeys = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -115,7 +115,7 @@ export const iterListLicenseKeys = (client: PolarCore) => {
     }
   };
 };
-export const getLicenseKeys = (client: PolarCore) => {
+export const getLicenseKeys = (client: ClientBase) => {
   /**
    * Get a license key.
    *
@@ -154,7 +154,7 @@ export const getLicenseKeys = (client: PolarCore) => {
     });
   };
 };
-export const updateLicenseKeys = (client: PolarCore) => {
+export const updateLicenseKeys = (client: ClientBase) => {
   /**
    * Update a license key.
    *
@@ -195,7 +195,7 @@ export const updateLicenseKeys = (client: PolarCore) => {
     });
   };
 };
-export const rotateLicenseKeys = (client: PolarCore) => {
+export const rotateLicenseKeys = (client: ClientBase) => {
   /**
    * Rotate a license key.
    *
@@ -237,7 +237,7 @@ export const rotateLicenseKeys = (client: PolarCore) => {
     });
   };
 };
-export const getActivationLicenseKeys = (client: PolarCore) => {
+export const getActivationLicenseKeys = (client: ClientBase) => {
   /**
    * Get a license key activation.
    *
@@ -279,7 +279,7 @@ export const getActivationLicenseKeys = (client: PolarCore) => {
     });
   };
 };
-export const validateLicenseKeys = (client: PolarCore) => {
+export const validateLicenseKeys = (client: ClientBase) => {
   /**
    * Validate a license key.
    *
@@ -316,7 +316,7 @@ export const validateLicenseKeys = (client: PolarCore) => {
     });
   };
 };
-export const activateLicenseKeys = (client: PolarCore) => {
+export const activateLicenseKeys = (client: ClientBase) => {
   /**
    * Activate a license key instance.
    *
@@ -353,7 +353,7 @@ export const activateLicenseKeys = (client: PolarCore) => {
     });
   };
 };
-export const deactivateLicenseKeys = (client: PolarCore) => {
+export const deactivateLicenseKeys = (client: ClientBase) => {
   /**
    * Deactivate a license key instance.
    *
@@ -386,7 +386,7 @@ export const deactivateLicenseKeys = (client: PolarCore) => {
   };
 };
 
-export function createLicenseKeysService(client: PolarCore) {
+export function createLicenseKeysService(client: ClientBase) {
   return {
     list: listLicenseKeys(client),
     get: getLicenseKeys(client),

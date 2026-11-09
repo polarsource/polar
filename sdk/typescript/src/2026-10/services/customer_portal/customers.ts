@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../../base";
+import type { ClientBase, RequestOptions } from "../../../base";
 import type {
   CustomerEmailUpdateRequest,
   CustomerEmailUpdateVerifyRequest,
@@ -23,7 +23,7 @@ import {
   ResourceNotFound,
 } from "../../errors";
 
-export const getCustomers = (client: PolarCore) => {
+export const getCustomers = (client: ClientBase) => {
   /**
    * Get authenticated customer.
    *
@@ -49,7 +49,7 @@ export const getCustomers = (client: PolarCore) => {
     return client.parseResponse<CustomerPortalCustomer>(response, "json", {});
   };
 };
-export const updateCustomers = (client: PolarCore) => {
+export const updateCustomers = (client: ClientBase) => {
   /**
    * Update authenticated customer.
    *
@@ -80,7 +80,7 @@ export const updateCustomers = (client: PolarCore) => {
     });
   };
 };
-export const listPaymentMethodsCustomers = (client: PolarCore) => {
+export const listPaymentMethodsCustomers = (client: ClientBase) => {
   /**
    * Get saved payment methods of the authenticated customer.
    *
@@ -128,7 +128,7 @@ export const listPaymentMethodsCustomers = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListPaymentMethodsCustomers = (client: PolarCore) => {
+export const iterListPaymentMethodsCustomers = (client: ClientBase) => {
   return async function* (
     query?: {
       page?: number;
@@ -156,7 +156,7 @@ export const iterListPaymentMethodsCustomers = (client: PolarCore) => {
     }
   };
 };
-export const addPaymentMethodCustomers = (client: PolarCore) => {
+export const addPaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Add a payment method to the authenticated customer.
    *
@@ -189,7 +189,7 @@ export const addPaymentMethodCustomers = (client: PolarCore) => {
     });
   };
 };
-export const confirmPaymentMethodCustomers = (client: PolarCore) => {
+export const confirmPaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Confirm a payment method for the authenticated customer.
    *
@@ -222,7 +222,7 @@ export const confirmPaymentMethodCustomers = (client: PolarCore) => {
     });
   };
 };
-export const deletePaymentMethodCustomers = (client: PolarCore) => {
+export const deletePaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Delete a payment method from the authenticated customer.
    *
@@ -256,7 +256,7 @@ export const deletePaymentMethodCustomers = (client: PolarCore) => {
     });
   };
 };
-export const requestEmailUpdateCustomers = (client: PolarCore) => {
+export const requestEmailUpdateCustomers = (client: ClientBase) => {
   /**
    * Request an email change for the authenticated customer.
    *
@@ -287,7 +287,7 @@ export const requestEmailUpdateCustomers = (client: PolarCore) => {
     });
   };
 };
-export const checkEmailUpdateCustomers = (client: PolarCore) => {
+export const checkEmailUpdateCustomers = (client: ClientBase) => {
   /**
    * Check if an email change verification token is still valid.
    *
@@ -324,7 +324,7 @@ export const checkEmailUpdateCustomers = (client: PolarCore) => {
     });
   };
 };
-export const verifyEmailUpdateCustomers = (client: PolarCore) => {
+export const verifyEmailUpdateCustomers = (client: ClientBase) => {
   /**
    * Verify an email change using the token from the verification email.
    *
@@ -358,7 +358,7 @@ export const verifyEmailUpdateCustomers = (client: PolarCore) => {
   };
 };
 
-export function createCustomersService(client: PolarCore) {
+export function createCustomersService(client: ClientBase) {
   return {
     get: getCustomers(client),
     update: updateCustomers(client),

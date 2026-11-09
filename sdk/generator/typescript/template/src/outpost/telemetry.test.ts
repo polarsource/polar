@@ -6,7 +6,7 @@ import { once } from "node:events";
 import { createServer, type IncomingHttpHeaders } from "node:http";
 import { afterEach, expect, it, vi } from "vitest";
 
-import { PolarCore } from "../base";
+import { ClientBase } from "../base";
 import { VERSION } from "../version";
 import { RelayMetricExporter, createMeterProvider, createTracerProvider } from "./telemetry";
 
@@ -29,7 +29,7 @@ it("relays spans without reading OTEL_EXPORTER_OTLP_*", async () => {
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const { port } = server.address() as AddressInfo;
-  const client = new PolarCore({
+  const client = new ClientBase({
     baseUrl: `http://127.0.0.1:${port}`,
     accessToken: "test-token",
     version: "2026-10",
@@ -63,7 +63,7 @@ it("relays metrics to the metrics endpoint", async () => {
   server.listen(0, "127.0.0.1");
   await once(server, "listening");
   const { port } = server.address() as AddressInfo;
-  const client = new PolarCore({
+  const client = new ClientBase({
     baseUrl: `http://127.0.0.1:${port}`,
     accessToken: "test-token",
     version: "2026-10",

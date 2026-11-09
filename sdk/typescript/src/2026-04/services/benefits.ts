@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   Benefit,
   BenefitCreate,
@@ -22,7 +22,7 @@ import type {
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
-export const listBenefits = (client: PolarCore) => {
+export const listBenefits = (client: ClientBase) => {
   /**
    * List benefits.
    *
@@ -82,7 +82,7 @@ export const listBenefits = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListBenefits = (client: PolarCore) => {
+export const iterListBenefits = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -114,7 +114,7 @@ export const iterListBenefits = (client: PolarCore) => {
     }
   };
 };
-export const createBenefits = (client: PolarCore) => {
+export const createBenefits = (client: ClientBase) => {
   /**
    * Create a benefit, for example license keys, file downloads or Discord access.
    *
@@ -138,7 +138,7 @@ export const createBenefits = (client: PolarCore) => {
     });
   };
 };
-export const getBenefits = (client: PolarCore) => {
+export const getBenefits = (client: ClientBase) => {
   /**
    * Get a benefit by ID.
    *
@@ -172,7 +172,7 @@ export const getBenefits = (client: PolarCore) => {
     });
   };
 };
-export const deleteBenefits = (client: PolarCore) => {
+export const deleteBenefits = (client: ClientBase) => {
   /**
    * Delete a benefit.
    *
@@ -212,7 +212,7 @@ export const deleteBenefits = (client: PolarCore) => {
     });
   };
 };
-export const updateBenefits = (client: PolarCore) => {
+export const updateBenefits = (client: ClientBase) => {
   /**
    * Update a benefit.
    *
@@ -259,7 +259,7 @@ export const updateBenefits = (client: PolarCore) => {
     });
   };
 };
-export const filesBenefits = (client: PolarCore) => {
+export const filesBenefits = (client: ClientBase) => {
   /**
    * List the downloadable files for a benefit with their download statistics.
    *
@@ -319,7 +319,7 @@ export const filesBenefits = (client: PolarCore) => {
  * @throws {ResourceNotFound} Benefit not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterFilesBenefits = (client: PolarCore) => {
+export const iterFilesBenefits = (client: ClientBase) => {
   return async function* (
     id: string,
     query?: {
@@ -345,7 +345,7 @@ export const iterFilesBenefits = (client: PolarCore) => {
     }
   };
 };
-export const grantsBenefits = (client: PolarCore) => {
+export const grantsBenefits = (client: ClientBase) => {
   /**
    * List the individual grants for a benefit.
    *
@@ -415,7 +415,7 @@ export const grantsBenefits = (client: PolarCore) => {
  * @throws {ResourceNotFound} Benefit not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterGrantsBenefits = (client: PolarCore) => {
+export const iterGrantsBenefits = (client: ClientBase) => {
   return async function* (
     id: string,
     query?: {
@@ -445,7 +445,7 @@ export const iterGrantsBenefits = (client: PolarCore) => {
   };
 };
 
-export function createBenefitsService(client: PolarCore) {
+export function createBenefitsService(client: ClientBase) {
   return {
     list: listBenefits(client),
     create: createBenefits(client),

@@ -19,7 +19,7 @@ import { once } from "node:events";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
-import { PolarCore, PolarClientError, PolarError, PolarRateLimitError } from "../base";
+import { ClientBase, PolarClientError, PolarError, PolarRateLimitError } from "../base";
 import { UnknownMeterError } from "../metering/errors";
 import { customerKey, parseEvent } from "./event";
 import {
@@ -354,7 +354,7 @@ const customerArguments = (customer: string): Customer => {
 };
 
 export interface OutpostOptions {
-  client: Pick<PolarCore, "buildRequest" | "sendRequest" | "parseResponse">;
+  client: Pick<ClientBase, "buildRequest" | "sendRequest" | "parseResponse">;
   /** Send Outpost telemetry to Polar. Also disabled by `POLAR_OUTPOST_TELEMETRY=0`. */
   telemetry?: boolean;
   /** How long a read of a cold customer waits for its first snapshot, in milliseconds. */

@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   Discount,
   DiscountCreate,
@@ -9,7 +9,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listDiscounts = (client: PolarCore) => {
+export const listDiscounts = (client: ClientBase) => {
   /**
    * List discounts.
    *
@@ -67,7 +67,7 @@ export const listDiscounts = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListDiscounts = (client: PolarCore) => {
+export const iterListDiscounts = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -95,7 +95,7 @@ export const iterListDiscounts = (client: PolarCore) => {
     }
   };
 };
-export const createDiscounts = (client: PolarCore) => {
+export const createDiscounts = (client: ClientBase) => {
   /**
    * Create a discount.
    *
@@ -119,7 +119,7 @@ export const createDiscounts = (client: PolarCore) => {
     });
   };
 };
-export const getDiscounts = (client: PolarCore) => {
+export const getDiscounts = (client: ClientBase) => {
   /**
    * Get a discount by ID.
    *
@@ -153,7 +153,7 @@ export const getDiscounts = (client: PolarCore) => {
     });
   };
 };
-export const deleteDiscounts = (client: PolarCore) => {
+export const deleteDiscounts = (client: ClientBase) => {
   /**
    * Delete a discount.
    *
@@ -187,7 +187,7 @@ export const deleteDiscounts = (client: PolarCore) => {
     });
   };
 };
-export const updateDiscounts = (client: PolarCore) => {
+export const updateDiscounts = (client: ClientBase) => {
   /**
    * Update a discount.
    *
@@ -227,7 +227,7 @@ export const updateDiscounts = (client: PolarCore) => {
   };
 };
 
-export function createDiscountsService(client: PolarCore) {
+export function createDiscountsService(client: ClientBase) {
   return {
     list: listDiscounts(client),
     create: createDiscounts(client),

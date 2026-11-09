@@ -7,7 +7,7 @@ import type {
 } from "./event";
 import type { CustomerMeter, MeterInput } from "./meter";
 
-import { type PolarCore } from "../base";
+import { type ClientBase } from "../base";
 import {
   BufferedMeteringStrategy,
   type BufferedMeteringOptions,
@@ -134,7 +134,7 @@ export class Metering {
   private shutdownTimedOut = false;
   private activeOperations = 0;
   private onDrained?: () => void;
-  private readonly client: PolarCore;
+  private readonly client: ClientBase;
 
   /**
    * Create a helper with explicit strategies.
@@ -147,7 +147,7 @@ export class Metering {
     client,
   }: {
     strategies: readonly MeteringStrategy[];
-    client: PolarCore;
+    client: ClientBase;
   }) {
     this.strategies = strategies;
     this.client = client;
@@ -390,7 +390,7 @@ const validateActor = (input: {
  */
 export const createMetering = (
   polar: MeteringClient,
-  client: PolarCore,
+  client: ClientBase,
   options: MeteringOptions = {},
 ): Metering => {
   if (options.strategies !== undefined) {

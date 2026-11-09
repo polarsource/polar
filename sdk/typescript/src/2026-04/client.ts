@@ -1,4 +1,4 @@
-import { PolarCore, ClientOptions, resolveBaseUrl } from "../base";
+import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
 import { createMetering, type MeteringOptions } from "../metering/client";
 import { createBenefitGrantsService } from "./services/benefit_grants";
 import { createBenefitsService } from "./services/benefits";
@@ -40,14 +40,14 @@ export interface PolarOptions extends Omit<ClientOptions, "baseUrl" | "version">
 }
 
 export function createPolarCore(options: PolarOptions) {
-  return new PolarCore({
+  return new ClientBase({
     ...options,
     baseUrl: resolveBaseUrl(SERVERS, options.environment ?? "production", options.baseUrl),
     version: "2026-04",
   });
 }
 
-export type { PolarCore };
+export type PolarCore = ReturnType<typeof createPolarCore>;
 
 export function createPolar(options: PolarOptions) {
   const client = createPolarCore(options);

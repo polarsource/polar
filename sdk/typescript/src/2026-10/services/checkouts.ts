@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   Checkout,
   CheckoutConfirmStripe,
@@ -24,7 +24,7 @@ import {
   ResourceNotFound,
 } from "../errors";
 
-export const listCheckouts = (client: PolarCore) => {
+export const listCheckouts = (client: ClientBase) => {
   /**
    * List checkout sessions.
    *
@@ -90,7 +90,7 @@ export const listCheckouts = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListCheckouts = (client: PolarCore) => {
+export const iterListCheckouts = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -122,7 +122,7 @@ export const iterListCheckouts = (client: PolarCore) => {
     }
   };
 };
-export const createCheckouts = (client: PolarCore) => {
+export const createCheckouts = (client: ClientBase) => {
   /**
    * Create a checkout session.
    *
@@ -146,7 +146,7 @@ export const createCheckouts = (client: PolarCore) => {
     });
   };
 };
-export const getCheckouts = (client: PolarCore) => {
+export const getCheckouts = (client: ClientBase) => {
   /**
    * Get a checkout session by ID.
    *
@@ -180,7 +180,7 @@ export const getCheckouts = (client: PolarCore) => {
     });
   };
 };
-export const updateCheckouts = (client: PolarCore) => {
+export const updateCheckouts = (client: ClientBase) => {
   /**
    * Update a checkout session.
    *
@@ -221,7 +221,7 @@ export const updateCheckouts = (client: PolarCore) => {
     });
   };
 };
-export const clientGetCheckouts = (client: PolarCore) => {
+export const clientGetCheckouts = (client: ClientBase) => {
   /**
    * Get a checkout session by client secret.
    *
@@ -260,7 +260,7 @@ export const clientGetCheckouts = (client: PolarCore) => {
     });
   };
 };
-export const clientUpdateCheckouts = (client: PolarCore) => {
+export const clientUpdateCheckouts = (client: ClientBase) => {
   /**
    * Update a checkout session by client secret.
    *
@@ -303,7 +303,7 @@ export const clientUpdateCheckouts = (client: PolarCore) => {
     });
   };
 };
-export const clientConfirmCheckouts = (client: PolarCore) => {
+export const clientConfirmCheckouts = (client: ClientBase) => {
   /**
    * Confirm a checkout session by client secret.
    *
@@ -351,7 +351,7 @@ export const clientConfirmCheckouts = (client: PolarCore) => {
   };
 };
 
-export function createCheckoutsService(client: PolarCore) {
+export function createCheckoutsService(client: ClientBase) {
   return {
     list: listCheckouts(client),
     create: createCheckouts(client),

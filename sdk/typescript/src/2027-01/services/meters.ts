@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../base";
+import type { ClientBase, RequestOptions } from "../../base";
 import type {
   AggregationFunction,
   ListResourceMeter,
@@ -14,7 +14,7 @@ import type {
 
 import { AmbiguousExternalMeterID, HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listMeters = (client: PolarCore) => {
+export const listMeters = (client: ClientBase) => {
   /**
    * List meters.
    *
@@ -72,7 +72,7 @@ export const listMeters = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListMeters = (client: PolarCore) => {
+export const iterListMeters = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -103,7 +103,7 @@ export const iterListMeters = (client: PolarCore) => {
     }
   };
 };
-export const createMeters = (client: PolarCore) => {
+export const createMeters = (client: ClientBase) => {
   /**
    * Create a meter.
    *
@@ -127,7 +127,7 @@ export const createMeters = (client: PolarCore) => {
     });
   };
 };
-export const getExternalMeters = (client: PolarCore) => {
+export const getExternalMeters = (client: ClientBase) => {
   /**
    * Get a meter by external ID.
    *
@@ -163,7 +163,7 @@ export const getExternalMeters = (client: PolarCore) => {
     });
   };
 };
-export const getMeters = (client: PolarCore) => {
+export const getMeters = (client: ClientBase) => {
   /**
    * Get a meter by ID.
    *
@@ -197,7 +197,7 @@ export const getMeters = (client: PolarCore) => {
     });
   };
 };
-export const updateMeters = (client: PolarCore) => {
+export const updateMeters = (client: ClientBase) => {
   /**
    * Update a meter.
    *
@@ -226,7 +226,7 @@ export const updateMeters = (client: PolarCore) => {
     });
   };
 };
-export const quantitiesMeters = (client: PolarCore) => {
+export const quantitiesMeters = (client: ClientBase) => {
   /**
    * Get quantities of a meter over a time period.
    *
@@ -284,7 +284,7 @@ export const quantitiesMeters = (client: PolarCore) => {
   };
 };
 
-export function createMetersService(client: PolarCore) {
+export function createMetersService(client: ClientBase) {
   return {
     list: listMeters(client),
     create: createMeters(client),

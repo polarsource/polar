@@ -1,4 +1,4 @@
-import type { PolarCore, RequestOptions } from "../../../base";
+import type { ClientBase, RequestOptions } from "../../../base";
 import type {
   Customer,
   CustomerCreate,
@@ -15,7 +15,7 @@ import type {
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 import { createMembersService } from "./members";
 
-export const listCustomers = (client: PolarCore) => {
+export const listCustomers = (client: ClientBase) => {
   /**
    * List customers.
    *
@@ -79,7 +79,7 @@ export const listCustomers = (client: PolarCore) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListCustomers = (client: PolarCore) => {
+export const iterListCustomers = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -110,7 +110,7 @@ export const iterListCustomers = (client: PolarCore) => {
     }
   };
 };
-export const createCustomers = (client: PolarCore) => {
+export const createCustomers = (client: ClientBase) => {
   /**
    * Create a customer.
    *
@@ -136,7 +136,7 @@ export const createCustomers = (client: PolarCore) => {
     });
   };
 };
-export const exportCustomers = (client: PolarCore) => {
+export const exportCustomers = (client: ClientBase) => {
   /**
    * Export customers as a CSV file.
    *
@@ -173,7 +173,7 @@ export const exportCustomers = (client: PolarCore) => {
     });
   };
 };
-export const getCustomers = (client: PolarCore) => {
+export const getCustomers = (client: ClientBase) => {
   /**
    * Get a customer by ID.
    *
@@ -207,7 +207,7 @@ export const getCustomers = (client: PolarCore) => {
     });
   };
 };
-export const deleteCustomers = (client: PolarCore) => {
+export const deleteCustomers = (client: ClientBase) => {
   /**
    * Delete a customer.
    *
@@ -264,7 +264,7 @@ export const deleteCustomers = (client: PolarCore) => {
     });
   };
 };
-export const updateCustomers = (client: PolarCore) => {
+export const updateCustomers = (client: ClientBase) => {
   /**
    * Update a customer.
    *
@@ -303,7 +303,7 @@ export const updateCustomers = (client: PolarCore) => {
     });
   };
 };
-export const getExternalCustomers = (client: PolarCore) => {
+export const getExternalCustomers = (client: ClientBase) => {
   /**
    * Get a customer by external ID.
    *
@@ -337,7 +337,7 @@ export const getExternalCustomers = (client: PolarCore) => {
     });
   };
 };
-export const deleteExternalCustomers = (client: PolarCore) => {
+export const deleteExternalCustomers = (client: ClientBase) => {
   /**
    * Delete a customer by external ID.
    *
@@ -384,7 +384,7 @@ export const deleteExternalCustomers = (client: PolarCore) => {
     });
   };
 };
-export const updateExternalCustomers = (client: PolarCore) => {
+export const updateExternalCustomers = (client: ClientBase) => {
   /**
    * Update a customer by external ID.
    *
@@ -423,7 +423,7 @@ export const updateExternalCustomers = (client: PolarCore) => {
     });
   };
 };
-export const getStateCustomers = (client: PolarCore) => {
+export const getStateCustomers = (client: ClientBase) => {
   /**
    * Get a customer state by ID.
    *
@@ -463,7 +463,7 @@ export const getStateCustomers = (client: PolarCore) => {
     });
   };
 };
-export const getStateExternalCustomers = (client: PolarCore) => {
+export const getStateExternalCustomers = (client: ClientBase) => {
   /**
    * Get a customer state by external ID.
    *
@@ -503,7 +503,7 @@ export const getStateExternalCustomers = (client: PolarCore) => {
     });
   };
 };
-export const listPaymentMethodsCustomers = (client: PolarCore) => {
+export const listPaymentMethodsCustomers = (client: ClientBase) => {
   /**
    * Get saved payment methods of a customer.
    *
@@ -563,7 +563,7 @@ export const listPaymentMethodsCustomers = (client: PolarCore) => {
  * @throws {ResourceNotFound} Customer not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListPaymentMethodsCustomers = (client: PolarCore) => {
+export const iterListPaymentMethodsCustomers = (client: ClientBase) => {
   return async function* (
     id: string,
     query?: {
@@ -593,7 +593,7 @@ export const iterListPaymentMethodsCustomers = (client: PolarCore) => {
     }
   };
 };
-export const listPaymentMethodsExternalCustomers = (client: PolarCore) => {
+export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
   /**
    * Get saved payment methods of a customer by external ID.
    *
@@ -653,7 +653,7 @@ export const listPaymentMethodsExternalCustomers = (client: PolarCore) => {
  * @throws {ResourceNotFound} Customer not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListPaymentMethodsExternalCustomers = (client: PolarCore) => {
+export const iterListPaymentMethodsExternalCustomers = (client: ClientBase) => {
   return async function* (
     external_id: string,
     query?: {
@@ -684,7 +684,7 @@ export const iterListPaymentMethodsExternalCustomers = (client: PolarCore) => {
   };
 };
 
-export function createCustomersService(client: PolarCore) {
+export function createCustomersService(client: ClientBase) {
   return {
     list: listCustomers(client),
     create: createCustomers(client),

@@ -2,7 +2,7 @@ import { Redis } from "ioredis";
 import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
-import { BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encodeState } from "./benchmark";
+import { BUCKET_COUNTS, COLD_UNTIL, encodeState } from "./benchmark";
 import { BUCKET_SIZE } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT, READ_STATE_SCRIPT, WRITE_BUCKET_SCRIPT } from "./scripts";
 import { startRedisServer, type RedisServer } from "./testing";
@@ -21,9 +21,6 @@ let sequence = 0;
 const writeArgs = (identity: string, bucketStart: number) => [
   stateKey(identity),
   `outpost:v1:pending:${identity}:${bucketStart}`,
-  identity,
-  CHANNEL,
-  EPOCH,
   bucketStart,
   1,
   7,
@@ -94,7 +91,7 @@ describe("READ_STATE", () => {
     bench(
       `read a ${buckets}-bucket state`,
       async () => {
-        await redis.evalsha(readStateSha, 1, keyOf(buckets), EPOCH);
+        await redis.evalsha(readStateSha, 1, keyOf(buckets));
       },
       OPTIONS,
     );
@@ -112,9 +109,6 @@ describe("APPLY_SNAPSHOT", () => {
           applySnapshotSha,
           1,
           keyOf(buckets),
-          identityOf(buckets),
-          CHANNEL,
-          EPOCH,
           COLD_UNTIL,
           COLD_UNTIL + 1,
           1000,

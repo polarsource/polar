@@ -11,7 +11,7 @@ from polar.outpost.client import (
     WRITE_BUCKET_SCRIPT,
 )
 from polar.outpost.reducer import BUCKET_SIZE
-from tests.benchmarks import BUCKET_COUNTS, CHANNEL, COLD_UNTIL, EPOCH, encode_state
+from tests.benchmarks import BUCKET_COUNTS, COLD_UNTIL, encode_state
 
 pytestmark = pytest.mark.benchmark
 
@@ -42,9 +42,6 @@ def write_args(identity: str, bucket_start: int) -> list[str | int]:
     return [
         state_key(identity),
         pending_key,
-        identity,
-        CHANNEL,
-        EPOCH,
         bucket_start,
     ] + [
         1,
@@ -103,7 +100,7 @@ def test_write_bucket_three_reducers(benchmark: BenchmarkFixture, redis: Redis) 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)
 def test_read_state(benchmark: BenchmarkFixture, redis: Redis, buckets: int) -> None:
     sha = redis.script_load(READ_STATE_SCRIPT)
-    benchmark(redis.evalsha, sha, 1, key_of(buckets), EPOCH)
+    benchmark(redis.evalsha, sha, 1, key_of(buckets))
 
 
 @pytest.mark.parametrize("buckets", BUCKET_COUNTS)
@@ -118,9 +115,6 @@ def test_apply_snapshot(
         sha,
         1,
         key_of(buckets),
-        identity_of(buckets),
-        CHANNEL,
-        EPOCH,
         COLD_UNTIL,
         COLD_UNTIL + 1,
         1000,

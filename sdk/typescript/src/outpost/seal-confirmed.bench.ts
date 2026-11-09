@@ -4,9 +4,7 @@ import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import {
   BUCKET_COUNTS,
-  CHANNEL,
   COLD_UNTIL,
-  EPOCH,
   PENDING_COUNTS,
   encodePending,
   encodeState,
@@ -63,32 +61,8 @@ describe("CONFIRM then APPLY_SNAPSHOT", () => {
             .multi()
             .hset(stateKey, ...fields)
             .hset(pendingKey, ...entries)
-            .evalsha(
-              confirmSha,
-              2,
-              stateKey,
-              pendingKey,
-              identity,
-              CHANNEL,
-              EPOCH,
-              newestBucketStart,
-              "",
-              ...ids,
-            )
-            .evalsha(
-              applySnapshotSha,
-              1,
-              stateKey,
-              identity,
-              CHANNEL,
-              EPOCH,
-              cutoff,
-              cutoff + 1,
-              1000,
-              123456,
-              1,
-              999,
-            )
+            .evalsha(confirmSha, 2, stateKey, pendingKey, newestBucketStart, "", ...ids)
+            .evalsha(applySnapshotSha, 1, stateKey, cutoff, cutoff + 1, 1000, 123456, 1, 999)
             .exec();
           for (const [error] of results ?? []) if (error) throw error;
         },

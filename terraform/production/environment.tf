@@ -59,8 +59,8 @@ locals {
       CA = "720474766 RT9999"
       AU = "300038975137"
     })
-    tax_processors                                   = "[\"stripe\"]"
-    tax_record_processor                             = "stripe"
+    tax_processors                                   = "[\"numeral\",\"stripe\"]"
+    tax_record_processor                             = "numeral"
     customer_portal_url_overrides                    = var.customer_portal_url_overrides
     plain_default_tier_external_id                   = var.plain_default_tier_external_id
     merchant_migration_destination_stripe_account_id = var.merchant_migration_destination_stripe_account_id

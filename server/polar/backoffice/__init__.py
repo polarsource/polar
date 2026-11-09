@@ -9,7 +9,7 @@ from polar.observability.http_metrics import exclude_app_from_metrics
 from .auth.endpoints import router as auth_router
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
-from .dependencies import get_admin, get_legacy_admin
+from .dependencies import get_admin
 from .email_logs.endpoints import router as email_logs_router
 from .exception_handlers import backoffice_polar_exception_handler
 from .external_events.endpoints import router as external_events_router
@@ -70,11 +70,7 @@ protected_router.include_router(subscriptions_router, prefix="/subscriptions")
 protected_router.include_router(orders_router, prefix="/orders")
 protected_router.include_router(payouts_router, prefix="/payouts")
 protected_router.include_router(payout_accounts_router, prefix="/payout-accounts")
-app.include_router(
-    impersonation_router,
-    prefix="/impersonation",
-    dependencies=[Depends(get_legacy_admin)],
-)
+protected_router.include_router(impersonation_router, prefix="/impersonation")
 protected_router.include_router(webhooks_router, prefix="/webhooks")
 protected_router.include_router(feedbacks_router, prefix="/feedbacks")
 protected_router.include_router(support_cases_router, prefix="/support-cases")

@@ -6,6 +6,7 @@ from fastapi import (
     Form,
     HTTPException,
     Request,
+    Response,
     status,
 )
 from fastapi.responses import RedirectResponse
@@ -15,15 +16,13 @@ from polar.auth.scope import READ_ONLY_SCOPES
 from polar.auth.service import auth as auth_service
 from polar.backoffice.routing import BackofficeRouter
 from polar.config import settings
-from polar.kit.crypto import get_token_hash_candidates
+from polar.kit.http import is_localhost
 from polar.models import (
     User,
-    UserSession,
 )
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession, get_db_session
 
-from ..dependencies import get_legacy_admin
 from ..responses import HXRedirectResponse
 
 router = BackofficeRouter()
@@ -35,15 +34,11 @@ router = BackofficeRouter()
 )
 async def start_impersonation(
     request: Request,
-    admin_session: UserSession = Depends(get_legacy_admin),
     user_id: str = Form(),
     organization_id: str | None = Form(default=None),
     session: AsyncSession = Depends(get_db_session),
-) -> Any:  # RedirectResponse | HXRedirectResponse:
-    """Start impersonating a user. Only available to admin users."""
-
-    # Allow non-secure cookies over local http (backoffice dev).
-    secure_cookie = request.url.hostname not in ("127.0.0.1", "localhost")
+) -> Response:
+    """Start a read-only dashboard session scoped to the target organization."""
 
     # Get the target user
     result = await session.execute(select(User).where(User.id == user_id))
@@ -76,42 +71,31 @@ async def start_impersonation(
         organization_ids=frozenset({target_org.id}),
     )
 
-    admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
-    if (
-        admin_token
-        and admin_session.token not in get_token_hash_candidates(admin_token).values()
-    ):
-        admin_token = None
-    if not admin_token:
-        admin_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
-
-    response = HXRedirectResponse(
-        request, f"{settings.FRONTEND_BASE_URL}/dashboard/{target_org.slug}", 307
-    )
-
-    # Set admin session cookie
-    if admin_token:
-        response.set_cookie(
-            settings.IMPERSONATION_COOKIE_KEY,
-            value=admin_token,
-            expires=admin_session.expires_at,
-            path="/",
-            domain=settings.USER_SESSION_COOKIE_DOMAIN,
-            secure=secure_cookie,
-            httponly=True,
-            samesite="lax",
+    dashboard_session = await auth_service.authenticate(session, request)
+    original_cookie = settings.USER_SESSION_COOKIE_KEY
+    if dashboard_session is None:
+        original_cookie = settings.IMPERSONATION_COOKIE_KEY
+        dashboard_session = await auth_service.authenticate(
+            session, request, cookie=original_cookie
         )
 
-    # Set impersonated session cookie
-    response.set_cookie(
-        settings.USER_SESSION_COOKIE_KEY,
-        value=token,
-        expires=impersonation_session.expires_at,
-        path="/",
-        domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=secure_cookie,
-        httponly=True,
-        samesite="lax",
+    response = HXRedirectResponse(
+        request, f"{settings.FRONTEND_BASE_URL}/dashboard/{target_org.slug}", 303
+    )
+    if dashboard_session is not None:
+        response.set_cookie(
+            settings.IMPERSONATION_COOKIE_KEY,
+            value=request.cookies[original_cookie],
+            expires=dashboard_session.expires_at,
+            httponly=True,
+            secure=not is_localhost(request),
+            samesite="lax",
+        )
+    else:
+        response.delete_cookie(settings.IMPERSONATION_COOKIE_KEY)
+
+    auth_service._set_user_session_cookie(
+        request, response, token, impersonation_session.expires_at
     )
 
     # Set JS-readable impersonation indicator cookie
@@ -121,7 +105,7 @@ async def start_impersonation(
         expires=impersonation_session.expires_at,
         path="/",
         domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=secure_cookie,
+        secure=not is_localhost(request),
         httponly=False,  # JS-readable
         samesite="lax",
     )
@@ -134,73 +118,27 @@ async def end_impersonation(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> Any:
-    """End impersonation and restore the admin session."""
-
-    # Allow non-secure cookies over local http (backoffice dev).
-    secure_cookie = request.url.hostname not in ("127.0.0.1", "localhost")
-
-    # Get the admin session token
-    admin_token = request.cookies.get(settings.IMPERSONATION_COOKIE_KEY)
-    if not admin_token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="No admin session found"
-        )
-
-    # Get the current impersonated session to delete it
-    impersonated_org_id = None
-    current_token = request.cookies.get(settings.USER_SESSION_COOKIE_KEY)
-    if current_token:
-        current_session = await auth_service._get_user_session_by_token(
-            session, current_token
-        )
-        if current_session:
-            # Impersonation sessions are scoped to a single organization; use it
-            # to send the admin back to that organization in the backoffice.
-            if current_session.organization_scopes:
-                impersonated_org_id = current_session.organization_scopes[
-                    0
-                ].organization_id
-            await session.delete(current_session)
-
-    # Validate the admin session is still valid
-    admin_session = await auth_service._get_user_session_by_token(session, admin_token)
-    if not admin_session:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Admin session expired or invalid",
-        )
-
-    if impersonated_org_id:
-        response = RedirectResponse(
-            settings.generate_backoffice_url(f"/organizations/{impersonated_org_id}")
-        )
-    else:
-        response = RedirectResponse(settings.generate_backoffice_url("/"))
-
-    # Restore admin session
-    response.set_cookie(
-        settings.USER_SESSION_COOKIE_KEY,
-        value=admin_token,
-        expires=admin_session.expires_at,
-        path="/",
-        domain=settings.USER_SESSION_COOKIE_DOMAIN,
-        secure=secure_cookie,
-        httponly=True,
-        samesite="lax",
+    """End impersonation and restore the saved dashboard session."""
+    original_session = await auth_service.authenticate(
+        session, request, cookie=settings.IMPERSONATION_COOKIE_KEY
     )
+    response = RedirectResponse(settings.generate_backoffice_url("/"))
+    if original_session is not None:
+        auth_service._set_user_session_cookie(
+            request,
+            response,
+            request.cookies[settings.IMPERSONATION_COOKIE_KEY],
+            original_session.expires_at,
+        )
+    elif settings.IMPERSONATION_INDICATOR_COOKIE_KEY in request.cookies:
+        response.delete_cookie(
+            settings.USER_SESSION_COOKIE_KEY,
+            domain=settings.USER_SESSION_COOKIE_DOMAIN,
+        )
 
-    # Remove admin session cookie
-    response.delete_cookie(
-        settings.IMPERSONATION_COOKIE_KEY,
-        path="/",
-        domain=settings.USER_SESSION_COOKIE_DOMAIN,
-    )
-
-    # Remove impersonation indicator cookie
+    response.delete_cookie(settings.IMPERSONATION_COOKIE_KEY)
     response.delete_cookie(
         settings.IMPERSONATION_INDICATOR_COOKIE_KEY,
-        path="/",
         domain=settings.USER_SESSION_COOKIE_DOMAIN,
     )
-
     return response

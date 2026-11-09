@@ -76,7 +76,7 @@ PAYMENT_METHOD_RULES: dict[str, PaymentMethodRule] = {
         amount_limits=USD_WALLET_AMOUNT_LIMITS,
     ),
     "upi": PaymentMethodRule(
-        currencies=frozenset({"inr"}), amount_limits={"inr": (4697, 10_000_000)}
+        currencies=frozenset({"inr"}), amount_limits={"inr": (5000, 10_000_000)}
     ),
     "bancontact": PaymentMethodRule(
         countries=frozenset({"BE"}),

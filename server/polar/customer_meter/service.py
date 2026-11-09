@@ -148,6 +148,7 @@ class CustomerMeterService:
                     redis,
                     customer_meter,
                     partial(self._get_late_usage, session, customer, meter),
+                    partial(self._get_usage_quantity, session, customer, meter),
                 )
             updated = updated or meter_updated
 

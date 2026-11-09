@@ -652,6 +652,7 @@ class ReducerService:
         redis: Redis,
         customer_meter: CustomerMeter,
         get_late_usage: Callable[[], Awaitable[UsageSummary]],
+        get_legacy_usage: Callable[[], Awaitable[float]],
     ) -> None:
         if isinstance(customer_meter.meter.aggregation, UniqueAggregation):
             return
@@ -665,6 +666,7 @@ class ReducerService:
             consumed_units: Decimal | None = None
             late_usage: UsageSummary | None = None
             consumed_units_with_late_usage: Decimal | None = None
+            legacy_consumed_units_after: Decimal | None = None
             try:
                 async with session.begin_nested():
                     usage, credited_units = await self._get_customer_meter_usage(
@@ -683,6 +685,15 @@ class ReducerService:
                             consumed_units_with_late_usage = finalize_quantity(
                                 merge_summaries([summary, late_usage]), function
                             )
+                            # Usage ingested since legacy's read is only in the
+                            # reducer, so read legacy again to bound it.
+                            if not math.isclose(
+                                consumed_units_with_late_usage,
+                                customer_meter.consumed_units,
+                            ):
+                                legacy_consumed_units_after = Decimal(
+                                    await get_legacy_usage()
+                                )
             except Exception:
                 log.exception(
                     "Failed to compare customer meter with reducer",
@@ -693,6 +704,11 @@ class ReducerService:
                 "legacy",
                 {
                     "consumed_units": _format_units(customer_meter.consumed_units),
+                    "consumed_units_after_reducer": _format_units(
+                        legacy_consumed_units_after
+                    )
+                    if legacy_consumed_units_after is not None
+                    else None,
                     "credited_units": _format_units(customer_meter.credited_units),
                 },
             )
@@ -717,11 +733,14 @@ class ReducerService:
                 "match",
                 consumed_units is not None
                 and credited_units is not None
-                and math.isclose(
+                and _is_between(
                     consumed_units
                     if consumed_units_with_late_usage is None
                     else consumed_units_with_late_usage,
                     customer_meter.consumed_units,
+                    customer_meter.consumed_units
+                    if legacy_consumed_units_after is None
+                    else legacy_consumed_units_after,
                 )
                 and math.isclose(credited_units, customer_meter.credited_units),
             )
@@ -1174,6 +1193,11 @@ def _enqueue_outpost_event(
             "external_customer_id": external_customer_id,
         },
     )
+
+
+def _is_between(value: Decimal, bound: Decimal, other_bound: Decimal) -> bool:
+    low, high = sorted((bound, other_bound))
+    return math.isclose(value, low) or math.isclose(value, high) or low < value < high
 
 
 def _format_units(units: Decimal | int) -> str:

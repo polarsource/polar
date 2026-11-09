@@ -1,5 +1,11 @@
 # @polar-sh/cli
 
+## 3.2.0
+
+### Minor Changes
+
+- 26572db: Add `polar agent setup`, which detects Claude Code, Codex and Cursor and installs the Polar plugin, MCP servers and skills for each.
+
 ## 3.1.0
 
 ### Minor Changes

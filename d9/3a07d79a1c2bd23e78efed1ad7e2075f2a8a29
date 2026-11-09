@@ -1,0 +1,78 @@
+sdk/typescript/package.json
+  ai_agent 3
+sdk/python/polar/v2027_01/services/products.py
+  ai_agent 27,44-45,67-68,96-97,123-124,146-147,175-176,231,248,446-447,469-470,498-499,525-526,548-549,577-578,634,651
+sdk/typescript/src/base.ts
+  ai_agent 159
+sdk/python/polar/base.py
+  ai_agent 83
+sdk/python/polar/v2026_04/services/events.py
+  ai_agent 39-40,64-65,95-96,331-332,356-357,387-388
+sdk/python/polar/__init__.py
+  ai_agent 12
+sdk/typescript/pnpm-workspace.yaml
+  ai_agent 2,6,9
+sdk/typescript/src/2026-10/models.ts
+  ai_agent 944
+sdk/typescript/src/2027-01/services/products.ts
+  ai_agent 3,40-41,59-60,97-98,140,149
+sdk/python/tests/test_base.py
+  ai_agent 341
+sdk/python/polar/v2026_10/services/events.py
+  ai_agent 39-40,64-65,95-96,331-332,356-357,387-388
+sdk/python/uv.lock
+  ai_agent 2,23,29,31,322,327,329,334,339,341,346,351,353,358,365,367,372,378,380,478,487,489,494,500-523,601-621
+sdk/python/polar/v2027_01/services/benefits.py
+  ai_agent 40,61-62,82-83,109-110,134-135,155-156,182-183,288,305,747-748,768-769,795-796,820-821,841-842,868-869,975,992
+sdk/typescript/src/base.test.ts
+  ai_agent 214
+sdk/typescript/src/version.ts
+  ai_agent 1
+sdk/CHANGELOG.md
+  ai_agent 13-14,60-61
+  s_85366b5bcb3fd0::t_2ea8c143c55492 27
+sdk/typescript/pnpm-lock.yaml
+  ai_agent 277-278,281-282,531-532,537-538,543-544,549-550,555-556,561-562,567-568,574-575,581-582,588-589,595-596,602-603,609-610,615-616,621-622,642-643,840-841,1202-1203,1435,1451,1459,1472,1474,1476,1596,1599,1602,1605,1608,1611,1614,1617,1620,1623,1626,1629,1632,1635,1638,1654,1781,1855,2078,2083,2092,2094,2097-2111,2147,2155-2156,2186
+sdk/typescript/src/2027-01/services/events.ts
+  ai_agent 34-35,55-56
+docs/openapi/2026-04.openapi.json
+  ai_agent 22730,22736-22752,22758-22759,22761,22764,22771,22777-22778,22780,22783,22789,22795-22796,22798,22801,22808,22811-22827,22833-22834,22836
+sdk/python/polar/v2027_01/literals.py
+  ai_agent 40
+docs/openapi/2026-10.openapi.json
+  ai_agent 22730,22736-22752,22758-22759,22761,22764,22771,22777-22778,22780,22783,22789,22795-22796,22798,22801,22808,22811-22827,22833-22834,22836
+sdk/python/polar/v2027_01/services/events.py
+  ai_agent 40-41,65-66,96-97,334-335,359-360,390-391
+sdk/typescript/src/2026-04/models.ts
+  ai_agent 944
+sdk/typescript/src/2027-01/models.ts
+  ai_agent 52-54,948,2968-2971,3308-3311,3678-3681,3961-3964,4224-4227,5499-5502,5813-5816,6195-6198,7726-7729,8340-8343,8592-8595,18363-18366,19862-19865
+docs/openapi/2027-01.openapi.json
+  ai_agent 2464-2512,5108-5157,23303,23309-23325,23331-23332,23334,23337,23344,23350-23351,23353,23356,23362,23368-23369,23371,23374,23381,23384-23400,23406-23407,23409,32021-32025,32050,32739-32743,32768,33458-33462,33487,34010-34014,34039,34519-34523,34548,37228-37232,37257,37876-37880,37905,38654-38658,38683,39651-39659,42340-42344,42393,43976-43983,44040-44041,44625-44632,44700,68664-68668,68689-68690,73574-73578,73658,85126
+sdk/typescript/src/2027-01/services/benefits.ts
+  ai_agent 17,47-48,64-65,100-101,139,148
+sdk/python/polar/v2027_01/outputs.py
+  ai_agent 775-777,948-950,1123-1125,1249-1251,1372-1374,2130-2132,2265-2267,2457-2459,3258-3260,3453-3455,3633-3635,8372-8374,9165-9166
+sdk/typescript/src/2026-10/services/events.ts
+  ai_agent 34-35,55-56
+sdk/typescript/src/2026-04/services/events.ts
+  ai_agent 34-35,55-56
+sdk/typescript/src/2027-01/errors.ts
+  ai_agent 184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d93a07d79a1c2bd23e78efed1ad7e2075f2a8a29",
+  "prompts": {},
+  "sessions": {
+    "s_85366b5bcb3fd0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "be038a6d-9365-474d-b63c-b3ecaad4bcf9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

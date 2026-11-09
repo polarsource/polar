@@ -37,6 +37,7 @@ BenefitVisibility: typing.TypeAlias = typing.Literal["draft", "private", "public
 BillingAddressFieldMode: typing.TypeAlias = typing.Literal[
     "required", "optional", "disabled"
 ]
+CatalogStatus: typing.TypeAlias = typing.Literal["draft", "live", "archived"]
 CheckoutLinkSortProperty: typing.TypeAlias = typing.Literal[
     "created_at",
     "-created_at",

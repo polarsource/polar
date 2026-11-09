@@ -772,6 +772,9 @@ class BenefitCustom:
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitCustomProperties
 
     visibility_configurable: bool
@@ -941,6 +944,9 @@ class BenefitDiscord:
 
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
 
     properties: BenefitDiscordProperties
 
@@ -1114,6 +1120,9 @@ class BenefitDownloadables:
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitDownloadablesProperties
 
     visibility_configurable: bool
@@ -1237,6 +1246,9 @@ class BenefitFeatureFlag:
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitFeatureFlagProperties
 
     visibility_configurable: bool
@@ -1356,6 +1368,9 @@ class BenefitGitHubRepository:
 
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
 
     properties: BenefitGitHubRepositoryProperties
 
@@ -2112,6 +2127,9 @@ class BenefitLicenseKeys:
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
 
+    is_current: bool
+    """Whether this is the current version of the benefit."""
+
     properties: BenefitLicenseKeysProperties
 
     visibility_configurable: bool
@@ -2243,6 +2261,9 @@ class BenefitMeterCredit:
 
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
 
     properties: BenefitMeterCreditProperties
 
@@ -2432,6 +2453,9 @@ class BenefitSlackSharedChannel:
 
     catalog_id: str | None
     """ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the benefit."""
 
     properties: BenefitSlackSharedChannelProperties
 
@@ -3231,6 +3255,9 @@ class CheckoutProduct:
     catalog_id: str | None
     """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""
 
+    is_current: bool
+    """Whether this is the current version of the product."""
+
     prices: list[ProductPrice]
     """List of prices for this product."""
 
@@ -3423,6 +3450,9 @@ class CheckoutPublic:
 
     attached_custom_fields: list[AttachedCustomField] | None
 
+    payment_method_types: list[str]
+    """Payment method types to offer in the payment form."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CheckoutPublicConfirmed:
@@ -3599,6 +3629,9 @@ class CheckoutPublicConfirmed:
     organization: CheckoutOrganization
 
     attached_custom_fields: list[AttachedCustomField] | None
+
+    payment_method_types: list[str]
+    """Payment method types to offer in the payment form."""
 
     customer_session_token: str | None
 
@@ -8336,6 +8369,9 @@ class OrderProduct:
     catalog_id: str | None
     """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""
 
+    is_current: bool
+    """Whether this is the current version of the product."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrderReceipt:
@@ -9125,6 +9161,9 @@ class Product:
 
     catalog_id: str | None
     """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the product."""
 
     external_id: str | None
     """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""

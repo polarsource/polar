@@ -181,7 +181,7 @@ export class SubscriptionsUpdate409Error extends PolarClientError<
   }
 }
 /**
- * This benefit is not deletable.
+ * Organization benefit limit reached.
  */
 export class NotPermitted extends PolarClientError<NotPermittedModel> {
   constructor(

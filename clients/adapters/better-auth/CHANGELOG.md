@@ -1,5 +1,11 @@
 # @polar-sh/hono
 
+## 2.1.4
+
+### Patch Changes
+
+- 4e4bb72: Export the `PolarBetterAuthPlugin` type so projects that emit declarations can wrap `polar()` in an exported function.
+
 ## 2.1.3
 
 ### Patch Changes

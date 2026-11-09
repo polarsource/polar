@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
@@ -11,7 +11,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
+export const listWebhookEndpointsWebhooks = (client: PolarCore) => {
   /**
    * List webhook endpoints.
    *
@@ -65,7 +65,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListWebhookEndpointsWebhooks = (client: ClientBase) => {
+export const iterListWebhookEndpointsWebhooks = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -94,7 +94,7 @@ export const iterListWebhookEndpointsWebhooks = (client: ClientBase) => {
     }
   };
 };
-export const createWebhookEndpointWebhooks = (client: ClientBase) => {
+export const createWebhookEndpointWebhooks = (client: PolarCore) => {
   /**
    * Create a webhook endpoint.
    *
@@ -127,7 +127,7 @@ export const createWebhookEndpointWebhooks = (client: ClientBase) => {
     });
   };
 };
-export const getWebhookEndpointWebhooks = (client: ClientBase) => {
+export const getWebhookEndpointWebhooks = (client: PolarCore) => {
   /**
    * Get a webhook endpoint by ID.
    *
@@ -161,7 +161,7 @@ export const getWebhookEndpointWebhooks = (client: ClientBase) => {
     });
   };
 };
-export const deleteWebhookEndpointWebhooks = (client: ClientBase) => {
+export const deleteWebhookEndpointWebhooks = (client: PolarCore) => {
   /**
    * Delete a webhook endpoint.
    *
@@ -195,7 +195,7 @@ export const deleteWebhookEndpointWebhooks = (client: ClientBase) => {
     });
   };
 };
-export const updateWebhookEndpointWebhooks = (client: ClientBase) => {
+export const updateWebhookEndpointWebhooks = (client: PolarCore) => {
   /**
    * Update a webhook endpoint.
    *
@@ -234,7 +234,7 @@ export const updateWebhookEndpointWebhooks = (client: ClientBase) => {
     });
   };
 };
-export const resetWebhookEndpointSecretWebhooks = (client: ClientBase) => {
+export const resetWebhookEndpointSecretWebhooks = (client: PolarCore) => {
   /**
    * Regenerate a webhook endpoint secret.
    *
@@ -268,7 +268,7 @@ export const resetWebhookEndpointSecretWebhooks = (client: ClientBase) => {
     });
   };
 };
-export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
+export const listWebhookDeliveriesWebhooks = (client: PolarCore) => {
   /**
    * List webhook deliveries.
    *
@@ -338,7 +338,7 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListWebhookDeliveriesWebhooks = (client: ClientBase) => {
+export const iterListWebhookDeliveriesWebhooks = (client: PolarCore) => {
   return async function* (
     query?: {
       endpoint_id?: string | string[] | null;
@@ -373,7 +373,7 @@ export const iterListWebhookDeliveriesWebhooks = (client: ClientBase) => {
     }
   };
 };
-export const redeliverWebhookEventWebhooks = (client: ClientBase) => {
+export const redeliverWebhookEventWebhooks = (client: PolarCore) => {
   /**
    * Schedule the re-delivery of a webhook event.
    *
@@ -408,7 +408,7 @@ export const redeliverWebhookEventWebhooks = (client: ClientBase) => {
   };
 };
 
-export function createWebhooksService(client: ClientBase) {
+export function createWebhooksService(client: PolarCore) {
   return {
     listWebhookEndpoints: listWebhookEndpointsWebhooks(client),
     createWebhookEndpoint: createWebhookEndpointWebhooks(client),

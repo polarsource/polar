@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type {
   AuthorizeResponseOrganization,
   AuthorizeResponseUser,
@@ -11,7 +11,7 @@ import type {
 
 import { createClientsService } from "./clients";
 
-export const authorizeOauth2 = (client: ClientBase) => {
+export const authorizeOauth2 = (client: PolarCore) => {
   /**
    *
    * @param requestOptions - Request options
@@ -40,7 +40,7 @@ export const authorizeOauth2 = (client: ClientBase) => {
     );
   };
 };
-export const requestTokenOauth2 = (client: ClientBase) => {
+export const requestTokenOauth2 = (client: PolarCore) => {
   /**
    * Request an access token using a valid grant.
    *
@@ -64,7 +64,7 @@ export const requestTokenOauth2 = (client: ClientBase) => {
     return client.parseResponse<TokenResponse>(response, "json", {});
   };
 };
-export const revokeTokenOauth2 = (client: ClientBase) => {
+export const revokeTokenOauth2 = (client: PolarCore) => {
   /**
    * Revoke an access token or a refresh token.
    *
@@ -88,7 +88,7 @@ export const revokeTokenOauth2 = (client: ClientBase) => {
     return client.parseResponse<RevokeTokenResponse>(response, "json", {});
   };
 };
-export const introspectTokenOauth2 = (client: ClientBase) => {
+export const introspectTokenOauth2 = (client: PolarCore) => {
   /**
    * Get information about an access token.
    *
@@ -112,7 +112,7 @@ export const introspectTokenOauth2 = (client: ClientBase) => {
     return client.parseResponse<IntrospectTokenResponse>(response, "json", {});
   };
 };
-export const userinfoOauth2 = (client: ClientBase) => {
+export const userinfoOauth2 = (client: PolarCore) => {
   /**
    * Get information about the authenticated user.
    *
@@ -137,7 +137,7 @@ export const userinfoOauth2 = (client: ClientBase) => {
   };
 };
 
-export function createOauth2Service(client: ClientBase) {
+export function createOauth2Service(client: PolarCore) {
   return {
     authorize: authorizeOauth2(client),
     requestToken: requestTokenOauth2(client),

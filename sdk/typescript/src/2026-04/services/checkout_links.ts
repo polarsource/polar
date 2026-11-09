@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   CheckoutLink,
   CheckoutLinkCreate,
@@ -9,7 +9,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listCheckoutLinks = (client: ClientBase) => {
+export const listCheckoutLinks = (client: PolarCore) => {
   /**
    * List checkout links.
    *
@@ -67,7 +67,7 @@ export const listCheckoutLinks = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListCheckoutLinks = (client: ClientBase) => {
+export const iterListCheckoutLinks = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -95,7 +95,7 @@ export const iterListCheckoutLinks = (client: ClientBase) => {
     }
   };
 };
-export const createCheckoutLinks = (client: ClientBase) => {
+export const createCheckoutLinks = (client: PolarCore) => {
   /**
    * Create a checkout link.
    *
@@ -128,7 +128,7 @@ export const createCheckoutLinks = (client: ClientBase) => {
     });
   };
 };
-export const getCheckoutLinks = (client: ClientBase) => {
+export const getCheckoutLinks = (client: PolarCore) => {
   /**
    * Get a checkout link by ID.
    *
@@ -162,7 +162,7 @@ export const getCheckoutLinks = (client: ClientBase) => {
     });
   };
 };
-export const deleteCheckoutLinks = (client: ClientBase) => {
+export const deleteCheckoutLinks = (client: PolarCore) => {
   /**
    * Delete a checkout link.
    *
@@ -196,7 +196,7 @@ export const deleteCheckoutLinks = (client: ClientBase) => {
     });
   };
 };
-export const updateCheckoutLinks = (client: ClientBase) => {
+export const updateCheckoutLinks = (client: PolarCore) => {
   /**
    * Update a checkout link.
    *
@@ -236,7 +236,7 @@ export const updateCheckoutLinks = (client: ClientBase) => {
   };
 };
 
-export function createCheckoutLinksService(client: ClientBase) {
+export function createCheckoutLinksService(client: PolarCore) {
   return {
     list: listCheckoutLinks(client),
     create: createCheckoutLinks(client),

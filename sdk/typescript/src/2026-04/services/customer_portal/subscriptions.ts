@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type {
   CustomerSubscription,
   CustomerSubscriptionSortProperty,
@@ -15,7 +15,7 @@ import {
   ResourceNotFound,
 } from "../../errors";
 
-export const listSubscriptions = (client: ClientBase) => {
+export const listSubscriptions = (client: PolarCore) => {
   /**
    * List subscriptions of the authenticated customer.
    *
@@ -75,7 +75,7 @@ export const listSubscriptions = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListSubscriptions = (client: ClientBase) => {
+export const iterListSubscriptions = (client: PolarCore) => {
   return async function* (
     query?: {
       product_id?: string | string[] | null;
@@ -104,7 +104,7 @@ export const iterListSubscriptions = (client: ClientBase) => {
     }
   };
 };
-export const getSubscriptions = (client: ClientBase) => {
+export const getSubscriptions = (client: PolarCore) => {
   /**
    * Get a subscription for the authenticated customer.
    *
@@ -138,7 +138,7 @@ export const getSubscriptions = (client: ClientBase) => {
     });
   };
 };
-export const cancelSubscriptions = (client: ClientBase) => {
+export const cancelSubscriptions = (client: PolarCore) => {
   /**
    * Cancel a subscription of the authenticated customer.
    *
@@ -172,7 +172,7 @@ export const cancelSubscriptions = (client: ClientBase) => {
     });
   };
 };
-export const updateSubscriptions = (client: ClientBase) => {
+export const updateSubscriptions = (client: PolarCore) => {
   /**
    * Update a subscription of the authenticated customer.
    *
@@ -216,7 +216,7 @@ export const updateSubscriptions = (client: ClientBase) => {
   };
 };
 
-export function createSubscriptionsService(client: ClientBase) {
+export function createSubscriptionsService(client: PolarCore) {
   return {
     list: listSubscriptions(client),
     get: getSubscriptions(client),

@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   FileCreate,
   FilePatch,
@@ -10,7 +10,7 @@ import type {
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
-export const listFiles = (client: ClientBase) => {
+export const listFiles = (client: PolarCore) => {
   /**
    * List files.
    *
@@ -60,7 +60,7 @@ export const listFiles = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListFiles = (client: ClientBase) => {
+export const iterListFiles = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -87,7 +87,7 @@ export const iterListFiles = (client: ClientBase) => {
     }
   };
 };
-export const createFiles = (client: ClientBase) => {
+export const createFiles = (client: PolarCore) => {
   /**
    * Create a file.
    *
@@ -111,7 +111,7 @@ export const createFiles = (client: ClientBase) => {
     });
   };
 };
-export const uploadedFiles = (client: ClientBase) => {
+export const uploadedFiles = (client: PolarCore) => {
   /**
    * Complete a file upload.
    *
@@ -152,7 +152,7 @@ export const uploadedFiles = (client: ClientBase) => {
     });
   };
 };
-export const deleteFiles = (client: ClientBase) => {
+export const deleteFiles = (client: PolarCore) => {
   /**
    * Delete a file.
    *
@@ -188,7 +188,7 @@ export const deleteFiles = (client: ClientBase) => {
     });
   };
 };
-export const updateFiles = (client: ClientBase) => {
+export const updateFiles = (client: PolarCore) => {
   /**
    * Update a file.
    *
@@ -224,7 +224,7 @@ export const updateFiles = (client: ClientBase) => {
   };
 };
 
-export function createFilesService(client: ClientBase) {
+export function createFilesService(client: PolarCore) {
   return {
     list: listFiles(client),
     create: createFiles(client),

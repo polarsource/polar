@@ -1,7 +1,7 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type { CustomerCustomerSession, PortalAuthenticatedUser } from "../../models";
 
-export const introspectCustomerSession = (client: ClientBase) => {
+export const introspectCustomerSession = (client: PolarCore) => {
   /**
    * Introspect the current session and return its information.
    *
@@ -27,7 +27,7 @@ export const introspectCustomerSession = (client: ClientBase) => {
     return client.parseResponse<CustomerCustomerSession>(response, "json", {});
   };
 };
-export const getAuthenticatedUserCustomerSession = (client: ClientBase) => {
+export const getAuthenticatedUserCustomerSession = (client: PolarCore) => {
   /**
    * Get information about the currently authenticated portal user.
    *
@@ -54,7 +54,7 @@ export const getAuthenticatedUserCustomerSession = (client: ClientBase) => {
   };
 };
 
-export function createCustomerSessionService(client: ClientBase) {
+export function createCustomerSessionService(client: PolarCore) {
   return {
     introspect: introspectCustomerSession(client),
     getAuthenticatedUser: getAuthenticatedUserCustomerSession(client),

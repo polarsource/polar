@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   AggregationFunction,
   ListResourceMeter,
@@ -14,7 +14,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listMeters = (client: ClientBase) => {
+export const listMeters = (client: PolarCore) => {
   /**
    * List meters.
    *
@@ -70,7 +70,7 @@ export const listMeters = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListMeters = (client: ClientBase) => {
+export const iterListMeters = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -100,7 +100,7 @@ export const iterListMeters = (client: ClientBase) => {
     }
   };
 };
-export const createMeters = (client: ClientBase) => {
+export const createMeters = (client: PolarCore) => {
   /**
    * Create a meter.
    *
@@ -124,7 +124,7 @@ export const createMeters = (client: ClientBase) => {
     });
   };
 };
-export const getMeters = (client: ClientBase) => {
+export const getMeters = (client: PolarCore) => {
   /**
    * Get a meter by ID.
    *
@@ -158,7 +158,7 @@ export const getMeters = (client: ClientBase) => {
     });
   };
 };
-export const updateMeters = (client: ClientBase) => {
+export const updateMeters = (client: PolarCore) => {
   /**
    * Update a meter.
    *
@@ -187,7 +187,7 @@ export const updateMeters = (client: ClientBase) => {
     });
   };
 };
-export const quantitiesMeters = (client: ClientBase) => {
+export const quantitiesMeters = (client: PolarCore) => {
   /**
    * Get quantities of a meter over a time period.
    *
@@ -245,7 +245,7 @@ export const quantitiesMeters = (client: ClientBase) => {
   };
 };
 
-export function createMetersService(client: ClientBase) {
+export function createMetersService(client: PolarCore) {
   return {
     list: listMeters(client),
     create: createMeters(client),

@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   CustomField,
   CustomFieldCreate,
@@ -10,7 +10,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listCustomFields = (client: ClientBase) => {
+export const listCustomFields = (client: PolarCore) => {
   /**
    * List custom fields.
    *
@@ -70,7 +70,7 @@ export const listCustomFields = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListCustomFields = (client: ClientBase) => {
+export const iterListCustomFields = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -99,7 +99,7 @@ export const iterListCustomFields = (client: ClientBase) => {
     }
   };
 };
-export const createCustomFields = (client: ClientBase) => {
+export const createCustomFields = (client: PolarCore) => {
   /**
    * Create a custom field.
    *
@@ -129,7 +129,7 @@ export const createCustomFields = (client: ClientBase) => {
     });
   };
 };
-export const getCustomFields = (client: ClientBase) => {
+export const getCustomFields = (client: PolarCore) => {
   /**
    * Get a custom field by ID.
    *
@@ -163,7 +163,7 @@ export const getCustomFields = (client: ClientBase) => {
     });
   };
 };
-export const deleteCustomFields = (client: ClientBase) => {
+export const deleteCustomFields = (client: PolarCore) => {
   /**
    * Delete a custom field.
    *
@@ -197,7 +197,7 @@ export const deleteCustomFields = (client: ClientBase) => {
     });
   };
 };
-export const updateCustomFields = (client: ClientBase) => {
+export const updateCustomFields = (client: PolarCore) => {
   /**
    * Update a custom field.
    *
@@ -237,7 +237,7 @@ export const updateCustomFields = (client: ClientBase) => {
   };
 };
 
-export function createCustomFieldsService(client: ClientBase) {
+export function createCustomFieldsService(client: PolarCore) {
   return {
     list: listCustomFields(client),
     create: createCustomFields(client),

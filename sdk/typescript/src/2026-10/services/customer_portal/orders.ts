@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type {
   CustomerOrder,
   CustomerOrderConfirmPayment,
@@ -22,7 +22,7 @@ import {
   ResourceNotFound,
 } from "../../errors";
 
-export const listOrders = (client: ClientBase) => {
+export const listOrders = (client: PolarCore) => {
   /**
    * List orders of the authenticated customer.
    *
@@ -80,7 +80,7 @@ export const listOrders = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListOrders = (client: ClientBase) => {
+export const iterListOrders = (client: PolarCore) => {
   return async function* (
     query?: {
       product_id?: string | string[] | null;
@@ -110,7 +110,7 @@ export const iterListOrders = (client: ClientBase) => {
     }
   };
 };
-export const getOrders = (client: ClientBase) => {
+export const getOrders = (client: PolarCore) => {
   /**
    * Get an order by ID for the authenticated customer.
    *
@@ -142,7 +142,7 @@ export const getOrders = (client: ClientBase) => {
     });
   };
 };
-export const updateOrders = (client: ClientBase) => {
+export const updateOrders = (client: PolarCore) => {
   /**
    * Update an order for the authenticated customer.
    *
@@ -179,7 +179,7 @@ export const updateOrders = (client: ClientBase) => {
     });
   };
 };
-export const invoiceOrders = (client: ClientBase) => {
+export const invoiceOrders = (client: PolarCore) => {
   /**
    * Get an order's invoice data.
    *
@@ -211,7 +211,7 @@ export const invoiceOrders = (client: ClientBase) => {
     });
   };
 };
-export const generateInvoiceOrders = (client: ClientBase) => {
+export const generateInvoiceOrders = (client: PolarCore) => {
   /**
    * Trigger generation of an order's invoice.
    *
@@ -245,7 +245,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
     });
   };
 };
-export const receiptOrders = (client: ClientBase) => {
+export const receiptOrders = (client: PolarCore) => {
   /**
    * Get a presigned URL to download an order's receipt PDF.
    *
@@ -277,7 +277,7 @@ export const receiptOrders = (client: ClientBase) => {
     });
   };
 };
-export const getPaymentStatusOrders = (client: ClientBase) => {
+export const getPaymentStatusOrders = (client: PolarCore) => {
   /**
    * Get the current payment status for an order.
    *
@@ -312,7 +312,7 @@ export const getPaymentStatusOrders = (client: ClientBase) => {
     });
   };
 };
-export const confirmRetryPaymentOrders = (client: ClientBase) => {
+export const confirmRetryPaymentOrders = (client: PolarCore) => {
   /**
    * Confirm a retry payment using a Stripe confirmation token.
    *
@@ -354,7 +354,7 @@ export const confirmRetryPaymentOrders = (client: ClientBase) => {
   };
 };
 
-export function createOrdersService(client: ClientBase) {
+export function createOrdersService(client: PolarCore) {
   return {
     list: listOrders(client),
     get: getOrders(client),

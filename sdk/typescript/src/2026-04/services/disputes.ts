@@ -1,9 +1,9 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type { Dispute, DisputeSortProperty, DisputeStatus, ListResourceDispute } from "../models";
 
 import { DisputeNotOpenError, HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listDisputes = (client: ClientBase) => {
+export const listDisputes = (client: PolarCore) => {
   /**
    * List disputes.
    *
@@ -57,7 +57,7 @@ export const listDisputes = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListDisputes = (client: ClientBase) => {
+export const iterListDisputes = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -86,7 +86,7 @@ export const iterListDisputes = (client: ClientBase) => {
     }
   };
 };
-export const getDisputes = (client: ClientBase) => {
+export const getDisputes = (client: PolarCore) => {
   /**
    * Get a dispute by ID.
    *
@@ -120,7 +120,7 @@ export const getDisputes = (client: ClientBase) => {
     });
   };
 };
-export const acceptDisputes = (client: ClientBase) => {
+export const acceptDisputes = (client: PolarCore) => {
   /**
    * Accept a dispute, conceding the chargeback.
    *
@@ -160,7 +160,7 @@ export const acceptDisputes = (client: ClientBase) => {
   };
 };
 
-export function createDisputesService(client: ClientBase) {
+export function createDisputesService(client: PolarCore) {
   return {
     list: listDisputes(client),
     get: getDisputes(client),

@@ -1,9 +1,9 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type { DownloadableRead, ListResourceDownloadableRead } from "../../models";
 
 import { HTTPValidationError } from "../../errors";
 
-export const listDownloadables = (client: ClientBase) => {
+export const listDownloadables = (client: PolarCore) => {
   /**
    * **Scopes**: `customer_portal:read` `customer_portal:write`
    *
@@ -53,7 +53,7 @@ export const listDownloadables = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListDownloadables = (client: ClientBase) => {
+export const iterListDownloadables = (client: PolarCore) => {
   return async function* (
     query?: {
       benefit_id?: string | string[] | null;
@@ -80,7 +80,7 @@ export const iterListDownloadables = (client: ClientBase) => {
   };
 };
 
-export function createDownloadablesService(client: ClientBase) {
+export function createDownloadablesService(client: PolarCore) {
   return {
     list: listDownloadables(client),
     iterList: iterListDownloadables(client),

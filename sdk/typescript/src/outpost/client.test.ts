@@ -8,7 +8,7 @@ import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { createPolar } from "../2026-10/client";
-import { ClientBase } from "../base";
+import { PolarCore } from "../base";
 import { UnknownMeterError } from "../metering/errors";
 import {
   decodeState,
@@ -85,7 +85,7 @@ const creditKey = "outpost:v1:org-1:state:external:alice:credits";
 let redisServer: RedisServer;
 let redis: Redis;
 let server: Server;
-let core: ClientBase;
+let core: PolarCore;
 let reducers: Reducer[];
 let snapshot: Record<string, unknown> | undefined;
 let refuseConnections = false;
@@ -169,7 +169,7 @@ beforeAll(async () => {
   await once(server, "listening");
   const address = server.address();
   if (typeof address === "string" || !address) throw new Error("Missing server address");
-  core = new ClientBase({
+  core = new PolarCore({
     baseUrl: `http://127.0.0.1:${address.port}`,
     accessToken: "test-token",
     version: "2026-10",

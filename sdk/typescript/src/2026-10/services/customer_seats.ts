@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   CustomerSeat,
   CustomerSeatClaimResponse,
@@ -31,7 +31,7 @@ import {
   HTTPValidationError,
 } from "../errors";
 
-export const listSeatsCustomerSeats = (client: ClientBase) => {
+export const listSeatsCustomerSeats = (client: PolarCore) => {
   /**
    * List seats for a subscription or order.
    *
@@ -76,7 +76,7 @@ export const listSeatsCustomerSeats = (client: ClientBase) => {
     });
   };
 };
-export const assignSeatCustomerSeats = (client: ClientBase) => {
+export const assignSeatCustomerSeats = (client: PolarCore) => {
   /**
    * Assign a seat for a subscription or order.
    *
@@ -114,7 +114,7 @@ export const assignSeatCustomerSeats = (client: ClientBase) => {
     });
   };
 };
-export const revokeSeatCustomerSeats = (client: ClientBase) => {
+export const revokeSeatCustomerSeats = (client: PolarCore) => {
   /**
    * Revoke a customer seat.
    *
@@ -152,7 +152,7 @@ export const revokeSeatCustomerSeats = (client: ClientBase) => {
     });
   };
 };
-export const resendInvitationCustomerSeats = (client: ClientBase) => {
+export const resendInvitationCustomerSeats = (client: PolarCore) => {
   /**
    * Resend an invitation for a pending customer seat.
    *
@@ -192,7 +192,7 @@ export const resendInvitationCustomerSeats = (client: ClientBase) => {
     });
   };
 };
-export const getClaimInfoCustomerSeats = (client: ClientBase) => {
+export const getClaimInfoCustomerSeats = (client: PolarCore) => {
   /**
    * Get claim information for a customer seat invitation.
    *
@@ -231,7 +231,7 @@ export const getClaimInfoCustomerSeats = (client: ClientBase) => {
     });
   };
 };
-export const claimSeatCustomerSeats = (client: ClientBase) => {
+export const claimSeatCustomerSeats = (client: PolarCore) => {
   /**
    * Claim a customer seat with an invitation token.
    *
@@ -267,7 +267,7 @@ export const claimSeatCustomerSeats = (client: ClientBase) => {
   };
 };
 
-export function createCustomerSeatsService(client: ClientBase) {
+export function createCustomerSeatsService(client: PolarCore) {
   return {
     listSeats: listSeatsCustomerSeats(client),
     assignSeat: assignSeatCustomerSeats(client),

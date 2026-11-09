@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   CustomerMeter,
   CustomerMeterSortProperty,
@@ -7,7 +7,7 @@ import type {
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
-export const listCustomerMeters = (client: ClientBase) => {
+export const listCustomerMeters = (client: PolarCore) => {
   /**
    * List customer meters.
    *
@@ -69,7 +69,7 @@ export const listCustomerMeters = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListCustomerMeters = (client: ClientBase) => {
+export const iterListCustomerMeters = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -99,7 +99,7 @@ export const iterListCustomerMeters = (client: ClientBase) => {
     }
   };
 };
-export const getCustomerMeters = (client: ClientBase) => {
+export const getCustomerMeters = (client: PolarCore) => {
   /**
    * Get a customer meter by ID.
    *
@@ -134,7 +134,7 @@ export const getCustomerMeters = (client: ClientBase) => {
   };
 };
 
-export function createCustomerMetersService(client: ClientBase) {
+export function createCustomerMetersService(client: PolarCore) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),

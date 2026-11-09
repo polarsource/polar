@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type {
   ListResourceMember,
   Member,
@@ -15,7 +15,7 @@ import {
   ResourceNotFound,
 } from "../../errors";
 
-export const listMembers = (client: ClientBase) => {
+export const listMembers = (client: PolarCore) => {
   /**
    * List the members of a customer.
    *
@@ -79,7 +79,7 @@ export const listMembers = (client: ClientBase) => {
  * @throws {ResourceNotFound} Customer not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListMembers = (client: ClientBase) => {
+export const iterListMembers = (client: PolarCore) => {
   return async function* (
     id: string,
     query?: {
@@ -107,7 +107,7 @@ export const iterListMembers = (client: ClientBase) => {
     }
   };
 };
-export const createMembers = (client: ClientBase) => {
+export const createMembers = (client: PolarCore) => {
   /**
    * Create a new member for a customer.
    *
@@ -151,7 +151,7 @@ export const createMembers = (client: ClientBase) => {
     });
   };
 };
-export const listExternalMembers = (client: ClientBase) => {
+export const listExternalMembers = (client: PolarCore) => {
   /**
    * List the members of a customer identified by its external ID.
    *
@@ -218,7 +218,7 @@ export const listExternalMembers = (client: ClientBase) => {
  * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListExternalMembers = (client: ClientBase) => {
+export const iterListExternalMembers = (client: PolarCore) => {
   return async function* (
     external_id: string,
     query?: {
@@ -250,7 +250,7 @@ export const iterListExternalMembers = (client: ClientBase) => {
     }
   };
 };
-export const createExternalMembers = (client: ClientBase) => {
+export const createExternalMembers = (client: PolarCore) => {
   /**
    * Create a new member for a customer identified by its external ID.
    *
@@ -293,7 +293,7 @@ export const createExternalMembers = (client: ClientBase) => {
     });
   };
 };
-export const getMembers = (client: ClientBase) => {
+export const getMembers = (client: PolarCore) => {
   /**
    * Get a member of a customer by its ID.
    *
@@ -333,7 +333,7 @@ export const getMembers = (client: ClientBase) => {
     });
   };
 };
-export const deleteMembers = (client: ClientBase) => {
+export const deleteMembers = (client: PolarCore) => {
   /**
    * Delete a member of a customer.
    *
@@ -369,7 +369,7 @@ export const deleteMembers = (client: ClientBase) => {
     });
   };
 };
-export const updateMembers = (client: ClientBase) => {
+export const updateMembers = (client: PolarCore) => {
   /**
    * Update a member of a customer.
    *
@@ -413,7 +413,7 @@ export const updateMembers = (client: ClientBase) => {
     });
   };
 };
-export const getExternalMembers = (client: ClientBase) => {
+export const getExternalMembers = (client: PolarCore) => {
   /**
    * Get a member by external ID for a customer identified by its external ID.
    *
@@ -455,7 +455,7 @@ export const getExternalMembers = (client: ClientBase) => {
     });
   };
 };
-export const deleteExternalMembers = (client: ClientBase) => {
+export const deleteExternalMembers = (client: PolarCore) => {
   /**
    * Delete a member by external ID for a customer identified by its external ID.
    *
@@ -497,7 +497,7 @@ export const deleteExternalMembers = (client: ClientBase) => {
     });
   };
 };
-export const updateExternalMembers = (client: ClientBase) => {
+export const updateExternalMembers = (client: PolarCore) => {
   /**
    * Update a member by external ID for a customer identified by its external ID.
    *
@@ -542,7 +542,7 @@ export const updateExternalMembers = (client: ClientBase) => {
   };
 };
 
-export function createMembersService(client: ClientBase) {
+export function createMembersService(client: PolarCore) {
   return {
     list: listMembers(client),
     create: createMembers(client),

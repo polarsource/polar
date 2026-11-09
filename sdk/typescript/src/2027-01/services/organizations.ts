@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   ListResourceOrganization,
   Organization,
@@ -15,7 +15,7 @@ import {
   ResourceNotFound,
 } from "../errors";
 
-export const listOrganizations = (client: ClientBase) => {
+export const listOrganizations = (client: PolarCore) => {
   /**
    * List organizations.
    *
@@ -71,7 +71,7 @@ export const listOrganizations = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListOrganizations = (client: ClientBase) => {
+export const iterListOrganizations = (client: PolarCore) => {
   return async function* (
     query?: {
       slug?: string | null;
@@ -98,7 +98,7 @@ export const iterListOrganizations = (client: ClientBase) => {
     }
   };
 };
-export const createOrganizations = (client: ClientBase) => {
+export const createOrganizations = (client: PolarCore) => {
   /**
    * Create an organization.
    *
@@ -133,7 +133,7 @@ export const createOrganizations = (client: ClientBase) => {
     });
   };
 };
-export const getOrganizations = (client: ClientBase) => {
+export const getOrganizations = (client: PolarCore) => {
   /**
    * Get an organization by ID.
    *
@@ -167,7 +167,7 @@ export const getOrganizations = (client: ClientBase) => {
     });
   };
 };
-export const updateOrganizations = (client: ClientBase) => {
+export const updateOrganizations = (client: PolarCore) => {
   /**
    * Update an organization.
    *
@@ -211,7 +211,7 @@ export const updateOrganizations = (client: ClientBase) => {
   };
 };
 
-export function createOrganizationsService(client: ClientBase) {
+export function createOrganizationsService(client: PolarCore) {
   return {
     list: listOrganizations(client),
     create: createOrganizations(client),

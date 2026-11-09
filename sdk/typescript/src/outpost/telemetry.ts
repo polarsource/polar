@@ -21,7 +21,7 @@ import {
   type SpanExporter,
 } from "@opentelemetry/sdk-trace";
 
-import type { ClientBase } from "../base";
+import type { PolarCore } from "../base";
 
 import { VERSION } from "../version";
 
@@ -105,7 +105,7 @@ export class RelayMetricExporter implements PushMetricExporter {
 }
 
 const relayTarget = (
-  client: Pick<ClientBase, "buildRequest">,
+  client: Pick<PolarCore, "buildRequest">,
   path: string,
 ): [url: string, headers: Headers] => {
   const [url, request] = client.buildRequest("POST", path);
@@ -125,7 +125,7 @@ const resource = () =>
     "telemetry.sdk.language": "nodejs",
   });
 
-export const createTracerProvider = (client: Pick<ClientBase, "buildRequest">): TracerProvider => {
+export const createTracerProvider = (client: Pick<PolarCore, "buildRequest">): TracerProvider => {
   const [url, headers] = relayTarget(client, "/v1/outpost/telemetry");
   return new TracerProvider({
     resource: resource(),
@@ -134,7 +134,7 @@ export const createTracerProvider = (client: Pick<ClientBase, "buildRequest">): 
   });
 };
 
-export const createMeterProvider = (client: Pick<ClientBase, "buildRequest">): MeterProvider => {
+export const createMeterProvider = (client: Pick<PolarCore, "buildRequest">): MeterProvider => {
   const [url, headers] = relayTarget(client, "/v1/outpost/telemetry/metrics");
   return new MeterProvider({
     resource: resource(),

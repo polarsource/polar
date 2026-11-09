@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   ListResourceOrder,
   MetadataQuery,
@@ -24,7 +24,7 @@ import {
   ResourceNotFound,
 } from "../errors";
 
-export const listOrders = (client: ClientBase) => {
+export const listOrders = (client: PolarCore) => {
   /**
    * List orders.
    *
@@ -98,7 +98,7 @@ export const listOrders = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListOrders = (client: ClientBase) => {
+export const iterListOrders = (client: PolarCore) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
@@ -137,7 +137,7 @@ export const iterListOrders = (client: ClientBase) => {
     }
   };
 };
-export const createOrders = (client: ClientBase) => {
+export const createOrders = (client: PolarCore) => {
   /**
    * Create a draft order for an off-session charge against a saved payment
    * method. The order is created with `status=draft` and no invoice number;
@@ -165,7 +165,7 @@ export const createOrders = (client: ClientBase) => {
     });
   };
 };
-export const exportOrders = (client: ClientBase) => {
+export const exportOrders = (client: PolarCore) => {
   /**
    * Export orders as a CSV file.
    *
@@ -216,7 +216,7 @@ export const exportOrders = (client: ClientBase) => {
     });
   };
 };
-export const getOrders = (client: ClientBase) => {
+export const getOrders = (client: PolarCore) => {
   /**
    * Get an order by ID.
    *
@@ -250,7 +250,7 @@ export const getOrders = (client: ClientBase) => {
     });
   };
 };
-export const updateOrders = (client: ClientBase) => {
+export const updateOrders = (client: PolarCore) => {
   /**
    * Update an order.
    *
@@ -279,7 +279,7 @@ export const updateOrders = (client: ClientBase) => {
     });
   };
 };
-export const finalizeOrders = (client: ClientBase) => {
+export const finalizeOrders = (client: PolarCore) => {
   /**
    * Finalize a draft order and synchronously attempt an off-session charge.
    *
@@ -330,7 +330,7 @@ export const finalizeOrders = (client: ClientBase) => {
     });
   };
 };
-export const invoiceOrders = (client: ClientBase) => {
+export const invoiceOrders = (client: PolarCore) => {
   /**
    * Get an order's invoice data.
    *
@@ -364,7 +364,7 @@ export const invoiceOrders = (client: ClientBase) => {
     });
   };
 };
-export const generateInvoiceOrders = (client: ClientBase) => {
+export const generateInvoiceOrders = (client: PolarCore) => {
   /**
    * Trigger generation of an order's invoice.
    *
@@ -400,7 +400,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
     });
   };
 };
-export const receiptOrders = (client: ClientBase) => {
+export const receiptOrders = (client: PolarCore) => {
   /**
    * Get a presigned URL to download an order's receipt PDF.
    *
@@ -435,7 +435,7 @@ export const receiptOrders = (client: ClientBase) => {
   };
 };
 
-export function createOrdersService(client: ClientBase) {
+export function createOrdersService(client: PolarCore) {
   return {
     list: listOrders(client),
     create: createOrders(client),

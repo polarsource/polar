@@ -143,7 +143,7 @@ export const resolveBaseUrl = (
   return serverUrl;
 };
 
-export class ClientBase {
+export class PolarCore {
   protected readonly options: ClientOptions;
 
   constructor(options: ClientOptions) {

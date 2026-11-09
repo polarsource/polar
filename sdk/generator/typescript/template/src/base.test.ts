@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { ClientBase, resolveBaseUrl } from "./base";
+import { PolarCore, resolveBaseUrl } from "./base";
 
 const servers = {
   production: "https://api.polar.sh",
@@ -25,7 +25,7 @@ describe("resolveBaseUrl", () => {
   });
 });
 
-const client = new ClientBase({
+const client = new PolarCore({
   baseUrl: "https://api.polar.sh",
   version: "2026-04",
   accessToken: "polar_at_u_xxx",
@@ -40,7 +40,7 @@ describe("sendRequest", () => {
     const timeoutSignal = new AbortController().signal;
     const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeoutSignal);
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
-    const client = new ClientBase({
+    const client = new PolarCore({
       baseUrl: "https://api.polar.sh",
       version: "{{ (ir.versions[-2] | default({})).version }}",
       accessToken: "polar_at_u_xxx",
@@ -59,7 +59,7 @@ describe("sendRequest", () => {
     const timeoutSignal = new AbortController().signal;
     const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeoutSignal);
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
-    const client = new ClientBase({
+    const client = new PolarCore({
       baseUrl: "https://api.polar.sh",
       version: "{{ (ir.versions[-2] | default({})).version }}",
       accessToken: "polar_at_u_xxx",
@@ -81,7 +81,7 @@ describe("sendRequest", () => {
     vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeoutSignal);
     const any = vi.spyOn(AbortSignal, "any").mockReturnValue(combinedSignal);
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
-    const client = new ClientBase({
+    const client = new PolarCore({
       baseUrl: "https://api.polar.sh",
       version: "{{ (ir.versions[-2] | default({})).version }}",
       accessToken: "polar_at_u_xxx",
@@ -116,7 +116,7 @@ describe("sendRequest", () => {
 
   test("uses a per-request access token override", async () => {
     const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response());
-    const client = new ClientBase({
+    const client = new PolarCore({
       baseUrl: "https://api.polar.sh",
       version: "2026-04",
       accessToken: "polar_at_u_xxx",
@@ -135,7 +135,7 @@ describe("sendRequest", () => {
   });
 
   test("does not create a timeout signal when no timeout is configured", async () => {
-    const client = new ClientBase({
+    const client = new PolarCore({
       baseUrl: "https://api.polar.sh",
       version: "{{ (ir.versions[-2] | default({})).version }}",
       accessToken: "polar_at_u_xxx",
@@ -204,7 +204,7 @@ describe("buildRequest", () => {
 });
 
 describe("organization", () => {
-  const organizationHeader = (client: ClientBase) => {
+  const organizationHeader = (client: PolarCore) => {
     const [, requestInit] = client.buildRequest("GET", "/v1/items/");
     return (requestInit.headers as Headers).get("Polar-Organization");
   };
@@ -214,7 +214,7 @@ describe("organization", () => {
   });
 
   test("sends the configured organization", () => {
-    const client = new ClientBase({
+    const client = new PolarCore({
       baseUrl: "https://api.polar.sh",
       version: "2026-04",
       accessToken: "polar_at_u_xxx",

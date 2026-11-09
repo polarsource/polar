@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../../base";
+import type { PolarCore, RequestOptions } from "../../../base";
 import type {
   CustomerPortalMember,
   CustomerPortalMemberCreate,
@@ -23,7 +23,7 @@ import {
   HTTPValidationError,
 } from "../../errors";
 
-export const listMembersMembers = (client: ClientBase) => {
+export const listMembersMembers = (client: PolarCore) => {
   /**
    * List all members of the customer's team.
    *
@@ -81,7 +81,7 @@ export const listMembersMembers = (client: ClientBase) => {
  * @throws {CustomerPortalMembersListMembers403Error} Not permitted - requires owner or billing manager role
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterListMembersMembers = (client: ClientBase) => {
+export const iterListMembersMembers = (client: PolarCore) => {
   return async function* (
     query?: {
       page?: number;
@@ -106,7 +106,7 @@ export const iterListMembersMembers = (client: ClientBase) => {
     }
   };
 };
-export const addMemberMembers = (client: ClientBase) => {
+export const addMemberMembers = (client: PolarCore) => {
   /**
    * Add a new member to the customer's team.
    *
@@ -149,7 +149,7 @@ export const addMemberMembers = (client: ClientBase) => {
     });
   };
 };
-export const removeMemberMembers = (client: ClientBase) => {
+export const removeMemberMembers = (client: PolarCore) => {
   /**
    * Remove a member from the team.
    *
@@ -193,7 +193,7 @@ export const removeMemberMembers = (client: ClientBase) => {
     });
   };
 };
-export const updateMemberMembers = (client: ClientBase) => {
+export const updateMemberMembers = (client: PolarCore) => {
   /**
    * Update a member's name or role.
    *
@@ -243,7 +243,7 @@ export const updateMemberMembers = (client: ClientBase) => {
   };
 };
 
-export function createMembersService(client: ClientBase) {
+export function createMembersService(client: PolarCore) {
   return {
     listMembers: listMembersMembers(client),
     addMember: addMemberMembers(client),

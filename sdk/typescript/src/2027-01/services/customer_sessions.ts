@@ -1,4 +1,4 @@
-import type { ClientBase, RequestOptions } from "../../base";
+import type { PolarCore, RequestOptions } from "../../base";
 import type {
   CustomerSession,
   CustomerSessionCustomerExternalIDCreate,
@@ -7,7 +7,7 @@ import type {
 
 import { AmbiguousExternalCustomerID, HTTPValidationError } from "../errors";
 
-export const createCustomerSessions = (client: ClientBase) => {
+export const createCustomerSessions = (client: PolarCore) => {
   /**
    * Create a customer session.
    *
@@ -46,7 +46,7 @@ export const createCustomerSessions = (client: ClientBase) => {
   };
 };
 
-export function createCustomerSessionsService(client: ClientBase) {
+export function createCustomerSessionsService(client: PolarCore) {
   return {
     create: createCustomerSessions(client),
   };

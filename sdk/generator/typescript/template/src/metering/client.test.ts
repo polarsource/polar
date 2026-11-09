@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { EventInput } from "./event";
 import type { CustomerMeter } from "./meter";
 
-import { ClientBase, PolarError, PolarNetworkError } from "../base";
+import { PolarCore, PolarError, PolarNetworkError } from "../base";
 import { createPolar } from "../{{ (ir.versions[-2] | default(ir.versions[0])).version }}/client";
 import { BufferedMeteringStrategy } from "./buffered";
 import { UnknownMeterError } from "./errors";
@@ -19,7 +19,7 @@ import {
   type MeteringOutpostOptions,
 } from "./client";
 
-const client = new ClientBase({
+const client = new PolarCore({
   accessToken: "token",
   baseUrl: "https://api.polar.sh",
   version: "2026-10",

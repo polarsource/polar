@@ -6,7 +6,7 @@ import type { EventInput } from "./event";
 import type { CustomerMeter } from "./meter";
 
 import { createPolar } from "../2026-10/client";
-import { ClientBase, PolarError, PolarNetworkError } from "../base";
+import { PolarCore, PolarError, PolarNetworkError } from "../base";
 import { BufferedMeteringStrategy } from "./buffered";
 import {
   Metering,
@@ -19,7 +19,7 @@ import {
 } from "./client";
 import { UnknownMeterError } from "./errors";
 
-const client = new ClientBase({
+const client = new PolarCore({
   accessToken: "token",
   baseUrl: "https://api.polar.sh",
   version: "2026-10",

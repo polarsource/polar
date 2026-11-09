@@ -26,7 +26,7 @@ const clientState = (status: ClientStatus) => {
   if (!status.detected) return ui.dim('not found')
   if (status.problem) return ui.yellow(status.problem)
   if (!status.installed) return 'not set up'
-  return `${ui.green('set up')}${status.version ? ` ${ui.dim(status.version)}` : ''}`
+  return `${ui.green('set up')}${status.version ? ` ${ui.dim(`· plugin ${status.version}`)}` : ''}`
 }
 
 export const statusReport = (result: AgentSetupResult) => {

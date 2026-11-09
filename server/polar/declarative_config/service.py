@@ -15,10 +15,19 @@ from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
+from polar.custom_field.repository import CustomFieldRepository
+from polar.custom_field.service import custom_field as custom_field_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Benefit, Organization, Product, User
+from polar.models import (
+    Agent,
+    Benefit,
+    Organization,
+    Product,
+    ProductCustomField,
+    User,
+)
 from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -66,6 +75,7 @@ from .schemas import (
 )
 from .validation import (
     BenefitChange,
+    CustomFieldChange,
     MeterChange,
     ProductChange,
     ResourceChange,
@@ -78,6 +88,7 @@ _METER_EXTERNAL_ID_INDEX = "ix_meters_organization_id_external_id"
 _BENEFIT_EXTERNAL_ID_INDEX = "ix_benefits_organization_id_external_id"
 _PRODUCT_EXTERNAL_ID_INDEX = "ix_products_organization_id_external_id"
 _WEBHOOK_EXTERNAL_ID_INDEX = "ix_webhook_endpoints_organization_id_external_id"
+_CUSTOM_FIELD_SLUG_INDEX = "custom_fields_slug_organization_id_active_key"
 
 
 def _assert_scopes(
@@ -120,6 +131,19 @@ async def _assert_webhooks_permission(
             auth_subject,
             organization.id,
             OrganizationPermission.organization_manage,
+        )
+
+
+async def _assert_custom_fields_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization | Agent],
+    config: Config,
+    organization: Organization,
+    permission: OrganizationPermission,
+) -> None:
+    if "custom_fields" in config.model_fields_set:
+        await assert_organization_permission(
+            session, auth_subject, organization.id, permission
         )
 
 
@@ -187,6 +211,14 @@ class ConfigWebhookConflict(PolarError):
         super().__init__(
             "A webhook endpoint in this config was created by a concurrent request. "
             "Retry.",
+            409,
+        )
+
+
+class ConfigCustomFieldConflict(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "A custom field in this config was created by a concurrent request. Retry.",
             409,
         )
 
@@ -367,6 +399,13 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_manage,
+        )
         catalog_repository = CatalogRepository.from_session(session)
         await catalog_repository.lock(organization.id)
         draft = await catalog_repository.get_draft(organization.id)
@@ -376,6 +415,9 @@ class DeclarativeConfigService:
         removed, removal_issues = await removals.products(session, organization, config)
         issues.extend(removal_issues)
         removed += await removals.benefits(session, organization, config)
+        removed_custom_fields = await removals.custom_fields(
+            session, organization, config, for_update=True
+        )
         issues.extend(
             await catalogs.cascade_benefit_changes(
                 session, organization, changes, removed
@@ -408,6 +450,9 @@ class DeclarativeConfigService:
         meter_results, meter_ids = await self._apply_meters(
             session, organization, changes.meters
         )
+        custom_field_results, custom_field_ids = await self._apply_custom_fields(
+            session, organization, changes.custom_fields
+        )
         benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
             session,
             redis,
@@ -424,7 +469,9 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
+            custom_field_ids,
             draft=not publish,
+            manage_custom_fields="custom_fields" in config.model_fields_set,
         )
         catalog: ConfigCatalogChange | None = None
         if new_products or new_benefits or removed:
@@ -453,6 +500,12 @@ class DeclarativeConfigService:
             # The config describes the catalog and matches live: no draft left.
             await catalog_service.discard_draft(session, draft)
 
+        # After publishing: the bulk detach marks loaded attachments as deleted.
+        for custom_field in removed_custom_fields:
+            await custom_field_service.delete(
+                session, custom_field, auth_subject, declarative_config=True
+            )
+
         if (
             changes.settings is not None
             and changes.settings.action == ConfigAction.updated
@@ -469,10 +522,14 @@ class DeclarativeConfigService:
             changes=[
                 *webhook_results,
                 *meter_results,
+                *custom_field_results,
                 *benefit_results,
                 *product_results,
             ],
-            removed=removed,
+            removed=[
+                *removed,
+                *removals.custom_field_removals(removed_custom_fields),
+            ],
             catalog=catalog,
             settings=settings_result,
         )
@@ -489,6 +546,13 @@ class DeclarativeConfigService:
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_read,
+        )
         base = await catalog_service.resolve(session, organization, catalog_id)
         archived_base = (
             base if base is not None and base.status != CatalogStatus.live else None
@@ -541,10 +605,16 @@ class DeclarativeConfigService:
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
+                *self._plan_changes(ConfigResource.custom_field, changes.custom_fields),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
             ],
-            removed=removed,
+            removed=[
+                *removed,
+                *removals.custom_field_removals(
+                    await removals.custom_fields(session, organization, config)
+                ),
+            ],
             catalog=catalog,
             settings=None
             if changes.settings is None
@@ -850,6 +920,44 @@ class DeclarativeConfigService:
             )
         return results, meter_ids
 
+    async def _apply_custom_fields(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        changes: Sequence[CustomFieldChange],
+    ) -> tuple[list[ConfigResult], dict[str, UUID]]:
+        repository = CustomFieldRepository.from_session(session)
+        results: list[ConfigResult] = []
+        custom_field_ids: dict[str, UUID] = {}
+        for change in changes:
+            custom_field = change.existing
+            if custom_field is None:
+                try:
+                    async with session.begin_nested():
+                        custom_field = await repository.create(
+                            change.config.type.get_model()(
+                                **change.update_dict,
+                                slug=change.config.slug,
+                                organization=organization,
+                            ),
+                            flush=True,
+                        )
+                except IntegrityError as e:
+                    if _constraint_name(e) != _CUSTOM_FIELD_SLUG_INDEX:
+                        raise
+                    raise ConfigCustomFieldConflict() from e
+            elif change.update_dict:
+                await repository.update(custom_field, update_dict=change.update_dict)
+            custom_field_ids[change.config.slug] = custom_field.id
+            results.append(
+                ConfigResult(
+                    resource=ConfigResource.custom_field,
+                    external_id=change.config.slug,
+                    action=change.action,
+                )
+            )
+        return results, custom_field_ids
+
     async def _apply_benefits(
         self,
         session: AsyncSession,
@@ -927,8 +1035,10 @@ class DeclarativeConfigService:
         changes: Sequence[ProductChange],
         meter_ids: dict[str, UUID],
         benefit_ids: dict[str, UUID],
+        custom_field_ids: dict[str, UUID],
         *,
         draft: bool,
+        manage_custom_fields: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
         external_ids = {
@@ -960,6 +1070,7 @@ class DeclarativeConfigService:
                                     if is_organization(auth_subject)
                                     else organization.id,
                                     meter_ids,
+                                    custom_field_ids,
                                 ),
                                 auth_subject,
                                 declarative_config=True,
@@ -972,6 +1083,15 @@ class DeclarativeConfigService:
                                 catalog_service.copy_product_settings(
                                     change.existing, product
                                 )
+                                if not manage_custom_fields:
+                                    product.attached_custom_fields = [
+                                        ProductCustomField(
+                                            custom_field=attached.custom_field,
+                                            order=attached.order,
+                                            required=attached.required,
+                                        )
+                                        for attached in change.existing.attached_custom_fields
+                                    ]
                                 if config.meter_interval is None:
                                     update_dict["meter_interval"] = (
                                         change.existing.meter_interval

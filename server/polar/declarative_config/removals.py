@@ -1,6 +1,9 @@
+from collections.abc import Sequence
+
 from polar.catalog.repository import CatalogProductRepository, CatalogRepository
 from polar.catalog.service import catalog as catalog_service
-from polar.models import Catalog, Organization
+from polar.custom_field.repository import CustomFieldRepository
+from polar.models import Catalog, CustomField, Organization
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
@@ -135,4 +138,47 @@ async def benefits(
             reason=ConfigRemovalReason.missing,
         )
         for external_id in missing
+    ]
+
+
+async def custom_fields(
+    session: AsyncReadSession,
+    organization: Organization,
+    config: Config,
+    *,
+    for_update: bool = False,
+) -> Sequence[CustomField]:
+    """Custom fields the config doesn't list. Applying deletes them.
+
+    Custom fields that pull doesn't export are left untouched.
+    """
+    if "custom_fields" not in config.model_fields_set:
+        return []
+    listed = {custom_field.slug for custom_field in config.custom_fields}
+    missing = [
+        custom_field
+        for custom_field in await CustomFieldRepository.from_session(
+            session
+        ).get_all_by_organization(organization.id, for_update=for_update)
+        if custom_field.slug not in listed
+    ]
+    if not missing:
+        return []
+    exported = await export_config(session, organization, None)
+    describable = {custom_field.slug for custom_field in exported.config.custom_fields}
+    return [
+        custom_field for custom_field in missing if custom_field.slug in describable
+    ]
+
+
+def custom_field_removals(
+    custom_fields: Sequence[CustomField],
+) -> list[ConfigRemoval]:
+    return [
+        ConfigRemoval(
+            resource=ConfigResource.custom_field,
+            external_id=custom_field.slug,
+            reason=ConfigRemovalReason.missing,
+        )
+        for custom_field in sorted(custom_fields, key=lambda field: field.slug)
     ]

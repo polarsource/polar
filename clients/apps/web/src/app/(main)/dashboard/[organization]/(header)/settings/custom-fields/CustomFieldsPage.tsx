@@ -6,6 +6,7 @@ import UpdateCustomFieldModalContent from '@/components/CustomFields/UpdateCusto
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
+import { useIsManagedAsCode } from '@/hooks/permissions'
 import { useCustomFields, useDeleteCustomField } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -42,6 +43,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     })
 
   const [{ type }] = useQueryStates(filterParsers)
+  const managedAsCode = useIsManagedAsCode(organization.id)
 
   const [showNewModal, setShowNewModal] = useState(false)
   const [showUpdateModal, setShowUpdateModal] = useState(false)
@@ -123,6 +125,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         )
       },
     },
+  ]
+  const actionColumns: DataTableColumnDef<schemas['CustomField']>[] = [
     {
       id: 'actions',
       enableSorting: false,
@@ -164,15 +168,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wrapperClassName="max-w-(--breakpoint-md)!"
       title="Custom Fields"
       header={
-        <Button type="button" onClick={() => setShowNewModal(true)}>
-          New
-        </Button>
+        managedAsCode ? undefined : (
+          <Button type="button" onClick={() => setShowNewModal(true)}>
+            New
+          </Button>
+        )
       }
     >
       <div className="flex flex-col gap-8">
         {customFields && pageCount !== undefined && (
           <DataTable
-            columns={columns}
+            columns={managedAsCode ? columns : [...columns, ...actionColumns]}
             data={customFields}
             rowCount={rowCount}
             pageCount={pageCount}

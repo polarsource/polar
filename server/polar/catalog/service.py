@@ -25,7 +25,6 @@ from polar.models import (
     CatalogProduct,
     Organization,
     Product,
-    ProductCustomField,
     ProductMedia,
 )
 from polar.models.catalog import CatalogStatus
@@ -657,14 +656,6 @@ class CatalogService:
         new_product.product_medias = [
             ProductMedia(file=media.file, order=media.order)
             for media in product.product_medias
-        ]
-        new_product.attached_custom_fields = [
-            ProductCustomField(
-                custom_field=field.custom_field,
-                order=field.order,
-                required=field.required,
-            )
-            for field in product.attached_custom_fields
         ]
 
 

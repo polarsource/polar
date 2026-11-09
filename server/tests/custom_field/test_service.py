@@ -3,6 +3,7 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.custom_field.schemas import CustomFieldCreateText, CustomFieldUpdateText
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.declarative_config.guard import DeclarativeConfigManaged
 from polar.exceptions import PolarRequestValidationError
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.custom_field import CustomFieldText, CustomFieldType
@@ -43,6 +44,28 @@ async def order_text_field_data(
 
 @pytest.mark.anyio
 class TestCreate:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.create(
+                session,
+                CustomFieldCreateText(
+                    type=CustomFieldType.text,
+                    slug="company",
+                    name="Company",
+                    properties={},
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
     @pytest.mark.auth
     async def test_existing_slug(
         self,
@@ -98,6 +121,23 @@ class TestCreate:
 @pytest.mark.anyio
 class TestUpdate:
     @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.update(
+                session,
+                text_field,
+                CustomFieldUpdateText(type=text_field.type, name="Renamed"),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
     async def test_slug_update(
         self,
         session: AsyncSession,
@@ -151,3 +191,23 @@ class TestUpdate:
         await session.flush()
 
         assert updated_field.slug == deleted_field.slug
+
+
+@pytest.mark.anyio
+class TestDelete:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.delete(session, text_field, auth_subject)
+
+        deleted_field = await custom_field_service.delete(
+            session, text_field, auth_subject, declarative_config=True
+        )
+        assert deleted_field.deleted_at is not None

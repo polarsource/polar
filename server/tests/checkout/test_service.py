@@ -2681,6 +2681,25 @@ class TestCheckoutLinkCreate:
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_trial_payment_setup_not_required(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+            trial_payment_setup_required=False,
+        )
+
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.trial_payment_setup_required is False
+        assert checkout.is_payment_setup_required is False
+
     async def test_dropped_embed_origin(
         self,
         save_fixture: SaveFixture,

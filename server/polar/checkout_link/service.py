@@ -225,6 +225,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             if not any(product.is_recurring for product in products):
                 checkout_link.trial_interval = None
                 checkout_link.trial_interval_count = None
+                checkout_link.trial_payment_setup_required = None
 
         if "discount_id" in checkout_link_update.model_fields_set:
             if checkout_link_update.discount_id is None:

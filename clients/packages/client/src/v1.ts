@@ -14933,6 +14933,11 @@ export interface components {
       /** @description Payment processor used. */
       payment_processor: components['schemas']['PaymentProcessor']
       /**
+       * Trial Payment Setup Required
+       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used.
+       */
+      trial_payment_setup_required: boolean | null
+      /**
        * Client Secret
        * @description Client secret used to access the checkout link.
        */
@@ -15027,6 +15032,11 @@ export interface components {
        * @description The number of interval units for the trial period.
        */
       trial_interval_count?: number | null
+      /**
+       * Trial Payment Setup Required
+       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used.
+       */
+      trial_payment_setup_required?: boolean | null
       /**
        * Payment Processor
        * @description Payment processor to use. Currently only Stripe is supported.
@@ -15212,6 +15222,11 @@ export interface components {
       metadata?: {
         [key: string]: string | number | boolean
       }
+      /**
+       * Trial Payment Setup Required
+       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used.
+       */
+      trial_payment_setup_required?: boolean | null
       /**
        * Products
        * @description List of products that will be available to select at checkout.

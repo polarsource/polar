@@ -64,6 +64,10 @@ const PULL_RETRY_DELAY = 1000;
 const MAX_PULL_RETRY_DELAY = 30000;
 const PULL_LIMIT = 500;
 const PULL_CONCURRENCY = 16;
+const SNAPSHOT_BATCH = 500;
+const FETCH_BATCH_WINDOW = 10;
+const FETCH_CONCURRENCY = 3;
+const FETCH_RETRY_DELAY = 100;
 const PULL_CHECK_INTERVAL = 1000;
 const BUCKET_PREFIX = "bucket:";
 const PENDING_PREFIX = "pending:";
@@ -196,11 +200,14 @@ const eachAtMost = async <T>(
   work: (item: T) => Promise<void>,
 ): Promise<void> => {
   let next = 0;
-  await Promise.all(
+  // Every worker ends before a failure goes up: the caller's cleanup must not run under them.
+  const workers = await Promise.allSettled(
     Array.from({ length: Math.min(limit, items.length) }, async () => {
       while (next < items.length) await work(items[next++]);
     }),
   );
+  const failed = workers.find((worker) => worker.status === "rejected");
+  if (failed) throw failed.reason;
 };
 const reconnectDelay = (attempt: number): number =>
   Math.min(MAX_REDIS_RECONNECT_DELAY, REDIS_RECONNECT_DELAY * 2 ** (attempt - 1)) *
@@ -357,6 +364,8 @@ export class Outpost {
   private reducers: Reducer[] = [];
   private matchers: ReducerMatchers = [];
   private readonly requesting = new Map<string, Promise<void>>();
+  private queued: { identity: string; done: () => void }[] = [];
+  private fetchTimer?: ReturnType<typeof setTimeout>;
   private isConfigured = false;
   private prefix = KEY_VERSION;
   private refreshTimer?: ReturnType<typeof setInterval>;
@@ -736,6 +745,14 @@ export class Outpost {
     return `${this.prefix}:pull:lock`;
   }
 
+  private get coldKey(): string {
+    return `${this.prefix}:cold`;
+  }
+
+  private get coldLockKey(): string {
+    return `${this.prefix}:cold:lock`;
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -947,39 +964,127 @@ export class Outpost {
     return result;
   }
 
-  // One instance of the fleet asks Polar for a cold customer; the others read the state it applies.
+  // Queues the identity once. The instance holding the cold lock asks Polar for the fleet's cold
+  // customers together and applies their states.
   private fetch(customer: string, reducer: Reducer): Promise<void> {
     const identity = `${customer}:${reducer.id}`;
     let fetching = this.requesting.get(identity);
     if (!fetching) {
-      fetching = this.fetchSnapshot(customer, reducer, identity).finally(() =>
+      fetching = new Promise<void>((done) => this.queued.push({ identity, done })).finally(() =>
         this.requesting.delete(identity),
       );
       this.requesting.set(identity, fetching);
+      this.fetchTimer ??= setTimeout(() => void this.fetchQueued());
     }
     return fetching;
   }
 
-  private async fetchSnapshot(customer: string, reducer: Reducer, identity: string): Promise<void> {
-    const lock = `${this.prefix}:fetch:${identity}`;
-    const token = randomUUID();
-    let locked = false;
+  private async fetchQueued(): Promise<void> {
+    this.fetchTimer = undefined;
+    const queued = this.queued.splice(0);
     try {
       const redis = this.requireRedis();
-      locked = (await redis.set(lock, token, "PX", TIMEOUT, "NX")) !== null;
-      if (!locked) return;
-      const resets = this.resets;
-      const snapshots = await this.request<Snapshot[]>("POST", "/v1/outpost/meter-usage", {
-        body: { identities: [{ ...customerArguments(customer), reducer_id: reducer.id }] },
+      // A customer already queued or asked for stays out of the queue until Polar answers.
+      const marking = redis.pipeline();
+      for (const { identity } of queued)
+        marking.set(`${this.prefix}:fetch:${identity}`, "1", "PX", TIMEOUT, "NX");
+      const marked = await marking.exec().catch((error: unknown) => {
+        throw redisUnavailable(error);
       });
-      await this.serial(async () => {
-        for (const snapshot of snapshots) await this.receiveSnapshot(snapshot, false, resets);
-      });
+      if (marked === null) throw new UnavailableRedisError();
+      const failed = marked.find(([error]) => error)?.[0];
+      if (failed) throw redisUnavailable(failed);
+      const identities = queued
+        .filter((_, index) => marked[index]?.[1] === "OK")
+        .map(({ identity }) => identity);
+      if (identities.length)
+        await redis.sadd(this.coldKey, ...identities).catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+      await this.drainCold();
     } catch (error) {
       this.failUnlessTransient(error);
     } finally {
-      // Past its TTL, the lock may be another instance's.
-      if (locked) await this.redis?.eval(RELEASE_LOCK_SCRIPT, 1, lock, token).catch(() => {});
+      for (const { done } of queued) done();
+    }
+  }
+
+  // Once it lets go of the lock, the instance looks again: a customer queued while it held the
+  // lock is not left behind.
+  private async drainCold(): Promise<void> {
+    const redis = this.requireRedis();
+    for (;;) {
+      const token = randomUUID();
+      if (!(await redis.set(this.coldLockKey, token, "PX", TIMEOUT, "NX"))) return;
+      try {
+        await sleep(FETCH_BATCH_WINDOW);
+        const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.coldLockKey, token, TIMEOUT);
+        for (;;) {
+          const batches: string[][] = [];
+          while (batches.length < FETCH_CONCURRENCY) {
+            const identities = await redis.spop(this.coldKey, SNAPSHOT_BATCH);
+            if (!identities.length) break;
+            batches.push(identities);
+          }
+          if (!batches.length) break;
+          await renew();
+          // A few batches at once: the cold start lasts as long as the slowest, not their sum.
+          await eachAtMost(batches, FETCH_CONCURRENCY, (identities) =>
+            this.fetchBatch(identities, renew),
+          );
+        }
+      } finally {
+        // Past its TTL, the lock may be another instance's.
+        await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.coldLockKey, token).catch(() => {});
+      }
+      if (!(await redis.scard(this.coldKey))) return;
+    }
+  }
+
+  private async fetchBatch(identities: string[], renew: () => Promise<unknown>): Promise<void> {
+    try {
+      const resets = this.resets;
+      const body = {
+        identities: identities.map((identity) => {
+          const separator = identity.lastIndexOf(":");
+          return {
+            ...customerArguments(identity.slice(0, separator)),
+            reducer_id: identity.slice(separator + 1),
+          };
+        }),
+      };
+      const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
+      // Its reads still wait: a failure that may pass is asked for again until they give up.
+      const ask = async (delay: number): Promise<Snapshot[]> => {
+        try {
+          return await this.request<Snapshot[]>("POST", "/v1/outpost/meter-usage", { body });
+        } catch (error) {
+          const wait =
+            error instanceof PolarRateLimitError && error.retryAfter !== null
+              ? error.retryAfter * 1000
+              : delay;
+          if (
+            error instanceof RefusedError ||
+            (error instanceof PolarClientError && !(error instanceof PolarRateLimitError)) ||
+            Date.now() + wait >= deadline
+          )
+            throw error;
+          await sleep(wait);
+          await renew();
+          return ask(delay * 2);
+        }
+      };
+      const snapshots = await ask(FETCH_RETRY_DELAY);
+      // Side by side, as a pulled page: one instance applies the snapshots of the fleet.
+      await this.serial(() =>
+        eachAtMost(snapshots, PULL_CONCURRENCY, async (snapshot) => {
+          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renew();
+        }),
+      );
+    } finally {
+      await this.requireRedis()
+        .del(...identities.map((identity) => `${this.prefix}:fetch:${identity}`))
+        .catch(() => {});
     }
   }
 

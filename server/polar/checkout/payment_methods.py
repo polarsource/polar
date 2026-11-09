@@ -85,10 +85,16 @@ PAYMENT_METHOD_RULES: dict[str, PaymentMethodRule] = {
         amount_limits={"eur": (45, 99_999_999)},
     ),
     "eps": PaymentMethodRule(
-        countries=frozenset({"AT"}), currencies=frozenset({"eur"}), reusable=False
+        countries=frozenset({"AT"}),
+        currencies=frozenset({"eur"}),
+        reusable=False,
+        amount_limits={"eur": (100, 99_999_999)},
     ),
     "ideal": PaymentMethodRule(
-        countries=frozenset({"NL"}), currencies=frozenset({"eur"}), reusable=False
+        countries=frozenset({"NL"}),
+        currencies=frozenset({"eur"}),
+        reusable=False,
+        amount_limits={"eur": (1, 99_999_999)},
     ),
 }
 

@@ -114,6 +114,10 @@ def test_payment_method_rule_amount_limits(
         ("US", "usd", 100_000_000, ["card", "link"]),
         ("BE", "eur", 44, ["card", "link"]),
         ("BE", "eur", 45, ["card", "link", "bancontact"]),
+        ("AT", "eur", 99, ["card", "link"]),
+        ("AT", "eur", 100, ["card", "link", "eps"]),
+        ("NL", "eur", 1, ["card", "link", "ideal"]),
+        ("NL", "eur", 100_000_000, ["card", "link"]),
         ("KR", "krw", 674, ["card", "link"]),
         (
             "KR",

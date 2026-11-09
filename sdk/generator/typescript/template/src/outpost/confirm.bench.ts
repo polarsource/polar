@@ -3,9 +3,7 @@ import { once } from "node:events";
 import { afterAll, beforeAll, bench, describe } from "vitest";
 
 import {
-  CHANNEL,
   COLD_UNTIL,
-  EPOCH,
   PENDING_COUNTS,
   encodePending,
   encodeState,
@@ -58,9 +56,6 @@ describe("CONFIRM", () => {
             2,
             stateKey,
             pendingKey,
-            identityOf(pending),
-            CHANNEL,
-            EPOCH,
             COLD_UNTIL,
             "",
             ...ids,

@@ -14,6 +14,7 @@ from ..tax_id import TaxID
 from .base import (
     AlreadyRevertedError,
     CalculationExpiredError,
+    InvalidAddressError,
     InvalidTaxIDError,
     TaxabilityReason,
     TaxBreakdownItem,
@@ -109,8 +110,15 @@ class TaxCalculationService:
             The calculation and the processor that produced it.
 
         Raises:
+            InvalidAddressError: If the address lacks fields required to
+                determine the tax jurisdiction.
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
         """
+        if address.country in {"US", "CA"} and not address.has_state():
+            raise InvalidAddressError("State is required.")
+        if address.country == "US" and address.postal_code is None:
+            raise InvalidAddressError("Postal code is required.")
+
         for processor in settings.tax_processors:
             log.debug("Attempting tax calculation with processor", processor=processor)
             tax_processor_service = _get_tax_service(processor)
@@ -338,6 +346,7 @@ tax_calculation = TaxCalculationService()
 __all__ = [
     "AlreadyRevertedError",
     "CalculationExpiredError",
+    "InvalidAddressError",
     "InvalidTaxIDError",
     "TaxBreakdownItem",
     "TaxCalculation",

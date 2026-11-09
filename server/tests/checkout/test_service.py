@@ -3711,33 +3711,6 @@ class TestUpdate:
         assert checkout.customer_billing_address.country == "US"
 
     @pytest.mark.parametrize(
-        "address",
-        [
-            {"country": "US"},
-            {"country": "US", "state": "NY"},
-            {"country": "US", "postal_code": "10001"},
-            {"country": "CA"},
-        ],
-    )
-    async def test_skip_calculate_tax_incomplete_address(
-        self,
-        address: dict[str, str],
-        session: AsyncSession,
-        calculate_tax_mock: AsyncMock,
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        checkout = await checkout_service.update(
-            session,
-            checkout_one_time_fixed,
-            CheckoutUpdate(
-                customer_billing_address=AddressInput.model_validate(address),
-            ),
-        )
-
-        calculate_tax_mock.assert_not_called()
-        assert checkout.tax_amount is None
-
-    @pytest.mark.parametrize(
         ("tax_behavior", "amount", "tax_amount", "expected_net_amount"),
         [
             (TaxBehavior.exclusive, 1000, 100, 1000),

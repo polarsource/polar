@@ -5,9 +5,9 @@ from freezegun import freeze_time
 from pytest_mock import MockerFixture
 
 from polar.config import Environment, settings
-from polar.enums import TaxProcessor
+from polar.enums import TaxBehaviorOption, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
-from polar.tax.calculation import TaxCode, tax_calculation
+from polar.tax.calculation import InvalidAddressError, TaxCode, tax_calculation
 
 
 @pytest.mark.anyio
@@ -97,3 +97,38 @@ class TestRecord:
             "order",
             transaction_date,
         )
+
+
+@pytest.mark.anyio
+class TestCalculate:
+    @pytest.mark.parametrize(
+        "address",
+        [
+            {"country": "US"},
+            {"country": "US", "state": "NY"},
+            {"country": "US", "postal_code": "10001"},
+            {"country": "CA"},
+        ],
+    )
+    async def test_incomplete_address(
+        self, mocker: MockerFixture, address: dict[str, str]
+    ) -> None:
+        numeral_mock = mocker.patch(
+            "polar.tax.calculation.numeral_tax_service.calculate"
+        )
+        stripe_mock = mocker.patch("polar.tax.calculation.stripe_tax_service.calculate")
+
+        with pytest.raises(InvalidAddressError):
+            await tax_calculation.calculate(
+                "identifier",
+                "usd",
+                1000,
+                TaxBehaviorOption.location,
+                TaxCode.general_electronically_supplied_services,
+                Address.model_validate(address),
+                [],
+                customer_exempt=False,
+            )
+
+        numeral_mock.assert_not_called()
+        stripe_mock.assert_not_called()

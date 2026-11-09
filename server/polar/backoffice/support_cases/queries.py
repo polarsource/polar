@@ -13,7 +13,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, and_, func, or_, select
 
-from polar.models import Dispute, Organization, User
+from polar.models import BackofficeUser, Dispute, Organization, User
 from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -115,7 +115,7 @@ def cases_statement(
             SupportCase,
             Organization,
             is_open.label("is_open"),
-            User.email.label("assignee_email"),
+            func.coalesce(BackofficeUser.email, User.email).label("assignee_email"),
             awaiting_platform.label("awaiting_platform"),
             unread.label("unread"),
             Dispute.status.label("dispute_status"),
@@ -126,6 +126,9 @@ def cases_statement(
         .join(Organization, Organization.id == SupportCase.organization_id)
         .outerjoin(Dispute, DisputeSupportCase.dispute_id == Dispute.id)
         .outerjoin(User, SupportCase.assigned_user_id == User.id)
+        .outerjoin(
+            BackofficeUser, SupportCase.backoffice_assigned_user_id == BackofficeUser.id
+        )
         .where(SupportCase.deleted_at.is_(None))
     )
 

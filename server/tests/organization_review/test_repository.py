@@ -308,6 +308,9 @@ class TestRecordHumanDecision:
         assert decision.verdict == "APPROVE"
         assert decision.risk_score == 15.0  # LOW
         assert decision.reason == "Looks good"
+        assert decision.reviewer_id == user.id
+        assert decision.backoffice_reviewer is not None
+        assert decision.backoffice_reviewer.email == user.email.lower()
         assert decision.is_current is True
 
     async def test_with_agent_review_override(

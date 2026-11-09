@@ -4,7 +4,6 @@ import contextlib
 import json
 from collections.abc import Generator, Sequence
 
-import structlog
 from fastapi import Request
 from tagflow import tag, text
 
@@ -22,8 +21,6 @@ from ._shared import (
     render_review_context_badge,
 )
 from .risk_signals import render_flagged_names_card, render_risk_signals_card
-
-logger = structlog.get_logger()
 
 
 class ReviewsSection:
@@ -127,22 +124,15 @@ class ReviewsSection:
                                     with tag.div(classes=f"badge {decision_badge}"):
                                         text(human_feedback.decision)
 
-                                # Reviewer info
-                                if human_feedback.reviewer_id is not None:
-                                    try:
-                                        if (
-                                            human_feedback.reviewer
-                                            and human_feedback.reviewer.email
-                                        ):
-                                            with tag.span(
-                                                classes="text-xs text-base-content/60"
-                                            ):
-                                                text(human_feedback.reviewer.email)
-                                    except Exception:
-                                        logger.exception(
-                                            "Failed to render review feedback reviewer",
-                                            review_id=review.id,
-                                        )
+                                reviewer = (
+                                    human_feedback.backoffice_reviewer
+                                    or human_feedback.reviewer
+                                )
+                                if reviewer is not None:
+                                    with tag.span(
+                                        classes="text-xs text-base-content/60"
+                                    ):
+                                        text(reviewer.email)
 
                                 with tag.span(classes="text-xs text-base-content/40"):
                                     text(

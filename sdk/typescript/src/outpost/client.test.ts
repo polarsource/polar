@@ -8,7 +8,7 @@ import { createRequire } from "node:module";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
 
 import { createPolar } from "../2026-10/client";
-import { ClientBase } from "../base";
+import { ClientBase, PolarError } from "../base";
 import { UnknownMeterError } from "../metering/errors";
 import {
   decodeState,
@@ -114,7 +114,12 @@ const confirmRequests: Record<string, unknown>[] = [];
 // Each identity asked for, and the size of each meter usage request.
 const meterUsageRequests: Record<string, unknown>[] = [];
 const meterUsageBatches: number[] = [];
+// The most meter usage requests Polar held at once.
+let meterUsageInFlight = 0;
+let meterUsageMostInFlight = 0;
 let meterUsageStatus = 200;
+// Meter usage requests that fail with a 503 before Polar answers again.
+let meterUsageFailures = 0;
 const outposts: Outpost[] = [];
 
 const creditReducer = (id: string, meterId: string): Reducer => ({
@@ -212,9 +217,13 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
       meterUsageRequests.push(...identities);
       meterUsageBatches.push(identities.length);
       if (meterUsageStatus !== 200) return respond(response, {}, meterUsageStatus);
+      if (meterUsageFailures > 0) {
+        meterUsageFailures -= 1;
+        return respond(response, {}, 503);
+      }
       if (!snapshot) return respond(response, []);
       let delay = 0;
-      const payloads = identities.map(({ reducer_id }) => {
+      const payloads = identities.map(({ reducer_id, ...requested }) => {
         const reducerId = reducer_id as string;
         const kind = reducers.find((reducer) => reducer.id === reducerId)?.kind;
         const { delay: wait = 0, ...override } = reducerSnapshots[reducerId] ?? {};
@@ -223,11 +232,18 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
           customer_exists: true,
           ...snapshot,
           ...(kind === "credit" && creditSnapshot(credited, snapshot!.version as number)),
+          customer_id: null,
+          external_customer_id: null,
+          ...requested,
           reducer_id: reducerId,
           ...override,
         };
       });
-      setTimeout(() => respond(response, payloads), delay);
+      meterUsageMostInFlight = Math.max(meterUsageMostInFlight, ++meterUsageInFlight);
+      setTimeout(() => {
+        meterUsageInFlight -= 1;
+        respond(response, payloads);
+      }, delay);
       return;
     }
     case "POST /v1/outpost/confirm": {
@@ -293,7 +309,9 @@ beforeEach(async () => {
   changesStatus = 200;
   meterUsageRequests.length = 0;
   meterUsageBatches.length = 0;
+  meterUsageMostInFlight = 0;
   meterUsageStatus = 200;
+  meterUsageFailures = 0;
   credited = 100;
   reducerSnapshots = {};
   ingested = new Set();
@@ -868,14 +886,17 @@ it("asks Polar for a customer only while the shared Redis has no snapshot of it"
   expect((await first.meter(meter))?.consumed_units).toBe(3);
   const second = await start();
   expect((await second.meter(meter))?.consumed_units).toBe(3);
-  expect(meterUsageRequests.map((request) => request.reducer_id)).toEqual(["tokens", "credits"]);
+  expect(meterUsageRequests.map((request) => request.reducer_id).sort()).toEqual([
+    "credits",
+    "tokens",
+  ]);
 });
 
 it("keeps the cold-fetch lock another instance took once its own expired", async () => {
   snapshot = aliceSnapshot;
   reducerSnapshots = { tokens: { delay: 100 } };
   const outpost = await start({ snapshotTimeout: 1_000 });
-  const lock = `outpost:v1:${organization}:fetch:external:alice:tokens`;
+  const lock = `outpost:v1:${organization}:cold:lock`;
   const read = outpost.meter(meter);
   await vi.waitFor(async () => expect(await redis.exists(lock)).toBe(1));
   await redis.set(lock, "other");
@@ -1578,7 +1599,8 @@ it.each([
   expect((await outpost.meter(meter))?.consumed_units).toBe(8);
   expect((await outpost.meter(meter))?.balance).toBe(92);
   expect(outpost.connected).toBe(true);
-  expect(applySnapshot.mock.calls.filter(([stateKey]) => stateKey === key)).toHaveLength(2);
+  const [[failed]] = applySnapshot.mock.calls;
+  expect(applySnapshot.mock.calls.filter(([stateKey]) => stateKey === failed)).toHaveLength(2);
 });
 
 it.each([
@@ -1645,6 +1667,88 @@ it("reports a failed read as an error", async () => {
   expect(await readOutcomes(outpost)).toEqual([["meter", "error"]]);
 });
 
+it("asks Polar in one request for the cold customers the whole fleet reads", async () => {
+  snapshot = aliceSnapshot;
+  const fleet = await Promise.all(
+    Array.from({ length: 3 }, () => start({ snapshotTimeout: 1_000 })),
+  );
+  await fleet[0]["pull"]();
+  await Promise.all(
+    ["alice", "bob", "carol"].map((id, index) =>
+      fleet[index].meter({ external_customer_id: id, meter_id: "meter" }),
+    ),
+  );
+  expect(meterUsageBatches).toEqual([6]);
+});
+
+it("asks Polar again for a batch of cold customers a passing error failed", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start({ snapshotTimeout: 2_000 });
+  await outpost["pull"]();
+  meterUsageFailures = 1;
+  expect((await outpost.meter(meter))?.consumed_units).toBe(3);
+  expect(meterUsageBatches).toEqual([2, 2]);
+});
+
+it("applies the cold customers it asked Polar for side by side", async () => {
+  snapshot = aliceSnapshot;
+  const outpost = await start({ snapshotTimeout: 2_000 });
+  await outpost["pull"]();
+  const receive = outpost["receiveSnapshot"].bind(outpost);
+  let applying = 0;
+  let most = 0;
+  outpost["receiveSnapshot"] = async (...args: Parameters<typeof receive>) => {
+    most = Math.max(most, ++applying);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    try {
+      return await receive(...args);
+    } finally {
+      applying -= 1;
+    }
+  };
+  const read = await Promise.all(
+    Array.from({ length: 10 }, (_, index) =>
+      outpost.meter({ external_customer_id: `customer-${index}`, meter_id: "meter" }),
+    ),
+  );
+  expect(most).toBeGreaterThan(1);
+  expect(read.every((value) => value !== null)).toBe(true);
+});
+
+it("lets go of a pull only once every snapshot of its page is done", async () => {
+  const outpost = await start();
+  const stateKey = (id: string) => `outpost:v1:${organization}:state:external:${id}:tokens`;
+  for (const id of ["failing", "slow"]) await redis.hset(stateKey(id), "cold:sum", 0);
+  let finished = false;
+  const receive = outpost["receiveSnapshot"].bind(outpost);
+  outpost["receiveSnapshot"] = async (...args: Parameters<typeof receive>) => {
+    if (args[0].external_customer_id === "failing") throw new PolarError("Polar is down");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const applied = await receive(...args);
+    finished = true;
+    return applied;
+  };
+  await deliver(
+    outpost,
+    ...["failing", "slow"].map((id) => ({ ...aliceSnapshot, external_customer_id: id })),
+  );
+  expect(finished).toBe(true);
+});
+
+it("asks Polar for a few batches of cold customers at once", async () => {
+  snapshot = aliceSnapshot;
+  reducerSnapshots = { tokens: { delay: 100 } };
+  const outpost = await start({ snapshotTimeout: 2_000 });
+  await outpost["pull"]();
+  await Promise.all(
+    Array.from({ length: 300 }, (_, index) =>
+      outpost.meter({ external_customer_id: `customer-${index}`, meter_id: "meter" }),
+    ),
+  );
+  expect(meterUsageBatches.sort((a, b) => b - a)).toEqual([500, 100]);
+  expect(meterUsageMostInFlight).toBe(2);
+});
+
 it("reads null for a customer Polar does not know", async () => {
   snapshot = { ...aliceSnapshot, customer_exists: false };
   const outpost = await start();
@@ -1672,6 +1776,7 @@ it.each([
 ])(
   "waits for the credit snapshot of the meter it reads (delay %i ms)",
   async (delay, credits, outcome) => {
+    await redis.hset(key, { cold_until: bucket, "cold:count": 1, "cold:sum": 3 });
     snapshot = aliceSnapshot;
     reducerSnapshots = { credits: { delay } };
     const outpost = await start();

@@ -7,6 +7,13 @@ import {
   type MetadataShape,
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
+import {
+  CustomFieldConfig,
+  customFieldHelpers,
+  required,
+  SLUG,
+} from './customField'
+import type { CustomFieldDefinition, CustomFieldHelpers } from './customField'
 import { deprecatedKey } from './deprecation'
 import type { Deprecated } from './deprecation'
 import {
@@ -47,6 +54,7 @@ export type SettingsConfig = typeof SettingsConfig.Type
 export const PolarConfig = Schema.Struct({
   settings: Schema.optionalKey(SettingsConfig),
   meters: Schema.Array(MeterConfig),
+  custom_fields: Schema.optionalKey(Schema.Array(CustomFieldConfig)),
   benefits: Schema.optionalKey(Schema.Array(BenefitConfig)),
   products: Schema.optionalKey(Schema.Array(ProductConfig)),
   webhooks: Schema.optionalKey(Schema.Array(WebhookEndpointConfig)),
@@ -92,7 +100,7 @@ const validateProductNaming = validateNaming('product', 3, 64)
 
 const assertKnown = (
   owner: string,
-  kind: 'meter' | 'benefit' | 'product',
+  kind: 'meter' | 'benefit' | 'product' | 'custom field',
   ids: ReadonlySet<string>,
   references: ReadonlyArray<string>,
 ) => {
@@ -225,13 +233,53 @@ type ConnectedBenefit<Definition> =
 type DeclaredEvents<Events extends EventDefinitions | undefined> =
   Events extends EventDefinitions ? Events : Record<never, never>
 
+type CustomFieldEntries =
+  | Readonly<Record<string, CustomFieldDefinition>>
+  | ReadonlyArray<readonly [slug: string, field: CustomFieldDefinition]>
+
+type CustomFieldKey<CustomFields extends CustomFieldEntries> =
+  CustomFields extends ReadonlyArray<
+    readonly [infer Key, CustomFieldDefinition]
+  >
+    ? Key & string
+    : keyof CustomFields & string
+
+type SlugCharacters = 'abcdefghijklmnopqrstuvwxyz0123456789-_'
+
+type IsSlug<Key extends string> = string extends Key
+  ? true
+  : Key extends `${infer Character}${infer Rest}`
+    ? SlugCharacters extends `${string}${Character}${string}`
+      ? Rest extends ''
+        ? true
+        : IsSlug<Rest>
+      : false
+    : false
+
+type ValidCustomFields<CustomFields extends CustomFieldEntries> = ValidEntries<
+  CustomFields,
+  {
+    [Key in CustomFieldKey<CustomFields>]: IsSlug<Key> extends true
+      ? unknown
+      : DeprecationError<`Custom field key '${Key}' can only use lowercase letters, numbers, - and _.`>
+  }
+>
+
+type CustomFieldsInput<CustomFields extends CustomFieldEntries> = (
+  helpers: CustomFieldHelpers,
+) => CustomFields & ValidCustomFields<CustomFields>
+
 type ProductEntries<
   Meter extends string = string,
   Benefit extends string = string,
+  Field extends string = string,
 > =
-  | Readonly<Record<string, ProductDefinition<Meter, Benefit>>>
+  | Readonly<Record<string, ProductDefinition<Meter, Benefit, Benefit, Field>>>
   | ReadonlyArray<
-      readonly [externalId: string, product: ProductDefinition<Meter, Benefit>]
+      readonly [
+        externalId: string,
+        product: ProductDefinition<Meter, Benefit, Benefit, Field>,
+      ]
     >
 
 type ProductGrant<Product> =
@@ -344,8 +392,13 @@ type ProductsInput<
   Meters extends MeterEntries,
   Benefits extends BenefitEntries,
   Products extends ProductEntries,
+  CustomFields extends CustomFieldEntries,
 > = (
-  helpers: ProductHelpers<MeterKey<Meters>, BenefitKey<Benefits>>,
+  helpers: ProductHelpers<
+    MeterKey<Meters>,
+    BenefitKey<Benefits>,
+    CustomFieldKey<CustomFields>
+  >,
 ) => Products &
   ValidProducts<
     Products,
@@ -361,9 +414,11 @@ type Present<Entries, Section> = [Entries] extends [never] ? unknown : Section
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
+  const CustomFields extends CustomFieldEntries = never,
   const Products extends ProductEntries<
     MeterKey<Meters>,
-    BenefitKey<Benefits>
+    BenefitKey<Benefits>,
+    CustomFieldKey<CustomFields>
   > = never,
   Events extends EventDefinitions | undefined = undefined,
   const Webhooks extends WebhookEntries = Record<never, never>,
@@ -376,16 +431,28 @@ export const defineConfig = <
       readonly meter: typeof meter<DeclaredEvents<Events>>
       readonly events: EventReferences<DeclaredEvents<Events>>
     }) => Meters
+    readonly customFields?: CustomFieldsInput<CustomFields>
     readonly benefits?: BenefitsInput<Meters, Benefits>
-    readonly products?: ProductsInput<Meters, Benefits, Products>
+    readonly products?: ProductsInput<Meters, Benefits, Products, CustomFields>
     readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
   } & Present<
     Benefits,
     { readonly benefits: BenefitsInput<Meters, Benefits> }
   > &
     Present<
+      CustomFields,
+      { readonly customFields: CustomFieldsInput<CustomFields> }
+    > &
+    Present<
       Products,
-      { readonly products: ProductsInput<Meters, Benefits, Products> }
+      {
+        readonly products: ProductsInput<
+          Meters,
+          Benefits,
+          Products,
+          CustomFields
+        >
+      }
     >,
 ): Config<Meters, Benefits, Events, Webhooks> => {
   const events = input.events as Events
@@ -410,6 +477,29 @@ export const defineConfig = <
       definition[deprecatedKey] ? [external_id] : [],
     ),
   )
+  const customFields = input.customFields?.(customFieldHelpers)
+  const customFieldEntries =
+    customFields === undefined
+      ? []
+      : toEntries<CustomFieldDefinition>(customFields)
+  const invalidSlug = customFieldEntries.find(([slug]) => !SLUG.test(slug))
+  if (invalidSlug !== undefined) {
+    throw new Error(
+      `Custom field key "${invalidSlug[0]}" can only use lowercase letters, numbers, - and _.`,
+    )
+  }
+  const invalidRange = customFieldEntries.find(
+    ([, { properties }]) =>
+      typeof properties.ge === 'number' &&
+      typeof properties.le === 'number' &&
+      properties.ge > properties.le,
+  )
+  if (invalidRange !== undefined) {
+    throw new Error(
+      `Custom field "${invalidRange[0]}" has a min that is after its max.`,
+    )
+  }
+  const customFieldSlugs = new Set(customFieldEntries.map(([slug]) => slug))
   const products = input.products?.({
     product,
     free,
@@ -418,6 +508,7 @@ export const defineConfig = <
     units,
     tier,
     meter: metered,
+    required,
   })
   const productEntries =
     products === undefined ? [] : toEntries<ProductDefinition>(products)
@@ -457,6 +548,17 @@ export const defineConfig = <
         }
       },
     ),
+    ...(customFields !== undefined && {
+      custom_fields: customFieldEntries.map(
+        ([slug, { name, type, properties, [metadataKey]: metadata }]) => ({
+          type,
+          slug,
+          name: name ?? slug,
+          properties,
+          ...(metadata !== undefined && { metadata }),
+        }),
+      ),
+    }),
     ...(benefits !== undefined && {
       benefits: benefitEntries.map(
         ([
@@ -507,6 +609,12 @@ export const defineConfig = <
         const deprecated = definition[deprecatedKey]
         assertKnown(owner, 'meter', meterIds, meterReferences)
         assertKnown(owner, 'benefit', benefitIds, definition.benefits)
+        assertKnown(
+          owner,
+          'custom field',
+          customFieldSlugs,
+          definition.fieldList.map(({ field }) => field),
+        )
         if (!deprecated) {
           assertNotDeprecated(
             owner,
@@ -535,6 +643,9 @@ export const defineConfig = <
           benefits: definition.benefits,
           ...(definition[metadataKey] !== undefined && {
             metadata: definition[metadataKey],
+          }),
+          ...(definition.fieldList.length > 0 && {
+            custom_fields: definition.fieldList,
           }),
           ...(definition.descriptionText !== undefined && {
             description: definition.descriptionText,

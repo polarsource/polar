@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
+import type { RequiredField } from './customField'
 import { withDeprecation } from './deprecation'
 import type { KeepDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
@@ -146,6 +147,14 @@ export const ProductConfig = Schema.Struct({
   ),
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
   benefits: Schema.Array(Schema.String),
+  custom_fields: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        field: Schema.String.check(Schema.isMinLength(1)),
+        required: Schema.optionalKey(Schema.Boolean),
+      }),
+    ),
+  ),
   metadata: Schema.optionalKey(Metadata),
   description: Schema.optionalKey(Schema.String),
   visibility: Schema.optionalKey(Visibility),
@@ -214,10 +223,15 @@ class ProductBuilder<
   P extends Prices<Meter> | undefined,
   Billing extends Recurring | OneTime | undefined,
   Granted extends Benefit = never,
+  Field extends string = string,
 > extends withDeprecation(withMetadata(withVisibility(Builder))) {
   readonly trialPeriod: Trial | undefined = undefined
   readonly meterPeriod: MeterCycle | undefined = undefined
   readonly benefits: ReadonlyArray<Granted> = []
+  readonly fieldList: ReadonlyArray<{
+    readonly field: string
+    readonly required: boolean
+  }> = []
   readonly descriptionText: string | undefined = undefined
 
   constructor(
@@ -232,7 +246,7 @@ class ProductBuilder<
     ...prices: Priced
   ): KeepDeprecation<
     this,
-    ProductBuilder<Meter, Benefit, Priced, Billing, Granted>
+    ProductBuilder<Meter, Benefit, Priced, Billing, Granted, Field>
   > {
     return this.with({ priceList: prices })
   }
@@ -241,20 +255,20 @@ class ProductBuilder<
     cadence: keyof typeof cadences,
   ): KeepDeprecation<
     this,
-    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>
   >
   recurring(
     count: number,
     interval: Interval,
   ): KeepDeprecation<
     this,
-    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>
   >
   recurring(
     ...args: Cycle
   ): KeepDeprecation<
     this,
-    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+    ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>
   > {
     const [interval, count] = cycleOf(args)
     const billing: Recurring = {
@@ -266,7 +280,7 @@ class ProductBuilder<
 
   once(): KeepDeprecation<
     this,
-    ProductBuilder<Meter, Benefit, P, OneTime, Granted>
+    ProductBuilder<Meter, Benefit, P, OneTime, Granted, Field>
   > {
     const billing: OneTime = {
       recurring_interval: null,
@@ -280,7 +294,7 @@ class ProductBuilder<
   }
 
   trial(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>,
     count: number,
     interval: Interval,
   ): this {
@@ -293,16 +307,16 @@ class ProductBuilder<
   }
 
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>,
     cadence: keyof typeof cadences,
   ): this
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>,
     count: number,
     interval: Interval,
   ): this
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted, Field>,
     ...args: Cycle
   ): this {
     const [interval, count] = cycleOf(args)
@@ -313,8 +327,25 @@ class ProductBuilder<
 
   grants<const Grant extends Benefit>(
     benefits: ReadonlyArray<Grant>,
-  ): KeepDeprecation<this, ProductBuilder<Meter, Benefit, P, Billing, Grant>> {
+  ): KeepDeprecation<
+    this,
+    ProductBuilder<Meter, Benefit, P, Billing, Grant, Field>
+  > {
     return this.with({ benefits })
+  }
+
+  /**
+   * The custom fields checkout asks for, in this order. They're optional
+   * unless wrapped in `required()`: `[required('terms'), 'company']`.
+   */
+  customFields<const Asked extends Field>(
+    fields: ReadonlyArray<Asked | RequiredField<Asked>>,
+  ): this {
+    return this.with({
+      fieldList: fields.map((field) =>
+        typeof field === 'string' ? { field, required: false } : field,
+      ),
+    })
   }
 
   description(description: string): this {
@@ -327,14 +358,23 @@ export type ProductDefinition<
   Meter extends string = string,
   Benefit extends string = string,
   Granted extends Benefit = Benefit,
-> = ProductBuilder<Meter, Benefit, Prices<Meter>, Recurring | OneTime, Granted>
+  Field extends string = string,
+> = ProductBuilder<
+  Meter,
+  Benefit,
+  Prices<Meter>,
+  Recurring | OneTime,
+  Granted,
+  Field
+>
 
 export const product = <
   Meter extends string = string,
   Benefit extends string = string,
+  Field extends string = string,
 >(
   name?: string,
-): ProductBuilder<Meter, Benefit, undefined, undefined> =>
+): ProductBuilder<Meter, Benefit, undefined, undefined, never, Field> =>
   new ProductBuilder(name, undefined, undefined)
 
 /**
@@ -373,10 +413,14 @@ export const productPrices = (
   )
 }
 
-export type ProductHelpers<Meter extends string, Benefit extends string> = {
+export type ProductHelpers<
+  Meter extends string,
+  Benefit extends string,
+  Field extends string = string,
+> = {
   readonly product: (
     name?: string,
-  ) => ProductBuilder<Meter, Benefit, undefined, undefined>
+  ) => ProductBuilder<Meter, Benefit, undefined, undefined, never, Field>
   readonly free: typeof free
   readonly fixed: typeof fixed
   readonly seats: typeof seats
@@ -385,4 +429,7 @@ export type ProductHelpers<Meter extends string, Benefit extends string> = {
   readonly meter: <const Priced extends Meter>(
     meter: Priced,
   ) => ReturnType<typeof metered<Priced>>
+  readonly required: <const Asked extends Field>(
+    field: Asked,
+  ) => RequiredField<Asked>
 }

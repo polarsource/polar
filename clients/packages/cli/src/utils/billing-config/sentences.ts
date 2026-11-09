@@ -232,12 +232,102 @@ const shownUrl = (url: unknown, format: unknown) =>
     ? url
     : new Rendered(webhookUrl(url, format))
 
+const FIELD_PROPERTIES: Record<string, string> = {
+  form_label: 'label',
+  form_help_text: 'help',
+  form_placeholder: 'placeholder',
+  textarea: 'textarea',
+  min_length: 'min length',
+  max_length: 'max length',
+  ge: 'min',
+  le: 'max',
+  options: 'options',
+}
+
+const propertyValue = (property: string, value: unknown, type: unknown) => {
+  if (value === undefined || value === null) return value
+  if (property === 'options' && Array.isArray(value)) {
+    return new Rendered(
+      value
+        .map(record)
+        .map(
+          (option) => `${name(option?.['value'])} → ${name(option?.['label'])}`,
+        )
+        .join('\n'),
+    )
+  }
+  if (type === 'date' && typeof value === 'number') {
+    return new Rendered(new Date(value * 1000).toISOString().slice(0, 10))
+  }
+  if (typeof value === 'boolean') return new Rendered(value ? 'yes' : 'no')
+  return value
+}
+
+// A custom field's properties show as one row each, with readable names.
+const customFieldProperties = (
+  change: AppliedEntry['diff'][number],
+  type: unknown,
+): AppliedEntry['diff'] => {
+  const before = record(change.before) ?? {}
+  const after = record(change.after) ?? {}
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]))
+    .map((key) => ({
+      field: FIELD_PROPERTIES[key] ?? key,
+      before: propertyValue(key, before[key], type),
+      after: propertyValue(key, after[key], type),
+    }))
+}
+
+const askedFields = (input: unknown) =>
+  Array.isArray(input)
+    ? new Rendered(
+        input.length === 0
+          ? 'none'
+          : input
+              .map(record)
+              .map(
+                (asked) =>
+                  `${name(asked?.['field'])}${asked?.['required'] === true ? ' (required)' : ''}`,
+              )
+              .join('\n'),
+      )
+    : input
+
 // Webhook URLs in a diff are redacted by the format on their own side.
 export const shownDiff = (
   section: string,
   diff: AppliedEntry['diff'],
   document: unknown,
 ): AppliedEntry['diff'] => {
+  if (section === 'custom_fields') {
+    return diff.flatMap((change) =>
+      change.field === 'properties'
+        ? customFieldProperties(change, record(document)?.['type'])
+        : [change],
+    )
+  }
+  if (section === 'products') {
+    return diff
+      .flatMap((change) =>
+        change.field !== 'custom_fields'
+          ? [change]
+          : change.before === undefined &&
+              Array.isArray(change.after) &&
+              change.after.length === 0
+            ? []
+            : [change],
+      )
+      .map((change) =>
+        change.field === 'custom_fields'
+          ? {
+              field: 'custom fields',
+              before: askedFields(change.before),
+              after: askedFields(change.after),
+            }
+          : change,
+      )
+  }
   if (section !== 'webhooks') return diff
   const format = diff.find((change) => change.field === 'format')
   const before =

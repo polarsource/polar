@@ -38,8 +38,8 @@ const report = (
   entries: ReadonlyArray<PruneEntry>,
 ) => {
   if (entries.length === 0) return []
-  const ordered = NOUNS.flatMap(([, resource]) =>
-    entries.filter((entry) => entry.resource === resource),
+  const ordered = NOUNS.flatMap(([section]) =>
+    entries.filter((entry) => `${entry.resource}s` === section),
   )
   // Shared across both groups so ids and reasons line up in one column each
   const typeWidth = Math.max(...ordered.map((entry) => entry.resource.length))

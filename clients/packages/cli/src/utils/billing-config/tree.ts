@@ -17,10 +17,11 @@ import {
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products' | 'webhooks'
+type Section = 'meters' | 'custom_fields' | 'benefits' | 'products' | 'webhooks'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
+  'custom_fields',
   'benefits',
   'products',
   'webhooks',
@@ -33,6 +34,7 @@ const isSection = (section: string): section is Section =>
 
 const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
+  custom_fields: () => undefined,
   benefits: benefitSentence,
   products: productSentence,
   webhooks: webhookSentence,
@@ -40,6 +42,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
+  custom_fields: new Set(),
   benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',
@@ -64,7 +67,8 @@ export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {
-    const id = record(item)?.['external_id']
+    // Custom fields are matched by slug, everything else by external_id
+    const id = record(item)?.['external_id'] ?? record(item)?.['slug']
     if (typeof id === 'string') byId.set(name(id), item)
   }
   return byId
@@ -182,6 +186,7 @@ export const formatTree = (
     entries.filter((entry) => entry.section === section)
   const docs = {
     meters: documents(input, 'meters'),
+    custom_fields: documents(input, 'custom_fields'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
     webhooks: documents(input, 'webhooks'),

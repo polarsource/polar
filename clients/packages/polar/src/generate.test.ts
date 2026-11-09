@@ -271,6 +271,45 @@ const cases: [string, PolarConfig][] = [
       .toJSON(),
   ],
   [
+    'custom fields',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        customFields: ({ text, number, date, checkbox, select }) => ({
+          company: text('Company')
+            .label('Company name')
+            .help('Your legal name')
+            .placeholder('Acme')
+            .textarea()
+            .minLength(2)
+            .maxLength(100)
+            .metadata({ source: 'crm' }),
+          employees: number('Employees').min(1).max(100000),
+          start: date('Start date').min('2026-01-01').max('2027-06-30'),
+          terms: checkbox('Terms').label('I accept the terms'),
+          'team-size': select('Team size', {
+            small: '1-10',
+            '"\\\n` ${notCode}': 'Large',
+          }).placeholder('Pick one'),
+          '10': select('Tens', [
+            ['20', 'Twenty'],
+            ['10', 'Ten'],
+          ]),
+        }),
+        products: ({ product, free, required }) => ({
+          pro: product('Pro')
+            .prices(free())
+            .recurring('monthly')
+            .customFields([required('terms'), 'team-size']),
+          tens: product('Tens')
+            .prices(free())
+            .once()
+            .customFields(['team-size', required('10')]),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
     'private resources',
     api
       .defineConfig({
@@ -602,4 +641,22 @@ test('leaves empty metadata out of the generated code', async () => {
     generateConfig({ meters: [{ ...meter, metadata: {} }] }),
   )
   expect(source).not.toContain('.metadata(')
+})
+
+test('renders date bounds as the UTC day they fall on', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      custom_fields: [
+        {
+          type: 'date',
+          slug: 'start',
+          name: 'Start',
+          properties: { ge: 1767261600, le: 1798761599 },
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(".min('2026-01-01')")
+  expect(source).toContain(".max('2026-12-31')")
 })

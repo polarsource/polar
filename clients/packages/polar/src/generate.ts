@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import { validateConfig } from './schema/config'
 import type { BenefitConfig } from './schema/benefit'
+import type { CustomFieldConfig } from './schema/customField'
 import type { Metadata } from './schema/metadata'
 import type { MeterConfig, MeterFilter } from './schema/meter'
 import { majorAmount, scaleRate } from './schema/money'
@@ -25,6 +26,22 @@ const key = (value: string): string =>
     : IDENTIFIER.test(value)
       ? value
       : literal(value)
+
+// Objects list integer-like keys first, so those need `[key, value]` entries.
+const keepsOrder = (keys: ReadonlyArray<string>): boolean => {
+  const objectKeys = Object.keys(
+    Object.fromEntries(keys.map((name) => [name, null])),
+  )
+  return (
+    objectKeys.length === keys.length &&
+    objectKeys.every((name, index) => name === keys[index])
+  )
+}
+
+const renderPairs = (pairs: ReadonlyArray<readonly [string, string]>) =>
+  keepsOrder(pairs.map(([name]) => name))
+    ? `{ ${pairs.map(([name, value]) => `${key(name)}: ${literal(value)}`).join(', ')} }`
+    : `[${pairs.map(([name, value]) => `[${literal(name)}, ${literal(value)}]`).join(', ')}]`
 
 const renderMetadata = (metadata: Metadata | undefined): string[] =>
   metadata === undefined || Object.keys(metadata).length === 0
@@ -114,6 +131,49 @@ const renderBenefit = (
     ...renderMetadata(benefit.metadata),
     ...renderVisibility(benefit.visibility),
     ...renderDeprecated(benefit.deprecated),
+  ].join('\n')
+}
+
+const FIELD_METHODS = [
+  ['form_label', 'label'],
+  ['form_help_text', 'help'],
+  ['form_placeholder', 'placeholder'],
+  ['min_length', 'minLength'],
+  ['max_length', 'maxLength'],
+  ['ge', 'min'],
+  ['le', 'max'],
+] as const
+
+// Bounds are Unix seconds, checked as the UTC calendar day they fall on.
+const dateText = (seconds: number): string =>
+  new Date(seconds * 1000).toISOString().slice(0, 10)
+
+const renderCustomField = (
+  field: CustomFieldConfig,
+  helpers: Set<string>,
+): string => {
+  helpers.add(field.type)
+  const properties: Record<string, unknown> = field.properties
+  return [
+    field.type === 'select'
+      ? `select(${literal(field.name)}, ${renderPairs(
+          field.properties.options.map(({ value, label }) => [value, label]),
+        )})`
+      : `${field.type}(${literal(field.name)})`,
+    ...FIELD_METHODS.flatMap(([property, method]) => {
+      const value = properties[property]
+      if (property === 'form_placeholder' && field.type === 'checkbox') {
+        return []
+      }
+      if (typeof value === 'number' && field.type === 'date') {
+        return [`.${method}(${literal(dateText(value))})`]
+      }
+      return typeof value === 'string' || typeof value === 'number'
+        ? [`.${method}(${literal(value)})`]
+        : []
+    }),
+    ...(properties['textarea'] === true ? ['.textarea()'] : []),
+    ...renderMetadata(field.metadata),
   ].join('\n')
 }
 
@@ -407,6 +467,18 @@ const renderProduct =
       ...(product.benefits.length === 0
         ? []
         : [`.grants([${product.benefits.map(literal).join(', ')}])`]),
+      ...(product.custom_fields === undefined ||
+      product.custom_fields.length === 0
+        ? []
+        : [
+            `.customFields([${product.custom_fields
+              .map(({ field, required }) => {
+                if (!required) return literal(field)
+                helpers.add('required')
+                return `required(${literal(field)})`
+              })
+              .join(', ')}])`,
+          ]),
       ...renderMetadata(product.metadata),
       ...(product.description === undefined
         ? []
@@ -422,13 +494,9 @@ const renderEntries = <Resource extends { readonly external_id: string }>(
   render: (resource: Resource, helpers: Set<string>) => string,
 ): string[] => {
   const helpers = new Set<string>()
-  const ids = resources.map((resource) => resource.external_id)
-  const objectKeys = Object.keys(
-    Object.fromEntries(ids.map((id) => [id, null])),
+  const useEntries = !keepsOrder(
+    resources.map((resource) => resource.external_id),
   )
-  const useEntries =
-    objectKeys.length !== ids.length ||
-    objectKeys.some((id, index) => id !== ids[index])
   const lines = resources.map((resource) => {
     const expression = render(resource, helpers).replaceAll('\n', '\n      ')
     return useEntries
@@ -452,6 +520,17 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     helpers.add('meter')
     return renderMeter(meter, imports)
   })
+  const customFields =
+    config.custom_fields === undefined
+      ? []
+      : renderEntries(
+          'customFields',
+          config.custom_fields.map((field) => ({
+            external_id: field.slug,
+            field,
+          })),
+          ({ field }, helpers) => renderCustomField(field, helpers),
+        )
   const benefits =
     config.benefits === undefined
       ? []
@@ -472,6 +551,7 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
     'export default defineConfig({',
     ...settings,
     ...meters,
+    ...customFields,
     ...benefits,
     ...products,
     '})',

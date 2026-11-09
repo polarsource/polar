@@ -2,7 +2,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid, text
+from sqlalchemy import (
+    TIMESTAMP,
+    BigInteger,
+    Boolean,
+    ForeignKey,
+    Index,
+    String,
+    Uuid,
+    text,
+)
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models.base import RecordModel
@@ -14,6 +23,7 @@ from polar.meter.filter import Filter, FilterType
 from polar.meter.unit import MeterUnit
 
 if TYPE_CHECKING:
+    from .catalog import Catalog
     from .event import Event
     from .organization import Organization
 
@@ -26,7 +36,9 @@ class Meter(RecordModel, MetadataMixin, ExternalIDMixin):
             "organization_id",
             "external_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL AND external_id IS NOT NULL"),
+            postgresql_where=text(
+                "deleted_at IS NULL AND external_id IS NOT NULL AND is_current"
+            ),
         ),
     )
 
@@ -48,6 +60,16 @@ class Meter(RecordModel, MetadataMixin, ExternalIDMixin):
     archived_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
+    catalog_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("catalogs.id", ondelete="restrict"),
+        nullable=True,
+        default=None,
+    )
+    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced later.
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=True, default=True, server_default=text("true")
+    )
 
     @declared_attr
     def last_billed_event(cls) -> Mapped["Event | None"]:
@@ -63,3 +85,7 @@ class Meter(RecordModel, MetadataMixin, ExternalIDMixin):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def catalog(cls) -> Mapped["Catalog | None"]:
+        return relationship("Catalog", lazy="raise")

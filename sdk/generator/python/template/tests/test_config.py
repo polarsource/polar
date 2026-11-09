@@ -6,14 +6,24 @@ import sys
 import pytest
 
 from polar.config import (
+    BenefitSet,
     Config,
+    Credits,
     Fixed,
+    Flag,
+    Free,
     Meter,
     Metered,
     MeterSet,
+    PaymentSettings,
+    Product,
+    ProductSet,
     Seats,
+    SettingsSet,
     Tier,
     Units,
+    Webhook,
+    WebhookSet,
     eq,
     eur,
     jpy,
@@ -42,8 +52,13 @@ class Meters(MeterSet):
     tool_call = Meter("Tool calls", on="tool_call", unit="custom", label="tool calls")
 
 
+class Benefits(BenefitSet):
+    custom_servers = Flag("Custom servers", metadata={"tag": "primary"})
+    topup = Credits("Extra calls", meter=Meters.tool_call, units=100, rollover=True)
+
+
 def test_config_compiles_to_the_json_the_api_accepts() -> None:
-    assert json.loads(Config(meters=Meters).to_json()) == {
+    assert json.loads(Config(meters=Meters, benefits=Benefits).to_json()) == {
         "meters": [
             {
                 "external_id": "tool_call",
@@ -58,7 +73,21 @@ def test_config_compiles_to_the_json_the_api_accepts() -> None:
                 "unit": "custom",
                 "custom_label": "tool calls",
             }
-        ]
+        ],
+        "benefits": [
+            {
+                "type": "feature_flag",
+                "external_id": "custom_servers",
+                "description": "Custom servers",
+                "metadata": {"tag": "primary"},
+            },
+            {
+                "type": "meter_credit",
+                "external_id": "topup",
+                "description": "Extra calls",
+                "properties": {"meter": "tool_call", "units": 100, "rollover": True},
+            },
+        ],
     }
 
 
@@ -98,6 +127,25 @@ def test_short_attribute_names_need_a_name() -> None:
 
     with pytest.raises(ValueError, match='Provide a name for meter "ok"'):
         Config(meters=Usage)
+
+
+def test_references_must_be_declared_and_not_deprecated() -> None:
+    stray = Meter("Stray", on="x")
+    with pytest.raises(ValueError, match="not declared in a set"):
+        Config(
+            benefits=type(
+                "B", (BenefitSet,), {"c": Credits("Calls", meter=stray, units=1)}
+            )
+        )
+
+    class Old(MeterSet):
+        old = Meter("Old meter", on="x", deprecated=True)
+
+    class Perks(BenefitSet):
+        calls = Credits("Calls", meter=Old.old, units=1)
+
+    with pytest.raises(ValueError, match="is deprecated"):
+        Config(meters=Old, benefits=Perks)
 
 
 def test_money_is_written_in_major_units() -> None:
@@ -201,6 +249,133 @@ def test_prices_take_amounts_or_tiers_not_both() -> None:
         price_currencies(
             Seats(graduated=[Tier(max=5, amount=usd(1)), Tier(amount=eur(1))]), "p"
         )
+
+
+def test_products_compile_with_their_prices_cycles_and_grants() -> None:
+    class Products(ProductSet):
+        free = Product(
+            "Free",
+            prices=[Free()],
+            recurring="monthly",
+            grants=[Benefits.custom_servers],
+        )
+        team = Product(
+            "Team",
+            prices=[Seats(usd(24), min=1)],
+            recurring=(3, "months"),
+            trial=(14, "days"),
+        )
+        topup = Product(
+            "100 calls",
+            prices=[Fixed(usd(9), tax="inclusive")],
+            grants=[Benefits.topup],
+        )
+
+    assert Config(meters=Meters, benefits=Benefits, products=Products).to_dict()[
+        "products"
+    ] == [
+        {
+            "external_id": "free",
+            "name": "Free",
+            "recurring_interval": "month",
+            "recurring_interval_count": 1,
+            "prices": [
+                {"amount_type": "fixed", "price_currency": "usd", "price_amount": 0}
+            ],
+            "benefits": ["custom_servers"],
+        },
+        {
+            "external_id": "team",
+            "name": "Team",
+            "recurring_interval": "month",
+            "recurring_interval_count": 3,
+            "trial_interval": "day",
+            "trial_interval_count": 14,
+            "prices": [
+                {
+                    "amount_type": "seat_based",
+                    "price_currency": "usd",
+                    "minimum_units": 1,
+                    "tiers": {"type": "volume", "tiers": [{"unit_amount": "2400"}]},
+                }
+            ],
+            "benefits": [],
+        },
+        {
+            "external_id": "topup",
+            "name": "100 calls",
+            "prices": [
+                {
+                    "amount_type": "fixed",
+                    "price_currency": "usd",
+                    "price_amount": 900,
+                    "tax_behavior": "inclusive",
+                }
+            ],
+            "benefits": ["topup"],
+        },
+    ]
+
+
+def test_products_check_their_prices_and_references() -> None:
+    class Mixed(ProductSet):
+        plan = Product(
+            "Plan", prices=[Fixed([usd(1), eur(1)]), Units(usd(2))], recurring="monthly"
+        )
+
+    with pytest.raises(ValueError, match="same currencies"):
+        Config(products=Mixed)
+
+    class OneTime(ProductSet):
+        plan = Product("Plan", prices=[Metered(Meters.tool_call, amount=usd(1))])
+
+    with pytest.raises(ValueError, match="one-time purchase"):
+        Config(meters=Meters, products=OneTime)
+
+    class Unknown(ProductSet):
+        plan = Product("Plan", prices=[Free()], grants=[Benefits.topup])
+
+    with pytest.raises(ValueError, match="not in the benefits passed to Config"):
+        Config(meters=Meters, products=Unknown)
+
+    with pytest.raises(ValueError, match="needs a recurring product"):
+        Product("Plan", prices=[Free()], trial=(14, "days"))
+
+
+def test_settings_compile_to_their_api_groups() -> None:
+    class Settings(SettingsSet):
+        payments = PaymentSettings(currency="eur")
+
+    class Plans(ProductSet):
+        free = Product("Free", prices=[Free()])
+
+    config = Config(settings=Settings, products=Plans)
+    assert config.to_dict()["settings"] == {"payments": {"currency": "eur"}}
+    assert config.to_dict()["products"][0]["prices"][0]["price_currency"] == "eur"
+
+    with pytest.raises(TypeError, match="Bad.notifications is not a settings group"):
+
+        class Bad(SettingsSet):
+            notifications = PaymentSettings()
+
+
+def test_webhooks_compile_with_the_sdk_api_version() -> None:
+    class Webhooks(WebhookSet):
+        ops = Webhook(
+            "https://hooks.slack.com/x", events=["order.paid"], format="slack"
+        )
+
+    assert Config(webhooks=Webhooks).to_dict()["webhooks"] == [
+        {
+            "external_id": "ops",
+            "url": "https://hooks.slack.com/x",
+            "format": "slack",
+            "events": ["order.paid"],
+            "api_version": "{{ latest_api_version }}",
+        }
+    ]
+    with pytest.raises(ValueError, match="at least one event"):
+        Webhook("https://example.com/hook", events=[])
 
 
 def test_module_prints_the_config(tmp_path: pathlib.Path) -> None:

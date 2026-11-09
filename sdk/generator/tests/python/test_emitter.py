@@ -177,3 +177,8 @@ def test_emit_config_module_exporting_everything_the_config_reaches(
     )
     assert "from polar.v2026_04.literals import (\n    FilterConjunction,\n)" in module
     assert "ProductCreate" not in module
+    assert (
+        'API_VERSION = "2026-04"'
+        in (tmp_path / "polar" / "config" / "webhooks.py").read_text()
+    )
+    assert (tmp_path / "tests" / "test_config.py").is_file()

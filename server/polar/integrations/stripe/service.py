@@ -17,7 +17,6 @@ from stripe.params._payment_intent_create_params import (
 from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
 from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
 from stripe.params._setup_intent_create_params import SetupIntentCreateParams
-from stripe.params._setup_intent_modify_params import SetupIntentModifyParams
 from stripe.params._setup_intent_retrieve_params import SetupIntentRetrieveParams
 from stripe.params.tax._calculation_create_params import CalculationCreateParams
 
@@ -396,12 +395,6 @@ class StripeService:
             usage=params.get("usage"),
         )
         return await stripe_lib.SetupIntent.create_async(**params)
-
-    async def modify_setup_intent(
-        self, id: str, **params: Unpack[SetupIntentModifyParams]
-    ) -> stripe_lib.SetupIntent:
-        log.info("stripe.setup_intent.modify", setup_intent_id=id)
-        return await stripe_lib.SetupIntent.modify_async(id, **params)
 
     async def confirm_setup_intent(
         self, id: str, **params: Unpack[SetupIntentConfirmParams]

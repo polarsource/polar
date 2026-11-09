@@ -232,21 +232,6 @@ async def handle_success(
                 )
                 return
 
-            # Metadata marker is set when confirmation was denied because of trial abuse detection
-            if checkout.status == CheckoutStatus.open:
-                updated_object = await stripe_service.get_setup_intent(object.id)
-                if (
-                    updated_object.metadata
-                    and updated_object.metadata.get("polar_trial_abuse_detected")
-                    == "true"
-                ):
-                    log.info(
-                        "Skipping outdated checkout intent after trial abuse detection",
-                        checkout_id=checkout.id,
-                        intent_id=object.id,
-                    )
-                    return
-
         if checkout.status not in {CheckoutStatus.confirmed, CheckoutStatus.succeeded}:
             raise NotConfirmedCheckout(checkout)
 

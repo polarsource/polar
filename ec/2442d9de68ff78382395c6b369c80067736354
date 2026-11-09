@@ -1,0 +1,25 @@
+docs/integrate/mcp.mdx
+  s_afae5f1f0ea553::t_ab1f9de068593c 15
+clients/packages/cli/src/services/agent-setup/plugins.ts
+  s_afae5f1f0ea553::t_ea348931f235d6 43-44,53-54,63,157-172,179
+  s_afae5f1f0ea553::t_db111399284b01 117
+clients/packages/cli/src/services/agent-setup/plugins.test.ts
+  s_afae5f1f0ea553::t_b9dbc769173e31 49,58,67-68,72-86,91,93,100,102
+  s_afae5f1f0ea553::t_db111399284b01 50-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ec2442d9de68ff78382395c6b369c80067736354",
+  "prompts": {},
+  "sessions": {
+    "s_afae5f1f0ea553": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "02200b6e-52fc-4c68-8b91-79b34ae4da49",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

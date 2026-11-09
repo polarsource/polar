@@ -74,6 +74,8 @@ export interface State {
   buckets: Map<number, BucketStatistics>;
   // The part of each bucket Polar has not confirmed yet.
   pending: Map<number, BucketStatistics>;
+  // The pull's reset count when Polar last answered for it.
+  confirmedAfterResets?: number;
 }
 type Customer = Parameters<typeof customerKey>[0];
 interface Snapshot {
@@ -238,6 +240,7 @@ export const decodeState = (value: string[]): State => {
     } else if (field.startsWith(COLD_PREFIX))
       state.cold[field.slice(COLD_PREFIX.length) as keyof BucketStatistics] = number(raw);
     else if (field === "cold_until") state.coldUntil = number(raw);
+    else if (field === "reset") state.confirmedAfterResets = number(raw);
   }
   return state;
 };
@@ -364,6 +367,8 @@ export class Outpost {
   private pullRetryAt = 0;
   // The configuration's revision in the pull hash, as of the configuration this instance runs.
   private configurationRevision: number | null = null;
+  // How many times Polar's changes went past their retention, as of the last read of the pull hash.
+  private resets: number | null = null;
   private failure?: Error;
   private messages: Promise<unknown> = Promise.resolve();
 
@@ -385,6 +390,7 @@ export class Outpost {
     this.failure = undefined;
     this.pullRetryAt = 0;
     this.configurationRevision = null;
+    this.resets = null;
     this.isConfigured = false;
     this.messages = Promise.resolve();
     if (isTelemetryEnabled(this.options.telemetry ?? true)) {
@@ -664,12 +670,16 @@ export class Outpost {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
     let reads = await this.load(customer, reducers);
     // Polar sends no snapshot without a connection.
-    if (reads.every(isReady) || !this.connected) return reads;
+    if (!this.connected) return reads;
+    // A state confirmed before the last reset serves the read while Polar confirms it again.
     const fetched = Promise.all(
       reducers.map((reducer, index) =>
-        isReady(reads[index]) ? undefined : this.fetch(customer, reducer),
+        isReady(reads[index]) && !this.isStale(reads[index])
+          ? undefined
+          : this.fetch(customer, reducer),
       ),
     );
+    if (reads.every(isReady)) return reads;
     await waitAtMost(fetched, deadline - Date.now());
     for (;;) {
       reads = await this.load(customer, reducers);
@@ -686,17 +696,24 @@ export class Outpost {
       pipeline.outpostReadState(`${this.prefix}:state:${identity}`);
       pipeline.hget(this.missingKey(identity), "retry_at");
     }
+    pipeline.hget(this.pullKey, "reset");
     const results = await pipeline.exec().catch((error: unknown) => {
       throw redisUnavailable(error);
     });
     if (results === null) throw new UnavailableRedisError();
     const failed = results.find(([error]) => error)?.[0];
     if (failed) throw redisUnavailable(failed);
+    const resets = results[2 * reducers.length][1] as string | null;
+    this.resets = resets === null ? null : Number(resets);
     return reducers.map((_, index) =>
       Number(results[2 * index + 1][1]) > Date.now()
         ? "missing"
         : decodeState(results[2 * index][1] as string[]),
     );
+  }
+
+  private isStale(read: Read): boolean {
+    return read !== "missing" && (read.confirmedAfterResets ?? null) !== this.resets;
   }
 
   private findReducer(kind: Reducer["kind"], meterId: string): Reducer | undefined {
@@ -793,8 +810,8 @@ export class Outpost {
   }
 
   private async loadPull(): Promise<void> {
-    const [pulledAt, nextPoll, retryAt, revision] = await this.requireRedis()
-      .hmget(this.pullKey, "pulled_at", "next_poll_in", "retry_at", "configuration")
+    const [pulledAt, nextPoll, retryAt, revision, resets] = await this.requireRedis()
+      .hmget(this.pullKey, "pulled_at", "next_poll_in", "retry_at", "configuration", "reset")
       .catch((error: unknown) => {
         throw redisUnavailable(error);
       });
@@ -806,6 +823,7 @@ export class Outpost {
     this.pulledAt = Number(pulledAt ?? 0);
     this.pullInterval = Number(nextPoll ?? PULL_INTERVAL);
     this.pullRetryAt = Number(retryAt ?? 0);
+    this.resets = resets === null ? null : Number(resets);
   }
 
   // Another instance holds the pull: it has ended, pulled or failed, once its lock is gone.
@@ -875,11 +893,12 @@ export class Outpost {
           throw error;
         });
         pages += 1;
-        if (changes.reset) await this.reset();
+        if (changes.reset) this.resets = await redis.hincrby(this.pullKey, "reset", 1);
         if (changes.configuration_changed) {
           await this.configure("polar");
           this.configurationRevision = await redis.hincrby(this.pullKey, "configuration", 1);
         }
+        const resets = this.resets;
         // Each customer's snapshots apply in order; customers apply side by side.
         const customers = new Map<string, Snapshot[]>();
         for (const snapshot of changes.changes) {
@@ -889,7 +908,7 @@ export class Outpost {
         await this.serial(() =>
           eachAtMost([...customers.values()], PULL_CONCURRENCY, async (snapshots) => {
             for (const snapshot of snapshots)
-              if (await this.receiveSnapshot(snapshot, true, renew)) {
+              if (await this.receiveSnapshot(snapshot, true, resets, renew)) {
                 applied += 1;
                 await renew();
               }
@@ -921,17 +940,6 @@ export class Outpost {
     }
   }
 
-  // Polar's changes went past its retention: no snapshot can be trusted any more.
-  private async reset(): Promise<void> {
-    const redis = this.requireRedis();
-    for await (const keys of redis.scanStream({ match: `${this.prefix}:state:*`, count: 1000 })) {
-      if (!(keys as string[]).length) continue;
-      const pipeline = redis.pipeline();
-      for (const key of keys as string[]) pipeline.hdel(key, "cold_until", "snapshot_version");
-      await pipeline.exec();
-    }
-  }
-
   // Snapshots and what they trigger run one at a time, in order.
   private serial<T>(work: () => Promise<T>): Promise<T> {
     const result = this.messages.then(work);
@@ -960,11 +968,12 @@ export class Outpost {
       const redis = this.requireRedis();
       locked = (await redis.set(lock, token, "PX", TIMEOUT, "NX")) !== null;
       if (!locked) return;
+      const resets = this.resets;
       const snapshots = await this.request<Snapshot[]>("POST", "/v1/outpost/meter-usage", {
-        body: { ...customerArguments(customer), reducer_id: reducer.id },
+        body: { identities: [{ ...customerArguments(customer), reducer_id: reducer.id }] },
       });
       await this.serial(async () => {
-        for (const snapshot of snapshots) await this.receiveSnapshot(snapshot, false);
+        for (const snapshot of snapshots) await this.receiveSnapshot(snapshot, false, resets);
       });
     } catch (error) {
       this.failUnlessTransient(error);
@@ -1064,9 +1073,12 @@ export class Outpost {
   }
 
   // Applies a snapshot of Polar's, unless it was pulled for a customer nobody here reads.
+  // `resets` is the reset count when the snapshot was asked for: one asked for before a reset may
+  // have missed changes the pull skipped.
   private async receiveSnapshot(
     snapshot: Snapshot,
     pulled: boolean,
+    resets: number | null,
     renew?: () => Promise<unknown>,
   ): Promise<boolean> {
     const reducer = this.reducers.find((item) => item.id === snapshot.reducer_id);
@@ -1102,6 +1114,7 @@ export class Outpost {
       identity,
       customer,
       confirmation?.snapshot ?? snapshot,
+      resets,
       confirmation,
       answered,
     );
@@ -1170,6 +1183,7 @@ export class Outpost {
     identity: string,
     customer: string,
     snapshot: Snapshot,
+    resets: number | null,
     confirmation?: Confirmation,
     answered = false,
   ): Promise<void> {
@@ -1182,6 +1196,7 @@ export class Outpost {
       snapshot.sum,
       snapshot.min ?? "",
       snapshot.max ?? "",
+      resets ?? "",
     ];
     await this.trace(
       "outpost.snapshot.received",

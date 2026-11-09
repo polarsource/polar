@@ -200,6 +200,14 @@ local cutoff = tonumber(ARGV[1])
 local state = redis.call('HGETALL', KEYS[1])
 local fields = {}
 for i = 1, #state, 2 do fields[state[i]] = state[i + 1] end
+-- The pull's reset count when Polar answered: a read after the next reset asks Polar again.
+if ARGV[7] and fields['reset'] ~= ARGV[7] then
+    if ARGV[7] == '' then
+        redis.call('HDEL', KEYS[1], 'reset')
+    else
+        redis.call('HSET', KEYS[1], 'reset', ARGV[7])
+    end
+end
 local current = fields['cold_until']
 local previous = fields['snapshot_version']
 -- Polar sends each snapshot to every instance: an older one changes nothing.

@@ -237,6 +237,10 @@ PULL_RETRY_DELAY = {{ outpost_constants.pull_retry_delay / 1000 }}
 MAX_PULL_RETRY_DELAY = {{ outpost_constants.max_pull_retry_delay / 1000 }}
 PULL_LIMIT = {{ outpost_constants.pull_limit }}
 PULL_CONCURRENCY = {{ outpost_constants.pull_concurrency }}
+SNAPSHOT_BATCH = {{ outpost_constants.snapshot_batch }}
+FETCH_BATCH_WINDOW = {{ outpost_constants.fetch_batch_window / 1000 }}
+FETCH_CONCURRENCY = {{ outpost_constants.fetch_concurrency }}
+FETCH_RETRY_DELAY = {{ outpost_constants.fetch_retry_delay / 1000 }}
 PULL_CHECK_INTERVAL = {{ outpost_constants.pull_check_interval / 1000 }}
 RELEASE_LOCK_SCRIPT = """
 {{ outpost_scripts.release_lock }}"""
@@ -429,6 +433,7 @@ class Outpost:
         self._matchers: list[ReducerMatcher] = []
         # The fetches in flight, by identity: each event is set once its fetch ends.
         self._requesting: dict[str, anyio.Event] = {}
+        self._queued: list[str] = []
         self._configured = anyio.Event()
         self._apply_snapshot: AsyncScript | None = None
         self._confirm_script: AsyncScript | None = None
@@ -936,53 +941,165 @@ class Outpost:
         return self._redis
 
     def _fetch(self, customer: str, reducer: Reducer) -> anyio.Event:
-        """One instance of the fleet asks Polar for a cold customer; the others read the
-        state it applies."""
+        """Queues the identity once. The instance holding the cold lock asks Polar for
+        the fleet's cold customers together and applies their states."""
         identity = f"{customer}:{reducer['id']}"
         fetching = self._requesting.get(identity)
         if fetching is None:
             fetching = self._requesting[identity] = anyio.Event()
-            assert self._tasks is not None
-            self._tasks.start_soon(
-                self._fetch_snapshot, customer, reducer, identity, fetching
-            )
+            self._queued.append(identity)
+            if len(self._queued) == 1:
+                assert self._tasks is not None
+                self._tasks.start_soon(self._fetch_queued)
         return fetching
 
-    async def _fetch_snapshot(
-        self, customer: str, reducer: Reducer, identity: str, done: anyio.Event
-    ) -> None:
-        lock = f"{self._prefix}:fetch:{identity}"
-        token = uuid.uuid4().hex
-        locked = False
+    async def _fetch_queued(self) -> None:
+        await anyio.lowlevel.checkpoint()
+        queued, self._queued = self._queued, []
         try:
             redis = self._require_redis()
-            locked = bool(
-                await redis.set(lock, token, px=int(TIMEOUT * 1000), nx=True)
-            )
-            if not locked:
-                return
-            resets = self._resets
-            snapshots: list[Snapshot] = await self._request(
-                "POST",
-                "/v1/outpost/meter-usage",
-                json={
-                    "identities": [
-                        {**self._customer_arguments(customer), "reducer_id": reducer["id"]}
-                    ]
-                },
-            )
-            async with self._applying:
-                for snapshot in snapshots:
-                    await self._receive_snapshot(snapshot, pulled=False, resets=resets)
+            # A customer already queued or asked for stays out of the queue until Polar
+            # answers.
+            async with redis.pipeline(transaction=False) as pipeline:
+                for identity in queued:
+                    pipeline.set(
+                        f"{self._prefix}:fetch:{identity}",
+                        1,
+                        px=int(TIMEOUT * 1000),
+                        nx=True,
+                    )
+                marked = await pipeline.execute()
+            identities = [
+                identity for identity, ok in zip(queued, marked, strict=True) if ok
+            ]
+            if identities:
+                await redis.sadd(self._cold_key, *identities)
+            await self._drain_cold()
         except Exception as error:  # noqa: BLE001
             self._fail_unless_transient(error)
         finally:
-            self._requesting.pop(identity, None)
-            done.set()
-            # Past its TTL, the lock may be another instance's.
-            if locked and self._redis is not None:
+            for identity in queued:
+                done = self._requesting.pop(identity, None)
+                if done is not None:
+                    done.set()
+
+    async def _drain_cold(self) -> None:
+        """Once it lets go of the lock, the instance looks again: a customer queued while
+        it held the lock is not left behind."""
+        redis = self._require_redis()
+        while True:
+            token = uuid.uuid4().hex
+            if not await redis.set(
+                self._cold_lock_key, token, px=int(TIMEOUT * 1000), nx=True
+            ):
+                return
+            try:
+                await anyio.sleep(FETCH_BATCH_WINDOW)
+
+                async def renew(token: str = token) -> None:
+                    await redis.eval(
+                        EXTEND_LOCK_SCRIPT,
+                        1,
+                        self._cold_lock_key,
+                        token,
+                        int(TIMEOUT * 1000),
+                    )
+
+                while True:
+                    batches: list[list[str]] = []
+                    while len(batches) < FETCH_CONCURRENCY:
+                        popped = typing.cast(
+                            list[bytes],
+                            await redis.spop(self._cold_key, SNAPSHOT_BATCH),
+                        )
+                        identities = [_decode(item) for item in popped]
+                        if not identities:
+                            break
+                        batches.append(identities)
+                    if not batches:
+                        break
+                    await renew()
+                    # A few batches at once: the cold start lasts as long as the
+                    # slowest, not their sum.
+                    async with anyio.create_task_group() as group:
+                        for identities in batches:
+                            group.start_soon(self._fetch_batch, identities, renew)
+            finally:
+                # Past its TTL, the lock may be another instance's.
                 with contextlib.suppress(RedisError):
-                    await self._redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token)
+                    await redis.eval(RELEASE_LOCK_SCRIPT, 1, self._cold_lock_key, token)
+            if not await redis.scard(self._cold_key):
+                return
+
+    async def _fetch_batch(
+        self,
+        identities: list[str],
+        renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
+    ) -> None:
+        redis = self._require_redis()
+        try:
+            requested = []
+            for identity in identities:
+                customer, reducer_id = identity.rsplit(":", 1)
+                requested.append(
+                    {**self._customer_arguments(customer), "reducer_id": reducer_id}
+                )
+            resets = self._resets
+            deadline = anyio.current_time() + SNAPSHOT_TIMEOUT
+
+            async def ask() -> list[Snapshot]:
+                """Its reads still wait: a failure that may pass is asked for again until
+                they give up."""
+                delay = FETCH_RETRY_DELAY
+                while True:
+                    try:
+                        return await self._request(
+                            "POST",
+                            "/v1/outpost/meter-usage",
+                            json={"identities": requested},
+                        )
+                    except (httpx.HTTPStatusError, httpx.TransportError) as error:
+                        response = getattr(error, "response", None)
+                        if response is not None and (
+                            response.is_client_error and response.status_code != 429
+                        ):
+                            raise
+                        retry_after = (
+                            response.headers.get("retry-after")
+                            if response is not None
+                            else None
+                        )
+                        wait = (
+                            float(retry_after)
+                            if retry_after and retry_after.isdecimal()
+                            else delay
+                        )
+                        if anyio.current_time() + wait >= deadline:
+                            raise
+                        await anyio.sleep(wait)
+                        await renew()
+                        delay *= 2
+
+            snapshots = await ask()
+            # Side by side, as a pulled page: one instance applies the snapshots of the
+            # fleet.
+            limiter = anyio.CapacityLimiter(PULL_CONCURRENCY)
+
+            async def apply(snapshot: Snapshot) -> None:
+                async with limiter:
+                    if await self._receive_snapshot(
+                        snapshot, pulled=False, resets=resets, renew=renew
+                    ):
+                        await renew()
+
+            async with self._applying, anyio.create_task_group() as group:
+                for snapshot in snapshots:
+                    group.start_soon(apply, snapshot)
+        finally:
+            with contextlib.suppress(RedisError):
+                await redis.delete(
+                    *(f"{self._prefix}:fetch:{identity}" for identity in identities)
+                )
 
     async def _load_state(self, identity: str) -> ReducerState:
         assert self._read_state is not None
@@ -1046,6 +1163,14 @@ class Outpost:
     @property
     def _pull_lock_key(self) -> str:
         return f"{self._prefix}:pull:lock"
+
+    @property
+    def _cold_key(self) -> str:
+        return f"{self._prefix}:cold"
+
+    @property
+    def _cold_lock_key(self) -> str:
+        return f"{self._prefix}:cold:lock"
 
     @property
     def _configuration_key(self) -> str:

@@ -32,7 +32,9 @@ export const EmptyState = ({
       padding="3xl"
       flexGrow={fill ? 1 : undefined}
     >
-      <div className="dark:text-polar-500 text-5xl text-gray-500">{icon}</div>
+      <Box alignItems="center" justifyContent="center" color="text-secondary">
+        {icon}
+      </Box>
       <Box flexDirection="column" alignItems="center" textAlign="center">
         <Text variant="body" as="h3">
           {title}

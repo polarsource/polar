@@ -2220,7 +2220,7 @@ class TestHandleAccountRiskSignal:
         ).get_current_decision(organization.id)
         assert decision is not None
         assert decision.actor_type == ActorType.STRIPE
-        assert decision.reviewer_id is None
+        assert decision.backoffice_reviewer_id is None
 
     async def test_actionable_website_matches_org_by_evaluation_id(
         self,

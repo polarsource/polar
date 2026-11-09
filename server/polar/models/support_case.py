@@ -143,14 +143,6 @@ class SupportCase(RecordModel):
         return relationship("Organization", lazy="raise")
 
     # Staff member currently handling the case (advisory; no exclusivity).
-    assigned_user_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        ForeignKey("users.id", ondelete="set null"),
-        nullable=True,
-        default=None,
-        index=True,
-    )
-
     backoffice_assigned_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("backoffice_users.id", ondelete="set null"),
@@ -175,10 +167,6 @@ class SupportCase(RecordModel):
         return relationship(
             "SupportCaseAttachment", lazy="raise", back_populates="case"
         )
-
-    @declared_attr
-    def assigned_user(cls) -> Mapped["User | None"]:
-        return relationship("User", lazy="raise")
 
     @declared_attr
     def backoffice_assigned_user(cls) -> Mapped["BackofficeUser | None"]:
@@ -253,8 +241,7 @@ Index(
 
 class SupportCaseParticipant(RecordModel):
     """A party to a case: the platform (staff), the merchant (org), or a
-    customer. The subject is determined by ``kind``. Platform participants
-    may carry both staff IDs during the transition. ``last_read_at`` tracks
+    customer. The subject is determined by ``kind``. ``last_read_at`` tracks
     unread state and notification targeting.
     """
 
@@ -262,13 +249,13 @@ class SupportCaseParticipant(RecordModel):
     __table_args__ = (
         CheckConstraint(
             "(kind = 'platform' "
-            "AND (platform_user_id IS NOT NULL OR backoffice_platform_user_id IS NOT NULL) "
+            "AND backoffice_platform_user_id IS NOT NULL "
             "AND organization_id IS NULL AND customer_id IS NULL) "
             "OR (kind = 'merchant' AND organization_id IS NOT NULL "
-            "AND platform_user_id IS NULL AND backoffice_platform_user_id IS NULL "
+            "AND backoffice_platform_user_id IS NULL "
             "AND customer_id IS NULL) "
             "OR (kind = 'customer' AND customer_id IS NOT NULL "
-            "AND platform_user_id IS NULL AND backoffice_platform_user_id IS NULL "
+            "AND backoffice_platform_user_id IS NULL "
             "AND organization_id IS NULL)",
             name="subject_matches_kind",
         ),
@@ -279,15 +266,6 @@ class SupportCaseParticipant(RecordModel):
             "organization_id",
             unique=True,
             postgresql_where=text("organization_id IS NOT NULL AND deleted_at IS NULL"),
-        ),
-        Index(
-            "ix_support_case_participants_unique_platform_user",
-            "case_id",
-            "platform_user_id",
-            unique=True,
-            postgresql_where=text(
-                "platform_user_id IS NOT NULL AND deleted_at IS NULL"
-            ),
         ),
         Index(
             "ix_support_case_participants_unique_backoffice_user",
@@ -323,9 +301,6 @@ class SupportCaseParticipant(RecordModel):
         default=None,
     )
     # Platform staff (kind=platform only).
-    platform_user_id: Mapped[UUID | None] = mapped_column(
-        Uuid, ForeignKey("users.id", ondelete="cascade"), nullable=True, default=None
-    )
     backoffice_platform_user_id: Mapped[UUID | None] = mapped_column(
         Uuid,
         ForeignKey("backoffice_users.id", ondelete="cascade"),
@@ -349,10 +324,6 @@ class SupportCaseParticipant(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization | None"]:
         return relationship("Organization", lazy="raise")
-
-    @declared_attr
-    def platform_user(cls) -> Mapped["User | None"]:
-        return relationship("User", lazy="raise")
 
     @declared_attr
     def backoffice_platform_user(cls) -> Mapped["BackofficeUser | None"]:

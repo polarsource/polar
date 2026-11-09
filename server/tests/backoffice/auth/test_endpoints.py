@@ -167,10 +167,9 @@ class TestGoogleLogin:
         assert settings.BACKOFFICE_USER_SESSION_COOKIE_KEY not in client.cookies
         assert (await session.scalars(select(BackofficeUserSession))).first() is None
 
-    async def test_dashboard_admin_session_does_not_authorize_backoffice(
+    async def test_dashboard_session_does_not_authorize_backoffice(
         self, client: httpx.AsyncClient, session: AsyncSession, user: User
     ) -> None:
-        user.is_admin = True
         token, _ = await auth_service._create_user_session(
             session, user, user_agent="tests", scopes=[]
         )

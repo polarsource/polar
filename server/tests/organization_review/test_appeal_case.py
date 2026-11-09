@@ -102,7 +102,7 @@ class TestRequestHumanReview:
         assert len(participants) == 1
         assert participants[0].kind == SupportCaseParticipantKind.merchant
         assert participants[0].organization_id == denied_review.organization_id
-        assert participants[0].platform_user_id is None
+        assert participants[0].backoffice_platform_user_id is None
 
         message_repository = SupportCaseMessageRepository.from_session(session)
         messages = await message_repository.list_by_case(case.id)

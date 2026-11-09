@@ -73,7 +73,6 @@ class TestCasesStatement:
         user: User,
     ) -> None:
         case = await create_appeal_case(save_fixture, organization)
-        case.assigned_user = user
         case.backoffice_assigned_user = backoffice_user
         await save_fixture(case)
 

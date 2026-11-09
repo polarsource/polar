@@ -42,7 +42,6 @@ class MemberOrganization(Schema):
 class UserRead(UserBase, TimestampedSchema):
     id: uuid.UUID
     accepted_terms_of_service: bool
-    is_admin: bool
     identity_verified: bool
     identity_verification_status: IdentityVerificationStatus
     first_name: str | None

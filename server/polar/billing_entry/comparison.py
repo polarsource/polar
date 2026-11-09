@@ -127,6 +127,9 @@ async def compare(
             meter_id=meter.id,
         )
         adjustments = {}
+    adjustments["unpooled_net"] = Adjustment(
+        net=legacy.net - max(Decimal(0), legacy.usage - legacy.credits)
+    )
     return Comparison(
         legacy=legacy,
         reducer=reducer,

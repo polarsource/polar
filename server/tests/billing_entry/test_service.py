@@ -1655,9 +1655,9 @@ class TestCreateOrderItemsFromPending:
             str(meter.id): {
                 "legacy": {"usage": "15.0", "credits": "16", "net": "2.0"},
                 "reducer": {"usage": "15", "credits": "16", "net": "0"},
-                "adjustments": {},
-                "explained": {"usage": "15", "credits": "16", "net": "0"},
+                "adjustments": {"unpooled_net": {"net": "2.0"}},
+                "explained": {"usage": "15", "credits": "16", "net": "2.0"},
             }
         }
         assert span.attributes["raw_match"] is False
-        assert span.attributes["match"] is False
+        assert span.attributes["match"] is True

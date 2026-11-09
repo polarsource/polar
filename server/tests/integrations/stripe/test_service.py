@@ -120,3 +120,12 @@ class TestGetUsdBaseRates:
             lock_duration="none",
             stripe_version=FX_QUOTES_API_VERSION,
         )
+
+
+@pytest.mark.anyio
+async def test_reject_account_maps_legacy_fraud_reason(mocker: MockerFixture) -> None:
+    reject = mocker.patch("stripe.Account.reject_async", new_callable=AsyncMock)
+
+    await stripe_service.reject_account("acct_test", "fraud")
+
+    reject.assert_awaited_once_with("acct_test", reason="fraud_other")

@@ -183,7 +183,7 @@ class TestHandleFailure:
             status=CheckoutStatus.confirmed,
             payment_processor_metadata=metadata,
         )
-        failure.metadata = {
+        failure["metadata"] = {
             "organization_id": str(product.organization_id),
             "checkout_id": str(checkout.id),
         }

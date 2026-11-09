@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
+from polar.integrations.stripe.utils import get_expandable_id, get_stripe_field
 from polar.kit.math import polar_round
 from polar.logging import Logger
 from polar.models import Transaction
@@ -72,7 +72,7 @@ class PaymentTransactionService(BaseTransactionService):
         if "tax_amount" in charge.metadata:
             tax_amount = int(charge.metadata["tax_amount"])
             tax_country = charge.metadata["tax_country"]
-            tax_state = charge.metadata.get("tax_state")
+            tax_state = get_stripe_field(charge.metadata, "tax_state")
 
         settlement_amount = balance_transaction.amount
         settlement_currency = balance_transaction.currency
@@ -95,8 +95,8 @@ class PaymentTransactionService(BaseTransactionService):
             presentment_tax_amount=tax_amount,
             exchange_rate=exchange_rate,
             charge_id=charge.id,
-            risk_level=risk.get("risk_level"),
-            risk_score=risk.get("risk_score"),
+            risk_level=get_stripe_field(risk, "risk_level"),
+            risk_score=get_stripe_field(risk, "risk_score"),
             # Filled when we handle the invoice
             order=None,
             payment_customer=None,

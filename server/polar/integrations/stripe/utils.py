@@ -1,3 +1,5 @@
+from typing import Any
+
 import stripe as stripe_lib
 from stripe import StripeObject
 from stripe._expandable_field import ExpandableField
@@ -16,3 +18,12 @@ def get_fingerprint(payment_method: stripe_lib.PaymentMethod) -> str | None:
     if card is not None:
         return getattr(card, "fingerprint", None)
     return None
+
+
+def get_stripe_field(
+    resource: StripeObject | dict[str, Any], field: str, default: Any = None
+) -> Any:
+    try:
+        return resource[field]
+    except KeyError:
+        return default

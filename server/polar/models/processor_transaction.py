@@ -52,5 +52,5 @@ class ProcessorTransaction(Model):
             amount=bt.amount,
             fee=bt.fee,
             description=bt.description,
-            raw=bt,
+            raw=bt.to_dict(for_json=True),
         )

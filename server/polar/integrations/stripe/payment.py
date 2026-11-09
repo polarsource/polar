@@ -13,7 +13,7 @@ from polar.integrations.stripe.service import (
 from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
-from polar.integrations.stripe.utils import get_expandable_id
+from polar.integrations.stripe.utils import get_expandable_id, get_stripe_field
 from polar.logging import Logger
 from polar.models import (
     Checkout,
@@ -62,7 +62,9 @@ async def _resolve_organization(
     if object.metadata is None:
         return None
 
-    if (organization_id := object.metadata.get("organization_id")) is None:
+    if (
+        organization_id := get_stripe_field(object.metadata, "organization_id")
+    ) is None:
         log.warning(
             "Legacy payment resolution: no organization_id in metadata",
             object_id=object.id,
@@ -98,7 +100,7 @@ async def resolve_checkout(
     if object.metadata is None:
         return None
 
-    if (checkout_id := object.metadata.get("checkout_id")) is None:
+    if (checkout_id := get_stripe_field(object.metadata, "checkout_id")) is None:
         return None
 
     repository = CheckoutRepository.from_session(session)
@@ -114,8 +116,8 @@ async def resolve_wallet(
     if object.metadata is None:
         return None, None
 
-    wallet_id = object.metadata.get("wallet_id")
-    wallet_transaction_id = object.metadata.get("wallet_transaction_id")
+    wallet_id = get_stripe_field(object.metadata, "wallet_id")
+    wallet_transaction_id = get_stripe_field(object.metadata, "wallet_transaction_id")
 
     if wallet_transaction_id is not None:
         wallet_transaction_repository = WalletTransactionRepository.from_session(
@@ -146,7 +148,7 @@ async def resolve_order(
     order_repository = OrderRepository.from_session(session)
     if (
         object.metadata is not None
-        and (order_id := object.metadata.get("order_id")) is not None
+        and (order_id := get_stripe_field(object.metadata, "order_id")) is not None
     ):
         order = await order_repository.get_by_id(
             uuid.UUID(order_id), options=order_repository.get_eager_options()
@@ -165,7 +167,9 @@ async def resolve_order(
                 )
                 if (
                     updated_intent.metadata
-                    and updated_intent.metadata.get("polar_failed_sync_payment")
+                    and get_stripe_field(
+                        updated_intent.metadata, "polar_failed_sync_payment"
+                    )
                     == "true"
                 ):
                     return None
@@ -185,7 +189,7 @@ def _resolve_trigger(
 ) -> PaymentTrigger | None:
     if object.metadata is None:
         return None
-    raw = object.metadata.get(STRIPE_METADATA_PAYMENT_TRIGGER)
+    raw = get_stripe_field(object.metadata, STRIPE_METADATA_PAYMENT_TRIGGER)
     if raw is not None:
         try:
             return PaymentTrigger(raw)
@@ -195,7 +199,7 @@ def _resolve_trigger(
                 object_id=object.id,
                 raw_trigger=raw,
             )
-    if object.metadata.get("checkout_id") is not None:
+    if get_stripe_field(object.metadata, "checkout_id") is not None:
         return PaymentTrigger.purchase
     return None
 
@@ -237,7 +241,9 @@ async def handle_success(
                 updated_object = await stripe_service.get_setup_intent(object.id)
                 if (
                     updated_object.metadata
-                    and updated_object.metadata.get("polar_trial_abuse_detected")
+                    and get_stripe_field(
+                        updated_object.metadata, "polar_trial_abuse_detected"
+                    )
                     == "true"
                 ):
                     log.info(

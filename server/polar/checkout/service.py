@@ -1437,7 +1437,9 @@ class CheckoutService:
                     if trial_already_redeemed:
                         # Mark the intent with metadata so we can discard the webhook event associated
                         if intent is not None:
-                            trial_intent_metadata = intent.metadata or {}
+                            trial_intent_metadata = (
+                                intent.metadata.to_dict() if intent.metadata else {}
+                            )
                             trial_intent_metadata["polar_trial_abuse_detected"] = "true"
                             if isinstance(intent, stripe_lib.SetupIntent):
                                 await stripe_service.modify_setup_intent(

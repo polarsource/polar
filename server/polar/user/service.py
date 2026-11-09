@@ -219,8 +219,12 @@ class UserService:
                 return None
             return user
 
-        metadata = verification_session.get("metadata") or {}
-        user_id = metadata.get("user_id")
+        metadata = getattr(verification_session, "metadata", None)
+        user_id = (
+            metadata["user_id"]
+            if metadata is not None and "user_id" in metadata
+            else None
+        )
         if user_id is not None:
             user = await repository.get_by_id(
                 UUID(user_id), for_update=True, include_deleted=True

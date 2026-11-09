@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
@@ -65,28 +65,21 @@ class DisputeStatus(StrEnum):
     @classmethod
     def from_stripe(
         cls,
-        status: Literal[
-            "lost",
-            "needs_response",
-            "prevented",
-            "under_review",
-            "warning_closed",
-            "warning_needs_response",
-            "warning_under_review",
-            "won",
-        ],
+        status: str,
     ) -> "DisputeStatus":
         match status:
             case "lost":
                 return DisputeStatus.lost
-            case "needs_response" | "warning_needs_response":
+            case "needs_response" | "warning_needs_response" | "appeal_needs_response":
                 return DisputeStatus.needs_response
-            case "under_review" | "warning_under_review":
+            case "under_review" | "warning_under_review" | "appeal_under_review":
                 return DisputeStatus.under_review
             case "won":
                 return DisputeStatus.won
             case "warning_closed" | "prevented":
                 return DisputeStatus.prevented
+            case _:
+                raise ValueError(f"Unknown Stripe dispute status: {status}")
 
 
 class DisputeAlertProcessor(StrEnum):

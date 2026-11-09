@@ -20,7 +20,7 @@ from polar import tasks  # noqa: F401
 from polar.enums import PaymentMode, PaymentProcessor
 from polar.integrations.stripe import payment as stripe_payment
 from polar.integrations.stripe.service import stripe as stripe_service
-from polar.integrations.stripe.utils import get_expandable_id
+from polar.integrations.stripe.utils import get_expandable_id, get_stripe_field
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Customer, Order, PaymentMethod, Subscription
 from polar.models.order import OrderStatus
@@ -160,10 +160,11 @@ async def recover_order(
     matching = [
         intent
         async for intent in intents.auto_paging_iter()
-        if intent.metadata.get("order_id") == str(order.id)
+        if get_stripe_field(intent.metadata, "order_id") == str(order.id)
         or (
             order.checkout_id is not None
-            and intent.metadata.get("checkout_id") == str(order.checkout_id)
+            and get_stripe_field(intent.metadata, "checkout_id")
+            == str(order.checkout_id)
         )
     ]
     for intent in matching:

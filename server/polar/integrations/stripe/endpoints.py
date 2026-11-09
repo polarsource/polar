@@ -1,3 +1,6 @@
+import json
+from typing import Any
+
 import stripe
 import structlog
 from fastapi import Depends, HTTPException, Query, Request
@@ -57,11 +60,15 @@ CONNECT_IMPLEMENTED_WEBHOOKS = {
 }
 
 
-async def enqueue(session: AsyncSession, event: stripe.Event) -> None:
+async def enqueue(session: AsyncSession, event: dict[str, Any]) -> None:
     event_type: str = event["type"]
     task_name = f"stripe.webhook.{event_type}"
     await external_event_service.enqueue(
-        session, ExternalEventSource.stripe, task_name, event.id, event
+        session,
+        ExternalEventSource.stripe,
+        task_name,
+        event["id"],
+        event,
     )
 
 
@@ -97,10 +104,11 @@ async def stripe_connect_refresh(
 
 
 class WebhookEventGetter:
-    def __init__(self, secret: str) -> None:
+    def __init__(self, secret: str, *, thin: bool = False) -> None:
         self.secret = secret
+        self.thin = thin
 
-    async def __call__(self, request: Request) -> stripe.Event:
+    async def __call__(self, request: Request) -> dict[str, Any]:
         # An empty secret verifies against an empty key, which anyone can forge.
         # Treat it as a disabled endpoint.
         if not self.secret:
@@ -112,7 +120,22 @@ class WebhookEventGetter:
             raise HTTPException(status_code=400)
 
         try:
-            return stripe.Webhook.construct_event(payload, sig_header, self.secret)
+            if self.thin:
+                stripe.WebhookSignature.verify_header(
+                    payload, sig_header, self.secret, stripe.Webhook.DEFAULT_TOLERANCE
+                )
+                event = json.loads(payload)
+            else:
+                event = stripe.Webhook.construct_event(
+                    payload, sig_header, self.secret
+                ).to_dict(for_json=True)
+            if (
+                not isinstance(event, dict)
+                or not isinstance(event.get("id"), str)
+                or not isinstance(event.get("type"), str)
+            ):
+                raise ValueError("Invalid Stripe event")
+            return event
         except ValueError as e:
             raise HTTPException(status_code=400) from e
         except stripe.SignatureVerificationError as e:
@@ -122,7 +145,7 @@ class WebhookEventGetter:
 @router.post("/webhook", status_code=202, name="integrations.stripe.webhook")
 async def webhook(
     session: AsyncSession = Depends(get_db_session),
-    event: stripe.Event = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET)),
+    event: dict[str, Any] = Depends(WebhookEventGetter(settings.STRIPE_WEBHOOK_SECRET)),
 ) -> None:
     if event["type"] in DIRECT_IMPLEMENTED_WEBHOOKS:
         await enqueue(session, event)
@@ -133,7 +156,7 @@ async def webhook(
 )
 async def webhook_connect(
     session: AsyncSession = Depends(get_db_session),
-    event: stripe.Event = Depends(
+    event: dict[str, Any] = Depends(
         WebhookEventGetter(settings.STRIPE_CONNECT_WEBHOOK_SECRET)
     ),
 ) -> None:
@@ -148,8 +171,8 @@ async def webhook_connect(
 )
 async def webhook_account_risk(
     session: AsyncSession = Depends(get_db_session),
-    event: stripe.Event = Depends(
-        WebhookEventGetter(settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET)
+    event: dict[str, Any] = Depends(
+        WebhookEventGetter(settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET, thin=True)
     ),
 ) -> None:
     if is_account_risk_event(event["type"]):
@@ -157,6 +180,6 @@ async def webhook_account_risk(
             session,
             ExternalEventSource.stripe,
             "stripe.account_risk_signal",
-            event.id,
+            event["id"],
             event,
         )

@@ -32,6 +32,11 @@ class TaxCalculationLogicalError(TaxError):
         super().__init__(message)
 
 
+class InvalidAddressError(TaxCalculationLogicalError):
+    def __init__(self, message: str = "The provided address is invalid.") -> None:
+        super().__init__(message)
+
+
 class InvalidTaxIDError(TaxCalculationLogicalError):
     def __init__(self) -> None:
         message = "The provided tax ID is invalid."

@@ -14,6 +14,7 @@ from ..tax_id import TaxID
 from .base import (
     AlreadyRevertedError,
     CalculationExpiredError,
+    InvalidAddressError,
     InvalidTaxIDError,
     TaxabilityReason,
     TaxBreakdownItem,
@@ -109,9 +110,16 @@ class TaxCalculationService:
             The calculation and the processor that produced it.
 
         Raises:
+            InvalidAddressError: If the address lacks fields required to
+                determine the tax jurisdiction.
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
         """
-        for processor in settings.tax_processors:
+        if address.country in {"US", "CA"} and not address.has_state():
+            raise InvalidAddressError("State is required.")
+        if address.country == "US" and address.postal_code is None:
+            raise InvalidAddressError("Postal code is required.")
+
+        for processor in settings.TAX_PROCESSORS:
             log.debug("Attempting tax calculation with processor", processor=processor)
             tax_processor_service = _get_tax_service(processor)
             try:
@@ -178,7 +186,7 @@ class TaxCalculationService:
             The recorded transaction ID and its processor. Transactions recorded
             from explicit amounts have a ``backfill_``-prefixed ID.
         """
-        record_processor = settings.tax_record_processor
+        record_processor = settings.TAX_RECORD_PROCESSOR
         tax_processor_service = _get_tax_service(record_processor)
         if calculation_processor != record_processor:
             log.info(
@@ -228,7 +236,7 @@ class TaxCalculationService:
             A ``backfill_``-prefixed record ID and the recording processor.
             Returning an ID does not verify completion of asynchronous processing.
         """
-        record_processor = settings.tax_record_processor
+        record_processor = settings.TAX_RECORD_PROCESSOR
         tax_processor_service = _get_tax_service(record_processor)
         backfill_reference = await tax_processor_service.backfill(
             amount,
@@ -338,6 +346,7 @@ tax_calculation = TaxCalculationService()
 __all__ = [
     "AlreadyRevertedError",
     "CalculationExpiredError",
+    "InvalidAddressError",
     "InvalidTaxIDError",
     "TaxBreakdownItem",
     "TaxCalculation",

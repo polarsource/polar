@@ -11,7 +11,8 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { BunFileSystem } from '@effect/platform-bun'
-import { Effect, Layer } from 'effect'
+import { Effect, Fiber, Layer } from 'effect'
+import { TestClock } from 'effect/testing'
 import { describe, expect, test } from 'vitest'
 import {
   TREE_URL,
@@ -89,6 +90,26 @@ const toolkit = () =>
       ]),
     ),
   })
+
+test('gives up when GitHub does not respond', async () => {
+  const http = fakeHttp({
+    [TREE_URL]: (request) =>
+      new Promise((_, reject) =>
+        request.signal.addEventListener('abort', () =>
+          reject(request.signal.reason),
+        ),
+      ),
+  })
+  const error = await Effect.runPromise(
+    Effect.gen(function* () {
+      const fiber = yield* Effect.forkChild(Effect.flip(fetchSkills))
+      yield* TestClock.adjust('15 seconds')
+      return yield* Fiber.join(fiber)
+    }).pipe(Effect.provide(Layer.merge(http.layer, TestClock.layer()))),
+  )
+
+  expect(error.hint).toBe('GitHub did not respond within 15s.')
+})
 
 test('installs the skills, then reports them current until a file changes', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'polar-skills-'))

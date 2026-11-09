@@ -72,6 +72,16 @@ export const fetchSkills = Effect.gen(function* () {
         hint: cause.message,
       }),
   ),
+  Effect.timeoutOrElse({
+    duration: '15 seconds',
+    orElse: () =>
+      Effect.fail(
+        new AgentSetupError({
+          message: 'Could not fetch the Polar skills from GitHub',
+          hint: 'GitHub did not respond within 15s.',
+        }),
+      ),
+  }),
   Effect.filterOrFail(
     (skills) => skills.length > 0,
     () =>

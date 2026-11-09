@@ -12,6 +12,7 @@ import { Form, FormField, FormMessage } from '@polar-sh/ui/components/ui/form'
 import { useForm, useFormState } from 'react-hook-form'
 import { PathCardBanner } from './PathCardBanner'
 import { SectionLayout } from './SectionLayout'
+import { SupportEmailVerification } from './SupportEmailVerification'
 
 interface Props {
   organization: schemas['Organization']
@@ -96,9 +97,11 @@ export const EmailSection = ({
               </Box>
             )}
           />
-          {reasonItems.map((reason) => (
-            <PathCardBanner key={reason} tone={tone} title={reason} />
-          ))}
+          {step.status !== 'pending' &&
+            reasonItems.map((reason) => (
+              <PathCardBanner key={reason} tone={tone} title={reason} />
+            ))}
+          <SupportEmailVerification organization={organization} />
         </SectionLayout>
       </form>
     </Form>

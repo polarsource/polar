@@ -40,6 +40,7 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 import { Box } from '@polar-sh/orbit/Box'
+import { SupportEmailVerification } from '@/components/Finance/Account/sections/SupportEmailVerification'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
@@ -210,7 +211,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 }) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
-  const { name, avatar_url: avatarURL } = useWatch({ control })
+  const { name, avatar_url: avatarURL, email } = useWatch({ control })
   const fieldId = useId()
 
   const { status: urlStatus, validateURL } = useURLValidation({
@@ -459,6 +460,9 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                 </div>
               )}
             />
+            {!readOnly && email === organization.email && (
+              <SupportEmailVerification organization={organization} />
+            )}
           </div>
         </div>
 

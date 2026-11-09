@@ -50,18 +50,23 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const isTokenCreationResume =
     step?.key === 'setup_readiness' &&
     searchParams.has(ORGANIZATION_ACCESS_TOKEN_RESUME_PARAM)
-  const [isExpanded, setIsExpanded] = useState(isTokenCreationResume)
+  const [expandedToggle, setExpandedToggle] = useState<boolean | null>(null)
   const [isDeepLinkTarget] = useState(
     () => targetStepKey != null && step?.key === targetStepKey,
   )
   const { data: domains } = useOrganizationDomains(organization.id)
+  const isEmailUnverified =
+    step?.key === 'identity.email' &&
+    !!step.reasons?.includes('identity.email_unverified')
+  const isExpanded =
+    expandedToggle ?? (isTokenCreationResume || isEmailUnverified)
 
   useEffect(() => {
     if (!isDeepLinkTarget) {
       return
     }
     setTargetStepKey(null)
-    const timeout = setTimeout(() => setIsExpanded(true), 750)
+    const timeout = setTimeout(() => setExpandedToggle(true), 750)
     return () => clearTimeout(timeout)
   }, [isDeepLinkTarget, setTargetStepKey])
 
@@ -87,7 +92,8 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
       : undefined
   const isDomainUnverified =
     !!websiteDomainHost && !!domains && !websiteDomain?.verified_at
-  const status = isDomainUnverified ? 'warning' : step.status
+  const status =
+    isDomainUnverified || isEmailUnverified ? 'warning' : step.status
 
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
@@ -122,11 +128,13 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
             status={status}
             reasons={step.reasons}
             icon={
-              isDomainUnverified
-                ? websiteDomain
-                  ? 'waiting'
-                  : 'dashed'
-                : undefined
+              isEmailUnverified
+                ? 'waiting'
+                : isDomainUnverified
+                  ? websiteDomain
+                    ? 'waiting'
+                    : 'dashed'
+                  : undefined
             }
           />
           <Box flexDirection="column" rowGap="none">
@@ -145,12 +153,14 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsExpanded((prev) => !prev)}
+                onClick={() => setExpandedToggle(!isExpanded)}
                 aria-expanded={isExpanded}
               >
                 {isExpanded
                   ? 'Close'
-                  : collapsedActionLabel({ ...step, status })}
+                  : isEmailUnverified
+                    ? 'Confirm'
+                    : collapsedActionLabel({ ...step, status })}
               </Button>
             </Box>
           )}

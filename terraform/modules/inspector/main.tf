@@ -2,6 +2,10 @@ terraform {
   required_version = ">= 1.2"
 
   required_providers {
+    archive = {
+      source  = "hashicorp/archive"
+      version = ">= 2.0"
+    }
     aws = {
       source  = "hashicorp/aws"
       version = ">= 6.69.1, < 7.0.0"
@@ -81,76 +85,84 @@ resource "aws_cloudwatch_event_rule" "findings" {
   })
 }
 
-resource "aws_cloudwatch_event_connection" "slack" {
-  name               = "inspector-findings-slack"
-  authorization_type = "API_KEY"
+resource "aws_dynamodb_table" "notified" {
+  name         = "inspector-findings-notified"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "key"
 
-  auth_parameters {
-    api_key {
-      key   = "Authorization"
-      value = "Bearer ${var.slack_bot_token}"
-    }
+  attribute {
+    name = "key"
+    type = "S"
   }
 }
 
-resource "aws_cloudwatch_event_api_destination" "slack_post_message" {
-  name                = "inspector-findings-slack-post-message"
-  connection_arn      = aws_cloudwatch_event_connection.slack.arn
-  invocation_endpoint = "https://slack.com/api/chat.postMessage"
-  http_method         = "POST"
+data "archive_file" "notify" {
+  type        = "zip"
+  source_file = "${path.module}/notify.py"
+  output_path = "${path.root}/inspector-findings-notify-${data.aws_region.current.region}.zip"
 }
 
-data "aws_iam_policy_document" "slack_assume" {
+data "aws_iam_policy_document" "notify_assume" {
   statement {
     actions = ["sts:AssumeRole"]
 
     principals {
       type        = "Service"
-      identifiers = ["events.amazonaws.com"]
+      identifiers = ["lambda.amazonaws.com"]
     }
   }
 }
 
-resource "aws_iam_role" "slack" {
-  name               = "inspector-findings-slack-${data.aws_region.current.region}"
-  assume_role_policy = data.aws_iam_policy_document.slack_assume.json
+resource "aws_iam_role" "notify" {
+  name               = "inspector-findings-notify-${data.aws_region.current.region}"
+  assume_role_policy = data.aws_iam_policy_document.notify_assume.json
 }
 
-data "aws_iam_policy_document" "slack" {
+data "aws_iam_policy_document" "notify" {
   statement {
-    actions   = ["events:InvokeApiDestination"]
-    resources = [aws_cloudwatch_event_api_destination.slack_post_message.arn]
+    actions   = ["dynamodb:PutItem", "dynamodb:DeleteItem"]
+    resources = [aws_dynamodb_table.notified.arn]
+  }
+
+  statement {
+    actions   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["arn:aws:logs:*:*:*"]
   }
 }
 
-resource "aws_iam_role_policy" "slack" {
-  name   = "post-to-slack"
-  role   = aws_iam_role.slack.id
-  policy = data.aws_iam_policy_document.slack.json
+resource "aws_iam_role_policy" "notify" {
+  name   = "notify"
+  role   = aws_iam_role.notify.id
+  policy = data.aws_iam_policy_document.notify.json
 }
 
-resource "aws_cloudwatch_event_target" "findings_slack" {
-  rule     = aws_cloudwatch_event_rule.findings.name
-  arn      = aws_cloudwatch_event_api_destination.slack_post_message.arn
-  role_arn = aws_iam_role.slack.arn
+resource "aws_lambda_function" "notify" {
+  function_name    = "inspector-findings-notify"
+  role             = aws_iam_role.notify.arn
+  runtime          = "python3.13"
+  handler          = "notify.handler"
+  filename         = data.archive_file.notify.output_path
+  source_code_hash = data.archive_file.notify.output_base64sha256
+  timeout          = 30
 
-  http_target {
-    header_parameters = { "Content-Type" = "application/json" }
-  }
-
-  input_transformer {
-    input_paths = {
-      severity = "$.detail.severity"
-      title    = "$.detail.title"
-      account  = "$.detail.awsAccountId"
-      resource = "$.detail.resources[0].id"
-      region   = "$.region"
+  environment {
+    variables = {
+      TABLE_NAME      = aws_dynamodb_table.notified.name
+      SLACK_CHANNEL   = var.slack_channel
+      SLACK_BOT_TOKEN = var.slack_bot_token
     }
-    input_template = <<-EOT
-      {
-        "channel": "${var.slack_channel}",
-        "text": ":shield: *Inspector <severity>* in account <account> (<region>): <title>\nResource: `<resource>`\nhttps://<region>.console.aws.amazon.com/inspector/v2/home?region=<region>#/findings/all"
-      }
-    EOT
   }
+}
+
+resource "aws_cloudwatch_event_target" "findings_notify" {
+  rule = aws_cloudwatch_event_rule.findings.name
+  arn  = aws_lambda_function.notify.arn
+}
+
+resource "aws_lambda_permission" "findings_notify" {
+  statement_id  = "AllowEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.notify.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.findings.arn
 }

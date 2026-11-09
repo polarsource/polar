@@ -241,6 +241,9 @@ test('initialize returns instructions for the tool mode', async () => {
   expect(optedOut).toContain('aggregate in code')
   expect(optedOut).not.toContain('intent')
   expect(optedOut).not.toContain('feedback')
+  for (const instructions of [codeMode, operations, optedOut]) {
+    expect(instructions).toContain('default_presentment_currency')
+  }
 })
 
 test('search and execute preserve sandbox isolation, outbound credentials, and limits', async () => {
@@ -352,6 +355,38 @@ test('the execute sandbox client serializes requests and handles every kind of r
     headers: { 'Content-Type': 'application/json' },
     body: '{"name":"Pro"}',
   })
+})
+
+test('the execute sandbox client stops at the request limit with an error that says how to continue', async () => {
+  const execute = (await rpc('tools/list')).result.tools.find(
+    (tool: { name: string }) => tool.name === 'execute',
+  )
+  expect(execute.description).toContain('at most 50 API requests')
+  await rpc('tools/call', {
+    name: 'execute',
+    arguments: {
+      code: `async () => {
+        for (let page = 1; page <= 51; page++) {
+          await polar.request({ path: '/v1/orders/', query: { page } })
+        }
+      }`,
+    },
+  })
+  const source = get.mock.calls[0][1]().modules['worker.js'] as string
+  const sandboxFetch = vi.fn<typeof fetch>(async () =>
+    Response.json({ items: [] }),
+  )
+  const Worker = runInThisContext(
+    `(WorkerEntrypoint, globalThis) => {${source
+      .replace("import { WorkerEntrypoint } from 'cloudflare:workers'", '')
+      .replace('export default', 'return')}}`,
+  )(class {}, { fetch: sandboxFetch })
+  const { error, requests } = await new Worker().evaluate()
+  expect(requests).toBe(50)
+  expect(sandboxFetch).toHaveBeenCalledTimes(50)
+  expect(error).toBe(
+    'This execute call reached its limit of 50 API requests. Split the work across several execute calls, for example a range of pages per call, or narrow it with filters.',
+  )
 })
 
 test('sandbox failures become tool errors and long errors and results are truncated', async () => {

@@ -4,7 +4,8 @@ const SHARED = `Polar API responses are large, and every tool result you read co
 - Page through, filter and aggregate in code, and return only the final figures and the few rows the answer needs. Don't return whole API responses or full objects, and don't fetch samples just to look at them.
 - List responses are { items, pagination: { total_count, max_page } }. Use limit=100 and fetch the remaining pages together.
 - Narrow requests with filters such as organization_id, customer_id and product_id instead of fetching everything.
-- Amounts are integers in the currency's smallest unit (cents for USD, whole yen for zero-decimal currencies such as JPY): net_amount excludes tax, total_amount includes it.`
+- Amounts are integers in the currency's smallest unit (cents for USD, whole yen for zero-decimal currencies such as JPY): net_amount excludes tax, total_amount includes it.
+- A product's prices must include one in the organization's default_presentment_currency, found on the organization. These tools can't change that currency; the user can, under Settings → Payments → Default payment currency in the Polar dashboard.`
 
 const TELEMETRY = `- Pass intent on every tool call: one sentence on the goal the call serves, kept the same while the goal is unchanged, without customer names, emails or IDs.
 - Before telling the user that something cannot be done with these tools, because an operation is missing, a search found nothing or an error made no sense, call the feedback tool with what was missing. Also use it when something works especially well. Then continue the task.`

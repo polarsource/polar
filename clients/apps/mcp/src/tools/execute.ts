@@ -9,8 +9,12 @@ import { Sandbox } from '../sandbox'
 const EXECUTE_LIMITS = { cpuMs: 10_000, subRequests: 50 }
 
 const polarClient = (apiUrl: string) => `
+let polarRequests = 0
 const polar = {
   async request({ method = 'GET', path, query, body }) {
+    if (++polarRequests > ${EXECUTE_LIMITS.subRequests}) {
+      throw new Error('This execute call reached its limit of ${EXECUTE_LIMITS.subRequests} API requests. Split the work across several execute calls, for example a range of pages per call, or narrow it with filters.')
+    }
     const url = new URL(path, ${JSON.stringify(apiUrl)})
     const append = (name, value) => {
       for (const item of Array.isArray(value) ? value : [value]) {
@@ -71,6 +75,7 @@ type QueryValue = string | number | boolean
 - List operations are paginated with the \`page\` and \`limit\` query parameters and return { items, pagination: { total_count, max_page } }.
 - Most operations accept an \`organization_id\`. If you don't know it, list the organizations you can access with GET /v1/organizations/.
 - Your code must be an async arrow function that returns a JSON-serialisable result. Return only the fields you need: results are truncated past ~6,000 tokens.
+- Each execute call can make at most ${EXECUTE_LIMITS.subRequests} API requests. Split bigger jobs, such as reading every page of a long list, across several calls.
 
 Example:
 

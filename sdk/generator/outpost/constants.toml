@@ -29,6 +29,15 @@ pull_lock_ttl = 10000
 pull_retry_delay = 1000
 max_pull_retry_delay = 30000
 pull_limit = 500
+# Identities per meter usage request: Polar refuses a bigger one.
+snapshot_batch = 500
+# How long an instance gathers the cold customers its reads ask for before asking Polar.
+fetch_batch_window = 10
+# Batches of cold customers the instance holding the queue asks Polar for at once.
+fetch_concurrency = 3
+# A batch of cold customers that fails at once is asked for again this long later, twice as
+# long after each failure, while its reads still wait.
+fetch_retry_delay = 100
 # Customers of a pulled page whose snapshots apply side by side; each one's apply in order.
 pull_concurrency = 16
 pull_check_interval = 1000

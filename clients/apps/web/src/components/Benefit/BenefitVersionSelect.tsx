@@ -15,7 +15,7 @@ export const BenefitVersionSelect = ({
     managedAsCode && benefit.external_id ? organization.id : undefined,
     {
       external_id: benefit.external_id ?? undefined,
-      catalog_status: ['live', 'archived'],
+      catalog_status: ['live', 'archived', 'draft'],
       limit: 100,
     },
   )

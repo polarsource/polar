@@ -49,11 +49,17 @@ export const CatalogVersionSelect = ({
           id: version.id,
           name: catalog.name ?? 'Untitled',
           publishedAt: catalog.published_at,
+          date: formatPublishedAt(catalog.published_at),
           isCurrent: version.is_current,
+          isDraft: catalog.status === 'draft',
         },
       ]
     })
-    .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+    .sort(
+      (a, b) =>
+        Number(!b.publishedAt) - Number(!a.publishedAt) ||
+        (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
+    )
   const selected = versions.find(({ id }) => id === selectedId)
 
   if (!selected) return null
@@ -73,7 +79,9 @@ export const CatalogVersionSelect = ({
               ·{' '}
               {selected.isCurrent
                 ? 'Current'
-                : formatPublishedAt(selected.publishedAt)}
+                : selected.isDraft
+                  ? 'Draft'
+                  : selected.date}
             </Text>
             <ChevronDown size={14} />
           </Box>
@@ -98,10 +106,7 @@ export const CatalogVersionSelect = ({
               <CommandItem
                 key={version.id}
                 value={version.id}
-                keywords={[
-                  version.name,
-                  formatPublishedAt(version.publishedAt),
-                ]}
+                keywords={[version.name, version.date]}
                 onSelect={() => {
                   setOpen(false)
                   router.push(`${basePath}/${version.id}`)
@@ -111,13 +116,15 @@ export const CatalogVersionSelect = ({
                 <Text truncate>{version.name}</Text>
                 {version.isCurrent ? (
                   <Status status="Current" color="gray" size="small" />
+                ) : version.isDraft ? (
+                  <Status status="Draft" color="blue" size="small" />
                 ) : null}
                 <Box flex={1} />
                 {version.id === selected.id ? (
                   <Check className="size-3.5!" />
                 ) : null}
                 <Text variant="caption" color="muted" wrap="nowrap" tabularNums>
-                  {formatPublishedAt(version.publishedAt)}
+                  {version.date}
                 </Text>
               </CommandItem>
             ))}

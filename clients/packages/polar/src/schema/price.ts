@@ -133,15 +133,11 @@ type VolumeTier<Rate extends Money> = Tier<Rate> & {
   readonly included?: never
 }
 
-/** An amount for one unit, like `usd(10)`. */
-type UnitAmount = Money<1>
-/** An amount for one unit, or for many with `perThousand()` or `perMillion()`. */
-type UsageAmount = Money
-
-type UnitTier = Tier<UnitAmount>
-type UnitVolumeTier = VolumeTier<UnitAmount>
-type UsageTier = Tier<UsageAmount>
-type UsageVolumeTier = VolumeTier<UsageAmount>
+type UnitTier = Tier<Money<1>>
+type UnitVolumeTier = VolumeTier<Money<1>>
+/** Usage tiers can charge per thousand or per million units. */
+type UsageTier = Tier<Money>
+type UsageVolumeTier = VolumeTier<Money>
 
 class PricedTier<Rate extends Money> implements Tier<Rate> {
   constructor(
@@ -287,7 +283,7 @@ export class MeteredPrice<Meter extends string> extends TaxablePrice {
   }
 
   /** The most this usage can cost per billing period, one amount per currency. */
-  cap(...caps: Amounts<UnitAmount>): MeteredPrice<Meter> {
+  cap(...caps: Amounts<Money<1>>): MeteredPrice<Meter> {
     return clonePrice<MeteredPrice<Meter>>(this, { caps })
   }
 }
@@ -300,7 +296,7 @@ export type PriceDefinition<Meter extends string = string> =
 
 class FixedBuilder {
   /** The price, one amount per currency. */
-  amount(...amounts: Amounts<UnitAmount>): FixedPrice {
+  amount(...amounts: Amounts<Money<1>>): FixedPrice {
     return new FixedPrice(amounts)
   }
 }
@@ -320,7 +316,7 @@ class FlatQuantityBuilder<Type extends QuantityType> {
   }
 
   /** The price of each unit, one amount per currency. */
-  amount(...amounts: Amounts<UnitAmount>): QuantityPrice<Type> {
+  amount(...amounts: Amounts<Money<1>>): QuantityPrice<Type> {
     return new QuantityPrice(
       this.type,
       'flat',
@@ -359,7 +355,7 @@ class FlatMeteredBuilder<Meter extends string> {
   constructor(private readonly meter: Meter) {}
 
   /** The rate per unit of usage, one amount per currency. */
-  amount(...amounts: Amounts<UsageAmount>): MeteredPrice<Meter> {
+  amount(...amounts: Amounts<Money>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'flat', [
       new PricedTier(undefined, amounts),
     ])

@@ -1,33 +1,9 @@
 import { schemas } from '@polar-sh/client'
-import { Grid, Status, Text } from '@polar-sh/orbit'
+import { DataTable, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 
 type Item = schemas['RemovedCatalogItem']
-
-const COLUMNS =
-  'minmax(0, 2fr) minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) 160px 96px'
-
-const Row = ({
-  children,
-  header,
-}: {
-  children: React.ReactNode
-  header?: boolean
-}) => (
-  <Grid
-    templateColumns={COLUMNS}
-    columnGap="l"
-    alignItems="center"
-    px="xl"
-    py={header ? 's' : 'm'}
-    borderTopWidth={header ? 0 : 1}
-    borderStyle="solid"
-    borderColor="border-primary"
-  >
-    {children}
-  </Grid>
-)
 
 const Customers = ({ item }: { item: Item }) =>
   item.status === 'deprecated' ? (
@@ -66,36 +42,45 @@ export const RemovedGroup = ({
           {hint}
         </Text>
       </Box>
-      <Box
-        flexDirection="column"
-        borderRadius="l"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-        overflow="hidden"
-      >
-        <Row header>
-          {['Name', 'Key', 'In versions', 'Removed in', 'Customers'].map(
-            (label) => (
-              <Text key={label} variant="caption" color="muted">
-                {label}
+      <DataTable
+        data={items}
+        isLoading={false}
+        getRowId={(item) => item.external_id}
+        columns={[
+          { accessorKey: 'name', header: 'Name' },
+          {
+            accessorKey: 'external_id',
+            header: 'Key',
+            cell: ({ row }) => (
+              <Text monospace color="muted">
+                {row.original.external_id}
               </Text>
             ),
-          )}
-        </Row>
-        {items.map((item) => {
-          const first = versionName(item.first_catalog_id)
-          const last = versionName(item.last_catalog_id)
-          return (
-            <Row key={item.external_id}>
-              <Text truncate>{item.name}</Text>
-              <Text monospace color="muted" truncate>
-                {item.external_id}
-              </Text>
-              <Text truncate>{first === last ? last : `${first}–${last}`}</Text>
-              <Text truncate>{versionName(item.removed_in_catalog_id)}</Text>
-              <Customers item={item} />
-              <Link href={href(item)}>
+          },
+          {
+            id: 'versions',
+            header: 'In versions',
+            cell: ({ row }) => {
+              const first = versionName(row.original.first_catalog_id)
+              const last = versionName(row.original.last_catalog_id)
+              return first === last ? last : `${first}–${last}`
+            },
+          },
+          {
+            id: 'removed_in',
+            header: 'Removed in',
+            cell: ({ row }) => versionName(row.original.removed_in_catalog_id),
+          },
+          {
+            accessorKey: 'customers_count',
+            header: 'Customers',
+            cell: ({ row }) => <Customers item={row.original} />,
+          },
+          {
+            id: 'open',
+            header: '',
+            cell: ({ row }) => (
+              <Link href={href(row.original)}>
                 <Box
                   as="span"
                   display="flex"
@@ -104,15 +89,15 @@ export const RemovedGroup = ({
                   transitionProperty="colors"
                   transitionDuration="fast"
                 >
-                  <Text as="span" color="inherit" truncate>
-                    Open {last} →
+                  <Text as="span" color="inherit">
+                    Open {versionName(row.original.last_catalog_id)} →
                   </Text>
                 </Box>
               </Link>
-            </Row>
-          )
-        })}
-      </Box>
+            ),
+          },
+        ]}
+      />
     </Box>
   )
 }

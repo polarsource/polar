@@ -470,4 +470,9 @@ export default {
       unknown: 'Something went wrong.',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: 'Deprecated · still in use',
+    },
+  },
 } as const

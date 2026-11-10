@@ -67,15 +67,14 @@ class MCPEventService:
             "expires_at": now + ttl,
         }
 
-        if (
+        is_live = (
             endpoint is not None
             and endpoint.expires_at is not None
             and endpoint.expires_at > now
-        ):
-            return await repository.update(endpoint, update_dict=update_dict)
-
+        )
         endpoint_id = endpoint.id if endpoint is not None else generate_uuid()
-        await _verify_callback(url, subscribe.secret, endpoint_id, now)
+        if not is_live:
+            await _verify_callback(url, subscribe.secret, endpoint_id, now)
 
         if endpoint is not None:
             return await repository.update(endpoint, update_dict=update_dict)

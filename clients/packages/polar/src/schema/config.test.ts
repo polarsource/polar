@@ -77,6 +77,25 @@ test('defineConfig rejects empty external IDs even with a valid display name', (
   ).toThrow()
 })
 
+test('external IDs allow letters, digits, "_", "-", "." and ":" only', () => {
+  const define = (key: string) => () =>
+    defineConfig({
+      meters: ({ meter }) => ({ [key]: meter('Requests').count() }),
+    })
+
+  for (const key of [
+    'calls',
+    'api_calls-v2',
+    'confirmix.plan.free',
+    'a1:month',
+  ]) {
+    expect(define(key)).not.toThrow()
+  }
+  for (const key of ['tool calls', 'a/b', '_calls', '..', 'pró']) {
+    expect(define(key)).toThrow('Use only letters, digits')
+  }
+})
+
 test('short meter keys require an explicit display name', () => {
   expect(() =>
     defineConfig({ meters: ({ meter }) => ({ x: meter().count() }) }),

@@ -27,6 +27,7 @@ def upgrade() -> None:
     op.add_column(
         "webhook_endpoints",
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        if_not_exists=True,
     )
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5min'")
@@ -64,4 +65,6 @@ def downgrade() -> None:
             )
         finally:
             op.execute("RESET lock_timeout")
+
+    op.execute("SET LOCAL lock_timeout = '5s'")
     op.drop_column("webhook_endpoints", "expires_at")

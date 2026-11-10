@@ -3,7 +3,7 @@ title: "Architecture Overview"
 description: "The services that make up Polar, where they run and how they connect."
 ---
 
-**Last reviewed:** 2026-11-05. Update this page when you add, move or remove a service. The source of truth is [`terraform/`](https://github.com/polarsource/polar/tree/main/terraform).
+**Last reviewed:** 2026-11-10. Update this page when you add, move or remove a service. The source of truth is [`terraform/`](https://github.com/polarsource/polar/tree/main/terraform).
 
 For what data goes where and which third parties receive it, see [Data Flows](/engineering/data-flows).
 
@@ -46,6 +46,7 @@ flowchart TB
 
     subgraph SaaS["Third parties"]
         stripe["Stripe"]
+        numeral["Numeral"]
         tinybird["Tinybird"]
         resend["Resend"]
         logfire["Logfire"]

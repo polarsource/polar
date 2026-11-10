@@ -1,4 +1,10 @@
-import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
+import {
+  EmailLink,
+  Footer,
+  Intro,
+  Text,
+  WrapperPolar,
+} from '../components/foundation'
 import OTPCode from '../components/OTPCode'
 import type { schemas } from '../types'
 
@@ -10,10 +16,10 @@ export function OrganizationEmailVerification({
 }: schemas['OrganizationEmailVerificationProps']) {
   return (
     <WrapperPolar
-      preview={`Your code to confirm the support email of ${organization_name} is ${code}. It is valid for the next ${code_lifetime_minutes.toFixed()} minutes.`}
+      preview={`Your code to verify the support email of ${organization_name} is ${code}. It is valid for the next ${code_lifetime_minutes.toFixed()} minutes.`}
     >
       <Intro>
-        Here is your code to confirm {email} as the support email of{' '}
+        Here is your code to verify {email} as the support email of{' '}
         <Text as="span" weight="bold">
           {organization_name}
         </Text>{' '}
@@ -24,7 +30,8 @@ export function OrganizationEmailVerification({
       </Intro>
       <OTPCode code={code} domain="polar.sh" />
       <Text variant="caption">
-        If you didn't request this email, you can safely ignore it.
+        If you didn't request this code, please contact{' '}
+        <EmailLink href="mailto:support@polar.sh">support@polar.sh</EmailLink>.
       </Text>
       <Footer email={email} />
     </WrapperPolar>

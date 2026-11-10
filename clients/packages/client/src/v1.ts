@@ -31192,7 +31192,7 @@ export interface components {
       email: string | null
       /**
        * Verified
-       * @description Whether the merchant confirmed this email with a code.
+       * @description Whether the merchant verified this email with a code.
        */
       verified: boolean
       /**

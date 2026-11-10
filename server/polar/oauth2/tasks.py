@@ -21,6 +21,7 @@ async def oauth2_token_delete_expired() -> None:
     cron_trigger=CronTrigger(hour=0, minute=30),
     priority=TaskPriority.LOW,
     max_retries=0,
+    time_limit=600_000,
 )
 async def oauth2_client_delete_stale() -> None:
     cutoff = utc_now()

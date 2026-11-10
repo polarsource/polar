@@ -34,7 +34,9 @@ describe('CheckoutLayout', () => {
 
       const probe = screen.getByTestId('probe')
       expect(probe).toHaveTextContent('rtl')
-      expect(probe.closest('[dir]')).toHaveAttribute('dir', 'rtl')
+      const layout = probe.closest('[dir]')
+      expect(layout).not.toBe(document.documentElement)
+      expect(layout).toHaveAttribute('dir', 'rtl')
       expect(document.documentElement).toHaveAttribute('dir', 'rtl')
     },
   )
@@ -48,7 +50,9 @@ describe('CheckoutLayout', () => {
 
     const probe = screen.getByTestId('probe')
     expect(probe).toHaveTextContent('ltr')
-    expect(probe.closest('[dir]')).toHaveAttribute('dir', 'ltr')
+    const layout = probe.closest('[dir]')
+    expect(layout).not.toBe(document.documentElement)
+    expect(layout).toHaveAttribute('dir', 'ltr')
     expect(document.documentElement).toHaveAttribute('dir', 'ltr')
   })
 

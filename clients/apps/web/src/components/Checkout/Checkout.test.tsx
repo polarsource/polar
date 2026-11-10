@@ -221,9 +221,9 @@ describe('Checkout page', () => {
         renderCheckout({ locale: locale as AcceptedLocale })
 
         expect(document.documentElement).toHaveAttribute('dir', 'rtl')
-        expect(
-          screen.getByText('Test Product').closest('[dir]'),
-        ).toHaveAttribute('dir', 'rtl')
+        const layout = screen.getByText('Test Product').closest('[dir]')
+        expect(layout).not.toBe(document.documentElement)
+        expect(layout).toHaveAttribute('dir', 'rtl')
       },
     )
 
@@ -233,9 +233,9 @@ describe('Checkout page', () => {
         renderCheckout({ locale })
 
         expect(document.documentElement).toHaveAttribute('dir', 'ltr')
-        expect(
-          screen.getByText('Test Product').closest('[dir]'),
-        ).toHaveAttribute('dir', 'ltr')
+        const layout = screen.getByText('Test Product').closest('[dir]')
+        expect(layout).not.toBe(document.documentElement)
+        expect(layout).toHaveAttribute('dir', 'ltr')
       },
     )
   })

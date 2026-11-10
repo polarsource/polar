@@ -656,6 +656,14 @@ def _get_benefit_update_dict(
     return update_dict
 
 
+def benefit_update_dict(
+    benefit: Benefit, benefit_config: ConfigBenefit, external_ids: dict[str, str]
+) -> dict[str, Any]:
+    return _get_benefit_update_dict(
+        benefit, benefit_config, benefit_properties(benefit, external_ids)
+    )
+
+
 async def diff_benefits(
     session: AsyncSession,
     organization: Organization,
@@ -877,6 +885,17 @@ def _get_product_update_dict(
     ):
         update_dict["user_metadata"] = product_config.metadata
     return update_dict
+
+
+def product_update_dict(
+    product: Product, product_config: ConfigProduct, external_ids: dict[str, str]
+) -> dict[str, Any]:
+    return _get_product_update_dict(
+        product,
+        product_config,
+        [price_config(price, external_ids) for price in product.prices],
+        [external_ids.get(str(b.id), str(b.id)) for b in product.benefits],
+    )
 
 
 async def diff_products(

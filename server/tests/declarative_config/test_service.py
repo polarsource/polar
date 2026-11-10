@@ -63,8 +63,10 @@ from polar.meter.repository import MeterRepository
 from polar.meter.unit import MeterUnit
 from polar.models import (
     Agent,
+    Benefit,
     Customer,
     Organization,
+    Product,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
     ProductPriceUnit,
@@ -4967,6 +4969,141 @@ class TestCatalogDrafts:
         assert (live_pro.is_current, current_pro.id) == (False, members["pro"].id)
         await session.refresh(live)
         assert live.status == CatalogStatus.archived
+
+    async def _draft_members(
+        self, session: AsyncSession, organization: Organization
+    ) -> tuple[dict[str, Benefit], dict[str, Product]]:
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        products = {
+            member.external_id: member.product
+            for member in await CatalogProductRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+        }
+        benefits = await catalog_service.get_catalog_benefits(
+            session, organization, draft
+        )
+        return benefits, products
+
+    async def test_reapply_updates_the_draft_rows_in_place(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT],
+                    "products": [{**MONTHLY_PRO, "benefits": ["beta"]}],
+                }
+            ),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                    "products": [{**MONTHLY_PRO_25, "benefits": ["beta"]}],
+                }
+            ),
+            publish=False,
+        )
+        first_benefits, first_products = await self._draft_members(
+            session, organization
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Earliest access"}],
+                    "products": [
+                        {**MONTHLY_PRO_25, "name": "Pro Plus", "benefits": ["beta"]}
+                    ],
+                }
+            ),
+            publish=False,
+        )
+
+        benefits, products = await self._draft_members(session, organization)
+        beta, pro = benefits["beta"], products["pro"]
+        assert (beta.id, pro.id) == (
+            first_benefits["beta"].id,
+            first_products["pro"].id,
+        )
+        assert (beta.description, beta.deleted_at) == ("Earliest access", None)
+        assert (pro.name, pro.deleted_at) == ("Pro Plus", None)
+        assert [b.id for b in pro.benefits] == [beta.id]
+        [price] = pro.prices
+        assert isinstance(price, ProductPriceFixed)
+        assert price.price_amount == 2500
+
+    async def test_reapply_reverting_a_resource_drops_its_draft_row(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT],
+                    "products": [{**MONTHLY_PRO, "benefits": ["beta"]}],
+                }
+            ),
+        )
+        [live_beta] = await BenefitRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["beta"])
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [{**BETA_BENEFIT, "description": "Early access"}],
+                    "products": [{**MONTHLY_PRO_25, "benefits": ["beta"]}],
+                }
+            ),
+            publish=False,
+        )
+        first_benefits, first_products = await self._draft_members(
+            session, organization
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "benefits": [BETA_BENEFIT],
+                    "products": [{**MONTHLY_PRO_25, "benefits": ["beta"]}],
+                }
+            ),
+            publish=False,
+        )
+
+        benefits, products = await self._draft_members(session, organization)
+        assert benefits["beta"].id == live_beta.id
+        assert products["pro"].id == first_products["pro"].id
+        assert [b.id for b in products["pro"].benefits] == [live_beta.id]
+        await session.refresh(first_benefits["beta"])
+        assert first_benefits["beta"].deleted_at is not None
 
     async def test_export_the_draft(
         self,

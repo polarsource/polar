@@ -1,3 +1,5 @@
+from collections.abc import Collection
+from typing import Any
 from uuid import UUID
 
 from polar.exceptions import PolarRequestValidationError
@@ -11,6 +13,7 @@ from polar.product.schemas import (
     ProductPriceMeteredUnitCreate,
     ProductPriceSeatBasedCreate,
     ProductPriceUnitBasedCreate,
+    ProductUpdate,
 )
 
 from .schemas import (
@@ -114,3 +117,22 @@ def product_create(
         prices=prices,
         organization_id=organization_id,
     )
+
+
+def product_update(
+    config: ConfigProduct, meter_ids: dict[str, UUID], fields: Collection[str]
+) -> ProductUpdate:
+    values: dict[str, Any] = {
+        name: getattr(config, name)
+        for name in ("name", "description", "visibility")
+        if name in fields
+    }
+    # The trial interval and its count are only valid together.
+    if {"trial_interval", "trial_interval_count"} & set(fields):
+        values["trial_interval"] = config.trial_interval
+        values["trial_interval_count"] = config.trial_interval_count
+    if "user_metadata" in fields:
+        values["metadata"] = config.metadata
+    if "prices" in fields:
+        values["prices"] = [price_create(price, meter_ids) for price in config.prices]
+    return ProductUpdate(**values)

@@ -76,7 +76,8 @@ class ReducerUsageChanged(PolarError):
         self.subscription = subscription
         super().__init__(
             f"Reducer usage of subscription {subscription.id} changed "
-            "while its order was created."
+            "while its order was created.",
+            409,
         )
 
 

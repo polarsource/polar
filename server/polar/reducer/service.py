@@ -231,14 +231,12 @@ class ReducerService:
         customer: Customer,
         meter_ids: Iterable[UUID],
         *,
-        order_id: UUID | None,
+        order_id: UUID,
         windows: Sequence[UsageWindow],
         cutoff: datetime,
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the customer's usage in `windows` and its credits since the latest
         reset as billed by the order, and returns their quantities per meter.
-        Without an order, they are sealed and returned, not marked: billing them
-        with the order afterwards returns the same quantities.
         Raises on failure: the caller rolls it back."""
         usage = await self.bill_by_window(
             session,
@@ -269,7 +267,9 @@ class ReducerService:
         windows: Sequence[UsageWindow],
         cutoff: datetime,
     ) -> dict[UUID, MeterUsage]:
-        """Like `bill`, with each meter's usage kept per window."""
+        """Like `bill`, with each meter's usage kept per window. Without an
+        order, the usage and credits are sealed and returned, not marked: billing
+        them with the order afterwards returns the same."""
         meter_ids = sorted(meter_ids)
         reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
         observed = await self._bill_windows(

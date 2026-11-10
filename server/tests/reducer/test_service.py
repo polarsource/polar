@@ -1706,7 +1706,7 @@ class TestBill:
         )
         windows = [usage_window(meter, CUTOFF, NEXT_BUCKET_START)]
 
-        sealed = await reducer_service.bill(
+        sealed = await reducer_service.bill_by_window(
             session,
             external_customer,
             [meter.id],
@@ -1715,10 +1715,10 @@ class TestBill:
             cutoff=NEXT_BUCKET_START,
         )
 
-        assert sealed == {meter.id: (Decimal(1), Decimal(0))}
+        assert [usage.summary.count for usage in sealed[meter.id].windows] == [1]
         assert all(bucket.billed_at is None for bucket in await get_buckets(session))
 
-        billed = await reducer_service.bill(
+        billed = await reducer_service.bill_by_window(
             session,
             external_customer,
             [meter.id],

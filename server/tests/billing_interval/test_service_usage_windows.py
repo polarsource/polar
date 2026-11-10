@@ -229,30 +229,31 @@ class TestChargeUsage:
             )
 
 
-def test_get_meter_charge_groups_usage_by_interval_price() -> None:
-    meter_id, old_price_id, new_price_id = uuid4(), uuid4(), uuid4()
-    old_interval_id, new_interval_id = uuid4(), uuid4()
+class TestGetMeterCharge:
+    def test_groups_usage_by_interval_price(self) -> None:
+        meter_id, old_price_id, new_price_id = uuid4(), uuid4(), uuid4()
+        old_interval_id, new_interval_id = uuid4(), uuid4()
 
-    def usage(interval_id: UUID, start: datetime, total: int) -> WindowUsage:
-        return WindowUsage(
-            UsageWindow(interval_id, uuid4(), meter_id, start, CUTOFF),
-            UsageSummary(2, Decimal(total), Decimal(1), Decimal(total)),
+        def usage(interval_id: UUID, start: datetime, total: int) -> WindowUsage:
+            return WindowUsage(
+                UsageWindow(interval_id, uuid4(), meter_id, start, CUTOFF),
+                UsageSummary(2, Decimal(total), Decimal(1), Decimal(total)),
+            )
+
+        charge = get_meter_charge(
+            MeterUsage(
+                function=AggregationFunction.avg,
+                windows=(
+                    usage(new_interval_id, CUTOFF, 8),
+                    usage(old_interval_id, EARLIER, 4),
+                    usage(old_interval_id, EARLIER, 8),
+                ),
+                credits=Decimal(3),
+            ),
+            {old_interval_id: old_price_id, new_interval_id: new_price_id},
         )
 
-    charge = get_meter_charge(
-        MeterUsage(
-            function=AggregationFunction.avg,
-            windows=(
-                usage(new_interval_id, CUTOFF, 8),
-                usage(old_interval_id, EARLIER, 4),
-                usage(old_interval_id, EARLIER, 8),
-            ),
-            credits=Decimal(3),
-        ),
-        {old_interval_id: old_price_id, new_interval_id: new_price_id},
-    )
-
-    assert charge == MeterCharge(
-        {old_price_id: Decimal(3), new_price_id: Decimal(4)}, Decimal(3)
-    )
-    assert list(charge.units_by_price) == [old_price_id, new_price_id]
+        assert charge == MeterCharge(
+            {old_price_id: Decimal(3), new_price_id: Decimal(4)}, Decimal(3)
+        )
+        assert list(charge.units_by_price) == [old_price_id, new_price_id]

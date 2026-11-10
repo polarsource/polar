@@ -12,6 +12,7 @@ import structlog
 from babel.dates import format_date
 
 from polar.billing_interval.service import billing_interval as billing_interval_service
+from polar.billing_interval.types import MeterCharge
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import PolarError
@@ -235,13 +236,15 @@ class BillingEntryService:
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         """Like `_create_order_items`, with the metered usage read from the
         reducers instead of the pending billing entries."""
-        prices: dict[uuid.UUID, MeteredPrice] = {}
+        meter_ids: set[uuid.UUID] = set()
         if include_metered:
-            for price in await self._get_active_prices(
-                session, subscription, price_ids
-            ):
-                if is_metered_price(price):
-                    prices.setdefault(price.meter_id, price)
+            meter_ids = {
+                price.meter_id
+                for price in await self._get_active_prices(
+                    session, subscription, price_ids
+                )
+                if is_metered_price(price)
+            }
 
         async with self._create_order_items(
             session,
@@ -252,15 +255,19 @@ class BillingEntryService:
         ) as static_items:
             usage = (
                 await billing_interval_service.charge_usage(
-                    session, subscription, prices, order_id=None, cutoff=reducer_cutoff
+                    session,
+                    subscription,
+                    meter_ids,
+                    order_id=None,
+                    cutoff=reducer_cutoff,
                 )
-                if prices
+                if meter_ids
                 else {}
             )
             metered_items = [
-                self._get_reducer_order_item(prices[meter_id], units, credited_units)
-                for meter_id, (units, credited_units) in usage.items()
-                if units > 0
+                item
+                for charge in usage.values()
+                for item in await self._get_reducer_order_items(session, charge)
             ]
 
             yield [*static_items, *metered_items]
@@ -269,27 +276,42 @@ class BillingEntryService:
                 billed = await billing_interval_service.charge_usage(
                     session,
                     subscription,
-                    prices,
+                    meter_ids,
                     order_id=metered_items[0].order_id,
                     cutoff=reducer_cutoff,
                 )
                 if billed != usage:
                     raise ReducerUsageChanged(subscription)
 
-    def _get_reducer_order_item(
-        self, price: MeteredPrice, units: Decimal, credited_units: Decimal
-    ) -> OrderItem:
-        amount, amount_label = price.get_amount_and_label(
-            float(units), int(credited_units)
-        )
-        return OrderItem(
-            label=f"{price.meter.name} — {amount_label}",
-            amount=amount,
-            net_amount=amount,
-            tax_amount=0,
-            proration=False,
-            product_price=price,
-        )
+    async def _get_reducer_order_items(
+        self, session: AsyncSession, charge: MeterCharge
+    ) -> list[OrderItem]:
+        """One item per price the meter's usage is charged at. Credits come off
+        the usage at the oldest price first."""
+        repository = ProductPriceRepository.from_session(session)
+        items: list[OrderItem] = []
+        credited_units = charge.credited_units
+        for price_id, units in charge.units_by_price.items():
+            if units <= 0:
+                continue
+            price = cast(
+                MeteredPrice, await repository.get_by_id(price_id, include_deleted=True)
+            )
+            amount, amount_label = price.get_amount_and_label(
+                float(units), int(credited_units)
+            )
+            items.append(
+                OrderItem(
+                    label=f"{price.meter.name} — {amount_label}",
+                    amount=amount,
+                    net_amount=amount,
+                    tax_amount=0,
+                    proration=False,
+                    product_price=price,
+                )
+            )
+            credited_units = max(Decimal(0), credited_units - units)
+        return items
 
     def create_order_items_from_pending(
         self,

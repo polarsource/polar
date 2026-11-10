@@ -1,6 +1,7 @@
+import contextlib
 import dataclasses
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
 from itertools import pairwise
@@ -15,12 +16,13 @@ from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
+from polar.reducer.service import finalize_quantity, merge_summaries
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.types import UsageWindow
+from polar.reducer.types import MeterUsage, UsageSummary, UsageWindow
 from polar.subscription.repository import SubscriptionRepository
 
 from .repository import BillingIntervalRepository
-from .types import IntervalChangePlan, SubscriptionMeterBillingState
+from .types import IntervalChangePlan, MeterCharge, SubscriptionMeterBillingState
 
 log: Logger = structlog.get_logger()
 
@@ -126,10 +128,19 @@ class BillingIntervalService:
         Failures, including waiting on a bucket lock for longer than
         BILL_USAGE_LOCK_TIMEOUT, are rolled back and logged, so they never affect
         the order."""
+        meter_ids = sorted(meter_ids)
         try:
-            quantities = await self._settle_usage(
-                session, subscription, meter_ids, order_id=order_id, cutoff=cutoff
-            )
+            async with self._settlement_windows(
+                session, subscription, meter_ids, cutoff=cutoff
+            ) as windows:
+                quantities = await reducer_service.bill(
+                    session,
+                    subscription.customer,
+                    meter_ids,
+                    order_id=order_id,
+                    windows=windows,
+                    cutoff=cutoff,
+                )
         except Exception:
             log.exception(
                 "Failed to bill reducer usage",
@@ -148,28 +159,45 @@ class BillingIntervalService:
         *,
         order_id: UUID | None,
         cutoff: datetime,
-    ) -> dict[UUID, tuple[Decimal, Decimal]]:
-        """Like `bill_usage`, for an order charging these quantities: failures
-        raise, and so does a meter without a quantity. Before the order exists,
-        call it without one to seal the quantities, then again to mark them."""
-        meter_ids = set(meter_ids)
-        quantities = await self._settle_usage(
-            session, subscription, meter_ids, order_id=order_id, cutoff=cutoff
-        )
-        if quantities.keys() != meter_ids:
-            raise ReducerUsageUnavailable(subscription, meter_ids - quantities.keys())
-        return quantities
+    ) -> dict[UUID, MeterCharge]:
+        """Like `bill_usage`, for an order charging the usage, at the price of the
+        interval it falls in: failures raise, and so does a meter without usage.
+        Before the order exists, call it without one to seal the usage, then
+        again to mark it."""
+        meter_ids = sorted(meter_ids)
+        async with self._settlement_windows(
+            session, subscription, meter_ids, cutoff=cutoff
+        ) as windows:
+            usage = await reducer_service.bill_by_window(
+                session,
+                subscription.customer,
+                meter_ids,
+                order_id=order_id,
+                windows=windows,
+                cutoff=cutoff,
+            )
+        if usage.keys() != set(meter_ids):
+            raise ReducerUsageUnavailable(subscription, set(meter_ids) - usage.keys())
+        intervals = await BillingIntervalRepository.from_session(
+            session
+        ).get_by_subscription(subscription.id)
+        price_ids = {interval.id: interval.product_price_id for interval in intervals}
+        return {
+            meter_id: get_meter_charge(meter_usage, price_ids)
+            for meter_id, meter_usage in usage.items()
+        }
 
-    async def _settle_usage(
+    @contextlib.asynccontextmanager
+    async def _settlement_windows(
         self,
         session: AsyncSession,
         subscription: Subscription,
-        meter_ids: Iterable[UUID],
+        meter_ids: Sequence[UUID],
         *,
-        order_id: UUID | None,
         cutoff: datetime,
-    ) -> dict[UUID, tuple[Decimal, Decimal]]:
-        meter_ids = sorted(meter_ids)
+    ) -> AsyncIterator[tuple[UsageWindow, ...]]:
+        """The windows the subscription settles on the meters, in a savepoint
+        that doesn't wait on a lock for longer than BILL_USAGE_LOCK_TIMEOUT."""
         repository = BillingIntervalRepository.from_session(session)
         async with (
             repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
@@ -182,16 +210,25 @@ class BillingIntervalService:
                         session, subscription.customer, meter_id, cutoff=cutoff
                     )
                 )
-            return await reducer_service.bill(
-                session,
-                subscription.customer,
-                meter_ids,
-                order_id=order_id,
-                windows=select_settlement_windows(
-                    windows, billing_subscription_id=subscription.id
-                ),
-                cutoff=cutoff,
+            yield select_settlement_windows(
+                windows, billing_subscription_id=subscription.id
             )
+
+
+def get_meter_charge(usage: MeterUsage, price_ids: Mapping[UUID, UUID]) -> MeterCharge:
+    """The meter's usage by the price of the interval each window is in.
+    `price_ids` are the price ids by interval id."""
+    summaries_by_price: dict[UUID, list[UsageSummary]] = defaultdict(list)
+    for window_usage in sorted(usage.windows, key=lambda usage: usage.window.start):
+        price_id = price_ids[window_usage.window.interval_id]
+        summaries_by_price[price_id].append(window_usage.summary)
+    return MeterCharge(
+        units_by_price={
+            price_id: finalize_quantity(merge_summaries(summaries), usage.function)
+            for price_id, summaries in summaries_by_price.items()
+        },
+        credited_units=usage.credits,
+    )
 
 
 def get_interval_boundaries(

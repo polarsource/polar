@@ -46,6 +46,7 @@ from .bucket_repository import (
 )
 from .repository import ReducerRepository
 from .types import (
+    MeterUsage,
     UsageSummary,
     UsageWindow,
     WindowUsage,
@@ -239,6 +240,36 @@ class ReducerService:
         Without an order, they are sealed and returned, not marked: billing them
         with the order afterwards returns the same quantities.
         Raises on failure: the caller rolls it back."""
+        usage = await self.bill_by_window(
+            session,
+            customer,
+            meter_ids,
+            order_id=order_id,
+            windows=windows,
+            cutoff=cutoff,
+        )
+        return {
+            meter_id: (
+                finalize_quantity(
+                    merge_summaries([window.summary for window in meter.windows]),
+                    meter.function,
+                ),
+                meter.credits,
+            )
+            for meter_id, meter in usage.items()
+        }
+
+    async def bill_by_window(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID | None,
+        windows: Sequence[UsageWindow],
+        cutoff: datetime,
+    ) -> dict[UUID, MeterUsage]:
+        """Like `bill`, with each meter's usage kept per window."""
         meter_ids = sorted(meter_ids)
         reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
         observed = await self._bill_windows(
@@ -256,19 +287,6 @@ class ReducerService:
                 reason="boundary_unavailable",
             )
             return {}
-        quantities = {
-            reducer.id: finalize_quantity(
-                merge_summaries(
-                    [
-                        usage.summary
-                        for usage in observed
-                        if usage.window.meter_id == meter_id
-                    ]
-                ),
-                reducer.aggregation.func,
-            )
-            for meter_id, reducer in reducers.items()
-        }
         credit_reducers = await self._get_reducers(
             session, meter_ids, ReducerKind.credit
         )
@@ -292,12 +310,14 @@ class ReducerService:
             )
             credits[meter_id] = billed[credit_reducer.id]
         return {
-            meter_id: (
-                quantities[reducer.id],
-                max(credits.get(meter_id, Decimal(0)), Decimal(0)),
+            meter_id: MeterUsage(
+                function=reducer.aggregation.func,
+                windows=tuple(
+                    usage for usage in observed if usage.window.meter_id == meter_id
+                ),
+                credits=max(credits.get(meter_id, Decimal(0)), Decimal(0)),
             )
             for meter_id, reducer in reducers.items()
-            if reducer.id in quantities
         }
 
     async def _bill_windows(

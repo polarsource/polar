@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from pytest_mock import MockerFixture
@@ -10,13 +10,16 @@ from polar.billing_interval.repository import BillingIntervalRepository
 from polar.billing_interval.service import (
     BILL_USAGE_LOCK_TIMEOUT,
     ReducerUsageUnavailable,
+    get_meter_charge,
 )
 from polar.billing_interval.service import billing_interval as billing_interval_service
+from polar.billing_interval.types import MeterCharge
+from polar.meter.aggregation import AggregationFunction
 from polar.models import Customer, Meter, Product
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.types import UsageWindow
+from polar.reducer.types import MeterUsage, UsageSummary, UsageWindow, WindowUsage
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription
 
@@ -218,9 +221,38 @@ class TestChargeUsage:
             customer=customer,
             status=SubscriptionStatus.active,
         )
-        mocker.patch.object(reducer_service, "bill", return_value={})
+        mocker.patch.object(reducer_service, "bill_by_window", return_value={})
 
         with pytest.raises(ReducerUsageUnavailable):
             await billing_interval_service.charge_usage(
                 session, subscription, [meter.id], order_id=None, cutoff=CUTOFF
             )
+
+
+def test_get_meter_charge_groups_usage_by_interval_price() -> None:
+    meter_id, old_price_id, new_price_id = uuid4(), uuid4(), uuid4()
+    old_interval_id, new_interval_id = uuid4(), uuid4()
+
+    def usage(interval_id: UUID, start: datetime, total: int) -> WindowUsage:
+        return WindowUsage(
+            UsageWindow(interval_id, uuid4(), meter_id, start, CUTOFF),
+            UsageSummary(2, Decimal(total), Decimal(1), Decimal(total)),
+        )
+
+    charge = get_meter_charge(
+        MeterUsage(
+            function=AggregationFunction.avg,
+            windows=(
+                usage(new_interval_id, CUTOFF, 8),
+                usage(old_interval_id, EARLIER, 4),
+                usage(old_interval_id, EARLIER, 8),
+            ),
+            credits=Decimal(3),
+        ),
+        {old_interval_id: old_price_id, new_interval_id: new_price_id},
+    )
+
+    assert charge == MeterCharge(
+        {old_price_id: Decimal(3), new_price_id: Decimal(4)}, Decimal(3)
+    )
+    assert list(charge.units_by_price) == [old_price_id, new_price_id]

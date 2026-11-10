@@ -31,6 +31,10 @@ async def _authentication_ip(scope: Scope) -> tuple[str, RateLimitGroup]:
     return f"authentication:{user}", group
 
 
+async def _authenticate_path(scope: Scope) -> tuple[str, RateLimitGroup]:
+    return f"path:{scope['path']}", RateLimitGroup.default
+
+
 _AUTHENTICATION_RULES: dict[str, Sequence[Rule]] = {
     "^/v1/login-code": [
         Rule(minute=6, hour=12, block_time=900, zone="login-code"),
@@ -204,6 +208,17 @@ def get_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     return RateLimitMiddleware(app, _authenticate, RedisBackend(redis), rules)
 
 
+def get_checkout_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
+    rules: dict[str, Sequence[Rule]] = {}
+    if settings.ENV in {Environment.production, Environment.sandbox}:
+        rules = {
+            "^/v1/checkouts/.+/confirm": [
+                Rule(hour=20, day=30, zone="checkout-confirm-attempts")
+            ]
+        }
+    return RateLimitMiddleware(app, _authenticate_path, RedisBackend(redis), rules)
+
+
 def get_ip_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     rules: dict[str, Sequence[Rule]] = {}
     if settings.ENV in {Environment.production, Environment.sandbox}:
@@ -221,4 +236,9 @@ def get_authentication_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddle
     return RateLimitMiddleware(app, _authentication_ip, RedisBackend(redis), rules)
 
 
-__all__ = ["get_authentication_middleware", "get_ip_middleware", "get_middleware"]
+__all__ = [
+    "get_authentication_middleware",
+    "get_checkout_middleware",
+    "get_ip_middleware",
+    "get_middleware",
+]

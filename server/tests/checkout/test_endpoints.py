@@ -11,6 +11,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.schemas import CheckoutProductCreate
+from polar.checkout.service import CheckoutConfirmRateLimited
 from polar.checkout.service import checkout as checkout_service
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior, TaxProcessor
 from polar.integrations.stripe.service import StripeService
@@ -1388,6 +1389,30 @@ class TestClientConfirm:
         )
 
         assert response.status_code == 404
+
+    async def test_rate_limited(
+        self,
+        api_prefix: str,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        mocker.patch.object(
+            checkout_service,
+            "check_confirm_rate_limit",
+            side_effect=CheckoutConfirmRateLimited(60),
+        )
+
+        response = await client.post(
+            f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
+            json={
+                "customer_email": "customer@example.com",
+                "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+            },
+        )
+
+        assert response.status_code == 429
+        assert response.headers["retry-after"] == "60"
 
     @pytest.mark.parametrize(
         "customer_billing_address",

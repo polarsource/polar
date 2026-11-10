@@ -27,6 +27,7 @@ from polar.checkout.schemas import (
 )
 from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
+    CheckoutConfirmRateLimited,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
     DiscountRedemptionLimitReached,
@@ -39,7 +40,7 @@ from polar.checkout.service import (
     TrialAlreadyRedeemed,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.config import Environment
+from polar.config import Environment, settings
 from polar.customer_seat.service import SeatService
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
@@ -101,6 +102,7 @@ from polar.product.guard import (
 )
 from polar.product.schemas import ProductPriceFixedCreate
 from polar.product.tiers import Tiers, TierType
+from polar.redis import Redis
 from polar.subscription.service import SubscriptionService
 from polar.tax.calculation import (
     TaxabilityReason,
@@ -7782,6 +7784,40 @@ class TestHandleSuccess:
         await checkout_service.handle_success(session, checkout)
 
         seat_service_mock.assign_seat.assert_not_called()
+
+
+@pytest.mark.anyio
+class TestCheckConfirmRateLimit:
+    async def test_limited_per_normalized_email(
+        self,
+        mocker: MockerFixture,
+        redis: Redis,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch.object(settings, "ENV", Environment.production)
+
+        for index in range(20):
+            await checkout_service.check_confirm_rate_limit(
+                redis,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_construct(
+                    customer_email=f"John.Doe+{index}@gmail.com"
+                ),
+            )
+
+        with pytest.raises(CheckoutConfirmRateLimited):
+            await checkout_service.check_confirm_rate_limit(
+                redis,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_construct(
+                    customer_email="johndoe@googlemail.com"
+                ),
+            )
+        await checkout_service.check_confirm_rate_limit(
+            redis,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_construct(customer_email="jane@example.com"),
+        )
 
 
 @pytest.mark.anyio

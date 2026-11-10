@@ -1317,7 +1317,7 @@ class EventService:
 
         for org_id, org_events in events_by_org.items():
             meters = await meter_repository.get_all(
-                meter_repository.get_active_statement().where(
+                meter_repository.get_legacy_billed_statement().where(
                     Meter.organization_id == org_id
                 )
             )

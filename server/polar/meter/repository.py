@@ -14,6 +14,7 @@ from polar.models import (
     Catalog,
     CustomerSeat,
     Meter,
+    Organization,
     ProductPrice,
     Subscription,
     SubscriptionProductPrice,
@@ -49,6 +50,19 @@ class MeterRepository(
 
     def get_active_statement(self) -> Select[Meter]:
         return self.get_base_statement().where(self.get_active_clause())
+
+    def get_legacy_billed_statement(self) -> Select[Meter]:
+        """Active meters billed from `meter_events`: organizations on reducer
+        billing have none."""
+        return (
+            self.get_active_statement()
+            .join(Organization, Organization.id == Meter.organization_id)
+            .where(
+                Organization.feature_settings["reducer_billing_enabled"]
+                .as_boolean()
+                .is_not(True)
+            )
+        )
 
     async def get_by_external_id_and_organization(
         self, external_id: str, organization_id: UUID

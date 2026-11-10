@@ -1782,6 +1782,36 @@ class TestMoveStagedEvents:
         )
         assert staged_events == 0
 
+    async def test_reducer_billing_skips_meter_events(
+        self,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        ingested_at = utc_now() - timedelta(minutes=1)
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=ingested_at,
+                ingested_at=ingested_at,
+                organization_id=organization.id,
+                external_customer_id="test",
+                user_metadata={"tokens": 1},
+            )
+        )
+
+        assert await event_service.move_staged_events(session, 1000) == 1
+
+        meter_events = await session.scalar(
+            select(func.count()).select_from(MeterEvent)
+        )
+        assert meter_events == 0
+
     async def test_limit(
         self,
         enqueue_events_mock: AsyncMock,

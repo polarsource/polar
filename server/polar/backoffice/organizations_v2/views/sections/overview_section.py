@@ -13,6 +13,7 @@ from polar.enums import PayoutAccountStatus
 from polar.models import (
     Organization,
     OrganizationDomain,
+    OrganizationEmail,
     OrganizationReviewFeedback,
 )
 from polar.models.organization_risk_signal import OrganizationRiskSignal
@@ -63,6 +64,7 @@ class OverviewSection(ChecklistMixin):
         risk_signals: Sequence[OrganizationRiskSignal] = (),
         shared_organizations: Sequence[Organization] = (),
         organization_domains: Sequence[OrganizationDomain] = (),
+        support_email: OrganizationEmail | None = None,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -74,6 +76,7 @@ class OverviewSection(ChecklistMixin):
         self.risk_signals = risk_signals
         self.shared_organizations = shared_organizations
         self.organization_domains = organization_domains
+        self.support_email = support_email
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -738,6 +741,7 @@ class OverviewSection(ChecklistMixin):
                     "Support Email",
                     self.has_email,
                     self.org.email if self.has_email else None,
+                    self._support_email_badge() if self.has_email else None,
                 )
 
                 render_checklist_row(
@@ -793,6 +797,16 @@ class OverviewSection(ChecklistMixin):
 
                 self._render_payout_account_row()
                 self._render_shared_payout_account_row(request)
+
+    def _support_email_badge(self) -> tuple[str, str, str | None]:
+        current = self.support_email
+        if (
+            current is not None
+            and current.verified_at is not None
+            and current.email == self.org.email
+        ):
+            return "Verified", "badge-success", None
+        return "Not verified", "badge-ghost", None
 
     def _website_domain_badge(self) -> tuple[str, str, str | None]:
         host = urlparse(self.org.website or "").hostname or ""

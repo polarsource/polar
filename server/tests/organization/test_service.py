@@ -2487,13 +2487,15 @@ async def _setup_passing_org(
     organization: Organization,
     user: User,
 ) -> Product:
-    organization.email = "support@example.com"
     organization.website = "https://example.com"
     organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
     organization.details = {
         "product_description": "Subscription SaaS for software teams and agencies."
     }
     await save_fixture(organization)
+    await create_verified_organization_email(
+        save_fixture, organization, "support@example.com"
+    )
 
     user.identity_verification_status = IdentityVerificationStatus.verified
     await save_fixture(user)
@@ -2543,6 +2545,22 @@ def _sub(
 
 @pytest.mark.anyio
 class TestGetReviewState:
+    async def test_email_unverified_is_pending(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.email = "support@example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.IDENTITY_EMAIL_UNVERIFIED]
+        assert state.can_submit is False
+
     """Test the merchant self-review checklist."""
 
     @pytest.fixture(autouse=True)
@@ -2617,8 +2635,9 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.email = "support@example.com"
-        await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2635,8 +2654,9 @@ class TestGetReviewState:
         # Free/personal email — the merchant can still submit, but we surface
         # this as a soft warning so reviewers know the support address isn't
         # tied to a business domain.
-        organization.email = "founder@gmail.com"
-        await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "founder@gmail.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2663,9 +2683,11 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.email = "support@otherdomain.com"
         organization.website = "https://example.com"
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@otherdomain.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2679,9 +2701,11 @@ class TestGetReviewState:
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        organization.email = "support@example.com"
         organization.website = "https://www.example.com/products"
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2706,9 +2730,11 @@ class TestGetReviewState:
         # The merchant's support email lives on the apex domain while the
         # product is hosted on a subdomain — they still belong to the same
         # organization, so this must not be flagged as a mismatch.
-        organization.email = "support@example.com"
         organization.website = website
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2725,9 +2751,11 @@ class TestGetReviewState:
         organization: Organization,
     ) -> None:
         # Reverse relationship: support email on a subdomain, website on the apex.
-        organization.email = "support@mail.example.com"
         organization.website = "https://example.com"
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@mail.example.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
@@ -2751,9 +2779,11 @@ class TestGetReviewState:
         organization: Organization,
         website: str,
     ) -> None:
-        organization.email = "support@acme.com"
         organization.website = website
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@acme.com"
+        )
 
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)

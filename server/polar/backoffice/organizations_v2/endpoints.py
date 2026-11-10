@@ -81,6 +81,7 @@ from polar.organization.service import (
 )
 from polar.organization.service import organization as organization_service
 from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_email.repository import OrganizationEmailRepository
 from polar.organization_review.appeal_case import (
     AppealCaseError,
 )
@@ -1271,6 +1272,7 @@ async def overview_setup_checklist(
         session, organization_id
     )
     domain_repository = OrganizationDomainRepository.from_session(session)
+    email_repository = OrganizationEmailRepository.from_session(session)
     overview = OverviewSection(
         organization,
         orders_count=orders_count,
@@ -1278,6 +1280,9 @@ async def overview_setup_checklist(
         shared_organizations=await _get_shared_organizations(session, organization),
         organization_domains=await domain_repository.get_all(
             domain_repository.get_statement_by_organization(organization_id)
+        ),
+        support_email=await email_repository.get_latest_by_organization(
+            organization_id
         ),
     )
     with overview.setup_checklist_card(request, setup_data):

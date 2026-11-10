@@ -53,6 +53,18 @@ interface QueryParams {
   [key: string]: QueryParamValue | QueryParams;
 }
 
+const networkError = (error: unknown): PolarNetworkError =>
+  new PolarNetworkError(error instanceof Error ? error.message : String(error));
+
+// The request's timeout and signal still apply while the body arrives.
+const readText = async (response: Response): Promise<string> => {
+  try {
+    return await response.text();
+  } catch (error) {
+    throw networkError(error);
+  }
+};
+
 const buildUrl = (
   url: string,
   pathParams?: PathParams,
@@ -221,9 +233,7 @@ export class ClientBase {
         ...(signal ? { signal } : {}),
       });
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      throw new PolarNetworkError(errorMessage);
+      throw networkError(error);
     }
   }
 
@@ -244,7 +254,7 @@ export class ClientBase {
         const retryAfter = response.headers.get("Retry-After");
         if (!retryAfter && errors?.[statusCode]) {
           const ErrorClass = errors[statusCode];
-          const errorData = await response.json();
+          const errorData = JSON.parse(await readText(response));
           throw new ErrorClass(statusCode, errorData);
         }
         throw new PolarRateLimitError(
@@ -254,7 +264,7 @@ export class ClientBase {
       }
       if (errors?.[statusCode]) {
         const ErrorClass = errors[statusCode];
-        const errorData = await response.json();
+        const errorData = JSON.parse(await readText(response));
         throw new ErrorClass(statusCode, errorData);
       } else {
         const text = await response.text().catch(() => "");
@@ -263,11 +273,11 @@ export class ClientBase {
     }
 
     if (responseType === "json") {
-      const body = await response.text();
+      const body = await readText(response);
       return (body ? JSON.parse(body) : undefined) as T;
     }
     if (responseType === "text") {
-      return (await response.text()) as unknown as T;
+      return (await readText(response)) as unknown as T;
     }
 
     return undefined as unknown as T;

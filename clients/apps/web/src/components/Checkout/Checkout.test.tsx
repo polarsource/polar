@@ -3,6 +3,7 @@ import {
   createCustomPrice,
 } from '@polar-sh/checkout/test-utils'
 import type { schemas } from '@polar-sh/client'
+import { type AcceptedLocale, SUPPORTED_LOCALES } from '@polar-sh/i18n'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -213,30 +214,29 @@ describe('Checkout page', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('Test Product')
   })
 
-  describe('right-to-left', () => {
-    it('lays the hosted checkout out right-to-left', () => {
-      renderCheckout({ dir: 'rtl' })
+  describe('text direction', () => {
+    it.each(['ar', 'he'])(
+      'lays the checkout out right-to-left for %s',
+      (locale) => {
+        renderCheckout({ locale: locale as AcceptedLocale })
 
-      expect(document.documentElement).toHaveAttribute('dir', 'rtl')
-      expect(screen.getByText('Test Product').closest('[dir]')).toHaveAttribute(
-        'dir',
-        'rtl',
-      )
-    })
+        expect(document.documentElement).toHaveAttribute('dir', 'rtl')
+        expect(
+          screen.getByText('Test Product').closest('[dir]'),
+        ).toHaveAttribute('dir', 'rtl')
+      },
+    )
 
-    it('keeps the confirmation page right-to-left', async () => {
-      const { router } = renderCheckout({
-        dir: 'rtl',
-        checkout: freeProductCheckout(),
-      })
+    it.each([...SUPPORTED_LOCALES])(
+      'keeps the checkout left-to-right for %s',
+      (locale) => {
+        renderCheckout({ locale })
 
-      submitCheckout('Get for free')
-
-      await waitFor(() =>
-        expect(router.push).toHaveBeenCalledWith(
-          `${CHECKOUT_URL}/confirmation?dir=rtl&customer_session_token=${CUSTOMER_SESSION_TOKEN}`,
-        ),
-      )
-    })
+        expect(document.documentElement).toHaveAttribute('dir', 'ltr')
+        expect(
+          screen.getByText('Test Product').closest('[dir]'),
+        ).toHaveAttribute('dir', 'ltr')
+      },
+    )
   })
 })

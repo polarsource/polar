@@ -1,6 +1,5 @@
 import { PolarEmbedCheckout } from '@polar-sh/checkout/embed'
 import type { schemas } from '@polar-sh/client'
-import { useDirection } from '@radix-ui/react-direction'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 
@@ -10,7 +9,6 @@ export const useCheckoutConfirmedRedirect = (
   listenFulfillment?: () => Promise<void>,
 ) => {
   const router = useRouter()
-  const dir = useDirection()
   return useCallback(
     async (
       checkout: schemas['CheckoutPublic'],
@@ -31,9 +29,6 @@ export const useCheckoutConfirmedRedirect = (
       const isInternalSuccessURL = checkout.success_url.startsWith(checkout.url)
 
       if (isInternalSuccessURL) {
-        if (dir === 'rtl') {
-          parsedURL.searchParams.set('dir', dir)
-        }
         if (embed) {
           parsedURL.searchParams.set('embed', 'true')
           if (theme) {
@@ -100,6 +95,6 @@ export const useCheckoutConfirmedRedirect = (
         router.push(parsedURL.toString())
       }
     },
-    [router, dir, embed, theme, listenFulfillment],
+    [router, embed, theme, listenFulfillment],
   )
 }

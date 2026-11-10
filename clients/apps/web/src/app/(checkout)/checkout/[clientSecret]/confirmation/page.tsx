@@ -1,7 +1,7 @@
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import CheckoutLayout from '@/components/Checkout/CheckoutLayout'
 import { getServerURL } from '@/utils/api'
-import { parseCheckoutDirection } from '@/utils/checkout'
+import { getLocaleDirection } from '@polar-sh/i18n'
 import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
 import {
@@ -18,19 +18,12 @@ export default async function Page(props: {
     embed?: string
     theme?: 'light' | 'dark'
     locale?: string
-    dir?: string
     customer_session_token?: string
   }>
 }) {
   const searchParams = await props.searchParams
 
-  const {
-    embed,
-    theme,
-    locale: _locale,
-    dir,
-    customer_session_token,
-  } = searchParams
+  const { embed, theme, locale: _locale, customer_session_token } = searchParams
 
   const params = await props.params
 
@@ -69,7 +62,7 @@ export default async function Page(props: {
       checkout={checkout}
       embed={embed === 'true'}
       theme={theme}
-      dir={parseCheckoutDirection(dir)}
+      dir={getLocaleDirection(locale)}
     >
       <CheckoutConfirmation
         checkout={checkout}

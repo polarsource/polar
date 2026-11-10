@@ -1,7 +1,5 @@
 import type { schemas } from '@polar-sh/client'
-import { DirectionProvider } from '@radix-ui/react-direction'
 import { renderHook } from '@testing-library/react'
-import { createElement, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCheckoutConfirmedRedirect } from './checkout'
 
@@ -48,19 +46,9 @@ const callHook = async (args: {
   listenFulfillment?: () => Promise<void>
   checkout: schemas['CheckoutPublic']
   customerSessionToken?: string | null
-  dir?: 'ltr' | 'rtl'
 }) => {
-  const { result } = renderHook(
-    () =>
-      useCheckoutConfirmedRedirect(
-        args.embed,
-        undefined,
-        args.listenFulfillment,
-      ),
-    {
-      wrapper: ({ children }: { children: ReactNode }) =>
-        createElement(DirectionProvider, { dir: args.dir ?? 'ltr' }, children),
-    },
+  const { result } = renderHook(() =>
+    useCheckoutConfirmedRedirect(args.embed, undefined, args.listenFulfillment),
   )
   const token =
     'customerSessionToken' in args ? args.customerSessionToken : 'tok_123'
@@ -282,44 +270,5 @@ describe('useCheckoutConfirmedRedirect', () => {
     expect(pushMock.mock.calls[0][0]).toContain(
       'customer_session_token=tok_abc',
     )
-  })
-
-  it('carries dir=rtl to the internal success URL', async () => {
-    await callHook({ embed: false, checkout: baseCheckout(), dir: 'rtl' })
-
-    const url = new URL(pushMock.mock.calls[0][0] as string)
-    expect(url.searchParams.get('dir')).toBe('rtl')
-  })
-
-  it('carries dir=rtl to the /confirmation fallback URL', async () => {
-    await callHook({
-      embed: true,
-      checkout: baseCheckout(),
-      dir: 'rtl',
-      listenFulfillment: () => Promise.reject(new Error('timeout')),
-    })
-
-    expect(pushMock).toHaveBeenCalledWith(
-      expect.stringMatching(/^\/checkout\/cs_test\/confirmation\?.*dir=rtl/),
-    )
-  })
-
-  it('does not add dir for LTR', async () => {
-    await callHook({ embed: false, checkout: baseCheckout() })
-
-    const url = new URL(pushMock.mock.calls[0][0] as string)
-    expect(url.searchParams.has('dir')).toBe(false)
-  })
-
-  it('does not add dir to an external success URL', async () => {
-    await callHook({
-      embed: false,
-      checkout: baseCheckout({ success_url: 'https://merchant.com/thanks' }),
-      dir: 'rtl',
-      listenFulfillment: () => Promise.resolve(),
-    })
-
-    const url = new URL(pushMock.mock.calls[0][0] as string)
-    expect(url.searchParams.has('dir')).toBe(false)
   })
 })

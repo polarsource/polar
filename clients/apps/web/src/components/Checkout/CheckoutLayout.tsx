@@ -1,6 +1,6 @@
 import { PolarThemeProvider } from '@/app/providers'
-import type { CheckoutDirection } from '@/utils/checkout'
 import type { schemas } from '@polar-sh/client'
+import type { TextDirection } from '@polar-sh/i18n'
 import CheckoutDirectionProvider from './CheckoutDirectionProvider'
 import CheckoutEmbedLayout from './Embed/CheckoutEmbedLayout'
 
@@ -14,7 +14,7 @@ const CheckoutLayout = ({
   checkout: schemas['CheckoutPublic']
   embed: boolean
   theme?: 'light' | 'dark'
-  dir?: CheckoutDirection
+  dir?: TextDirection
 }>) => {
   if (embed) {
     return (

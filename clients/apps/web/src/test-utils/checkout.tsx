@@ -1,7 +1,6 @@
 import CheckoutPage from '@/app/(checkout)/checkout/[clientSecret]/CheckoutPage'
 import { CheckoutConfirmation } from '@/components/Checkout/CheckoutConfirmation'
 import { UserContextProvider } from '@/providers/auth'
-import type { CheckoutDirection } from '@/utils/checkout'
 import type { ProductCheckoutPublic } from '@polar-sh/checkout/guards'
 import {
   CheckoutFormProvider,
@@ -362,7 +361,6 @@ export interface RenderCheckoutOptions
   embed?: boolean
   theme?: 'light' | 'dark'
   locale?: AcceptedLocale
-  dir?: CheckoutDirection
   distinctId?: string | null
 }
 
@@ -372,7 +370,6 @@ export const renderCheckout = ({
   embed = false,
   theme = 'light',
   locale = 'en',
-  dir = 'ltr',
   distinctId = DISTINCT_ID,
   paymentStatus,
   discounts,
@@ -402,7 +399,7 @@ export const renderCheckout = ({
         serverURL={API_URL}
       >
         <CheckoutFormProvider locale={locale}>
-          <CheckoutPage embed={embed} theme={theme} locale={locale} dir={dir} />
+          <CheckoutPage embed={embed} theme={theme} locale={locale} />
         </CheckoutFormProvider>
       </CheckoutProvider>
     </UserContextProvider>,

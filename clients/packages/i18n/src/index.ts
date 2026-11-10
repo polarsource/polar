@@ -1,7 +1,12 @@
 import { useMemo } from 'react'
 
-export { DEFAULT_LOCALE, LOCALE_NAMES, SUPPORTED_LOCALES } from './config'
-export type { AcceptedLocale, SupportedLocale } from './config'
+export {
+  DEFAULT_LOCALE,
+  getLocaleDirection,
+  LOCALE_NAMES,
+  SUPPORTED_LOCALES,
+} from './config'
+export type { AcceptedLocale, SupportedLocale, TextDirection } from './config'
 export type { TranslateFn, TranslationKey, Translations } from './types'
 
 import type { AcceptedLocale, SupportedLocale } from './config'

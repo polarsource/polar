@@ -18,6 +18,15 @@ export const SUPPORTED_LOCALES = [
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number]
 export const DEFAULT_LOCALE = 'en' satisfies SupportedLocale
 
+export type TextDirection = 'ltr' | 'rtl'
+// Only the right-to-left languages we're preparing to ship.
+const RTL_LANGUAGES: readonly string[] = ['ar', 'he']
+
+export function getLocaleDirection(locale: string): TextDirection {
+  const language = locale.split('-')[0].toLowerCase()
+  return RTL_LANGUAGES.includes(language) ? 'rtl' : 'ltr'
+}
+
 export type TranslatedLocale = Exclude<SupportedLocale, typeof DEFAULT_LOCALE>
 
 // Expand bare language codes to include region variants,

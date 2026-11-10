@@ -1,5 +1,5 @@
-import type { CheckoutDirection } from '@/utils/checkout'
 import type { schemas } from '@polar-sh/client'
+import type { TextDirection } from '@polar-sh/i18n'
 import CheckoutEmbedClose from './CheckoutEmbedClose'
 import CheckoutEmbedLoaded from './CheckoutEmbedLoaded'
 
@@ -11,7 +11,7 @@ const CheckoutEmbedLayout = ({
 }: React.PropsWithChildren<{
   checkout: schemas['CheckoutPublic']
   theme?: 'light' | 'dark'
-  dir?: CheckoutDirection
+  dir?: TextDirection
 }>) => {
   const colorScheme = theme === 'dark' ? 'dark' : 'light'
   return (

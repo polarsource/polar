@@ -1,130 +1,112 @@
 'use client'
 
+import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useOrganizationEmail,
   useSendOrganizationEmailCode,
-  useVerifyOrganizationEmail,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import { Button, Input, Pill, Text } from '@polar-sh/orbit'
+import { Modal } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { CircleAlert, CircleCheck, Clock } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
+import { SupportEmailVerifyFlow } from './SupportEmailVerifyFlow'
 
-const RESEND_COOLDOWN_MS = 30_000
+type Tone = 'danger' | 'warning'
 
 interface Props {
   organization: schemas['Organization']
+  tone?: Tone
 }
 
-export const SupportEmailVerification = ({ organization }: Props) => {
+export const SupportEmailStatusIcon = ({
+  organization,
+  tone = 'danger',
+}: Props) => {
+  const { data: status } = useOrganizationEmail(organization.id)
+  if (!status?.email) return null
+  if (status.verified) {
+    return (
+      <Box as="span" display="flex" color="text-success">
+        <CircleCheck className="h-4 w-4" />
+      </Box>
+    )
+  }
+  return (
+    <Box
+      as="span"
+      display="flex"
+      color={tone === 'danger' ? 'text-danger' : 'text-warning'}
+    >
+      {tone === 'danger' ? (
+        <CircleAlert className="h-4 w-4" />
+      ) : (
+        <Clock className="h-4 w-4" />
+      )}
+    </Box>
+  )
+}
+
+export const SupportEmailVerifyPrompt = ({
+  organization,
+  tone = 'danger',
+}: Props) => {
   const { data: status } = useOrganizationEmail(organization.id)
   const sendCode = useSendOrganizationEmailCode(organization.id)
-  const verify = useVerifyOrganizationEmail(organization.id)
-  const [code, setCode] = useState('')
-  const [resendLocked, setResendLocked] = useState(false)
+  const { isShown, show, hide } = useModal()
+  const [codeJustSent, setCodeJustSent] = useState(false)
+  if (!status?.email || status.verified) return null
 
-  if (!status?.email) return null
-
-  const onSend = async () => {
-    const { error } = await sendCode.mutateAsync()
-    if (error) {
-      toast({
-        title: 'Failed to send the code',
-        description: extractApiErrorMessage(error, 'Please try again.'),
-      })
-      return
+  const onVerifyNow = async () => {
+    const sending = !status.code_pending
+    if (sending) {
+      const { error } = await sendCode.mutateAsync()
+      if (error) {
+        toast({
+          title: 'Failed to send the code',
+          description: extractApiErrorMessage(error, 'Please try again.'),
+        })
+        return
+      }
     }
-    setResendLocked(true)
-    setTimeout(() => setResendLocked(false), RESEND_COOLDOWN_MS)
-  }
-
-  const onVerify = async () => {
-    const { error } = await verify.mutateAsync({ code })
-    if (error) {
-      toast({
-        title: 'Code not accepted',
-        description: extractApiErrorMessage(error, 'Please try again.'),
-      })
-      return
-    }
-    setCode('')
+    setCodeJustSent(sending)
+    show()
   }
 
   return (
-    <Box
-      flexDirection="column"
-      rowGap="m"
-      marginTop="m"
-      borderTopWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-      paddingTop="m"
-    >
-      <Box alignItems="center" columnGap="s">
-        <Text variant="label">Verify your support email</Text>
-        {status.verified ? (
-          <Pill color="green">Verified</Pill>
-        ) : (
-          <Pill color="red">Required</Pill>
-        )}
-      </Box>
-      {status.verified ? (
-        <Text color="muted">
-          {status.email} is verified. Changing it will ask for a new code.
-        </Text>
-      ) : status.code_pending ? (
-        <>
-          <Text color="muted">
-            Enter the code we sent to {status.email}. It is valid for 30
-            minutes.
-          </Text>
-          <Box alignItems="center" columnGap="s">
-            <Input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="ABC123"
-              maxLength={6}
-              autoComplete="one-time-code"
-            />
-            <Button
-              type="button"
-              size="sm"
-              loading={verify.isPending}
-              disabled={code.length !== 6}
-              onClick={onVerify}
-            >
-              Verify
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              loading={sendCode.isPending}
-              disabled={resendLocked}
-              onClick={onSend}
-            >
-              Resend
-            </Button>
-          </Box>
-        </>
-      ) : (
-        <Box alignItems="center" justifyContent="between" columnGap="s">
-          <Text color="muted">
-            Prove you read {status.email}: we send a code there, you type it
-            here.
-          </Text>
-          <Button
+    <>
+      <Box color={tone === 'danger' ? 'text-danger' : 'text-warning'}>
+        <p className="text-xs">
+          {tone === 'danger'
+            ? 'This email is not verified.'
+            : "This email isn't verified yet."}{' '}
+          <button
             type="button"
-            size="sm"
-            loading={sendCode.isPending}
-            onClick={onSend}
+            className="cursor-pointer underline underline-offset-2 disabled:cursor-default disabled:opacity-60"
+            disabled={sendCode.isPending}
+            onClick={onVerifyNow}
           >
-            Send code
-          </Button>
-        </Box>
-      )}
-    </Box>
+            {sendCode.isPending ? 'Sending code…' : 'Verify now'}
+          </button>
+        </p>
+      </Box>
+      <Modal
+        title="Verify your support email"
+        isShown={isShown}
+        hide={hide}
+        className="md:min-w-100 lg:max-w-135"
+        modalContent={
+          <Box flexDirection="column" padding="2xl">
+            <SupportEmailVerifyFlow
+              organization={organization}
+              codeJustSent={codeJustSent}
+              onVerified={hide}
+            />
+          </Box>
+        }
+      />
+    </>
   )
 }

@@ -79,7 +79,6 @@ from polar.organization.service import (
     PayoutAccountAlreadyLinked,
 )
 from polar.organization.service import organization as organization_service
-from polar.organization_email.service import SupportEmailNotVerified
 from polar.organization_email.service import (
     organization_email as organization_email_service,
 )
@@ -868,8 +867,10 @@ class TestSubmitForReviewEmail:
             "switching": False,
         }
 
-        with pytest.raises(SupportEmailNotVerified):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await organization_service.submit_for_review(session, organization)
+
+        assert [e["loc"] for e in exc_info.value.errors()] == [("body", "email")]
 
         assert organization.details_submitted_at is None
 

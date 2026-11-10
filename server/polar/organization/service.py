@@ -733,7 +733,17 @@ class OrganizationService:
                 cast(Sequence[ValidationError], e.errors())
             ) from e
 
-        await organization_email_service.assert_verified(session, organization)
+        if not await organization_email_service.is_verified(session, organization):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "email"),
+                        "msg": "The support email must be verified.",
+                        "input": organization.email,
+                    }
+                ]
+            )
 
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)

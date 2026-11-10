@@ -280,7 +280,9 @@ class TestMeterCreditBenefitIntegration:
             name="usage",
             metadata={"tokens": 80},
         )
-        await customer_meter_service.update_customer_meter(session, customer, meter)
+        await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         customer_meter = await customer_meter_repo.get_by_customer_and_meter(
             customer.id, meter.id
@@ -429,7 +431,9 @@ class TestRevokeMeterCredit:
             name="usage",
             metadata={"tokens": 10},
         )
-        await customer_meter_service.update_customer_meter(session, customer, meter)
+        await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
         customer_meter = await customer_meter_repo.get_by_customer_and_meter(
             customer.id, meter.id
         )

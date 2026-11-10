@@ -140,7 +140,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             customer_meter, meter_updated = await self.update_customer_meter(
-                session, customer, meter
+                session, redis, customer, meter
             )
             if meter_updated and customer_meter is not None:
                 await reducer_service.log_customer_meter_comparison(
@@ -159,6 +159,7 @@ class CustomerMeterService:
     async def update_customer_meter(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
@@ -236,6 +237,7 @@ class CustomerMeterService:
     async def credit(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         credit_create: CustomerMeterCreditsCreate,
     ) -> Event:
@@ -343,7 +345,7 @@ class CustomerMeterService:
         try:
             async with session.begin_nested():
                 _, updated = await self.update_customer_meter(
-                    session, customer, meter, activate_meter=True
+                    session, redis, customer, meter, activate_meter=True
                 )
             if updated:
                 enqueue_job("customer.state_changed", customer.id)
@@ -369,6 +371,7 @@ class CustomerMeterService:
     async def reverse_credit(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Event:
@@ -469,7 +472,7 @@ class CustomerMeterService:
         await event_service.create_event(session, event)
 
         _, updated = await self.update_customer_meter(
-            session, customer, meter, activate_meter=True
+            session, redis, customer, meter, activate_meter=True
         )
         if updated:
             enqueue_job("customer.state_changed", customer.id)

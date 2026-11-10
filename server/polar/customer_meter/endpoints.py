@@ -12,6 +12,7 @@ from polar.kit.versioning import version
 from polar.models import CustomerMeter, Event
 from polar.openapi import APITag, destructive
 from polar.postgres import AsyncSession, get_db_session
+from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
@@ -121,6 +122,7 @@ async def credits(
     credit_create: CustomerMeterCreditsCreate,
     auth_subject: auth.CustomerMeterWrite,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Event:
     """
     Manually grant credits on a customer meter.
@@ -129,7 +131,9 @@ async def credits(
     before the response is returned, unless the meter is being updated
     concurrently, in which case it catches up shortly after.
     """
-    return await customer_meter_service.credit(session, auth_subject, credit_create)
+    return await customer_meter_service.credit(
+        session, redis, auth_subject, credit_create
+    )
 
 
 @router.post(
@@ -170,6 +174,7 @@ async def reverse_credit(
     ],
     auth_subject: auth.CustomerMeterWrite,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Event:
     """
     Reverse a manual credit, removing the units the customer hasn't used yet.
@@ -178,4 +183,4 @@ async def reverse_credit(
     Returns a `meter.credited` event with negative units and
     `parent_id` set to the reversed credit.
     """
-    return await customer_meter_service.reverse_credit(session, auth_subject, id)
+    return await customer_meter_service.reverse_credit(session, redis, auth_subject, id)

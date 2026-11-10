@@ -186,10 +186,10 @@ async def events_for_external_customer(
 @pytest.mark.anyio
 class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self, session: AsyncSession, redis: Redis, customer: Customer, meter: Meter
     ) -> None:
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -200,6 +200,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -215,7 +216,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
@@ -228,13 +231,14 @@ class TestUpdateCustomerMeter:
     async def test_new_customer_meter(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
     ) -> None:
         before = utc_now()
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
         after = utc_now()
 
@@ -254,6 +258,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -278,7 +283,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -289,6 +294,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -307,7 +313,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -321,6 +329,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -338,7 +347,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -352,6 +363,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -390,7 +402,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(0)
@@ -404,6 +418,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -442,7 +457,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(0)
@@ -455,6 +472,7 @@ class TestUpdateCustomerMeter:
     async def test_customer_with_external_id(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         events_for_external_customer: list[Event],
         meter: Meter,
@@ -466,7 +484,7 @@ class TestUpdateCustomerMeter:
         assert customer_with_external_id.external_id is not None
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -486,6 +504,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -521,7 +540,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -534,6 +553,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
     ) -> None:
         match_all_meter = await create_meter(
@@ -563,7 +583,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, _ = await customer_meter_service.update_customer_meter(
-            session, customer, match_all_meter
+            session, redis, customer, match_all_meter
         )
 
         assert customer_meter is not None
@@ -573,6 +593,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -607,7 +628,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -620,6 +641,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -655,7 +677,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -668,6 +690,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -698,7 +721,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -711,6 +734,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -774,7 +798,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -788,6 +812,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -839,7 +864,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -851,6 +876,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -904,7 +930,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -915,6 +941,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -952,7 +979,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -1513,6 +1540,7 @@ class TestBulkEventProcessing:
     async def test_process_50k_events(
         self,
         session: AsyncSession,
+        redis: Redis,
         organization: Organization,
         customer: Customer,
         meter: Meter,
@@ -1543,7 +1571,7 @@ class TestBulkEventProcessing:
         assert duplicates == 0
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None

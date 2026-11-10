@@ -99,7 +99,14 @@ class TestImpersonation:
 
         response = await client.get("/impersonation/end")
         assert response.status_code == 307
-        assert response.headers["location"] == f"https://{BACKOFFICE_HOST}/"
+        assert response.headers["location"] == (
+            f"https://{BACKOFFICE_HOST}/organizations/{organization.id}"
+        )
+        session.expunge_all()
+        assert (
+            await auth_service._get_user_session_by_token(session, impersonation_token)
+            is None
+        )
         assert client.cookies.get(settings.USER_SESSION_COOKIE_KEY) == original_token
         assert settings.IMPERSONATION_COOKIE_KEY not in client.cookies
         assert settings.IMPERSONATION_INDICATOR_COOKIE_KEY not in client.cookies
@@ -109,6 +116,7 @@ class TestImpersonation:
         if original_token is not None:
             response = await client.get("/impersonation/end")
             assert response.status_code == 307
+            assert response.headers["location"] == f"https://{BACKOFFICE_HOST}/"
             assert client.cookies[settings.USER_SESSION_COOKIE_KEY] == original_token
             assert (
                 await auth_service._get_user_session_by_token(session, original_token)

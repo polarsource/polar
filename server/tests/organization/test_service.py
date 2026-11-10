@@ -23,10 +23,12 @@ from polar.integrations.stripe.account_risk import (
     WebsiteRiskSignal,
 )
 from polar.kit.http import UrlReachability
+from polar.kit.utils import utc_now
 from polar.models import (
     Agent,
     Customer,
     Organization,
+    OrganizationDomain,
     OrganizationRiskSignal,
     PayoutAccount,
     Product,
@@ -4647,6 +4649,29 @@ class TestSoftDeleteOrganization:
         assert result.slug != original_slug
         assert original_slug not in result.slug
         assert result.slug_history == []
+
+    async def test_releases_verified_domains(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="example.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_service.soft_delete_organization(session, organization)
+
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization_second,
+                domain="example.com",
+                verified_at=utc_now(),
+            )
+        )
 
 
 @pytest.mark.anyio

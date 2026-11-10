@@ -82,6 +82,7 @@ from polar.oauth2.service.oauth2_token import (
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
+from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.organization_email.service import (
     organization_email as organization_email_service,
 )
@@ -983,6 +984,9 @@ class OrganizationService:
 
         organization = await repository.update(organization, update_dict=update_dict)
         await repository.soft_delete(organization)
+        await OrganizationDomainRepository.from_session(
+            session
+        ).soft_delete_by_organization(organization.id)
 
         # Close an open *appeal* support case — it's moot once the org is gone.
         # Only appeals: dispute and refund cases are deliberately left open, as

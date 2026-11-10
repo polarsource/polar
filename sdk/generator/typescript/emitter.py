@@ -25,6 +25,7 @@ from typescript.types import (
     convert_type_to_typescript,
 )
 from typescript.utils import format_default_value_ts, format_description
+from typescript.zod import ZodConverter, sort_unions_by_dependency
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
 BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
@@ -112,6 +113,11 @@ class TypeScriptEmitter(EmitterBase):
             self.get_context(),
         )
         self.render_file(
+            "src/zod.test.ts",
+            src_dir / "zod.test.ts",
+            self.get_context(),
+        )
+        self.render_file(
             "src/index.ts",
             src_dir / "index.ts",
             self.get_context(),
@@ -157,6 +163,7 @@ class TypeScriptEmitter(EmitterBase):
             # Emit models
             self._emit_models(version_dir, api)
             self._emit_webhooks(version_dir, api)
+            self._emit_zod_schemas(version_dir, api)
             # Emit services
             for service in api.services:
                 self._emit_service(service, api, version_dir / "services")
@@ -225,6 +232,19 @@ class TypeScriptEmitter(EmitterBase):
             {
                 **self.get_version_context(api),
                 "imports": sorted(imports),
+            },
+        )
+
+    def _emit_zod_schemas(self, version_dir: pathlib.Path, api: APIVersion) -> None:
+        self.render_file(
+            "src/version/zod.ts",
+            version_dir / "zod.ts",
+            {
+                **self.get_version_context(api),
+                "converter": ZodConverter(api.all_models, api.all_unions),
+                "enums": api.enums,
+                "models": api.all_models,
+                "unions": sort_unions_by_dependency(api.all_unions),
             },
         )
 

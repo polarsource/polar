@@ -7,6 +7,7 @@ export default defineConfig({
     "src/outpost/index.ts",
 {% for version in ir.versions %}
     "src/{{ version.version }}/index.ts",
+    "src/{{ version.version }}/zod.ts",
     "src/{{ version.version }}/services/**/*.ts",
 {% endfor %}
   ],

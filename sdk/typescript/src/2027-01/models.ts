@@ -19288,6 +19288,10 @@ export interface OrganizationFeatureSettings {
    * If this organization can manage its configuration from a declarative config document.
    */
   config_as_code_enabled?: boolean;
+  /**
+   * If this organization's metered usage is billed from the reducer instead of the legacy billing entries.
+   */
+  reducer_billing_enabled?: boolean;
 }
 
 /**

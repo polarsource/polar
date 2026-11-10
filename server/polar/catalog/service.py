@@ -535,7 +535,15 @@ class CatalogService:
                 flush=True,
             )
         else:
-            await self._clear_draft(session, draft)
+            await self._clear_draft(
+                session,
+                draft,
+                keep={
+                    *(product.id for product in members.products.values()),
+                    *(benefit.id for benefit in members.benefits.values()),
+                    *(meter.id for meter in members.meters.values()),
+                },
+            )
         await repository.update(
             draft,
             update_dict={
@@ -700,24 +708,36 @@ class CatalogService:
         if draft.status != CatalogStatus.draft or draft.deleted_at is not None:
             raise CatalogNotDraft(draft.id)
 
-    async def _clear_draft(self, session: AsyncSession, draft: Catalog) -> None:
-        """Delete the draft's memberships and the rows only it lists."""
+    async def _clear_draft(
+        self,
+        session: AsyncSession,
+        draft: Catalog,
+        keep: Collection[uuid.UUID] = (),
+    ) -> None:
+        """Delete the draft's memberships and the rows only it lists, except
+        the rows in `keep`, which the next draft lists again."""
         catalog_product_repository = CatalogProductRepository.from_session(session)
         product_repository = ProductRepository.from_session(session)
         for member in await catalog_product_repository.get_all_by_catalog(draft.id):
-            if member.product.catalog_id == draft.id:
+            if member.product.catalog_id == draft.id and member.product_id not in keep:
                 await product_repository.soft_delete(member.product)
         catalog_benefit_repository = CatalogBenefitRepository.from_session(session)
         benefit_repository = BenefitRepository.from_session(session)
         for benefit_member in await catalog_benefit_repository.get_all_by_catalog(
             draft.id
         ):
-            if benefit_member.benefit.catalog_id == draft.id:
+            if (
+                benefit_member.benefit.catalog_id == draft.id
+                and benefit_member.benefit_id not in keep
+            ):
                 await benefit_repository.soft_delete(benefit_member.benefit)
         catalog_meter_repository = CatalogMeterRepository.from_session(session)
         meter_repository = MeterRepository.from_session(session)
         for meter_member in await catalog_meter_repository.get_all_by_catalog(draft.id):
-            if meter_member.meter.catalog_id == draft.id:
+            if (
+                meter_member.meter.catalog_id == draft.id
+                and meter_member.meter_id not in keep
+            ):
                 await meter_repository.update(
                     meter_member.meter, update_dict={"deleted_at": utc_now()}
                 )

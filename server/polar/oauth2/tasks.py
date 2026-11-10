@@ -23,8 +23,10 @@ async def oauth2_token_delete_expired() -> None:
     max_retries=0,
 )
 async def oauth2_client_delete_stale() -> None:
-    async with AsyncSessionMaker() as session:
-        repository = OAuth2ClientRepository.from_session(session)
-        cutoff = utc_now()
-        while await repository.delete_stale(cutoff):
-            continue
+    cutoff = utc_now()
+    while True:
+        async with AsyncSessionMaker() as session:
+            repository = OAuth2ClientRepository.from_session(session)
+            deleted = await repository.delete_stale(cutoff)
+        if deleted == 0:
+            break

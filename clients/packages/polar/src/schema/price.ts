@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { Currency, DecimalAmount, unitAmount, WholeAmount } from './money'
-import type { Money } from './money'
+import type { Money, Scale } from './money'
 
 const Units = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))
 const Cents = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
@@ -175,9 +175,9 @@ class TierBuilder {
   }
 
   /** The price of each unit in this tier, one amount per currency. */
-  amount<const Rates extends Amounts<Money>>(
-    ...amounts: Rates
-  ): PricedTier<Rates[number]> {
+  amount<Per extends Scale>(
+    ...amounts: Amounts<Money<Per>>
+  ): PricedTier<Money<Per>> {
     return new PricedTier(this.bound, amounts)
   }
 

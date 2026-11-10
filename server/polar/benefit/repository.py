@@ -84,6 +84,30 @@ class BenefitRepository(
             statement = statement.with_for_update(of=Benefit, key_share=True)
         return await self.get_all(statement)
 
+    async def get_retired_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Sequence[Benefit]:
+        """The latest published version of each benefit that is no longer current."""
+        if not external_ids:
+            return []
+        drafts = select(Catalog.id).where(
+            Catalog.organization_id == organization_id,
+            Catalog.status == CatalogStatus.draft,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
+                Benefit.is_current.is_(False),
+                or_(Benefit.catalog_id.is_(None), Benefit.catalog_id.not_in(drafts)),
+            )
+            .distinct(Benefit.external_id)
+            .order_by(Benefit.external_id, Benefit.created_at.desc(), Benefit.id.desc())
+            .options(undefer(Benefit.external_id), *self.get_eager_options())
+        )
+        return await self.get_all(statement)
+
     def get_organization_statement(self, organization_id: UUID) -> Select[Benefit]:
         return (
             self.get_base_statement()

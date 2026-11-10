@@ -893,15 +893,14 @@ class DeclarativeConfigService:
                             "external_id": change.config.external_id,
                             "is_current": not draft,
                         }
-                        if change.existing is not None:
+                        previous = change.existing or change.previous
+                        if previous is not None:
                             update_dict["is_tax_applicable"] = (
-                                change.existing.is_tax_applicable
+                                previous.is_tax_applicable
                             )
                             # Metadata left out of the config is kept, as on update.
                             if "metadata" not in change.config.model_fields_set:
-                                update_dict["user_metadata"] = (
-                                    change.existing.user_metadata
-                                )
+                                update_dict["user_metadata"] = previous.user_metadata
                         await repository.update(
                             benefit, update_dict=update_dict, flush=True
                         )
@@ -980,16 +979,15 @@ class DeclarativeConfigService:
                                 "external_id": config.external_id,
                                 "is_current": not draft,
                             }
-                            if change.existing is not None:
-                                catalog_service.copy_product_settings(
-                                    change.existing, product
-                                )
+                            previous = change.existing or change.previous
+                            if previous is not None:
+                                catalog_service.copy_product_settings(previous, product)
                                 if config.meter_interval is None:
                                     update_dict["meter_interval"] = (
-                                        change.existing.meter_interval
+                                        previous.meter_interval
                                     )
                                     update_dict["meter_interval_count"] = (
-                                        change.existing.meter_interval_count
+                                        previous.meter_interval_count
                                     )
                             await repository.update(
                                 product, update_dict=update_dict, flush=True

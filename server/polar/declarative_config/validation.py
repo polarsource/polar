@@ -72,6 +72,8 @@ class ResourceChange[ConfigT, ModelT]:
     existing: ModelT | None
     update_dict: dict[str, Any]
     before: dict[str, Any] = dataclass_field(default_factory=dict)
+    # The retired version an `external_id` without a current row comes back from.
+    previous: ModelT | None = None
 
     @property
     def action(self) -> ConfigAction:
@@ -436,7 +438,8 @@ def _changed_interval(
 def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
     issues: list[ConfigIssue] = []
     for change in changes:
-        if change.existing is None:
+        product = change.existing or change.previous
+        if product is None:
             continue
         intervals = [
             ("billing interval", ("recurring_interval", "recurring_interval_count"))
@@ -446,7 +449,7 @@ def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
                 ("meter cycle", ("meter_interval", "meter_interval_count"))
             )
         for label, names in intervals:
-            issue = _changed_interval(change, change.existing, label, names)
+            issue = _changed_interval(change, product, label, names)
             if issue is not None:
                 issues.append(issue)
     return issues
@@ -669,6 +672,12 @@ async def diff_benefits(
             organization.id, external_ids, for_update=for_update
         )
     existing_benefits = {benefit.external_id: benefit for benefit in benefits}
+    retired_benefits = {
+        benefit.external_id: benefit
+        for benefit in await repository.get_retired_by_external_ids(
+            organization.id, [id for id in external_ids if id not in existing_benefits]
+        )
+    }
     meter_external_ids = _external_ids_by_id(meters)
     changes: list[BenefitChange] = []
     for index, benefit_config in enumerate(benefit_configs):
@@ -679,7 +688,15 @@ async def diff_benefits(
             create_dict = _create_update_dict(benefit_config)
             if "properties" in create_dict:
                 create_dict["properties"] = create_dict["properties"].model_dump()
-            changes.append(BenefitChange(index, benefit_config, None, create_dict))
+            changes.append(
+                BenefitChange(
+                    index,
+                    benefit_config,
+                    None,
+                    create_dict,
+                    previous=retired_benefits.get(benefit_config.external_id),
+                )
+            )
             continue
         properties = benefit_properties(benefit, meter_external_ids)
         changes.append(
@@ -880,6 +897,12 @@ async def diff_products(
             catalog.id, external_ids, options=repository.get_eager_options()
         )
     existing_products = {product.external_id: product for product in products}
+    retired_products = {
+        product.external_id: product
+        for product in await repository.get_retired_by_external_ids(
+            organization.id, [id for id in external_ids if id not in existing_products]
+        )
+    }
     meter_external_ids = _external_ids_by_id(meters)
     benefit_external_ids = _external_ids_by_id(benefits)
     changes: list[ProductChange] = []
@@ -892,7 +915,15 @@ async def diff_products(
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]
-            changes.append(ProductChange(index, product_config, None, create_dict))
+            changes.append(
+                ProductChange(
+                    index,
+                    product_config,
+                    None,
+                    create_dict,
+                    previous=retired_products.get(product_config.external_id),
+                )
+            )
             continue
         prices = [price_config(price, meter_external_ids) for price in product.prices]
         product_benefits = [

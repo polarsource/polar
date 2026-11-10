@@ -120,6 +120,30 @@ class ProductRepository(
             statement = statement.with_for_update(of=Product, key_share=True)
         return await self.get_all(statement)
 
+    async def get_retired_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> Sequence[Product]:
+        """The latest published version of each product that is no longer current."""
+        if not external_ids:
+            return []
+        drafts = select(Catalog.id).where(
+            Catalog.organization_id == organization_id,
+            Catalog.status == CatalogStatus.draft,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.external_id.in_(external_ids),
+                Product.is_current.is_(False),
+                or_(Product.catalog_id.is_(None), Product.catalog_id.not_in(drafts)),
+            )
+            .distinct(Product.external_id)
+            .order_by(Product.external_id, Product.created_at.desc(), Product.id.desc())
+            .options(undefer(Product.external_id), *self.get_eager_options())
+        )
+        return await self.get_all(statement)
+
     async def get_version_ids_by_external_ids(
         self,
         organization_ids: Sequence[UUID],

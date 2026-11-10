@@ -4262,6 +4262,58 @@ class TestProductRemoval:
         )
         assert (again.removed, again.catalog) == ([], None)
 
+    async def test_undeprecated_keeps_settings(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        async def apply(**entry: Any) -> None:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {
+                        "products": [{**MONTHLY_PRO, **entry}],
+                        "benefits": [{**BETA_BENEFIT, **entry}],
+                    }
+                ),
+            )
+
+        products = ProductRepository.from_session(session)
+        benefits = BenefitRepository.from_session(session)
+        await apply()
+        [old_product] = await products.get_all_by_external_ids(organization.id, ["pro"])
+        [old_benefit] = await benefits.get_all_by_external_ids(
+            organization.id, ["beta"]
+        )
+        old_product.is_tax_applicable = False
+        old_benefit.user_metadata = {"tier": "gold"}
+        await save_fixture(old_product)
+        await save_fixture(old_benefit)
+        await apply(deprecated=True)
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**MONTHLY_PRO, "recurring_interval": "year"}]}
+            ),
+        )
+        await apply()
+
+        assert [issue.type for issue in plan.issues] == [
+            ConfigIssueType.interval_changed
+        ]
+        [product] = await products.get_all_by_external_ids(organization.id, ["pro"])
+        [benefit] = await benefits.get_all_by_external_ids(organization.id, ["beta"])
+        assert (product.id, benefit.id) != (old_product.id, old_benefit.id)
+        assert product.is_tax_applicable is False
+        assert benefit.user_metadata == {"tier": "gold"}
+
 
 @pytest.fixture
 async def catalog_versions(

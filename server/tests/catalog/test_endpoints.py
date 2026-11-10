@@ -447,10 +447,10 @@ class TestListRemoved:
                 item["external_id"],
                 item["status"],
                 item["customers_count"],
-                item["first_catalog_id"],
-                item["last_catalog_id"],
+                item["first_catalog"]["id"],
+                item["last_catalog"]["id"],
                 item["last_item_id"],
-                item["removed_in_catalog_id"],
+                item["removed_in_catalog"]["id"],
             )
             for item in response.json()
         ] == [

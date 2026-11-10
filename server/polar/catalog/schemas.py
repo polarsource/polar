@@ -69,6 +69,11 @@ class RemovedCatalogItemStatus(StrEnum):
     removed = "removed"
 
 
+class RemovedCatalogItemVersion(IDSchema):
+    name: str | None
+    published_at: datetime
+
+
 class RemovedCatalogItem(Schema):
     """A key that was in a published catalog but isn't in the live one."""
 
@@ -86,16 +91,17 @@ class RemovedCatalogItem(Schema):
             "the product; customers granted the benefit."
         )
     )
-    first_catalog_id: UUID4 = Field(description="First catalog that listed it.")
-    last_catalog_id: UUID4 = Field(description="Last catalog that listed it.")
     last_item_id: UUID4 = Field(
         description="ID of the product or benefit in the last catalog that listed it."
     )
-    removed_in_catalog_id: UUID4 = Field(
-        description="The catalog published after the last one that listed it."
+    first_catalog: RemovedCatalogItemVersion = Field(
+        description="First catalog that listed it."
     )
-    removed_at: datetime = Field(
-        description="When the catalog that removed it was published."
+    last_catalog: RemovedCatalogItemVersion = Field(
+        description="Last catalog that listed it."
+    )
+    removed_in_catalog: RemovedCatalogItemVersion = Field(
+        description="The catalog published after the last one that listed it."
     )
 
 

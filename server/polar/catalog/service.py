@@ -48,6 +48,7 @@ from .schemas import (
     RemovedCatalogItem,
     RemovedCatalogItemResource,
     RemovedCatalogItemStatus,
+    RemovedCatalogItemVersion,
 )
 
 
@@ -138,8 +139,6 @@ def _removed_items(
 ) -> list[RemovedCatalogItem]:
     items: list[RemovedCatalogItem] = []
     for external_id, entry in removed.items():
-        removed_in = catalogs[entry.last + 1]
-        assert removed_in.published_at is not None
         customers_count = customers.get(external_id, 0)
         items.append(
             RemovedCatalogItem(
@@ -150,11 +149,16 @@ def _removed_items(
                 if customers_count
                 else RemovedCatalogItemStatus.removed,
                 customers_count=customers_count,
-                first_catalog_id=catalogs[entry.first].id,
-                last_catalog_id=entry.membership.catalog_id,
                 last_item_id=entry.membership.item_id,
-                removed_in_catalog_id=removed_in.id,
-                removed_at=removed_in.published_at,
+                first_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.first]
+                ),
+                last_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.last]
+                ),
+                removed_in_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.last + 1]
+                ),
             )
         )
     return items
@@ -271,7 +275,10 @@ class CatalogService:
                     benefit_customers,
                 ),
             ],
-            key=lambda item: (-item.removed_at.timestamp(), item.external_id),
+            key=lambda item: (
+                -item.removed_in_catalog.published_at.timestamp(),
+                item.external_id,
+            ),
         )
 
     async def get_draft_for_write(

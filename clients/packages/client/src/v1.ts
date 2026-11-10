@@ -36066,36 +36066,17 @@ export interface components {
        */
       customers_count: number
       /**
-       * First Catalog Id
-       * Format: uuid4
-       * @description First catalog that listed it.
-       */
-      first_catalog_id: string
-      /**
-       * Last Catalog Id
-       * Format: uuid4
-       * @description Last catalog that listed it.
-       */
-      last_catalog_id: string
-      /**
        * Last Item Id
        * Format: uuid4
        * @description ID of the product or benefit in the last catalog that listed it.
        */
       last_item_id: string
-      /**
-       * Removed In Catalog Id
-       * Format: uuid4
-       * @description The catalog published after the last one that listed it.
-       */
-      removed_in_catalog_id: string
-      /**
-       * Removed At
-       * Format: date-time
-       * @description When the catalog that removed it was published.
-       * @example 2026-01-01T00:00:00.000000Z
-       */
-      removed_at: string
+      /** @description First catalog that listed it. */
+      first_catalog: components['schemas']['RemovedCatalogItemVersion']
+      /** @description Last catalog that listed it. */
+      last_catalog: components['schemas']['RemovedCatalogItemVersion']
+      /** @description The catalog published after the last one that listed it. */
+      removed_in_catalog: components['schemas']['RemovedCatalogItemVersion']
     }
     /**
      * RemovedCatalogItemResource
@@ -36107,6 +36088,23 @@ export interface components {
      * @enum {string}
      */
     RemovedCatalogItemStatus: 'deprecated' | 'removed'
+    /** RemovedCatalogItemVersion */
+    RemovedCatalogItemVersion: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Name */
+      name: string | null
+      /**
+       * Published At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      published_at: string
+    }
     /** ResourceNotFound */
     ResourceNotFound: {
       /**

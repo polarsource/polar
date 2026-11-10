@@ -1,6 +1,5 @@
 'use client'
 
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl, Text } from '@polar-sh/orbit'
@@ -34,49 +33,38 @@ export default function RemovedPage({
       : `${productsPath}/${item.last_item_id}`
 
   return (
-    <MasterDetailLayoutContent
-      header={
-        <Box flexDirection="column" rowGap="xs" minWidth={0}>
-          <Text variant="heading-xs" as="h1">
-            Removed
-          </Text>
-          <Text color="muted">
-            Keys an earlier version listed that the current version
-            doesn&apos;t.
-          </Text>
-        </Box>
-      }
-    >
-      <Box flexDirection="column" rowGap="2xl" minWidth={0}>
-        <Box>
-          <SegmentedControl
-            options={resources.map(({ value, label }) => ({
-              value,
-              label: `${label} ${count(value)}`,
-            }))}
-            value={resource}
-            onChange={setResource}
-          />
-        </Box>
-        {items && !shown.length ? (
-          <Text color="muted">
-            No {resources.find(({ value }) => value === resource)?.noun} removed
-            yet.
-          </Text>
-        ) : null}
-        <RemovedGroup
-          title="Deprecated · still billing"
-          hint="Becomes removed once no customer uses it"
-          items={shown.filter((item) => item.status === 'deprecated')}
-          href={href}
-        />
-        <RemovedGroup
-          title="Removed · safe to delete from config"
-          hint="No customer uses it"
-          items={shown.filter((item) => item.status === 'removed')}
-          href={href}
+    <Box flexDirection="column" rowGap="2xl" minWidth={0} paddingBottom="2xl">
+      <Text color="muted">
+        Keys an earlier version listed that the current version doesn&apos;t.
+      </Text>
+      <Box>
+        <SegmentedControl
+          options={resources.map(({ value, label }) => ({
+            value,
+            label: `${label} ${count(value)}`,
+          }))}
+          value={resource}
+          onChange={setResource}
         />
       </Box>
-    </MasterDetailLayoutContent>
+      {items && !shown.length ? (
+        <Text color="muted">
+          No {resources.find(({ value }) => value === resource)?.noun} removed
+          yet.
+        </Text>
+      ) : null}
+      <RemovedGroup
+        title="Deprecated · still billing"
+        hint="Becomes removed once no customer uses it"
+        items={shown.filter((item) => item.status === 'deprecated')}
+        href={href}
+      />
+      <RemovedGroup
+        title="Removed · safe to delete from config"
+        hint="No customer uses it"
+        items={shown.filter((item) => item.status === 'removed')}
+        href={href}
+      />
+    </Box>
   )
 }

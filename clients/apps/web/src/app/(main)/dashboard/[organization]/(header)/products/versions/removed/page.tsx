@@ -5,7 +5,7 @@ import RemovedPage from './RemovedPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Removed', // " | Polar is added by the template"
+    title: 'Removed keys', // " | Polar is added by the template"
   }
 }
 

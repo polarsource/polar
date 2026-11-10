@@ -4,6 +4,7 @@ import { useInfiniteCatalogs } from '@/hooks/queries/catalogs'
 import { useInViewport } from '@/hooks/utils'
 import { schemas } from '@polar-sh/client'
 import {
+  SegmentedControl,
   Spinner,
   Status,
   Text,
@@ -15,7 +16,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import PolarTimeAgo from '@polar-sh/ui/components/atoms/PolarTimeAgo'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter, useSelectedLayoutSegment } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
@@ -94,6 +95,9 @@ export const VersionListSidebar = ({
   organization: schemas['Organization']
 }) => {
   const { id: selectedId } = useParams<{ id?: string }>()
+  const segment = useSelectedLayoutSegment()
+  const router = useRouter()
+  const versionsPath = `/dashboard/${organization.slug}/products/versions`
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useInfiniteCatalogs(organization.id)
   const { ref: loadingRef, inViewport } = useInViewport()
@@ -107,6 +111,8 @@ export const VersionListSidebar = ({
   return (
     <Box flexDirection="column" height="100%">
       <Box
+        flexDirection="column"
+        rowGap="m"
         paddingHorizontal="l"
         paddingVertical="l"
         borderBottomWidth={1}
@@ -114,6 +120,20 @@ export const VersionListSidebar = ({
         borderColor="border-primary"
       >
         <Text variant="body">Versions</Text>
+        <SegmentedControl
+          variant="tabs"
+          size="sm"
+          options={[
+            { value: 'history', label: 'History' },
+            { value: 'removed', label: 'Removed' },
+          ]}
+          value={segment === 'removed' ? 'removed' : 'history'}
+          onChange={(tab) =>
+            router.push(
+              tab === 'removed' ? `${versionsPath}/removed` : versionsPath,
+            )
+          }
+        />
       </Box>
       <Box flexDirection="column" overflowY="auto" flexGrow={1}>
         {data?.pages

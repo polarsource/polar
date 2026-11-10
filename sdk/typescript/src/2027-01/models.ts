@@ -49,6 +49,10 @@ export type BenefitVisibility = "draft" | "private" | "public";
  */
 export type BillingAddressFieldMode = "required" | "optional" | "disabled";
 /**
+ * CatalogStatus
+ */
+export type CatalogStatus = "draft" | "live" | "archived";
+/**
  * CheckoutLinkSortProperty
  */
 export type CheckoutLinkSortProperty =
@@ -941,7 +945,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -2962,6 +2966,10 @@ export interface BenefitCustom {
    */
   catalog_id: string | null;
   /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: BenefitCustomProperties;
@@ -3297,6 +3305,10 @@ export interface BenefitDiscord {
    * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
    */
   catalog_id: string | null;
+  /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
   /**
    * properties
    */
@@ -3664,6 +3676,10 @@ export interface BenefitDownloadables {
    */
   catalog_id: string | null;
   /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: BenefitDownloadablesProperties;
@@ -3943,6 +3959,10 @@ export interface BenefitFeatureFlag {
    */
   catalog_id: string | null;
   /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: BenefitFeatureFlagProperties;
@@ -4201,6 +4221,10 @@ export interface BenefitGitHubRepository {
    * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
    */
   catalog_id: string | null;
+  /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
   /**
    * properties
    */
@@ -5473,6 +5497,10 @@ export interface BenefitLicenseKeys {
    */
   catalog_id: string | null;
   /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: BenefitLicenseKeysProperties;
@@ -5782,6 +5810,10 @@ export interface BenefitMeterCredit {
    * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
    */
   catalog_id: string | null;
+  /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
   /**
    * properties
    */
@@ -6160,6 +6192,10 @@ export interface BenefitSlackSharedChannel {
    * ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config.
    */
   catalog_id: string | null;
+  /**
+   * Whether this is the current version of the benefit.
+   */
+  is_current: boolean;
   /**
    * properties
    */
@@ -7688,6 +7724,10 @@ export interface CheckoutProduct {
    */
   catalog_id: string | null;
   /**
+   * Whether this is the current version of the product.
+   */
+  is_current: boolean;
+  /**
    * List of prices for this product.
    */
   prices: ProductPrice[];
@@ -8297,6 +8337,10 @@ export interface CheckoutPublic {
    * attached_custom_fields
    */
   attached_custom_fields: AttachedCustomField[] | null;
+  /**
+   * Payment method types to offer in the payment form.
+   */
+  payment_method_types: string[];
 }
 
 /**
@@ -8545,6 +8589,10 @@ export interface CheckoutPublicConfirmed {
    * attached_custom_fields
    */
   attached_custom_fields: AttachedCustomField[] | null;
+  /**
+   * Payment method types to offer in the payment form.
+   */
+  payment_method_types: string[];
   /**
    * customer_session_token
    */
@@ -18312,6 +18360,10 @@ export interface OrderProduct {
    * ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
    */
   catalog_id: string | null;
+  /**
+   * Whether this is the current version of the product.
+   */
+  is_current: boolean;
 }
 
 /**
@@ -19807,6 +19859,10 @@ export interface Product {
    * ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
    */
   catalog_id: string | null;
+  /**
+   * Whether this is the current version of the product.
+   */
+  is_current: boolean;
   /**
    * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
    */

@@ -13,9 +13,9 @@ class MCPEventDefinition(NamedTuple):
     data: TypeAdapter[Any]
 
 
-_order: TypeAdapter[Any] = TypeAdapter(Order)
-_subscription: TypeAdapter[Any] = TypeAdapter(Subscription)
-_customer: TypeAdapter[Any] = TypeAdapter(CustomerResponse)
+_order = TypeAdapter(Order)
+_subscription = TypeAdapter(Subscription)
+_customer = TypeAdapter(CustomerResponse)
 
 
 MCP_EVENTS: dict[WebhookEventType, MCPEventDefinition] = {

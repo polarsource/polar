@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, or_, select
@@ -83,6 +84,33 @@ class BenefitRepository(
         if for_update:
             statement = statement.with_for_update(of=Benefit, key_share=True)
         return await self.get_all(statement)
+
+    async def get_retired_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, Benefit]:
+        """The latest published version of each benefit that is no longer current."""
+        if not external_ids:
+            return {}
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                Benefit.external_id.in_(external_ids),
+                Benefit.is_current.is_(False),
+                or_(
+                    Benefit.catalog_id.is_(None),
+                    Benefit.catalog_id.not_in(
+                        select(Catalog.id).where(Catalog.status == CatalogStatus.draft)
+                    ),
+                ),
+            )
+            .order_by(Benefit.created_at, Benefit.id)
+            .options(undefer(Benefit.external_id), *self.get_eager_options())
+        )
+        return {
+            cast(str, benefit.external_id): benefit
+            for benefit in await self.get_all(statement)
+        }
 
     def get_organization_statement(self, organization_id: UUID) -> Select[Benefit]:
         return (

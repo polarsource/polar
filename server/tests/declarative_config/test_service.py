@@ -4262,6 +4262,131 @@ class TestProductRemoval:
         )
         assert (again.removed, again.catalog) == ([], None)
 
+    async def test_undeprecated_product_keeps_settings(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        repository = ProductRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        [retired] = await repository.get_all_by_external_ids(organization.id, ["pro"])
+        retired.is_tax_applicable = False
+        await save_fixture(retired)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**MONTHLY_PRO, "deprecated": True}, PACK_PRODUCT]}
+            ),
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+
+        assert [(change.external_id, change.action) for change in result.changes] == [
+            ("pro", ConfigAction.created),
+            ("pack", ConfigAction.unchanged),
+        ]
+        [product] = await repository.get_all_by_external_ids(organization.id, ["pro"])
+        assert product.id != retired.id
+        assert (product.is_tax_applicable, product.is_archived) == (False, False)
+
+    async def test_undeprecated_product_interval_changed(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO, PACK_PRODUCT]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**MONTHLY_PRO, "deprecated": True}, PACK_PRODUCT]}
+            ),
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {**MONTHLY_PRO, "recurring_interval": "year"},
+                        PACK_PRODUCT,
+                    ]
+                }
+            ),
+        )
+
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (
+                ConfigIssueType.interval_changed,
+                ["body", "products", 0, "recurring_interval"],
+            )
+        ]
+
+    async def test_undeprecated_benefit_keeps_settings(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        repository = BenefitRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [BETA_BENEFIT, SUPPORT_BENEFIT]}),
+        )
+        [retired] = await repository.get_all_by_external_ids(organization.id, ["beta"])
+        retired.is_tax_applicable = not retired.is_tax_applicable
+        retired.user_metadata = {"tier": "gold"}
+        await save_fixture(retired)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"benefits": [{**BETA_BENEFIT, "deprecated": True}, SUPPORT_BENEFIT]}
+            ),
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"benefits": [BETA_BENEFIT, SUPPORT_BENEFIT]}),
+        )
+
+        [benefit] = await repository.get_all_by_external_ids(organization.id, ["beta"])
+        assert benefit.id != retired.id
+        assert (benefit.is_tax_applicable, benefit.user_metadata) == (
+            retired.is_tax_applicable,
+            {"tier": "gold"},
+        )
+
 
 @pytest.fixture
 async def catalog_versions(

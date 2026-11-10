@@ -3700,6 +3700,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/catalogs/removed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Removed Catalog Items
+     * @description List the products and benefits a published catalog listed but the live
+     *     one doesn't, newest removal first. They're deprecated while customers still
+     *     use them, and removed once nobody does.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:list_removed']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/catalogs/{id}': {
     parameters: {
       query?: never
@@ -36018,6 +36042,71 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * RemovedCatalogItem
+     * @description A key that was in a published catalog but isn't in the live one.
+     */
+    RemovedCatalogItem: {
+      resource: components['schemas']['RemovedCatalogItemResource']
+      /**
+       * External Id
+       * @description Key of the item in the catalogs.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description Name of the item in its last version.
+       */
+      name: string
+      /** @description `deprecated` while customers still use it, `removed` once nobody does. */
+      status: components['schemas']['RemovedCatalogItemStatus']
+      /**
+       * Customers Count
+       * @description Customers with a billable subscription on, or a scheduled change to, the product; customers granted the benefit.
+       */
+      customers_count: number
+      /**
+       * First Catalog Id
+       * Format: uuid4
+       * @description First catalog that listed it.
+       */
+      first_catalog_id: string
+      /**
+       * Last Catalog Id
+       * Format: uuid4
+       * @description Last catalog that listed it.
+       */
+      last_catalog_id: string
+      /**
+       * Last Item Id
+       * Format: uuid4
+       * @description ID of the product or benefit in the last catalog that listed it.
+       */
+      last_item_id: string
+      /**
+       * Removed In Catalog Id
+       * Format: uuid4
+       * @description The catalog published after the last one that listed it.
+       */
+      removed_in_catalog_id: string
+      /**
+       * Removed At
+       * Format: date-time
+       * @description When the catalog that removed it was published.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      removed_at: string
+    }
+    /**
+     * RemovedCatalogItemResource
+     * @enum {string}
+     */
+    RemovedCatalogItemResource: 'product' | 'benefit'
+    /**
+     * RemovedCatalogItemStatus
+     * @enum {string}
+     */
+    RemovedCatalogItemStatus: 'deprecated' | 'removed'
     /** ResourceNotFound */
     ResourceNotFound: {
       /**
@@ -53472,6 +53561,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Catalog_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:list_removed': {
+    parameters: {
+      query: {
+        organization_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RemovedCatalogItem'][]
         }
       }
       /** @description Validation Error */
@@ -74939,6 +75059,12 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const removedCatalogItemResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RemovedCatalogItemResource']
+> = ['product', 'benefit']
+export const removedCatalogItemStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RemovedCatalogItemStatus']
+> = ['deprecated', 'removed']
 export const reviewAppealSupportCaseListItemTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseListItem']['type']
 > = ['review_appeal']

@@ -110,7 +110,11 @@ from polar.models.product_price import (
     ProductPriceSeatUnit,
     ProductPriceUnit,
 )
-from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.models.subscription import (
+    PROMOTIONAL_PRICE_NOTICE_MIN_DURATION,
+    CustomerCancellationReason,
+    SubscriptionStatus,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewPaidSubscriptionNotificationPayload,
@@ -4576,7 +4580,12 @@ class SubscriptionService:
         extra_context: dict[str, Any] = {
             "renewal_date": format_date(subscription.current_period_end)
         }
-        if subscription.promotional_price_ends_at_period_end:
+        if (
+            subscription.discount_ends_at_period_end
+            and subscription.discount_applied_at is not None
+            and subscription.current_period_end - subscription.discount_applied_at
+            > PROMOTIONAL_PRICE_NOTICE_MIN_DURATION
+        ):
             subject_template = "Your {product.name} promotional price ends soon"
             extra_context["regular_amount"] = sum(
                 spp.amount for spp in subscription.subscription_product_prices

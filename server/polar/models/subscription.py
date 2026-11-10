@@ -441,17 +441,14 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return cls.canceled_at.is_not(None)
 
     @property
-    def promotional_price_ends_at_period_end(self) -> bool:
+    def discount_ends_at_period_end(self) -> bool:
         discount = self.discount
         applied_at = self.discount_applied_at
         if discount is None or applied_at is None or self.current_period_end is None:
             return False
-        return (
-            not discount.is_repetition_expired(applied_at, self.current_period_start)
-            and discount.is_repetition_expired(applied_at, self.current_period_end)
-            and self.current_period_end - applied_at
-            > PROMOTIONAL_PRICE_NOTICE_MIN_DURATION
-        )
+        return not discount.is_repetition_expired(
+            applied_at, self.current_period_start
+        ) and discount.is_repetition_expired(applied_at, self.current_period_end)
 
     def initialize_meter_period(
         self, start: datetime | None, *, containing: datetime | None = None

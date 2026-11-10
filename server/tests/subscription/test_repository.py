@@ -440,13 +440,21 @@ class TestGetSubscriptionsNeedingRenewalReminder:
         assert [s.id for s in result] == [subscription.id]
 
     @pytest.mark.parametrize(
-        ("duration", "duration_in_months", "period_start", "applied_at", "expected"),
+        (
+            "duration",
+            "duration_in_months",
+            "period_start",
+            "applied_at",
+            "discount_ends",
+            "expected",
+        ),
         [
             pytest.param(
                 DiscountDuration.repeating,
                 3,
                 datetime(2026, 5, 13, tzinfo=UTC),
                 datetime(2026, 3, 13, tzinfo=UTC),
+                True,
                 True,
                 id="repeating ends at renewal",
             ),
@@ -456,6 +464,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
                 datetime(2026, 5, 13, tzinfo=UTC),
                 datetime(2026, 3, 13, tzinfo=UTC),
                 False,
+                False,
                 id="repeating continues after renewal",
             ),
             pytest.param(
@@ -464,6 +473,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
                 datetime(2026, 3, 13, tzinfo=UTC),
                 datetime(2026, 3, 13, tzinfo=UTC),
                 True,
+                True,
                 id="once over a quarter",
             ),
             pytest.param(
@@ -471,6 +481,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
                 None,
                 datetime(2026, 5, 13, tzinfo=UTC),
                 datetime(2026, 5, 13, tzinfo=UTC),
+                True,
                 False,
                 id="once lasting exactly 31 days",
             ),
@@ -480,6 +491,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
                 datetime(2026, 5, 13, tzinfo=UTC),
                 datetime(2026, 3, 13, tzinfo=UTC),
                 False,
+                False,
                 id="forever",
             ),
             pytest.param(
@@ -487,6 +499,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
                 3,
                 datetime(2026, 5, 13, tzinfo=UTC),
                 None,
+                False,
                 False,
                 id="not applied yet",
             ),
@@ -502,6 +515,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
         duration_in_months: int | None,
         period_start: datetime,
         applied_at: datetime | None,
+        discount_ends: bool,
         expected: bool,
     ) -> None:
         now = datetime(2026, 6, 10, tzinfo=UTC)
@@ -535,7 +549,7 @@ class TestGetSubscriptionsNeedingRenewalReminder:
         )
 
         assert [s.id for s in result] == ([subscription.id] if expected else [])
-        assert subscription.promotional_price_ends_at_period_end is expected
+        assert subscription.discount_ends_at_period_end is discount_ends
 
 
 @pytest.mark.anyio

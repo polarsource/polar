@@ -4,7 +4,6 @@ import contextlib
 import json
 from collections.abc import Generator, Sequence
 from datetime import datetime
-from itertools import pairwise
 from urllib.parse import urlparse
 
 from fastapi import Request
@@ -65,7 +64,7 @@ class OverviewSection(ChecklistMixin):
         risk_signals: Sequence[OrganizationRiskSignal] = (),
         shared_organizations: Sequence[Organization] = (),
         organization_domains: Sequence[OrganizationDomain] = (),
-        organization_emails: Sequence[OrganizationEmail] = (),
+        support_email: OrganizationEmail | None = None,
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -77,7 +76,7 @@ class OverviewSection(ChecklistMixin):
         self.risk_signals = risk_signals
         self.shared_organizations = shared_organizations
         self.organization_domains = organization_domains
-        self.organization_emails = organization_emails
+        self.support_email = support_email
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -800,20 +799,14 @@ class OverviewSection(ChecklistMixin):
                 self._render_shared_payout_account_row(request)
 
     def _support_email_badge(self) -> tuple[str, str, str | None]:
-        emails = self.organization_emails
-        previous = [
-            f"{older.email} until {newer.created_at:%Y-%m-%d}"
-            for newer, older in pairwise(emails)
-        ]
-        tip = f"Previous: {', '.join(previous)}" if previous else None
-        current = emails[0] if emails else None
+        current = self.support_email
         if (
             current is not None
             and current.verified_at is not None
             and current.email == self.org.email
         ):
-            return "Verified", "badge-success", tip
-        return "Not verified", "badge-ghost", tip
+            return "Verified", "badge-success", None
+        return "Not verified", "badge-ghost", None
 
     def _website_domain_badge(self) -> tuple[str, str, str | None]:
         host = urlparse(self.org.website or "").hostname or ""

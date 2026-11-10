@@ -755,7 +755,7 @@ class TestOverviewLazyCards:
 
         assert "Not verified" in response.text
 
-    async def test_setup_checklist_support_email_verified_with_history(
+    async def test_setup_checklist_support_email_verified(
         self,
         backoffice_client: httpx.AsyncClient,
         save_fixture: SaveFixture,
@@ -763,13 +763,6 @@ class TestOverviewLazyCards:
     ) -> None:
         organization.email = "support@acme.com"
         await save_fixture(organization)
-        await save_fixture(
-            OrganizationEmail(
-                organization=organization,
-                email="old@acme.com",
-                created_at=datetime(2026, 1, 1, tzinfo=UTC),
-            )
-        )
         await save_fixture(
             OrganizationEmail(
                 organization=organization,
@@ -783,7 +776,7 @@ class TestOverviewLazyCards:
         )
 
         assert "Verified" in response.text
-        assert "Previous: old@acme.com until" in response.text
+        assert "Not verified" not in response.text
 
     async def test_setup_checklist_website_domain_not_verified(
         self,

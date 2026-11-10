@@ -1281,7 +1281,7 @@ async def overview_setup_checklist(
         organization_domains=await domain_repository.get_all(
             domain_repository.get_statement_by_organization(organization_id)
         ),
-        organization_emails=await email_repository.get_history_by_organization(
+        support_email=await email_repository.get_latest_by_organization(
             organization_id
         ),
     )

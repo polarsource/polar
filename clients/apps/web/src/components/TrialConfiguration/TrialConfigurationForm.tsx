@@ -75,8 +75,13 @@ export const TrialConfigurationForm = ({
         </Button>
       </Box>
       {!trialEnabled && (
-        <Box alignItems="center" minHeight={40} color="text-secondary">
-          No trial configured
+        <Box
+          alignItems="center"
+          justifyContent="center"
+          minHeight={40}
+          color="text-secondary"
+        >
+          <span className="text-sm">No trial configured</span>
         </Box>
       )}
       {trialEnabled && (

@@ -2220,8 +2220,16 @@ class TestLogCustomerMeterComparison:
         async def get_legacy_usage() -> float:
             raise AssertionError("legacy usage shouldn't be read again")
 
+        async def get_usage_ingested_before(before: datetime) -> UsageSummary:
+            raise AssertionError("usage ingested before shouldn't be read")
+
         await reducer_service.log_customer_meter_comparison(
-            session, redis, customer_meter, get_late_usage, get_legacy_usage
+            session,
+            redis,
+            customer_meter,
+            get_late_usage,
+            get_legacy_usage,
+            get_usage_ingested_before,
         )
 
         span = get_comparison_span(capfire)
@@ -2269,8 +2277,18 @@ class TestLogCustomerMeterComparison:
         async def get_legacy_usage() -> float:
             return legacy_usage_after
 
+        async def get_usage_ingested_before(before: datetime) -> UsageSummary:
+            return UsageSummary(
+                count=1, total=Decimal(100), minimum=Decimal(100), maximum=Decimal(100)
+            )
+
         await reducer_service.log_customer_meter_comparison(
-            session, redis, customer_meter, get_late_usage, get_legacy_usage
+            session,
+            redis,
+            customer_meter,
+            get_late_usage,
+            get_legacy_usage,
+            get_usage_ingested_before,
         )
 
         span = get_comparison_span(capfire)
@@ -2278,6 +2296,77 @@ class TestLogCustomerMeterComparison:
         assert span.attributes["match"] is match
         legacy = json.loads(cast(str, span.attributes["legacy"]))
         assert legacy["consumed_units_after_reducer"] == f"{legacy_usage_after:g}"
+
+    @pytest.mark.parametrize(
+        ("usage_ingested_before", "match"), [(Decimal(17), True), (Decimal(16), False)]
+    )
+    async def test_merges_usage_ingested_before_the_reducer(
+        self,
+        capfire: CaptureLogfire,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        usage_ingested_before: Decimal,
+        match: bool,
+    ) -> None:
+        meter = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+        await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        customer_meter = CustomerMeter(
+            customer=customer,
+            meter=meter,
+            consumed_units=Decimal(30),
+            credited_units=0,
+            balance=Decimal(-30),
+        )
+        await save_fixture(customer_meter)
+
+        async def get_late_usage() -> UsageSummary:
+            return UsageSummary(
+                count=1, total=Decimal(4), minimum=Decimal(4), maximum=Decimal(4)
+            )
+
+        async def get_legacy_usage() -> float:
+            return 30.0
+
+        async def get_usage_ingested_before(before: datetime) -> UsageSummary:
+            assert before == reducer.created_at
+            return UsageSummary(
+                count=3,
+                total=usage_ingested_before,
+                minimum=Decimal(1),
+                maximum=Decimal(10),
+            )
+
+        await reducer_service.log_customer_meter_comparison(
+            session,
+            redis,
+            customer_meter,
+            get_late_usage,
+            get_legacy_usage,
+            get_usage_ingested_before,
+        )
+
+        span = get_comparison_span(capfire)
+        assert span.attributes is not None
+        assert span.attributes["match"] is match
+        assert (
+            json.loads(cast(str, span.attributes["reducer"]))["pre_reducer_events"] == 3
+        )
 
 
 def get_comparison_span(capfire: CaptureLogfire) -> ReadableSpan:

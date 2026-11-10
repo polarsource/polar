@@ -720,6 +720,7 @@ class ReducerService:
         customer_meter: CustomerMeter,
         get_late_usage: Callable[[], Awaitable[UsageSummary]],
         get_legacy_usage: Callable[[], Awaitable[float]],
+        get_usage_ingested_before: Callable[[datetime], Awaitable[UsageSummary]],
     ) -> None:
         if isinstance(customer_meter.meter.aggregation, UniqueAggregation):
             return
@@ -734,6 +735,8 @@ class ReducerService:
             late_usage: UsageSummary | None = None
             consumed_units_with_late_usage: Decimal | None = None
             legacy_consumed_units_after: Decimal | None = None
+            pre_reducer_usage: UsageSummary | None = None
+            consumed_units_with_pre_reducer_usage: Decimal | None = None
             try:
                 async with session.begin_nested():
                     usage, credited_units = await self._get_customer_meter_usage(
@@ -761,6 +764,30 @@ class ReducerService:
                                 legacy_consumed_units_after = Decimal(
                                     await get_legacy_usage()
                                 )
+                                # Legacy also counts usage ingested before the
+                                # reducer was created, which it only has if backfilled.
+                                if not _is_between(
+                                    consumed_units_with_late_usage,
+                                    customer_meter.consumed_units,
+                                    legacy_consumed_units_after,
+                                ):
+                                    reducer = await ReducerRepository.from_session(
+                                        session
+                                    ).get_by_meter_and_kind(
+                                        customer_meter.meter_id, ReducerKind.usage
+                                    )
+                                    assert reducer is not None
+                                    pre_reducer_usage = await get_usage_ingested_before(
+                                        reducer.created_at
+                                    )
+                                    consumed_units_with_pre_reducer_usage = (
+                                        finalize_quantity(
+                                            merge_summaries(
+                                                [summary, late_usage, pre_reducer_usage]
+                                            ),
+                                            function,
+                                        )
+                                    )
             except Exception:
                 log.exception(
                     "Failed to compare customer meter with reducer",
@@ -791,6 +818,14 @@ class ReducerService:
                     )
                     if consumed_units_with_late_usage is not None
                     else None,
+                    "pre_reducer_events": pre_reducer_usage.count
+                    if pre_reducer_usage is not None
+                    else None,
+                    "consumed_units_with_pre_reducer_usage": _format_units(
+                        consumed_units_with_pre_reducer_usage
+                    )
+                    if consumed_units_with_pre_reducer_usage is not None
+                    else None,
                     "credited_units": _format_units(credited_units)
                     if credited_units is not None
                     else None,
@@ -801,9 +836,11 @@ class ReducerService:
                 consumed_units is not None
                 and credited_units is not None
                 and _is_between(
-                    consumed_units
-                    if consumed_units_with_late_usage is None
-                    else consumed_units_with_late_usage,
+                    consumed_units_with_pre_reducer_usage
+                    if consumed_units_with_pre_reducer_usage is not None
+                    else consumed_units_with_late_usage
+                    if consumed_units_with_late_usage is not None
+                    else consumed_units,
                     customer_meter.consumed_units,
                     customer_meter.consumed_units
                     if legacy_consumed_units_after is None

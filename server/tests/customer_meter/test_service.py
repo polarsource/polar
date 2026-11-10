@@ -1023,6 +1023,88 @@ class TestGetLateUsage:
 
 
 @pytest.mark.anyio
+class TestGetUsageIngestedBefore:
+    async def test_without_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        before = utc_now() - timedelta(hours=1)
+        await create_event(
+            save_fixture,
+            timestamp=before + timedelta(minutes=1),
+            ingested_at=before - timedelta(days=30),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=before - timedelta(days=1),
+            ingested_at=before + timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 5, "model": "lite"},
+        )
+
+        assert await customer_meter_service._get_usage_ingested_before(
+            session, customer, meter, before
+        ) == UsageSummary(
+            count=1, total=Decimal(20), minimum=Decimal(20), maximum=Decimal(20)
+        )
+
+    async def test_since_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        before = utc_now() - timedelta(hours=1)
+        reset_timestamp = before - timedelta(days=1)
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp,
+            ingested_at=reset_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            ingested_at=reset_timestamp - timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            ingested_at=reset_timestamp + timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 5, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp - timedelta(hours=1),
+            ingested_at=reset_timestamp + timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 7, "model": "lite"},
+        )
+
+        assert await customer_meter_service._get_usage_ingested_before(
+            session, customer, meter, before
+        ) == UsageSummary(
+            count=1, total=Decimal(5), minimum=Decimal(5), maximum=Decimal(5)
+        )
+
+
+@pytest.mark.anyio
 class TestGetRolloverUnits:
     async def test_excludes_usage_at_or_after_cutoff(
         self,

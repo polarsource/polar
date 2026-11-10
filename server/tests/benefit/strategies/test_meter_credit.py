@@ -15,6 +15,7 @@ from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
     Customer,
+    Meter,
     Organization,
     Product,
     Subscription,
@@ -310,6 +311,52 @@ class TestMeterCreditBenefitIntegration:
 
 @pytest.mark.anyio
 class TestRevokeMeterCredit:
+    async def test_revokes_each_purchase_contribution(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        subscription: Subscription,
+        meter: Meter,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 100, "rollover": False},
+        )
+        order = await create_order(save_fixture, product=product, customer=customer)
+        order_grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, order=order
+        )
+        subscription_grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+        repository = CustomerMeterRepository.from_session(session)
+        customer_meter = await repository.get_by_customer_and_meter(
+            customer.id, meter.id
+        )
+        assert customer_meter is not None
+        assert customer_meter.credited_units == 200
+
+        await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit, order=order
+        )
+
+        assert order_grant.is_revoked
+        assert subscription_grant.is_granted
+        assert customer_meter.credited_units == 100
+
+        await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+
+        assert subscription_grant.is_revoked
+        assert customer_meter.credited_units == 0
+
     async def test_keeps_rollover_after_period_reset(
         self,
         session: AsyncSession,

@@ -14,7 +14,6 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ### Added
 
-- Add metering helper with buffering and local reduction for low-latency event ingestion.
 - Send a `User-Agent` header with the SDK language and version, such as `polar-sdk-python/1.0.3` or `polar-sdk-typescript/1.0.3`.
 
 ### Changed

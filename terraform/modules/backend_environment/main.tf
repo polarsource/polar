@@ -58,6 +58,9 @@ locals {
     var.backend_config.merchant_migration_destination_stripe_account_id != "" ? {
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = var.backend_config.merchant_migration_destination_stripe_account_id
     } : {},
+    var.backend_config.customer_meter_units_from_reducer ? {
+      POLAR_CUSTOMER_METER_UNITS_FROM_REDUCER = "true"
+    } : {},
   )
 
   backend_secrets = merge(

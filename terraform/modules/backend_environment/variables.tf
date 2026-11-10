@@ -54,6 +54,7 @@ variable "backend_config" {
     linear_team_id                                   = optional(string, "")
     linear_payout_amount_mismatch_template_id        = optional(string, "")
     merchant_migration_destination_stripe_account_id = optional(string, "")
+    customer_meter_units_from_reducer                = optional(bool, false)
   })
 }
 

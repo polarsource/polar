@@ -16933,6 +16933,7 @@ export interface components {
       | 'deprecated_reference'
       | 'duplicate_external_id'
       | 'interval_changed'
+      | 'invalid_prices'
       | 'meter_cycle_unused'
       | 'meter_locked'
       | 'missing_currency'
@@ -72351,6 +72352,7 @@ export const configIssueTypeValues: ReadonlyArray<
   'deprecated_reference',
   'duplicate_external_id',
   'interval_changed',
+  'invalid_prices',
   'meter_cycle_unused',
   'meter_locked',
   'missing_currency',

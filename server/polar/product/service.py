@@ -1,7 +1,7 @@
 import builtins
 import uuid
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Literal
 
 from sqlalchemy import select
@@ -846,23 +846,7 @@ class ProductService:
                     continue
                 existing_prices.add(price)
             else:
-                model_class = price_schema.get_model_class()
-                if isinstance(
-                    price_schema,
-                    ProductPriceUnitBasedCreate
-                    | ProductPriceMeteredTiersCreate
-                    | ProductPriceSeatBasedCreate,
-                ):
-                    price = model_class(
-                        product=product,
-                        source=source,
-                        **price_schema.model_dump(exclude={"tiers"}),
-                        tiers=price_schema.tiers.to_tiers(),
-                    )
-                else:
-                    price = model_class(
-                        product=product, source=source, **price_schema.model_dump()
-                    )
+                price = self.build_price(price_schema, product, source)
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):
@@ -904,6 +888,57 @@ class ProductService:
                 }
             )
 
+        errors.extend(
+            self.validate_price_structure(
+                prices_per_currency, prices_schema, error_prefix
+            )
+        )
+
+        # Check that the default presentment currency is present
+        if organization.default_presentment_currency not in prices_per_currency:
+            errors.append(
+                {
+                    "type": "value_error",
+                    "loc": error_prefix,
+                    "msg": "The organization's default presentment currency must be present in the prices.",
+                    "input": prices_schema,
+                }
+            )
+
+        return prices, existing_prices, added_prices, errors
+
+    def build_price(
+        self,
+        price_schema: ProductPriceCreate,
+        product: Product | None,
+        source: ProductPriceSource,
+    ) -> ProductPrice:
+        model_class = price_schema.get_model_class()
+        if isinstance(
+            price_schema,
+            ProductPriceUnitBasedCreate
+            | ProductPriceMeteredTiersCreate
+            | ProductPriceSeatBasedCreate,
+        ):
+            price = model_class(
+                product=product,
+                source=source,
+                **price_schema.model_dump(exclude={"tiers"}),
+                tiers=price_schema.tiers.to_tiers(),
+            )
+        else:
+            price = model_class(
+                product=product, source=source, **price_schema.model_dump()
+            )
+        return price
+
+    def validate_price_structure(
+        self,
+        prices_per_currency: Mapping[str, Sequence[tuple[ProductPrice, int]]],
+        prices_schema: object,
+        error_prefix: tuple[str, ...],
+    ) -> builtins.list[ValidationError]:
+        errors: list[ValidationError] = []
         # Track price structure per currency for cross-currency validation
         price_structure_per_currency: dict[str, tuple[bool, bool, bool, bool, int]] = {}
 
@@ -1031,21 +1066,7 @@ class ProductService:
                 }
             )
 
-        # Check that the default presentment currency is present
-        if (
-            organization.default_presentment_currency
-            not in price_structure_per_currency
-        ):
-            errors.append(
-                {
-                    "type": "value_error",
-                    "loc": error_prefix,
-                    "msg": "The organization's default presentment currency must be present in the prices.",
-                    "input": prices_schema,
-                }
-            )
-
-        return prices, existing_prices, added_prices, errors
+        return errors
 
     async def _archive(self, session: AsyncSession, product: Product) -> Product:
         product.is_archived = True

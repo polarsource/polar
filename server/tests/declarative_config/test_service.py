@@ -1561,7 +1561,7 @@ class TestApply:
         mocker.patch("polar.meter.service.enqueue_job")
         metered_price = PRO_PRODUCT["prices"][1]
 
-        with pytest.raises(PolarRequestValidationError) as exc_info:
+        with pytest.raises(ConfigInvalid) as exc_info:
             await declarative_config_service.apply(
                 session,
                 redis,
@@ -1580,9 +1580,9 @@ class TestApply:
                 ),
             )
 
-        [error] = exc_info.value.errors()
-        assert error["loc"] == ("body", "products", 0, "prices", 1, "meter")
-        assert error["input"] == "sdk-tool-calls"
+        [issue] = exc_info.value.errors
+        assert issue.type == ConfigIssueType.invalid_prices
+        assert issue.loc == ["body", "products", 0, "prices", 1, "meter"]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_create_and_update_metered_tiers_price(
@@ -1901,6 +1901,64 @@ class TestApply:
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestPlan:
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    @pytest.mark.parametrize(
+        ("prices", "msg"),
+        [
+            (
+                [
+                    {
+                        "amount_type": "fixed",
+                        "price_amount": 2000,
+                        "tax_behavior": "exclusive",
+                    },
+                    {
+                        "amount_type": "metered_unit",
+                        "meter": "sdk-tool-calls",
+                        "unit_amount": "0.5",
+                        "tax_behavior": "inclusive",
+                    },
+                ],
+                "All prices for the same currency must have the same tax behavior.",
+            ),
+            (
+                [*PRO_PRODUCT["prices"], EUR_PACK_PRICE],
+                "All price currencies must define the same set of price types.",
+            ),
+            (
+                [*PACK_PRODUCT["prices"], *PACK_PRODUCT["prices"]],
+                "Only one fixed price is allowed.",
+            ),
+        ],
+    )
+    async def test_invalid_prices(
+        self,
+        prices: list[dict[str, Any]],
+        msg: str,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        config = Config.model_validate(
+            {
+                "meters": [TOOL_CALLS_METER],
+                "products": [{**PRO_PRODUCT, "prices": prices, "benefits": []}],
+            }
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+
+        [issue] = [
+            issue
+            for issue in plan.issues
+            if issue.severity == ConfigIssueSeverity.error
+        ]
+        assert issue.type == ConfigIssueType.invalid_prices
+        assert issue.loc == ["body", "products", 0, "prices"]
+        assert issue.msg == msg
+        with pytest.raises(ConfigInvalid):
+            await declarative_config_service.apply(session, redis, auth_subject, config)
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_diff(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]

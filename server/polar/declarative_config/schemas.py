@@ -478,6 +478,7 @@ class ConfigIssueType(StrEnum):
     deprecated_reference = "deprecated_reference"
     duplicate_external_id = "duplicate_external_id"
     interval_changed = "interval_changed"
+    invalid_prices = "invalid_prices"
     meter_cycle_unused = "meter_cycle_unused"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"

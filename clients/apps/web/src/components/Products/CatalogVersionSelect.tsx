@@ -1,6 +1,6 @@
 import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { Button, Status, Text } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Check, ChevronDown } from '@polar-sh/orbit/icons'
 import {
@@ -115,9 +115,13 @@ export const CatalogVersionSelect = ({
               >
                 <Text truncate>{version.name}</Text>
                 {version.isCurrent ? (
-                  <Status status="Current" color="gray" size="small" />
+                  <Text variant="caption" color="muted">
+                    Current
+                  </Text>
                 ) : version.isDraft ? (
-                  <Status status="Draft" color="blue" size="small" />
+                  <Text variant="caption" color="muted">
+                    Draft
+                  </Text>
                 ) : null}
                 <Box flex={1} />
                 {version.id === selected.id ? (

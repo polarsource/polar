@@ -2,6 +2,7 @@ import { MasterDetailIndex } from '@/components/Layout/MasterDetailIndex'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
+import { Box } from '@polar-sh/orbit/Box'
 import { HistoryRounded } from '@polar-sh/orbit/icons'
 import { Metadata } from 'next'
 
@@ -35,10 +36,13 @@ export default async function Page(props: {
   }
 
   return (
-    <EmptyState
-      icon={<HistoryRounded />}
-      title="No versions yet"
-      description="Apply your config to save a draft, then publish it to create a version."
-    />
+    <Box flexGrow={1} alignItems="center" justifyContent="center">
+      <EmptyState
+        icon={<HistoryRounded />}
+        title="No versions yet"
+        description="Apply your config to save a draft, then publish it to create a version."
+        bordered={false}
+      />
+    </Box>
   )
 }

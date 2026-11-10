@@ -1,14 +1,18 @@
 import uuid
 
+import dramatiq
 import typer
 from sqlalchemy import or_, select
 from sqlalchemy.orm import joinedload
 
+from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import CustomerMeter, MeterReducer, Reducer, ReducerBucket
 from polar.models.reducer import ReducerKind
 from polar.postgres import create_async_engine
+from polar.redis import create_redis
 from polar.reducer.service import reducer as reducer_service
+from polar.worker import JobQueueManager
 
 from .helper import configure_script_logging, typer_async
 
@@ -59,16 +63,24 @@ async def backfill(
     configure_script_logging()
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
+    redis = create_redis("script")
+    broker = dramatiq.get_broker()
     after: uuid.UUID | None = None
     try:
-        while True:
-            async with sessionmaker.begin() as session:
-                last = await backfill_batch(session, after=after, batch_size=batch_size)
-            if last is None:
-                break
-            after = last
-            typer.echo(f"Rebuilt up to customer meter {last}")
+        # Seals enqueue outpost events: without a manager they fail and roll back.
+        async with JobQueueManager.open(broker, redis) as manager:
+            while True:
+                async with sessionmaker.begin() as session:
+                    last = await backfill_batch(
+                        session, after=after, batch_size=batch_size
+                    )
+                if last is None:
+                    break
+                await manager.flush(broker, redis)
+                after = last
+                typer.echo(f"Rebuilt up to customer meter {last}")
     finally:
+        await redis.close()
         await engine.dispose()
 
 

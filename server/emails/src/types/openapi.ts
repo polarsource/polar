@@ -2483,6 +2483,12 @@ export interface components {
        * @default false
        */
       config_as_code_enabled: boolean
+      /**
+       * Reducer Billing Enabled
+       * @description If this organization's metered usage is billed from the reducer instead of the legacy billing entries.
+       * @default false
+       */
+      reducer_billing_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

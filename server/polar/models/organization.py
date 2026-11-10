@@ -768,6 +768,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_staged_events_ingest_enabled(self) -> bool:
         return self.feature_settings.get("staged_events_ingest_enabled", False)
 
+    @property
+    def is_reducer_billing_enabled(self) -> bool:
+        return self.feature_settings.get("reducer_billing_enabled", False)
+
     products_limit: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

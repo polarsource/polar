@@ -271,6 +271,16 @@ class OrganizationFeatureSettings(Schema):
             ),
         ),
     ] = False
+    reducer_billing_enabled: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "If this organization's metered usage is billed from the reducer "
+                "instead of the legacy billing entries."
+            ),
+        ),
+    ] = False
 
 
 class OrganizationFeatureSettingsUpdate(Schema):

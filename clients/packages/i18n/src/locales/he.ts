@@ -77,7 +77,7 @@ export default {
       },
       additionalMeteredUsage: 'שימוש נוסף לפי מדידה',
       meteredChargesMayApply: 'ייתכנו חיובים נוספים לפי מדידה',
-      meteredIncluded: '{units} כלולים',
+      meteredIncluded: 'כולל {units}',
       meterUnits: {
         token: 'טוקנים',
         scalar: 'יחידות',
@@ -257,7 +257,7 @@ export default {
     trialUnavailable: {
       title: 'אין תקופת ניסיון חינם לרכישה זו',
       description:
-        'כבר השתמשת בתקופת ניסיון חינם למוצר זה, לכן יחויב סכום היום. המשך למטה כדי להשלים את הרכישה.',
+        'כבר השתמשת בתקופת ניסיון חינם למוצר זה, לכן תחויב היום. המשך למטה כדי להשלים את הרכישה.',
     },
   },
   intervals: {

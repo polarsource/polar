@@ -238,7 +238,11 @@ class BillingEntryService:
         """Like `_create_order_items`, with the metered usage read from the
         reducers instead of the pending billing entries."""
         meter_ids: set[uuid.UUID] = set()
-        if include_metered:
+        if include_metered and price_ids is None:
+            meter_ids = await billing_interval_service.get_meter_ids(
+                session, subscription
+            )
+        elif include_metered:
             meter_ids = {
                 price.meter_id
                 for price in await self._get_active_prices(

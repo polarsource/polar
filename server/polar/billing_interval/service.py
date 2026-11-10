@@ -114,6 +114,16 @@ class BillingIntervalService:
         )
         return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
 
+    async def get_meter_ids(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> set[UUID]:
+        """The meters the subscription has intervals on, including those it no
+        longer has a price for."""
+        intervals = await BillingIntervalRepository.from_session(
+            session
+        ).get_by_subscription(subscription.id)
+        return {interval.meter_id for interval in intervals}
+
     async def bill_usage(
         self,
         session: AsyncSession,

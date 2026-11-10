@@ -1839,6 +1839,32 @@ class TestCreateOrderItemsFromReducers:
                 save_fixture, customer=customer, order_items=list(order_items)
             )
 
+    async def test_bills_a_meter_the_subscription_no_longer_has_a_price_for(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, meter, tokens=20
+        )
+        metered_subscription.subscription_product_prices = []
+        await save_fixture(metered_subscription)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, reducer_cutoff=REDUCER_CUTOFF
+        ) as order_items:
+            assert [(item.product_price, item.amount) for item in order_items] == [
+                (price, 20_00)
+            ]
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
     async def test_metered_only_settles_the_given_prices(
         self,
         save_fixture: SaveFixture,
@@ -1900,6 +1926,10 @@ class TestCreateOrderItemsFromReducers:
         organization.feature_settings = {"reducer_billing_enabled": True}
         await save_fixture(organization)
         price_id = product_metered_unit.prices[0].id
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.get_meter_ids",
+            return_value={meter.id},
+        )
         mocker.patch(
             "polar.billing_entry.service.billing_interval_service.charge_usage",
             side_effect=[

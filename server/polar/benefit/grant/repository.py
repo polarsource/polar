@@ -188,6 +188,7 @@ class BenefitGrantRepository(
         benefit: Benefit,
         customer: Customer,
         *,
+        member: Member | None = None,
         options: Options = (),
     ) -> Sequence[BenefitGrant]:
         statement = (
@@ -200,6 +201,8 @@ class BenefitGrantRepository(
             )
             .options(*options)
         )
+        if member is not None:
+            statement = statement.where(BenefitGrant.member_id == member.id)
         return await self.get_all(statement)
 
     async def list_errored_by_customer_and_benefit_type(

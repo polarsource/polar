@@ -1753,72 +1753,41 @@ class TestRevokeBenefitWithMember:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
+        customer: Customer,
         subscription: Subscription,
         benefit_organization: Benefit,
-        organization: Organization,
+        member_owner: Member,
+        member_second: Member,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        """Test that revoking for one member doesn't affect another member's grant.
-
-        In B2B scenarios, each seat holder (member) belongs to the same customer.
-        """
-        customer = await create_customer(
-            save_fixture, organization=organization, email="customer@example.com"
-        )
-
-        member1 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member1@example.com",
-            name="Member 1",
-            role=MemberRole.member,
-        )
-        await save_fixture(member1)
-
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member2@example.com",
-            name="Member 2",
-            role=MemberRole.member,
-        )
-        await save_fixture(member2)
-
-        # Create grants for both members
-        grant1 = BenefitGrant(
+        target = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_owner,
             subscription=subscription,
-            customer=customer,
-            benefit=benefit_organization,
-            member_id=member1.id,
         )
-        grant1.set_granted()
-        await save_fixture(grant1)
-
-        grant2 = BenefitGrant(
+        other = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_second,
             subscription=subscription,
-            customer=customer,
-            benefit=benefit_organization,
-            member_id=member2.id,
         )
-        grant2.set_granted()
-        await save_fixture(grant2)
 
-        # Revoke for member1 only
         await benefit_grant_service.revoke_benefit(
             session,
             redis,
             customer,
             benefit_organization,
-            member=member1,
+            member=member_owner,
             subscription=subscription,
         )
 
-        # Refresh grants
-        await session.refresh(grant1)
-        await session.refresh(grant2)
-
-        # Member1's grant should be revoked
-        assert grant1.is_revoked
-
-        # Member2's grant should still be granted
-        assert grant2.is_granted
+        assert target.is_revoked
+        assert other.is_granted
+        benefit_strategy_mock.revoke.assert_awaited_once_with(
+            benefit_organization, customer, {}, attempt=1, member=member_owner
+        )

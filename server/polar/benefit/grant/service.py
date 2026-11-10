@@ -290,7 +290,7 @@ class BenefitGrantService:
         # * If there is only one grant remaining for this benefit,
         #   so the benefit remains if other grants exist via other purchases
         other_grants = await repository.list_granted_by_benefit_and_customer(
-            benefit, customer
+            benefit, customer, member=member
         )
         if benefit_strategy.should_revoke_individually or len(other_grants) < 2:
             try:

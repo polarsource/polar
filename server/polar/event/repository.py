@@ -278,8 +278,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 ).where(Event.id.in_(inserted_ids))
             )
         ).all()
-        pending_refs = {ref for _, _, ref in batch_rows if ref is not None}
-        batch_external_ids = {ext for _, ext, _ in batch_rows if ext is not None}
+        pending_refs: set[str] = set()
+        batch_external_ids: set[str] = set()
+        for _, external_id, pending_ref in batch_rows:
+            if pending_ref is not None:
+                pending_refs.add(pending_ref)
+            if external_id is not None:
+                batch_external_ids.add(external_id)
 
         # parent_1a, parent_1b, parent_1c, parent_1d
         # are all four ways we can resolve pending_parent_id to parent_id

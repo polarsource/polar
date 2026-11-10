@@ -114,7 +114,7 @@ class TestSubscribeMCPEvent:
                 "arguments": {},
                 "url": CALLBACK_URL,
                 "secret": SECRET,
-                "ttl_ms": int(timedelta(hours=48).total_seconds() * 1000),
+                "ttl_ms": 10**18,
             },
         )
 
@@ -218,6 +218,11 @@ class TestSubscribeMCPEvent:
                 {"return_value": httpx.Response(200, json={"challenge": "wrong"})},
                 "challenge_failed",
                 id="challenge_failed",
+            ),
+            pytest.param(
+                {"return_value": httpx.Response(200, json={"challenge": "é"})},
+                "challenge_failed",
+                id="challenge_non_ascii",
             ),
         ],
     )

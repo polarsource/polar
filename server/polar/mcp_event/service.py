@@ -25,7 +25,7 @@ from polar.webhook.tasks import sign_webhook
 from .catalog import MCP_EVENTS
 from .schemas import MCPEventArguments, MCPEventSubscribe, MCPEventUnsubscribe
 
-MAX_TTL = timedelta(hours=24)
+MAX_TTL_MS = 24 * 60 * 60 * 1000
 
 CallbackEndpointErrorReason = Literal[
     "connection_refused",
@@ -58,13 +58,11 @@ class MCPEventService:
         endpoint = await repository.get_mcp_subscription(organization.id, url, event)
 
         now = utc_now()
-        ttl = MAX_TTL
-        if subscribe.ttl_ms is not None:
-            ttl = min(timedelta(milliseconds=subscribe.ttl_ms), MAX_TTL)
+        ttl_ms = min(subscribe.ttl_ms or MAX_TTL_MS, MAX_TTL_MS)
         update_dict = {
             "secret": subscribe.secret,
             "secret_generated_at": now,
-            "expires_at": now + ttl,
+            "expires_at": now + timedelta(milliseconds=ttl_ms),
         }
 
         is_live = (
@@ -172,7 +170,9 @@ async def _verify_callback(
         echoed = response.json()["challenge"]
     except ValueError, KeyError, TypeError:
         echoed = None
-    if not isinstance(echoed, str) or not hmac.compare_digest(echoed, challenge):
+    if not isinstance(echoed, str) or not hmac.compare_digest(
+        echoed.encode(), challenge.encode()
+    ):
         raise CallbackEndpointError("challenge_failed")
 
 

@@ -1,4 +1,5 @@
 import contextlib
+import functools
 from collections.abc import AsyncIterator
 from datetime import timedelta
 
@@ -109,6 +110,64 @@ class TestEmailSend:
         result = await session.execute(select(EmailLog))
         log = result.scalar_one()
         assert log.deduplication_key == "some_reminder:abc:2026-4"
+
+    async def test_skips_duplicate_send_for_same_recipient(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        mock_send = mocker.patch(
+            "polar.email.tasks.email_sender.send",
+            return_value="resend_123",
+        )
+
+        for to_email_addr in (
+            "test@example.com",
+            "test@example.com",
+            "other@example.com",
+        ):
+            await email_send(
+                to_email_addr=to_email_addr,
+                subject="Test Subject",
+                html_content="<p>Hello</p>",
+                from_name="Polar",
+                from_email_addr="noreply@polar.sh",
+                email_headers=None,
+                reply_to_name=None,
+                reply_to_email_addr=None,
+                deduplication_key="some_reminder:abc:2026-4",
+            )
+
+        assert [c.kwargs["to_email_addr"] for c in mock_send.call_args_list] == [
+            "test@example.com",
+            "other@example.com",
+        ]
+
+    async def test_failed_send_can_be_retried(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        mock_send = mocker.patch(
+            "polar.email.tasks.email_sender.send",
+            side_effect=[SendEmailError("connection refused"), "resend_123"],
+        )
+        send = functools.partial(
+            email_send,
+            to_email_addr="test@example.com",
+            subject="Test Subject",
+            html_content="<p>Hello</p>",
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            deduplication_key="some_reminder:abc:2026-4",
+        )
+
+        with pytest.raises(SendEmailError):
+            await send()
+        await send()
+
+        assert mock_send.call_count == 2
 
     async def test_template_email_extracts_organization_id(
         self,

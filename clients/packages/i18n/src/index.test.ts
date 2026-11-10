@@ -52,7 +52,7 @@ describe('getLocaleDirection', () => {
     expect(getLocaleDirection(locale)).toBe('rtl')
   })
 
-  it.each([...SUPPORTED_LOCALES])(
+  it.each(SUPPORTED_LOCALES.filter((locale) => !['ar', 'he'].includes(locale)))(
     'is ltr for supported locale %s',
     (locale) => {
       expect(getLocaleDirection(locale)).toBe('ltr')

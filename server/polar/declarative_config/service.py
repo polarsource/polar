@@ -13,16 +13,12 @@ from polar.authz.service import assert_organization_permission
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
-from polar.catalog.repository import (
-    CatalogBenefitRepository,
-    CatalogProductRepository,
-    CatalogRepository,
-)
+from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
-from polar.models import Agent, Benefit, Catalog, Organization, Product, User
+from polar.models import Agent, Benefit, Organization, Product, User
 from polar.models.catalog import CatalogStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.oauth2.exceptions import InsufficientScopeError
@@ -37,7 +33,15 @@ from polar.webhook.repository import WebhookEndpointRepository
 from polar.webhook.schemas import WebhookEndpointCreate, WebhookEndpointUpdate
 from polar.webhook.service import webhook as webhook_service
 
-from . import benefits, catalogs, external_ids, products, removals, validation
+from . import (
+    benefits,
+    catalogs,
+    drafts,
+    external_ids,
+    products,
+    removals,
+    validation,
+)
 from .auth import SECTION_SCOPES
 from .export import EXPORTED_SECTIONS, export_config
 from .schemas import (
@@ -252,28 +256,6 @@ def _external_ids_by_id(*ids: Mapping[str, UUID]) -> dict[str, str]:
     return {str(id): external_id for each in ids for external_id, id in each.items()}
 
 
-_INTERVAL_FIELDS = (
-    "recurring_interval",
-    "recurring_interval_count",
-    "meter_interval",
-    "meter_interval_count",
-)
-
-
-def _keeps_intervals(
-    change: ProductChange, draft_product: Product, meter_ids: dict[str, UUID]
-) -> bool:
-    """Whether the draft's row can take the config in place: a product's
-    intervals can't be updated. Against live, changing them is an error."""
-    if change.existing is not None:
-        return True
-    created = products.product_create(change.config, None, meter_ids)
-    return all(
-        getattr(draft_product, name) == getattr(created, name, None)
-        for name in _INTERVAL_FIELDS
-    )
-
-
 class DeclarativeConfigService:
     async def init(
         self,
@@ -421,7 +403,7 @@ class DeclarativeConfigService:
         if draft is not None and publish:
             await catalog_service.discard_draft(session, draft)
         draft_benefits, draft_products = (
-            await self._get_draft_rows(session, draft, config)
+            await drafts.rows(session, draft, config)
             if draft is not None and not publish
             else ({}, {})
         )
@@ -887,38 +869,6 @@ class DeclarativeConfigService:
             )
         return results, meter_ids
 
-    async def _get_draft_rows(
-        self, session: AsyncSession, draft: Catalog, config: Config
-    ) -> tuple[dict[str, Benefit], dict[str, Product]]:
-        """The rows the draft created, by `external_id`. Applying to the draft
-        again updates them in place."""
-        benefits = await CatalogBenefitRepository.from_session(
-            session
-        ).get_benefits_by_external_ids(
-            draft.id,
-            [benefit.external_id for benefit in config.benefits],
-            options=BenefitRepository.from_session(session).get_eager_options(),
-        )
-        products = await CatalogProductRepository.from_session(
-            session
-        ).get_products_by_external_ids(
-            draft.id,
-            [product.external_id for product in config.products],
-            options=ProductRepository.from_session(session).get_eager_options(),
-        )
-        return (
-            {
-                benefit.external_id: benefit
-                for benefit in benefits
-                if benefit.external_id is not None and benefit.catalog_id == draft.id
-            },
-            {
-                product.external_id: product
-                for product in products
-                if product.external_id is not None and product.catalog_id == draft.id
-            },
-        )
-
     async def _apply_benefits(
         self,
         session: AsyncSession,
@@ -1041,7 +991,7 @@ class DeclarativeConfigService:
                 draft_product
                 if draft_product is not None
                 and (product is None or copy_on_write)
-                and _keeps_intervals(change, draft_product, meter_ids)
+                and drafts.keeps_intervals(change, draft_product, meter_ids)
                 else None
             )
             try:

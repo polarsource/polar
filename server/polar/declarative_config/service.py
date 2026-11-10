@@ -982,9 +982,6 @@ class DeclarativeConfigService:
                             previous = change.existing or change.previous
                             if previous is not None:
                                 catalog_service.copy_product_settings(previous, product)
-                                if change.existing is None:
-                                    # Listing it in the config sells it again.
-                                    product.is_archived = False
                                 if config.meter_interval is None:
                                     update_dict["meter_interval"] = (
                                         previous.meter_interval

@@ -672,17 +672,8 @@ async def diff_benefits(
             organization.id, external_ids, for_update=for_update
         )
     existing_benefits = {benefit.external_id: benefit for benefit in benefits}
-    retired_benefits = (
-        await repository.get_retired_by_external_ids(
-            organization.id,
-            [
-                config.external_id
-                for config in benefit_configs
-                if not config.deprecated and config.external_id not in existing_benefits
-            ],
-        )
-        if catalog is None
-        else {}
+    retired_benefits = await repository.get_retired_by_external_ids(
+        organization.id, [id for id in external_ids if id not in existing_benefits]
     )
     meter_external_ids = _external_ids_by_id(meters)
     changes: list[BenefitChange] = []
@@ -903,17 +894,8 @@ async def diff_products(
             catalog.id, external_ids, options=repository.get_eager_options()
         )
     existing_products = {product.external_id: product for product in products}
-    retired_products = (
-        await repository.get_retired_by_external_ids(
-            organization.id,
-            [
-                config.external_id
-                for config in product_configs
-                if not config.deprecated and config.external_id not in existing_products
-            ],
-        )
-        if catalog is None
-        else {}
+    retired_products = await repository.get_retired_by_external_ids(
+        organization.id, [id for id in external_ids if id not in existing_products]
     )
     meter_external_ids = _external_ids_by_id(meters)
     benefit_external_ids = _external_ids_by_id(benefits)

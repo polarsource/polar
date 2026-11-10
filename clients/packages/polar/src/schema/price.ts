@@ -172,7 +172,7 @@ class TierBuilder {
     return new TierBuilder(bound)
   }
 
-  /** The tier's rate, one amount per currency. */
+  /** The price of each unit in this tier, one amount per currency. */
   amount<const Rates extends Amounts<Money>>(
     ...amounts: Rates
   ): PricedTier<Rates[number]> {
@@ -335,16 +335,18 @@ class QuantityBuilder<Type extends QuantityType> {
   }
 
   /**
-   * Each tier prices only the units inside it. With $10 up to 5 and $8
-   * after, 10 units cost 5 × $10 + 5 × $8 = $90. Compare `.volume()`.
+   * Each tier charges only for the units that fall in it. With $10 for up to
+   * 5 units and $8 after, 10 units cost 5 × $10 + 5 × $8 = $90.
+   * `.volume()` would charge $80.
    */
   graduated(...tiers: TierList<Tier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
   /**
-   * The tier the total lands in prices every unit. With $10 up to 5 and $8
-   * after, 10 units cost 10 × $8 = $80. Compare `.graduated()`.
+   * Every unit is charged at the price of the tier the total falls in. With
+   * $10 for up to 5 units and $8 after, 10 units cost 10 × $8 = $80.
+   * `.graduated()` would charge $90.
    */
   volume(...tiers: TierList<VolumeTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
@@ -354,7 +356,10 @@ class QuantityBuilder<Type extends QuantityType> {
 class FlatMeteredBuilder<Meter extends string> {
   constructor(private readonly meter: Meter) {}
 
-  /** The rate per unit of usage, one amount per currency. */
+  /**
+   * The price of each unit of usage, one amount per currency. Use
+   * `perThousand()` or `perMillion()` for fractions of a cent.
+   */
   amount(...amounts: Amounts<Money>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'flat', [
       new PricedTier(undefined, amounts),
@@ -371,16 +376,18 @@ class MeteredBuilder<Meter extends string> {
   }
 
   /**
-   * Each tier prices only the units inside it. With $10 up to 5 and $8
-   * after, 10 units cost 5 × $10 + 5 × $8 = $90. Compare `.volume()`.
+   * Each tier charges only for the units that fall in it. With $10 for up to
+   * 5 units and $8 after, 10 units cost 5 × $10 + 5 × $8 = $90.
+   * `.volume()` would charge $80.
    */
   graduated(...tiers: TierList<UsageTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'graduated', tiers)
   }
 
   /**
-   * The tier the total lands in prices every unit. With $10 up to 5 and $8
-   * after, 10 units cost 10 × $8 = $80. Compare `.graduated()`.
+   * Every unit is charged at the price of the tier the total falls in. With
+   * $10 for up to 5 units and $8 after, 10 units cost 10 × $8 = $80.
+   * `.graduated()` would charge $90.
    */
   volume(...tiers: TierList<UsageVolumeTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'volume', volumeTiers(tiers))

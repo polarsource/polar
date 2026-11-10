@@ -12,7 +12,7 @@ publishes **no host ports** — reach it with `dev docker exec <service> ...`.
 
 ## Infrastructure services (project `polar-shared`)
 
-### db (PostgreSQL 15.1)
+### db (PostgreSQL 18.6)
 - Primary database. Reached at `db:5432` on the `polar-shared` network.
 - Credentials: `polar` / `polar`.
 - One logical database per instance: `polar_dev_<N>`.

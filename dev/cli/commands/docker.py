@@ -743,10 +743,15 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             if not result or result.returncode != 0:
                 console.print("[red]Failed to start shared infra[/red]")
                 raise typer.Exit(1)
-        elif monitoring:
-            console.print(
-                "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
-            )
+        else:
+            result = run_command(_shared_compose_cmd() + ["up", "-d", "db"])
+            if not result or result.returncode != 0:
+                console.print("[red]Failed to update shared db[/red]")
+                raise typer.Exit(1)
+            if monitoring:
+                console.print(
+                    "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
+                )
 
         env = _build_compose_env(instance)
         cmd = _build_compose_cmd(instance)

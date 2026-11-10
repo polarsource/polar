@@ -276,12 +276,9 @@ def deserialize(data: object, model: typing_extensions.TypeForm[_ModelT]) -> _Mo
         raise PolarDeserializationError(e) from e
 
 
-E = typing.TypeVar("E", bound=PolarClientError)
-
-
 def _handle_errors(
     response: httpx.Response,
-    errors: dict[int, type[E]] | None = None,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     status_code = response.status_code
 
@@ -314,7 +311,7 @@ def _handle_errors(
 def parse_response_json(
     response: httpx.Response,
     response_model: typing.Any | None = None,
-    errors: dict[int, type[E]] | None = None,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> typing.Any:
     _handle_errors(response, errors)
 
@@ -329,7 +326,7 @@ def parse_response_json(
 
 def parse_response_text(
     response: httpx.Response,
-    errors: dict[int, type[E]] | None = None,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> str:
     _handle_errors(response, errors)
     return response.text
@@ -337,6 +334,6 @@ def parse_response_text(
 
 def parse_response_none(
     response: httpx.Response,
-    errors: dict[int, type[E]] | None = None,
+    errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     _handle_errors(response, errors)

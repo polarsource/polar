@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, update
 
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.utils import utc_now
 from polar.models import OrganizationDomain
 
 
@@ -46,3 +47,13 @@ class OrganizationDomainRepository(
             OrganizationDomain.domain == domain
         )
         return await self.get_one_or_none(statement)
+
+    async def soft_delete_by_organization(self, organization_id: UUID) -> None:
+        await self.session.execute(
+            update(OrganizationDomain)
+            .where(
+                OrganizationDomain.organization_id == organization_id,
+                OrganizationDomain.deleted_at.is_(None),
+            )
+            .values(deleted_at=utc_now())
+        )

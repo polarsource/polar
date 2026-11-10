@@ -357,7 +357,9 @@ class BenefitGrantService:
         # When a member_id is provided, only check that member's grants
         if member_id is not None:
             member_repository = MemberRepository.from_session(session)
-            member = await member_repository.get_by_id(member_id)
+            member = await member_repository.get_by_id(
+                member_id, include_deleted=task == "revoke"
+            )
             if member is not None:
                 existing_grants = await repository.list_by_member_and_scope(
                     member, **scope

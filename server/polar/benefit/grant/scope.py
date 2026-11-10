@@ -119,7 +119,9 @@ async def resolve_member(
     member_repository = MemberRepository.from_session(session)
 
     if member_id is not None:
-        member = await member_repository.get_by_id(member_id)
+        member = await member_repository.get_by_id(
+            member_id, include_deleted=include_deleted
+        )
         if member is None:
             log.error(
                 "Member not found for seat-based benefit grant",

@@ -1,10 +1,14 @@
 import json
 import os
+import re
 import urllib.request
 
 import boto3
 
 table = boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"])
+
+ACCOUNT_ID_RE = re.compile(r":\d{12}:")
+ENV_PREFIX_RE = re.compile(r"\bpolar-(?:production|sandbox|test)-")
 
 
 def post_to_slack(text):
@@ -22,6 +26,11 @@ def post_to_slack(text):
         raise RuntimeError(f"Slack postMessage failed: {body.get('error')}")
 
 
+def normalize_resource_name(value):
+    value = ACCOUNT_ID_RE.sub(":*:", value)
+    return ENV_PREFIX_RE.sub("polar-", value)
+
+
 def dedup_key(finding):
     vulnerability_id = finding.get("packageVulnerabilityDetails", {}).get(
         "vulnerabilityId"
@@ -31,8 +40,9 @@ def dedup_key(finding):
     resource = finding["resources"][0]
     name = resource.get("tags", {}).get("Name")
     if resource["type"] == "AWS_EC2_INSTANCE" and name:
-        return f"{vulnerability_id}#{finding['awsAccountId']}/{name}"
-    return f"{vulnerability_id}#{resource['id'].split('/sha256:')[0]}"
+        return f"{vulnerability_id}#{normalize_resource_name(name)}"
+    resource_id = normalize_resource_name(resource["id"].split("/sha256:")[0])
+    return f"{vulnerability_id}#{resource_id}"
 
 
 def handler(event, context):

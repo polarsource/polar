@@ -9,6 +9,7 @@ import {
   flattenKeysToStrings,
   getPluralCategoryKeys,
   getPluralCategorySamples,
+  getSharedExactCounts,
   getStringValue,
   hasLlmContext,
   isLeafNode,
@@ -481,31 +482,77 @@ describe('findOrphanedKeys', () => {
   })
 })
 
+describe('getSharedExactCounts', () => {
+  it('returns the exact counts every plural defines', () => {
+    const sourceKeys = new Map<string, string>([
+      ['seats.=1', '# seat'],
+      ['seats.other', '# seats'],
+      ['every.=1', 'Every day'],
+      ['every.=2', 'Every other day'],
+      ['every.other', 'Every # days'],
+    ])
+    const pluralPaths = new Set(['seats', 'every'])
+
+    expect(getSharedExactCounts(sourceKeys, pluralPaths)).toEqual(new Set([1]))
+  })
+
+  it('returns nothing when there are no plurals', () => {
+    expect(getSharedExactCounts(new Map(), new Set())).toEqual(new Set())
+  })
+})
+
 describe('getPluralCategoryKeys', () => {
+  const sharedExactCounts = new Set([0, 1, 2])
+
   it('returns few and many for Polish', () => {
-    expect(getPluralCategoryKeys('pl')).toEqual(['few', 'many'])
+    expect(getPluralCategoryKeys('pl', sharedExactCounts)).toEqual([
+      'few',
+      'many',
+    ])
   })
 
   it('includes one when it covers more than the count 1', () => {
-    expect(getPluralCategoryKeys('fr')).toEqual(['one', 'many'])
-    expect(getPluralCategoryKeys('ru')).toEqual(['one', 'few', 'many'])
+    expect(getPluralCategoryKeys('fr', sharedExactCounts)).toEqual([
+      'one',
+      'many',
+    ])
+    expect(getPluralCategoryKeys('ru', sharedExactCounts)).toEqual([
+      'one',
+      'few',
+      'many',
+    ])
   })
 
-  it('excludes zero, one and two when they only cover their exact count', () => {
-    expect(getPluralCategoryKeys('de')).toEqual([])
-    expect(getPluralCategoryKeys('en')).toEqual([])
-    expect(getPluralCategoryKeys('ar')).toEqual(['few', 'many'])
+  it('excludes zero, one and two when every plural defines their exact count', () => {
+    expect(getPluralCategoryKeys('de', sharedExactCounts)).toEqual([])
+    expect(getPluralCategoryKeys('en', sharedExactCounts)).toEqual([])
+    expect(getPluralCategoryKeys('ar', sharedExactCounts)).toEqual([
+      'few',
+      'many',
+    ])
+  })
+
+  it('includes zero and two when some plural lacks their exact count', () => {
+    expect(getPluralCategoryKeys('ar', new Set([1]))).toEqual([
+      'zero',
+      'two',
+      'few',
+      'many',
+    ])
+    expect(getPluralCategoryKeys('he', new Set([1]))).toEqual(['two'])
   })
 
   it('returns nothing for locales with only other', () => {
-    expect(getPluralCategoryKeys('ja')).toEqual([])
+    expect(getPluralCategoryKeys('ja', sharedExactCounts)).toEqual([])
   })
 })
 
 describe('getPluralCategorySamples', () => {
   it('lists example counts per category', () => {
-    expect(getPluralCategorySamples('ru').one).toEqual([1, 21, 31, 41, 51])
-    expect(getPluralCategorySamples('fr').one).toEqual([0, 1])
+    expect(getPluralCategorySamples('ru', new Set([1])).one).toEqual([
+      1, 21, 31, 41, 51,
+    ])
+    expect(getPluralCategorySamples('fr', new Set([1])).one).toEqual([0, 1])
   })
 })
 

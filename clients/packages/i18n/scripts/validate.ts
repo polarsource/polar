@@ -8,6 +8,7 @@ import {
   flattenKeys,
   flattenKeysToStrings,
   getPluralCategoryKeys,
+  getSharedExactCounts,
   resolveSourceKey,
 } from './utils'
 
@@ -39,6 +40,7 @@ async function validate() {
   const sourceKeys = flattenKeys(defaultLocale)
   const sourceStrings = flattenKeysToStrings(defaultLocale)
   const pluralPaths = findPluralPaths(defaultLocale as Record<string, unknown>)
+  const sharedExactCounts = getSharedExactCounts(sourceKeys, pluralPaths)
   const targetLocales = SUPPORTED_LOCALES.filter(
     (l): l is TranslatedLocale => l !== DEFAULT_LOCALE,
   )
@@ -80,7 +82,7 @@ async function validate() {
       }
     }
 
-    const pluralCategoryKeys = getPluralCategoryKeys(locale)
+    const pluralCategoryKeys = getPluralCategoryKeys(locale, sharedExactCounts)
     const extraKeys: string[] = []
     for (const key of translationKeys.keys()) {
       if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {

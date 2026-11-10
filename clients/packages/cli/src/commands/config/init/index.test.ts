@@ -792,6 +792,12 @@ describe('polar config init', () => {
       ).toBe('--external-id p-1 is not <id>=<external ID>')
       expect(
         message(
+          (await run(['--json', '--external-id', 'p-1=_pro'], {}, { unkeyed }))
+            .exit,
+        ),
+      ).toBe('--external-id p-1=_pro is not a valid external ID')
+      expect(
+        message(
           (
             await run(
               ['--json', '--confirm', '--external-id', 'p-1=team'],

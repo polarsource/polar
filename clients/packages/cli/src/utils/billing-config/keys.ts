@@ -1,3 +1,5 @@
+import { ExternalId } from '@polar-sh/polar'
+import { Schema } from 'effect'
 import { printable } from '@/utils/ui'
 import type {
   ConfigDocument,
@@ -29,8 +31,13 @@ export const slugify = (name: string) =>
 
 export const typedKey = (text: string) => {
   const key = text.toLowerCase().replace(/ /g, '_')
-  return /^[a-z0-9_-]+$/.test(key) ? key : undefined
+  return /^[a-z0-9_.:-]+$/.test(key) ? key : undefined
 }
+
+export const isExternalId = Schema.is(ExternalId)
+
+export const EXTERNAL_ID_RULE =
+  'use only letters, digits, "_", "-", "." and ":", starting with a letter or digit'
 
 const ADVERBS: Record<string, string> = {
   day: 'daily',

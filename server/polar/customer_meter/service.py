@@ -6,6 +6,7 @@ from functools import partial
 from typing import Any
 
 import logfire
+from redis import RedisError
 from sqlalchemy import ColumnElement, Float, Select, and_, func, or_, select, union_all
 from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
@@ -140,7 +141,7 @@ class CustomerMeterService:
         updated = False
         async for meter in repository.stream(statement):
             customer_meter, meter_updated = await self.update_customer_meter(
-                session, customer, meter
+                session, redis, customer, meter
             )
             if meter_updated and customer_meter is not None:
                 await reducer_service.log_customer_meter_comparison(
@@ -159,6 +160,7 @@ class CustomerMeterService:
     async def update_customer_meter(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
@@ -213,9 +215,9 @@ class CustomerMeterService:
         event_repository = EventRepository.from_session(session)
 
         with logfire.span("get_usage"):
-            usage_units = await self._get_usage_quantity(session, customer, meter)
-
-        customer_meter.consumed_units = Decimal(usage_units)
+            customer_meter.consumed_units = await self._get_consumed_units(
+                session, redis, customer, meter
+            )
 
         with logfire.span("get_credits"):
             credit_events = await self._get_credit_events(
@@ -236,6 +238,7 @@ class CustomerMeterService:
     async def credit(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         credit_create: CustomerMeterCreditsCreate,
     ) -> Event:
@@ -343,7 +346,7 @@ class CustomerMeterService:
         try:
             async with session.begin_nested():
                 _, updated = await self.update_customer_meter(
-                    session, customer, meter, activate_meter=True
+                    session, redis, customer, meter, activate_meter=True
                 )
             if updated:
                 enqueue_job("customer.state_changed", customer.id)
@@ -369,6 +372,7 @@ class CustomerMeterService:
     async def reverse_credit(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Event:
@@ -469,7 +473,7 @@ class CustomerMeterService:
         await event_service.create_event(session, event)
 
         _, updated = await self.update_customer_meter(
-            session, customer, meter, activate_meter=True
+            session, redis, customer, meter, activate_meter=True
         )
         if updated:
             enqueue_job("customer.state_changed", customer.id)
@@ -647,6 +651,27 @@ class CustomerMeterService:
         if ingested_at_lower_bound is not None:
             statement = statement.where(Event.ingested_at >= ingested_at_lower_bound)
         return statement.order_by(Event.ingested_at.desc()).limit(1)
+
+    async def _get_consumed_units(
+        self, session: AsyncSession, redis: Redis, customer: Customer, meter: Meter
+    ) -> Decimal:
+        """The customer's usage since the meter's latest reset: from the reducer when
+        enabled, from the events otherwise or when the reducer can't answer."""
+        if settings.CUSTOMER_METER_UNITS_FROM_REDUCER:
+            try:
+                consumed_units, _ = await reducer_service.get_customer_meter_units(
+                    session, redis, customer, meter.id
+                )
+            except RedisError:
+                logfire.warn(
+                    "Could not read consumed units from the reducer",
+                    customer_id=str(customer.id),
+                    meter_id=str(meter.id),
+                )
+            else:
+                if consumed_units is not None:
+                    return consumed_units
+        return Decimal(await self._get_usage_quantity(session, customer, meter))
 
     async def _get_usage_quantity(
         self,

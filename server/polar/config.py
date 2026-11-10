@@ -126,6 +126,9 @@ class Settings(BaseSettings):
 
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
+    # Test environments only: invoices, rollovers and credit reversals still read
+    # the events, so a customer's balance could disagree with their invoice.
+    CUSTOMER_METER_UNITS_FROM_REDUCER: bool = False
 
     OUTPOST_PULL_INTERVAL: timedelta = timedelta(seconds=30)
 

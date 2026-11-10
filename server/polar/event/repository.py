@@ -269,29 +269,46 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not inserted_ids:
             return []
 
+        # By primary key: a filter on pending refs would make the planner scan
+        # every pending row of ix_events_org_pending_parent instead.
+        batch_rows = (
+            await self.session.execute(
+                select(
+                    Event.id, Event.external_id, Event.pending_parent_external_id
+                ).where(Event.id.in_(inserted_ids))
+            )
+        ).all()
+        pending_refs: set[str] = set()
+        batch_external_ids: set[str] = set()
+        for _, external_id, pending_ref in batch_rows:
+            if pending_ref is not None:
+                pending_refs.add(pending_ref)
+            if external_id is not None:
+                batch_external_ids.add(external_id)
+
         # parent_1a, parent_1b, parent_1c, parent_1d
         # are all four ways we can resolve pending_parent_id to parent_id
         # (pointing to a internal event ID).
-        parent_1a = Event.__table__.alias("parent_1a")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1a.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1a.c.organization_id,
-                Event.pending_parent_external_id == parent_1a.c.external_id,
-                Event.id.in_(inserted_ids),
-                Event.id != parent_1a.c.id,
+        if pending_refs:
+            parent_1a = Event.__table__.alias("parent_1a")
+            await self.session.execute(
+                update(Event)
+                .values(parent_id=parent_1a.c.id, pending_parent_external_id=None)
+                .where(
+                    Event.organization_id == parent_1a.c.organization_id,
+                    Event.pending_parent_external_id == parent_1a.c.external_id,
+                    Event.id.in_(inserted_ids),
+                    Event.id != parent_1a.c.id,
+                    # Implied by the join; makes the planner probe
+                    # ix_events_org_pending_parent instead of scanning it
+                    Event.pending_parent_external_id.in_(pending_refs),
+                )
             )
-        )
 
-        batch_pending_rows = await self.session.execute(
-            select(Event.id, Event.pending_parent_external_id).where(
-                Event.id.in_(inserted_ids),
-                Event.pending_parent_external_id.is_not(None),
-            )
-        )
         uuid_pending_in_batch: list[UUID] = []
-        for event_id, pending_ref in batch_pending_rows.all():
+        for event_id, _, pending_ref in batch_rows:
+            if pending_ref is None:
+                continue
             try:
                 UUID(pending_ref)
             except ValueError, TypeError:
@@ -311,18 +328,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 )
             )
 
-        parent_1c = Event.__table__.alias("parent_1c")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1c.c.organization_id,
-                Event.pending_parent_external_id.is_not(None),
-                Event.pending_parent_external_id == parent_1c.c.external_id,
-                parent_1c.c.id.in_(inserted_ids),
-                Event.id != parent_1c.c.id,
+        if batch_external_ids:
+            parent_1c = Event.__table__.alias("parent_1c")
+            await self.session.execute(
+                update(Event)
+                .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
+                .where(
+                    Event.organization_id == parent_1c.c.organization_id,
+                    Event.pending_parent_external_id.is_not(None),
+                    Event.pending_parent_external_id == parent_1c.c.external_id,
+                    parent_1c.c.id.in_(inserted_ids),
+                    Event.id != parent_1c.c.id,
+                    # Implied by the join; makes the planner probe
+                    # ix_events_org_pending_parent instead of scanning it
+                    Event.pending_parent_external_id.in_(batch_external_ids),
+                )
             )
-        )
 
         # Pending refs are matched against the canonical lowercase string of
         # batch ids; non-canonical (e.g. uppercase) refs won't link here, but

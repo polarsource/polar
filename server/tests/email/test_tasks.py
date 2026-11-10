@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import functools
 from collections.abc import AsyncIterator
@@ -142,13 +143,18 @@ class TestEmailSend:
             "other@example.com",
         ]
 
+    @pytest.mark.parametrize(
+        "error",
+        [SendEmailError("connection refused"), asyncio.CancelledError()],
+    )
     async def test_failed_send_can_be_retried(
         self,
+        error: BaseException,
         mocker: MockerFixture,
     ) -> None:
         mock_send = mocker.patch(
             "polar.email.tasks.email_sender.send",
-            side_effect=[SendEmailError("connection refused"), "resend_123"],
+            side_effect=[error, "resend_123"],
         )
         send = functools.partial(
             email_send,
@@ -163,7 +169,7 @@ class TestEmailSend:
             deduplication_key="some_reminder:abc:2026-4",
         )
 
-        with pytest.raises(SendEmailError):
+        with pytest.raises(type(error)):
             await send()
         await send()
 

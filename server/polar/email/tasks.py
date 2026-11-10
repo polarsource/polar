@@ -89,8 +89,9 @@ async def email_send(
             attachments=attachments,
             deduplication_key=deduplication_key,
         )
-    except Exception:
-        # Let the retry send it.
+    except BaseException:
+        # Let the retry send it. BaseException, since task timeouts surface as
+        # CancelledError / TimeLimitExceeded.
         if claim_key is not None:
             await RedisMiddleware.get().delete(claim_key)
         raise

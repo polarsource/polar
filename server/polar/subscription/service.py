@@ -1491,7 +1491,9 @@ class SubscriptionService:
         existing one. Meters are taken from the metered prices and from the
         granted meter-credit benefits, so a meter that is only credited is reset
         too, whether or not the renewal payment succeeds: its credits were for
-        the period that just ended.
+        the period that just ended. A meter that a live subscription started
+        earlier also bills or credits is left to that subscription, which owns
+        it.
         """
         meters: dict[tuple[uuid.UUID, uuid.UUID], tuple[Customer, Meter]] = {
             (subscription.customer_id, price.meter_id): (
@@ -1518,7 +1520,12 @@ class SubscriptionService:
                 if meter is not None:
                     meters[(grant.customer_id, meter_id)] = (grant.customer, meter)
 
+        repository = SubscriptionRepository.from_session(session)
         for customer, meter in meters.values():
+            if await repository.has_earlier_subscription_on_meter(
+                subscription, customer.id, meter.id
+            ):
+                continue
             await self.reset_customer_meter(
                 session,
                 subscription.organization,

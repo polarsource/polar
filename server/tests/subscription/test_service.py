@@ -4914,6 +4914,32 @@ class TestResetMeters:
         reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
         assert len(reset_events) == 1
 
+    async def test_leaves_meter_of_earlier_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        earlier = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            started_at=utc_now() - timedelta(days=1),
+        )
+        later = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            started_at=utc_now(),
+        )
+
+        await subscription_service.reset_meters(session, later)
+        assert await get_all_by_name(session, SystemEvent.meter_reset) == []
+
+        await subscription_service.reset_meters(session, earlier)
+        assert len(await get_all_by_name(session, SystemEvent.meter_reset)) == 1
+
 
 @pytest.mark.anyio
 class TestUpdateMeters:

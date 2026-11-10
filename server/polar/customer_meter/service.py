@@ -6,7 +6,7 @@ from functools import partial
 from typing import Any
 
 import logfire
-from sqlalchemy import Float, Select, func, or_, select, union_all
+from sqlalchemy import ColumnElement, Float, Select, and_, func, or_, select, union_all
 from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
@@ -149,6 +149,7 @@ class CustomerMeterService:
                     customer_meter,
                     partial(self._get_late_usage, session, customer, meter),
                     partial(self._get_usage_quantity, session, customer, meter),
+                    partial(self._get_usage_ingested_before, session, customer, meter),
                 )
             updated = updated or meter_updated
 
@@ -734,6 +735,39 @@ class CustomerMeterService:
         if meter_reset_event is None:
             return UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
 
+        return await self._get_usage_summary(
+            session,
+            customer,
+            meter,
+            meter_reset_event,
+            Event.timestamp < meter_reset_event.timestamp,
+        )
+
+    async def _get_usage_ingested_before(
+        self, session: AsyncSession, customer: Customer, meter: Meter, before: datetime
+    ) -> UsageSummary:
+        """Summary of the usage ingested since the meter's latest reset but before
+        `before`, leaving out the late usage."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+        clause = Event.ingested_at < before
+        if meter_reset_event is not None:
+            clause = and_(clause, Event.timestamp >= meter_reset_event.timestamp)
+        return await self._get_usage_summary(
+            session, customer, meter, meter_reset_event, clause
+        )
+
+    async def _get_usage_summary(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None,
+        clause: ColumnElement[bool],
+    ) -> UsageSummary:
+        event_repository = EventRepository.from_session(session)
         value_column = self._get_raw_aggregation_column(meter)
         values = union_all(
             *(
@@ -745,10 +779,7 @@ class CustomerMeterService:
                     by_external_id=by_external_id,
                     include_system_events=False,
                 )
-                .where(
-                    Event.source == EventSource.user,
-                    Event.timestamp < meter_reset_event.timestamp,
-                )
+                .where(Event.source == EventSource.user, clause)
                 .with_only_columns(value_column.label("value"))
                 for by_external_id in (False, True)
                 if not by_external_id or customer.external_id is not None

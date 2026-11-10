@@ -3,7 +3,10 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from pytest_mock import MockerFixture
+from redis import RedisError
 
+from polar.config import settings
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
@@ -24,10 +27,12 @@ from polar.models import (
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageSummary
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_customer,
     create_event,
     create_meter,
 )
@@ -1578,3 +1583,127 @@ class TestBulkEventProcessing:
         assert updated is True
         assert customer_meter.consumed_units == Decimal(event_count * tokens_per_event)
         assert customer_meter.balance == Decimal(-event_count * tokens_per_event)
+
+
+@pytest.fixture
+async def late_usage(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    redis: Redis,
+    organization: Organization,
+) -> tuple[Customer, Meter]:
+    """A reset 30 minutes ago, 3 tokens timestamped after it, and 5 tokens timestamped
+    before it but ingested after it."""
+    mocker.patch("polar.reducer.service.enqueue_job")
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.sum, property="tokens"
+        ),
+    )
+    await reducer_service.sync_meter(session, meter)
+    customer = await create_customer(save_fixture, organization=organization)
+    now = utc_now()
+    reset_at = now - timedelta(minutes=30)
+    await create_event(
+        save_fixture,
+        organization=organization,
+        customer=customer,
+        source=EventSource.system,
+        name=SystemEvent.meter_reset,
+        timestamp=reset_at,
+        ingested_at=reset_at,
+        metadata={"meter_id": str(meter.id)},
+    )
+    events = [
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=timestamp,
+            ingested_at=ingested_at,
+            metadata={"tokens": tokens},
+        )
+        for timestamp, ingested_at, tokens in (
+            (now - timedelta(minutes=60), now - timedelta(minutes=60), 2),
+            (now - timedelta(minutes=10), now - timedelta(minutes=10), 3),
+            (now - timedelta(minutes=40), now, 5),
+        )
+    ]
+    await reducer_service.rollup(session, redis, organization.id, events)
+    return customer, meter
+
+
+@pytest.mark.anyio
+class TestUpdateCustomerMeterFromReducer:
+    @pytest.fixture(autouse=True)
+    def enabled(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "CUSTOMER_METER_UNITS_FROM_REDUCER", True)
+
+    async def test_counts_usage_timestamped_since_the_reset(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(3)
+
+    async def test_falls_back_to_legacy_when_redis_fails(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        mocker.patch(
+            "polar.reducer.redis_store.get_bucket_totals", side_effect=RedisError
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(8)
+
+    async def test_falls_back_to_legacy_without_a_reducer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            metadata={"tokens": 4},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(4)

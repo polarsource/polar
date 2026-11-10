@@ -119,27 +119,27 @@ export type PriceConfig = typeof PriceConfig.Type
 type Amounts<Rate extends Money> = readonly [amount: Rate, ...amounts: Rate[]]
 
 /** A tier without amounts is free: 0 in each currency the price uses. */
-export interface Tier<Rate extends Money = Money> {
+export interface TierOf<Rate extends Money = Money> {
   readonly bound: number | undefined
   readonly amounts: ReadonlyArray<Rate>
 }
 
 type TierList<T> = readonly [tier: T, ...tiers: T[]]
 
-type Tiers<Rate extends Money> = TierList<Tier<Rate>>
+type Tiers<Rate extends Money> = TierList<TierOf<Rate>>
 
 /** Volume pricing charges every unit at the matching tier's rate, so no units are ever included. */
-type VolumeTier<Rate extends Money> = Tier<Rate> & {
+type VolumeTierOf<Rate extends Money> = TierOf<Rate> & {
   readonly included?: never
 }
 
-type UnitTier = Tier<Money<1>>
-type UnitVolumeTier = VolumeTier<Money<1>>
+type Tier = TierOf<Money<1>>
+type VolumeTier = VolumeTierOf<Money<1>>
 /** Usage tiers can charge per thousand or per million units. */
-type UsageTier = Tier<Money>
-type UsageVolumeTier = VolumeTier<Money>
+type UsageTier = TierOf<Money>
+type UsageVolumeTier = VolumeTierOf<Money>
 
-class PricedTier<Rate extends Money> implements Tier<Rate> {
+class PricedTier<Rate extends Money> implements TierOf<Rate> {
   constructor(
     readonly bound: number | undefined,
     readonly amounts: ReadonlyArray<Rate>,
@@ -155,7 +155,7 @@ class IncludedTier extends PricedTier<never> {
 }
 
 const volumeTiers = <Rate extends Money>(
-  tiers: TierList<VolumeTier<Rate>>,
+  tiers: TierList<VolumeTierOf<Rate>>,
 ): Tiers<Rate> => {
   if (tiers.some((tier) => tier instanceof IncludedTier)) {
     throw new Error(
@@ -338,7 +338,7 @@ class QuantityBuilder<Type extends QuantityType> {
    * Each tier prices only the units inside it. With $10 up to 5 and $8
    * after, 10 units cost 5 × $10 + 5 × $8 = $90. Compare `.volume()`.
    */
-  graduated(...tiers: TierList<UnitTier>): QuantityPrice<Type> {
+  graduated(...tiers: TierList<Tier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
@@ -346,7 +346,7 @@ class QuantityBuilder<Type extends QuantityType> {
    * The tier the total lands in prices every unit. With $10 up to 5 and $8
    * after, 10 units cost 10 × $8 = $80. Compare `.graduated()`.
    */
-  volume(...tiers: TierList<UnitVolumeTier>): QuantityPrice<Type> {
+  volume(...tiers: TierList<VolumeTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
 }
@@ -429,7 +429,7 @@ const boundedTiers = <Rate extends Money>(
   tiers: Tiers<Rate>,
   maximum: number | undefined,
   where: string,
-): ReadonlyArray<Tier<Rate>> => {
+): ReadonlyArray<TierOf<Rate>> => {
   const lastIndex = tiers.length - 1
   if (maximum !== undefined && tiers[lastIndex]?.bound !== undefined) {
     throw new Error(
@@ -510,7 +510,7 @@ export const priceCurrencies = (
 
 const tiersConfig = (
   type: TiersConfig['type'],
-  tiers: ReadonlyArray<Tier>,
+  tiers: ReadonlyArray<TierOf>,
   currency: Currency,
 ): TiersConfig => ({
   type,

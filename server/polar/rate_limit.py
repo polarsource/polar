@@ -1,3 +1,4 @@
+import hashlib
 from collections.abc import Sequence
 
 from fastapi.requests import Request
@@ -8,6 +9,7 @@ from ratelimit.types import ASGIApp, Scope
 from polar.auth.models import AuthSubject, Subject, is_anonymous
 from polar.config import Environment, settings
 from polar.enums import RateLimitGroup
+from polar.kit.email import normalize_email
 from polar.kit.http import get_ip_address
 from polar.redis import Redis
 
@@ -219,6 +221,15 @@ def get_checkout_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     return RateLimitMiddleware(app, _authenticate_path, RedisBackend(redis), rules)
 
 
+async def get_checkout_confirm_email_retry_after(redis: Redis, email: str) -> int:
+    if settings.ENV not in {Environment.production, Environment.sandbox}:
+        return 0
+    mailbox = hashlib.sha256(normalize_email(email).encode()).hexdigest()
+    return await RedisBackend(redis).retry_after(
+        "checkout-confirm-email", f"email:{mailbox}", Rule(hour=20, day=30)
+    )
+
+
 def get_ip_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddleware:
     rules: dict[str, Sequence[Rule]] = {}
     if settings.ENV in {Environment.production, Environment.sandbox}:
@@ -238,6 +249,7 @@ def get_authentication_middleware(app: ASGIApp, redis: Redis) -> RateLimitMiddle
 
 __all__ = [
     "get_authentication_middleware",
+    "get_checkout_confirm_email_retry_after",
     "get_checkout_middleware",
     "get_ip_middleware",
     "get_middleware",

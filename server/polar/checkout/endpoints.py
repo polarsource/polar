@@ -49,6 +49,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyActiveSubscriptionError,
+    CheckoutConfirmRateLimited,
     CheckoutLocked,
     DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
@@ -86,6 +87,10 @@ CheckoutPaymentOrSharedPaymentTokenError = {
         PaymentError.schema() | SharedPaymentTokenError.schema(),
         SetSchemaReference("CheckoutPaymentError"),
     ],
+}
+CheckoutConfirmRateLimitedError = {
+    "description": "Too many payment attempts for this customer email.",
+    "model": CheckoutConfirmRateLimited.schema(),
 }
 CheckoutNotPermitted = {
     "description": "The organization is not allowed to accept payments.",
@@ -365,6 +370,7 @@ async def client_confirm(
     checkout_confirm: legacy_schemas.CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Checkout:
     """
     Confirm a checkout session by client secret.
@@ -374,6 +380,7 @@ async def client_confirm(
     checkout = await checkout_service.get_by_client_secret(
         session, client_secret, for_update=True
     )
+    await checkout_service.check_confirm_rate_limit(redis, checkout, checkout_confirm)
 
     return await checkout_service.confirm(
         session, auth_subject, checkout, checkout_confirm
@@ -392,6 +399,7 @@ async def client_confirm(
         403: CheckoutForbiddenError,
         409: CheckoutLockedError,
         410: CheckoutExpired,
+        429: CheckoutConfirmRateLimitedError,
     },
 )
 @version(starting_from=V2027_01)
@@ -400,6 +408,7 @@ async def client_confirm_v2027_01(
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
     session: AsyncSession = Depends(get_db_session),
+    redis: Redis = Depends(get_redis),
 ) -> Checkout:
     """
     Confirm a checkout session by client secret.
@@ -409,6 +418,7 @@ async def client_confirm_v2027_01(
     checkout = await checkout_service.get_by_client_secret(
         session, client_secret, for_update=True
     )
+    await checkout_service.check_confirm_rate_limit(redis, checkout, checkout_confirm)
 
     return await checkout_service.confirm(
         session, auth_subject, checkout, checkout_confirm

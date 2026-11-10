@@ -1,6 +1,5 @@
 import contextlib
 import dataclasses
-import math
 import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator, AsyncIterable, Sequence
@@ -19,7 +18,7 @@ from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, Event, OrderItem, Product, Subscription
+from polar.models import BillingEntry, Event, Meter, OrderItem, Product, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -31,6 +30,7 @@ from polar.product.guard import (
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
 
+from .comparison import Comparison, Quantities, compare
 from .repository import BillingEntryRepository
 from .types import BillingEntrySelector, PendingByMeter, PendingByPrice
 
@@ -81,7 +81,10 @@ class BillingEntryService:
         consumed_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         credited_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
         net_units: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+        meters: dict[uuid.UUID, Meter] = {}
+        meter_order_item_ids: dict[uuid.UUID, list[uuid.UUID]] = defaultdict(list)
         async for line_item, selector in line_items:
+            order_item_id = uuid.uuid4()
             if (
                 isinstance(line_item, MeteredLineItem)
                 and line_item.price.meter.aggregation.func != AggregationFunction.unique
@@ -92,8 +95,10 @@ class BillingEntryService:
                 credited_units[meter_id] += line_item.credited_units
                 # Each line item bills its own net units.
                 net_units[meter_id] += max(Decimal(0), units - line_item.credited_units)
+                meters[meter_id] = line_item.price.meter
+                meter_order_item_ids[meter_id].append(order_item_id)
             order_item = OrderItem(
-                id=uuid.uuid4(),
+                id=order_item_id,
                 label=line_item.label,
                 amount=line_item.amount,
                 net_amount=line_item.amount,
@@ -141,36 +146,51 @@ class BillingEntryService:
                     order_id=order_id,
                     cutoff=reducer_cutoff,
                 )
-                reducer_net_units = {
-                    meter_id: max(Decimal(0), usage - credits)
-                    for meter_id, (usage, credits) in quantities.items()
+                legacy = {
+                    meter_id: Quantities(
+                        usage=consumed_units[meter_id],
+                        credits=credited_units[meter_id],
+                        net=net,
+                    )
+                    for meter_id, net in net_units.items()
                 }
+                comparisons: dict[uuid.UUID, Comparison] = {}
+                for meter_id, (usage, credits) in quantities.items():
+                    comparisons[meter_id] = await compare(
+                        session,
+                        subscription,
+                        meters[meter_id],
+                        order_id,
+                        meter_order_item_ids[meter_id],
+                        legacy=legacy[meter_id],
+                        reducer=Quantities(
+                            usage=usage,
+                            credits=credits,
+                            net=max(Decimal(0), usage - credits),
+                        ),
+                        cutoff=reducer_cutoff,
+                    )
                 span.set_attribute(
                     "quantities",
                     {
-                        str(meter_id): {
-                            "legacy": {
-                                "usage": str(consumed_units[meter_id]),
-                                "credits": str(credited_units[meter_id]),
-                                "net": str(net),
-                            },
-                            "reducer": {
-                                "usage": str(quantities[meter_id][0]),
-                                "credits": str(quantities[meter_id][1]),
-                                "net": str(reducer_net_units[meter_id]),
-                            }
-                            if meter_id in quantities
-                            else None,
-                        }
-                        for meter_id, net in net_units.items()
+                        str(meter_id): comparisons[meter_id].to_dict()
+                        if meter_id in comparisons
+                        else {"legacy": legacy[meter_id].to_dict(), "reducer": None}
+                        for meter_id in legacy
                     },
+                )
+                span.set_attribute(
+                    "raw_match",
+                    all(
+                        meter_id in comparisons and comparisons[meter_id].raw_match
+                        for meter_id in legacy
+                    ),
                 )
                 span.set_attribute(
                     "match",
                     all(
-                        meter_id in reducer_net_units
-                        and math.isclose(reducer_net_units[meter_id], net)
-                        for meter_id, net in net_units.items()
+                        meter_id in comparisons and comparisons[meter_id].match
+                        for meter_id in legacy
                     ),
                 )
 

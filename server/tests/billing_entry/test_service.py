@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -41,6 +42,7 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.tiers import Tiers, TierType
+from polar.reducer.types import UsageWindow
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -1570,13 +1572,8 @@ class TestCreateOrderItemsFromPending:
         else:
             bill.assert_not_called()
 
-    @pytest.mark.parametrize(
-        ("reducer_credits", "match"), [(Decimal(13), True), (Decimal(16), False)]
-    )
     async def test_compares_net_usage_with_the_reducer(
         self,
-        reducer_credits: Decimal,
-        match: bool,
         capfire: CaptureLogfire,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -1587,7 +1584,7 @@ class TestCreateOrderItemsFromPending:
     ) -> None:
         mocker.patch(
             "polar.billing_entry.service.billing_interval_service.bill_usage",
-            return_value={meter.id: (Decimal(15), reducer_credits)},
+            return_value={meter.id: (Decimal(15), Decimal(16))},
         )
         product_old = await create_product(
             save_fixture,
@@ -1625,6 +1622,18 @@ class TestCreateOrderItemsFromPending:
             SubscriptionProductPrice.from_price(product_new.prices[0])
         ]
         await save_fixture(subscription)
+        mocker.patch(
+            "polar.billing_entry.comparison.billing_interval_service.get_usage_windows",
+            return_value=(
+                UsageWindow(
+                    interval_id=uuid.uuid4(),
+                    source_subscription_id=subscription.id,
+                    meter_id=meter.id,
+                    start=datetime(2020, 1, 1, tzinfo=UTC),
+                    end=utc_now() + timedelta(days=1),
+                ),
+            ),
+        )
 
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription
@@ -1645,11 +1654,10 @@ class TestCreateOrderItemsFromPending:
         assert json.loads(str(span.attributes["quantities"])) == {
             str(meter.id): {
                 "legacy": {"usage": "15.0", "credits": "16", "net": "2.0"},
-                "reducer": {
-                    "usage": "15",
-                    "credits": str(reducer_credits),
-                    "net": str(max(Decimal(15) - reducer_credits, Decimal(0))),
-                },
+                "reducer": {"usage": "15", "credits": "16", "net": "0"},
+                "adjustments": {"unpooled_net": {"net": "2.0"}},
+                "explained": {"usage": "15", "credits": "16", "net": "2.0"},
             }
         }
-        assert span.attributes["match"] is match
+        assert span.attributes["raw_match"] is False
+        assert span.attributes["match"] is True

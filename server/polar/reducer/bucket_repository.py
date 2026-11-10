@@ -571,3 +571,35 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
         )
         return result.tuples().all()
+
+    def get_event_billed_by_other_order_clause(
+        self, reducer: Reducer, order_id: UUID
+    ) -> ColumnElement[bool]:
+        """Whether the reducer billed the event in an order other than `order_id`:
+        the first generation still open at its ingestion holds it."""
+        return (
+            select(
+                and_(
+                    ReducerBucket.billed_at.is_not(None),
+                    ReducerBucket.order_id.is_distinct_from(order_id),
+                )
+            )
+            .where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                ReducerBucket.customer_id.is_not_distinct_from(Event.customer_id),
+                ReducerBucket.external_customer_id.is_not_distinct_from(
+                    Event.external_customer_id
+                ),
+                ReducerBucket.bucket_start <= Event.timestamp,
+                ReducerBucket.bucket_end > Event.timestamp,
+                or_(
+                    ReducerBucket.sealed_at.is_(None),
+                    ReducerBucket.sealed_at >= Event.ingested_at,
+                ),
+            )
+            .order_by(ReducerBucket.generation)
+            .limit(1)
+            .scalar_subquery()
+            .is_(True)
+        )

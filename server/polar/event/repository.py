@@ -702,6 +702,64 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         return statement
 
+    def get_by_pending_meter_entries_statement(
+        self, subscription: UUID, meter: UUID
+    ) -> Select[Event]:
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .join(ProductPrice, BillingEntry.product_price_id == ProductPrice.id)
+            .where(
+                ProductPrice.is_metered,
+                BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter,
+                Event.source == EventSource.user,
+            )
+        )
+
+    def get_by_order_item_entries_statement(
+        self, order_item_ids: Sequence[UUID]
+    ) -> Select[Event]:
+        return (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .where(
+                BillingEntry.order_item_id.in_(order_item_ids),
+                Event.source == EventSource.user,
+            )
+        )
+
+    async def get_pending_meter_credits(
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        since: datetime | None,
+        until: datetime,
+    ) -> Sequence[Event]:
+        statement = (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .join(ProductPrice, BillingEntry.product_price_id == ProductPrice.id)
+            .where(
+                ProductPrice.is_metered,
+                BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == meter,
+                BillingEntry.start_timestamp < until,
+                Event.source == EventSource.system,
+                Event.name == SystemEvent.meter_credited,
+            )
+        )
+        if since is not None:
+            statement = statement.where(BillingEntry.start_timestamp >= since)
+        return await self.get_all(statement)
+
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))
 

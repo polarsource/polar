@@ -70,6 +70,7 @@ class EmailTemplate(StrEnum):
     notification_credits_granted = "notification_credits_granted"
     notification_file_flagged_malicious = "notification_file_flagged_malicious"
     domain_verification_lost = "domain_verification_lost"
+    organization_email_verification = "organization_email_verification"
     chargeback_prevention_refund = "chargeback_prevention_refund"
     polar_self_subscription_cancellation = "polar_self_subscription_cancellation"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
@@ -525,6 +526,19 @@ class DomainVerificationLostEmail(BaseModel):
     props: DomainVerificationLostProps
 
 
+class OrganizationEmailVerificationProps(EmailProps):
+    code: str
+    code_lifetime_minutes: int
+    organization_name: str
+
+
+class OrganizationEmailVerificationEmail(BaseModel):
+    template: Literal[EmailTemplate.organization_email_verification] = (
+        EmailTemplate.organization_email_verification
+    )
+    props: OrganizationEmailVerificationProps
+
+
 class ChargebackPreventionRefundProps(EmailProps):
     order_number: str
     customer_name: str
@@ -664,6 +678,7 @@ Email = Annotated[
     | NotificationCreditsGrantedEmail
     | NotificationFileFlaggedMaliciousEmail
     | DomainVerificationLostEmail
+    | OrganizationEmailVerificationEmail
     | ChargebackPreventionRefundEmail
     | PolarSelfSubscriptionCancellationEmail
     | PolarSelfSubscriptionConfirmationEmail

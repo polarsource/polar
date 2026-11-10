@@ -16,6 +16,7 @@ import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
+import { OrganizationEmailVerification } from './organization_email_verification'
 import { OrganizationInvite } from './organization_invite'
 import { OrganizationOffboarded } from './organization_offboarded'
 import { PaymentMethodExpirationReminder } from './payment_method_expiration_reminder'
@@ -83,6 +84,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_credits_granted: NotificationCreditsGranted,
   notification_file_flagged_malicious: NotificationFileFlaggedMalicious,
   domain_verification_lost: DomainVerificationLost,
+  organization_email_verification: OrganizationEmailVerification,
   chargeback_prevention_refund: ChargebackPreventionRefund,
   polar_self_subscription_cancellation: PolarSelfSubscriptionCancellation,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,

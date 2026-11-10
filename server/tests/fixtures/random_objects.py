@@ -56,6 +56,7 @@ from polar.models import (
     Order,
     OrderItem,
     Organization,
+    OrganizationEmail,
     OrganizationReview,
     Payment,
     PaymentMethod,
@@ -226,6 +227,18 @@ async def create_organization(
         organization.capabilities = {**STATUS_CAPABILITIES[status]}
     await save_fixture(organization)
     return organization
+
+
+async def create_verified_organization_email(
+    save_fixture: SaveFixture, organization: Organization, email: str
+) -> OrganizationEmail:
+    organization.email = email
+    await save_fixture(organization)
+    organization_email = OrganizationEmail(
+        organization=organization, email=email, verified_at=utc_now()
+    )
+    await save_fixture(organization_email)
+    return organization_email
 
 
 @pytest.fixture

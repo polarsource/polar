@@ -53,6 +53,7 @@ from tests.fixtures.random_objects import (
     create_payout_account,
     create_subscription,
     create_user,
+    create_verified_organization_email,
 )
 
 # The organization fixture is created now, which is past the cutoff from
@@ -706,6 +707,9 @@ class TestUpdateOrganization:
 
         organization.status = OrganizationStatus.CREATED
         await save_fixture(organization)
+        await create_verified_organization_email(
+            save_fixture, organization, "support@example.com"
+        )
 
         update_response = await client.patch(
             f"/v1/organizations/{organization.id}",

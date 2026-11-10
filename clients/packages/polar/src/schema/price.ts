@@ -340,20 +340,12 @@ class QuantityBuilder<Type extends QuantityType> {
     return new FlatQuantityBuilder(this.type)
   }
 
-  /**
-   * Each tier charges only for the units that fall in it. With $10 for up to
-   * 5 units and $8 after, 10 units cost 5 × $10 + 5 × $8 = $90.
-   * `.volume()` would charge $80.
-   */
+  /** Each tier charges only for the units that fall in it. */
   graduated(...tiers: TierList<Tier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
-  /**
-   * Every unit is charged at the price of the tier the total falls in. With
-   * $10 for up to 5 units and $8 after, 10 units cost 10 × $8 = $80.
-   * `.graduated()` would charge $90.
-   */
+  /** Every unit is charged at the price of the tier the total falls in. */
   volume(...tiers: TierList<VolumeTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
@@ -381,20 +373,12 @@ class MeteredBuilder<Meter extends string> {
     return new FlatMeteredBuilder(this.meter)
   }
 
-  /**
-   * Each tier charges only for the units that fall in it. With $10 for up to
-   * 5 units and $8 after, 10 units cost 5 × $10 + 5 × $8 = $90.
-   * `.volume()` would charge $80.
-   */
+  /** Each tier charges only for the units that fall in it. */
   graduated(...tiers: TierList<UsageTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'graduated', tiers)
   }
 
-  /**
-   * Every unit is charged at the price of the tier the total falls in. With
-   * $10 for up to 5 units and $8 after, 10 units cost 10 × $8 = $80.
-   * `.graduated()` would charge $90.
-   */
+  /** Every unit is charged at the price of the tier the total falls in. */
   volume(...tiers: TierList<UsageVolumeTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'volume', volumeTiers(tiers))
   }

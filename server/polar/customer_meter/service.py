@@ -41,6 +41,7 @@ from polar.meter.aggregation import (
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
@@ -138,12 +139,18 @@ class CustomerMeterService:
             .order_by(Meter.created_at.asc())
         )
 
+        reducer_billing = bool(
+            await OrganizationRepository.from_session(session).get_ids_with_feature(
+                {customer.organization_id}, "reducer_billing_enabled"
+            )
+        )
+
         updated = False
         async for meter in repository.stream(statement):
             customer_meter, meter_updated = await self.update_customer_meter(
-                session, redis, customer, meter
+                session, redis, customer, meter, from_reducer=reducer_billing
             )
-            if meter_updated and customer_meter is not None:
+            if meter_updated and customer_meter is not None and not reducer_billing:
                 await reducer_service.log_customer_meter_comparison(
                     session,
                     redis,
@@ -164,6 +171,8 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
+        *,
+        from_reducer: bool = False,
     ) -> tuple[CustomerMeter | None, bool]:
         repository = CustomerMeterRepository.from_session(session)
         # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
@@ -216,7 +225,7 @@ class CustomerMeterService:
 
         with logfire.span("get_usage"):
             customer_meter.consumed_units = await self._get_consumed_units(
-                session, redis, customer, meter
+                session, redis, customer, meter, from_reducer=from_reducer
             )
 
         with logfire.span("get_credits"):
@@ -653,11 +662,18 @@ class CustomerMeterService:
         return statement.order_by(Event.ingested_at.desc()).limit(1)
 
     async def _get_consumed_units(
-        self, session: AsyncSession, redis: Redis, customer: Customer, meter: Meter
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+        meter: Meter,
+        *,
+        from_reducer: bool = False,
     ) -> Decimal:
         """The customer's usage since the meter's latest reset: from the reducer when
-        enabled, from the events otherwise or when the reducer can't answer."""
-        if settings.CUSTOMER_METER_UNITS_FROM_REDUCER:
+        enabled or `from_reducer`, from the events otherwise or when the reducer
+        can't answer."""
+        if from_reducer or settings.CUSTOMER_METER_UNITS_FROM_REDUCER:
             try:
                 consumed_units, _ = await reducer_service.get_customer_meter_units(
                     session, redis, customer, meter.id

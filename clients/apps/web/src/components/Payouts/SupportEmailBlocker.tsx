@@ -12,14 +12,14 @@ interface Props {
 export const SupportEmailBlocker = ({ organization, email, hide }: Props) => (
   <Box flexDirection="column" rowGap="l">
     <Text>
-      Payouts need a confirmed support email.{' '}
+      Payouts need a verified support email.{' '}
       {email
-        ? `Confirm ${email} from your organization settings, then come back to withdraw.`
-        : 'Add one in your organization settings and confirm it, then come back to withdraw.'}
+        ? `Verify ${email} from your organization settings, then come back to withdraw.`
+        : 'Add one in your organization settings and verify it, then come back to withdraw.'}
     </Text>
     <Box columnGap="m">
       <Link href={`/dashboard/${organization.slug}/settings`}>
-        <Button variant="default">Confirm support email</Button>
+        <Button variant="default">Verify support email</Button>
       </Link>
       <Button variant="ghost" onClick={hide}>
         Close

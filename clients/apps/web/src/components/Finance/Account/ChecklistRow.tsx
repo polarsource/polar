@@ -159,7 +159,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
                 {isExpanded
                   ? 'Close'
                   : isEmailUnverified
-                    ? 'Confirm'
+                    ? 'Verify'
                     : collapsedActionLabel({ ...step, status })}
               </Button>
             </Box>

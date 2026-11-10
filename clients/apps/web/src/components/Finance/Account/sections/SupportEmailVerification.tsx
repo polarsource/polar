@@ -63,7 +63,7 @@ export const SupportEmailVerification = ({ organization }: Props) => {
       paddingTop="m"
     >
       <Box alignItems="center" columnGap="s">
-        <Text variant="label">Confirm your support email</Text>
+        <Text variant="label">Verify your support email</Text>
         {status.verified ? (
           <Pill color="green">Verified</Pill>
         ) : (
@@ -72,7 +72,7 @@ export const SupportEmailVerification = ({ organization }: Props) => {
       </Box>
       {status.verified ? (
         <Text color="muted">
-          {status.email} is confirmed. Changing it will ask for a new code.
+          {status.email} is verified. Changing it will ask for a new code.
         </Text>
       ) : status.code_pending ? (
         <>

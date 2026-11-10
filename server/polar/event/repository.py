@@ -269,6 +269,16 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not inserted_ids:
             return []
 
+        # By primary key: a filter on pending refs would make the planner scan
+        # every pending row of ix_events_org_pending_parent instead.
+        batch_rows = (
+            await self.session.execute(
+                select(Event.id, Event.pending_parent_external_id).where(
+                    Event.id.in_(inserted_ids)
+                )
+            )
+        ).all()
+
         # parent_1a, parent_1b, parent_1c, parent_1d
         # are all four ways we can resolve pending_parent_id to parent_id
         # (pointing to a internal event ID).
@@ -284,14 +294,10 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
         )
 
-        batch_pending_rows = await self.session.execute(
-            select(Event.id, Event.pending_parent_external_id).where(
-                Event.id.in_(inserted_ids),
-                Event.pending_parent_external_id.is_not(None),
-            )
-        )
         uuid_pending_in_batch: list[UUID] = []
-        for event_id, pending_ref in batch_pending_rows.all():
+        for event_id, pending_ref in batch_rows:
+            if pending_ref is None:
+                continue
             try:
                 UUID(pending_ref)
             except ValueError, TypeError:

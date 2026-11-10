@@ -13,7 +13,10 @@ from polar.billing_interval.service import select_settlement_windows
 from polar.event.repository import EventRepository
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Meter, Subscription
+from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
+from polar.reducer.bucket_repository import ReducerBucketRepository
+from polar.reducer.repository import ReducerRepository
 
 log = structlog.get_logger(__name__)
 
@@ -100,6 +103,7 @@ async def compare(
     session: AsyncSession,
     subscription: Subscription,
     meter: Meter,
+    order_id: uuid.UUID,
     order_item_ids: Sequence[uuid.UUID],
     *,
     legacy: Quantities,
@@ -114,7 +118,12 @@ async def compare(
         async with session.begin_nested():
             adjustments = {
                 **await _get_usage_adjustments(
-                    session, subscription, meter, order_item_ids, cutoff=cutoff
+                    session,
+                    subscription,
+                    meter,
+                    order_id,
+                    order_item_ids,
+                    cutoff=cutoff,
                 ),
                 **await _get_credit_adjustments(
                     session, subscription, meter, cutoff=cutoff
@@ -145,6 +154,7 @@ async def _get_usage_adjustments(
     session: AsyncSession,
     subscription: Subscription,
     meter: Meter,
+    order_id: uuid.UUID,
     order_item_ids: Sequence[uuid.UUID],
     *,
     cutoff: datetime,
@@ -175,25 +185,38 @@ async def _get_usage_adjustments(
             subscription.id, meter.id
         ).where(in_windows),
     )
-    reset = await repository.get_latest_meter_reset(
-        subscription.customer, meter.id, cutoff=cutoff
-    )
-    carried_over_usage = (
-        await meter_service.get_quantity(
-            session,
-            meter,
-            repository.get_by_order_item_entries_statement(order_item_ids).where(
-                BillingEntry.start_timestamp < reset.timestamp,
-                BillingEntry.created_at > reset.timestamp,
-            ),
-        )
-        if reset is not None
-        else 0.0
+    carried_over_usage = await _get_carried_over_usage(
+        session, meter, order_id, order_item_ids
     )
     return {
         "deferred_usage": Adjustment(usage=-Decimal(str(deferred_usage))),
         "carried_over_usage": Adjustment(usage=Decimal(str(carried_over_usage))),
     }
+
+
+async def _get_carried_over_usage(
+    session: AsyncSession,
+    meter: Meter,
+    order_id: uuid.UUID,
+    order_item_ids: Sequence[uuid.UUID],
+) -> float:
+    """Usage legacy bills in this order that the reducer billed in another one."""
+    reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+        meter.id, ReducerKind.usage
+    )
+    if reducer is None:
+        return 0.0
+    return await meter_service.get_quantity(
+        session,
+        meter,
+        EventRepository.from_session(session)
+        .get_by_order_item_entries_statement(order_item_ids)
+        .where(
+            ReducerBucketRepository.from_session(
+                session
+            ).get_event_billed_by_other_order_clause(reducer, order_id)
+        ),
+    )
 
 
 async def _get_credit_adjustments(

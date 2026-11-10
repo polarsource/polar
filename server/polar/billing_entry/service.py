@@ -160,6 +160,7 @@ class BillingEntryService:
                         session,
                         subscription,
                         meters[meter_id],
+                        order_id,
                         meter_order_item_ids[meter_id],
                         legacy=legacy[meter_id],
                         reducer=Quantities(

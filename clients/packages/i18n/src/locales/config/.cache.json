@@ -204,7 +204,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "fr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -408,7 +409,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "sv": {
     "checkout.footer.poweredBy": "Powered by",
@@ -612,7 +614,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "es": {
     "checkout.footer.poweredBy": "Powered by",
@@ -819,7 +822,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "de": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1026,7 +1030,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "hu": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1222,7 +1227,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "it": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1421,7 +1427,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "ko": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1617,7 +1624,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "pt": {
     "checkout.footer.poweredBy": "Powered by",
@@ -1813,7 +1821,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "pt-PT": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2009,7 +2018,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "ja": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2208,7 +2218,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "tr": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2407,7 +2418,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "pl": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2606,7 +2618,8 @@
     "checkout.pricing.tiers.volumeExplainer": "All usage is billed at the rate for the range it falls in",
     "checkout.orderSummary": "Order summary",
     "checkout.loading.paymentNotCompleted": "Payment was not completed. Please try again.",
-    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again."
+    "checkout.loading.paymentFormNotLoaded": "The payment form failed to load. Please refresh the page and try again.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   },
   "zh-TW": {
     "checkout.footer.poweredBy": "Powered by",
@@ -2802,6 +2815,7 @@
     "embedPaymentMethod.errors.invalidRequest": "Missing required parameters.",
     "embedPaymentMethod.errors.unauthorized": "Session expired.",
     "embedPaymentMethod.errors.processingFailed": "Could not process the payment method. Please try again.",
-    "embedPaymentMethod.errors.unknown": "Something went wrong."
+    "embedPaymentMethod.errors.unknown": "Something went wrong.",
+    "catalogVersions.removed.deprecatedTitle": "Deprecated · still in use"
   }
 }

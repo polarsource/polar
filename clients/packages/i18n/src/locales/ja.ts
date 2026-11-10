@@ -324,4 +324,9 @@ export default {
       unknown: '問題が発生しました。',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: '非推奨 · まだ使用中',
+    },
+  },
 } as const

@@ -322,4 +322,9 @@ export default {
       unknown: 'Algo correu mal.',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: 'Obsoleto · ainda em utilização',
+    },
+  },
 } as const

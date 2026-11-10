@@ -328,4 +328,9 @@ export default {
       unknown: 'Etwas ist schiefgelaufen.',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: 'Veraltet · noch in Verwendung',
+    },
+  },
 } as const

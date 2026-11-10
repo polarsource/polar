@@ -324,4 +324,9 @@ export default {
       unknown: 'Er is iets misgegaan.',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: 'Verouderd · nog in gebruik',
+    },
+  },
 } as const

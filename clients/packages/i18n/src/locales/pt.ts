@@ -322,4 +322,9 @@ export default {
       unknown: 'Algo deu errado.',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: 'Obsoleto · ainda em uso',
+    },
+  },
 } as const

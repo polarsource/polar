@@ -317,4 +317,9 @@ export default {
       unknown: '문제가 발생했습니다.',
     },
   },
+  catalogVersions: {
+    removed: {
+      deprecatedTitle: '지원 중단됨 · 아직 사용 중',
+    },
+  },
 } as const

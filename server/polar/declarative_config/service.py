@@ -862,12 +862,10 @@ class DeclarativeConfigService:
         for change in changes:
             meter = change.existing
             draft_meter = draft_meters.get(change.config.external_id)
-            # A draft meter isn't billing yet, so its locked fields can change too.
-            if (
-                draft_meter is not None
-                and (meter is None or change.update_dict)
-                and draft_meter.last_billed_event_id is None
-            ):
+            if draft_meter is not None and (meter is None or change.update_dict):
+                # Billing starts at publish, so a draft meter's locked fields can
+                # still change.
+                assert draft_meter.last_billed_event_id is None
                 meter = draft_meter
                 fields = validation.meter_update_dict(meter, change.config)
                 if fields:

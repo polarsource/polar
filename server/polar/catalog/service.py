@@ -668,6 +668,7 @@ class CatalogService:
                 keep={
                     *(product.id for product in members.products.values()),
                     *(benefit.id for benefit in members.benefits.values()),
+                    *(meter.id for meter in members.meters.values()),
                 },
             )
         await repository.update(
@@ -860,7 +861,10 @@ class CatalogService:
         catalog_meter_repository = CatalogMeterRepository.from_session(session)
         meter_repository = MeterRepository.from_session(session)
         for meter_member in await catalog_meter_repository.get_all_by_catalog(draft.id):
-            if meter_member.meter.catalog_id == draft.id:
+            if (
+                meter_member.meter.catalog_id == draft.id
+                and meter_member.meter_id not in keep
+            ):
                 await meter_repository.update(
                     meter_member.meter, update_dict={"deleted_at": utc_now()}
                 )

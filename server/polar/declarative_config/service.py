@@ -18,6 +18,7 @@ from polar.catalog.service import CatalogMembers, CatalogRemovals
 from polar.catalog.service import catalog as catalog_service
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.meter.repository import MeterRepository
+from polar.meter.schemas import MeterUpdate
 from polar.meter.service import meter as meter_service
 from polar.models import Agent, Benefit, Meter, Organization, Product, User
 from polar.models.catalog import CatalogStatus
@@ -406,10 +407,10 @@ class DeclarativeConfigService:
         removed_external_ids = _removed_external_ids(removed)
         if draft is not None and publish:
             await catalog_service.discard_draft(session, draft)
-        draft_benefits, draft_products = (
+        draft_rows = (
             await drafts.rows(session, draft, config)
             if draft is not None and not publish
-            else ({}, {})
+            else CatalogMembers()
         )
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
@@ -426,7 +427,12 @@ class DeclarativeConfigService:
             session, auth_subject, organization, changes.webhooks
         )
         meter_results, meter_ids, new_meters = await self._apply_meters(
-            session, organization, changes.meters, draft=not publish
+            session,
+            auth_subject,
+            organization,
+            changes.meters,
+            draft_rows.meters,
+            draft=not publish,
         )
         benefit_results, benefit_ids, new_benefits = await self._apply_benefits(
             session,
@@ -435,7 +441,7 @@ class DeclarativeConfigService:
             organization,
             changes.benefits,
             meter_ids,
-            draft_benefits,
+            draft_rows.benefits,
             draft=not publish,
         )
         product_results, new_products = await self._apply_products(
@@ -445,7 +451,7 @@ class DeclarativeConfigService:
             changes.products,
             meter_ids,
             benefit_ids,
-            draft_products,
+            draft_rows.products,
             draft=not publish,
         )
         catalog: ConfigCatalogChange | None = None
@@ -842,8 +848,10 @@ class DeclarativeConfigService:
     async def _apply_meters(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
         organization: Organization,
         changes: Sequence[MeterChange],
+        draft_meters: Mapping[str, Meter],
         *,
         draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Meter]]:
@@ -853,7 +861,32 @@ class DeclarativeConfigService:
         new_meters: dict[str, Meter] = {}
         for change in changes:
             meter = change.existing
-            if meter is None or change.update_dict:
+            draft_meter = draft_meters.get(change.config.external_id)
+            # A draft meter isn't billing yet, so its locked fields can change too.
+            if (
+                draft_meter is not None
+                and (meter is None or change.update_dict)
+                and draft_meter.last_billed_event_id is None
+            ):
+                meter = draft_meter
+                fields = validation.meter_update_dict(meter, change.config)
+                if fields:
+                    values: dict[str, Any] = {
+                        field: getattr(change.config, field)
+                        for field in fields
+                        if field != "user_metadata"
+                    }
+                    if "user_metadata" in fields:
+                        values["metadata"] = change.config.metadata
+                    meter = await meter_service.update(
+                        session,
+                        meter,
+                        MeterUpdate(**values),
+                        auth_subject,
+                        declarative_config=True,
+                    )
+                new_meters[change.config.external_id] = meter
+            elif meter is None or change.update_dict:
                 try:
                     async with session.begin_nested():
                         # A draft's new row isn't current, so the live one stays.

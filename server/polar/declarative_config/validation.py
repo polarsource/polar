@@ -563,6 +563,10 @@ def _get_meter_update_dict(
     return update_dict
 
 
+def meter_update_dict(meter: Meter, meter_config: ConfigMeter) -> dict[str, Any]:
+    return _get_meter_update_dict(meter, meter_config)
+
+
 async def diff_meters(
     session: AsyncSession,
     organization: Organization,

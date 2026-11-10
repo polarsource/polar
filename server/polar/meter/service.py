@@ -274,11 +274,14 @@ class MeterService:
         meter: Meter,
         meter_update: MeterUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Meter:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage
         )
-        await assert_catalog_editable(session, meter.organization_id)
+        if not declarative_config:
+            await assert_catalog_editable(session, meter.organization_id)
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []

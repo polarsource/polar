@@ -68,10 +68,12 @@ from polar.models import (
     Benefit,
     Catalog,
     Customer,
+    Meter,
     Organization,
     Product,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     ProductPriceUnit,
     SubscriptionMeter,
     SubscriptionUpdate,
@@ -5116,6 +5118,120 @@ class TestCatalogDrafts:
         assert [b.id for b in products["pro"].benefits] == [live_beta.id]
         await session.refresh(first_benefits["beta"])
         assert first_benefits["beta"].deleted_at is not None
+
+    async def _apply_metered(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        meter: dict[str, Any],
+        product: dict[str, Any],
+        *,
+        publish: bool,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"meters": [meter], "products": [product]}),
+            publish=publish,
+        )
+
+    async def _draft_meter_and_price(
+        self, session: AsyncSession, organization: Organization
+    ) -> tuple[Meter, Product, ProductPriceMeteredUnit]:
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        meters = await catalog_service.get_catalog_meters(session, organization, draft)
+        _, products = await self._draft_members(session, organization)
+        [price] = [
+            p for p in products["pro"].prices if isinstance(p, ProductPriceMeteredUnit)
+        ]
+        return meters["sdk-tool-calls"], products["pro"], price
+
+    async def test_reapply_updates_the_draft_meter_in_place(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = {**MONTHLY_PRO, "prices": PRO_PRODUCT["prices"]}
+        draft_product = {**product, "name": "Pro Plus"}
+        await self._apply_metered(
+            session, redis, auth_subject, TOOL_CALLS_METER, product, publish=True
+        )
+        await self._apply_metered(
+            session,
+            redis,
+            auth_subject,
+            {**TOOL_CALLS_METER, "name": "Tool calls v2"},
+            draft_product,
+            publish=False,
+        )
+        first_meter, first_pro, _ = await self._draft_meter_and_price(
+            session, organization
+        )
+
+        await self._apply_metered(
+            session,
+            redis,
+            auth_subject,
+            {**TOOL_CALLS_METER, "name": "Tool calls v3"},
+            draft_product,
+            publish=False,
+        )
+
+        meter, pro, price = await self._draft_meter_and_price(session, organization)
+        assert (meter.id, pro.id) == (first_meter.id, first_pro.id)
+        assert (meter.name, meter.deleted_at, meter.is_current) == (
+            "Tool calls v3",
+            None,
+            False,
+        )
+        assert price.meter_id == meter.id
+
+    async def test_reapply_reverting_a_meter_relinks_the_draft_product(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = {**MONTHLY_PRO, "prices": PRO_PRODUCT["prices"]}
+        draft_product = {**product, "name": "Pro Plus"}
+        await self._apply_metered(
+            session, redis, auth_subject, TOOL_CALLS_METER, product, publish=True
+        )
+        [live_meter] = await MeterRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["sdk-tool-calls"])
+        await self._apply_metered(
+            session,
+            redis,
+            auth_subject,
+            {**TOOL_CALLS_METER, "name": "Tool calls v2"},
+            draft_product,
+            publish=False,
+        )
+        first_meter, first_pro, _ = await self._draft_meter_and_price(
+            session, organization
+        )
+
+        await self._apply_metered(
+            session,
+            redis,
+            auth_subject,
+            TOOL_CALLS_METER,
+            draft_product,
+            publish=False,
+        )
+
+        meter, pro, price = await self._draft_meter_and_price(session, organization)
+        assert (meter.id, pro.id) == (live_meter.id, first_pro.id)
+        assert price.meter_id == live_meter.id
+        await session.refresh(first_meter)
+        assert first_meter.deleted_at is not None
 
     async def test_export_the_draft(
         self,

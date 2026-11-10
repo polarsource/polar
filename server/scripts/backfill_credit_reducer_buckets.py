@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 
 import dramatiq
 import typer
@@ -20,7 +21,11 @@ cli = typer.Typer()
 
 
 async def backfill_batch(
-    session: AsyncSession, *, after: uuid.UUID | None, batch_size: int
+    session: AsyncSession,
+    *,
+    after: uuid.UUID | None,
+    batch_size: int,
+    customer_meter_ids: Sequence[uuid.UUID] = (),
 ) -> uuid.UUID | None:
     """Rebuilds the credit buckets of a batch of customer meters with credits or
     credit buckets, and returns the last one's id."""
@@ -45,6 +50,8 @@ async def backfill_batch(
         .order_by(CustomerMeter.id)
         .limit(batch_size)
     )
+    if customer_meter_ids:
+        statement = statement.where(CustomerMeter.id.in_(customer_meter_ids))
     if after is not None:
         statement = statement.where(CustomerMeter.id > after)
     customer_meters = (await session.scalars(statement)).all()
@@ -59,6 +66,9 @@ async def backfill_batch(
 @typer_async
 async def backfill(
     batch_size: int = typer.Option(100, help="Customer meters per transaction"),
+    customer_meter_id: list[uuid.UUID] = typer.Option(
+        [], help="Only these customer meters. Repeatable."
+    ),
 ) -> None:
     configure_script_logging()
     engine = create_async_engine("script")
@@ -72,7 +82,10 @@ async def backfill(
             while True:
                 async with sessionmaker.begin() as session:
                     last = await backfill_batch(
-                        session, after=after, batch_size=batch_size
+                        session,
+                        after=after,
+                        batch_size=batch_size,
+                        customer_meter_ids=customer_meter_id,
                     )
                 if last is None:
                     break

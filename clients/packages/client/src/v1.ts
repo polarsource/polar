@@ -11645,6 +11645,16 @@ export interface components {
     /** BenefitGrant */
     BenefitGrant: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -11729,6 +11739,16 @@ export interface components {
     BenefitGrantCustomProperties: Record<string, never>
     /** BenefitGrantCustomWebhook */
     BenefitGrantCustomWebhook: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -11818,6 +11838,16 @@ export interface components {
     /** BenefitGrantDiscordWebhook */
     BenefitGrantDiscordWebhook: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -11899,6 +11929,16 @@ export interface components {
     }
     /** BenefitGrantDownloadablesWebhook */
     BenefitGrantDownloadablesWebhook: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -11987,6 +12027,16 @@ export interface components {
     BenefitGrantFeatureFlagProperties: Record<string, never>
     /** BenefitGrantFeatureFlagWebhook */
     BenefitGrantFeatureFlagWebhook: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -12081,6 +12131,16 @@ export interface components {
     /** BenefitGrantGitHubRepositoryWebhook */
     BenefitGrantGitHubRepositoryWebhook: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -12166,6 +12226,16 @@ export interface components {
     }
     /** BenefitGrantLicenseKeysWebhook */
     BenefitGrantLicenseKeysWebhook: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -12263,6 +12333,16 @@ export interface components {
     /** BenefitGrantMeterCreditWebhook */
     BenefitGrantMeterCreditWebhook: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -12354,6 +12434,16 @@ export interface components {
     }
     /** BenefitGrantSlackSharedChannelWebhook */
     BenefitGrantSlackSharedChannelWebhook: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -18976,6 +19066,16 @@ export interface components {
     /** CustomerBenefitGrantCustom */
     CustomerBenefitGrantCustom: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -19032,6 +19132,16 @@ export interface components {
     }
     /** CustomerBenefitGrantDiscord */
     CustomerBenefitGrantDiscord: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -19097,6 +19207,16 @@ export interface components {
     /** CustomerBenefitGrantDownloadables */
     CustomerBenefitGrantDownloadables: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -19154,6 +19274,16 @@ export interface components {
     /** CustomerBenefitGrantFeatureFlag */
     CustomerBenefitGrantFeatureFlag: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -19210,6 +19340,16 @@ export interface components {
     }
     /** CustomerBenefitGrantGitHubRepository */
     CustomerBenefitGrantGitHubRepository: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -19274,6 +19414,16 @@ export interface components {
     }
     /** CustomerBenefitGrantLicenseKeys */
     CustomerBenefitGrantLicenseKeys: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time
@@ -19345,6 +19495,16 @@ export interface components {
     /** CustomerBenefitGrantMeterCredit */
     CustomerBenefitGrantMeterCredit: {
       /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
+      /**
        * Created At
        * Format: date-time
        * @description Creation timestamp of the object.
@@ -19401,6 +19561,16 @@ export interface components {
     }
     /** CustomerBenefitGrantSlackSharedChannel */
     CustomerBenefitGrantSlackSharedChannel: {
+      /**
+       * Manually Granted At
+       * @description When the manual grant was requested, if applicable.
+       */
+      manually_granted_at: string | null
+      /**
+       * Manually Revoked At
+       * @description When this grant was permanently revoked manually, if applicable.
+       */
+      manually_revoked_at: string | null
       /**
        * Created At
        * Format: date-time

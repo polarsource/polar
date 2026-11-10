@@ -11,7 +11,6 @@ import {
 } from './event'
 import { Builder } from './builder'
 import { deprecatedKey, withDeprecation } from './deprecation'
-import type { KeepDeprecation } from './deprecation'
 import {
   Metadata as MeterMetadata,
   metadataKey,
@@ -134,13 +133,21 @@ const comparison =
           [scopeKey]: property[eventKey],
         }
 
+/** Matches events where the property equals the value. */
 export const eq = comparison('eq') as EqualityComparison
+/** Matches events where the property doesn't equal the value. */
 export const ne = comparison('ne') as EqualityComparison
+/** Matches events where the number property is greater than the value. */
 export const gt = comparison('gt') as TypedComparison<number>
+/** Matches events where the number property is at least the value. */
 export const gte = comparison('gte') as TypedComparison<number>
+/** Matches events where the number property is less than the value. */
 export const lt = comparison('lt') as TypedComparison<number>
+/** Matches events where the number property is at most the value. */
 export const lte = comparison('lte') as TypedComparison<number>
+/** Matches events where the text property contains the value. */
 export const like = comparison('like') as TypedComparison<string>
+/** Matches events where the text property doesn't contain the value. */
 export const notLike = comparison('not_like') as TypedComparison<string>
 
 const toCondition = (input: ConditionInput<string>): Condition<string> =>
@@ -155,7 +162,9 @@ const group =
     clauses: clauses.map(toCondition),
   })
 
+/** Matches events that match every condition. */
 export const and = group('and')
+/** Matches events that match any condition. */
 export const or = group('or')
 
 // A meter over a single event already requires that event's name, so
@@ -187,7 +196,11 @@ type Unit =
 
 // What an aggregation returns: the meter's fields, plus `.metadata()` and
 // `.deprecated()` so they can still go at the end of the chain.
-class AggregatedMeter extends withDeprecation(withMetadata(Builder)) {}
+class AggregatedMeter<
+  Deprecated extends boolean = boolean,
+> extends withDeprecation(withMetadata(Builder)) {
+  declare readonly [deprecatedKey]: Deprecated
+}
 
 type Property<Metadata, Type> = unknown extends Metadata
   ? string
@@ -196,7 +209,9 @@ type Property<Metadata, Type> = unknown extends Metadata
 export class MeterBuilder<
   Names extends string = string,
   Metadata = unknown,
+  Deprecated extends boolean = boolean,
 > extends withDeprecation(withMetadata(Builder)) {
+  declare readonly [deprecatedKey]: Deprecated
   protected readonly meterFilter: MeterFilter = {
     conjunction: 'and',
     clauses: [],
@@ -208,9 +223,10 @@ export class MeterBuilder<
     super()
   }
 
+  /** Only measures events that match, like `.where(eq(events.call.success, true))`. */
   where(
     input: ConditionInput<Names>,
-  ): KeepDeprecation<this, MeterBuilder<Names, Metadata>> {
+  ): MeterBuilder<Names, Metadata, this[typeof deprecatedKey]> {
     const condition = expand(toCondition(input), this.events)
     const filter = 'conjunction' in condition ? condition : and(condition)
     const combined: MeterFilter =
@@ -228,9 +244,10 @@ export class MeterBuilder<
     return this.refine({ meterFilter: structuredClone(combined) })
   }
 
+  /** How prices on this meter display: `'scalar'` ($0.05 / unit), `'token'` ($20.00 / 1M tokens) or `'custom'` with your own label. Doesn't affect billing. */
   unit(
     ...args: [unit: 'scalar' | 'token'] | [unit: 'custom', label: string]
-  ): KeepDeprecation<this, MeterBuilder<Names, Metadata>> {
+  ): MeterBuilder<Names, Metadata, this[typeof deprecatedKey]> {
     const meterUnit: Unit =
       args[0] === 'custom'
         ? { unit: 'custom', custom_label: args[1] }
@@ -241,30 +258,36 @@ export class MeterBuilder<
   /** Returns a plain `MeterBuilder`, which has no `on()`. */
   protected refine<Refined extends string = Names, Output = Metadata>(
     patch: object,
-  ): KeepDeprecation<this, MeterBuilder<Refined, Output>> {
+  ): MeterBuilder<Refined, Output, this[typeof deprecatedKey]> {
     return Object.assign(new MeterBuilder<Refined, Output>(), this, patch)
   }
 
+  /** Counts matching events. */
   count() {
     return this.aggregate({ func: 'count' })
   }
 
+  /** Adds up a number property across matching events. */
   sum(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'sum', property })
   }
 
+  /** The largest value of a number property across matching events. */
   max(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'max', property })
   }
 
+  /** The smallest value of a number property across matching events. */
   min(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'min', property })
   }
 
+  /** The average of a number property across matching events. */
   avg(property: Property<Metadata, number>) {
     return this.aggregate({ func: 'avg', property })
   }
 
+  /** Counts the distinct values of a property across matching events. */
   unique(property: Property<Metadata, ScalarValue>) {
     return this.aggregate({ func: 'unique', property })
   }
@@ -283,7 +306,7 @@ export class MeterBuilder<
         [metadataKey]: { ...this[metadataKey] },
       }),
       ...(this[deprecatedKey] && { [deprecatedKey]: true }),
-    }) as KeepDeprecation<this, AggregatedMeter & typeof fields>
+    }) as AggregatedMeter<this[typeof deprecatedKey]> & typeof fields
   }
 }
 
@@ -292,11 +315,13 @@ export type MeterDefinition = ReturnType<MeterBuilder['count']>
 export class UnboundMeter<
   Events extends EventDefinitions,
 > extends MeterBuilder {
+  /** The events this meter measures, from `events`. */
   on<const Name extends keyof Events & string>(
     ...events: [EventReference<Name>, ...EventReference<Name>[]]
-  ): KeepDeprecation<
-    this,
-    MeterBuilder<Name, SharedEventOutput<Events, Name>>
+  ): MeterBuilder<
+    Name,
+    SharedEventOutput<Events, Name>,
+    this[typeof deprecatedKey]
   > {
     const references: readonly unknown[] = events
     if (references.length === 0 || !references.every(isEventReference)) {
@@ -311,6 +336,7 @@ export class UnboundMeter<
   }
 }
 
+/** Filters and aggregates your events into usage. The name defaults to its key in `meters`. */
 export const meter = <Events extends EventDefinitions = Record<never, never>>(
   name?: string,
 ): UnboundMeter<Events> => new UnboundMeter(name)

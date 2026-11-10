@@ -174,7 +174,7 @@ class TierBuilder {
     return new TierBuilder(lastUnit)
   }
 
-  /** The price of each unit in this tier, one amount per currency. */
+  /** The rate for each unit in this tier, one amount per currency. */
   amount<Per extends Scale>(
     ...amounts: Amounts<Money<Per>>
   ): PricedTier<Money<Per>> {
@@ -216,6 +216,11 @@ const clonePrice = <Price extends object>(
 abstract class TaxablePrice {
   readonly taxBehavior: TaxBehavior | undefined = undefined
 
+  /**
+   * Whether the amount includes tax or has it added at checkout. `'location'`
+   * excludes it in the US, Canada and India and includes it elsewhere.
+   * Defaults to the organization's setting.
+   */
   tax(behavior: TaxBehavior): this {
     return clonePrice(this, { taxBehavior: behavior } as Partial<this>)
   }
@@ -248,21 +253,21 @@ export class QuantityPrice<
     super()
   }
 
-  /** The fewest units a customer can buy. */
+  /** The smallest quantity a customer can buy. Defaults to 1. */
   min(minimum: number): QuantityPrice<Type> {
     return clonePrice<QuantityPrice<Type>>(this, {
       bounds: { ...this.bounds, minimum },
     })
   }
 
-  /** The most units a customer can buy. */
+  /** The largest quantity a customer can buy. Unlimited by default. */
   max(maximum: number): QuantityPrice<Type> {
     return clonePrice<QuantityPrice<Type>>(this, {
       bounds: { ...this.bounds, maximum },
     })
   }
 
-  /** The unit noun shown at checkout and on invoices. Defaults to "unit"/"units". */
+  /** The unit name shown at checkout, in the customer portal and on invoices. Defaults to "unit"/"units". */
   label(
     this: QuantityPrice<'unit_based'>,
     singular: string,
@@ -286,7 +291,7 @@ export class MeteredPrice<Meter extends string> extends TaxablePrice {
     super()
   }
 
-  /** The most this usage can cost per billing period, one amount per currency. */
+  /** The most customers pay for this usage per period, however much they use. One amount per currency. */
   cap(...caps: Amounts<Money<1>>): MeteredPrice<Meter> {
     return clonePrice<MeteredPrice<Meter>>(this, { caps })
   }
@@ -311,12 +316,12 @@ class FlatQuantityBuilder<Type extends QuantityType> {
     private readonly bounds: Bounds = {},
   ) {}
 
-  /** The fewest units a customer can buy. */
+  /** The smallest quantity a customer can buy. Defaults to 1. */
   min(minimum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, minimum })
   }
 
-  /** The most units a customer can buy. */
+  /** The largest quantity a customer can buy. Unlimited by default. */
   max(maximum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, maximum })
   }
@@ -340,12 +345,12 @@ class QuantityBuilder<Type extends QuantityType> {
     return new FlatQuantityBuilder(this.type)
   }
 
-  /** Each tier charges only for the units that fall in it. */
+  /** Each tier charges its own rate for the units in it. The total is the sum across tiers. */
   graduated(...tiers: TierList<Tier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
-  /** Every unit is charged at the price of the tier the total falls in. */
+  /** The total quantity sets the rate, and that rate applies to every unit. */
   volume(...tiers: TierList<VolumeTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
@@ -373,12 +378,12 @@ class MeteredBuilder<Meter extends string> {
     return new FlatMeteredBuilder(this.meter)
   }
 
-  /** Each tier charges only for the units that fall in it. */
+  /** Each tier charges its own rate for the units in it. The total is the sum across tiers. */
   graduated(...tiers: TierList<UsageTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'graduated', tiers)
   }
 
-  /** Every unit is charged at the price of the tier the total falls in. */
+  /** The total usage in the period sets the rate, and that rate applies to every unit. */
   volume(...tiers: TierList<UsageVolumeTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'volume', volumeTiers(tiers))
   }
@@ -388,10 +393,10 @@ class MeteredBuilder<Meter extends string> {
 export const free = (): FreePrice => new FreePrice()
 /** Charges one set amount. */
 export const fixed = (): FixedBuilder => new FixedBuilder()
-/** Charges per seat. Customers pick how many seats to buy and assign them to team members. */
+/** Charges per seat. The buyer assigns seats to team members, who each get the product's benefits. */
 export const seats = (): QuantityBuilder<'seat_based'> =>
   new QuantityBuilder('seat_based')
-/** Charges per unit. Customers pick how many units to buy. */
+/** Charges per unit, paid up front. Customers pick a quantity and get each benefit once. */
 export const units = (): QuantityBuilder<'unit_based'> =>
   new QuantityBuilder('unit_based')
 /** Charges for what a meter records, billed at the end of each period. */

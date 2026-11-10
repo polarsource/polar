@@ -358,6 +358,7 @@ type ProductsInput<
 // given, this repeats its key as required.
 type Present<Entries, Section> = [Entries] extends [never] ? unknown : Section
 
+/** Declares your Polar setup as code: meters, benefits, products and webhooks. */
 export const defineConfig = <
   const Meters extends MeterEntries,
   const Benefits extends BenefitEntries<MeterKey<Meters>> = never,
@@ -369,15 +370,23 @@ export const defineConfig = <
   const Webhooks extends WebhookEntries = Record<never, never>,
 >(
   input: {
+    /** Organization defaults, like the payment currency and tax behavior. */
     readonly settings?: SettingsConfig
+    /** The events your app sends, with a schema for each. Meters count them. */
     readonly events?: Events &
       (Events extends EventDefinitions ? ValidEvents<Events> : unknown)
+    /** What usage to measure, keyed by ID. */
     readonly meters: (helpers: {
+      /** Filters and aggregates your events into usage. The name defaults to its key in `meters`. */
       readonly meter: typeof meter<DeclaredEvents<Events>>
+      /** Your events and their properties, like `events.call.duration_ms`, for `.on()` and filters. */
       readonly events: EventReferences<DeclaredEvents<Events>>
     }) => Meters
+    /** What customers get, keyed by ID. Products grant them. */
     readonly benefits?: BenefitsInput<Meters, Benefits>
+    /** What customers buy, keyed by ID. */
     readonly products?: ProductsInput<Meters, Benefits, Products>
+    /** Where Polar sends events, keyed by ID. */
     readonly webhooks?: (helpers: WebhookHelpers) => Webhooks
   } & Present<
     Benefits,

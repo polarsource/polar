@@ -63765,7 +63765,7 @@ export interface operations {
   'config:apply': {
     parameters: {
       query?: {
-        /** @description Publish the product and benefit changes. With `false`, they're saved in the organization's draft catalog, to publish later. With `true`, a pending draft is discarded. Meters, settings and webhooks aren't versioned, so they apply right away. */
+        /** @description Publish the product and benefit changes. By default, they're saved in the organization's draft catalog, to publish later. With `true`, they go live and a pending draft is discarded. Meters, settings and webhooks aren't versioned, so they apply right away. */
         publish?: boolean
       }
       header?: never

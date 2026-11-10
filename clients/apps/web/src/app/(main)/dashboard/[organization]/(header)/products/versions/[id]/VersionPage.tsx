@@ -1,13 +1,13 @@
 'use client'
 
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PublishedAt, StatusBadge } from '../VersionsPage'
+import { PublishedAt } from '../VersionList'
 import { VersionDiff } from './VersionDiff'
 
 type Organization = schemas['Organization']
@@ -43,7 +43,7 @@ export default function VersionPage({
     notFound()
   }
   if (!catalog) {
-    return <DashboardBody title={null} />
+    return <MasterDetailLayoutContent />
   }
 
   const versionsPath = `/dashboard/${organization.slug}/products/versions`
@@ -63,23 +63,21 @@ export default function VersionPage({
   const productsPath = `/dashboard/${organization.slug}/products`
 
   return (
-    <DashboardBody
-      wrapperClassName="max-w-(--breakpoint-lg)!"
-      title={
+    <MasterDetailLayoutContent
+      header={
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
           <Box alignItems="center" columnGap="l" minWidth={0}>
             <Text variant="heading-xs" as="h1" truncate>
-              {catalog.name ?? 'Untitled'}
+              {catalog.name ??
+                (catalog.status === 'draft'
+                  ? 'Unpublished changes'
+                  : 'Untitled')}
             </Text>
             <Box flexShrink={0}>
-              {catalog.status === 'live' ? (
-                <StatusBadge draft={false} />
-              ) : (
-                <Status
-                  status={statusLabel[catalog.status]}
-                  color={catalog.status === 'archived' ? 'gray' : undefined}
-                />
-              )}
+              <Status
+                status={statusLabel[catalog.status]}
+                color={catalog.status === 'draft' ? 'blue' : 'gray'}
+              />
             </Box>
           </Box>
           <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
@@ -130,6 +128,6 @@ export default function VersionPage({
           />
         ) : null}
       </Box>
-    </DashboardBody>
+    </MasterDetailLayoutContent>
   )
 }

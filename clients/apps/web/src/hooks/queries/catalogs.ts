@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
@@ -58,27 +58,22 @@ export const useCatalogVersionLabels = (
     enabled: !!organization.feature_settings?.config_as_code_enabled,
   })
 
-export const useCatalogs = (
-  organizationId: string,
-  page: number,
-  limit: number,
-) =>
-  useQuery({
-    queryKey: ['catalogs', { organizationId, page, limit }],
-    queryFn: () =>
+export const useInfiniteCatalogs = (organizationId: string) =>
+  useInfiniteQuery({
+    queryKey: ['infinite', 'catalogs', { organizationId }],
+    queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/catalogs/', {
           params: {
-            query: {
-              organization_id: organizationId,
-              page,
-              limit,
-            },
+            query: { organization_id: organizationId, page: pageParam },
           },
         }),
       ),
     retry: defaultRetry,
     staleTime: 0,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+      lastPageParam >= lastPage.pagination.max_page ? null : lastPageParam + 1,
   })
 
 export const useCatalog = (id: string | null | undefined) =>

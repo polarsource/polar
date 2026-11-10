@@ -22,6 +22,8 @@ class BenefitMeterCreditService(
         BenefitMeterCreditProperties, BenefitGrantMeterCreditProperties
     ]
 ):
+    should_revoke_individually = True
+
     async def grant(
         self,
         benefit: Benefit,

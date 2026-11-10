@@ -374,7 +374,11 @@ class TestListRemoved:
 
         assert response.status_code == 401
 
-    @pytest.mark.auth
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
     @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
     async def test_valid(
         self,
@@ -444,28 +448,31 @@ class TestListRemoved:
                 item["status"],
                 item["customers_count"],
                 item["first_catalog_id"],
+                item["last_catalog_id"],
                 item["last_item_id"],
                 item["removed_in_catalog_id"],
             )
             for item in response.json()
         ] == [
             (
+                "benefit",
+                "perk",
+                "deprecated",
+                1,
+                *map(str, (v2.id, v2.id, perk.id, v3.id)),
+            ),
+            (
                 "product",
                 "team",
                 "deprecated",
                 1,
-                str(v2.id),
-                str(products["team"].id),
-                str(v3.id),
+                *map(str, (v2.id, v2.id, products["team"].id, v3.id)),
             ),
             (
                 "product",
                 "lifetime",
                 "removed",
                 0,
-                str(v1.id),
-                str(products["lifetime"].id),
-                str(v2.id),
+                *map(str, (v1.id, v1.id, products["lifetime"].id, v2.id)),
             ),
-            ("benefit", "perk", "deprecated", 1, str(v2.id), str(perk.id), str(v3.id)),
         ]

@@ -157,9 +157,7 @@ def _removed_items(
                 removed_at=removed_in.published_at,
             )
         )
-    return sorted(
-        items, key=lambda item: (-item.removed_at.timestamp(), item.external_id)
-    )
+    return items
 
 
 class CatalogNotFound(PolarError):
@@ -226,8 +224,6 @@ class CatalogService:
         auth_subject: AuthSubject[User | Organization | Agent],
         organization_id: uuid.UUID,
     ) -> builtins.list[RemovedCatalogItem]:
-        """Products and benefits published once but not in the live catalog,
-        with whether customers still use them."""
         if organization_id not in await self._get_readable_org_ids(
             session, auth_subject
         ):
@@ -260,20 +256,23 @@ class CatalogService:
             organization_id, builtins.list(benefits)
         )
 
-        return [
-            *_removed_items(
-                RemovedCatalogItemResource.product,
-                catalogs,
-                products,
-                product_customers,
-            ),
-            *_removed_items(
-                RemovedCatalogItemResource.benefit,
-                catalogs,
-                benefits,
-                benefit_customers,
-            ),
-        ]
+        return sorted(
+            [
+                *_removed_items(
+                    RemovedCatalogItemResource.product,
+                    catalogs,
+                    products,
+                    product_customers,
+                ),
+                *_removed_items(
+                    RemovedCatalogItemResource.benefit,
+                    catalogs,
+                    benefits,
+                    benefit_customers,
+                ),
+            ],
+            key=lambda item: (-item.removed_at.timestamp(), item.external_id),
+        )
 
     async def get_draft_for_write(
         self,

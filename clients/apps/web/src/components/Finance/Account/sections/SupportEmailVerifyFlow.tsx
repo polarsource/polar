@@ -161,7 +161,7 @@ export const SupportEmailVerifyFlow = ({
                 <button
                   type="button"
                   className="cursor-pointer underline underline-offset-2 disabled:cursor-default disabled:opacity-60"
-                  disabled={sendCode.isPending}
+                  disabled={sendCode.isPending || verify.isPending}
                   onClick={onSend}
                 >
                   Resend

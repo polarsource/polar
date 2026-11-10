@@ -29,7 +29,13 @@ export const SupportEmailStatusIcon = ({
   if (!status?.email) return null
   if (status.verified) {
     return (
-      <Box as="span" display="flex" color="text-success">
+      <Box
+        as="span"
+        display="flex"
+        color="text-success"
+        role="img"
+        aria-label="Verified"
+      >
         <CircleCheck className="h-4 w-4" />
       </Box>
     )
@@ -39,6 +45,8 @@ export const SupportEmailStatusIcon = ({
       as="span"
       display="flex"
       color={tone === 'danger' ? 'text-danger' : 'text-warning'}
+      role="img"
+      aria-label="Not verified"
     >
       {tone === 'danger' ? (
         <CircleAlert className="h-4 w-4" />

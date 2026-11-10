@@ -329,7 +329,7 @@ const Checkout = ({
           href={checkout.return_url}
           className="dark:text-polar-500 text-gray-600"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={20} className="rtl:-scale-x-100" />
         </Link>
       )}
       <div className="flex flex-row items-center gap-x-2">

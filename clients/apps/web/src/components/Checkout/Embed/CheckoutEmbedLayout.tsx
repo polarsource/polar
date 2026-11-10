@@ -1,4 +1,5 @@
 import type { schemas } from '@polar-sh/client'
+import type { TextDirection } from '@polar-sh/i18n'
 import CheckoutEmbedClose from './CheckoutEmbedClose'
 import CheckoutEmbedLoaded from './CheckoutEmbedLoaded'
 
@@ -6,14 +7,17 @@ const CheckoutEmbedLayout = ({
   children,
   checkout,
   theme,
+  dir = 'ltr',
 }: React.PropsWithChildren<{
   checkout: schemas['CheckoutPublic']
   theme?: 'light' | 'dark'
+  dir?: TextDirection
 }>) => {
   const colorScheme = theme === 'dark' ? 'dark' : 'light'
   return (
     <div
       className={colorScheme}
+      dir={dir}
       id="polar-embed-layout"
       data-polar-embed-theme={colorScheme}
     >

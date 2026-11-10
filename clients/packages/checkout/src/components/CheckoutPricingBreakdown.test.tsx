@@ -190,6 +190,29 @@ describe('CheckoutPricingBreakdown', () => {
       expect(getRowValue('Taxes')).toBe('—')
       expect(getRowValue('Total')).toBe('$16')
     })
+
+    it('isolates signed amounts so right-to-left layouts keep the sign in place', () => {
+      const checkout = createBaseCheckout({
+        amount: 2000,
+        discount_amount: 400,
+        net_amount: 1600,
+        tax_amount: null,
+        total_amount: 1600,
+        discount: {
+          id: 'disc_1',
+          name: '20% off',
+          type: 'percentage',
+          duration: 'once',
+          code: null,
+          basis_points: 2000,
+        } satisfies schemas['CheckoutPublic']['discount'],
+      })
+
+      render(<CheckoutPricingBreakdown checkout={checkout} locale="en" />)
+
+      expect(screen.getByText('-$4')).toHaveAttribute('dir', 'auto')
+      expect(screen.getByText('(-20%)')).toHaveAttribute('dir', 'auto')
+    })
   })
 
   describe('with discount and taxes', () => {

@@ -3,6 +3,7 @@ import {
   createCustomPrice,
 } from '@polar-sh/checkout/test-utils'
 import type { schemas } from '@polar-sh/client'
+import { type AcceptedLocale, SUPPORTED_LOCALES } from '@polar-sh/i18n'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -211,5 +212,31 @@ describe('Checkout page', () => {
     expect(screen.getByText('+1')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('img', { name: 'Test Product' }))
     expect(screen.getByRole('dialog')).toHaveTextContent('Test Product')
+  })
+
+  describe('text direction', () => {
+    it.each(['ar', 'he'])(
+      'lays the checkout out right-to-left for %s',
+      (locale) => {
+        renderCheckout({ locale: locale as AcceptedLocale })
+
+        expect(document.documentElement).toHaveAttribute('dir', 'rtl')
+        const layout = screen.getByText('Test Product').closest('[dir]')
+        expect(layout).not.toBe(document.documentElement)
+        expect(layout).toHaveAttribute('dir', 'rtl')
+      },
+    )
+
+    it.each([...SUPPORTED_LOCALES])(
+      'keeps the checkout left-to-right for %s',
+      (locale) => {
+        renderCheckout({ locale })
+
+        expect(document.documentElement).toHaveAttribute('dir', 'ltr')
+        const layout = screen.getByText('Test Product').closest('[dir]')
+        expect(layout).not.toBe(document.documentElement)
+        expect(layout).toHaveAttribute('dir', 'ltr')
+      },
+    )
   })
 })

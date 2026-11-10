@@ -116,7 +116,7 @@ export const PriceConfig = Schema.Union([
 
 export type PriceConfig = typeof PriceConfig.Type
 
-type Amounts<Rate extends Money> = readonly [Rate, ...Rate[]]
+type Amounts<Rate extends Money> = readonly [amount: Rate, ...amounts: Rate[]]
 
 /** A tier without amounts is free: 0 in each currency the price uses. */
 export interface Tier<Rate extends Money = Money> {
@@ -124,17 +124,20 @@ export interface Tier<Rate extends Money = Money> {
   readonly amounts: ReadonlyArray<Rate>
 }
 
-type Tiers<Rate extends Money> = readonly [Tier<Rate>, ...Tier<Rate>[]]
+type TierList<T> = readonly [tier: T, ...tiers: T[]]
+
+type Tiers<Rate extends Money> = TierList<Tier<Rate>>
 
 /** Volume pricing charges every unit at the matching tier's rate, so no units are ever included. */
 type VolumeTier<Rate extends Money> = Tier<Rate> & {
   readonly included?: never
 }
 
-type VolumeTiers<Rate extends Money> = readonly [
-  VolumeTier<Rate>,
-  ...VolumeTier<Rate>[],
-]
+type UnitTier = Tier<Money<1>>
+type UnitVolumeTier = VolumeTier<Money<1>>
+/** Usage tiers can charge per thousand or per million units. */
+type UsageTier = Tier<Money>
+type UsageVolumeTier = VolumeTier<Money>
 
 class PricedTier<Rate extends Money> implements Tier<Rate> {
   constructor(
@@ -152,7 +155,7 @@ class IncludedTier extends PricedTier<never> {
 }
 
 const volumeTiers = <Rate extends Money>(
-  tiers: VolumeTiers<Rate>,
+  tiers: TierList<VolumeTier<Rate>>,
 ): Tiers<Rate> => {
   if (tiers.some((tier) => tier instanceof IncludedTier)) {
     throw new Error(
@@ -169,6 +172,7 @@ class TierBuilder {
     return new TierBuilder(bound)
   }
 
+  /** The tier's rate, one amount per currency. */
   amount<const Rates extends Amounts<Money>>(
     ...amounts: Rates
   ): PricedTier<Rates[number]> {
@@ -278,6 +282,7 @@ export class MeteredPrice<Meter extends string> extends TaxablePrice {
     super()
   }
 
+  /** The most this usage can cost per billing period, one amount per currency. */
   cap(...caps: Amounts<Money<1>>): MeteredPrice<Meter> {
     return clonePrice<MeteredPrice<Meter>>(this, { caps })
   }
@@ -290,6 +295,7 @@ export type PriceDefinition<Meter extends string = string> =
   | MeteredPrice<Meter>
 
 class FixedBuilder {
+  /** The price, one amount per currency. */
   amount(...amounts: Amounts<Money<1>>): FixedPrice {
     return new FixedPrice(amounts)
   }
@@ -309,6 +315,7 @@ class FlatQuantityBuilder<Type extends QuantityType> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, maximum })
   }
 
+  /** The price of each unit, one amount per currency. */
   amount(...amounts: Amounts<Money<1>>): QuantityPrice<Type> {
     return new QuantityPrice(
       this.type,
@@ -322,15 +329,24 @@ class FlatQuantityBuilder<Type extends QuantityType> {
 class QuantityBuilder<Type extends QuantityType> {
   constructor(private readonly type: Type) {}
 
+  /** Every unit costs the same. */
   flat(): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type)
   }
 
-  graduated(...tiers: Tiers<Money<1>>): QuantityPrice<Type> {
+  /**
+   * Each tier prices only the units inside it. With $10 up to 5 and $8
+   * after, 10 units cost 5 × $10 + 5 × $8 = $90. Compare `.volume()`.
+   */
+  graduated(...tiers: TierList<UnitTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
-  volume(...tiers: VolumeTiers<Money<1>>): QuantityPrice<Type> {
+  /**
+   * The tier the total lands in prices every unit. With $10 up to 5 and $8
+   * after, 10 units cost 10 × $8 = $80. Compare `.graduated()`.
+   */
+  volume(...tiers: TierList<UnitVolumeTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
 }
@@ -338,6 +354,7 @@ class QuantityBuilder<Type extends QuantityType> {
 class FlatMeteredBuilder<Meter extends string> {
   constructor(private readonly meter: Meter) {}
 
+  /** The rate per unit of usage, one amount per currency. */
   amount(...amounts: Amounts<Money>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'flat', [
       new PricedTier(undefined, amounts),
@@ -348,15 +365,24 @@ class FlatMeteredBuilder<Meter extends string> {
 class MeteredBuilder<Meter extends string> {
   constructor(private readonly meter: Meter) {}
 
+  /** Every unit of usage costs the same. */
   flat(): FlatMeteredBuilder<Meter> {
     return new FlatMeteredBuilder(this.meter)
   }
 
-  graduated(...tiers: Tiers<Money>): MeteredPrice<Meter> {
+  /**
+   * Each tier prices only the units inside it. With $10 up to 5 and $8
+   * after, 10 units cost 5 × $10 + 5 × $8 = $90. Compare `.volume()`.
+   */
+  graduated(...tiers: TierList<UsageTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'graduated', tiers)
   }
 
-  volume(...tiers: VolumeTiers<Money>): MeteredPrice<Meter> {
+  /**
+   * The tier the total lands in prices every unit. With $10 up to 5 and $8
+   * after, 10 units cost 10 × $8 = $80. Compare `.graduated()`.
+   */
+  volume(...tiers: TierList<UsageVolumeTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'volume', volumeTiers(tiers))
   }
 }

@@ -36,6 +36,8 @@ export const STEP_CONFIG: Partial<
   'identity.email': {
     label: STEP_LABELS['identity.email'],
     reasonLabels: {
+      'identity.email_unverified':
+        'Verify your support email with the code we send to it',
       'identity.personal_email': 'Business email is preferred',
       'identity.domain_mismatch':
         'Email domain does not match your organization website',

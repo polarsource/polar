@@ -1,5 +1,6 @@
 import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { useHasPermission } from '@/hooks/permissions'
+import { useOrganizationEmail } from '@/hooks/queries'
 import { usePayouts } from '@/hooks/queries/payouts'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
@@ -13,6 +14,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { DetailRow } from '../Shared/DetailRow'
+import { SupportEmailBlocker } from './SupportEmailBlocker'
 import { toast } from '../Toast/use-toast'
 
 const COOLDOWN_PAYOUT_STATUSES: schemas['PayoutStatus'][] = [
@@ -47,6 +49,8 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     () => organization.capabilities.payouts,
     [organization.capabilities.payouts],
   )
+  const { data: supportEmail } = useOrganizationEmail(organization.id)
+  const supportEmailVerified = supportEmail?.verified === true
 
   const {
     data: latestPayouts,
@@ -77,7 +81,12 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     setPayoutEstimate(null)
     setErrorMessage(null)
 
-    if (!canManageFinance || !canWithdraw || isPayoutIntervalLimited) {
+    if (
+      !canManageFinance ||
+      !canWithdraw ||
+      !supportEmailVerified ||
+      isPayoutIntervalLimited
+    ) {
       return
     }
 
@@ -99,7 +108,13 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
     if (data) {
       setPayoutEstimate(data)
     }
-  }, [organization, canManageFinance, canWithdraw, isPayoutIntervalLimited])
+  }, [
+    organization,
+    canManageFinance,
+    canWithdraw,
+    supportEmailVerified,
+    isPayoutIntervalLimited,
+  ])
 
   /* oxlint-disable react-hooks/set-state-in-effect -- fetches payout estimate when modal opens */
   useEffect(() => {
@@ -179,6 +194,14 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({
                   </a>
                 </p>
               </div>
+            )}
+
+            {canWithdraw && supportEmail && !supportEmail.verified && (
+              <SupportEmailBlocker
+                organization={organization}
+                email={supportEmail.email}
+                hide={hide}
+              />
             )}
 
             {canWithdraw && isPayoutIntervalLimited && nextPayoutAt && (

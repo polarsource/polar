@@ -40,6 +40,10 @@ import { twMerge } from 'tailwind-merge'
 import { FileObject, useFileUpload } from '../FileUpload'
 import { toast } from '../Toast/use-toast'
 import { Box } from '@polar-sh/orbit/Box'
+import {
+  SupportEmailStatusIcon,
+  SupportEmailVerifyPrompt,
+} from '@/components/Finance/Account/sections/SupportEmailVerification'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationDetailsFormProps {
@@ -210,7 +214,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
 }) => {
   const { control, setError, setValue } =
     useFormContext<schemas['OrganizationUpdate']>()
-  const { name, avatar_url: avatarURL } = useWatch({ control })
+  const { name, avatar_url: avatarURL, email } = useWatch({ control })
   const fieldId = useId()
 
   const { status: urlStatus, validateURL } = useURLValidation({
@@ -454,11 +458,19 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
                     disabled={readOnly}
                     value={field.value || ''}
                     placeholder="support@acme.com"
+                    postSlot={
+                      email === organization.email ? (
+                        <SupportEmailStatusIcon organization={organization} />
+                      ) : undefined
+                    }
                   />
                   <FormMessage />
                 </div>
               )}
             />
+            {!readOnly && email === organization.email && (
+              <SupportEmailVerifyPrompt organization={organization} />
+            )}
           </div>
         </div>
 

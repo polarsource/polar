@@ -136,6 +136,9 @@ export const useUpdateOrganization = () =>
       await getQueryClient().invalidateQueries({
         queryKey: ['organizationReviewState', data.id],
       })
+      getQueryClient().invalidateQueries({
+        queryKey: ['organization_email', { organizationId: data.id }],
+      })
       await revalidate(`organizations:${data.id}`, { expire: 0 })
       await revalidate(`organizations:${data.slug}`, { expire: 0 })
 

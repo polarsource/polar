@@ -20,7 +20,7 @@ module "planetscale" {
 
   dedicated_read_replicas = {
     analytics = {
-      cluster_size = "PS_320_AWS_ARM"
+      cluster_size = "PS_640_AWS_ARM"
     }
   }
 

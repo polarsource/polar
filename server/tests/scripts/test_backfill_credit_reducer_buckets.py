@@ -74,3 +74,38 @@ class TestBackfillCreditReducerBuckets:
         else:
             assert last is None
             sync_credits.assert_not_called()
+
+    async def test_only_given_customer_meters(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        customer_second: Customer,
+        meter: Meter,
+    ) -> None:
+        sync_credits = mocker.patch(
+            "scripts.backfill_credit_reducer_buckets.reducer_service.sync_credits"
+        )
+        customer_meters = [
+            CustomerMeter(
+                customer=c,
+                meter=meter,
+                consumed_units=Decimal(0),
+                credited_units=10,
+                balance=Decimal(10),
+            )
+            for c in (customer, customer_second)
+        ]
+        for customer_meter in customer_meters:
+            await save_fixture(customer_meter)
+
+        last = await backfill_batch(
+            session,
+            after=None,
+            batch_size=10,
+            customer_meter_ids=[customer_meters[1].id],
+        )
+
+        assert last == customer_meters[1].id
+        sync_credits.assert_called_once_with(session, customer_second, meter.id)

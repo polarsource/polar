@@ -57,6 +57,9 @@ REDUCER_BUCKET_SIZE = timedelta(minutes=5)
 # Buckets are in Postgres after 10 minutes, and billing waits 15: sealing
 # normally runs in between.
 SEAL_DELAY = timedelta(minutes=11)
+# Until a seal splits the slot of a reset, its usage after the reset is read from
+# its events, for no longer than this.
+POST_RESET_EVENTS_READ_LIMIT = timedelta(minutes=15)
 
 type Contributions = dict[redis_store.BucketId, list[tuple[datetime, Decimal]]]
 # What an event adds to a count reducer.
@@ -603,7 +606,8 @@ class ReducerService:
         """The aggregation function and summary of the customer's usage since the
         meter's latest reset, and its credited units."""
         identities = get_customer_identities(customer)
-        current_bucket_start = get_reducer_bucket_start(utc_now())
+        now = utc_now()
+        current_bucket_start = get_reducer_bucket_start(now)
         previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
         rows = await ReducerBucketRepository.from_session(
             session
@@ -612,8 +616,18 @@ class ReducerService:
         )
         usage: tuple[UUID, Aggregation, datetime | None] | None = None
         usage_cold_agg_values: list[tuple[Any, ...]] = []
+        unsplit_identities: list[tuple[UUID | None, str | None]] = []
         credited_units: Decimal | None = None
-        for reducer_id, kind, aggregation, since, *cold_agg_values in rows:
+        for (
+            reducer_id,
+            kind,
+            aggregation,
+            since,
+            customer_id,
+            external_customer_id,
+            split_at_reset,
+            *cold_agg_values,
+        ) in rows:
             match kind:
                 case ReducerKind.credit:
                     # credits are always sums and never rolled up in redis
@@ -621,6 +635,8 @@ class ReducerService:
                 case ReducerKind.usage:
                     usage = (reducer_id, aggregation, since)
                     usage_cold_agg_values.append(tuple(cold_agg_values))
+                    if not split_at_reset:
+                        unsplit_identities.append((customer_id, external_customer_id))
 
         if usage is None or isinstance(usage[1], UniqueAggregation):
             return None, credited_units
@@ -638,13 +654,64 @@ class ReducerService:
             if active_bucket_starts
             else []
         )
+        # The buckets of the slot a reset falls within start before it until a seal
+        # splits the slot, so the usage after the reset is read from its events.
+        post_reset_usage: list[UsageSummary] = []
+        if (
+            since is not None
+            and since != get_reducer_bucket_start(since)
+            and unsplit_identities
+        ):
+            if now < since + POST_RESET_EVENTS_READ_LIMIT:
+                post_reset_usage = await self._get_post_reset_usage(
+                    session, meter_id, unsplit_identities, since
+                )
+            else:
+                log.warning(
+                    "Reducer slot of the latest meter reset isn't split",
+                    customer_id=customer.id,
+                    meter_id=meter_id,
+                    since=since.isoformat(),
+                )
         summary = merge_summaries(
             [
-                UsageSummary(*agg_values)
-                for agg_values in [*usage_cold_agg_values, *hot_agg_values]
+                *(
+                    UsageSummary(*agg_values)
+                    for agg_values in [*usage_cold_agg_values, *hot_agg_values]
+                ),
+                *post_reset_usage,
             ]
         )
         return (aggregation.func, summary), credited_units
+
+    async def _get_post_reset_usage(
+        self,
+        session: AsyncReadSession,
+        meter_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        since: datetime,
+    ) -> list[UsageSummary]:
+        """Summary of each identity's usage from `since` to the end of its slot."""
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter_id, ReducerKind.usage
+        )
+        assert reducer is not None
+        repository = ReducerBucketRepository.from_session(session)
+        slot_end = get_reducer_bucket_start(since) + REDUCER_BUCKET_SIZE
+        summaries: list[UsageSummary] = []
+        for customer_id, external_customer_id in identities:
+            count, total, minimum, maximum = await repository.aggregate_events(
+                reducer, since, slot_end, customer_id, external_customer_id
+            )
+            summaries.append(
+                UsageSummary(
+                    count=count,
+                    total=Decimal(total),
+                    minimum=None if minimum is None else Decimal(minimum),
+                    maximum=None if maximum is None else Decimal(maximum),
+                )
+            )
+        return summaries
 
     async def log_customer_meter_comparison(
         self,

@@ -11,6 +11,7 @@ from sqlalchemy import (
     Row,
     ScalarSelect,
     Select,
+    String,
     Uuid,
     and_,
     cast,
@@ -312,10 +313,10 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         usage_closed_before: datetime,
     ) -> Sequence[Row[*tuple[Any, ...]]]:
         """The id, kind and aggregation of each of the meter's reducers, the
-        customer's latest meter reset, and the count, sum, min and max of the
-        reducer's buckets of every generation starting from it: one row per
-        identity of the customer's usage buckets before `usage_closed_before`,
-        and one of its credit buckets."""
+        customer's latest meter reset, the identity of the buckets, whether one of
+        them starts at the reset, and their count, sum, min and max of every
+        generation starting from it: one row per identity of the customer's usage
+        buckets before `usage_closed_before`, and one of its credit buckets."""
         reducers = (
             await self.session.execute(
                 select(Reducer)
@@ -344,7 +345,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                 self._get_meter_reducer_totals_statement(
                     usage_reducer,
                     since,
-                    _is_customer(ReducerBucket, customer_id, external_customer_id),
+                    (customer_id, external_customer_id),
                     ReducerBucket.bucket_start < usage_closed_before,
                 )
                 for customer_id, external_customer_id in get_customer_identities(
@@ -354,9 +355,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         if credit_reducer is not None:
             statements.append(
                 self._get_meter_reducer_totals_statement(
-                    credit_reducer,
-                    since,
-                    _is_customer(ReducerBucket, customer.id, None),
+                    credit_reducer, since, (customer.id, None)
                 )
             )
         result = await self.session.execute(union_all(*statements))
@@ -366,16 +365,21 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         self,
         reducer: Reducer,
         since: ScalarSelect[datetime | None],
+        identity: tuple[UUID | None, str | None],
         *clauses: ColumnElement[bool],
     ) -> Select[*tuple[Any, ...]]:
         # One statement per kind and identity: Postgres won't serve an OR of
         # identities from the identity index here.
+        customer_id, external_customer_id = identity
         return (
             select(
                 Reducer.id,
                 Reducer.kind,
                 Reducer.aggregation,
                 since,
+                literal(customer_id, Uuid),
+                literal(external_customer_id, String),
+                func.coalesce(func.bool_or(ReducerBucket.bucket_start == since), False),
                 func.coalesce(func.sum(ReducerBucket.count), 0),
                 func.coalesce(func.sum(ReducerBucket.sum), 0),
                 func.min(ReducerBucket.min),
@@ -388,6 +392,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                     ReducerBucket.reducer_id == reducer.id,
                     ReducerBucket.bucket_start
                     >= func.coalesce(since, literal_column("'-infinity'::timestamptz")),
+                    _is_customer(ReducerBucket, customer_id, external_customer_id),
                     *clauses,
                 ),
             )

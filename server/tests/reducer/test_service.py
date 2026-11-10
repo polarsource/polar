@@ -3,7 +3,7 @@ import uuid
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import dramatiq
 import pytest
@@ -1954,6 +1954,85 @@ class TestGetCustomerMeterUnits:
                 name=SystemEvent.meter_reset,
                 timestamp=timestamp,
                 metadata={"meter_id": str(meter.id)},
+            )
+
+        consumed_units, credited_units = await reducer_service.get_customer_meter_units(
+            session, redis, customer, meter.id
+        )
+
+        assert consumed_units == expected
+
+    @pytest.mark.parametrize(
+        ("since", "split", "expected"),
+        [
+            (BUCKET_START + timedelta(seconds=20), None, 5),
+            (BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20), None, 12),
+            (
+                BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20),
+                "event_identity",
+                12,
+            ),
+            (
+                BUCKET_START - 2 * REDUCER_BUCKET_SIZE + timedelta(seconds=20),
+                "other_identity",
+                12,
+            ),
+            (BUCKET_START - timedelta(hours=1) + timedelta(seconds=20), None, 9),
+        ],
+    )
+    async def test_usage_after_reset_within_its_slot(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+        since: datetime,
+        split: Literal["event_identity", "other_identity"] | None,
+        expected: int,
+    ) -> None:
+        meter = await rollup_tokens(
+            save_fixture, session, redis, organization, SUM_TOKENS
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="external"
+        )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=since,
+            metadata={"meter_id": str(meter.id)},
+        )
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="external",
+            timestamp=since + timedelta(seconds=10),
+            ingested_at=since + timedelta(seconds=10),
+            metadata={"tokens": 5},
+        )
+        await reducer_service.rollup(session, redis, organization.id, [event])
+        if split is not None:
+            reducer = await ReducerRepository.from_session(
+                session
+            ).get_by_meter_and_kind(meter.id, ReducerKind.usage)
+            assert reducer is not None
+            event_identity = split == "event_identity"
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer_id=None if event_identity else customer.id,
+                    external_customer_id="external" if event_identity else None,
+                    bucket_start=since,
+                    bucket_end=get_reducer_bucket_start(since) + REDUCER_BUCKET_SIZE,
+                    count=1 if event_identity else 0,
+                    sum=Decimal(5 if event_identity else 0),
+                    min=Decimal(5) if event_identity else None,
+                    max=Decimal(5) if event_identity else None,
+                )
             )
 
         consumed_units, credited_units = await reducer_service.get_customer_meter_units(

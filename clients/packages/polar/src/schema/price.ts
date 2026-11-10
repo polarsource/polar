@@ -145,8 +145,9 @@ class PricedTier<Rate extends Money> implements TierOf<Rate> {
     readonly amounts: ReadonlyArray<Rate>,
   ) {}
 
-  max(bound: number): PricedTier<Rate> {
-    return new PricedTier(bound, this.amounts)
+  /** The last unit this tier covers. The next tier starts after it. */
+  max(lastUnit: number): PricedTier<Rate> {
+    return new PricedTier(lastUnit, this.amounts)
   }
 }
 
@@ -168,8 +169,9 @@ const volumeTiers = <Rate extends Money>(
 class TierBuilder {
   constructor(private readonly bound: number | undefined = undefined) {}
 
-  max(bound: number): TierBuilder {
-    return new TierBuilder(bound)
+  /** The last unit this tier covers. The next tier starts after it. */
+  max(lastUnit: number): TierBuilder {
+    return new TierBuilder(lastUnit)
   }
 
   /** The price of each unit in this tier, one amount per currency. */
@@ -246,12 +248,14 @@ export class QuantityPrice<
     super()
   }
 
+  /** The fewest units a customer can buy. */
   min(minimum: number): QuantityPrice<Type> {
     return clonePrice<QuantityPrice<Type>>(this, {
       bounds: { ...this.bounds, minimum },
     })
   }
 
+  /** The most units a customer can buy. */
   max(maximum: number): QuantityPrice<Type> {
     return clonePrice<QuantityPrice<Type>>(this, {
       bounds: { ...this.bounds, maximum },
@@ -307,10 +311,12 @@ class FlatQuantityBuilder<Type extends QuantityType> {
     private readonly bounds: Bounds = {},
   ) {}
 
+  /** The fewest units a customer can buy. */
   min(minimum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, minimum })
   }
 
+  /** The most units a customer can buy. */
   max(maximum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, maximum })
   }

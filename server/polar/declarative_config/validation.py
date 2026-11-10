@@ -1,4 +1,6 @@
 import json
+import uuid
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
@@ -36,10 +38,13 @@ from polar.models import (
     WebhookEndpoint,
 )
 from polar.models.benefit import BenefitType
+from polar.models.product_price import ProductPriceSource
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
+from polar.product.service import product as product_service
 from polar.webhook.repository import WebhookEndpointRepository
 
+from . import products as config_products
 from .schemas import (
     Config,
     ConfigAction,
@@ -1024,6 +1029,45 @@ def _external_ids_by_id(
     }
 
 
+def invalid_prices(
+    changes: Sequence[ProductChange], meters: Sequence[MeterChange]
+) -> list[ConfigIssue]:
+    # Meters that don't exist yet get a placeholder id: only identity matters here.
+    meter_ids = defaultdict(
+        uuid.uuid4,
+        {m.config.external_id: m.existing.id for m in meters if m.existing is not None},
+    )
+    issues: list[ConfigIssue] = []
+    for change in changes:
+        if change.existing is not None and not change.update_dict:
+            continue
+        prices_per_currency = defaultdict[str, list[tuple[ProductPrice, int]]](list)
+        for index, price_config in enumerate(change.config.prices):
+            price = product_service.build_price(
+                config_products.price_create(price_config, meter_ids),
+                None,
+                ProductPriceSource.catalog,
+            )
+            prices_per_currency[price.price_currency].append((price, index))
+        issues.extend(
+            ConfigIssue(
+                severity=ConfigIssueSeverity.error,
+                type=ConfigIssueType.invalid_prices,
+                loc=_loc(
+                    ConfigResource.product,
+                    change.index,
+                    *("meter" if part == "meter_id" else part for part in error["loc"]),
+                ),
+                msg=error["msg"],
+                input=None,
+            )
+            for error in product_service.validate_price_structure(
+                prices_per_currency, None, ("prices",)
+            )
+        )
+    return issues
+
+
 async def check(
     session: AsyncSession,
     organization: Organization,
@@ -1073,6 +1117,7 @@ async def check(
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),
+        *invalid_prices(products, meters),
         *changed_intervals(products),
         *new_meter_cycles(organization, config, products),
     ]

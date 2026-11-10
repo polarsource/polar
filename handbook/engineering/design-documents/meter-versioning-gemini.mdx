@@ -1,0 +1,165 @@
+---
+title: "Meter Versioning"
+description: "Whether Polar should version meters in declarative config, and how the three ways to do it affect merchants and customers."
+---
+
+<Info>
+
+**Created**: 2026-11-10
+
+**Last Updated**: 2026-11-10
+
+**Author**: Petru Rares Sincraian
+</Info>
+
+## Summary
+
+[Versioning](/engineering/design-documents/versioning) freezes products and benefits with copy-on-write rows and leaves meter versioning out of scope. This doc revisits that decision.
+
+**Recommendation: Do not version meters.** Keep the rule in `versioning.mdx`: a meter's `external_id` maps to one `Meter` row and one customer balance. Its `filter` and `aggregation` lock once used; to count usage differently, the merchant creates a new meter with a new `external_id`. We should only fix draft isolation so `apply` (without `--publish`) does not mutate or create live meters before the draft is published, and remove the unused `catalog_meters` scaffolding.
+
+Why not version meters? A product or benefit is a self-contained commercial term on a purchase. A meter is two things at once: a **counting rule** (`filter` and `aggregation`) and a **shared unit of account** (`CustomerMeter`) where subscription credits, one-time credit packs, rollovers, manual credits, and overage billing all meet.
+
+- If a meter change alters the unit (for example from counting API requests to summing tokens), old and new credits must not pool together — that is a new meter with a new `external_id`.
+- If a meter change only fixes an event filter for the same unit, splitting the meter row (`meter_A → meter_B`) splits the customer's balance and breaks top-ups, rollovers, and the customer portal.
+
+If we still decide to version meters, we should pick **Option 2 (versioned rules with a shared balance per `external_id`)** and restrict moves that change a meter rule to `next_period`.
+
+## Context
+
+In declarative config (`polar.ts`), editing a product or benefit creates a new row in the draft catalog and leaves existing customers untouched until moved. We started laying database groundwork for meter versioning (`catalog_meters`, `meters.catalog_id`, `meters.is_current`, and `MeterRepository.get_billed_by_external_id`), which surfaced a core question: if a meter gets a new row when edited, what happens to customer balances, top-ups, and credit grants across versions?
+
+## Current state
+
+Today in the codebase, meters are partially prepared for versioning in the schema, but behave as unversioned singletons in declarative config and billing:
+
+| Area | How it works in the code today |
+|---|---|
+| Schema and catalog | `meters` has `catalog_id`, `is_current`, and a unique index on `(organization_id, external_id) WHERE is_current`. The `catalog_meters` table exists, but `CatalogService` and `DeclarativeConfigService` only track products and benefits. |
+| Applying config | `DeclarativeConfigService._apply_meters` updates the current `Meter` row in place. It runs even when `publish=False` (saving a draft), so meter creates and display edits (`name`, `unit`, `custom_label`, `custom_multiplier`) go live right away without waiting for draft publication. |
+| Locking `filter` and `aggregation` | Locked once `meter.last_billed_event_id` is set. `MeterService.create_for_organization` sets `last_billed_event` on creation if any matching event already exists, and the billing cron, which runs every 15 minutes, advances it whenever an event matches, even with zero subscribers. |
+| Runtime identity | Every reference stores the row UUID `meter.id`, never `external_id`: `ProductPrice.meter_id`, `Benefit.properties["meter_id"]`, `CustomerMeter.meter_id`, `SubscriptionMeter.meter_id`, `MeterEvent.meter_id`, `MeterReducer.meter_id`, and `user_metadata["meter_id"]` on `meter.credited` and `meter.reset` system events. |
+| Buying extra credits ("top-ups") | Polar has no dedicated meter top-up feature (`wallets.mdx` is postponed). Customers buy extra credits via a **one-time product** with a `meter_credit` benefit, or receive **manual credits** via `POST /v1/customer-meters/credits` or the dashboard. Both emit `meter.credited` events on a `meter_id` and update `CustomerMeter.balance` (`credited_units - consumed_units`). |
+| Resets and rollovers | At cycle end, `SubscriptionService.reset_meters` resets each `meter_id` on the subscription's metered prices and `meter_credit` grants (unless an earlier active subscription also uses that `meter_id`). It writes `meter.reset` and re-credits unused `rollover: true` units onto the same `meter_id`. Non-rollover credits are consumed before rollover credits. |
+| Manual credit resolution | `POST /v1/customer-meters/credits` with `external_meter_id` calls `MeterRepository.get_billed_by_external_id`, which finds the meter version billed by the customer's active subscription (or claimed seat), falling back to `is_current`. It only checks metered `ProductPrice` rows — it ignores subscriptions that only grant `meter_credit` benefits. |
+| Moving customers | `SubscriptionBulkUpdateService` moves subscriptions to a target `Product` row at `next_period`. One-time order moves and benefit grant re-pointing by `external_id` are not implemented yet: switching products revokes the old product's `BenefitGrant` rows (`BenefitGrantRepository.list_outdated_grants` matches by `benefit_id`) and grants the new product's benefits. |
+
+## Goals
+
+- Keep customer balances, one-time credit top-ups, rollovers, and manual credits predictable when a catalog changes.
+- Prevent silent billing corruption (double-billing events, dropping unbilled overage, or pooling incompatible units).
+- Keep the customer portal and Customer State API clear: one balance per conceptual meter.
+
+## Out of scope
+
+- Prepaid cash wallets (`wallets.mdx`).
+- Automatic unit conversion when a merchant changes what a unit means (for example multiplying existing balances by 1,000).
+
+## Options
+
+| Option | We pick it? |
+|---|---|
+| **Do not version meters** — keep one `Meter` row per `external_id`; require a new `external_id` to change `filter` or `aggregation` | **Yes** |
+| **Option 1: Copy-on-write meter rows** — new `Meter` row per change, isolated `CustomerMeter` balance per `meter_id` | No. Breaks top-ups, strands rollover credits on move, and duplicates ingestion and customer state |
+| **Option 2: Versioned rules, shared balance per `external_id`** — new rule row per change, one shared `CustomerMeter` balance per `external_id` | No (best option if we must version). Pools credits across incompatible unit changes and complicates mid-cycle moves |
+| **Option 3: Time-sliced revisions on one meter** — one `Meter` row, new `filter`/`aggregation` takes effect for everyone at publish | No. Breaks the full-freeze guarantee by changing how existing subscribers are counted mid-cycle |
+
+### Option 1 — Copy-on-write meter rows (isolated balance per version)
+
+- **How it works:** Treat meters like benefits in `versioning.mdx`. Editing `tokens` in a draft creates a new row `meter_B` (`is_current = false` until published) and cascades new rows to every `meter_credit` benefit (`ben_2`) and product (`prod_B`) referencing `tokens`. Publishing sets `meter_A.is_current = false` and `meter_B.is_current = true`. Both `meter_A` and `meter_B` stay active in `MeterRepository.get_active_statement()`, with separate `CustomerMeter`, `MeterEvent`, and `Reducer` rows keyed by `meter.id`.
+- **What the merchant sees and has to do:** The merchant edits `tokens` in `polar.ts` under the same `external_id`. `plan` shows `meter_A → meter_B` and all cascaded benefits and products. After publishing, the merchant runs a bulk subscription update to move existing subscribers from `prod_A` to `prod_B`.
+- **What the customer sees:** Existing subscribers stay on `meter_A` until moved. However, because `meter_A` and `meter_B` have separate `CustomerMeter` rows, any credit granted on `meter_B` (such as a live top-up pack) appears as a second "Tokens" meter in the customer portal and does not cover `meter_A` usage.
+- **Main cost or risk:** Cross-version incompatibility and write amplification. Live one-time top-up products credit `meter_B` while existing subscribers bill on `meter_A`; moving a subscriber strands rollover and top-up credits on `meter_A`; and every matching event is written and reduced once per active meter version.
+
+### Option 2 — Versioned rules with a shared balance per `external_id`
+
+- **How it works:** Separate the counting rule from the credit ledger. Editing `tokens` creates a new rule row `meter_B` (holding `filter`, `aggregation`, `name`, `unit`) and cascades to products so each subscription pins its rule row. However, `CustomerMeter` and all `meter.credited` and `meter.reset` system events are keyed by `(organization_id, external_id)` (`tokens`), not by the version row. A customer has one `tokens` balance; Polar evaluates their usage with the rule pinned by their active subscription (or `is_current` if they have none) and deducts it from that shared balance.
+- **What the merchant sees and has to do:** The merchant edits `tokens` in `polar.ts` and publishes. Top-ups, manual credits, and `CustomerState` work across versions by `external_id` with no extra action. Moving subscribers switches which rule counts their events (restricted to `next_period` when the rule changes).
+- **What the customer sees:** Always a single "Tokens" balance in the customer portal and Customer State API. Top-up credits and rollover credits work seamlessly before and after a move.
+- **Main cost or risk:** Unit mismatch and multi-purchase ambiguity. If the merchant changes `tokens` from `count` (requests) to `sum(total_tokens)`, pooling credits into one `tokens` balance lets 10,000 token credits pay for 10,000 API calls. Reducers and `CustomerMeter` must also resolve which rule version applies per customer rather than per meter row.
+
+### Option 3 — Time-sliced meter revisions on a single meter (cutover at publish)
+
+- **How it works:** A meter has one `Meter` row (`meter_A`) and one `CustomerMeter` per customer forever. Draft edits are staged on the draft catalog without creating a new `Meter` row or cascading new rows to benefits and products. When the draft is published, Polar seals `meter_A`'s reducer buckets at `published_at` and updates `meter_A`'s active reducer to the new `filter` and `aggregation`. Usage before `published_at` keeps its sealed totals from the old rule; events from `published_at` onward are reduced under the new rule into the same `CustomerMeter`.
+- **What the merchant sees and has to do:** The merchant edits `tokens` in `polar.ts` and publishes. No benefits or products are cloned, and no customer migration is needed for the meter change.
+- **What the customer sees:** One "Tokens" meter and one continuous balance. Starting at `published_at`, new usage is counted under the updated rule.
+- **Main cost or risk:** Breaks `versioning.mdx`'s **full freeze** principle. Publishing immediately changes how events are counted for existing subscribers mid-cycle, and non-summable aggregations (`max`, `min`, `avg`, `unique`) cannot combine two different rules within a single billing period.
+
+## Concrete use cases across the options
+
+ACME sells `pro` ($20/month, metered price on `tokens` at $0.01/unit, and benefit `pro_credits` granting 5,000 `tokens` units/month with `rollover: true`) and a one-time top-up product `topup_10k` ($10, granting benefit `topup_credits` for 10,000 `tokens` units with `rollover: true`). Alice subscribes to `pro` in catalog `a1f3` (`prod_A`, `ben_1`, `meter_A`) and uses 6,000 units. ACME then edits `tokens` and publishes catalog `9c2e`.
+
+### 1. Alice (on `a1f3`) buys a $10 top-up of 10k credits from the live catalog (`9c2e`)
+
+Every new checkout uses the live catalog (`is_current = true`), and checkout links re-point to the live product row at publish. When Alice buys `topup_10k` after `9c2e` is published:
+
+| | Do not version | Option 1 (Copy-on-write rows) | Option 2 (Shared balance) | Option 3 (Time-sliced) |
+|---|---|---|---|---|
+| Subscription `sub_1` | Bills `meter_A` | Bills `meter_A` | Rule `meter_A`, balance `tokens` | Bills `meter_A` |
+| Live top-up `topup_10k` | Credits `meter_A` (+10k) | Credits `meter_B` (+10k) | Credits `tokens` (+10k) | Credits `meter_A` (+10k) |
+| Alice's balance after 6k usage | `meter_A`: +9,000 | `meter_A`: -1,000 (billed $10 overage); `meter_B`: +10,000 (unused) | `tokens`: +9,000 | `meter_A`: +9,000 |
+| **Compatible?** | **Yes** | **No** | **Yes** (if same unit) | **Yes** |
+
+Under **Option 1**, publishing `9c2e` cascades `ben_T2` (`meter_id = meter_B`) and `prod_T2`. Because `BenefitMeterCreditService.grant` credits the static `meter_id` on `ben_T2`, Alice's $10 top-up lands on `meter_B` while `sub_1` bills her overage on `meter_A`. (Even if `grant` called `get_billed_by_external_id`, a customer who buys a top-up before subscribing or who later moves to `prod_B` would still end up on the wrong row.)
+
+### 2. Credit grants (benefit credits, rollovers, manual credits) before and after moving Alice
+
+| Scenario | Option 1 (Copy-on-write rows) | Option 2 (Shared balance) | Option 3 (Time-sliced) |
+|---|---|---|---|
+| **Nothing moved** (Alice stays on `prod_A`) | `ben_1` cycles and rolls over on `meter_A`. Manual API credits by `external_meter_id` hit `meter_A` via `get_billed_by_external_id` **only if** `prod_A` has a metered price; on a credits-only plan (no metered price) or from the dashboard picker, manual credits land on `meter_B` and miss Alice's subscription. | `ben_1` cycles, rollovers, and manual credits (by ID, `external_meter_id`, or dashboard) all hit Alice's single `tokens` balance. | Everything hits `meter_A`. |
+| **Moved at `next_period`** (`prod_A → prod_B`) | In `SubscriptionService.cycle`, `apply_update()` switches prices to `meter_B`, then `reset_meters` resets `meter_A` and re-credits `rollover_units` back onto **`meter_A`**. `ben_2` grants new credits on `meter_B`. **All rollover, manual, and top-up credits on `meter_A` are stranded.** (If `prod_A` had no `ben_1`, `meter_A` is not even reset.) | At renewal, `tokens` settles under `meter_A`, resets once, rolls over unused `rollover: true` units in `tokens`, grants `ben_2` into `tokens`, and switches future counting to `meter_B`. | `prod_B` still uses `meter_A`; rollovers and manual credits stay on `meter_A`. |
+| **Moved `immediate`** (`prorate` or `invoice`) | `update_product` revokes `ben_1` (`-5,000` on `meter_A` because no `meter.reset` occurred since `last_credited_at`) and grants `ben_2` (`+5,000` on `meter_B`). Usage already accrued on `meter_A` loses its `ben_1` credit cover and bills as overage; manual/top-up credits stay stranded on `meter_A`. | `ben_1` is revoked (`-5,000`) and `ben_2` is granted (`+5,000`) on `tokens`, keeping net credits intact, but mid-period usage must be split between `meter_A` and `meter_B`. | `ben_1` is revoked and `ben_2` is granted on `meter_A`; net credits stay on `meter_A`. |
+
+### 3. Changing `filter` or `aggregation` mid-period and overage billing
+
+Suppose on Oct 15 (mid-month), ACME changes `tokens` in `9c2e`:
+
+- **Option 1:** Existing subscribers stay on `meter_A` until moved. If ACME moves Alice immediately on Oct 15, she has pending `BillingEntry` rows on `price_1` (`meter_A`) for Oct 1–15 and on `price_2` (`meter_B`) for Oct 15–31. For `count`/`sum`, her next invoice has two metered line items (and `meter_A`'s credits were revoked). For `max`, `min`, `avg`, or `unique`, `BillingEntryService.compute_pending_metered_line_items` looks for an active price on the subscription matching `meter_A`, finds none (`active_price is None`), and **silently drops Oct 1–15 overage from the invoice**.
+- **Option 2:** Existing subscribers stay on `meter_A` until moved. If moves that change a meter rule are restricted to `next_period`, every billing period uses one rule and overage is exact. If an immediate move is allowed, `CustomerMeter` cannot compute a single `max`, `avg`, or `unique` across two rules without resetting at the move timestamp.
+- **Option 3:** Publishing on Oct 15 immediately switches `meter_A`'s reducer for all customers. Subscribers see their counting rule change mid-month without being moved. This works for `count` and `sum` (sealed buckets before Oct 15 plus new buckets after), but fails for `unique` (which queries raw events over the full period) and for changes between incompatible aggregations such as `max` → `avg`.
+
+### 4. Event ingestion, Customer State API, Customer Portal, and two purchases on different versions
+
+Suppose Alice holds `prod_A` (`meter_A`) and either a top-up `prod_T2` (`meter_B`) or a second subscription `prod_B` (`meter_B`):
+
+- **Option 1:**
+  - **Event ingestion:** `EventService._create_meter_events` and `CustomerMeterService.update_customer` run for every active meter in the org. Each matching event writes `MeterEvent` rows, updates reducers, and creates `CustomerMeter` rows for **both** `meter_A` and `meter_B`. If Alice has subscriptions on both `prod_A` and `prod_B`, `MeterService.create_billing_entries` bills the **same event twice** (today's earliest-subscription tiebreaker in `SubscriptionProductPriceRepository` only deduplicates within a single `meter_id`).
+  - **Customer State API (`GET /v1/customers/{id}/state`):** `active_meters` returns every `CustomerMeter` row for Alice (`meter_A` and `meter_B`), and `CustomerStateMeter` only exposes `meter_id` (not `external_id`), so merchant apps cannot tell which balance to enforce.
+  - **Customer Portal:** Shows two separate "Tokens" meters — one with `prod_A`'s usage and another with `prod_T2`'s 10,000 credits.
+- **Option 2:** One `CustomerMeter` per `(customer_id, external_id)`. Customer State and the portal show one "Tokens" balance. If Alice holds two subscriptions on `meter_A` and `meter_B`, the earliest-started subscription wins ownership of the counting rule and reset cadence.
+- **Option 3:** One `Meter` row (`meter_A`). Ingestion, Customer State, the portal, and the earliest-subscription tiebreaker all work as today.
+
+### 5. Refunding Alice's $10 top-up
+
+When a one-time order is refunded with `revoke_benefits=true` (or disputed), `RefundService._on_created` revokes the order's `BenefitGrant`. `BenefitMeterCreditService.revoke` checks `has_meter_reset_ingested_after` on `last_credited_meter_id`:
+
+- **Option 1:** If Alice bought `prod_T1` (`meter_A`), was moved to `prod_B` (`meter_B`) with her balance migrated to `meter_B`, and then refunded `prod_T1`, `revoke` writes `-10,000` to `meter_A` while Alice keeps the 10,000 migrated credits on `meter_B`.
+- **Option 2 and Option 3 (and Do not version):** The `-10,000` revocation event targets the same balance Alice is using. (Note: across all options today, once a `meter.reset` occurs after `last_credited_at`, `BenefitMeterCreditService.revoke` skips clawing back credits even when `rollover: true` carried them into the new period.)
+
+### Comparison across options
+
+| Criterion | Do not version (Recommended) | Option 1: Copy-on-write rows | Option 2: Shared balance, versioned rules | Option 3: Time-sliced revisions |
+|---|---|---|---|---|
+| **Full freeze for existing subscribers** | Yes (counting rule never changes) | Yes | Yes | **No** (changes at publish) |
+| **Live top-ups work with old subscriptions** | Yes | **No** (lands on `meter_B`) | Yes (if same unit) | Yes |
+| **Rollover and manual credits survive move** | Yes | **No** (stranded on `meter_A`) | Yes | Yes |
+| **Customer Portal and `CustomerState`** | One meter | **Duplicate meters** per version | One meter | One meter |
+| **Event ingestion cost** | 1x per meter | **Nx per active version** | Nx reducers, 1x `CustomerMeter` | 1x per meter |
+| **Safe when unit meaning changes (`count` → `sum`)** | Yes (forced new `external_id`) | Yes | **No** (pools incompatible units) | **No** (corrupts mid-period) |
+| **Mid-period `max`/`avg`/`unique` changes** | Prevented | **Drops unbilled `meter_A` usage** on immediate move | Requires blocking immediate moves | **Broken** mid-period |
+
+## Security considerations
+
+- **Data in and out** — Declarative config payloads (`meters`), `CustomerState`, customer portal meter balances, and manual credit requests.
+- **Who can access it** — Unchanged: the `meters:read` / `meters:write` scopes for meters and config, the `customers:write` scope for manual credits, and customer session tokens for the portal.
+- **Data we store** — Meter definitions, `CustomerMeter` balances, and `meter.credited` / `meter.reset` events. No new personal data.
+- **Risks** — Under Option 1, a customer who migrates between meter versions and refunds a prior top-up could retain migrated credits; under Option 2, an agent changing a meter's aggregation in config could inflate a customer's credit purchasing power. Keeping `filter` and `aggregation` immutable per `external_id` eliminates both risks.
+
+Any risk identified above must be recorded as an entry in Freda's risk register, with an owner and treatment plan, before this RFC is merged.
+
+## Open questions
+
+1. **Draft isolation for unversioned meters:** Today `DeclarativeConfigService._apply_meters` writes new meters and display changes (`name`, `unit`, `custom_label`, `custom_multiplier`) directly to live even when `publish=False`. Should draft catalogs hold new meters with `is_current=False` (and stage display edits) until `publish_draft` runs?
+2. **When a new meter locks:** `MeterService.create_for_organization` sets `last_billed_event` immediately if matching events already exist in `events`, locking `filter` and `aggregation` before any customer is billed or credited. Should we only lock a meter once a customer purchase or credit references it?
+3. **Cleaning up `catalog_meters`:** If we confirm "do not version meters", should we drop the unused `catalog_meters` table and `MeterRepository.get_billed_by_external_id`, or keep `meters.catalog_id` / `meters.is_current` solely to hide draft-created meters until their first publish?
+4. **Refunding rolled-over top-ups:** `BenefitMeterCreditService.revoke` does not deduct credits from a refunded one-time order if a `meter.reset` happened after the purchase, even when `rollover: true` carried those unused credits into the current period. Should refund revocation claw back up to the unused rolled-over balance?

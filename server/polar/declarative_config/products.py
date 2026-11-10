@@ -122,7 +122,6 @@ def product_create(
 def product_update(
     config: ConfigProduct, meter_ids: dict[str, UUID], fields: Collection[str]
 ) -> ProductUpdate:
-    """The update setting these fields of the product to the config's values."""
     values: dict[str, Any] = {
         name: getattr(config, name)
         for name in ("name", "description", "visibility")

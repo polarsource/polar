@@ -67,7 +67,9 @@ class ZodConverter:
     def convert_model(self, model: Model) -> str:
         if not model.fields:
             if model.additional_properties is None:
-                return self._call("object", "{}")
+                # The SDK types these models as Record<string, never>, which a
+                # loose object's output doesn't satisfy.
+                return f"{self._call('looseObject', '{}')} as never"
             return self._call(
                 "record",
                 PURE + "z.string()",

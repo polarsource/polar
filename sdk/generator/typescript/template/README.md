@@ -310,8 +310,8 @@ npm install zod
 ```
 
 ```typescript
-import { webhooks } from "@polar-sh/sdk/2026-10";
-import { Order, WebhookPayload } from "@polar-sh/sdk/2026-10/zod";
+import { webhooks } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}";
+import { Order, WebhookPayload } from "@polar-sh/sdk/{{ (ir.versions[-2] | default({})).version }}/zod";
 
 const event = WebhookPayload.parse(await webhooks.validateEvent(body, headers, webhookSecret));
 

@@ -5,6 +5,7 @@ import openapi_pydantic as op
 
 from generator.ir import (
     Field,
+    LiteralType,
     Model,
     ModelRef,
     NamedUnion,
@@ -65,10 +66,18 @@ def test_convert_model_with_additional_properties_defers_references() -> None:
     )
 
 
-def _event_model(name: str, *, discriminator_required: bool = True) -> Model:
+def _event_model(
+    name: str, value: str, *, discriminator_required: bool = True
+) -> Model:
     return Model(
         name=name,
-        fields=[Field(name="name", type=STRING, required=discriminator_required)],
+        fields=[
+            Field(
+                name="name",
+                type=LiteralType(kind="literal", value=value),
+                required=discriminator_required,
+            )
+        ],
     )
 
 
@@ -91,9 +100,9 @@ def test_convert_named_union_nests_discriminated_unions() -> None:
         discriminator=discriminator,
     )
     models = [
-        _event_model("OrderPaidEvent"),
-        _event_model("OrderRefundedEvent"),
-        _event_model("UserEvent"),
+        _event_model("OrderPaidEvent", "order.paid"),
+        _event_model("OrderRefundedEvent", "order.refunded"),
+        _event_model("UserEvent", "user.event"),
     ]
 
     converter = ZodConverter(models, [event, system_event])
@@ -114,8 +123,8 @@ def test_convert_named_union_with_optional_discriminator_uses_union() -> None:
         discriminator=UnionDiscriminator(property_name="name", mapping={}),
     )
     models = [
-        _event_model("DiscountFixedCreate", discriminator_required=False),
-        _event_model("DiscountPercentageCreate"),
+        _event_model("DiscountFixedCreate", "fixed", discriminator_required=False),
+        _event_model("DiscountPercentageCreate", "percentage"),
     ]
 
     converter = ZodConverter(models, [union])
@@ -124,6 +133,14 @@ def test_convert_named_union_with_optional_discriminator_uses_union() -> None:
         "z.union([DiscountFixedCreate, DiscountPercentageCreate])"
     )
     assert not converter.is_discriminable_union(union)
+
+
+def test_convert_empty_model_keeps_unknown_fields() -> None:
+    model = Model(name="BenefitFeatureFlagProperties", fields=[])
+
+    assert _strip_pure(ZodConverter([], []).convert_model(model)) == (
+        "z.looseObject({}) as never"
+    )
 
 
 def test_sort_unions_by_dependency_declares_referenced_unions_first() -> None:

@@ -2688,9 +2688,9 @@ export const BenefitFeatureFlagCreate: ObjectSchema<models.BenefitFeatureFlagCre
     },
   });
 export const BenefitFeatureFlagCreateProperties: ObjectSchema<models.BenefitFeatureFlagCreateProperties> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitFeatureFlagProperties: ObjectSchema<models.BenefitFeatureFlagProperties> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitFeatureFlagPublic: ObjectSchema<models.BenefitFeatureFlagPublic> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -2722,7 +2722,7 @@ export const BenefitFeatureFlagSubscriber: ObjectSchema<models.BenefitFeatureFla
     },
   });
 export const BenefitFeatureFlagSubscriberProperties: ObjectSchema<models.BenefitFeatureFlagSubscriberProperties> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitFeatureFlagUpdate: ObjectSchema<models.BenefitFeatureFlagUpdate> =
   /* @__PURE__ */ z.looseObject({
     external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -2898,7 +2898,7 @@ export const BenefitGrant: ObjectSchema<models.BenefitGrant> = /* @__PURE__ */ z
   },
 });
 export const BenefitGrantCustomProperties: ObjectSchema<models.BenefitGrantCustomProperties> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitGrantCustomWebhook: ObjectSchema<models.BenefitGrantCustomWebhook> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -3018,7 +3018,7 @@ export const BenefitGrantError: ObjectSchema<models.BenefitGrantError> =
     timestamp: /* @__PURE__ */ z.string(),
   });
 export const BenefitGrantFeatureFlagProperties: ObjectSchema<models.BenefitGrantFeatureFlagProperties> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitGrantFeatureFlagWebhook: ObjectSchema<models.BenefitGrantFeatureFlagWebhook> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -3651,7 +3651,7 @@ export const BenefitSlackSharedChannelSubscriber: ObjectSchema<models.BenefitSla
     },
   });
 export const BenefitSlackSharedChannelSubscriberProperties: ObjectSchema<models.BenefitSlackSharedChannelSubscriberProperties> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitSlackSharedChannelUpdate: ObjectSchema<models.BenefitSlackSharedChannelUpdate> =
   /* @__PURE__ */ z.looseObject({
     external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -4728,7 +4728,7 @@ export const CheckoutUpdatePublic: ObjectSchema<models.CheckoutUpdatePublic> =
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.literal(false)),
     ),
   });
-export const Context: ObjectSchema<models.Context> = /* @__PURE__ */ z.object({});
+export const Context: ObjectSchema<models.Context> = /* @__PURE__ */ z.looseObject({}) as never;
 export const CostMetadataInput: ObjectSchema<models.CostMetadataInput> =
   /* @__PURE__ */ z.looseObject({
     amount: /* @__PURE__ */ z.union([/* @__PURE__ */ z.number(), /* @__PURE__ */ z.string()]),
@@ -10194,7 +10194,7 @@ export const ResourceNotFound: ObjectSchema<models.ResourceNotFound> =
     detail: /* @__PURE__ */ z.string(),
   });
 export const RevokeTokenResponse: ObjectSchema<models.RevokeTokenResponse> =
-  /* @__PURE__ */ z.object({});
+  /* @__PURE__ */ z.looseObject({}) as never;
 export const RotateNotPermitted: ObjectSchema<models.RotateNotPermitted> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("RotateNotPermitted"),

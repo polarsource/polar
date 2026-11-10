@@ -247,6 +247,28 @@ class TestFilter:
         assert await repository.get_all(statement) == []
         assert clause.matches(event) is False
 
+    @pytest.mark.parametrize("operator", [FilterOperator.eq, FilterOperator.ne])
+    async def test_boolean_timestamp_matches_nothing(
+        self,
+        operator: FilterOperator,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="customer_1",
+            timestamp=datetime.fromtimestamp(1, tz=UTC),
+        )
+        clause = FilterClause(property="timestamp", operator=operator, value=True)
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(clause.get_sql_clause(Event))
+
+        assert await repository.get_all(statement) == []
+        assert clause.matches(event) is False
+
     async def test_boolean_clause_number_value(
         self,
         save_fixture: SaveFixture,
@@ -284,7 +306,70 @@ class TestFilter:
         statement = repository.get_base_statement().where(filter.get_sql_clause(Event))
         matching_events = await repository.get_all(statement)
 
-        assert len(matching_events) == 2
+        assert len(matching_events) == 0
+
+    @pytest.mark.parametrize(
+        ("value", "other_type_value"), [(1, "1"), (1, True), (True, 1)]
+    )
+    @pytest.mark.parametrize("operator", [FilterOperator.eq, FilterOperator.ne])
+    async def test_value_never_equals_property_of_another_type(
+        self,
+        operator: FilterOperator,
+        value: int | bool,
+        other_type_value: int | str | bool,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        same_type_event, other_type_event = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                external_customer_id="customer_1",
+                metadata={"version": metadata_value},
+            )
+            for metadata_value in (value, other_type_value)
+        ]
+        matching_event = (
+            same_type_event if operator == FilterOperator.eq else other_type_event
+        )
+        clause = FilterClause(property="version", operator=operator, value=value)
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(clause.get_sql_clause(Event))
+        matching_events = await repository.get_all(statement)
+
+        assert [event.id for event in matching_events] == [matching_event.id]
+        assert [
+            event
+            for event in (same_type_event, other_type_event)
+            if clause.matches(event)
+        ] == [matching_event]
+
+    @pytest.mark.parametrize("property_value", [{"a": 1}, [1], None])
+    @pytest.mark.parametrize("operator", [FilterOperator.eq, FilterOperator.ne])
+    async def test_non_scalar_property(
+        self,
+        operator: FilterOperator,
+        property_value: dict[str, int] | list[int] | None,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="customer_1",
+            metadata={"version": property_value},
+        )
+        clause = FilterClause(property="version", operator=operator, value=1)
+        expected = operator == FilterOperator.ne and property_value is not None
+
+        repository = EventRepository.from_session(session)
+        statement = repository.get_base_statement().where(clause.get_sql_clause(Event))
+
+        assert (await repository.get_all(statement) == [event]) is expected
+        assert clause.matches(event) is expected
 
     async def test_number_comparisons_clause(
         self,

@@ -493,3 +493,98 @@ class TestResolvePendingParents:
         assert self_event.parent_id is None
         assert self_event.pending_parent_external_id == "self"
         assert self_event.root_id is None
+
+    async def test_unrelated_batch_leaves_orphans_pending(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        """Children whose parent never arrived stay pending through other batches."""
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        orphan_ids, _ = await repository.insert_batch(
+            [
+                _make_event(
+                    organization, f"orphan-{i}", pending_parent_external_id="missing"
+                )
+                for i in range(3)
+            ]
+        )
+        assert await _resolve(repository, orphan_ids) == []
+        await session.flush()
+
+        anonymous_id = uuid.uuid4()
+        batch_ids, _ = await repository.insert_batch(
+            [
+                _make_event(organization, "unrelated"),
+                {
+                    "id": anonymous_id,
+                    "name": "event.anonymous",
+                    "source": EventSource.user,
+                    "organization_id": organization.id,
+                    "external_id": None,
+                    "root_id": anonymous_id,
+                },
+            ]
+        )
+
+        assert await _resolve(repository, batch_ids) == []
+        by_ext = await _get_events(session, organization)
+        for i in range(3):
+            orphan = by_ext[f"orphan-{i}"]
+            assert orphan.pending_parent_external_id == "missing"
+            assert orphan.parent_id is None
+            assert orphan.root_id is None
+
+    async def test_resolves_both_directions_next_to_orphans(
+        self, save_fixture: SaveFixture, session: AsyncSession, account: Account
+    ) -> None:
+        """
+        One batch adopts a child already waiting in the database and attaches its
+        own child to a parent already there, while unrelated orphans stay pending.
+        """
+        organization = await create_organization(save_fixture, account)
+        repository = EventRepository.from_session(session)
+
+        earlier_ids, _ = await repository.insert_batch(
+            [
+                _make_event(
+                    organization, "orphan", pending_parent_external_id="missing"
+                ),
+                _make_event(organization, "old-parent"),
+                _make_event(
+                    organization,
+                    "waiting-child",
+                    pending_parent_external_id="new-parent",
+                ),
+            ]
+        )
+        assert await _resolve(repository, earlier_ids) == []
+        await session.flush()
+
+        anonymous_id = uuid.uuid4()
+        batch_ids, _ = await repository.insert_batch(
+            [
+                _make_event(organization, "new-parent"),
+                _make_event(
+                    organization, "new-child", pending_parent_external_id="old-parent"
+                ),
+                {
+                    "id": anonymous_id,
+                    "name": "event.anonymous",
+                    "source": EventSource.user,
+                    "organization_id": organization.id,
+                    "external_id": None,
+                    "root_id": anonymous_id,
+                },
+            ]
+        )
+        resolved = await _resolve(repository, batch_ids)
+
+        by_ext = await _get_events(session, organization)
+        assert set(resolved) == {by_ext["waiting-child"].id, by_ext["new-child"].id}
+        assert by_ext["waiting-child"].parent_id == by_ext["new-parent"].id
+        assert by_ext["waiting-child"].root_id == by_ext["new-parent"].id
+        assert by_ext["new-child"].parent_id == by_ext["old-parent"].id
+        assert by_ext["new-child"].root_id == by_ext["old-parent"].id
+        assert by_ext["orphan"].pending_parent_external_id == "missing"
+        assert by_ext["orphan"].parent_id is None

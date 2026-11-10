@@ -1,17 +1,21 @@
 import itertools
 import random
 import typing
+import uuid
+from collections.abc import Sequence
 
 import pytest
 from pytest_codspeed import BenchmarkFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.event.repository import EventRepository
 from polar.event.schemas import EventCreateExternalCustomer, EventsIngest
 from polar.event.service import event as event_service
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Organization
+from polar.models.event import EventSource
 from polar.redis import Redis
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
 from tests.fixtures.database import SaveFixture
@@ -126,3 +130,47 @@ def test_ingest_late_events(
 
     assert ingest_batch() == size
     benchmark(ingest_batch)
+
+
+# Events that name a parent Polar never receives keep waiting for it. Resolving the parents of a new
+# batch should only look at the events waiting for that batch.
+@pytest.mark.parametrize("size", [1, 100])
+def test_resolve_pending_parents_next_to_1000_orphans(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    organization: Organization,
+    size: int,
+) -> None:
+    repository = EventRepository.from_session(session)
+
+    def events(
+        prefix: str, count: int, pending_parent_external_id: str | None = None
+    ) -> list[dict[str, typing.Any]]:
+        rows: list[dict[str, typing.Any]] = []
+        for index in range(count):
+            event_id = uuid.uuid4()
+            rows.append(
+                {
+                    "id": event_id,
+                    "name": METER_TEST_EVENT,
+                    "source": EventSource.user,
+                    "organization_id": organization.id,
+                    "external_id": f"{prefix}-{index}",
+                    "pending_parent_external_id": pending_parent_external_id,
+                    "root_id": None if pending_parent_external_id else event_id,
+                }
+            )
+        return rows
+
+    async def seed() -> Sequence[uuid.UUID]:
+        for chunk in range(10):
+            await repository.insert_batch(events(f"resolved-{chunk}", 1_000))
+        await repository.insert_batch(events("orphan", 1_000, "missing"))
+        batch_ids, _ = await repository.insert_batch(events("batch", size))
+        return batch_ids
+
+    batch_ids = run(seed())
+    analyze(run, session)
+    assert run(repository.resolve_pending_parents(batch_ids)) == []
+    benchmark(lambda: run(repository.resolve_pending_parents(batch_ids)))

@@ -14,6 +14,7 @@ import type {
   BenefitSlackSharedChannelUpdate,
   BenefitSortProperty,
   BenefitType,
+  CatalogStatus,
   ListResourceBenefit,
   ListResourceBenefitDownloadableFile,
   ListResourceBenefitGrant,
@@ -43,6 +44,8 @@ export const listBenefits = (client: ClientBase) => {
       id?: string | string[] | null;
       external_id?: string | string[] | null;
       exclude_id?: string | string[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       query?: string | null;
       page?: number;
       limit?: number;
@@ -58,6 +61,8 @@ export const listBenefits = (client: ClientBase) => {
       id: query?.id,
       external_id: query?.external_id,
       exclude_id: query?.exclude_id,
+      catalog_id: query?.catalog_id,
+      catalog_status: query?.catalog_status,
       query: query?.query,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
@@ -92,6 +97,8 @@ export const iterListBenefits = (client: ClientBase) => {
       id?: string | string[] | null;
       external_id?: string | string[] | null;
       exclude_id?: string | string[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       query?: string | null;
       page?: number;
       limit?: number;
@@ -129,6 +136,7 @@ export const createBenefits = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} Organization benefit limit reached.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: BenefitCreate, requestOptions?: RequestOptions): Promise<Benefit> => {
@@ -137,6 +145,7 @@ export const createBenefits = (client: ClientBase) => {
     const request = client.buildRequest("POST", "/v1/benefits/", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Benefit>(response, "json", {
+      403: NotPermitted,
       422: HTTPValidationError,
     });
   };

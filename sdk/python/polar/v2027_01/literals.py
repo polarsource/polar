@@ -37,6 +37,7 @@ BenefitVisibility: typing.TypeAlias = typing.Literal["draft", "private", "public
 BillingAddressFieldMode: typing.TypeAlias = typing.Literal[
     "required", "optional", "disabled"
 ]
+CatalogStatus: typing.TypeAlias = typing.Literal["draft", "live", "archived"]
 CheckoutLinkSortProperty: typing.TypeAlias = typing.Literal[
     "created_at",
     "-created_at",
@@ -810,6 +811,7 @@ PaymentTrigger: typing.TypeAlias = typing.Literal[
 Permission: typing.TypeAlias = typing.Literal[
     "pull", "triage", "push", "maintain", "admin"
 ]
+"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Literal[
     "aed",
     "all",

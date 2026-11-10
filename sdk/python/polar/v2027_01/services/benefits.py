@@ -37,6 +37,7 @@ from polar.v2027_01.inputs import (
 from polar.v2027_01.literals import (
     BenefitSortProperty,
     BenefitType,
+    CatalogStatus,
 )
 from polar.v2027_01.outputs import (
     Benefit,
@@ -57,6 +58,8 @@ class BenefitsSync(SyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -76,6 +79,8 @@ class BenefitsSync(SyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -101,6 +106,8 @@ class BenefitsSync(SyncServiceBase):
                 "id": id,
                 "external_id": external_id,
                 "exclude_id": exclude_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "page": page,
                 "limit": limit,
@@ -124,6 +131,8 @@ class BenefitsSync(SyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -143,6 +152,8 @@ class BenefitsSync(SyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -168,6 +179,8 @@ class BenefitsSync(SyncServiceBase):
                 id=id,
                 external_id=external_id,
                 exclude_id=exclude_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 page=page,
                 limit=limit,
@@ -272,6 +285,7 @@ class BenefitsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Organization benefit limit reached.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -288,6 +302,7 @@ class BenefitsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Benefit, method_errors)
@@ -729,6 +744,8 @@ class BenefitsAsync(AsyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -748,6 +765,8 @@ class BenefitsAsync(AsyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -773,6 +792,8 @@ class BenefitsAsync(AsyncServiceBase):
                 "id": id,
                 "external_id": external_id,
                 "exclude_id": exclude_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "page": page,
                 "limit": limit,
@@ -796,6 +817,8 @@ class BenefitsAsync(AsyncServiceBase):
         id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
         exclude_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         page: int = 1,
         limit: int = 10,
@@ -815,6 +838,8 @@ class BenefitsAsync(AsyncServiceBase):
             id: Filter by benefit IDs.
             external_id: Filter by benefit external ID.
             exclude_id: Exclude benefits with these IDs.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by description.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
@@ -840,6 +865,8 @@ class BenefitsAsync(AsyncServiceBase):
                 id=id,
                 external_id=external_id,
                 exclude_id=exclude_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 page=page,
                 limit=limit,
@@ -945,6 +972,7 @@ class BenefitsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            NotPermitted: Organization benefit limit reached.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -961,6 +989,7 @@ class BenefitsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            403: NotPermitted,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Benefit, method_errors)

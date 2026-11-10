@@ -113,7 +113,7 @@ def start() -> None:
     # instead of waiting for it to expire.
     def handle_sigterm(signum: int, frame: FrameType | None) -> None:
         if scheduler.running:
-            scheduler.shutdown(wait=False)
+            scheduler.shutdown()
         else:
             raise SystemExit(0)
 
@@ -132,8 +132,12 @@ def start() -> None:
     try:
         scheduler.start()
     except KeyboardInterrupt:
-        scheduler.shutdown()
+        pass
     finally:
+        # Also reached on LeaderLeaseLost. Wait for jobs still running in the
+        # executor, so none can enqueue after another instance takes over.
+        if scheduler.running:
+            scheduler.shutdown()
         leader_lease.release()
         health_engine.dispose()
 

@@ -402,11 +402,15 @@ class MeteredBuilder<Meter extends string> {
 
 /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
 export const free = (): FreePrice => new FreePrice()
+/** Charges one set amount. */
 export const fixed = (): FixedBuilder => new FixedBuilder()
+/** Charges per seat. Customers pick how many seats to buy and assign them to team members. */
 export const seats = (): QuantityBuilder<'seat_based'> =>
   new QuantityBuilder('seat_based')
+/** Charges per unit. Customers pick how many units to buy. */
 export const units = (): QuantityBuilder<'unit_based'> =>
   new QuantityBuilder('unit_based')
+/** Charges for what a meter records, billed at the end of each period. */
 export const metered = <const Meter extends string>(
   meter: Meter,
 ): MeteredBuilder<Meter> => new MeteredBuilder(meter)

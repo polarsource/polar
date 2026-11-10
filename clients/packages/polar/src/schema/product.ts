@@ -377,11 +377,17 @@ export type ProductHelpers<Meter extends string, Benefit extends string> = {
   readonly product: (
     name?: string,
   ) => ProductBuilder<Meter, Benefit, undefined, undefined>
+  /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
   readonly free: typeof free
+  /** Charges one set amount. */
   readonly fixed: typeof fixed
+  /** Charges per seat. Customers pick how many seats to buy and assign them to team members. */
   readonly seats: typeof seats
+  /** Charges per unit. Customers pick how many units to buy. */
   readonly units: typeof units
+  /** A tier is unbounded unless you set `.max()`. Only the last tier may be unbounded. */
   readonly tier: typeof tier
+  /** Charges for what a meter records, billed at the end of each period. */
   readonly meter: <const Priced extends Meter>(
     meter: Priced,
   ) => ReturnType<typeof metered<Priced>>

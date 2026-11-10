@@ -252,7 +252,7 @@ def _removed_external_ids(
     )
 
 
-def _external_ids_by_id(*ids: Mapping[str, UUID]) -> dict[str, str]:
+def _external_ids_by_row_id(*ids: Mapping[str, UUID]) -> dict[str, str]:
     return {str(id): external_id for each in ids for external_id, id in each.items()}
 
 
@@ -882,7 +882,7 @@ class DeclarativeConfigService:
         draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, UUID], dict[str, Benefit]]:
         repository = BenefitRepository.from_session(session)
-        meter_external_ids = _external_ids_by_id(meter_ids)
+        meter_external_ids = _external_ids_by_row_id(meter_ids)
         results: list[ConfigResult] = []
         benefit_ids: dict[str, UUID] = {}
         new_benefits: dict[str, Benefit] = {}
@@ -979,7 +979,7 @@ class DeclarativeConfigService:
         draft: bool,
     ) -> tuple[list[ConfigResult], dict[str, Product]]:
         repository = ProductRepository.from_session(session)
-        external_ids = _external_ids_by_id(meter_ids, benefit_ids)
+        external_ids = _external_ids_by_row_id(meter_ids, benefit_ids)
         results: list[ConfigResult] = []
         new_products: dict[str, Product] = {}
         for change in changes:

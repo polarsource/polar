@@ -55,14 +55,17 @@ def keeps_intervals(
     change: ProductChange, draft_product: Product, meter_ids: dict[str, UUID]
 ) -> bool:
     """Whether the draft's row can take the config in place: a product's
-    intervals can't be updated. Against live, changing them is an error.
+    intervals can't be updated.
 
-    Compared with the product create schema, which normalizes a meter cycle
+    A live product keeps its intervals, so its draft row must have them. A new
+    product is compared with its create schema, which normalizes a meter cycle
     equal to the billing cycle to none, as the row stores it."""
-    if change.existing is not None:
-        return True
-    created = products.product_create(change.config, None, meter_ids)
+    expected = (
+        change.existing
+        if change.existing is not None
+        else products.product_create(change.config, None, meter_ids)
+    )
     return all(
-        getattr(draft_product, name) == getattr(created, name, None)
+        getattr(draft_product, name) == getattr(expected, name, None)
         for name in _INTERVAL_FIELDS
     )

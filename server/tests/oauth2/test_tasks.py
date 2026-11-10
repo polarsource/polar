@@ -19,20 +19,20 @@ def save_fixture(session: AsyncSession) -> SaveFixture:
     return save_fixture_factory(session)
 
 
-@contextlib.asynccontextmanager
-async def _session_maker(session: AsyncSession) -> AsyncIterator[AsyncSession]:
-    yield session
+@pytest.fixture(autouse=True)
+def task_session(mocker: MockerFixture, session: AsyncSession) -> None:
+    @contextlib.asynccontextmanager
+    async def session_maker() -> AsyncIterator[AsyncSession]:
+        yield session
+
+    mocker.patch("polar.oauth2.tasks.AsyncSessionMaker", side_effect=session_maker)
 
 
 @pytest.mark.anyio
 class TestOAuth2ClientDeleteStale:
     async def test_deletes_stale_clients(
-        self, mocker: MockerFixture, session: AsyncSession, save_fixture: SaveFixture
+        self, session: AsyncSession, save_fixture: SaveFixture
     ) -> None:
-        mocker.patch(
-            "polar.oauth2.tasks.AsyncSessionMaker",
-            side_effect=lambda: _session_maker(session),
-        )
         stale = OAuth2Client(
             client_id="stale", created_at=utc_now() - timedelta(days=8)
         )
@@ -45,12 +45,8 @@ class TestOAuth2ClientDeleteStale:
         assert set(await session.scalars(select(OAuth2Client.id))) == {recent.id}
 
     async def test_keeps_batching_until_nothing_is_stale(
-        self, mocker: MockerFixture, session: AsyncSession
+        self, mocker: MockerFixture
     ) -> None:
-        mocker.patch(
-            "polar.oauth2.tasks.AsyncSessionMaker",
-            side_effect=lambda: _session_maker(session),
-        )
         delete_stale_mock = mocker.patch.object(
             OAuth2ClientRepository, "delete_stale", side_effect=[1000, 1000, 42, 0]
         )

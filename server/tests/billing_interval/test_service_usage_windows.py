@@ -7,7 +7,10 @@ from pytest_mock import MockerFixture
 from sqlalchemy import update
 
 from polar.billing_interval.repository import BillingIntervalRepository
-from polar.billing_interval.service import BILL_USAGE_LOCK_TIMEOUT
+from polar.billing_interval.service import (
+    BILL_USAGE_LOCK_TIMEOUT,
+    ReducerUsageUnavailable,
+)
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.models import Customer, Meter, Product
 from polar.models.subscription import SubscriptionStatus
@@ -196,3 +199,28 @@ class TestBillUsage:
         assert meter.name == original_name
         assert await repository.get_lock_timeout() == lock_timeout
         log.exception.assert_called_once()
+
+
+@pytest.mark.anyio
+class TestChargeUsage:
+    async def test_raises_for_a_meter_without_a_quantity(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        mocker.patch.object(reducer_service, "bill", return_value={})
+
+        with pytest.raises(ReducerUsageUnavailable):
+            await billing_interval_service.charge_usage(
+                session, subscription, [meter.id], order_id=None, cutoff=CUTOFF
+            )

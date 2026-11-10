@@ -14,11 +14,20 @@ from babel.dates import format_date
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
+from polar.exceptions import PolarError
 from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
-from polar.models import BillingEntry, Event, Meter, OrderItem, Product, Subscription
+from polar.models import (
+    BillingEntry,
+    Event,
+    Meter,
+    OrderItem,
+    Product,
+    ProductPrice,
+    Subscription,
+)
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -59,6 +68,22 @@ class MeteredLineItem:
     currency: str
     label: str
     proration: Literal[False] = False
+
+
+class ReducerUsageChanged(PolarError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        super().__init__(
+            f"Reducer usage of subscription {subscription.id} changed "
+            "while its order was created."
+        )
+
+
+async def _no_line_items() -> AsyncGenerator[
+    tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+]:
+    return
+    yield
 
 
 class BillingEntryService:
@@ -194,6 +219,78 @@ class BillingEntryService:
                     ),
                 )
 
+    @contextlib.asynccontextmanager
+    async def _create_order_items_from_reducers(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        static_line_items: AsyncIterable[
+            tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+        ],
+        *,
+        include_metered: bool = True,
+        price_ids: Sequence[uuid.UUID] | None = None,
+        cutoff: datetime,
+        reducer_cutoff: datetime,
+    ) -> AsyncGenerator[Sequence[OrderItem]]:
+        """Like `_create_order_items`, with the metered usage read from the
+        reducers instead of the pending billing entries."""
+        prices: dict[uuid.UUID, MeteredPrice] = {}
+        if include_metered:
+            for price in await self._get_active_prices(
+                session, subscription, price_ids
+            ):
+                if is_metered_price(price):
+                    prices.setdefault(price.meter_id, price)
+
+        async with self._create_order_items(
+            session,
+            subscription,
+            static_line_items,
+            cutoff=cutoff,
+            reducer_cutoff=reducer_cutoff,
+        ) as static_items:
+            usage = (
+                await billing_interval_service.charge_usage(
+                    session, subscription, prices, order_id=None, cutoff=reducer_cutoff
+                )
+                if prices
+                else {}
+            )
+            metered_items = [
+                self._get_reducer_order_item(prices[meter_id], units, credited_units)
+                for meter_id, (units, credited_units) in usage.items()
+                if units > 0
+            ]
+
+            yield [*static_items, *metered_items]
+
+            if metered_items:
+                billed = await billing_interval_service.charge_usage(
+                    session,
+                    subscription,
+                    prices,
+                    order_id=metered_items[0].order_id,
+                    cutoff=reducer_cutoff,
+                )
+                if billed != usage:
+                    raise ReducerUsageChanged(subscription)
+
+    def _get_reducer_order_item(
+        self, price: MeteredPrice, units: Decimal, credited_units: Decimal
+    ) -> OrderItem:
+        amount, amount_label = price.get_amount_and_label(
+            float(units), int(credited_units)
+        )
+        return OrderItem(
+            label=f"{price.meter.name} — {amount_label}",
+            amount=amount,
+            net_amount=amount,
+            tax_amount=0,
+            proration=False,
+            product_price=price,
+        )
+
     def create_order_items_from_pending(
         self,
         session: AsyncSession,
@@ -204,6 +301,17 @@ class BillingEntryService:
         reducer_cutoff: datetime | None = None,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         cutoff = cutoff or utc_now()
+        if subscription.customer.organization.is_reducer_billing_enabled:
+            return self._create_order_items_from_reducers(
+                session,
+                subscription,
+                self.compute_pending_subscription_line_items(
+                    session, subscription, include_metered=False, cutoff=cutoff
+                ),
+                include_metered=include_metered,
+                cutoff=cutoff,
+                reducer_cutoff=reducer_cutoff or cutoff,
+            )
         return self._create_order_items(
             session,
             subscription,
@@ -228,6 +336,15 @@ class BillingEntryService:
         which settles usage between billing renewals.
         """
         cutoff = cutoff or utc_now()
+        if subscription.customer.organization.is_reducer_billing_enabled:
+            return self._create_order_items_from_reducers(
+                session,
+                subscription,
+                _no_line_items(),
+                price_ids=price_ids,
+                cutoff=cutoff,
+                reducer_cutoff=cutoff,
+            )
         return self._create_order_items(
             session,
             subscription,
@@ -296,24 +413,7 @@ class BillingEntryService:
         # but it involved to load lot of BillingEntry in memory, which was causing
         # performance issues and even OOM on large subscriptions.
         product_price_repository = ProductPriceRepository.from_session(session)
-
-        # ``price_ids`` overrides the subscription's current prices, so a deferred
-        # settlement bills against the prices active when it was triggered.
-        if price_ids is None:
-            active_prices = [
-                spp.product_price for spp in subscription.subscription_product_prices
-            ]
-        else:
-            active_prices = [
-                price
-                for price_id in price_ids
-                if (
-                    price := await product_price_repository.get_by_id(
-                        price_id, include_deleted=True
-                    )
-                )
-                is not None
-            ]
+        active_prices = await self._get_active_prices(session, subscription, price_ids)
 
         # Track which meters we've already processed to avoid duplicates
         # For non-summable aggregations (max, min, avg, unique), we process each meter only once
@@ -379,6 +479,30 @@ class BillingEntryService:
                 selector = PendingByPrice(product_price_id)
 
             yield metered_line_item, selector
+
+    async def _get_active_prices(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        price_ids: Sequence[uuid.UUID] | None,
+    ) -> Sequence[ProductPrice]:
+        # ``price_ids`` overrides the subscription's current prices, so a deferred
+        # settlement bills against the prices active when it was triggered.
+        if price_ids is None:
+            return [
+                spp.product_price for spp in subscription.subscription_product_prices
+            ]
+        product_price_repository = ProductPriceRepository.from_session(session)
+        return [
+            price
+            for price_id in price_ids
+            if (
+                price := await product_price_repository.get_by_id(
+                    price_id, include_deleted=True
+                )
+            )
+            is not None
+        ]
 
     async def _get_static_price_line_item(
         self,

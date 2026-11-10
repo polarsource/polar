@@ -39,6 +39,16 @@ class BillingIntervalConflict(PolarError):
         super().__init__(message, 409)
 
 
+class ReducerUsageUnavailable(PolarError):
+    def __init__(self, subscription: Subscription, meter_ids: Iterable[UUID]) -> None:
+        self.subscription = subscription
+        self.meter_ids = sorted(meter_ids)
+        super().__init__(
+            f"Reducer usage of subscription {subscription.id} is unavailable "
+            f"for meters {', '.join(str(meter_id) for meter_id in self.meter_ids)}."
+        )
+
+
 class BillingIntervalService:
     async def record_subscription(
         self,
@@ -116,30 +126,10 @@ class BillingIntervalService:
         Failures, including waiting on a bucket lock for longer than
         BILL_USAGE_LOCK_TIMEOUT, are rolled back and logged, so they never affect
         the order."""
-        meter_ids = sorted(meter_ids)
-        repository = BillingIntervalRepository.from_session(session)
         try:
-            async with (
-                repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
-                session.begin_nested(),
-            ):
-                windows: list[UsageWindow] = []
-                for meter_id in meter_ids:
-                    windows.extend(
-                        await self.get_usage_windows(
-                            session, subscription.customer, meter_id, cutoff=cutoff
-                        )
-                    )
-                quantities = await reducer_service.bill(
-                    session,
-                    subscription.customer,
-                    meter_ids,
-                    order_id=order_id,
-                    windows=select_settlement_windows(
-                        windows, billing_subscription_id=subscription.id
-                    ),
-                    cutoff=cutoff,
-                )
+            quantities = await self._settle_usage(
+                session, subscription, meter_ids, order_id=order_id, cutoff=cutoff
+            )
         except Exception:
             log.exception(
                 "Failed to bill reducer usage",
@@ -149,6 +139,59 @@ class BillingIntervalService:
             )
             quantities = {}
         return quantities
+
+    async def charge_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID | None,
+        cutoff: datetime,
+    ) -> dict[UUID, tuple[Decimal, Decimal]]:
+        """Like `bill_usage`, for an order charging these quantities: failures
+        raise, and so does a meter without a quantity. Before the order exists,
+        call it without one to seal the quantities, then again to mark them."""
+        meter_ids = set(meter_ids)
+        quantities = await self._settle_usage(
+            session, subscription, meter_ids, order_id=order_id, cutoff=cutoff
+        )
+        if quantities.keys() != meter_ids:
+            raise ReducerUsageUnavailable(subscription, meter_ids - quantities.keys())
+        return quantities
+
+    async def _settle_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID | None,
+        cutoff: datetime,
+    ) -> dict[UUID, tuple[Decimal, Decimal]]:
+        meter_ids = sorted(meter_ids)
+        repository = BillingIntervalRepository.from_session(session)
+        async with (
+            repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
+            session.begin_nested(),
+        ):
+            windows: list[UsageWindow] = []
+            for meter_id in meter_ids:
+                windows.extend(
+                    await self.get_usage_windows(
+                        session, subscription.customer, meter_id, cutoff=cutoff
+                    )
+                )
+            return await reducer_service.bill(
+                session,
+                subscription.customer,
+                meter_ids,
+                order_id=order_id,
+                windows=select_settlement_windows(
+                    windows, billing_subscription_id=subscription.id
+                ),
+                cutoff=cutoff,
+            )
 
 
 def get_interval_boundaries(

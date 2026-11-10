@@ -1686,6 +1686,54 @@ class TestBill:
             (CUTOFF, NEXT_BUCKET_START, order.id),
         ]
 
+    async def test_without_an_order_seals_what_the_order_then_bills(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await create_tokens_event(
+            save_fixture, organization, 3, timestamp=CUTOFF, ingested_at=INGESTED_AT
+        )
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+        windows = [usage_window(meter, CUTOFF, NEXT_BUCKET_START)]
+
+        sealed = await reducer_service.bill(
+            session,
+            external_customer,
+            [meter.id],
+            order_id=None,
+            windows=windows,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        assert sealed == {meter.id: (Decimal(1), Decimal(0))}
+        assert all(bucket.billed_at is None for bucket in await get_buckets(session))
+
+        billed = await reducer_service.bill(
+            session,
+            external_customer,
+            [meter.id],
+            order_id=order.id,
+            windows=windows,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        assert billed == sealed
+        assert {
+            bucket.order_id
+            for bucket in await get_buckets(session)
+            if bucket.bucket_start == CUTOFF
+        } == {order.id}
+
 
 SUM_TOKENS = PropertyAggregation(func=AggregationFunction.sum, property="tokens")
 

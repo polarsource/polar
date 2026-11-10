@@ -230,12 +230,14 @@ class ReducerService:
         customer: Customer,
         meter_ids: Iterable[UUID],
         *,
-        order_id: UUID,
+        order_id: UUID | None,
         windows: Sequence[UsageWindow],
         cutoff: datetime,
     ) -> dict[UUID, tuple[Decimal, Decimal]]:
         """Marks the customer's usage in `windows` and its credits since the latest
         reset as billed by the order, and returns their quantities per meter.
+        Without an order, they are sealed and returned, not marked: billing them
+        with the order afterwards returns the same quantities.
         Raises on failure: the caller rolls it back."""
         meter_ids = sorted(meter_ids)
         reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
@@ -305,10 +307,11 @@ class ReducerService:
         reducers: Mapping[UUID, Reducer],
         windows: Sequence[UsageWindow],
         *,
-        order_id: UUID,
+        order_id: UUID | None,
     ) -> list[WindowUsage] | None:
-        """Marks the customer's usage in each window as billed by the order, and
-        returns it, or None if a window's start or end is inside a sealed bucket.
+        """Marks the customer's usage in each window as billed by the order, if
+        any, and returns it, or None if a window's start or end is inside a sealed
+        bucket.
         The windows' starts and ends become bucket boundaries first.
         `reducers` are the usage reducers by meter id, one for each window's meter."""
         repository = ReducerBucketRepository.from_session(session)
@@ -354,13 +357,13 @@ class ReducerService:
                 await self._seal_buckets(
                     session, [reducer], customer, since=window.start, until=window.end
                 )
-                billed = await repository.mark_as_billed(
+                billed = await self._get_unbilled(
+                    repository,
                     reducer,
                     identities,
                     order_id,
                     since=window.start,
                     until=window.end,
-                    billed_at=utc_now(),
                 )
                 summary = merge_summaries([UsageSummary(*row) for row in billed])
                 span.set_attribute("billed_buckets", len(billed))
@@ -1082,12 +1085,12 @@ class ReducerService:
         reducers: Sequence[Reducer],
         customer: Customer,
         *,
-        order_id: UUID,
+        order_id: UUID | None,
         since: datetime | None,
         until: datetime,
     ) -> dict[UUID, Decimal]:
         """Marks the customer's sealed, unbilled usage within [since, until] as
-        billed by the order and returns its quantity per reducer."""
+        billed by the order, if any, and returns its quantity per reducer."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
         quantities: dict[UUID, Decimal] = {}
@@ -1101,19 +1104,44 @@ class ReducerService:
                 since=since,
                 until=until,
             ) as span:
-                billed = await repository.mark_as_billed(
+                billed = await self._get_unbilled(
+                    repository,
                     reducer,
                     identities,
                     order_id,
                     since=since,
                     until=until,
-                    billed_at=utc_now(),
                 )
                 quantity = _get_quantity(reducer.aggregation.func, billed)
                 span.set_attribute("billed_buckets", len(billed))
                 span.set_attribute("quantity", str(quantity))
             quantities[reducer.id] = quantity
         return quantities
+
+    async def _get_unbilled(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        order_id: UUID | None,
+        *,
+        since: datetime | None,
+        until: datetime,
+    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+        """count, sum, min and max of the identities' sealed, unbilled buckets
+        within [since, until], marked as billed by the order if there is one."""
+        if order_id is None:
+            return await repository.get_unbilled_totals(
+                reducer, identities, since=since, until=until
+            )
+        return await repository.mark_as_billed(
+            reducer,
+            identities,
+            order_id,
+            since=since,
+            until=until,
+            billed_at=utc_now(),
+        )
 
     async def _lock_buckets(
         self,

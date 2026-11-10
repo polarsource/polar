@@ -3267,6 +3267,11 @@ export interface components {
       previous_billing_provider: string | null
       /** Renewal Date */
       renewal_date: string
+      /**
+       * Regular Amount
+       * @default null
+       */
+      regular_amount: number | null
     }
     /** SubscriptionResumedEmail */
     SubscriptionResumedEmail: {

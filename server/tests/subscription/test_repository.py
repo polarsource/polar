@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -12,6 +12,7 @@ from polar.enums import EmailSender, SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import Customer, Meter, Organization, Product
 from polar.models.customer_seat import SeatStatus
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -25,6 +26,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_customer,
     create_customer_seat,
+    create_discount,
     create_product,
     create_subscription,
 )
@@ -436,6 +438,104 @@ class TestGetSubscriptionsNeedingRenewalReminder:
         )
 
         assert [s.id for s in result] == [subscription.id]
+
+    @pytest.mark.parametrize(
+        ("duration", "duration_in_months", "period_start", "applied_at", "expected"),
+        [
+            pytest.param(
+                DiscountDuration.repeating,
+                3,
+                datetime(2026, 5, 13, tzinfo=UTC),
+                datetime(2026, 3, 13, tzinfo=UTC),
+                True,
+                id="repeating ends at renewal",
+            ),
+            pytest.param(
+                DiscountDuration.repeating,
+                4,
+                datetime(2026, 5, 13, tzinfo=UTC),
+                datetime(2026, 3, 13, tzinfo=UTC),
+                False,
+                id="repeating continues after renewal",
+            ),
+            pytest.param(
+                DiscountDuration.once,
+                None,
+                datetime(2026, 3, 13, tzinfo=UTC),
+                datetime(2026, 3, 13, tzinfo=UTC),
+                True,
+                id="once over a quarter",
+            ),
+            pytest.param(
+                DiscountDuration.once,
+                None,
+                datetime(2026, 5, 13, tzinfo=UTC),
+                datetime(2026, 5, 13, tzinfo=UTC),
+                False,
+                id="once lasting exactly 31 days",
+            ),
+            pytest.param(
+                DiscountDuration.forever,
+                None,
+                datetime(2026, 5, 13, tzinfo=UTC),
+                datetime(2026, 3, 13, tzinfo=UTC),
+                False,
+                id="forever",
+            ),
+            pytest.param(
+                DiscountDuration.repeating,
+                3,
+                datetime(2026, 5, 13, tzinfo=UTC),
+                None,
+                False,
+                id="not applied yet",
+            ),
+        ],
+    )
+    async def test_promotional_price_ending(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        duration: DiscountDuration,
+        duration_in_months: int | None,
+        period_start: datetime,
+        applied_at: datetime | None,
+        expected: bool,
+    ) -> None:
+        now = datetime(2026, 6, 10, tzinfo=UTC)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=duration,
+            duration_in_months=duration_in_months,
+            organization=organization,
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            current_period_start=period_start,
+            current_period_end=datetime(2026, 6, 13, tzinfo=UTC),
+        )
+        subscription.discount_applied_at = applied_at
+        await save_fixture(subscription)
+
+        repository = SubscriptionRepository.from_session(session)
+        result = await repository.get_subscriptions_needing_renewal_reminder(
+            now, now + timedelta(days=7)
+        )
+
+        assert [s.id for s in result] == ([subscription.id] if expected else [])
+        assert subscription.promotional_price_ends_at_period_end is expected
 
 
 @pytest.mark.anyio

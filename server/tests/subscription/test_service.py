@@ -8511,6 +8511,47 @@ async def test_send_renewal_reminder_email_mentions_stripe_migration(
 
 
 @pytest.mark.anyio
+async def test_send_renewal_reminder_email_promotional_price_ending(
+    enqueue_email_mock: MagicMock,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    organization: Organization,
+    product: Product,
+    customer: Customer,
+) -> None:
+    discount = await create_discount(
+        save_fixture,
+        type=DiscountType.percentage,
+        basis_points=5000,
+        duration=DiscountDuration.repeating,
+        duration_in_months=3,
+        organization=organization,
+    )
+    subscription = await create_active_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        discount=discount,
+        current_period_start=datetime(2026, 5, 13, tzinfo=UTC),
+        current_period_end=datetime(2026, 6, 13, tzinfo=UTC),
+    )
+    subscription.discount_applied_at = datetime(2026, 3, 13, tzinfo=UTC)
+    await save_fixture(subscription)
+
+    await subscription_service.send_renewal_reminder_email(session, subscription)
+
+    enqueue_email_mock.assert_called_once()
+    email = enqueue_email_mock.call_args[0][0]
+    assert isinstance(email, SubscriptionRenewalReminderEmail)
+    assert email.props.regular_amount == sum(
+        spp.amount for spp in subscription.subscription_product_prices
+    )
+    assert enqueue_email_mock.call_args.kwargs["subject"] == (
+        f"Your {product.name} promotional price ends soon"
+    )
+
+
+@pytest.mark.anyio
 async def test_send_trial_conversion_reminder_email_formats_long_date(
     mocker: MockerFixture,
     save_fixture: SaveFixture,

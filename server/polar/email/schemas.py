@@ -377,6 +377,7 @@ class SubscriptionPastDueEmail(BaseModel):
 
 class SubscriptionRenewalReminderProps(SubscriptionPropsBase):
     renewal_date: str
+    regular_amount: int | None = None
 
 
 class SubscriptionRenewalReminderEmail(BaseModel):

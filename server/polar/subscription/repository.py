@@ -54,8 +54,12 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.customer_seat import SeatStatus
+from polar.models.discount import DiscountDuration
 from polar.models.email_log import EmailLog
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import (
+    PROMOTIONAL_PRICE_NOTICE_MIN_DURATION,
+    SubscriptionStatus,
+)
 from polar.product.guard import is_metered_price
 
 from .sorting import SubscriptionSortProperty
@@ -515,9 +519,12 @@ class SubscriptionRepository(
         options: Options = (),
     ) -> Sequence[Subscription]:
         """
-        Find active subscriptions with long billing cycles (> 180 days)
-        whose current_period_end is within the next 7 days,
-        and where no matching EmailLog row exists for dedup.
+        Find active subscriptions whose current_period_end is within the
+        reminder window, and where no matching EmailLog row exists for dedup.
+
+        A subscription qualifies if it has a long billing cycle (> 180 days),
+        or if a promotional price that lasted more than 31 days ends at this
+        renewal (mirrors `Discount.is_repetition_expired`).
         """
         # Long billing cycle conditions:
         # - year (any count)
@@ -537,6 +544,32 @@ class SubscriptionRepository(
             and_(
                 Subscription.recurring_interval == SubscriptionRecurringInterval.day,
                 Subscription.recurring_interval_count >= 180,
+            ),
+        )
+
+        applied_at_utc = func.timezone("UTC", Subscription.discount_applied_at)
+        period_start_utc = func.timezone("UTC", Subscription.current_period_start)
+        period_end_utc = func.timezone("UTC", Subscription.current_period_end)
+        repeating_promotion_end = applied_at_utc + func.make_interval(
+            0, Discount.duration_in_months - 1
+        )
+        promotion_ending_condition = and_(
+            Subscription.discount_applied_at.isnot(None),
+            Subscription.current_period_end - Subscription.discount_applied_at
+            > PROMOTIONAL_PRICE_NOTICE_MIN_DURATION,
+            Subscription.discount.has(
+                or_(
+                    and_(
+                        Discount.duration == DiscountDuration.once,
+                        period_start_utc <= applied_at_utc,
+                    ),
+                    and_(
+                        Discount.duration == DiscountDuration.repeating,
+                        Discount.duration_in_months.isnot(None),
+                        period_start_utc <= repeating_promotion_end,
+                        period_end_utc > repeating_promotion_end,
+                    ),
+                )
             ),
         )
 
@@ -563,7 +596,7 @@ class SubscriptionRepository(
                 Subscription.current_period_end.isnot(None),
                 Subscription.current_period_end > now,
                 Subscription.current_period_end <= reminder_window_end,
-                long_cycle_condition,
+                or_(long_cycle_condition, promotion_ending_condition),
                 ~dedup_subquery,
             )
             .options(*options)

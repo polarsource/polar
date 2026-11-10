@@ -60,6 +60,9 @@ if TYPE_CHECKING:
 
 PP = TypeVar("PP", bound="ProductPrice")
 
+PROMOTIONAL_PRICE_NOTICE_MIN_DURATION = timedelta(days=31)
+"""Promotional prices lasting longer than this require a notice before they end."""
+
 
 class SubscriptionStatus(StrEnum):
     incomplete = "incomplete"
@@ -436,6 +439,19 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _canceled_expression(cls) -> ColumnElement[bool]:
         return cls.canceled_at.is_not(None)
+
+    @property
+    def promotional_price_ends_at_period_end(self) -> bool:
+        discount = self.discount
+        applied_at = self.discount_applied_at
+        if discount is None or applied_at is None or self.current_period_end is None:
+            return False
+        return (
+            not discount.is_repetition_expired(applied_at, self.current_period_start)
+            and discount.is_repetition_expired(applied_at, self.current_period_end)
+            and self.current_period_end - applied_at
+            > PROMOTIONAL_PRICE_NOTICE_MIN_DURATION
+        )
 
     def initialize_meter_period(
         self, start: datetime | None, *, containing: datetime | None = None

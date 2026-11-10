@@ -4572,13 +4572,21 @@ class SubscriptionService:
             return
         if subscription.current_period_end is None:
             return
-        renewal_date = format_date(subscription.current_period_end)
+        subject_template = "Your {product.name} subscription renews soon"
+        extra_context: dict[str, Any] = {
+            "renewal_date": format_date(subscription.current_period_end)
+        }
+        if subscription.promotional_price_ends_at_period_end:
+            subject_template = "Your {product.name} promotional price ends soon"
+            extra_context["regular_amount"] = sum(
+                spp.amount for spp in subscription.subscription_product_prices
+            )
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {product.name} subscription renews soon",
+            subject_template=subject_template,
             template_name="subscription_renewal_reminder",
-            extra_context={"renewal_date": renewal_date},
+            extra_context=extra_context,
             deduplication_key=subscription_renewal_reminder_key(
                 subscription.id, subscription.current_period_end.date()
             ),

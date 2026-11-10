@@ -254,6 +254,8 @@ class TestGetMeterCharge:
         )
 
         assert charge == MeterCharge(
-            {old_price_id: Decimal(3), new_price_id: Decimal(4)}, Decimal(3)
+            units=Decimal(20) / 6,
+            units_by_price={old_price_id: Decimal(3), new_price_id: Decimal(4)},
+            credited_units=Decimal(3),
         )
         assert list(charge.units_by_price) == [old_price_id, new_price_id]

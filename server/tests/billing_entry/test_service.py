@@ -1933,8 +1933,12 @@ class TestCreateOrderItemsFromReducers:
         mocker.patch(
             "polar.billing_entry.service.billing_interval_service.charge_usage",
             side_effect=[
-                {meter.id: MeterCharge({price_id: Decimal(20)}, Decimal(0))},
-                {meter.id: MeterCharge({price_id: Decimal(21)}, Decimal(0))},
+                {
+                    meter.id: MeterCharge(
+                        Decimal(units), {price_id: Decimal(units)}, Decimal(0)
+                    )
+                }
+                for units in (20, 21)
             ],
         )
 

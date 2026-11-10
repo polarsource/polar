@@ -320,6 +320,74 @@ class ReducerService:
             for meter_id, reducer in reducers.items()
         }
 
+    async def get_pending_usage(
+        self,
+        session: AsyncReadSession,
+        redis: Redis,
+        customer: Customer,
+        meter_ids: Iterable[UUID],
+        *,
+        windows: Sequence[UsageWindow],
+    ) -> dict[UUID, MeterUsage]:
+        """What `bill_by_window` would bill now, without sealing or marking
+        anything: a preview, exact to the slot rather than the second.
+        - A slot a window's start or end falls in counts in the window the slot
+          starts in, until a seal or a bill splits it.
+        - The last two slots are read from Redis, which still holds usage an
+          order just billed.
+        - Credits are those since the latest reset, so until the order following
+          a reset bills the previous period's usage, it shows against the new
+          period's credits.
+        Billing splits and seals first, so an order charges the exact usage."""
+        identities = get_customer_identities(customer)
+        current_bucket_start = get_reducer_bucket_start(utc_now())
+        previous_bucket_start = current_bucket_start - REDUCER_BUCKET_SIZE
+        repository = ReducerBucketRepository.from_session(session)
+        reducer_repository = ReducerRepository.from_session(session)
+        usage: dict[UUID, MeterUsage] = {}
+        for meter_id in sorted(meter_ids):
+            reducer = await reducer_repository.get_by_meter_and_kind(
+                meter_id, ReducerKind.usage
+            )
+            if reducer is None or isinstance(reducer.aggregation, UniqueAggregation):
+                continue
+            function = reducer.aggregation.func
+            window_usage: list[WindowUsage] = []
+            for window in windows:
+                if window.meter_id != meter_id:
+                    continue
+                cold = await repository.get_pending_totals(
+                    reducer,
+                    identities,
+                    start=window.start,
+                    end=min(window.end, previous_bucket_start),
+                )
+                hot_bucket_starts = [
+                    bucket_start
+                    for bucket_start in (previous_bucket_start, current_bucket_start)
+                    if window.start <= bucket_start < window.end
+                ]
+                hot = (
+                    await redis_store.get_bucket_totals(
+                        redis, reducer.id, function, hot_bucket_starts, identities
+                    )
+                    if hot_bucket_starts
+                    else []
+                )
+                summary = merge_summaries(
+                    [UsageSummary(*totals) for totals in (cold, *hot)]
+                )
+                window_usage.append(WindowUsage(window, summary))
+            credit_reducer = await reducer_repository.get_by_meter_and_kind(
+                meter_id, ReducerKind.credit
+            )
+            credits = Decimal(0)
+            if credit_reducer is not None:
+                totals = await self.get_credits(session, credit_reducer, [customer.id])
+                credits = max(Decimal(totals[customer.id][1]), Decimal(0))
+            usage[meter_id] = MeterUsage(function, tuple(window_usage), credits)
+        return usage
+
     async def _bill_windows(
         self,
         session: AsyncSession,

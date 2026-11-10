@@ -9,6 +9,7 @@ from redis import RedisError
 from polar.config import settings
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
+from polar.enums import SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import generate_uuid, utc_now
@@ -33,9 +34,11 @@ from polar.reducer.types import UsageSummary
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_active_subscription,
     create_customer,
     create_event,
     create_meter,
+    create_product,
 )
 
 
@@ -1734,3 +1737,30 @@ class TestUpdateCustomerOnReducerBilling:
         assert customer_meter is not None
         assert customer_meter.consumed_units == Decimal(3)
         compare.assert_not_called()
+
+    async def test_refreshes_the_customers_subscription_meters(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        enqueue_job = mocker.patch("polar.customer_meter.service.enqueue_job")
+
+        await customer_meter_service.update_customer(session, redis, customer)
+
+        enqueue_job.assert_any_call("subscription.update_meters", subscription.id)

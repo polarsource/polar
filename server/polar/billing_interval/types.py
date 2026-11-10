@@ -17,8 +17,10 @@ class SubscriptionMeterBillingState:
 
 @dataclass(frozen=True)
 class MeterCharge:
-    """A meter's usage to charge by price, oldest price first, and its credits."""
+    """A meter's usage to charge, in total and by price, oldest price first,
+    and its credits."""
 
+    units: Decimal
     units_by_price: dict[UUID, Decimal]
     credited_units: Decimal
 

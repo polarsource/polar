@@ -16,6 +16,7 @@ from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.guard import is_metered_price
+from polar.redis import Redis
 from polar.reducer.service import finalize_quantity, merge_summaries
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import MeterUsage, UsageSummary, UsageWindow
@@ -188,6 +189,36 @@ class BillingIntervalService:
             )
         if usage.keys() != set(meter_ids):
             raise ReducerUsageUnavailable(subscription, set(meter_ids) - usage.keys())
+        return await self._get_meter_charges(session, subscription, usage)
+
+    async def get_pending_usage(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        subscription: Subscription,
+        *,
+        cutoff: datetime,
+    ) -> dict[UUID, MeterCharge]:
+        """What `charge_usage` would charge for an order at `cutoff`, on every
+        meter the subscription has intervals on, without sealing or marking it."""
+        meter_ids = sorted(await self.get_meter_ids(session, subscription))
+        usage = await reducer_service.get_pending_usage(
+            session,
+            redis,
+            subscription.customer,
+            meter_ids,
+            windows=await self._get_settlement_windows(
+                session, subscription, meter_ids, cutoff=cutoff
+            ),
+        )
+        return await self._get_meter_charges(session, subscription, usage)
+
+    async def _get_meter_charges(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        usage: Mapping[UUID, MeterUsage],
+    ) -> dict[UUID, MeterCharge]:
         intervals = await BillingIntervalRepository.from_session(
             session
         ).get_by_subscription(subscription.id)
@@ -196,6 +227,25 @@ class BillingIntervalService:
             meter_id: get_meter_charge(meter_usage, price_ids)
             for meter_id, meter_usage in usage.items()
         }
+
+    async def _get_settlement_windows(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Sequence[UUID],
+        *,
+        cutoff: datetime,
+    ) -> tuple[UsageWindow, ...]:
+        windows: list[UsageWindow] = []
+        for meter_id in meter_ids:
+            windows.extend(
+                await self.get_usage_windows(
+                    session, subscription.customer, meter_id, cutoff=cutoff
+                )
+            )
+        return select_settlement_windows(
+            windows, billing_subscription_id=subscription.id
+        )
 
     @contextlib.asynccontextmanager
     async def _settlement_windows(
@@ -213,15 +263,8 @@ class BillingIntervalService:
             repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
             session.begin_nested(),
         ):
-            windows: list[UsageWindow] = []
-            for meter_id in meter_ids:
-                windows.extend(
-                    await self.get_usage_windows(
-                        session, subscription.customer, meter_id, cutoff=cutoff
-                    )
-                )
-            yield select_settlement_windows(
-                windows, billing_subscription_id=subscription.id
+            yield await self._get_settlement_windows(
+                session, subscription, meter_ids, cutoff=cutoff
             )
 
 
@@ -233,6 +276,10 @@ def get_meter_charge(usage: MeterUsage, price_ids: Mapping[UUID, UUID]) -> Meter
         price_id = price_ids[window_usage.window.interval_id]
         summaries_by_price[price_id].append(window_usage.summary)
     return MeterCharge(
+        units=finalize_quantity(
+            merge_summaries([window.summary for window in usage.windows]),
+            usage.function,
+        ),
         units_by_price={
             price_id: finalize_quantity(merge_summaries(summaries), usage.function)
             for price_id, summaries in summaries_by_price.items()

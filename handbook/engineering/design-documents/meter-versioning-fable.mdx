@@ -1,0 +1,205 @@
+---
+title: "Meter versioning"
+description: "Should meters get versions under declarative config, and what merchants and customers would see."
+---
+
+<Info>
+
+**Created**: 2026-11-10
+
+**Last Updated**: 2026-11-10
+
+**Author**: Petru Rares Sincraian
+</Info>
+
+## Summary
+
+[Versioning](/engineering/design-documents/versioning) gives products and benefits a new row for every change. It left meters out: their filter and aggregation are locked, and to count usage differently the merchant creates a new meter with a new `external_id`. This doc revisits that decision.
+
+A meter is two things stored in one row:
+
+- A **rule**: the filter and aggregation that turn events into units.
+- A **balance**: for each customer, credited units minus consumed units.
+
+A product or a benefit is only a definition, so a copy is harmless. A copy of a meter is also a second balance.
+
+**Recommendation: yes, version meters, but only the rule. Never the balance** (Option 2). A customer keeps one balance per meter. Their subscription pins the rule that counts their usage. Credits bought from any catalog land in that one balance.
+
+If Option 2 is more than we want to build now, we should keep today's behaviour rather than ship Option 1. Option 1 gives the same result as a new `external_id`, a separate balance, but under the same name. Merchants and customers will expect the credits to be shared, and they are not.
+
+## Current state
+
+Checked in the code on `main`, on 2026-11-10.
+
+| Topic | Today |
+|---|---|
+| Rule | Locked once the meter has a billing cursor. The cursor is set at creation if matching events already exist, or by the first billing run that finds an event, even if nothing is billed. After that, an edit fails with "This field can't be updated because the meter is already aggregating events" |
+| Why it is locked | Balances are recomputed from the events with the meter's current rule. An edit in place would recount the open period of every customer |
+| Name and unit | Changed in place, for everyone. The name is printed on usage invoice lines. With declarative config, meter changes skip the draft: they apply on `apply`, even without `--publish` |
+| Balance | One row per customer and meter row, with consumed units, credited units and balance. The portal, the customer meters API and customer state (`active_meters`) show it, identified by `meter_id` |
+| Credits | Every credit is a `meter.credited` event that stores the `meter_id`. Three sources: a meter credit benefit (every cycle for a subscription, once for a one-time product), rollover, and manual credits from the dashboard or the API |
+| Reset | At each renewal, or meter cycle, the meters that the subscription bills or credits are reset for that customer. Credits without rollover are dropped. Rollover credits are carried over, up to the unused balance |
+| Overage | Each meter row has its own billing cursor. An event is billed on the metered price that the customer's subscription has on that row, and only credits on that same row are deducted. A customer without a metered price on the row is not billed |
+| Events | An event counts on every active meter row whose rule matches it |
+| Benefit versions | With declarative config, meter credit benefits are already copy-on-write. Every version points to the same meter row |
+| Moving a customer | Like a plan change. The old credit grant is revoked with a negative credit, unless the meter was reset since. Then the new one is granted |
+| Top-up | There is no top-up feature for meter credits. The merchant sells a one-time product with a meter credit benefit. [Wallets](/engineering/design-documents/wallets) is a cash balance, and a different thing |
+
+So today the Alice case works. Every catalog has the same meter row, and a top-up lands in the balance that her subscription draws from. It survives her next renewal only if the benefit has rollover on.
+
+The code is ahead of the versioning doc. Since November 9, `meters` has `catalog_id` and `is_current`, there is a `catalog_meters` table, and `external_id` is unique only among current rows. Lookups by `external_id` return the current row. A manual credit by `external_meter_id` goes to the version that the customer's subscription bills. Nothing creates a second row yet. That part is in review ([#16426](https://github.com/polarsource/polar/pull/16426), [#16427](https://github.com/polarsource/polar/pull/16427), [#16430](https://github.com/polarsource/polar/pull/16430), [#16431](https://github.com/polarsource/polar/pull/16431)), and it is Option 1 below.
+
+## Goals
+
+- Decide if meters get versions, and which kind.
+- A merchant can change how usage is counted, and nothing changes for an existing customer until they are moved.
+- A customer has one balance per meter, whatever catalog their purchases come from.
+- Meter changes go through the draft, like products and benefits.
+
+## Out of scope
+
+- A top-up feature (amount picker, auto top-up). A top-up stays a one-time product with a meter credit benefit.
+- Changing what a unit is. Counting tokens instead of requests is a new meter with a new `external_id`, in every option.
+- Wallets, migrations as config, and customer notifications.
+
+## Options
+
+| Option | We pick it? |
+|---|---|
+| **One meter, versioned rule**: the meter keeps its id and its balance, only the filter and aggregation get versions | Yes |
+| **New row per version**: copy-on-write, like products and benefits | No. Every version is a new balance, so credits don't follow the customer |
+| **One meter, dated rule**: a rule change applies to everyone from their next period | No. One balance, but it breaks the full freeze |
+| **No versioning**: today, with a new `external_id` to count differently | No, but it is the fallback. The merchant manages versions by hand |
+
+Why Option 2:
+
+- Credits are the popular use of meters, more than pure usage billing (see the wallets doc). A second balance hurts exactly there.
+- Benefit versions already share one meter row. That is why top-ups work across catalogs today, and Option 1 takes it away.
+- "Create a new meter" is the `pro_v2` answer that the versioning doc rejected for products.
+- Option 3 is the simplest, but a publish changes what existing customers pay. That is the one thing versioning promises not to do.
+
+### The example
+
+ACME has one meter, `credits`, named "AI credits". It counts `message` events.
+
+- `pro`: $20 a month, with 5,000 credits every month and a metered price of $0.01 per extra credit.
+- `credits-10k`: one-time, $10, with 10,000 credits and rollover on.
+
+Alice subscribes to Pro in catalog `a1f3`. Then ACME decides that `image` events also cost a credit, and publishes catalog `9c2e`. Bob subscribes to Pro in `9c2e`.
+
+### Option 1 - New row per version
+
+A meter change creates `meter_B`. `meter_A` stops being current, but keeps counting and billing for its subscribers. Benefits and prices store the meter id, so every benefit and product that uses the meter also gets a new row. Each meter row has its own balance, credits, resets and billing cursor.
+
+- **Merchant:** one model for everything, and the plan shows the cascade. But a rename also creates a new balance. A customer has to be moved before they buy anything from the new catalog. Code that stores a `meter_id` goes stale.
+- **Customer:** after a purchase from a newer catalog, or after a move, a second meter with the same name shows up. Credits stay on the old one.
+- **Cost:** it is safe only with extra rules: block two versions for one customer, bill each event once, credit the customer's version, and carry the balance on a move. The first two are in review. Each rule is a place where money can go wrong.
+
+### Option 2 - One meter, versioned rule
+
+The meter keeps one identity, which owns the balance, the credits and the resets. Only the rule gets versions: `rule_1`, `rule_2`. A subscription pins a rule through its product row, like it pins a price. So a rule change creates new rows for the products that use the meter, but not for benefits: a credit goes to the meter, not to a rule. A customer with no subscription uses the live rule.
+
+- **Merchant:** publishing changes nothing for existing customers. Moving a customer switches their rule and leaves their balance alone. `meter_id` never changes.
+- **Customer:** always one balance. After a move, more things can use their credits (here, images).
+- **Cost:** a concept that products and benefits don't have. The number of credits stays the same when the rule changes, so the new rule must keep the unit. One customer can only have one rule per meter.
+
+It can reuse what is merged: a `meters` row becomes a rule version, and balance, credits and resets move from the row id to the meter's `external_id`.
+
+### Option 3 - One meter, dated rule
+
+One row and one rule at a time. Publishing a rule change schedules it for everyone. Each customer switches at their next meter reset, so no period is counted with two rules. Past periods are not recounted. There is no pinning and no move.
+
+- **Merchant:** the simplest. One publish fixes a rule for every customer. The plan shows "168 subscriptions change from their next period". Old customers can't keep the old rule: for that, a new `external_id`.
+- **Customer:** one balance. Their usage is counted differently from the next period, without any action from them.
+- **Cost:** it breaks the full freeze, and it is the riskiest option for changes made by agents.
+
+## Use cases
+
+### 1. Alice tops up
+
+Alice is on Pro from `a1f3` and has sent 6,000 messages this month. She buys `credits-10k` from the live catalog `9c2e`.
+
+| Option | Where the 10,000 credits land | Same balance as her subscription? | What Alice sees |
+|---|---|---|---|
+| Today | `meter_A`, the only row | Yes | Balance 9,000. No overage |
+| 1 | `meter_B`: the live top-up benefit points to it. Pro bills `meter_A` | No | She pays $10 for the top-up and $10 of overage (1,000 × $0.01). The portal shows two "AI credits" meters. `meter_B` was never reset for her, so it shows 10,000 credits minus all her past messages |
+| 1, with a rule to credit the version her subscription bills | `meter_A` | Yes | Same as today. A customer on a plan without a metered price still gets `meter_B` (see open questions) |
+| 2 | The meter | Yes, always | Balance 9,000. No overage. Images are free for her until she is moved |
+| 3 | The meter | Yes, always | Balance 9,000. No overage. From her next period, images use her credits |
+
+### 2. Credit grants between versions
+
+Alice has 5,000 credits from her benefit, 2,000 rollover credits left from a top-up, and 500 manual credits from support.
+
+| Option | Nothing is moved | Alice is moved to `9c2e` |
+|---|---|---|
+| 1 | The benefit keeps crediting `meter_A` at each renewal, and rollover is computed there. A manual credit by `external_meter_id` goes to `meter_A`. In the dashboard, support picks one of two rows | The old grant is revoked on `meter_A` and the new one is granted on `meter_B`. The 2,000 rollover and 500 manual credits stay on `meter_A`, which Pro no longer bills. Alice loses them, unless the move copies her balance. That copy does not exist today |
+| 2 | Nothing changes | Her pin goes from `rule_1` to `rule_2`. The balance is not touched, so all three kinds of credits stay. If Pro's credit amount changed too, that part works as in the versioning doc: the old grant is revoked and the new one granted, on the same balance |
+| 3 | Nothing changes | There is no meter move. A product move works as in Option 2 |
+
+### 3. A rule change in the middle of a period
+
+ACME publishes `9c2e` on the 15th. Alice renews on the 1st.
+
+| Option | What happens |
+|---|---|
+| Today | Rejected. The rule is locked |
+| 1 | `meter_B` counts images for new customers from the 15th. Alice stays on `meter_A`. Moved with `next_period`, she starts on `meter_B` on the 1st, with her monthly credits and nothing else |
+| 2 | Alice is still counted with `rule_1`. Moved with `next_period`, `rule_2` applies from the 1st. Moved with `immediate`, events after the move use `rule_2` on the same balance |
+| 3 | Her images are free until the 1st. Then they use her credits, and nobody moved her |
+
+### 4. One customer, two versions of the same meter
+
+Alice has Pro from `a1f3`. She buys a second subscription from `9c2e`, with a metered price on `credits`.
+
+| Option | What happens |
+|---|---|
+| 1 | Her messages match `meter_A` and `meter_B`. Each row has its own cursor and price, so she is billed twice. The change in review rejects the checkout until she is moved |
+| 2 | One balance, but two pinned rules. One must win: block the checkout, or use the rule of the earliest subscription. Today the earliest subscription already owns the meter's reset and price |
+| 3 | Can't happen. There is one rule |
+
+### 5. What ACME's code reads
+
+ACME blocks usage when the balance of `meter_A` in customer state is zero.
+
+| Option | What ACME reads |
+|---|---|
+| 1 | Customer state lists a row for every active meter row. After her next message, Alice has `meter_A` and `meter_B` in `active_meters`, even before she buys anything. Once she is moved, her real balance is on `meter_B`. Customer state has no `external_id` on meters, so ACME's code blocks a paying customer, or gives free usage, until it is changed |
+| 2 and 3 | Same `meter_id`, same row, before and after a move |
+
+## Comparison
+
+| | Today | 1. New row | 2. Versioned rule | 3. Dated rule |
+|---|---|---|---|---|
+| Change the rule after billing started | No | Yes | Yes | Yes |
+| Existing customers frozen until moved | Yes | Yes | Yes | No |
+| Balances per customer and meter | One | One per version | One | One |
+| Top-up from a newer catalog reaches the subscription | Yes | No, without an extra rule | Yes | Yes |
+| Rollover and manual credits after a move | — | Left on the old version | Kept | Kept |
+| Refund of a top-up that revokes benefits | Credits removed, unless the meter was reset since | Same, on the row that was credited | Same as today | Same as today |
+| Rename a meter | In place, right away | New row and new balance | No new balance | In place, at publish |
+| Fix a wrong filter for everyone | New meter, balances lost | Move everyone, balances lost | Move everyone, balances kept | One publish |
+| `meter_id` in merchant code | Stable | Changes | Stable | Stable |
+| New rows on a rule change | — | Meter, benefits, products | Rule, products that use the meter | None |
+| Same model as products and benefits | — | Yes | No | No |
+
+## Open questions
+
+- How often do merchants need to change a locked rule? We have no numbers. Support requests and meters that were archived and created again would tell us.
+- Option 2: when one customer has two subscriptions with different rules, do we block, or does the earliest subscription win?
+- Option 2: max, min, average and unique can't be split in the middle of a period. Do we only allow the switch at a reset for those?
+- Option 2: do name and unit belong to the rule version (frozen until moved), or to the meter (changed at publish for everyone)?
+- Option 2: if rule versions reuse `meters` rows, which id do the customer meters API and customer state show?
+- Option 2: how does the plan warn that a rule change looks like a new unit, for example a different aggregation property?
+- Option 3: a customer with only one-time credits is never reset. When do they switch?
+- Option 1: on `main`, a manual credit by `external_meter_id` finds the customer's version through a metered price. A customer on a credits-only plan gets the current version. Is that intended?
+- Option 1: an immediate product change writes no meter reset today. Where does the balance of the new version start?
+- Grant re-pointing by benefit `external_id` is in the versioning doc, but we did not find it on `main`. Today a move revokes and grants by benefit id. This changes the "moved" column for every option.
+- Reducers already store their own filter and aggregation, and are linked to meters. Could a rule version be a reducer? We only checked the models.
+
+## Security considerations
+
+- **Data in and out:** meter definitions from merchants and agents, and plan reports with the number of subscriptions on each rule. No new customer data.
+- **Who can access it:** the existing `meters:read` and `meters:write` scopes, which config apply already asks for. Publishing a draft that changes a rule would check `meters:write` again.
+- **Data we store:** rule versions. No personal data. A version is kept while a purchase pins it.
+- **Risks:** an agent changes a filter, and usage becomes free or customers are overbilled. Mitigations: the change goes to a draft that a member publishes, publishing never changes the rule of an existing customer, and moves are explicit. A second risk is a rule change that changes the unit, which changes the value of prepaid credits. Mitigation: the plan warns, and the docs say to use a new `external_id`.

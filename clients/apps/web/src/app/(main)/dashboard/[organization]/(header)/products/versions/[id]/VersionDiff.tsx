@@ -1,11 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  Circle,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
-} from '@polar-sh/orbit/icons'
+import { Circle, KeyboardArrowDown } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import { Change, diffItems, Line } from './diff'
@@ -15,9 +11,9 @@ type Config = schemas['ConfigExportDocument']
 type Format = (field: string, value: unknown) => string
 
 const signs = {
-  added: { glyph: '+', color: 'success' },
-  removed: { glyph: '−', color: 'danger' },
-  changed: { glyph: '~', color: 'warning' },
+  added: { glyph: '+', color: 'text-emerald-500' },
+  removed: { glyph: '−', color: 'text-red-500' },
+  changed: { glyph: '~', color: 'text-amber-500' },
 } as const
 
 const changeStatus = {
@@ -39,13 +35,11 @@ const DiffLine = ({
   line,
   showLabel,
   showSign,
-  spaced,
   format,
 }: {
   line: Line
   showLabel: boolean
   showSign: boolean
-  spaced: boolean
   format: Format
 }) => {
   const sign = signs[line.change]
@@ -56,11 +50,10 @@ const DiffLine = ({
       alignItems="baseline"
       px="xl"
       py="xs"
-      mt={spaced ? 's' : 'none'}
     >
-      <Text monospace weight="semibold" color={sign.color}>
+      <span className={`font-mono font-semibold ${sign.color}`}>
         {showSign ? sign.glyph : null}
-      </Text>
+      </span>
       <Text color="muted" truncate>
         {showLabel ? fieldLabel(line.field) : null}
       </Text>
@@ -73,7 +66,10 @@ const DiffLine = ({
           <Text>{format(line.field, line.after)}</Text>
         </Box>
       ) : (
-        <Text>
+        <Text
+          color={line.change === 'removed' ? 'muted' : 'default'}
+          lineThrough={line.change === 'removed' && showSign}
+        >
           {format(
             line.field,
             line.change === 'removed' ? line.before : line.after,
@@ -84,41 +80,54 @@ const DiffLine = ({
   )
 }
 
-const ItemName = ({
-  name,
+const ItemRow = ({
   href,
-  removed = false,
+  children,
 }: {
-  name: string
   href?: string
-  removed?: boolean
+  children: React.ReactNode
 }) => {
-  const text = (
-    <Text
-      variant="body"
-      color={removed ? 'muted' : 'default'}
-      lineThrough={removed}
-      truncate
+  const row = (
+    <Box
+      alignItems="baseline"
+      justifyContent="between"
+      columnGap="l"
+      px="xl"
+      py="m"
+      minWidth={0}
+      backgroundColor={href ? { hover: 'background-card' } : undefined}
+      transitionProperty="colors"
+      transitionDuration="fast"
     >
-      {name}
-    </Text>
+      {children}
+    </Box>
   )
-  if (!href) return text
+  if (!href) return row
   return (
-    <Link href={href}>
-      <Box
-        as="span"
-        display="flex"
-        minWidth={0}
-        color={{ base: 'text-primary', hover: 'text-secondary' }}
-        transitionProperty="colors"
-        transitionDuration="fast"
-      >
-        {text}
-      </Box>
+    <Link href={href} className="block">
+      {row}
     </Link>
   )
 }
+
+const ItemName = ({
+  name,
+  removed = false,
+  muted = false,
+}: {
+  name: string
+  removed?: boolean
+  muted?: boolean
+}) => (
+  <Text
+    variant="body"
+    color={removed || muted ? 'muted' : 'default'}
+    lineThrough={removed}
+    truncate
+  >
+    {name}
+  </Text>
+)
 
 const UnchangedItems = <T extends { external_id: string }>({
   items,
@@ -153,41 +162,48 @@ const UnchangedItems = <T extends { external_id: string }>({
           as="span"
           display="flex"
           alignItems="center"
-          justifyContent="between"
-          columnGap="l"
+          columnGap="s"
           px="xl"
           py="m"
-          color={{ base: 'text-tertiary', hover: 'text-primary' }}
-          backgroundColor={{ hover: 'background-secondary' }}
+          color={{ base: 'text-secondary', hover: 'text-primary' }}
+          backgroundColor={{ hover: 'background-card' }}
           transitionProperty="colors"
           transitionDuration="fast"
         >
-          <Text color="muted">{plural(items.length, `unchanged ${noun}`)}</Text>
-          {expanded ? (
-            <KeyboardArrowUp fontSize="small" />
-          ) : (
+          <Text color="inherit">
+            {plural(items.length, `unchanged ${noun}`)}
+          </Text>
+          <Box
+            as="span"
+            display="flex"
+            transform={expanded ? 'rotate(180deg)' : 'none'}
+            transitionProperty="transform"
+            transitionDuration="base"
+            ease="standard"
+          >
             <KeyboardArrowDown fontSize="small" />
-          )}
+          </Box>
         </Box>
       </button>
       {expanded ? (
-        <Box
+        <div
           id={panelId}
-          flexDirection="column"
-          py="s"
-          borderTopWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
+          className="animate-in fade-in flex flex-col duration-150 ease-out"
         >
           {items.map((item) => (
-            <Box key={item.external_id} px="xl" py="xs" minWidth={0}>
-              <ItemName
-                name={String(item[nameField])}
-                href={href(item.external_id)}
-              />
+            <Box
+              key={item.external_id}
+              flexDirection="column"
+              borderTopWidth={1}
+              borderStyle="solid"
+              borderColor="border-primary"
+            >
+              <ItemRow href={href(item.external_id)}>
+                <ItemName name={String(item[nameField])} muted />
+              </ItemRow>
             </Box>
           ))}
-        </Box>
+        </div>
       ) : null}
     </Box>
   )
@@ -234,28 +250,15 @@ const DiffSection = <T extends { external_id: string }>({
             borderStyle="solid"
             borderColor="border-primary"
           >
-            <Box
-              alignItems="baseline"
-              justifyContent="between"
-              columnGap="l"
-              px="xl"
-              py="m"
-            >
+            <ItemRow href={href(key)}>
               <ItemName
                 name={String(item[nameField])}
-                href={href(key)}
                 removed={change === 'removed'}
               />
               <ChangeStatus change={change} />
-            </Box>
+            </ItemRow>
             {lines.length ? (
-              <Box
-                flexDirection="column"
-                py="s"
-                borderTopWidth={1}
-                borderStyle="solid"
-                borderColor="border-primary"
-              >
+              <Box flexDirection="column" pb="m">
                 {lines.map((line, index) => {
                   const showLabel = lines[index - 1]?.field !== line.field
                   return (
@@ -264,7 +267,6 @@ const DiffSection = <T extends { external_id: string }>({
                       line={line}
                       showLabel={showLabel}
                       showSign={change === 'changed'}
-                      spaced={showLabel && index > 0}
                       format={format}
                     />
                   )
@@ -303,25 +305,27 @@ export const VersionDiff = ({
   )
 
   return (
-    <Box flexDirection="column" rowGap="2xl">
-      <DiffSection
-        title="Products"
-        noun="product"
-        before={parentConfig?.products.map(productFields) ?? []}
-        after={config.products.map(productFields)}
-        nameField="name"
-        href={productHref}
-        format={format}
-      />
-      <DiffSection
-        title="Benefits"
-        noun="benefit"
-        before={parentConfig?.benefits ?? []}
-        after={config.benefits}
-        nameField="description"
-        href={benefitHref}
-        format={format}
-      />
-    </Box>
+    <div className="animate-in fade-in duration-200 ease-out">
+      <Box flexDirection="column" rowGap="2xl">
+        <DiffSection
+          title="Products"
+          noun="product"
+          before={parentConfig?.products.map(productFields) ?? []}
+          after={config.products.map(productFields)}
+          nameField="name"
+          href={productHref}
+          format={format}
+        />
+        <DiffSection
+          title="Benefits"
+          noun="benefit"
+          before={parentConfig?.benefits ?? []}
+          after={config.benefits}
+          nameField="description"
+          href={benefitHref}
+          format={format}
+        />
+      </Box>
+    </div>
   )
 }

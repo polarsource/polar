@@ -4,8 +4,8 @@ import { useInfiniteCatalogs } from '@/hooks/queries/catalogs'
 import { useInViewport } from '@/hooks/utils'
 import { schemas } from '@polar-sh/client'
 import {
+  Pill,
   Spinner,
-  Status,
   Text,
   Tooltip,
   TooltipContent,
@@ -60,7 +60,8 @@ const VersionRow = ({
       href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
     >
       <Box
-        flexDirection="column"
+        alignItems="baseline"
+        columnGap="s"
         paddingHorizontal="l"
         paddingVertical="m"
         borderBottomWidth={1}
@@ -70,19 +71,17 @@ const VersionRow = ({
           selected ? 'background-card' : { hover: 'background-card' }
         }
       >
-        <Box alignItems="center" columnGap="s" minWidth={0}>
-          <Text color={catalog.name || isDraft ? 'default' : 'muted'} truncate>
-            {catalog.name ?? (isDraft ? 'Unpublished changes' : 'Untitled')}
+        <Box flexDirection="column" flex={1} minWidth={0}>
+          <Text truncate>{catalog.name ?? 'Untitled'}</Text>
+          <Text variant="caption" color="muted">
+            {isDraft ? 'Not published' : <PublishedAt catalog={catalog} />}
           </Text>
-          {catalog.status === 'live' ? (
-            <Status status="Current" color="gray" size="small" />
-          ) : isDraft ? (
-            <Status status="Draft" color="blue" size="small" />
-          ) : null}
         </Box>
-        <Text variant="caption" color="muted">
-          {isDraft ? 'Not published' : <PublishedAt catalog={catalog} />}
-        </Text>
+        {catalog.status === 'live' ? (
+          <Pill color="gray">Current</Pill>
+        ) : isDraft ? (
+          <Pill color="blue">Draft</Pill>
+        ) : null}
       </Box>
     </Link>
   )

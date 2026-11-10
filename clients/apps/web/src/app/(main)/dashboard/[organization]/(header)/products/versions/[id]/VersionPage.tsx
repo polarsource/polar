@@ -3,7 +3,7 @@
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { Status, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -68,19 +68,12 @@ export default function VersionPage({
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
           <Box alignItems="center" columnGap="l" minWidth={0}>
             <Text variant="heading-xs" as="h1" truncate>
-              {catalog.name ??
-                (catalog.status === 'draft'
-                  ? 'Unpublished changes'
-                  : 'Untitled')}
+              {catalog.name ?? 'Untitled'}
             </Text>
-            <Box flexShrink={0}>
-              <Status
-                status={statusLabel[catalog.status]}
-                color={catalog.status === 'draft' ? 'blue' : 'gray'}
-              />
-            </Box>
           </Box>
           <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
+            <Text color="muted">{statusLabel[catalog.status]}</Text>
+            <Dot />
             <Text color="muted">
               {catalog.published_at ? (
                 <>

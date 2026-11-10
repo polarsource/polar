@@ -18,11 +18,12 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     benefit_revoke,
     benefit_update,
 )
-from polar.models import Benefit, BenefitGrant, Customer, Subscription
+from polar.models import Benefit, BenefitGrant, Customer, Member, Subscription
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_benefit_grant
 
 
 @pytest.mark.anyio
@@ -110,6 +111,49 @@ class TestBenefitGrant:
 
 @pytest.mark.anyio
 class TestBenefitRevoke:
+    async def test_soft_deleted_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        member_owner: Member,
+        member_second: Member,
+    ) -> None:
+        target = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_second,
+            subscription=subscription,
+        )
+        other = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_owner,
+            subscription=subscription,
+        )
+        member_second.set_deleted_at()
+        await save_fixture(member_second)
+
+        await benefit_revoke(
+            customer.id,
+            benefit_organization.id,
+            member_id=member_second.id,
+            subscription_id=subscription.id,
+        )
+
+        revoked = await session.get(BenefitGrant, target.id)
+        assert revoked is not None
+        assert revoked.is_revoked
+        surviving = await session.get(BenefitGrant, other.id)
+        assert surviving is not None
+        assert surviving.is_granted
+
     async def test_not_existing_customer(
         self,
         subscription: Subscription,

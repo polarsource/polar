@@ -590,6 +590,61 @@ class TestEnqueueBenefitsGrants:
         )
         group_mock.return_value.run.assert_called_once()
 
+    async def test_revoke_enqueues_grants_for_soft_deleted_member(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+        subscription: Subscription,
+        member_owner: Member,
+        member_second: Member,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.group")
+        broker = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        broker.return_value.get_actor.side_effect = {
+            "benefit.revoke": revoke_actor,
+            "benefit.enqueue_grants": MagicMock(),
+        }.__getitem__
+        await set_product_benefits(save_fixture, product=product, benefits=benefits)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefits[0],
+            granted=True,
+            member=member_second,
+            subscription=subscription,
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefits[1],
+            granted=True,
+            member=member_owner,
+            subscription=subscription,
+        )
+        member_second.set_deleted_at()
+        await save_fixture(member_second)
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session,
+            "revoke",
+            customer,
+            product,
+            member_id=member_second.id,
+            subscription=subscription,
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=benefits[0].id,
+            member_id=member_second.id,
+            subscription_id=subscription.id,
+        )
+
     async def test_revoke_pending_action_required_benefits(
         self,
         mocker: MockerFixture,
@@ -1285,6 +1340,7 @@ class TestDeleteBenefitGrant:
         customer: Customer,
         benefit_organization: Benefit,
         organization: Organization,
+        member_owner: Member,
         benefit_strategy_mock: MagicMock,
     ) -> None:
         """``delete_benefit_grant`` resolves soft-deleted members so the benefit
@@ -1317,6 +1373,14 @@ class TestDeleteBenefitGrant:
         )
         grant.set_granted()
         await save_fixture(grant)
+        surviving = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_owner,
+            subscription=subscription,
+        )
 
         # Soft-delete the member, mirroring what MemberService.delete() does
         member_repository = MemberRepository.from_session(session)
@@ -1329,6 +1393,7 @@ class TestDeleteBenefitGrant:
 
         assert updated_grant.id == grant.id
         assert updated_grant.is_revoked
+        assert surviving.is_granted
         benefit_strategy_mock.revoke.assert_called_once()
         # The resolved (soft-deleted) member must be passed to revoke so the
         # strategy can look up the member's stored OAuth account.
@@ -1753,72 +1818,41 @@ class TestRevokeBenefitWithMember:
         session: AsyncSession,
         redis: Redis,
         save_fixture: SaveFixture,
+        customer: Customer,
         subscription: Subscription,
         benefit_organization: Benefit,
-        organization: Organization,
+        member_owner: Member,
+        member_second: Member,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        """Test that revoking for one member doesn't affect another member's grant.
-
-        In B2B scenarios, each seat holder (member) belongs to the same customer.
-        """
-        customer = await create_customer(
-            save_fixture, organization=organization, email="customer@example.com"
-        )
-
-        member1 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member1@example.com",
-            name="Member 1",
-            role=MemberRole.member,
-        )
-        await save_fixture(member1)
-
-        member2 = Member(
-            customer_id=customer.id,
-            organization_id=organization.id,
-            email="member2@example.com",
-            name="Member 2",
-            role=MemberRole.member,
-        )
-        await save_fixture(member2)
-
-        # Create grants for both members
-        grant1 = BenefitGrant(
+        target = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_owner,
             subscription=subscription,
-            customer=customer,
-            benefit=benefit_organization,
-            member_id=member1.id,
         )
-        grant1.set_granted()
-        await save_fixture(grant1)
-
-        grant2 = BenefitGrant(
+        other = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            member=member_second,
             subscription=subscription,
-            customer=customer,
-            benefit=benefit_organization,
-            member_id=member2.id,
         )
-        grant2.set_granted()
-        await save_fixture(grant2)
 
-        # Revoke for member1 only
         await benefit_grant_service.revoke_benefit(
             session,
             redis,
             customer,
             benefit_organization,
-            member=member1,
+            member=member_owner,
             subscription=subscription,
         )
 
-        # Refresh grants
-        await session.refresh(grant1)
-        await session.refresh(grant2)
-
-        # Member1's grant should be revoked
-        assert grant1.is_revoked
-
-        # Member2's grant should still be granted
-        assert grant2.is_granted
+        assert target.is_revoked
+        assert other.is_granted
+        benefit_strategy_mock.revoke.assert_awaited_once_with(
+            benefit_organization, customer, {}, attempt=1, member=member_owner
+        )

@@ -146,6 +146,7 @@ variable "environment_groups" {
       POLAR_LINEAR_PAYOUT_AMOUNT_MISMATCH_TEMPLATE_ID = optional(string)
 
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = optional(string)
+      POLAR_CUSTOMER_METER_UNITS_FROM_REDUCER                = optional(string)
     })
     backend_production = object({
       POLAR_CHECKOUT_LINK_HOST             = string

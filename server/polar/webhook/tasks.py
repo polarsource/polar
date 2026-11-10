@@ -1,5 +1,4 @@
 import base64
-from collections.abc import Mapping
 from datetime import datetime
 from ssl import SSLError
 from typing import Annotated
@@ -20,8 +19,13 @@ from polar.kit.http import SSRFBlockedError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.webhook_delivery import WebhookDelivery
+from polar.models.webhook_endpoint import WebhookFormat
 from polar.observability.task_logging import LoggableField
-from polar.webhook.repository import WebhookDeliveryRepository, WebhookEventRepository
+from polar.webhook.repository import (
+    WebhookDeliveryRepository,
+    WebhookEndpointRepository,
+    WebhookEventRepository,
+)
 from polar.worker import (
     AsyncSessionMaker,
     HTTPXMiddleware,
@@ -31,7 +35,7 @@ from polar.worker import (
     enqueue_job,
 )
 
-from .constants import uses_standard_webhook_signature
+from .constants import MCP_WEBHOOK_MAX_DELIVERIES, uses_standard_webhook_signature
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
@@ -103,6 +107,8 @@ async def _webhook_event_send(
         session.add(event)
         return
 
+    is_mcp = event.webhook_endpoint.format == WebhookFormat.mcp
+
     if event.payload is None:
         bound_log.info("Archived event, skipping")
         return
@@ -142,7 +148,7 @@ async def _webhook_event_send(
         secret_generated_at=event.webhook_endpoint.secret_generated_at,
     )
 
-    headers: Mapping[str, str] = {
+    headers = {
         "user-agent": "polar.sh webhooks",
         "content-type": "application/json",
         "webhook-id": str(event.id),
@@ -150,6 +156,8 @@ async def _webhook_event_send(
         "webhook-signature": signature,
         "webhook-api-version": str(event.api_version),
     }
+    if is_mcp:
+        headers["X-MCP-Subscription-Id"] = str(event.webhook_endpoint_id)
 
     delivery = WebhookDelivery(
         webhook_event_id=webhook_event_id,
@@ -202,9 +210,16 @@ async def _webhook_event_send(
         # whether to retry. +1 accounts for the current attempt not yet committed.
         delivery_repository = WebhookDeliveryRepository.from_session(session)
         delivery_count = await delivery_repository.count_by_event(webhook_event_id) + 1
+        max_deliveries = (
+            MCP_WEBHOOK_MAX_DELIVERIES if is_mcp else settings.WEBHOOK_MAX_RETRIES
+        )
 
+        if is_mcp and delivery.http_code == 410:
+            event.succeeded = False
+            endpoint_repository = WebhookEndpointRepository.from_session(session)
+            await endpoint_repository.soft_delete(event.webhook_endpoint)
         # Permanent failure
-        if delivery_count >= settings.WEBHOOK_MAX_RETRIES:
+        elif delivery_count >= max_deliveries or (is_mcp and delivery.http_code == 413):
             if event.succeeded is not True:
                 event.succeeded = False
             enqueue_job(

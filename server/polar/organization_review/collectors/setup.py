@@ -10,7 +10,7 @@ from polar.kit.http import (
     resolve_and_validate_ip,
 )
 from polar.models.checkout_link import CheckoutLink
-from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 
 from ..known_domains import match_known_domain
 from ..schemas import (
@@ -324,10 +324,14 @@ def collect_setup_data(
     )
 
     # Integration data
-    webhook_endpoint_data = [
-        WebhookEndpointData(url=ep.url, enabled=ep.enabled) for ep in webhook_endpoints
+    merchant_webhook_endpoints = [
+        ep for ep in webhook_endpoints if ep.format != WebhookFormat.mcp
     ]
-    webhook_urls = [ep.url for ep in webhook_endpoints]
+    webhook_endpoint_data = [
+        WebhookEndpointData(url=ep.url, enabled=ep.enabled)
+        for ep in merchant_webhook_endpoints
+    ]
+    webhook_urls = [ep.url for ep in merchant_webhook_endpoints]
     webhook_domains = _unique_domains(webhook_urls)
 
     integration_data = IntegrationData(

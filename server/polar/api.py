@@ -42,6 +42,7 @@ from polar.integrations.resend.endpoints import router as resend_router
 from polar.integrations.slack.endpoints import router as slack_router
 from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
+from polar.mcp_event.endpoints import router as mcp_event_router
 from polar.member.endpoints import customer_members_router
 from polar.member.endpoints import router as member_router
 from polar.merchant_migration.endpoints import router as merchant_migration_router
@@ -120,6 +121,8 @@ router.include_router(dispute_router)
 router.include_router(refund_router)
 # /webhooks
 router.include_router(webhook_router)
+# /mcp/events
+router.include_router(mcp_event_router)
 # /stream
 router.include_router(stream_router)
 # /benefit-grants

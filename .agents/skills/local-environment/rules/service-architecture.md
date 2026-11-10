@@ -12,11 +12,11 @@ publishes **no host ports** — reach it with `dev docker exec <service> ...`.
 
 ## Infrastructure services (project `polar-shared`)
 
-### db (PostgreSQL 15.1)
+### db (PostgreSQL 18.6)
 - Primary database. Reached at `db:5432` on the `polar-shared` network.
 - Credentials: `polar` / `polar`.
 - One logical database per instance: `polar_dev_<N>`.
-- Volume: `postgres_data`. Health check: `pg_isready`.
+- Volume: `postgres18_data`. Health check: `pg_isready`.
 
 ### redis (Redis Alpine)
 - Cache and job-queue backend at `redis:6379`.
@@ -75,7 +75,7 @@ grafana     → prometheus
 
 | Volume | Purpose |
 |--------|---------|
-| postgres_data | Database (shared) |
+| postgres18_data | Database (shared) |
 | minio_data | Files (shared) |
 | server_uv_cache | Python package cache |
 | api_venv / worker_venv | Per-service virtualenv |

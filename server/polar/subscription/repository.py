@@ -587,11 +587,17 @@ class SubscriptionRepository(
         one_day_from_now = now + timedelta(days=1)
         three_days_from_now = now + timedelta(days=3)
 
-        # Dedup: NOT EXISTS in email_logs for this subscription + template
+        # Dedup: NOT EXISTS in email_logs for this subscription + trial end. The
+        # payment-method-required email shares this key, so either one counts.
         dedup_subquery = (
             select(EmailLog.id)
             .where(
-                EmailLog.email_template == "subscription_trial_conversion_reminder",
+                EmailLog.email_template.in_(
+                    (
+                        "subscription_trial_conversion_reminder",
+                        "subscription_trial_payment_method_required",
+                    )
+                ),
                 EmailLog.deduplication_key
                 == subscription_trial_conversion_reminder_key_sql(
                     Subscription.id, Subscription.trial_end

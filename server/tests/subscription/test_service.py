@@ -19,6 +19,8 @@ from polar.customer_seat.repository import CustomerSeatRepository
 from polar.email.schemas import (
     SubscriptionRenewalReminderEmail,
     SubscriptionRevokedEmail,
+    SubscriptionTrialConversionReminderEmail,
+    SubscriptionTrialPaymentMethodRequiredEmail,
 )
 from polar.enums import (
     PaymentMode,
@@ -8522,6 +8524,7 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
         save_fixture, product=product, customer=customer
     )
     subscription.trial_end = datetime(2026, 3, 17, tzinfo=UTC)
+    subscription.payment_method = await create_payment_method(save_fixture, customer)
     await save_fixture(subscription)
     send_customer_email_mock = mocker.patch.object(
         subscription_service, "_send_customer_email"
@@ -8539,6 +8542,131 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
         send_customer_email_mock.call_args.kwargs["deduplication_key"]
         == f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
     )
+
+
+@pytest.mark.anyio
+class TestSendTrialConversionReminderEmail:
+    async def test_without_payment_method(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.trial_end = datetime(2026, 3, 17, tzinfo=UTC)
+        await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
+        assert email.props.trial_end_date == "March 17, 2026"
+        assert f"/{organization.slug}/portal?" in email.props.url
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["subject"] == (
+            f"Add a payment method to keep your {product.name} subscription"
+        )
+        assert kwargs["deduplication_key"] == (
+            f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
+        )
+
+    async def test_with_subscription_payment_method(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.payment_method = await create_payment_method(
+            save_fixture, customer
+        )
+        await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+
+    async def test_with_customer_default_payment_method(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        customer.default_payment_method = await create_payment_method(
+            save_fixture, customer
+        )
+        await save_fixture(customer)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+
+    async def test_free_product(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product_recurring_free_price, customer=customer
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_disabled_by_conversion_reminder_setting(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_trial_conversion_reminder": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_not_called()
 
 
 @pytest.mark.anyio

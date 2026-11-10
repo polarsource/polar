@@ -59,6 +59,9 @@ class EmailTemplate(StrEnum):
     subscription_uncanceled = "subscription_uncanceled"
     subscription_renewal_reminder = "subscription_renewal_reminder"
     subscription_trial_conversion_reminder = "subscription_trial_conversion_reminder"
+    subscription_trial_payment_method_required = (
+        "subscription_trial_payment_method_required"
+    )
     subscription_updated = "subscription_updated"
     subscription_usage_invoice = "subscription_usage_invoice"
     webhook_endpoint_disabled = "webhook_endpoint_disabled"
@@ -398,6 +401,17 @@ class SubscriptionTrialConversionReminderEmail(BaseModel):
     props: SubscriptionTrialConversionReminderProps
 
 
+class SubscriptionTrialPaymentMethodRequiredProps(SubscriptionPropsBase):
+    trial_end_date: str
+
+
+class SubscriptionTrialPaymentMethodRequiredEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_trial_payment_method_required] = (
+        EmailTemplate.subscription_trial_payment_method_required
+    )
+    props: SubscriptionTrialPaymentMethodRequiredProps
+
+
 class SubscriptionRevokedProps(SubscriptionPropsBase): ...
 
 
@@ -666,6 +680,7 @@ Email = Annotated[
     | SubscriptionResumedEmail
     | SubscriptionRenewalReminderEmail
     | SubscriptionTrialConversionReminderEmail
+    | SubscriptionTrialPaymentMethodRequiredEmail
     | SubscriptionRevokedEmail
     | SubscriptionUncanceledEmail
     | SubscriptionUpdatedEmail

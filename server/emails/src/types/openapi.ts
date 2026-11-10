@@ -3379,6 +3379,33 @@ export interface components {
       /** Conversion Date */
       conversion_date: string
     }
+    /** SubscriptionTrialPaymentMethodRequiredEmail */
+    SubscriptionTrialPaymentMethodRequiredEmail: {
+      /**
+       * Template
+       * @default subscription_trial_payment_method_required
+       * @constant
+       */
+      template: 'subscription_trial_payment_method_required'
+      props: components['schemas']['SubscriptionTrialPaymentMethodRequiredProps']
+    }
+    /** SubscriptionTrialPaymentMethodRequiredProps */
+    SubscriptionTrialPaymentMethodRequiredProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
+      /** Trial End Date */
+      trial_end_date: string
+    }
     /** SubscriptionUncanceledEmail */
     SubscriptionUncanceledEmail: {
       /**

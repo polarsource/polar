@@ -5,6 +5,9 @@ import Link from 'next/link'
 
 type Item = schemas['RemovedCatalogItem']
 
+const versionName = ({ name }: schemas['RemovedCatalogItemVersion']) =>
+  name ?? 'Untitled'
+
 const Customers = ({ item }: { item: Item }) =>
   item.status === 'deprecated' ? (
     <Box alignItems="center" columnGap="s">
@@ -21,13 +24,11 @@ export const RemovedGroup = ({
   title,
   hint,
   items,
-  versionName,
   href,
 }: {
   title: string
   hint: string
   items: Item[]
-  versionName: (catalogId: string) => string
   href: (item: Item) => string
 }) => {
   if (!items.length) return null
@@ -61,15 +62,15 @@ export const RemovedGroup = ({
             id: 'versions',
             header: 'In versions',
             cell: ({ row }) => {
-              const first = versionName(row.original.first_catalog_id)
-              const last = versionName(row.original.last_catalog_id)
+              const first = versionName(row.original.first_catalog)
+              const last = versionName(row.original.last_catalog)
               return first === last ? last : `${first}–${last}`
             },
           },
           {
             id: 'removed_in',
             header: 'Removed in',
-            cell: ({ row }) => versionName(row.original.removed_in_catalog_id),
+            cell: ({ row }) => versionName(row.original.removed_in_catalog),
           },
           {
             accessorKey: 'customers_count',
@@ -90,7 +91,7 @@ export const RemovedGroup = ({
                   transitionDuration="fast"
                 >
                   <Text as="span" color="inherit">
-                    Open {versionName(row.original.last_catalog_id)} →
+                    Open {versionName(row.original.last_catalog)} →
                   </Text>
                 </Box>
               </Link>

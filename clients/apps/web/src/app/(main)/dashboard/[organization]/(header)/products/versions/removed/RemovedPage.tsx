@@ -1,10 +1,7 @@
 'use client'
 
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
-import {
-  useCatalogVersionLabels,
-  useRemovedCatalogItems,
-} from '@/hooks/queries/catalogs'
+import { useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -26,14 +23,11 @@ export default function RemovedPage({
 }) {
   const [resource, setResource] = useState<Resource>('product')
   const { data: items } = useRemovedCatalogItems(organization.id)
-  const { data: versions } = useCatalogVersionLabels(organization)
 
   const productsPath = `/dashboard/${organization.slug}/products`
   const shown = items?.filter((item) => item.resource === resource) ?? []
   const count = (value: Resource) =>
     items?.filter((item) => item.resource === value).length ?? 0
-  const versionName = (catalogId: string) =>
-    versions?.get(catalogId)?.name ?? 'Untitled'
   const href = (item: Item) =>
     item.resource === 'benefit'
       ? `${productsPath}/benefits/${item.last_item_id}`
@@ -74,14 +68,12 @@ export default function RemovedPage({
           title="Deprecated · still billing"
           hint="Becomes removed once no customer uses it"
           items={shown.filter((item) => item.status === 'deprecated')}
-          versionName={versionName}
           href={href}
         />
         <RemovedGroup
           title="Removed · safe to delete from config"
           hint="No customer uses it"
           items={shown.filter((item) => item.status === 'removed')}
-          versionName={versionName}
           href={href}
         />
       </Box>

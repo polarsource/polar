@@ -315,6 +315,10 @@ jobs:
         id: login-ecr-production
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Get today's date
+        id: date
+        run: echo "today=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
       - uses: useblacksmith/build-push-action@v2
         id: push-lambda-worker
         with:
@@ -334,6 +338,7 @@ jobs:
           build-args: |
             RELEASE_VERSION=${{ github.sha }}
             TAILSCALE_VERSION=${{ vars.TAILSCALE_VERSION }}
+            DNF_REFRESH_DATE=${{ steps.date.outputs.today }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
 

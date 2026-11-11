@@ -8,6 +8,7 @@ from decimal import Decimal
 import structlog
 from sqlalchemy import and_, false, or_
 
+from polar.billing_interval.repository import BillingIntervalRepository
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.billing_interval.service import select_settlement_windows
 from polar.event.repository import EventRepository
@@ -19,6 +20,9 @@ from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.repository import ReducerRepository
 
 log = structlog.get_logger(__name__)
+
+EXPLAIN_STATEMENT_TIMEOUT = "5s"
+"""Below the driver's command timeout, which breaks the order's transaction."""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -115,7 +119,12 @@ async def compare(
     if reducer.matches(legacy):
         return Comparison(legacy=legacy, reducer=reducer, adjustments={})
     try:
-        async with session.begin_nested():
+        async with (
+            BillingIntervalRepository.from_session(session).local_statement_timeout(
+                EXPLAIN_STATEMENT_TIMEOUT
+            ),
+            session.begin_nested(),
+        ):
             adjustments = {
                 **await _get_usage_adjustments(
                     session,

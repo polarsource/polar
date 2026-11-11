@@ -1,0 +1,16 @@
+server/polar/billing_interval/service.py
+  h_6aa6f5c50f181e 17,64-66,78-81
+server/tests/billing_interval/test_service_usage_windows.py
+  h_6aa6f5c50f181e 18,262-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9188af6171e39cfaea59a04cec3fd79e2ce7440c",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

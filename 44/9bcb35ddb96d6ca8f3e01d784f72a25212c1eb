@@ -1,0 +1,16 @@
+server/polar/customer_meter/service.py
+  h_6aa6f5c50f181e 44,142-143,149,658-666,671-676
+server/tests/customer_meter/test_service.py
+  h_6aa6f5c50f181e 10,1711-1756
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "449bcb35ddb96d6ca8f3e01d784f72a25212c1eb",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

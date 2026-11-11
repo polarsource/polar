@@ -1,0 +1,29 @@
+terraform/test/variables.tf
+  s_30b5b610fb0d13::t_82ae2d2a79fcb9 18-23
+terraform/global/sandbox.tf
+  s_30b5b610fb0d13::t_82ae2d2a79fcb9 823-830
+terraform/global/production.tf
+  s_30b5b610fb0d13::t_82ae2d2a79fcb9 999-1006
+terraform/global/test.tf
+  s_30b5b610fb0d13::t_82ae2d2a79fcb9 11-18
+terraform/sandbox/variables.tf
+  s_30b5b610fb0d13::t_82ae2d2a79fcb9 22-27
+terraform/production/variables.tf
+  s_30b5b610fb0d13::t_82ae2d2a79fcb9 22-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ee6cd2ffe06161ce63c6b0b29bceeaf4542d3e09",
+  "prompts": {},
+  "sessions": {
+    "s_30b5b610fb0d13": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7d15f158-b38f-4a02-9af3-2b93ef740156",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

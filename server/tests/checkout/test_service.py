@@ -7254,6 +7254,7 @@ class TestConfirm:
         assert checkout.customer == customer
         assert checkout.customer_email == customer.email
         assert checkout.customer_session_token is None
+        assert "agent_channel" not in (checkout.analytics_metadata or {})
 
     async def test_shared_payment_token_valid(
         self,
@@ -7285,6 +7286,8 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.payment_processor_metadata["intent_id"] == "STRIPE_INTENT_ID"
+        assert checkout.analytics_metadata is not None
+        assert checkout.analytics_metadata["agent_channel"] == "shared_payment_token"
         stripe_service_mock.get_confirmation_token.assert_not_called()
         stripe_service_mock.create_payment_intent.assert_not_called()
         create_mock = (

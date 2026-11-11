@@ -35,7 +35,9 @@ const MeteredTierRows: React.FC<MeteredTierRowsProps> = ({
     customMultiplier: price.meter.custom_multiplier,
     locale,
   })
-  const formatUnits = new Intl.NumberFormat(locale)
+  const formatUnits = new Intl.NumberFormat(locale, {
+    numberingSystem: 'latn',
+  })
 
   return (
     <>

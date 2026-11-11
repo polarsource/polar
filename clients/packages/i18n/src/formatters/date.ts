@@ -19,7 +19,10 @@ function getDateFormatter(
   locale: AcceptedLocale,
   options?: Intl.DateTimeFormatOptions,
 ): Intl.DateTimeFormat {
-  const opts = options ?? { dateStyle: 'medium' as const }
+  const opts = {
+    ...(options ?? { dateStyle: 'medium' as const }),
+    numberingSystem: 'latn',
+  }
   const key = formatCacheKey(locale, opts)
   let fmt = formatterCache.get(key)
   if (!fmt) {

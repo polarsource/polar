@@ -81,6 +81,7 @@ export const getDiscountDisplay = (
   if (isDiscountPercentage(discount)) {
     const percentageFormatter = new Intl.NumberFormat(locale, {
       style: 'percent',
+      numberingSystem: 'latn',
       maximumFractionDigits: 2,
     })
     return percentageFormatter.format(-discount.basis_points / 10000)

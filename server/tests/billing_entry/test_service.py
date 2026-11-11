@@ -1940,6 +1940,45 @@ class TestCreateOrderItemsFromReducers:
         ) as order_items:
             assert order_items == []
 
+    async def test_bills_a_peak_from_before_a_period_start_that_was_never_settled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        metered_subscription: Subscription,
+        product_metered_unit: Product,
+    ) -> None:
+        peak_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="tokens"
+            ),
+            organization=organization,
+        )
+        price = await create_product_price_metered_unit(
+            save_fixture, product=product_metered_unit, meter=peak_meter
+        )
+        await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, peak_meter, tokens=20
+        )
+
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session,
+            metered_subscription,
+            cutoff=REDUCER_CUTOFF,
+            price_ids=[price.id],
+            period_start=REDUCER_CUTOFF - timedelta(minutes=10),
+        ) as order_items:
+            assert [(item.product_price, item.amount) for item in order_items] == [
+                (price, 20_00)
+            ]
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
     @pytest.mark.parametrize("paid_on_creation", [False, True])
     async def test_usage_changing_raises_unless_the_order_is_already_paid(
         self,

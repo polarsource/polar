@@ -12,6 +12,7 @@ from polar.billing_interval.service import (
     BILL_USAGE_LOCK_TIMEOUT,
     ReducerUsageUnavailable,
     get_meter_charge,
+    get_usage_period_start,
     split_windows,
 )
 from polar.billing_interval.service import billing_interval as billing_interval_service
@@ -320,18 +321,47 @@ class TestGetMeterCharge:
         assert list(charge.units_by_price.values()) == list(expected_units.values())
 
 
-class TestSplitWindows:
-    def test_splits_the_window_the_period_starts_in(self) -> None:
-        window = UsageWindow(uuid4(), uuid4(), uuid4(), EARLIER, CUTOFF)
-        other = UsageWindow(uuid4(), uuid4(), uuid4(), PERIOD_START, CUTOFF)
+class TestGetUsagePeriodStart:
+    def window(self, start: datetime) -> UsageWindow:
+        return UsageWindow(uuid4(), uuid4(), uuid4(), start, CUTOFF)
 
-        assert split_windows([window, other], at=PERIOD_START) == (
+    def test_starts_at_the_period_start_when_the_meter_was_reset_then(self) -> None:
+        assert (
+            get_usage_period_start(PERIOD_START, PERIOD_START, [self.window(EARLIER)])
+            == PERIOD_START
+        )
+
+    def test_starts_at_the_last_reset_when_the_clock_ran_past_it(self) -> None:
+        assert (
+            get_usage_period_start(SWITCH, PERIOD_START, [self.window(EARLIER)])
+            == PERIOD_START
+        )
+
+    def test_ignores_a_reset_after_the_period_start(self) -> None:
+        assert (
+            get_usage_period_start(PERIOD_START, SWITCH, [self.window(EARLIER)])
+            == PERIOD_START
+        )
+
+    def test_starts_at_the_first_window_when_never_reset(self) -> None:
+        assert (
+            get_usage_period_start(SWITCH, None, [self.window(PERIOD_START)])
+            == PERIOD_START
+        )
+
+    def test_without_a_period_start(self) -> None:
+        assert get_usage_period_start(None, EARLIER, []) is None
+
+
+class TestSplitWindows:
+    def test_splits_the_window_its_meters_period_starts_in(self) -> None:
+        window = UsageWindow(uuid4(), uuid4(), uuid4(), EARLIER, CUTOFF)
+        other = UsageWindow(uuid4(), uuid4(), uuid4(), EARLIER, CUTOFF)
+
+        assert split_windows(
+            [window, other], at={window.meter_id: PERIOD_START, other.meter_id: None}
+        ) == (
             dataclasses.replace(window, end=PERIOD_START),
             dataclasses.replace(window, start=PERIOD_START),
             other,
         )
-
-    def test_without_a_period_start_keeps_the_windows(self) -> None:
-        window = UsageWindow(uuid4(), uuid4(), uuid4(), EARLIER, CUTOFF)
-
-        assert split_windows([window], at=None) == (window,)

@@ -9,6 +9,7 @@ from uuid import UUID
 
 import structlog
 
+from polar.event.repository import EventRepository
 from polar.exceptions import PolarError
 from polar.logging import Logger
 from polar.meter.aggregation import AggregationFunction
@@ -220,7 +221,15 @@ class BillingIntervalService:
         async with self._settlement_windows(
             session, subscription, meter_ids, cutoff=cutoff
         ) as windows:
-            windows = split_windows(windows, at=period_start)
+            period_starts = await self._get_usage_period_starts(
+                session,
+                subscription.customer,
+                meter_ids,
+                windows,
+                period_start=period_start,
+                cutoff=cutoff,
+            )
+            windows = split_windows(windows, at=period_starts)
             if order_id is None:
                 usage = await reducer_service.seal_usage(
                     session,
@@ -246,10 +255,38 @@ class BillingIntervalService:
         price_ids = {interval.id: interval.product_price_id for interval in intervals}
         return {
             meter_id: get_meter_charge(
-                meter_usage, price_ids, period_start=period_start, cutoff=cutoff
+                meter_usage,
+                price_ids,
+                period_start=period_starts[meter_id],
+                cutoff=cutoff,
             )
             for meter_id, meter_usage in usage.items()
         }
+
+    async def _get_usage_period_starts(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Sequence[UUID],
+        windows: Sequence[UsageWindow],
+        *,
+        period_start: datetime | None,
+        cutoff: datetime,
+    ) -> dict[UUID, datetime | None]:
+        """The start of the usage an order billing from `period_start` to `cutoff`
+        settles on each meter."""
+        repository = EventRepository.from_session(session)
+        period_starts: dict[UUID, datetime | None] = {}
+        for meter_id in meter_ids:
+            reset = await repository.get_latest_meter_reset(
+                customer, meter_id, cutoff=cutoff
+            )
+            period_starts[meter_id] = get_usage_period_start(
+                period_start,
+                None if reset is None else reset.timestamp,
+                [window for window in windows if window.meter_id == meter_id],
+            )
+        return period_starts
 
     @contextlib.asynccontextmanager
     async def _settlement_windows(
@@ -279,18 +316,36 @@ class BillingIntervalService:
             )
 
 
+def get_usage_period_start(
+    period_start: datetime | None,
+    last_reset_at: datetime | None,
+    windows: Sequence[UsageWindow],
+) -> datetime | None:
+    """The start of the usage an order settles on a meter: `period_start`, or
+    earlier if nothing was settled since. A subscription that isn't active keeps
+    its meter clock running without settling or resetting the meter, so its
+    usage since the last reset, or since it started, is still to bill."""
+    if period_start is None:
+        return None
+    unsettled_since = (
+        last_reset_at
+        if last_reset_at is not None
+        else min((window.start for window in windows), default=period_start)
+    )
+    return min(period_start, unsettled_since)
+
+
 def split_windows(
-    windows: Sequence[UsageWindow], *, at: datetime | None
+    windows: Sequence[UsageWindow], *, at: Mapping[UUID, datetime | None]
 ) -> tuple[UsageWindow, ...]:
-    """Splits the windows `at` falls inside, so the usage before it and from it
-    is observed apart."""
-    if at is None:
-        return tuple(windows)
+    """Splits each window the datetime of its meter falls inside, so the usage
+    before it and from it is observed apart."""
     split: list[UsageWindow] = []
     for window in windows:
-        if window.start < at < window.end:
-            split.append(dataclasses.replace(window, end=at))
-            split.append(dataclasses.replace(window, start=at))
+        split_at = at.get(window.meter_id)
+        if split_at is not None and window.start < split_at < window.end:
+            split.append(dataclasses.replace(window, end=split_at))
+            split.append(dataclasses.replace(window, start=split_at))
         else:
             split.append(window)
     return tuple(split)

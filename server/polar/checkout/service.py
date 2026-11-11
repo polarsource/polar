@@ -1390,6 +1390,10 @@ class CheckoutService:
                                     checkout_confirm.shared_payment_token_id,
                                     **payment_intent_params,
                                 )
+                                checkout.analytics_metadata = {
+                                    **(checkout.analytics_metadata or {}),
+                                    "agent_channel": "shared_payment_token",
+                                }
                             else:
                                 assert (
                                     checkout_confirm.confirmation_token_id is not None
@@ -1582,6 +1586,9 @@ class CheckoutService:
                     if checkout.customer_billing_address
                     else None,
                     "is_returning_customer": checkout.customer_id is not None,
+                    "agent_channel": checkout.analytics_metadata.get("agent_channel")
+                    if checkout.analytics_metadata
+                    else None,
                 },
             )
         except Exception as e:
@@ -1759,6 +1766,7 @@ class CheckoutService:
         )
 
         analytics_metadata = {
+            **(checkout.analytics_metadata or {}),
             "opened_at": utc_now().isoformat(),
             "distinct_id": resolved_distinct_id,
         }

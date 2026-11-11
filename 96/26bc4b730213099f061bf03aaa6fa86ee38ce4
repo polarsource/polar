@@ -1,0 +1,44 @@
+server/polar/webhook/schemas.py
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 95-97,101-103
+  s_ef0ee0cf80beae::t_372cc3af403ef8 93,203,235
+server/tests/webhooks/test_webhooks.py
+  s_ef0ee0cf80beae::t_bb40c2fac3f0de 741,776,789,817,850,885,898
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 708
+server/polar/organization_review/collectors/setup.py
+  s_ef0ee0cf80beae::t_a1d7b0c6437dfe 13,328,330
+server/polar/webhook/repository.py
+  s_ef0ee0cf80beae::t_372cc3af403ef8 179,194
+server/tests/organization_review/collectors/test_setup.py
+  s_ef0ee0cf80beae::t_a1d7b0c6437dfe 52
+server/tests/webhooks/test_endpoints.py
+  s_ef0ee0cf80beae::t_e03b8d3e4affe3 60,69-71,192-199
+server/tests/organization_review/test_repository.py
+  s_ef0ee0cf80beae::t_51830b4a1ad0ac 12,1374-1401
+clients/packages/client/src/v1.ts
+  ai_agent 2566-2625,13785-13795,26463-26531,42217,49380-49490,76018
+server/polar/webhook/service.py
+  s_ef0ee0cf80beae::t_bb40c2fac3f0de 969,971
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 963-966
+server/polar/webhook/webhooks.py
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 50
+  s_ef0ee0cf80beae::t_bb40c2fac3f0de 160,166,175,183,188
+server/polar/organization_review/repository.py
+  s_ef0ee0cf80beae::t_37b4a430fa1e51 526
+  s_ef0ee0cf80beae::t_a1d7b0c6437dfe 31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9626bc4b730213099f061bf03aaa6fa86ee38ce4",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

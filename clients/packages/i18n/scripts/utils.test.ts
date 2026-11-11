@@ -10,10 +10,12 @@ import {
   getPluralCategoryKeys,
   getPluralCategorySamples,
   getSharedExactCounts,
+  isSingleCountVariant,
   getStringValue,
   hasLlmContext,
   isLeafNode,
   normalizeResponse,
+  placeholdersMatch,
   prepareForLLM,
   resolveSourceKey,
   unflattenKeys,
@@ -553,6 +555,44 @@ describe('getPluralCategorySamples', () => {
       1, 21, 31, 41, 51,
     ])
     expect(getPluralCategorySamples('fr', new Set([1])).one).toEqual([0, 1])
+  })
+})
+
+describe('isSingleCountVariant', () => {
+  const pluralPaths = new Set(['seats'])
+
+  it('is true for exact counts', () => {
+    expect(isSingleCountVariant('seats.=1', pluralPaths, 'en')).toBe(true)
+  })
+
+  it('is true for a category the locale selects for one count only', () => {
+    expect(isSingleCountVariant('seats.two', pluralPaths, 'ar')).toBe(true)
+  })
+
+  it('is false for a category that covers several counts', () => {
+    expect(isSingleCountVariant('seats.few', pluralPaths, 'ar')).toBe(false)
+    expect(isSingleCountVariant('seats.one', pluralPaths, 'fr')).toBe(false)
+    expect(isSingleCountVariant('seats.other', pluralPaths, 'ar')).toBe(false)
+  })
+
+  it('is false outside plural objects', () => {
+    expect(isSingleCountVariant('ordinal.two', pluralPaths, 'ar')).toBe(false)
+  })
+})
+
+describe('placeholdersMatch', () => {
+  it('requires the same placeholders', () => {
+    expect(placeholdersMatch('# seats for {name}', '{name}: # مقاعد')).toBe(
+      true,
+    )
+    expect(placeholdersMatch('# seats', 'مقعدين')).toBe(false)
+    expect(placeholdersMatch('{min} seats', 'مقاعد')).toBe(false)
+  })
+
+  it('lets a translation spell the count out when it is optional', () => {
+    expect(placeholdersMatch('# seats', 'مقعدين', true)).toBe(true)
+    expect(placeholdersMatch('# seats', '# مقعدين', true)).toBe(true)
+    expect(placeholdersMatch('# {unit}', 'واحد', true)).toBe(false)
   })
 })
 

@@ -2,13 +2,13 @@ import path from 'node:path'
 import * as log from './logger'
 import {
   type NestedObject,
-  arraysEqual,
-  extractPlaceholders,
   findPluralPaths,
   flattenKeys,
   flattenKeysToStrings,
   getPluralCategoryKeys,
   getSharedExactCounts,
+  isSingleCountVariant,
+  placeholdersMatch,
   resolveSourceKey,
 } from './utils'
 
@@ -111,10 +111,8 @@ async function validate() {
       const sourceValue = sourceKey && sourceStrings.get(sourceKey)
       if (!sourceValue || !translationValue) continue
 
-      const sourcePlaceholders = extractPlaceholders(sourceValue)
-      const translationPlaceholders = extractPlaceholders(translationValue)
-
-      if (!arraysEqual(sourcePlaceholders, translationPlaceholders)) {
+      const countOptional = isSingleCountVariant(key, pluralPaths, locale)
+      if (!placeholdersMatch(sourceValue, translationValue, countOptional)) {
         placeholderErrors.push(key)
         errors.push(`${locale}.${key}: Placeholder mismatch`)
       }

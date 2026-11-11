@@ -167,6 +167,28 @@ export function getPluralCategoryKeys(
 }
 
 /**
+ * Whether a flat key is a plural variant used for a single count: an exact
+ * `=N`, or a category the locale's rules select for one count only (Arabic
+ * `two`). Such a variant may spell the count out instead of using `#`.
+ */
+export function isSingleCountVariant(
+  key: string,
+  pluralPaths: Set<string>,
+  locale: string,
+): boolean {
+  const separator = key.lastIndexOf('.')
+  if (!pluralPaths.has(key.slice(0, separator))) return false
+
+  const variant = key.slice(separator + 1)
+  if (variant.startsWith('=')) return true
+
+  const rules = new Intl.PluralRules(locale)
+  return (
+    PLURAL_SAMPLE_COUNTS.filter((n) => rules.select(n) === variant).length === 1
+  )
+}
+
+/**
  * Resolve the source key a translated flat key corresponds to.
  * Regular keys map to themselves; plural category keys (`path.few`,
  * `path.many`) map to their plural's `path.other`.
@@ -434,6 +456,28 @@ export function extractPlaceholders(str: string): string[] {
   }
 
   return [...new Set(placeholders)].sort()
+}
+
+/**
+ * Check that a translation keeps its source's placeholders. With
+ * `countOptional`, the translation may leave out the `#` count placeholder.
+ */
+export function placeholdersMatch(
+  source: string,
+  translation: string,
+  countOptional = false,
+): boolean {
+  const expected = extractPlaceholders(source)
+  const actual = extractPlaceholders(translation)
+  if (arraysEqual(expected, actual)) return true
+
+  return (
+    countOptional &&
+    arraysEqual(
+      expected.filter((placeholder) => placeholder !== '#'),
+      actual,
+    )
+  )
 }
 
 /**

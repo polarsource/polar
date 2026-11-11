@@ -8,8 +8,6 @@ import {
   type EntryValue,
   type NestedObject,
   type TranslationCache,
-  arraysEqual,
-  extractPlaceholders,
   findChangedKeys,
   findOrphanedKeys,
   findPluralPaths,
@@ -19,8 +17,10 @@ import {
   getPluralCategorySamples,
   getSharedExactCounts,
   getStringValue,
+  isSingleCountVariant,
   type LLMSourceEntry,
   normalizeResponse,
+  placeholdersMatch,
   prepareForLLM,
   resolveSourceKey,
   unflattenKeys,
@@ -403,10 +403,8 @@ function validate(
       const sourceValue = sourceKey && sourceStrings.get(sourceKey)
       if (!sourceValue || !translationValue) continue
 
-      const sourcePlaceholders = extractPlaceholders(sourceValue)
-      const translationPlaceholders = extractPlaceholders(translationValue)
-
-      if (!arraysEqual(sourcePlaceholders, translationPlaceholders)) {
+      const countOptional = isSingleCountVariant(key, pluralPaths, locale)
+      if (!placeholdersMatch(sourceValue, translationValue, countOptional)) {
         placeholderErrors.push(key)
         errors.push(`${locale}.${key}: Placeholder mismatch`)
       }

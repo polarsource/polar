@@ -55,6 +55,7 @@ from polar.models import (
     Product,
     ProductPrice,
     Subscription,
+    SubscriptionProductPrice,
     User,
     UserOrganization,
 )
@@ -63,7 +64,7 @@ from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
-from polar.models.discount import DiscountDuration, DiscountType
+from polar.models.discount import DiscountDuration, DiscountPercentage, DiscountType
 from polar.models.merchant_migration_record import MerchantMigrationCutoverStatus
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
@@ -8625,6 +8626,102 @@ class TestSendTrialConversionReminderEmail:
         enqueue_email_mock.assert_called_once()
         email = enqueue_email_mock.call_args[0][0]
         assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+
+    async def test_without_payment_method_full_forever_discount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        discount_percentage_100_forever: DiscountPercentage,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_percentage_100_forever,
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+
+    async def test_without_payment_method_zero_custom_amount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        product_recurring_custom_price: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.product = product_recurring_custom_price
+        subscription.subscription_product_prices = [
+            SubscriptionProductPrice.from_price(
+                product_recurring_custom_price.prices[0], amount=0
+            )
+        ]
+        await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+
+    async def test_without_payment_method_expiring_full_discount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        discount_percentage_100: DiscountPercentage,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_percentage_100,
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
+
+    async def test_without_payment_method_metered_price(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
 
     async def test_free_product(
         self,

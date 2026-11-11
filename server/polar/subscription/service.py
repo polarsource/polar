@@ -104,6 +104,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -474,6 +475,21 @@ def _from_timestamp(t: int | None) -> datetime | None:
     if t is None:
         return None
     return datetime.fromtimestamp(t, UTC)
+
+
+def _is_payment_setup_required(subscription: Subscription) -> bool:
+    discount = subscription.discount
+    if (
+        isinstance(discount, DiscountPercentage)
+        and discount.duration == DiscountDuration.forever
+        and discount.basis_points == 10_000
+    ):
+        return False
+    if any(is_metered_price(price) for price in subscription.prices):
+        return True
+    # `subscription.amount` is already discounted, and a discount that runs out
+    # still leaves renewals to charge, so look at the undiscounted prices.
+    return sum(spp.amount for spp in subscription.subscription_product_prices) > 0
 
 
 class SubscriptionUpdateContext:
@@ -4597,6 +4613,7 @@ class SubscriptionService:
         if (
             subscription.payment_method_id is None
             and subscription.customer.default_payment_method_id is None
+            and _is_payment_setup_required(subscription)
         ):
             return await self._send_customer_email(
                 session,

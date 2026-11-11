@@ -1,0 +1,221 @@
+---
+title: "Meter versioning"
+description: "How meters get versions under declarative config: the counting rule gets versions, the customer's balance does not."
+---
+
+<Info>
+
+**Created**: 2026-11-11
+
+**Last Updated**: 2026-11-11
+
+**Author**: Petru Rares Sincraian
+</Info>
+
+## Summary
+
+[Versioning](/engineering/design-documents/versioning) gives products and benefits a new row for every change. It left meters out of scope. We started to version meters the same way, and found a problem. A meter row is two things:
+
+- A **rule**: the filter and aggregation that turn events into units.
+- A **balance**: for each customer, credited units minus consumed units.
+
+A copy of a product is harmless. A copy of a meter is also a second balance, so a customer's credits end up split between versions.
+
+We propose to version the rule and to share the balance:
+
+1. **A meter change creates a new row**, like products and benefits. A row is a **meter version**. All rows with the same `external_id` are versions of one meter.
+2. **One balance per customer and meter `external_id`.** Credits, rollover, and resets belong to the balance, whatever catalog they come from.
+3. **A customer is counted with one version at a time.** It only changes when the merchant moves them, and only at a meter reset.
+4. **The aggregation never changes.** A version can change the filter and the display fields. Counting something else is a new meter, with a new `external_id`.
+
+Like versioning, this only applies to organizations that use declarative config.
+
+## Current state
+
+| Topic | Today |
+|---|---|
+| Balance | One row per customer and meter row (`customer_meters`). Credits and resets are events that store a `meter_id` |
+| Rule | Filter and aggregation are locked once the meter has a billing cursor |
+| Config | `apply` changes meters in place and right away, even without `--publish`. Every benefit and product version points to the same meter row |
+| Groundwork, merged | `meters.catalog_id`, `meters.is_current`, and `catalog_meters`. Lookups by `external_id` return the current row. Events match every published version, and skip rows that only exist in a draft |
+| In review | A new meter row for every change, with new rows for the benefits and products that use it. Each meter row keeps its own balance |
+
+### The problem with one balance per version
+
+ACME has one meter, `credits`, named "AI credits". It counts `message` events.
+
+- `pro`: $20 a month, with 5,000 credits every month and $0.01 per extra credit.
+- `credits-10k`: one-time, $10, with 10,000 credits and rollover on.
+
+Alice subscribes to Pro in catalog `a1f3`. Then ACME decides that `image` events also cost a credit, and publishes catalog `9c2e`. If each version has its own balance:
+
+| Alice | What happens |
+|---|---|
+| Buys `credits-10k` | The credits go to the new version. Pro still bills the old one, so she pays $10 and still pays overage |
+| Is moved to the new Pro | Her rollover and manual credits stay on the old version |
+| Opens the portal | She sees two "AI credits" meters |
+| ACME reads her balance | Customer state has two rows, identified only by `meter_id` |
+
+Asking the merchant for a new `external_id` gives the same result, done by hand.
+
+## Goals
+
+- A merchant can change what a meter counts, and nothing changes for an existing customer until they are moved.
+- A customer has one balance per meter, whatever catalog their purchases come from.
+- A meter change never loses credits, and never changes what a credit is worth.
+- Meter changes go through the draft, like products and benefits.
+
+## Out of scope
+
+- Changing the aggregation. That is a new meter with a new `external_id`.
+- Converting a balance from one meter to another.
+- `immediate` moves for a product whose meter version changes. The first version is `next_period` only.
+- A top-up feature. A top-up stays a one-time product with a meter credit benefit.
+- Organizations without declarative config. They keep one row per meter.
+
+## Options
+
+| Option | We pick it? |
+|---|---|
+| **Versioned rule, shared balance**: a new row per meter change, one balance per customer and `external_id` | Yes |
+| **One balance per version**: a new row per change, each with its own balance | No. Credits don't follow the customer |
+| **One meter row, rules in a second table**: the meter id never changes | No. Stable `meter_id`, but a second model only for meters, and the merged groundwork has to be redone. The versioning doc rejected "stable ids with version tables" for the same reason |
+| **Dated rule**: one row, a change applies to everyone from their next period | No. One balance, but it breaks the full freeze |
+| **No versioning**: the rule is locked, a new `external_id` to count differently | No. Safe, but the merchant manages versions and balances by hand |
+
+## Solution
+
+### What we store
+
+ACME publishes `9c2e`. Bob subscribes to Pro after that.
+
+`meters`
+
+| id | external_id | created in | counts | is_current |
+|---|---|---|---|---|
+| `meter_A` | `credits` | `a1f3` | `message` | `false` |
+| `meter_B` | `credits` | `9c2e` | `message`, `image` | `true` |
+
+`customer_meters`, one row per customer and `external_id`
+
+| customer | external_id | version | credited | consumed | balance |
+|---|---|---|---|---|---|
+| Alice | `credits` | `meter_A` | 15,000 | 6,000 | 9,000 |
+| Bob | `credits` | `meter_B` | 5,000 | 1,200 | 3,800 |
+
+Things to notice:
+
+- Alice has 5,000 credits from Pro and 10,000 from a top-up she bought in `9c2e`. The top-up benefit points to `meter_B`, but the credit is written on her version, `meter_A`.
+- Alice has no row for `meter_B`, even if her messages match both versions.
+- Images are free for Alice. Her version doesn't count them.
+
+### What creates a new version
+
+| Change at publication | Result |
+|---|---|
+| Filter | New meter row, plus new rows for the benefits and products that use it |
+| Name, unit, label, multiplier, metadata | Same. A new row, but not a new balance |
+| Aggregation | Rejected. Use a new `external_id` |
+| New `external_id` | A new meter with its own balance. It goes live at publish |
+
+The aggregation is fixed because a balance is only a number, and the rule gives it a meaning. Alice has 10,000 credits that count messages. If the rule becomes "sum of tokens", and a message is about 500 tokens, the same 10,000 credits pay for 20 messages.
+
+### Which version a customer uses
+
+- A customer with a balance on the meter keeps the version of that balance.
+- A new customer gets the version that their first purchase points to. For a new sale, that is the current one.
+- A customer can't have two versions of one meter. A checkout or a product change that would add a second one is rejected until the customer is moved.
+
+### Main flows
+
+#### Credits
+
+Every credit is written on the customer's version: benefit credits, rollover, manual credits, and revocations after a refund. The benefit or the request only says which meter, by `external_id`. So credits bought from any catalog land in the same balance.
+
+#### Moving customers
+
+Publishing never moves a customer. A move is the bulk subscription update of the versioning doc. When the target product uses another meter version, the move applies at renewal:
+
+1. The period that ends is counted and billed with the old version.
+2. The meter is reset. Rollover credits are computed on the old version.
+3. The balance points to the new version. The reset, the rollover credits, and the credits of the new period are written on the new version.
+
+Alice has 4,000 unused rollover credits when she is moved:
+
+| | Before the move | After the move |
+|---|---|---|
+| Version | `meter_A` | `meter_B` |
+| Rollover credits | 4,000 | 4,000 |
+| Monthly credits | 5,000 | 5,000 |
+| An image costs | Nothing | 1 credit |
+
+Credits without rollover end with the period, as at every renewal today.
+
+#### Events, reducers, and billing
+
+- **Ingestion doesn't choose a version.** An event is matched against every published version, as today. Each version has its own usage reducer and its own credit reducer, as today.
+- **Reading chooses.** A balance is the credits and the usage of the customer's version, since its last reset.
+- **Overage.** Each version bills the subscriptions whose metered price points to it. Alice's messages also match `meter_B`, but she has no price on it, so they are billed once.
+- **Cost.** An event that matches three versions is stored and reduced three times. A version with no customers left can stop matching events.
+
+#### Reading the balance
+
+The portal, the customer meters API, and customer state show one row per meter. Its `meter_id` is the customer's version, so it changes after a move. We add the meter's `external_id` to these responses, and the docs tell merchants to read a balance by `external_id`, as for products.
+
+### What changes for merchants and customers
+
+| | Today | With meter versions |
+|---|---|---|
+| Change a filter | Rejected once the meter has a billing cursor | New version. Existing customers keep the old one until moved |
+| Rename a meter | Changes for everyone, right away | New version. Existing customers keep the old name until moved |
+| Change the aggregation | Rejected once the meter has a billing cursor | Always rejected. New `external_id` |
+| Meter changes in a draft | Live right away | Live when the draft is published |
+| Customer's balance | One per meter | One per meter |
+| Top-up from a newer catalog | Same balance | Same balance |
+| `meter_id` of a customer's balance | Never changes | Changes when the customer is moved. `external_id` stays the same |
+
+### Impact on what we have
+
+| Area | What changes |
+|---|---|
+| Groundwork, merged | Nothing |
+| New row per change, and cascade to benefits and products ([#16426](https://github.com/polarsource/polar/pull/16426), [#16427](https://github.com/polarsource/polar/pull/16427)) | Kept. Aggregation changes are rejected |
+| One version per customer, and each event billed once ([#16430](https://github.com/polarsource/polar/pull/16430), [#16431](https://github.com/polarsource/polar/pull/16431)) | Kept. The check also has to cover subscriptions that only credit the meter. A one-time top-up is never rejected |
+| Credits | New. Benefit grants, cycles, and revocations find the customer's version before they write. Today only a manual credit by `external_meter_id` does it |
+| Balance rows | New. One row per customer and `external_id`. No row for the other versions |
+| Moves | New. The balance is carried to the new version at the reset |
+| Reducers | Same model: one usage and one credit reducer per meter row. Reads use the customer's version |
+| Outpost | The SDK reads a balance by `meter_id`. It needs a read by `external_id`, and to know the customer's version |
+| Versioning doc | Meter versioning leaves "Out of scope". "Change a meter" becomes a new version |
+
+## Open questions
+
+- How often do merchants need to change a locked rule on a meter that customers hold credits on? We have no numbers. Lock errors, and meters archived and created again, would tell us.
+- A customer with only one-time credits has no renewal, so no reset. How are they moved? One idea: the one-time order move resets the meter and carries the unused balance.
+- A customer with only one-time credits subscribes to a product on a newer version. A new subscription already resets the meter, so the balance could move there.
+- Is rejecting a second version at checkout acceptable for customers? The alternative is that the earliest subscription decides the version.
+- A filter can still point to a different kind of event. The plan shows the filter change and how many customers hold a balance. Is that enough?
+- A version that only changes the name could share the reducers of the previous one, so events are not reduced twice. We did not check this.
+- When does a version stop matching events? Probably when no balance points to it.
+- `immediate` moves need a reset in the middle of a period. Do we want them?
+- Outpost: how does the SDK learn the version of each customer?
+
+## Security considerations
+
+- **Data in and out:** meter definitions from merchants and agents, and plan reports with the number of customers on each version. No new customer data.
+- **Who can access it:** the existing `meters:read` and `meters:write` scopes. Publishing a draft that changes meters checks `meters:write` again. Moving customers needs `subscriptions:write`, as in the versioning doc.
+- **Data we store:** meter versions, and the version of each balance. No new personal data.
+- **Risks:**
+  - An agent changes a filter, and usage becomes free or customers are overbilled. Mitigations: the change goes to a draft that a member publishes, publishing never changes the version of an existing customer, and moves are explicit.
+  - A change gives prepaid credits another value. Mitigation: the aggregation can't change.
+  - A credit is written on a version that the customer doesn't use. Mitigation: one balance row per customer and `external_id`, and every credit goes through it.
+
+## Appendix: What we learned
+
+- **A copy of a meter is a copy of the balance.** This is why meters can't follow products and benefits row for row.
+- **Fixing billing is not enough.** Blocking two versions for one customer and billing each event once stop double billing. Credits still go to the wrong version.
+- **A new `external_id` is not a way out.** It is safe when the unit changes. For a filter fix, it splits the balance in the same way.
+- **A credit has no unit of its own.** The rule gives it one, so the aggregation has to stay.
+- **Ingestion doesn't need to know the customer.** Matching every version and choosing when we read keeps the hot path as it is.
+- **A rule can't change in the middle of a period.** A balance is recomputed over the open period with one rule, and max, min, average, and unique can't be split in two. So a version changes at a reset.
+- **Config changes to meters skip the draft today.** New rows per version fix this.

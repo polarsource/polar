@@ -98,7 +98,8 @@
               "engineering/design-documents/tasks-on-lambda",
               "engineering/design-documents/resend-forge",
               "engineering/design-documents/versioning",
-              "engineering/design-documents/outpost"
+              "engineering/design-documents/outpost",
+              "engineering/design-documents/meter-versioning"
             ]
           },
           {

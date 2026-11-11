@@ -1,0 +1,50 @@
+server/polar/customer_meter/service.py
+  s_fb19aa989d9ac0::t_637647f6897021 49,164-168
+  s_fb19aa989d9ac0::t_a8c88a8d6b6d50 169
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_817389c946c018 1088
+  s_fb19aa989d9ac0::t_8bfcb4722fd1ca 363-427
+server/polar/subscription/repository.py
+  s_fb19aa989d9ac0::t_14dae4d986d750 211-227
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_0bb83162db0c26 226-250,254-255,272-274,276-277
+  s_fb19aa989d9ac0::t_8a92de4c230544 19,251-253,265-271,275,278-283,300-301,313-315
+  s_fb19aa989d9ac0::t_a2b3a4f8c7aa87 316
+server/tests/customer_meter/test_service.py
+  s_fb19aa989d9ac0::t_31c2ab70be9c6d 12,37,41,1760-1786
+server/polar/billing_entry/service.py
+  s_fb19aa989d9ac0::t_126efee29d2e50 325
+  s_fb19aa989d9ac0::t_530ba72455f4f0 297-323,336,338
+server/polar/subscription/tasks.py
+  s_fb19aa989d9ac0::t_f6c3f68346c624 7,19,186-187,192-194
+server/tests/subscription/test_service.py
+  s_fb19aa989d9ac0::t_f75eccb89324b7 49,58,65,93-95,4956,4969,4980-5043,5048,5083
+server/polar/subscription/service.py
+  s_fb19aa989d9ac0::t_597148f9ce3235 139,3217,3223-3226,3725-3758
+  s_fb19aa989d9ac0::t_f64bb64e1a831e 3759
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_f224ecb5d799bb 23
+  s_fb19aa989d9ac0::t_0a0d9a6c42ebe1 20-21
+server/polar/reducer/bucket_repository.py
+  s_fb19aa989d9ac0::t_aabe17dd5a1632 554-580
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_9a176038c4ae12 1982-1984
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_b919a3e1903946 257-259
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0da9bec79a8c5bf5c3fb890cb61b174e213af6a9",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

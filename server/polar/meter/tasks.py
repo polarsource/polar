@@ -13,6 +13,7 @@ from polar.meter.repository import MeterRepository
 from polar.meter.service import meter as meter_service
 from polar.models import Event, Meter, MeterEvent
 from polar.observability.task_logging import LoggableField
+from polar.organization.repository import OrganizationRepository
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, enqueue_job
 
 
@@ -84,6 +85,11 @@ async def meter_backfill_events(
         meter = await repository.get_by_id(meter_id)
         if meter is None:
             raise MeterDoesNotExist(meter_id)
+
+        if await OrganizationRepository.from_session(session).get_ids_with_feature(
+            {meter.organization_id}, "reducer_billing_enabled"
+        ):
+            return
 
         statement = (
             select(Event)

@@ -865,6 +865,33 @@ class TestIngest:
         } == {event.id for event in events}
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reducer_billing_doesnt_create_meter_events(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "reducer_billing_enabled": True,
+        }
+        await save_fixture(organization)
+        create_meter_events = mocker.spy(event_service, "_create_meter_events")
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(name="test", external_customer_id="test")
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
+
+        assert len(await get_all_by_organization(session, organization.id)) == 1
+        create_meter_events.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_rollup_reducer_buckets(
         self,
         mocker: MockerFixture,
@@ -1781,6 +1808,40 @@ class TestMoveStagedEvents:
             select(func.count()).select_from(StagedEvent)
         )
         assert staged_events == 0
+
+    async def test_reducer_billing_doesnt_create_meter_events(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        ingested_at = utc_now() - timedelta(minutes=1)
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=ingested_at,
+                ingested_at=ingested_at,
+                organization_id=organization.id,
+                external_customer_id="test",
+                user_metadata={"tokens": 1},
+            )
+        )
+
+        create_meter_events = mocker.spy(event_service, "_create_meter_events")
+
+        assert await event_service.move_staged_events(session, 1000) == 1
+
+        create_meter_events.assert_not_called()
+        meter_events = await session.scalar(
+            select(func.count()).select_from(MeterEvent)
+        )
+        assert meter_events == 0
 
     async def test_limit(
         self,

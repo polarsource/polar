@@ -26,6 +26,26 @@ class TestMeterBackfillEvents:
         with pytest.raises(MeterDoesNotExist):
             await meter_backfill_events(uuid.uuid4())
 
+    async def test_skips_organizations_on_reducer_billing(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        customer = await create_customer(save_fixture, organization=organization)
+        await create_event(save_fixture, organization=organization, customer=customer)
+        meter = await create_meter(save_fixture, organization=organization)
+        session.expunge_all()
+
+        await meter_backfill_events(meter.id)
+
+        meter_events = await session.scalar(
+            select(func.count()).select_from(MeterEvent)
+        )
+        assert meter_events == 0
+
     async def test_backfills_matching_events(
         self,
         mocker: MockerFixture,

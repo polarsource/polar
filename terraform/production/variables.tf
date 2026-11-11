@@ -19,12 +19,6 @@ variable "planetscale_app_password" {
   }
 }
 
-variable "planetscale_migrator_password" {
-  description = "PlanetScale migrator role password"
-  type        = string
-  sensitive   = true
-}
-
 variable "planetscale_metrics_token" {
   description = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>."
   type        = string

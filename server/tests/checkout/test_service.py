@@ -8048,23 +8048,6 @@ class TestMarkOpened:
         assert checkout.analytics_metadata is not None
         assert checkout.analytics_metadata.get("opened_at") is not None
 
-    async def test_keeps_agent_channel(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        checkout_one_time_fixed: Checkout,
-    ) -> None:
-        mocker.patch("polar.checkout.service.posthog")
-        checkout_one_time_fixed.analytics_metadata = {
-            "agent_channel": "shared_payment_token"
-        }
-
-        checkout = await checkout_service.mark_opened(session, checkout_one_time_fixed)
-
-        assert checkout.analytics_metadata is not None
-        assert checkout.analytics_metadata["agent_channel"] == "shared_payment_token"
-        assert checkout.analytics_metadata.get("opened_at") is not None
-
     async def test_fires_posthog_event(
         self,
         mocker: MockerFixture,

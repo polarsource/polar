@@ -42,9 +42,23 @@ export interface Language {
     got: unknown,
     target: 'key' | 'value',
   ) => SourceLocation | undefined
+  readonly remove: (
+    config: LoadedConfig,
+    removals: ReadonlyArray<Removal>,
+  ) => Removed
 }
 
 export type SourcePath = ReadonlyArray<string | number>
+
+export interface Removal {
+  readonly section: string
+  readonly id: string
+}
+
+export interface Removed {
+  readonly source: string
+  readonly missing: ReadonlyArray<Removal>
+}
 
 export const escapePattern = (text: string) =>
   text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')

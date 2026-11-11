@@ -17,12 +17,9 @@ import {
   transportErrors,
   unexpected,
 } from '@/services/billing-config/api'
+import { languageOf } from '@/services/billing-config/languages'
+import type { Removal } from '@/services/billing-config/languages/language'
 import type { loader } from '@/services/billing-config/load'
-import {
-  type Removal,
-  removeFromJson,
-  removeFromScript,
-} from '@/services/billing-config/remove'
 
 /** Lists the deprecated entries in the config and what still uses each. */
 export const deprecations =
@@ -120,9 +117,10 @@ export const prune =
         section: SECTIONS[entry.resource],
         id: entry.external_id,
       }))
-      const { source, missing } = config.generated
-        ? removeFromScript(config.source, removals)
-        : removeFromJson(config.source, config.input, removals)
+      const { source, missing } = languageOf(config.file)?.remove(
+        config,
+        removals,
+      ) ?? { source: config.source, missing: removals }
       if (missing.length > 0) {
         return yield* new BillingConfigError({
           message: `Could not find ${missing.map(({ id }) => id).join(', ')} in ${config.file}, nothing removed`,

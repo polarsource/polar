@@ -73,7 +73,25 @@ polar auth list [flags]
 Choose the active organization
 
 ```bash
-polar auth org [flags]
+polar auth org [flags] [<organization>]
+```
+
+**Arguments**
+
+| Argument | Type | Description |
+| --- | --- | --- |
+| `organization` | `string` | ID or slug of the organization to activate. Omit to pick from a list (optional) |
+
+**Examples**
+
+Pick an organization from a list
+```bash
+polar auth org
+```
+
+Activate an organization by slug or ID
+```bash
+polar auth org acme
 ```
 
 ## polar auth token

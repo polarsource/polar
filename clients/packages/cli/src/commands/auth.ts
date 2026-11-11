@@ -1,5 +1,5 @@
-import { Effect, Schema, Stdio } from 'effect'
-import { Command, Flag, Prompt } from 'effect/cli'
+import { Effect, Option, Schema, Stdio } from 'effect'
+import { Argument, Command, Flag, Prompt } from 'effect/cli'
 import {
   ActiveOrganization,
   AuthError,
@@ -187,7 +187,7 @@ const selectionLines = (selection: Selection) => {
       return [
         ui.warning('Organization selection requires an interactive terminal'),
         ui.step(
-          `Run ${ui.command(orgCommand)} interactively, or use POLAR_ACCESS_TOKEN with ${ui.command('--org <id>')} in CI`,
+          `Run ${ui.command(`${orgCommand} <id>`)} with an ID from ${ui.command('polar auth list')}, or run ${ui.command(orgCommand)} interactively`,
         ),
         ui.blank,
       ]
@@ -366,11 +366,28 @@ const list = Command.make('list', {}).pipe(
   }),
 )
 
-const org = Command.make('org', {}).pipe(
+const organization = Argument.String('organization').pipe(
+  Argument.withDescription(
+    'ID or slug of the organization to activate. Omit to pick from a list',
+  ),
+  Argument.optional,
+)
+
+const org = Command.make('org', { organization }).pipe(
   Command.withDescription('Choose the active organization'),
+  Command.withExamples([
+    {
+      command: 'polar auth org',
+      description: 'Pick an organization from a list',
+    },
+    {
+      command: 'polar auth org acme',
+      description: 'Activate an organization by slug or ID',
+    },
+  ]),
   output({
     result: Selection,
-    run: () =>
+    run: ({ organization }) =>
       Effect.gen(function* () {
         const auth = yield* Auth
         if (yield* auth.override) {
@@ -382,6 +399,12 @@ const org = Command.make('org', {}).pipe(
           return yield* new AuthError({
             message: `Not logged in. Run ${loginCommand('sandbox')} or ${loginCommand('production')}.`,
           })
+        }
+        if (Option.isSome(organization)) {
+          const organizations = yield* Organizations
+          return yield* activate(
+            yield* organizations.resolve(organization.value),
+          )
         }
         return yield* selectOrganization
       }),

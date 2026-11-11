@@ -398,6 +398,37 @@ describe('auth org', () => {
     expect(output()).toContain(
       'Organization selection requires an interactive terminal',
     )
+    expect(output()).toContain(
+      'Run polar auth org <id> with an ID from polar auth list',
+    )
+  })
+
+  test('activates the organization given as an argument', async () => {
+    const { promise, output } = run(['org', 'org-2'])
+    await promise
+
+    expect(organizations.state.selected).toEqual({
+      id: 'org-2',
+      environment: 'production',
+    })
+    expect(output()).toContain('Active organization Beta beta production')
+  })
+
+  test('activates the organization given as an argument with --json', async () => {
+    const { promise, output } = run(['org', 'org-1', '--json'])
+    await promise
+
+    expect(JSON.parse(output())).toEqual({
+      status: 'activated',
+      organization: acme,
+    })
+  })
+
+  test('fails for an unknown organization argument', async () => {
+    const { promise } = run(['org', 'missing'])
+
+    await expect(promise).rejects.toThrow('No active organization')
+    expect(organizations.state.selected).toBeUndefined()
   })
 
   test('marks the active organization in the prompt', async () => {

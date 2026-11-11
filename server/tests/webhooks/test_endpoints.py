@@ -57,7 +57,7 @@ class TestListWebhookEndpoints:
         assert json["items"][0]["id"] == str(webhook_endpoint_organization.id)
 
     @pytest.mark.auth
-    async def test_excludes_mcp_endpoints(
+    async def test_includes_mcp_endpoints(
         self,
         client: AsyncClient,
         user_organization: UserOrganization,
@@ -66,7 +66,9 @@ class TestListWebhookEndpoints:
         response = await client.get("/v1/webhooks/endpoints")
 
         assert response.status_code == 200
-        assert response.json()["items"] == []
+        [item] = response.json()["items"]
+        assert item["id"] == str(webhook_endpoint_mcp.id)
+        assert item["format"] == "mcp"
 
 
 @pytest.mark.anyio
@@ -186,6 +188,15 @@ class TestCreateWebhookEndpoint:
         response = await client.post("/v1/webhooks/endpoints", json=params)
 
         assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})
+    )
+    async def test_mcp_format(self, client: AsyncClient) -> None:
+        params = {"url": "https://example.com/hook", "format": "mcp", "events": []}
+        response = await client.post("/v1/webhooks/endpoints", json=params)
+
+        assert response.status_code == 422
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.webhooks_write})

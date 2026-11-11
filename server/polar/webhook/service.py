@@ -960,15 +960,15 @@ class WebhookService:
             session, event=event, target=target
         ):
             endpoint_payload = payload.model_copy(
-                update={"api_version": endpoint.api_version}
+                update={
+                    "api_version": endpoint.api_version,
+                    "event_id": generate_uuid(),
+                }
             )
             try:
-                event_id = generate_uuid()
-                payload_data = endpoint_payload.get_payload(
-                    endpoint.format, target, event_id=event_id
-                )
+                payload_data = endpoint_payload.get_payload(endpoint.format, target)
                 event_type = WebhookEvent(
-                    id=event_id,
+                    id=endpoint_payload.event_id,
                     created_at=endpoint_payload.timestamp,
                     webhook_endpoint=endpoint,
                     type=event,

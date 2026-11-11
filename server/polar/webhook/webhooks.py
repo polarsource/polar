@@ -47,6 +47,7 @@ from polar.integrations.slack.payload import (
     get_branded_slack_payload,
 )
 from polar.kit.schemas import IDSchema, Schema
+from polar.kit.utils import generate_uuid
 from polar.kit.versioning import APIVersion, api_version_context
 from polar.member.schemas import Member as MemberSchema
 from polar.models import (
@@ -156,14 +157,13 @@ def get_slack_customer_field(customer: CustomerBase) -> SlackText:
 
 
 class BaseWebhookPayload(Schema):
+    event_id: SkipJsonSchema[UUID] = Field(default_factory=generate_uuid, exclude=True)
     type: WebhookEventType
     timestamp: datetime
     api_version: APIVersion
     data: IDSchema
 
-    def get_payload(
-        self, format: WebhookFormat, target: User | Organization, *, event_id: UUID
-    ) -> str:
+    def get_payload(self, format: WebhookFormat, target: User | Organization) -> str:
         match format:
             case WebhookFormat.raw:
                 return self.get_raw_payload()
@@ -172,7 +172,7 @@ class BaseWebhookPayload(Schema):
             case WebhookFormat.slack:
                 return self.get_slack_payload(target)
             case WebhookFormat.mcp:
-                return self.get_mcp_payload(event_id)
+                return self.get_mcp_payload()
             case _:
                 assert_never(format)
 
@@ -180,12 +180,12 @@ class BaseWebhookPayload(Schema):
         with api_version_context(self.api_version):
             return self.model_dump_json()
 
-    def get_mcp_payload(self, event_id: UUID) -> str:
+    def get_mcp_payload(self) -> str:
         with api_version_context(self.api_version):
             data = self.model_dump(mode="json")["data"]
         return json.dumps(
             {
-                "eventId": str(event_id),
+                "eventId": str(self.event_id),
                 "name": self.type,
                 "timestamp": self.timestamp.isoformat(),
                 "data": data,

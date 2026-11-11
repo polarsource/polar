@@ -84,37 +84,25 @@ EndpointURL = Annotated[
     BeforeValidator(lambda v: v.strip() if isinstance(v, str) else v),
     AfterValidator(validate_hostname),
 ]
+EndpointFormat = Annotated[
+    WebhookFormat,
+    Field(description="The format of the webhook payload."),
+]
 
 
-def _is_public_format(format: WebhookFormat) -> WebhookFormat:
+def _is_creatable_format(format: WebhookFormat) -> WebhookFormat:
     if format == WebhookFormat.mcp:
-        raise ValueError(f"Invalid format: {format}")
+        raise ValueError(
+            "MCP endpoints can only be created by subscribing to MCP events."
+        )
     return format
 
 
-class _PublicWebhookFormat:
-    def __get_pydantic_core_schema__(
-        self, source_type: object, handler: GetCoreSchemaHandler
-    ) -> core_schema.CoreSchema:
-        return core_schema.no_info_after_validator_function(
-            _is_public_format, handler(source_type)
-        )
-
-    def __get_pydantic_json_schema__(
-        self, schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
-        json_schema = handler.resolve_ref_schema(handler(schema))
-        json_schema["enum"] = [
-            format.value for format in WebhookFormat if format != WebhookFormat.mcp
-        ]
-        return json_schema
-
-
-EndpointFormat = Annotated[
-    WebhookFormat,
-    _PublicWebhookFormat(),
-    Field(description="The format of the webhook payload."),
+CreatableEndpointFormat = Annotated[
+    EndpointFormat, AfterValidator(_is_creatable_format)
 ]
+
+
 EndpointSecret = Annotated[
     str,
     Field(
@@ -212,7 +200,7 @@ class WebhookEndpointCreate(Schema):
         default=str(CURRENT_API_VERSION),  # type: ignore
         description="The API version that'll be used in event payloads.",
     )
-    format: EndpointFormat
+    format: CreatableEndpointFormat
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
         None,
@@ -244,7 +232,7 @@ class WebhookEndpointUpdate(Schema):
     api_version: AvailableAPIVersion | None = Field(
         default=None, description="The API version that'll be used in event payloads."
     )
-    format: EndpointFormat | None = None
+    format: CreatableEndpointFormat | None = None
     events: EndpointEvents | None = None
     enabled: bool | None = Field(
         default=None,

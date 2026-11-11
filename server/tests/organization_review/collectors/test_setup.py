@@ -5,7 +5,6 @@ import respx
 from pytest_mock import MockerFixture
 
 from polar.kit.http import SSRFBlockedError
-from polar.models.webhook_endpoint import WebhookFormat
 from polar.organization_review.collectors.firecrawl_client import ScrapeResult
 from polar.organization_review.collectors.setup import (
     _extract_domain,
@@ -50,15 +49,11 @@ def _build_checkout_link(
 
 
 def _build_webhook_endpoint(
-    *,
-    url: str = "https://example.com/webhook",
-    enabled: bool = True,
-    format: WebhookFormat = WebhookFormat.raw,
+    *, url: str = "https://example.com/webhook", enabled: bool = True
 ) -> MagicMock:
     ep = MagicMock()
     ep.url = url
     ep.enabled = enabled
-    ep.format = format
     return ep
 
 
@@ -321,19 +316,6 @@ class TestCollectSetupDataIntegration:
         ]
         assert all(ep.enabled for ep in result.integration.webhook_endpoints)
         assert set(result.integration.webhook_domains) == {"myapp.com", "other.com"}
-
-    def test_excludes_mcp_endpoints(self) -> None:
-        ep1 = _build_webhook_endpoint(url="https://myapp.com/webhook")
-        ep2 = _build_webhook_endpoint(
-            url="https://chatgpt.com/mcp/events", format=WebhookFormat.mcp
-        )
-
-        result = collect_setup_data([], [], [], 0, [ep1, ep2])
-
-        assert [ep.url for ep in result.integration.webhook_endpoints] == [
-            "https://myapp.com/webhook"
-        ]
-        assert result.integration.webhook_domains == ["myapp.com"]
 
     def test_no_webhooks(self) -> None:
         result = collect_setup_data([], [], [], 0, [])

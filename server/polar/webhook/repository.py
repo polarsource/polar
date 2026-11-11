@@ -92,7 +92,6 @@ class WebhookEventRepository(
             .options(contains_eager(WebhookEvent.webhook_endpoint))
             .where(
                 WebhookEndpoint.organization_id.in_(org_ids),
-                WebhookEndpoint.format != WebhookFormat.mcp,
                 ~WebhookEndpoint.is_deleted,
             )
         )
@@ -177,13 +176,7 @@ class WebhookDeliveryRepository(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[WebhookDelivery]:
         return self.get_base_statement().where(
-            WebhookDelivery.organization_id.in_(org_ids),
-            WebhookDelivery.webhook_endpoint_id.not_in(
-                select(WebhookEndpoint.id).where(
-                    WebhookEndpoint.organization_id.in_(org_ids),
-                    WebhookEndpoint.format == WebhookFormat.mcp,
-                )
-            ),
+            WebhookDelivery.organization_id.in_(org_ids)
         )
 
 
@@ -198,8 +191,7 @@ class WebhookEndpointRepository(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[WebhookEndpoint]:
         return self.get_base_statement().where(
-            WebhookEndpoint.organization_id.in_(org_ids),
-            WebhookEndpoint.format != WebhookFormat.mcp,
+            WebhookEndpoint.organization_id.in_(org_ids)
         )
 
     async def get_all_by_external_ids(

@@ -35,7 +35,7 @@ output "migrator_role_id" {
 }
 
 output "migrator_role_username" {
-  description = "Migrator role username. Connect directly on port 5432; it has no statement timeout."
+  description = "Migrator role username."
   value       = local.migrator_role == null ? null : local.migrator_role.username
 }
 

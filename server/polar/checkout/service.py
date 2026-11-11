@@ -1766,6 +1766,7 @@ class CheckoutService:
         )
 
         analytics_metadata = {
+            **(checkout.analytics_metadata or {}),
             "opened_at": utc_now().isoformat(),
             "distinct_id": resolved_distinct_id,
         }

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem } from 'effect'
 import { loader } from '@/services/billing-config/load'
@@ -118,7 +118,81 @@ describe('load', () => {
   test('rejects unsupported file types', async () => {
     const error = await failure(load(await write('meters: []', 'polar.yaml')))
     expect(error.message).toContain('is not a supported config file')
-    expect(error.hint).toBe('Use a .ts, .json or .js file.')
+    expect(error.hint).toBe('Use a .ts, .py, .json or .js file.')
+  })
+
+  test('loads a Python file through polar.config and keeps its source', async () => {
+    const file = await write('config = Config()', 'polar_config.py')
+    const commands: Array<ReadonlyArray<string>> = []
+    const config = await load(file, (command) => {
+      commands.push(command)
+      return Effect.succeed({ ok: true, stdout: '{"meters":[]}\n', stderr: '' })
+    })
+    expect(commands).toEqual([
+      [expect.stringMatching(/^python3?$/), '-m', 'polar.config', 'load', file],
+    ])
+    expect(config).toEqual({
+      file,
+      source: 'config = Config()',
+      input: { meters: [] },
+      generated: true,
+    })
+  })
+
+  test('runs Python through uv when the project has a uv.lock', async () => {
+    await write('', 'uv.lock')
+    const commands: Array<ReadonlyArray<string>> = []
+    await load(
+      await write('config = Config()', 'polar_config.py'),
+      (command) => {
+        commands.push(command)
+        return Effect.succeed({ ok: true, stdout: '{}', stderr: '' })
+      },
+    )
+    expect(commands[0]?.slice(0, 5)).toEqual([
+      'uv',
+      'run',
+      '--project',
+      directory,
+      'python',
+    ])
+  })
+
+  test('points at the line a Python error came from', async () => {
+    const file = await write('config = Config()', 'polar_config.py')
+    const stderr = [
+      'Traceback (most recent call last):',
+      '  File "<frozen runpy>", line 88, in _run_code',
+      `  File "${file}", line 5, in Meters`,
+      '    tool_call = Meter("Tool calls", on=EVENT)',
+      "NameError: name 'EVENT' is not defined",
+    ].join('\n')
+    const error = await failure(
+      load(file, () => Effect.succeed({ ok: false, stdout: '', stderr })),
+    )
+    expect(error.message).toBe(`Could not load ${file}:5`)
+    expect(error.hint).toBe("NameError: name 'EVENT' is not defined")
+  })
+
+  test('says when polar.config is not installed', async () => {
+    const file = await write('config = Config()', 'polar_config.py')
+    const stderr = '/usr/bin/python3: No module named polar.config\n'
+    const error = await failure(
+      load(file, () => Effect.succeed({ ok: false, stdout: '', stderr })),
+    )
+    expect(error.message).toBe(`Could not load ${file}`)
+    expect(error.hint).toBe(
+      'It needs polar.config, which is not installed. Install or upgrade polar-sdk.',
+    )
+  })
+
+  test('rejects a Python file that prints no config', async () => {
+    const error = await failure(
+      load(await write('raise SystemExit', 'polar_config.py'), () =>
+        Effect.succeed({ ok: true, stdout: '', stderr: '' }),
+      ),
+    )
+    expect(error.message).toContain('did not produce a billing config')
   })
 
   test('reports invalid JSON', async () => {
@@ -172,6 +246,25 @@ describe('load without a file', () => {
     const config = await load()
     expect(config.file).toBe('polar.config.ts')
     expect(config.input).toEqual({ meters: ['ts'] })
+  })
+
+  test('finds polar_config.py', async () => {
+    await write('config = Config()', 'polar_config.py')
+    const config = await load(undefined, () =>
+      Effect.succeed({ ok: true, stdout: '{}', stderr: '' }),
+    )
+    expect(config.file).toBe('polar_config.py')
+  })
+
+  test('names a Python file the way it was passed in', async () => {
+    await write('settings = Config()', 'polar_config.py')
+    const stderr = `${resolve('polar_config.py')} must assign a Config to a variable named \`config\`.`
+    const error = await failure(
+      load(undefined, () => Effect.succeed({ ok: false, stdout: '', stderr })),
+    )
+    expect(error.hint).toBe(
+      'polar_config.py must assign a Config to a variable named `config`.',
+    )
   })
 
   test('falls back to polar.json', async () => {

@@ -36,6 +36,8 @@ export interface Language {
   ) => Effect.Effect<string, BillingConfigError>
 }
 
+export type Loader = Pick<Language, 'extensions' | 'defaultFiles' | 'load'>
+
 export const readSource = (fs: FileSystem.FileSystem, file: string) =>
   fs
     .readFileString(file)

@@ -65,6 +65,7 @@ class FlagDefinition extends withDeprecation(
   }
 }
 
+/** A feature your app checks a customer has. The name defaults to its key in `benefits`. */
 export const flag = (name?: string): FlagDefinition => new FlagDefinition(name)
 
 class CreditsDefinition<Meter extends string> extends withDeprecation(
@@ -83,6 +84,7 @@ class CreditsDefinition<Meter extends string> extends withDeprecation(
     super()
   }
 
+  /** Carries unused credits over to the next cycle instead of expiring them. */
   rollover(): this {
     return this.with({ properties: { ...this.properties, rollover: true } })
   }
@@ -94,6 +96,7 @@ class CreditsBuilder<Meter extends string> {
     private readonly meterExternalId: Meter,
   ) {}
 
+  /** How many credits customers get each cycle, or once for a one-time purchase. */
   units(units: number): CreditsDefinition<Meter> {
     return new CreditsDefinition(this.name, {
       meter: this.meterExternalId,
@@ -103,14 +106,19 @@ class CreditsBuilder<Meter extends string> {
   }
 }
 
+/** Credits on a meter, used up before any usage is charged, like included tool calls. The name defaults to its key in `benefits`. */
 export const credits = (name?: string) => ({
+  /** The meter the credits count against. */
   meter: <const Meter extends string>(meter: Meter) =>
     new CreditsBuilder(name, meter),
 })
 
 export type BenefitHelpers<Meter extends string> = {
+  /** A feature your app checks a customer has. The name defaults to its key in `benefits`. */
   readonly flag: typeof flag
+  /** Credits on a meter, used up before any usage is charged, like included tool calls. The name defaults to its key in `benefits`. */
   readonly credits: (name?: string) => {
+    /** The meter the credits count against. */
     readonly meter: <const Credited extends Meter>(
       meter: Credited,
     ) => CreditsBuilder<Credited>

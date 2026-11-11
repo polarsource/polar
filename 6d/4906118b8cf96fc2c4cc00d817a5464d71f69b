@@ -1,0 +1,24 @@
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_992eef0f2a0005 82
+  s_fb19aa989d9ac0::t_20cc685b7d0a48 67-69,81
+  s_fb19aa989d9ac0::t_027acf01f72f6d 18,83-84
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_b400b5425e6746 339-344
+  s_fb19aa989d9ac0::t_881f15e04ebf29 20,345-374
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d4906118b8cf96fc2c4cc00d817a5464d71f69b",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

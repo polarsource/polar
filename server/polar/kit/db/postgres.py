@@ -82,6 +82,7 @@ def create_async_engine(
         pool_logging_name=pool_logging_name,
         json_serializer=json_serializer,
         query_cache_size=128,
+        hide_parameters=not debug,
     )
 
 
@@ -111,6 +112,7 @@ def create_sync_engine(
         pool_size=pool_size,
         pool_recycle=pool_recycle,
         pool_logging_name=pool_logging_name,
+        hide_parameters=not debug,
     )
     if command_timeout is not None:
         statement_timeout_ms = int(command_timeout * 1000)

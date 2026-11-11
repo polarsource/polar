@@ -19,6 +19,17 @@ variable "planetscale_app_password" {
   }
 }
 
+variable "planetscale_migrator_password" {
+  description = "Password for the PlanetScale migrator role returned by module.planetscale.migrator_role_username."
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = length(var.planetscale_migrator_password) > 0
+    error_message = "Set planetscale_migrator_password before running production migrations as the migrator role."
+  }
+}
+
 variable "planetscale_metrics_token" {
   description = "PlanetScale service token with read_metrics_endpoints, as <token id>:<token>."
   type        = string

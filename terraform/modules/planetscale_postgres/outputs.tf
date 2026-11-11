@@ -1,6 +1,7 @@
 locals {
-  app_role_sql_identifier = "\"${replace(planetscale_postgres_redacted_branch_role.app.base_username, "\"", "\"\"")}\""
-  database_sql_identifier = "\"${replace(var.app_database_name, "\"", "\"\"")}\""
+  app_role_sql_identifier      = "\"${replace(planetscale_postgres_redacted_branch_role.app.base_username, "\"", "\"\"")}\""
+  migrator_role_sql_identifier = "\"${replace(planetscale_postgres_redacted_branch_role.migrator.base_username, "\"", "\"\"")}\""
+  database_sql_identifier      = "\"${replace(var.app_database_name, "\"", "\"\"")}\""
 }
 
 output "branch_id" {
@@ -28,6 +29,16 @@ output "app_role_base_username" {
   value       = planetscale_postgres_redacted_branch_role.app.base_username
 }
 
+output "migrator_role_id" {
+  description = "Migrator role ID. Reset its password with `pscale role reset`."
+  value       = planetscale_postgres_redacted_branch_role.migrator.id
+}
+
+output "migrator_role_username" {
+  description = "Migrator role username."
+  value       = planetscale_postgres_redacted_branch_role.migrator.username
+}
+
 output "analytics_reader_role_id" {
   description = "Analytics reader role ID. Reset its password with `pscale role reset`."
   value       = planetscale_postgres_redacted_branch_role.analytics_reader.id
@@ -49,6 +60,14 @@ output "app_role_setup_sql" {
     -- Run as the default postgres role connected to ${local.database_sql_identifier}.
     GRANT CONNECT, CREATE ON DATABASE ${local.database_sql_identifier} TO ${local.app_role_sql_identifier};
     GRANT USAGE, CREATE ON SCHEMA public TO ${local.app_role_sql_identifier};
+  SQL
+}
+
+output "migrator_role_setup_sql" {
+  description = "Run as the default postgres role before migrations use the migrator role. Its sessions act as the app role, so the objects they create stay owned by it."
+  value       = <<-SQL
+    GRANT ${local.app_role_sql_identifier} TO ${local.migrator_role_sql_identifier};
+    ALTER ROLE ${local.migrator_role_sql_identifier} SET role = ${local.app_role_sql_identifier};
   SQL
 }
 

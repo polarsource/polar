@@ -227,6 +227,21 @@ export default {
           '=1': '# {unitLabel}',
           other: '# {unitLabelPlural}',
         },
+        range: {
+          value: '{min} - {max} {unitLabelPlural}',
+          _llmContext:
+            'Shown under the unit quantity stepper when a unit-based product has both a minimum and maximum quantity. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset. Displayed as: "5 - 100 licenses".',
+        },
+        minimum: {
+          value: 'Minimum {min} {unitLabelPlural}',
+          _llmContext:
+            'Shown under the unit quantity stepper when a unit-based product has a minimum quantity (always > 1) but no maximum. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset.',
+        },
+        maximum: {
+          value: 'Maximum {max} {unitLabelPlural}',
+          _llmContext:
+            'Shown under the unit quantity stepper when a unit-based product has a maximum quantity. {unitLabelPlural} is the merchant-defined plural noun, or "units" when unset. Displayed as: "Maximum 50 licenses".',
+        },
         updateFailed: 'Failed to update units',
       },
       discount: {

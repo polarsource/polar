@@ -1,0 +1,23 @@
+server/migrations/versions/2026-11-10-1519_add_scheduled_crons.py
+  s_ffa97c968aba10::t_406c0c44d6dd54 1-38
+server/polar/models/__init__.py
+  s_ffa97c968aba10::t_2bd5ba1ed273b2 121,270
+server/polar/models/scheduled_cron.py
+  s_ffa97c968aba10::t_130e5cf75a82cb 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c7ce55e992b19ebef516e7b286fdb7ac9b656453",
+  "prompts": {},
+  "sessions": {
+    "s_ffa97c968aba10": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b4224fd3-2007-49d5-89eb-85fd794c03ac",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

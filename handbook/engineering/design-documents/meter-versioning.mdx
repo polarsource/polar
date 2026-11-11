@@ -162,7 +162,7 @@ An `immediate` move splits the period in two. For count and sum, the two parts a
 
 #### Events, reducers, and billing
 
-- **Ingestion doesn't choose a version.** An event is matched against every published version, as today. Each version has its own usage reducer and its own credit reducer, as today.
+- **Ingestion doesn't choose a version.** An event matches a version when it passes that version's filter. It is tested against every published version, as today, and every version that matches counts it. A message matches `meter_A` and `meter_B`. An image only matches `meter_B`. Each version has its own usage reducer and its own credit reducer, as today.
 - **Reading chooses.** A balance is the credits and the usage of the customer's version, since its last reset.
 - **Overage.** Each version bills the subscriptions whose metered price points to it. Alice's messages also match `meter_B`, but she has no price on it, so they are billed once.
 - **Cost.** An event that matches three versions is stored and reduced three times. A version with no customers left can stop matching events.

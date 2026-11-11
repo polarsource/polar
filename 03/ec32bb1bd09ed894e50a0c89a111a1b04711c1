@@ -1,0 +1,21 @@
+server/Dockerfile
+  s_c79a39af4a35d4::t_7014fd33165efd 124
+.github/workflows/deploy.yml
+  s_c79a39af4a35d4::t_7014fd33165efd 318-321,341
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "03ec32bb1bd09ed894e50a0c89a111a1b04711c1",
+  "prompts": {},
+  "sessions": {
+    "s_c79a39af4a35d4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f18c46cf-5f03-43ec-859f-f76d267d4974",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

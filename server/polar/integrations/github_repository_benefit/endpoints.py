@@ -46,7 +46,7 @@ async def get_decoded_token_state(
         state_data = await jwt.decode(
             token=state, type="github_repository_benefit_oauth"
         )
-    except jwt.DecodeError as e:
+    except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
         raise Unauthorized("Invalid state") from e
 
     return (token_data, state_data)

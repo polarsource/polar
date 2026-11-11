@@ -25,6 +25,10 @@ import { nameResources, parseExternalIds } from '@/utils/billing-config/name'
 import { plural } from '@/utils/billing-config/problems'
 import {
   DEFAULT_CONFIG_FILES,
+  languageFor,
+  LANGUAGES,
+  languagesAt,
+  MANIFESTS,
   projectRoot,
 } from '@/utils/billing-config/languages'
 import { banner } from '@/utils/logo'
@@ -44,7 +48,7 @@ import * as ui from '@/utils/ui'
 
 const file = Argument.String('file').pipe(
   Argument.withDescription(
-    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar.config.json otherwise',
+    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar_config.py at the root of a Python project, polar.config.json otherwise',
   ),
   Argument.optional,
 )
@@ -52,7 +56,7 @@ const file = Argument.String('file').pipe(
 const format = Flag.Literals('format', FORMATS).pipe(
   Flag.optional,
   Flag.withDescription(
-    'Write TypeScript (ts), Python (py) or JSON (json). Detected from your project when omitted: ts when there is a package.json, json otherwise',
+    'Write TypeScript (ts), Python (py) or JSON (json). Detected from your project when omitted: ts with a package.json, py with a pyproject.toml. In a terminal you confirm it, or choose when both or neither exist. Outside a terminal it writes ts when both exist and json when neither does',
   ),
 )
 
@@ -204,6 +208,46 @@ const resolveOrganization = (
 
 const projectDirectory = (fs: FileSystem.FileSystem) =>
   Effect.map(projectRoot(fs, process.cwd()), (root) => root ?? process.cwd())
+
+const detectFormat = (
+  fs: FileSystem.FileSystem,
+  directory: string,
+  prompt: boolean,
+  progress: Progress,
+) =>
+  Effect.gen(function* () {
+    yield* progress.start('Detecting language')
+    const detected = yield* languagesAt(fs, directory)
+    const guess = prompt && detected.length > 1 ? undefined : detected[0]
+    const found = detected.map(({ manifest }) => `a ${manifest}`).join(' and ')
+    yield* progress.finish(
+      guess !== undefined
+        ? `${guess.title} detected, found ${found}`
+        : detected.length === 0
+          ? `No ${MANIFESTS.join(' or ')} found`
+          : `Found ${found}`,
+    )
+    if (!prompt) return guess?.format
+    if (
+      guess !== undefined &&
+      (yield* confirm(
+        `Write a ${guess.title} config (${guess.defaultFiles[0]})?`,
+      ))
+    ) {
+      return guess.format
+    }
+    return yield* select(
+      {
+        message: 'Which format should the config be in?',
+        choices: LANGUAGES.map(({ format, title, defaultFiles }) => ({
+          value: format,
+          title,
+          description: defaultFiles[0]!,
+        })),
+      },
+      (format) => languageFor(format).title,
+    )
+  })
 
 const packageOf = (command: ReadonlyArray<string>) => command.at(-1)!
 
@@ -441,6 +485,11 @@ export const init = Command.make('init', {
             const path = Option.getOrUndefined(file)
             const directory =
               path === undefined ? yield* projectDirectory(fs) : process.cwd()
+            const chosen =
+              Option.getOrUndefined(format) ??
+              (path === undefined
+                ? yield* detectFormat(fs, directory, prompt, progress)
+                : undefined)
             yield* progress.start('Reading your catalog')
             const outcome = yield* billing
               .init(
@@ -448,7 +497,7 @@ export const init = Command.make('init', {
                 {
                   directory,
                   file: path,
-                  format: Option.getOrUndefined(format),
+                  format: chosen,
                 },
                 nameResources({ prompt, confirm, given }, progress, say),
               )

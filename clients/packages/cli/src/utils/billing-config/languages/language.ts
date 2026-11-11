@@ -20,6 +20,7 @@ export interface Installer {
 }
 
 export interface Language {
+  readonly title: string
   readonly format: Format
   readonly extension: string
   readonly extensions: ReadonlyArray<string>

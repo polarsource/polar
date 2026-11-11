@@ -7,6 +7,7 @@ import {
 } from '@/utils/billing-config/languages/language'
 
 export const json: Language = {
+  title: 'JSON',
   format: 'json',
   extension: '.json',
   extensions: ['.json'],

@@ -35,11 +35,12 @@ const loadFailure = (file: string, script: string, stderr: string) => {
 }
 
 export const python: Language = {
+  title: 'Python',
   format: 'py',
   extension: '.py',
   extensions: ['.py'],
   defaultFiles: ['polar_config.py'],
-  manifest: undefined,
+  manifest: 'pyproject.toml',
   installer: undefined,
   load: (fs, run, file) =>
     Effect.gen(function* () {

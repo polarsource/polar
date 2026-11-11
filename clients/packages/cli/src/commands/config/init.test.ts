@@ -172,6 +172,9 @@ describe('polar config init', () => {
     ])
     expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
     expect(output).toContain('✔ Resolving organization\n    Acme (sandbox)')
+    expect(output).toContain(
+      '✔ Detecting language\n    No package.json or pyproject.toml found',
+    )
     expect(output).toContain('✔ Reading your catalog\n    nothing in it yet')
     expect(output).toContain('✔ Writing config\n    polar.config.ts')
     expect(output).toMatch(/Imported {6}0 meters, 0 benefits, 0 products/)
@@ -218,12 +221,15 @@ describe('polar config init', () => {
     )
   })
 
-  test('targets the project root from a subdirectory without asking', async () => {
+  test('targets the project root from a subdirectory without asking where', async () => {
     await writeFile(join(directory, 'package.json'), '{}')
     await mkdir(join(directory, 'src'))
     process.chdir(join(directory, 'src'))
 
-    const { calls, terminal } = await run([], { interactive: true })
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [keys.enter],
+    })
 
     expect(terminal).not.toContain('Where should the config live?')
     expect(calls[0]!.target.directory).toBe(directory)
@@ -239,14 +245,69 @@ describe('polar config init', () => {
     })
   })
 
-  test('only asks before installing in a terminal', async () => {
+  test('uses the language it detected without asking outside a terminal', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    const python = await run([])
+    await writeFile(join(directory, 'package.json'), '{}')
+    const both = await run([])
+
+    expect(python.output).toContain(
+      '✔ Detecting language\n    Python detected, found a pyproject.toml',
+    )
+    expect(python.calls[0]!.target.format).toBe('py')
+    expect(both.output).toContain(
+      '✔ Detecting language\n    TypeScript detected, found a package.json and a pyproject.toml',
+    )
+    expect(both.calls[0]!.target.format).toBe('ts')
+  })
+
+  test('asks to confirm the language it detected', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [keys.enter],
+    })
+
+    expect(terminal).toContain('Write a Python config (polar_config.py)?')
+    expect(calls[0]!.target.format).toBe('py')
+  })
+
+  test('asks which format when the guess is declined', async () => {
+    await writeFile(join(directory, 'package.json'), '{}')
+
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [...keys.type('n'), keys.down, keys.enter],
+    })
+
+    expect(terminal).toContain('Which format should the config be in?')
+    expect(calls[0]!.target.format).toBe('py')
+  })
+
+  test('asks which format when it cannot tell', async () => {
+    const neither = await run([], { interactive: true, input: [keys.enter] })
+    await writeFile(join(directory, 'package.json'), '{}')
+    await writeFile(join(directory, 'pyproject.toml'), '')
+    const both = await run([], {
+      interactive: true,
+      input: [keys.down, keys.down, keys.enter],
+    })
+
+    expect(neither.calls[0]!.target.format).toBe('ts')
+    expect(both.terminal).not.toContain('Write a')
+    expect(both.calls[0]!.target.format).toBe('json')
+  })
+
+  test('only asks before installing when the format is given', async () => {
     const { installed, output, terminal } = await run(
-      [],
+      ['--format', 'ts'],
       { interactive: true, input: [keys.enter] },
       { install: INSTALL },
     )
 
-    expect(terminal).not.toContain('Which format do you want?')
+    expect(terminal).not.toContain('Which format should the config be in?')
     expect(terminal).not.toContain('Where do you want to start?')
     expect(terminal).toContain('Install @polar-sh/polar with')
     expect(output.replace(/\r/g, '')).toContain('now?\n    Yes\n')
@@ -267,7 +328,7 @@ describe('polar config init', () => {
 
   test('asks which organization when the environment has several', async () => {
     const { calls, terminal } = await run(
-      ['--sandbox'],
+      ['--sandbox', '--format', 'ts'],
       { interactive: true, input: [keys.down, keys.enter] },
       { organizations: [acme, beta], selected: false },
     )
@@ -391,7 +452,7 @@ describe('polar config init', () => {
 
     test('previews the whole catalog and uses the suggestions', async () => {
       const { keyed, output, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         { interactive: true, input: [accept] },
         { unkeyed, catalog },
       )
@@ -407,7 +468,7 @@ describe('polar config init', () => {
 
     test('flags suggestions suffixed because of a duplicate name', async () => {
       const { output } = await run(
-        [],
+        ['--format', 'ts'],
         { interactive: true, input: [accept] },
         {
           unkeyed: [
@@ -432,7 +493,7 @@ describe('polar config init', () => {
 
     test('edits external IDs in a table, then asks again', async () => {
       const { keyed, output, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         {
           interactive: true,
           input: [
@@ -455,7 +516,7 @@ describe('polar config init', () => {
 
     test('blocks saving on a duplicate until the row is reset', async () => {
       const { keyed, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         {
           interactive: true,
           input: [
@@ -484,7 +545,7 @@ describe('polar config init', () => {
 
     test('filters the table by name', async () => {
       const { keyed, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         {
           interactive: true,
           input: [
@@ -509,7 +570,7 @@ describe('polar config init', () => {
 
     test('writes nothing when cancelled', async () => {
       const { keyed, exit } = await run(
-        [],
+        ['--format', 'ts'],
         { interactive: true, input: [keys.down, keys.down, keys.enter] },
         { unkeyed, catalog },
       )
@@ -567,7 +628,7 @@ describe('polar config init', () => {
 
     test('only edits the resources not given an external ID', async () => {
       const { keyed, terminal } = await run(
-        ['--external-id', 'p-1=pro'],
+        ['--external-id', 'p-1=pro', '--format', 'ts'],
         {
           interactive: true,
           input: [...openEditor, ...keys.type('s'), keys.enter, accept],

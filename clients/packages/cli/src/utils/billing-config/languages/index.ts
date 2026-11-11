@@ -38,20 +38,21 @@ export const writableLanguageOf = (file: string): Language | undefined =>
 export const supportedFiles = () =>
   `Use a ${LANGUAGES.map(({ extension }) => extension).join(', ')} or .js file.`
 
-export const languageAt = (fs: FileSystem.FileSystem, directory: string) =>
+export const languagesAt = (fs: FileSystem.FileSystem, directory: string) =>
   Effect.gen(function* () {
+    const found: Array<Language> = []
     for (const language of LANGUAGES) {
       if (
         language.manifest !== undefined &&
         (yield* exists(fs, join(directory, language.manifest)))
       ) {
-        return language
+        found.push(language)
       }
     }
-    return undefined
+    return found
   })
 
-const MANIFESTS = LANGUAGES.flatMap((language) =>
+export const MANIFESTS = LANGUAGES.flatMap((language) =>
   language.manifest === undefined ? [] : [language.manifest],
 )
 

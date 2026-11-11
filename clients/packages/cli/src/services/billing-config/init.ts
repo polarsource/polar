@@ -6,6 +6,7 @@ import {
   BillingConfigError,
   type ConfigDocument,
   ConfigExport,
+  DEFAULT_CONFIG_FILES,
   type ExternalIdAssignment,
   type Format,
   ValidationErrors,
@@ -19,7 +20,6 @@ import {
 } from '@/services/billing-config/api'
 import { type Unkeyed, unkeyed } from '@/utils/billing-config/keys'
 import {
-  DEFAULT_CONFIG_FILES,
   exists,
   type Language,
   languageFor,
@@ -27,7 +27,7 @@ import {
   languagesAt,
   projectRootFor,
   writableLanguageOf,
-} from '@/utils/billing-config/languages'
+} from '@/services/billing-config/languages'
 
 export interface InitTarget {
   readonly directory: string

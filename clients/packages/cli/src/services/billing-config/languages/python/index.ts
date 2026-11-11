@@ -1,13 +1,13 @@
 import { dirname, resolve } from 'node:path'
 import { Effect } from 'effect'
-import { BillingConfigError } from '@/schemas/BillingConfig'
+import { BillingConfigError, CONFIG_FILES } from '@/schemas/BillingConfig'
 import {
   findUp,
   type Language,
   readSource,
   unwritable,
-} from '@/utils/billing-config/languages/language'
-import { renderPython } from '@/utils/billing-config/languages/python/render'
+} from '@/services/billing-config/languages/language'
+import { renderPython } from '@/services/billing-config/languages/python/render'
 
 const PYTHON = process.platform === 'win32' ? 'python' : 'python3'
 
@@ -39,7 +39,7 @@ export const python: Language = {
   format: 'py',
   extension: '.py',
   extensions: ['.py'],
-  defaultFiles: ['polar_config.py'],
+  defaultFiles: CONFIG_FILES.py,
   manifest: 'pyproject.toml',
   installer: undefined,
   load: (fs, run, file) =>

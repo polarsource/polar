@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { BunServices } from '@effect/platform-bun'
 import { Effect, FileSystem } from 'effect'
 import { loader } from '@/services/billing-config/load'
-import { loadFailure } from '@/utils/billing-config/languages/typescript'
+import { loadFailure } from '@/services/billing-config/languages/typescript'
 import type { Run } from '@/utils/run'
 
 const source = [

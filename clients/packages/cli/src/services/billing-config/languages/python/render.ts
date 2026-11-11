@@ -3,7 +3,7 @@ import {
   BillingConfigError,
   type ConfigDocument,
 } from '@/schemas/BillingConfig'
-import { dropOptionalNulls } from '@/utils/billing-config/languages/language'
+import { dropOptionalNulls } from '@/services/billing-config/languages/language'
 
 const WIDTH = 88
 const INDENT = '    '

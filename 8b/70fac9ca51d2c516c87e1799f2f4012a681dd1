@@ -1,0 +1,89 @@
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_4aaa656908f3ae 257-292
+  s_fb19aa989d9ac0::t_f94d0e3d0ab753 251,255
+  s_fb19aa989d9ac0::t_6eacd569275e6b 3,10-14,16-17,22,29-30,207-249,297
+  s_fb19aa989d9ac0::t_da5ff9414491e7 250,256
+  s_fb19aa989d9ac0::t_b919a3e1903946 252-254
+  s_fb19aa989d9ac0::t_188897bf72477e 293-296,298-309
+server/tests/reducer/test_service.py
+  s_fb19aa989d9ac0::t_23dd8847a6707c 1689-1735
+server/polar/reducer/types.py
+  s_fb19aa989d9ac0::t_b18263893d7f44 6-7,30-36
+server/polar/reducer/bucket_repository.py
+  s_fb19aa989d9ac0::t_6b5f3a62a2cd14 534-553,568,585-602
+  s_fb19aa989d9ac0::t_7a40b593208c24 603
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_463202739ad9e0 1968-1981,1985-1994
+  s_fb19aa989d9ac0::t_087881a6710f83 1955-1957
+  s_fb19aa989d9ac0::t_71c9d5c0202fd5 1937-1939
+  s_fb19aa989d9ac0::t_823a8a041c278d 1950-1954,1958-1967
+  s_fb19aa989d9ac0::t_ff1545e2d71028 11,13-15,27,36,40,42,53-54,63,1675-1936,1940-1949
+  s_fb19aa989d9ac0::t_9a176038c4ae12 1982-1984
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_31191f53cf9214 22
+  s_fb19aa989d9ac0::t_f224ecb5d799bb 23
+  s_fb19aa989d9ac0::t_36ec4f6a614500 3,18-19,24-26
+  s_fb19aa989d9ac0::t_0a0d9a6c42ebe1 20-21
+  s_fb19aa989d9ac0::t_b5741f184a982b 27
+server/polar/billing_entry/service.py
+  s_fb19aa989d9ac0::t_c5a5d9400fdc7d 291-296,349
+  s_fb19aa989d9ac0::t_97104dc9444334 16,19-20,24-32,35,75-91,225-290,345,350,352-359,377,385-394,463,530-552
+  s_fb19aa989d9ac0::t_1ef843b1d6f52d 14
+  s_fb19aa989d9ac0::t_126efee29d2e50 324-335,351
+  s_fb19aa989d9ac0::t_530ba72455f4f0 297-323,336
+  s_fb19aa989d9ac0::t_3e4739609e2629 348,553
+server/polar/customer_meter/service.py
+  h_6aa6f5c50f181e 44,142-143,149,662-669,681-682
+  s_fb19aa989d9ac0::t_f8e78041f993d0 45,147,170-171,173-174,226,672-678,683-685
+  s_fb19aa989d9ac0::t_8b811e17c0fcb0 670
+server/polar/models/product_price.py
+  s_fb19aa989d9ac0::t_d449307986cfac 242,274,348
+server/tests/customer_meter/test_service.py
+  h_6aa6f5c50f181e 10,1711-1756
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_a9fa2f69d055fa 1,4,20,22,26,45-54,118-127,144-146,152,165-229,231,233-248,255-257,266,274,277-278,286,294,297-298,309
+  s_fb19aa989d9ac0::t_0bb83162db0c26 230,285
+  s_fb19aa989d9ac0::t_8c841aa973411a 251-254,258,265,267,273,289,293,308
+  s_fb19aa989d9ac0::t_20cc685b7d0a48 18
+  s_fb19aa989d9ac0::t_8a92de4c230544 232,249-250
+  s_fb19aa989d9ac0::t_78a990b8a11912 259-264,268,275,295
+  s_fb19aa989d9ac0::t_6b36e488ae5650 5,14,269-272,276,279-284,287-288,290-292,296,299-307,310-347
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_7bd92dcc9c574b 49,241-312,353-358,370,372-374,420-421,1148,1153,1167-1168,1181-1202
+  s_fb19aa989d9ac0::t_84bfc714555855 1203
+  s_fb19aa989d9ac0::t_035d5eb258f2ed 1204
+  s_fb19aa989d9ac0::t_3bb2045cdd530d 1205
+server/polar/order/service.py
+  s_fb19aa989d9ac0::t_a16e9e4b7ecabe 1426,1438,1458,1655,1658-1662
+server/polar/order/tasks.py
+  s_fb19aa989d9ac0::t_1d09201f248e53 184,211,230-234,253,263,290-294
+server/polar/subscription/service.py
+  s_fb19aa989d9ac0::t_254c79780d3c0a 1253-1256,1396-1400,1408,1599-1603,4895,4904
+server/tests/e2e/lifecycle/test_reducer_billing.py
+  s_fb19aa989d9ac0::t_6ba018e3ee6eba 1-340
+server/tests/order/test_tasks.py
+  s_fb19aa989d9ac0::t_091aa84a3d9e1c 89,123,165,198,227
+server/tests/subscription/test_service.py
+  s_fb19aa989d9ac0::t_913aa485eebb9d 1834,2166,2259,2353,2647,2777,5647,5933,6547,6587
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8b70fac9ca51d2c516c87e1799f2f4012a681dd1",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

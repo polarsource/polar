@@ -69,6 +69,7 @@ const run = async (
               : Effect.succeed(config),
           plan: planned,
           apply: () => Effect.die('unused'),
+          deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.succeed(catalogs),
           publish: published,

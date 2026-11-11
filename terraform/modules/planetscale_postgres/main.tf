@@ -26,8 +26,6 @@ resource "planetscale_postgres_redacted_branch_role" "app" {
 }
 
 resource "planetscale_postgres_redacted_branch_role" "migrator" {
-  count = var.migrator_role ? 1 : 0
-
   organization    = var.organization
   database        = var.database
   branch          = planetscale_postgres_branch.this.name

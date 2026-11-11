@@ -1,7 +1,7 @@
 locals {
-  app_role_sql_identifier = "\"${replace(planetscale_postgres_redacted_branch_role.app.base_username, "\"", "\"\"")}\""
-  migrator_role           = one(planetscale_postgres_redacted_branch_role.migrator)
-  database_sql_identifier = "\"${replace(var.app_database_name, "\"", "\"\"")}\""
+  app_role_sql_identifier      = "\"${replace(planetscale_postgres_redacted_branch_role.app.base_username, "\"", "\"\"")}\""
+  migrator_role_sql_identifier = "\"${replace(planetscale_postgres_redacted_branch_role.migrator.base_username, "\"", "\"\"")}\""
+  database_sql_identifier      = "\"${replace(var.app_database_name, "\"", "\"\"")}\""
 }
 
 output "branch_id" {
@@ -31,12 +31,12 @@ output "app_role_base_username" {
 
 output "migrator_role_id" {
   description = "Migrator role ID. Reset its password with `pscale role reset`."
-  value       = local.migrator_role == null ? null : local.migrator_role.id
+  value       = planetscale_postgres_redacted_branch_role.migrator.id
 }
 
 output "migrator_role_username" {
   description = "Migrator role username."
-  value       = local.migrator_role == null ? null : local.migrator_role.username
+  value       = planetscale_postgres_redacted_branch_role.migrator.username
 }
 
 output "analytics_reader_role_id" {
@@ -65,9 +65,9 @@ output "app_role_setup_sql" {
 
 output "migrator_role_setup_sql" {
   description = "Run as the default postgres role before migrations use the migrator role. Its sessions act as the app role, so the objects they create stay owned by it."
-  value       = local.migrator_role == null ? null : <<-SQL
-    GRANT ${local.app_role_sql_identifier} TO "${replace(local.migrator_role.base_username, "\"", "\"\"")}";
-    ALTER ROLE "${replace(local.migrator_role.base_username, "\"", "\"\"")}" SET role = ${local.app_role_sql_identifier};
+  value       = <<-SQL
+    GRANT ${local.app_role_sql_identifier} TO ${local.migrator_role_sql_identifier};
+    ALTER ROLE ${local.migrator_role_sql_identifier} SET role = ${local.app_role_sql_identifier};
   SQL
 }
 

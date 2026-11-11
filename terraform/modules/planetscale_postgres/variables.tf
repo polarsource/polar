@@ -24,12 +24,6 @@ variable "app_role_name" {
   type        = string
 }
 
-variable "migrator_role" {
-  description = "Whether to create a dedicated role for migrations."
-  type        = bool
-  default     = false
-}
-
 variable "region" {
   description = "PlanetScale region slug."
   type        = string

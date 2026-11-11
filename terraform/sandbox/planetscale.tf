@@ -7,7 +7,6 @@ module "planetscale" {
   app_role_name     = "polar_sandbox"
   region            = "aws-us-east-2"
   cluster_size      = "PS_80_AWS_ARM"
-  migrator_role     = true
 
   storage = {
     storage_iops            = 6000

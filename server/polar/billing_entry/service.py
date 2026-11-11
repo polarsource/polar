@@ -226,10 +226,15 @@ class BillingEntryService:
         period_start: datetime | None,
         cutoff: datetime,
         reducer_cutoff: datetime,
+        paid_on_creation: bool = False,
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         """Like `_create_order_items`, with the metered usage read from the
         reducers instead of the pending billing entries. The order bills the
-        period from `period_start` to `reducer_cutoff`."""
+        period from `period_start` to `reducer_cutoff`.
+
+        Usage changing while the order is created rolls the order back to be
+        retried, unless it is `paid_on_creation`: the payment can't be rolled back,
+        so the change is logged and the usage stays billed by the order."""
         meter_ids = (
             await billing_interval_service.get_meter_ids(session, subscription)
             if include_metered
@@ -272,7 +277,13 @@ class BillingEntryService:
                     cutoff=reducer_cutoff,
                 )
                 if billed != usage:
-                    raise ReducerUsageChanged(subscription)
+                    if not paid_on_creation:
+                        raise ReducerUsageChanged(subscription)
+                    log.error(
+                        "Reducer usage changed after the order was paid",
+                        subscription_id=subscription.id,
+                        order_id=metered_items[0].order_id,
+                    )
 
     async def _get_reducer_order_items(
         self, session: AsyncSession, charge: MeterCharge
@@ -319,6 +330,7 @@ class BillingEntryService:
         cutoff: datetime | None = None,
         reducer_cutoff: datetime | None = None,
         period_start: datetime | None = None,
+        paid_on_creation: bool = False,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         cutoff = cutoff or utc_now()
         if subscription.organization.is_reducer_billing_enabled:
@@ -332,6 +344,7 @@ class BillingEntryService:
                 period_start=period_start,
                 cutoff=cutoff,
                 reducer_cutoff=reducer_cutoff or cutoff,
+                paid_on_creation=paid_on_creation,
             )
         return self._create_order_items(
             session,

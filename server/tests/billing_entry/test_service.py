@@ -1940,8 +1940,10 @@ class TestCreateOrderItemsFromReducers:
         ) as order_items:
             assert order_items == []
 
-    async def test_usage_changing_before_the_order_exists_raises(
+    @pytest.mark.parametrize("paid_on_creation", [False, True])
+    async def test_usage_changing_raises_unless_the_order_is_already_paid(
         self,
+        paid_on_creation: bool,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -1968,10 +1970,16 @@ class TestCreateOrderItemsFromReducers:
                 },
             )
 
-        with pytest.raises(ReducerUsageChanged):
+        async def create() -> None:
             async with billing_entry_service.create_order_items_from_pending(
-                session, metered_subscription
+                session, metered_subscription, paid_on_creation=paid_on_creation
             ) as order_items:
                 await create_order(
                     save_fixture, customer=customer, order_items=list(order_items)
                 )
+
+        if paid_on_creation:
+            await create()
+        else:
+            with pytest.raises(ReducerUsageChanged):
+                await create()

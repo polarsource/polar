@@ -1456,6 +1456,7 @@ class OrderService:
             cutoff=cutoff,
             reducer_cutoff=reducer_cutoff,
             period_start=period_start,
+            paid_on_creation=payment_mode == PaymentMode.sync,
         ) as items:
             if len(items) == 0:
                 raise NoPendingBillingEntries(subscription)

@@ -1095,10 +1095,12 @@ class EventService:
             raise PolarRequestValidationError(errors)
 
         repository = EventRepository.from_session(session)
-        org_ids_with_staged_events_enabled = (
-            await self._get_org_ids_with_staged_events_enabled(
-                session, auth_subject, {event["organization_id"] for event in events}
-            )
+        organization_ids = {event["organization_id"] for event in events}
+        org_ids_with_staged_events_enabled = await self._get_org_ids_with_feature(
+            session, organization_ids, "staged_events_ingest_enabled", auth_subject
+        )
+        org_ids_with_reducer_billing = await self._get_org_ids_with_feature(
+            session, organization_ids, "reducer_billing_enabled", auth_subject
         )
         staged_events = [
             e
@@ -1127,15 +1129,24 @@ class EventService:
             event_ids.extend(direct_event_ids)
             duplicates_count += direct_duplicates_count
 
-            # Temporarily: fetch inserted events and create meter_events
-            with logfire.span("create_meter_events", event_count=len(direct_event_ids)):
-                if direct_event_ids:
-                    inserted_events = await repository.get_all(
-                        repository.get_base_statement().where(
-                            Event.id.in_(direct_event_ids)
+            if org_ids_with_reducer_billing != organization_ids:
+                meter_event_ids = [
+                    event["id"]
+                    for event in direct_events
+                    if event["organization_id"] not in org_ids_with_reducer_billing
+                ]
+
+                # Temporarily: fetch inserted events and create meter_events
+                if meter_event_ids:
+                    with logfire.span(
+                        "create_meter_events", event_count=len(meter_event_ids)
+                    ):
+                        inserted_events = await repository.get_all(
+                            repository.get_base_statement().where(
+                                Event.id.in_(meter_event_ids)
+                            )
                         )
-                    )
-                    await self._create_meter_events(session, inserted_events)
+                        await self._create_meter_events(session, inserted_events)
 
             # Parent resolution and root_id propagation run out-of-band in the
             # `event.ingested` task — they're not needed on the request path and
@@ -1188,7 +1199,18 @@ class EventService:
                 inserted_events = await repository.get_all(
                     repository.get_base_statement().where(Event.id.in_(event_ids))
                 )
-                await self._create_meter_events(session, inserted_events)
+                org_ids_with_reducer_billing = await self._get_org_ids_with_feature(
+                    session,
+                    {event.organization_id for event in inserted_events},
+                    "reducer_billing_enabled",
+                )
+                meter_events = [
+                    event
+                    for event in inserted_events
+                    if event.organization_id not in org_ids_with_reducer_billing
+                ]
+                if meter_events:
+                    await self._create_meter_events(session, meter_events)
 
             # Parent resolution and root_id propagation run out-of-band in the
             # `event.ingested` task.
@@ -1207,7 +1229,10 @@ class EventService:
             event.root_id = event.id
         event = await repository.create(event, flush=True)
         # Temporarily
-        await self._create_meter_events(session, [event])
+        if not await self._get_org_ids_with_feature(
+            session, {event.organization_id}, "reducer_billing_enabled"
+        ):
+            await self._create_meter_events(session, [event])
         if event.is_meter_credit:
             await reducer_service.add_credit(session, event)
         elif (
@@ -1407,25 +1432,24 @@ class EventService:
                 session.add(cm)
         await session.flush()
 
-    async def _get_org_ids_with_staged_events_enabled(
+    async def _get_org_ids_with_feature(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization | Agent],
         organization_ids: set[uuid.UUID],
+        feature: str,
+        auth_subject: AuthSubject[User | Organization | Agent] | None = None,
     ) -> set[uuid.UUID]:
-        if is_organization(auth_subject):
+        if auth_subject is not None and is_organization(auth_subject):
             organization = auth_subject.subject
             return (
                 {organization.id}
-                if organization.is_staged_events_ingest_enabled
+                if organization.feature_settings.get(feature, False)
                 else set()
             )
         if not organization_ids:
             return set()
         repository = OrganizationRepository.from_session(session)
-        return await repository.get_ids_with_feature(
-            organization_ids, "staged_events_ingest_enabled"
-        )
+        return await repository.get_ids_with_feature(organization_ids, feature)
 
     async def _get_organization_validation_function(
         self,

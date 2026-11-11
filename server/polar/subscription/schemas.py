@@ -16,7 +16,11 @@ from pydantic.json_schema import SkipJsonSchema
 from polar.custom_field.data import CustomFieldDataOutputMixin
 from polar.customer.schemas.customer import CustomerBase, CustomerID, ExternalCustomerID
 from polar.discount.schemas import DiscountID, DiscountMinimal
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    ProrationBehaviorSetting,
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.kit.currency import PresentmentCurrency, format_currency
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputMixin
 from polar.kit.schemas import (
@@ -359,7 +363,7 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
         description="Update subscription to another product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -412,7 +416,7 @@ class SubscriptionUpdateSeats(Schema):
         description="Update the number of seats for this subscription.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -428,7 +432,7 @@ class SubscriptionUpdateUnits(Schema):
         description="Update the number of units for this subscription.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -674,7 +678,7 @@ class SubscriptionChangePreviewProduct(Schema):
         description="Preview a change of the subscription to this product.",
         examples=[PRODUCT_ID_EXAMPLE],
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -690,7 +694,7 @@ class SubscriptionChangePreviewSeats(Schema):
         description="Preview a change of the subscription to this number of seats.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "
@@ -706,7 +710,7 @@ class SubscriptionChangePreviewUnits(Schema):
         description="Preview a change of the subscription to this number of units.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
+    proration_behavior: ProrationBehaviorSetting | None = Field(
         default=None,
         description=(
             "Determine how to handle the proration billing. "

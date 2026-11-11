@@ -7,21 +7,22 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 
-const PRORATION_BEHAVIOR_LABELS: Record<
-  schemas['SubscriptionProrationBehavior'],
-  string
-> = {
+type ProrationBehaviorSetting = schemas['Organization']['proration_behavior']
+
+const PRORATION_BEHAVIOR_LABELS: Record<ProrationBehaviorSetting, string> = {
   invoice: 'Prorate & charge now',
   prorate: 'Prorate on next invoice',
   next_period: 'Schedule for next cycle',
   reset: 'Charge full amount & reset cycle',
+  auto: 'Prorate upgrades, schedule downgrades',
 }
 
 export interface ProrationBehaviorProps {
   organization: schemas['Organization']
-  value: schemas['SubscriptionProrationBehavior']
-  onValueChange: (value: string) => void
+  value: ProrationBehaviorSetting
+  onValueChange: (value: ProrationBehaviorSetting) => void
   disabled?: boolean
 }
 
@@ -32,21 +33,34 @@ export const ProrationBehavior: React.FC<ProrationBehaviorProps> = ({
   ...props
 }) => {
   return (
-    <Select {...props} value={value} onValueChange={onValueChange}>
-      <SelectTrigger>{PRORATION_BEHAVIOR_LABELS[value]}</SelectTrigger>
-      <SelectContent>
-        {Object.entries(PRORATION_BEHAVIOR_LABELS)
-          .filter(
-            ([key]) =>
-              key !== 'reset' ||
-              organization.feature_settings?.reset_proration_behavior_enabled,
-          )
-          .map(([key, label]) => (
-            <SelectItem value={key} key={key}>
-              {label}
-            </SelectItem>
-          ))}
-      </SelectContent>
-    </Select>
+    <Box flexDirection="column" rowGap="s">
+      <Select
+        {...props}
+        value={value}
+        onValueChange={(value) =>
+          onValueChange(value as ProrationBehaviorSetting)
+        }
+      >
+        <SelectTrigger>{PRORATION_BEHAVIOR_LABELS[value]}</SelectTrigger>
+        <SelectContent>
+          {Object.entries(PRORATION_BEHAVIOR_LABELS)
+            .filter(
+              ([key]) =>
+                key !== 'reset' ||
+                organization.feature_settings?.reset_proration_behavior_enabled,
+            )
+            .map(([key, label]) => (
+              <SelectItem value={key} key={key}>
+                {label}
+              </SelectItem>
+            ))}
+        </SelectContent>
+      </Select>
+      {value === 'auto' && (
+        <p className="dark:text-polar-500 text-xs text-gray-500">
+          Use 2027-01 as your API version to ensure compatibility
+        </p>
+      )}
+    </Box>
   )
 }

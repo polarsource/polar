@@ -45,6 +45,8 @@ export const useSubscriptions = (
   })
 }
 
+const SUBSCRIPTION_UPDATE_HEADERS = { 'Polar-Version': '2027-01' }
+
 export const useUpdateSubscription = (id: string) => {
   const { polar } = usePolarClient()
 
@@ -53,6 +55,7 @@ export const useUpdateSubscription = (id: string) => {
       polar.PATCH('/v1/subscriptions/{id}', {
         params: { path: { id } },
         body,
+        headers: SUBSCRIPTION_UPDATE_HEADERS,
       }),
     onSuccess: (data, variables) => {
       queryClient.setQueryData(['subscription', id], data.data)

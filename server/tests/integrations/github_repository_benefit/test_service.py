@@ -188,3 +188,4 @@ class TestCreateOAuthAccount:
             )
 
         await session.flush()
+        assert user.get_oauth_account(OAuthPlatform.github_repository_benefit) is None

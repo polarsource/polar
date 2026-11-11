@@ -110,7 +110,7 @@ async def user_callback(
             await github_repository_benefit_user_service.update_oauth_account(
                 session, auth_subject.subject, token_data
             )
-        except GitHubRepositoryBenefitAccountNotConnected:
+        except GitHubRepositoryBenefitAccountNotConnected, ResourceAlreadyExists:
             return_to = state["return_to"]
             redirect_url = get_safe_return_url(
                 add_query_parameters(

@@ -126,15 +126,13 @@ class GitHubRepositoryBenefitUserService:
         if account is None:
             raise GitHubRepositoryBenefitAccountNotConnected(user)
 
-        await account.set_tokens(
-            access_token=oauth2_token_data["access_token"],
-            refresh_token=oauth2_token_data["refresh_token"],
-        )
-        account.expires_at = oauth2_token_data["expires_at"]
-
-        client = github.get_client(access_token=await account.get_access_token())
+        access_token = oauth2_token_data["access_token"]
+        client = github.get_client(access_token=access_token)
         user_data = await client.rest.users.async_get_authenticated()
         github.ensure_expected_response(user_data)
+
+        if str(user_data.parsed_data.id) != account.account_id:
+            raise ResourceAlreadyExists()
 
         (
             account_email,
@@ -143,6 +141,11 @@ class GitHubRepositoryBenefitUserService:
             client=client
         )
 
+        await account.set_tokens(
+            access_token=access_token,
+            refresh_token=oauth2_token_data["refresh_token"],
+        )
+        account.expires_at = oauth2_token_data["expires_at"]
         account.account_email = account_email
         account.account_username = user_data.parsed_data.login
 

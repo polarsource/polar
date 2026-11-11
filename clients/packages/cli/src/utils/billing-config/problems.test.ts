@@ -48,6 +48,28 @@ describe('formatProblems for a generated config', () => {
     )
   })
 
+  test('asks whether a close name was meant', () => {
+    const output = stripAnsi(
+      formatProblems(generated, [
+        { ...warning, got: '"tool_cal"', suggestion: 'tool_call' },
+        {
+          severity: 'error',
+          code: 'unknown_reference',
+          path: 'benefits.included.meter_id',
+          message: 'No meter in this config has this external_id.',
+          got: '"tool-call"',
+          suggestion: 'tool-calls',
+        },
+      ]),
+    )
+
+    expect(output).toContain(
+      'help: Did you mean "tool_call"? The meter stays at zero until your app sends an event with this exact name.',
+    )
+    expect(output).toContain('Error: Unknown meter "tool-call"')
+    expect(output).toContain('help: Did you mean "tool-calls"?')
+  })
+
   test('shows the offending value when there is no frame to point at', () => {
     const output = stripAnsi(formatProblems(generated, [invalid]))
     expect(output).toContain(

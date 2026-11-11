@@ -159,6 +159,7 @@ export const ConfigIssue = Schema.Struct({
   path: Schema.String,
   message: Schema.String,
   got: Schema.optional(Schema.String),
+  suggestion: Schema.optional(Schema.String),
   location: Schema.optional(SourceLocation),
 })
 export type ConfigIssue = typeof ConfigIssue.Type

@@ -251,7 +251,7 @@ const ProrationBehaviorSelector = ({
               })
             }}
           >
-            <Text>{label}</Text>
+            <Text style={{ flexShrink: 1 }}>{label}</Text>
             <MaterialIcons
               name="check"
               size={16}

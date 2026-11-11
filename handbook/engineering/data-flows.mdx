@@ -47,6 +47,7 @@ flowchart LR
 
     subgraph TP["Integrated services"]
         ST[Stripe]
+        NUM[Numeral]
         TB[Tinybird]
         RES[Resend]
         PL[Plain]
@@ -77,6 +78,7 @@ flowchart LR
     BE -->|support threads| PL
     BE -->|traces, errors, analytics| OBS
     WORK -->|payments, payouts, tax| ST
+    BE -->|tax calculation and records| NUM
     WORK -->|metered events, customer email and name| TB
     WORK -->|email| RES
     WORK -->|platform events| MS
@@ -100,7 +102,8 @@ One row per provider. The flows below say what reaches each one.
 | PlanetScale | AWS `us-east-2` | The Postgres primary and read replica holding all core platform data |
 | AWS | `us-east-2`; backups replicated to `us-west-2` | S3 for invoices, receipts, payout invoices, downloadable files, product media and the span archive; Lambda and SQS for background jobs; ElastiCache Redis for sessions, rate limits and job payloads; the backup buckets holding earlier Render Postgres exports |
 | Vercel | Distributed edge | Web app and checkout rendering. No persistent store |
-| Stripe | USA | Card credentials, payments, payouts, tax calculation, identity verification |
+| Stripe | USA | Card credentials, payments, payouts, fallback tax calculation, identity verification |
+| Numeral | USA | Tax calculation and tax records: billing address, tax IDs, order amount and currency |
 | Tinybird | USA | Metered events and derived metrics, including customer email and name |
 | Resend | USA | Transactional email: recipient address, subject, rendered body |
 | Plain | UK | Support threads, chat transcripts, attachments; context cards looked up by email address |
@@ -154,14 +157,15 @@ sequenceDiagram
     participant B as Buyer browser
     participant P as Polar API
     participant CF as Cloudflare Turnstile
+    participant N as Numeral
     participant S as Stripe
 
     B->>P: Open checkout, create session
     P->>P: Resolve country from IP locally
     B->>CF: Solve bot challenge
     B->>P: Submit email, billing address, tax ID
-    P->>S: Tax calculation
-    S-->>P: Tax amount and jurisdiction
+    P->>N: Tax calculation
+    N-->>P: Tax amount and jurisdiction
     B->>S: Card details via Stripe.js
     S-->>B: Payment method token
     B->>P: Confirm with token
@@ -169,6 +173,8 @@ sequenceDiagram
     S-->>P: payment_intent.succeeded webhook
     P->>P: Create order, customer, subscription
 ```
+
+If Numeral is unavailable, the tax calculation falls back to Stripe.
 
 ## Remaining flows
 

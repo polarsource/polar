@@ -7,7 +7,11 @@ import {
   useCustomerUpdateSubscription,
 } from '@/hooks/queries/customerPortal'
 import { isFreePrice } from '@/utils/product'
-import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
+import {
+  addInterval,
+  formatTrialEnd,
+  useTrialChangeOutcome,
+} from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { List, ListItem } from '@polar-sh/orbit'
@@ -16,6 +20,13 @@ import { useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
+
+const INTERVAL_ADJECTIVES: Record<schemas['RecurringInterval'], string> = {
+  day: 'daily',
+  week: 'weekly',
+  month: 'monthly',
+  year: 'yearly',
+}
 
 const ProductPriceListItem = ({
   product,
@@ -115,13 +126,29 @@ const CustomerChangePlanModal = ({
 
   const isTrialing = subscription.status === 'trialing'
 
+  // `auto` applies a longer billing interval now and defers a shorter one.
+  const isLongerInterval =
+    !!selectedProduct?.recurring_interval &&
+    !!subscription.recurring_interval &&
+    addInterval(
+      subscription.current_period_start,
+      selectedProduct.recurring_interval,
+      selectedProduct.recurring_interval_count ?? 1,
+    ) >
+      addInterval(
+        subscription.current_period_start,
+        subscription.recurring_interval,
+        subscription.recurring_interval_count ?? 1,
+      )
+
   const willTriggerImmediateCycle =
     selectedProduct !== null &&
     !isTrialing &&
     prorationBehavior !== 'next_period' &&
     (selectedProduct.recurring_interval !== subscription.recurring_interval ||
       selectedProduct.recurring_interval_count !==
-        subscription.recurring_interval_count)
+        subscription.recurring_interval_count) &&
+    (prorationBehavior !== 'auto' || isLongerInterval)
 
   const changePreview = useCustomerSubscriptionChangePreview(
     api,
@@ -149,8 +176,10 @@ const CustomerChangePlanModal = ({
     if (willTriggerImmediateCycle) {
       if (nextInvoiceType === null) return null
 
+      const interval = selectedProduct.recurring_interval ?? 'month'
+      const count = selectedProduct.recurring_interval_count ?? 1
       const newPeriod =
-        selectedProduct.recurring_interval === 'month' ? 'monthly' : 'yearly'
+        count > 1 ? `${count}-${interval}` : INTERVAL_ADJECTIVES[interval]
 
       switch (nextInvoiceType) {
         case 'charge':
@@ -171,6 +200,8 @@ const CustomerChangePlanModal = ({
         return 'The new plan will be applied on your next billing cycle.'
       case 'reset':
         return "You'll be charged the full amount for the new plan immediately, and your billing period restarts today."
+      case 'auto':
+        return 'Upgrades are charged immediately, with a proration for the current period. Downgrades are applied on your next billing cycle.'
     }
   }, [
     selectedProduct,

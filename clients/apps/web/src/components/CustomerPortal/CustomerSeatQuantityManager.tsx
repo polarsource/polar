@@ -43,9 +43,16 @@ export const CustomerSeatQuantityManager = ({
   const canDecrease = seats !== undefined && seats > assignedSeats
   const hasChanges = seats !== totalSeats
 
+  const resolvedProrationBehavior =
+    prorationBehavior === 'auto'
+      ? seats > totalSeats
+        ? 'invoice'
+        : 'next_period'
+      : prorationBehavior
+
   const invoicingMessage = useMemo((): string | null => {
-    if (!prorationBehavior) return null
-    switch (prorationBehavior) {
+    if (!resolvedProrationBehavior) return null
+    switch (resolvedProrationBehavior) {
       case 'invoice':
         return "You'll be charged immediately, with a proration for the current period."
       case 'prorate':
@@ -55,7 +62,7 @@ export const CustomerSeatQuantityManager = ({
       case 'reset':
         return "You'll be charged the full new amount immediately, and your billing period restarts today."
     }
-  }, [prorationBehavior])
+  }, [resolvedProrationBehavior])
 
   const onSubmit = useCallback(
     async (data: { seats: number }) => {
@@ -80,7 +87,7 @@ export const CustomerSeatQuantityManager = ({
         } else {
           const descriptionMessage = (() => {
             const seatText = `${data.seats} ${data.seats === 1 ? 'seat' : 'seats'}`
-            switch (prorationBehavior) {
+            switch (resolvedProrationBehavior) {
               case 'invoice':
                 return `Subscription now has ${seatText}. You'll be charged immediately with a proration for the current month.`
               case 'prorate':
@@ -112,7 +119,13 @@ export const CustomerSeatQuantityManager = ({
         }
       }
     },
-    [updateSubscription, subscriptionId, prorationBehavior, onUpdate, setError],
+    [
+      updateSubscription,
+      subscriptionId,
+      resolvedProrationBehavior,
+      onUpdate,
+      setError,
+    ],
   )
 
   const handleIncrement = () => {

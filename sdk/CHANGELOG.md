@@ -10,9 +10,10 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-09
+
 ### Added
 
-- Add metering helper with buffering and local reduction for low-latency event ingestion.
 - Send a `User-Agent` header with the SDK language and version, such as `polar-sdk-python/1.0.3` or `polar-sdk-typescript/1.0.3`.
 
 ### Changed
@@ -22,6 +23,7 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 ### Fixed
 
 - Return `undefined` (`None` in Python) instead of throwing on empty-body success responses, such as the `202` returned by order receipt endpoints while the receipt is being generated.
+- TypeScript: export `ClientBase` from each API version entry point, so wrapping `createPolarCore()` in an exported function compiles when emitting declarations.
 
 ## [1.0.2] - 2026-10-02
 
@@ -54,7 +56,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 - Generate next 2027-01 version.
 
-[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.0.2...HEAD
+[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.1.0...HEAD
+[1.1.0]: https://github.com/polarsource/polar/compare/sdk%2F1.0.2...sdk%2F1.1.0
 [1.0.2]: https://github.com/polarsource/polar/compare/sdk%2F1.0.1...sdk%2F1.0.2
 [1.0.1]: https://github.com/polarsource/polar/compare/sdk%2F1.0.0...sdk%2F1.0.1
 [1.0.0]: https://github.com/polarsource/polar/compare/sdk%2F1.0.0-alpha.22...sdk%2F1.0.0

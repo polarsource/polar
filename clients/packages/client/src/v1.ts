@@ -10063,7 +10063,7 @@ export interface components {
     BenefitCustomCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10237,7 +10237,7 @@ export interface components {
     BenefitCustomUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10431,7 +10431,7 @@ export interface components {
     BenefitDiscordCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10634,7 +10634,7 @@ export interface components {
     BenefitDiscordUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10808,7 +10808,7 @@ export interface components {
     BenefitDownloadablesCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10984,7 +10984,7 @@ export interface components {
     BenefitDownloadablesUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11106,7 +11106,7 @@ export interface components {
     BenefitFeatureFlagCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11271,7 +11271,7 @@ export interface components {
     BenefitFeatureFlagUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11389,7 +11389,7 @@ export interface components {
     BenefitGitHubRepositoryCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11605,7 +11605,7 @@ export interface components {
     BenefitGitHubRepositoryUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -12625,7 +12625,7 @@ export interface components {
     BenefitLicenseKeysCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -12814,7 +12814,7 @@ export interface components {
     BenefitLicenseKeysUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -12937,7 +12937,7 @@ export interface components {
     BenefitMeterCreditCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13151,7 +13151,7 @@ export interface components {
     BenefitMeterCreditUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13351,7 +13351,7 @@ export interface components {
     BenefitSlackSharedChannelCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13564,7 +13564,7 @@ export interface components {
     BenefitSlackSharedChannelUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13647,8 +13647,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -15250,8 +15255,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -20692,8 +20702,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -22950,7 +22965,7 @@ export interface components {
     DiscountFixedCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -23387,7 +23402,7 @@ export interface components {
     DiscountPercentageCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -23910,7 +23925,7 @@ export interface components {
     DiscountUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -27522,7 +27537,7 @@ export interface components {
     MeterCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -27792,7 +27807,7 @@ export interface components {
     MeterUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -29983,8 +29998,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -31381,8 +31401,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -32447,11 +32472,8 @@ export interface components {
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
-      /**
-       * PublicSubscriptionProrationBehavior
-       * @enum {string}
-       */
-      proration_behavior: 'invoice' | 'prorate' | 'next_period'
+      /** Proration Behavior */
+      proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Prevent Trial Abuse */
@@ -32834,8 +32856,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -34416,7 +34443,7 @@ export interface components {
     ProductCreateOneTime: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -34494,7 +34521,7 @@ export interface components {
     ProductCreateRecurring: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -35748,7 +35775,7 @@ export interface components {
     ProductUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -37750,9 +37777,13 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionChangePreviewSeats */
@@ -37762,9 +37793,13 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionChangePreviewUnits */
@@ -37774,9 +37809,13 @@ export interface components {
        * @description Preview a change of the subscription to this number of units.
        */
       units: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /**
@@ -39483,9 +39522,13 @@ export interface components {
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id?: string | null
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
       /**
        * Discount Id
@@ -39608,9 +39651,13 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /** SubscriptionUpdateUnits */
@@ -39620,9 +39667,13 @@ export interface components {
        * @description Update the number of units for this subscription.
        */
       units: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      /**
+       * Proration Behavior
+       * @description Determine how to handle the proration billing. If not provided, will use the default organization setting.
+       */
       proration_behavior?:
         | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
         | null
     }
     /**
@@ -74356,7 +74407,7 @@ export const organizationStatusValues: ReadonlyArray<
   'offboarding',
   'offboarded',
 ]
-export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
+export const organizationSubscriptionSettingsProration_behaviorAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
 > = ['invoice', 'prorate', 'next_period']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<

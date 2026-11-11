@@ -83,7 +83,7 @@ def test_update_customer_meter_100k_events(
                 session, redis, organization.id, [Event(**row) for row in rows]
             )
         await customer_meter_service.update_customer_meter(
-            session, customer, meter, activate_meter=True
+            session, redis, customer, meter, activate_meter=True
         )
         await session.flush()
         return customer, meter
@@ -107,7 +107,9 @@ def test_update_customer_meter_100k_events(
 
     def balance() -> tuple[CustomerMeter | None, bool]:
         return run(
-            customer_meter_service.update_customer_meter(session, customer, meter)
+            customer_meter_service.update_customer_meter(
+                session, redis, customer, meter
+            )
         )
 
     begin()

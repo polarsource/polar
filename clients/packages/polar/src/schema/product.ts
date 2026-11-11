@@ -1,7 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
-import { withDeprecation } from './deprecation'
-import type { KeepDeprecation } from './deprecation'
+import { deprecatedKey, withDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
 import {
@@ -208,13 +207,18 @@ type Prices<Meter extends string> = readonly [
   ...PriceDefinition<Meter>[],
 ]
 
+// `undefined` until `.prices()` is called, then the meters the prices charge by.
+type PriceList<Priced> = [Priced] extends [string] ? Prices<Priced> : undefined
+
 class ProductBuilder<
   Meter extends string,
   Benefit extends string,
-  P extends Prices<Meter> | undefined,
+  Priced extends Meter | undefined,
   Billing extends Recurring | OneTime | undefined,
   Granted extends Benefit = never,
+  Deprecated extends boolean = boolean,
 > extends withDeprecation(withMetadata(withVisibility(Builder))) {
+  declare readonly [deprecatedKey]: Deprecated
   readonly trialPeriod: Trial | undefined = undefined
   readonly meterPeriod: MeterCycle | undefined = undefined
   readonly benefits: ReadonlyArray<Granted> = []
@@ -222,39 +226,59 @@ class ProductBuilder<
 
   constructor(
     readonly name: string | undefined,
-    readonly priceList: P,
+    readonly priceList: PriceList<Priced>,
     readonly billing: Billing,
   ) {
     super()
   }
 
-  prices<const Priced extends Prices<Meter>>(
-    ...prices: Priced
-  ): KeepDeprecation<
-    this,
-    ProductBuilder<Meter, Benefit, Priced, Billing, Granted>
+  /** The product's prices. Metered prices stack on top of the others. Every price must use the same currencies. */
+  prices<Charged extends Meter = never>(
+    price: PriceDefinition<Charged>,
+    ...prices: PriceDefinition<Charged>[]
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Charged,
+    Billing,
+    Granted,
+    this[typeof deprecatedKey]
   > {
-    return this.with({ priceList: prices })
+    return this.with({ priceList: [price, ...prices] })
   }
 
+  /** Bills every day, week, month or year. */
   recurring(
     cadence: keyof typeof cadences,
-  ): KeepDeprecation<
-    this,
-    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Recurring,
+    Granted,
+    this[typeof deprecatedKey]
   >
+  /** Bills every `count` intervals, like `.recurring(3, 'months')`. */
   recurring(
     count: number,
     interval: Interval,
-  ): KeepDeprecation<
-    this,
-    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Recurring,
+    Granted,
+    this[typeof deprecatedKey]
   >
   recurring(
     ...args: Cycle
-  ): KeepDeprecation<
-    this,
-    ProductBuilder<Meter, Benefit, P, Recurring, Granted>
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Recurring,
+    Granted,
+    this[typeof deprecatedKey]
   > {
     const [interval, count] = cycleOf(args)
     const billing: Recurring = {
@@ -264,9 +288,14 @@ class ProductBuilder<
     return this.with({ billing })
   }
 
-  once(): KeepDeprecation<
-    this,
-    ProductBuilder<Meter, Benefit, P, OneTime, Granted>
+  /** Charges once, as a one-time purchase, and grants access forever. */
+  once(): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    OneTime,
+    Granted,
+    this[typeof deprecatedKey]
   > {
     const billing: OneTime = {
       recurring_interval: null,
@@ -279,8 +308,9 @@ class ProductBuilder<
     })
   }
 
+  /** A free trial before the first charge, like `.trial(14, 'days')`. */
   trial(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     count: number,
     interval: Interval,
   ): this {
@@ -292,17 +322,25 @@ class ProductBuilder<
     })
   }
 
+  /**
+   * Invoices usage, resets meters and grants credits every day, week, month or
+   * year, separately from billing. Must divide the billing interval evenly.
+   */
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     cadence: keyof typeof cadences,
   ): this
+  /**
+   * Invoices usage, resets meters and grants credits every `count` intervals,
+   * separately from billing. Must divide the billing interval evenly.
+   */
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     count: number,
     interval: Interval,
   ): this
   meterCycle(
-    this: ProductBuilder<Meter, Benefit, P, Recurring, Granted>,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     ...args: Cycle
   ): this {
     const [interval, count] = cycleOf(args)
@@ -311,12 +349,21 @@ class ProductBuilder<
     })
   }
 
+  /** The benefits customers get with this product. Polar grants and revokes them automatically. */
   grants<const Grant extends Benefit>(
     benefits: ReadonlyArray<Grant>,
-  ): KeepDeprecation<this, ProductBuilder<Meter, Benefit, P, Billing, Grant>> {
+  ): ProductBuilder<
+    Meter,
+    Benefit,
+    Priced,
+    Billing,
+    Grant,
+    this[typeof deprecatedKey]
+  > {
     return this.with({ benefits })
   }
 
+  /** Shown on the checkout page. Supports Markdown. */
   description(description: string): this {
     return this.with({ descriptionText: description })
   }
@@ -327,15 +374,20 @@ export type ProductDefinition<
   Meter extends string = string,
   Benefit extends string = string,
   Granted extends Benefit = Benefit,
-> = ProductBuilder<Meter, Benefit, Prices<Meter>, Recurring | OneTime, Granted>
+> = ProductBuilder<Meter, Benefit, Meter, Recurring | OneTime, Granted>
 
+/** A product customers can buy. The name defaults to its key in `products`. */
 export const product = <
   Meter extends string = string,
   Benefit extends string = string,
 >(
   name?: string,
 ): ProductBuilder<Meter, Benefit, undefined, undefined> =>
-  new ProductBuilder(name, undefined, undefined)
+  new ProductBuilder<Meter, Benefit, undefined, undefined>(
+    name,
+    undefined,
+    undefined,
+  )
 
 /**
  * Every price in a product must be set in the same currencies, so each
@@ -374,14 +426,21 @@ export const productPrices = (
 }
 
 export type ProductHelpers<Meter extends string, Benefit extends string> = {
+  /** A product customers can buy. The name defaults to its key in `products`. */
   readonly product: (
     name?: string,
   ) => ProductBuilder<Meter, Benefit, undefined, undefined>
+  /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
   readonly free: typeof free
+  /** Charges one set amount. */
   readonly fixed: typeof fixed
+  /** Charges per seat. The buyer assigns seats to team members, who each get the product's benefits. */
   readonly seats: typeof seats
+  /** Charges per unit, paid up front. Customers pick a quantity and get each benefit once. */
   readonly units: typeof units
+  /** A tier is unbounded unless you set `.max()`. Only the last tier may be unbounded. */
   readonly tier: typeof tier
+  /** Charges for what a meter records, billed at the end of each period. */
   readonly meter: <const Priced extends Meter>(
     meter: Priced,
   ) => ReturnType<typeof metered<Priced>>

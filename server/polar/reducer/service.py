@@ -46,6 +46,7 @@ from .bucket_repository import (
 )
 from .repository import ReducerRepository
 from .types import (
+    MeterUsage,
     UsageSummary,
     UsageWindow,
     WindowUsage,
@@ -237,6 +238,78 @@ class ReducerService:
         """Marks the customer's usage in `windows` and its credits since the latest
         reset as billed by the order, and returns their quantities per meter.
         Raises on failure: the caller rolls it back."""
+        usage = await self.bill_by_window(
+            session,
+            customer,
+            meter_ids,
+            order_id=order_id,
+            windows=windows,
+            cutoff=cutoff,
+        )
+        return {
+            meter_id: (
+                finalize_quantity(
+                    merge_summaries([window.summary for window in meter.windows]),
+                    meter.function,
+                ),
+                meter.credits,
+            )
+            for meter_id, meter in usage.items()
+        }
+
+    async def bill_by_window(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID,
+        windows: Sequence[UsageWindow],
+        cutoff: datetime,
+    ) -> dict[UUID, MeterUsage]:
+        """Like `bill`, with each meter's usage kept per window."""
+        return await self._settle(
+            session,
+            customer,
+            meter_ids,
+            order_id=order_id,
+            windows=windows,
+            cutoff=cutoff,
+        )
+
+    async def seal_usage(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Iterable[UUID],
+        *,
+        windows: Sequence[UsageWindow],
+        cutoff: datetime,
+    ) -> dict[UUID, MeterUsage]:
+        """Seals what `bill_by_window` would bill and returns it, without marking
+        it as billed: for an order that doesn't exist yet. Billing it with the
+        order afterwards returns the same."""
+        return await self._settle(
+            session,
+            customer,
+            meter_ids,
+            order_id=None,
+            windows=windows,
+            cutoff=cutoff,
+        )
+
+    async def _settle(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Iterable[UUID],
+        *,
+        order_id: UUID | None,
+        windows: Sequence[UsageWindow],
+        cutoff: datetime,
+    ) -> dict[UUID, MeterUsage]:
+        """Seals the customer's usage in `windows` and its credits since the latest
+        reset, and marks them as billed by the order if there is one."""
         meter_ids = sorted(meter_ids)
         reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
         observed = await self._bill_windows(
@@ -254,19 +327,6 @@ class ReducerService:
                 reason="boundary_unavailable",
             )
             return {}
-        quantities = {
-            reducer.id: finalize_quantity(
-                merge_summaries(
-                    [
-                        usage.summary
-                        for usage in observed
-                        if usage.window.meter_id == meter_id
-                    ]
-                ),
-                reducer.aggregation.func,
-            )
-            for meter_id, reducer in reducers.items()
-        }
         credit_reducers = await self._get_reducers(
             session, meter_ids, ReducerKind.credit
         )
@@ -290,12 +350,14 @@ class ReducerService:
             )
             credits[meter_id] = billed[credit_reducer.id]
         return {
-            meter_id: (
-                quantities[reducer.id],
-                max(credits.get(meter_id, Decimal(0)), Decimal(0)),
+            meter_id: MeterUsage(
+                function=reducer.aggregation.func,
+                windows=tuple(
+                    usage for usage in observed if usage.window.meter_id == meter_id
+                ),
+                credits=max(credits.get(meter_id, Decimal(0)), Decimal(0)),
             )
             for meter_id, reducer in reducers.items()
-            if reducer.id in quantities
         }
 
     async def _bill_windows(
@@ -305,10 +367,11 @@ class ReducerService:
         reducers: Mapping[UUID, Reducer],
         windows: Sequence[UsageWindow],
         *,
-        order_id: UUID,
+        order_id: UUID | None,
     ) -> list[WindowUsage] | None:
-        """Marks the customer's usage in each window as billed by the order, and
-        returns it, or None if a window's start or end is inside a sealed bucket.
+        """Marks the customer's usage in each window as billed by the order, if
+        any, and returns it, or None if a window's start or end is inside a sealed
+        bucket.
         The windows' starts and ends become bucket boundaries first.
         `reducers` are the usage reducers by meter id, one for each window's meter."""
         repository = ReducerBucketRepository.from_session(session)
@@ -354,13 +417,13 @@ class ReducerService:
                 await self._seal_buckets(
                     session, [reducer], customer, since=window.start, until=window.end
                 )
-                billed = await repository.mark_as_billed(
+                billed = await self._get_unbilled(
+                    repository,
                     reducer,
                     identities,
                     order_id,
                     since=window.start,
                     until=window.end,
-                    billed_at=utc_now(),
                 )
                 summary = merge_summaries([UsageSummary(*row) for row in billed])
                 span.set_attribute("billed_buckets", len(billed))
@@ -1082,12 +1145,12 @@ class ReducerService:
         reducers: Sequence[Reducer],
         customer: Customer,
         *,
-        order_id: UUID,
+        order_id: UUID | None,
         since: datetime | None,
         until: datetime,
     ) -> dict[UUID, Decimal]:
-        """Marks the customer's sealed, unbilled usage within [since, until] as
-        billed by the order and returns its quantity per reducer."""
+        """Marks the customer's sealed, unbilled usage within [since, until) as
+        billed by the order, if any, and returns its quantity per reducer."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
         quantities: dict[UUID, Decimal] = {}
@@ -1101,19 +1164,44 @@ class ReducerService:
                 since=since,
                 until=until,
             ) as span:
-                billed = await repository.mark_as_billed(
+                billed = await self._get_unbilled(
+                    repository,
                     reducer,
                     identities,
                     order_id,
                     since=since,
                     until=until,
-                    billed_at=utc_now(),
                 )
                 quantity = _get_quantity(reducer.aggregation.func, billed)
                 span.set_attribute("billed_buckets", len(billed))
                 span.set_attribute("quantity", str(quantity))
             quantities[reducer.id] = quantity
         return quantities
+
+    async def _get_unbilled(
+        self,
+        repository: ReducerBucketRepository,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        order_id: UUID | None,
+        *,
+        since: datetime | None,
+        until: datetime,
+    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+        """count, sum, min and max of the identities' sealed, unbilled buckets
+        within [since, until), marked as billed by the order if there is one."""
+        if order_id is None:
+            return await repository.get_unbilled_totals(
+                reducer, identities, since=since, until=until
+            )
+        return await repository.mark_as_billed(
+            reducer,
+            identities,
+            order_id,
+            since=since,
+            until=until,
+            billed_at=utc_now(),
+        )
 
     async def _lock_buckets(
         self,

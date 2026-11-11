@@ -1129,7 +1129,7 @@ class EventService:
             event_ids.extend(direct_event_ids)
             duplicates_count += direct_duplicates_count
 
-            if org_ids_with_reducer_billing != organization_ids:
+            if direct_event_ids and org_ids_with_reducer_billing != organization_ids:
                 meter_event_ids = [
                     event["id"]
                     for event in direct_events

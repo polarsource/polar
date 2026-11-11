@@ -1831,6 +1831,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_sent_once(
@@ -2162,6 +2163,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_not_sent(
@@ -2254,6 +2256,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_sent_once(
@@ -2347,6 +2350,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:
@@ -2640,6 +2644,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -2769,6 +2774,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert not any(
@@ -5638,6 +5644,7 @@ class TestUpdate:
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=updated.current_period_start,
+            period_start=ANY,
         )
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"
@@ -5923,6 +5930,7 @@ class TestUpdate:
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=updated.current_period_start,
+            period_start=ANY,
         )
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"
@@ -6536,6 +6544,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            period_start=ANY,
         )
 
     async def test_trial_to_no_trial_product_ends_trial(
@@ -6575,6 +6584,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            period_start=ANY,
         )
 
     async def test_trial_product_change_skips_proration_billing(

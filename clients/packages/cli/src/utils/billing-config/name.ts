@@ -16,6 +16,7 @@ import {
   type Unkeyed,
 } from '@/utils/billing-config/keys'
 import { plural } from '@/utils/billing-config/problems'
+import { counts } from '@/utils/billing-config/review'
 import type { Progress } from '@/utils/progress'
 import { select } from '@/utils/prompt'
 import { editTable } from '@/utils/table-prompt'
@@ -226,7 +227,9 @@ export const nameResources =
     Effect.gen(function* () {
       yield* checkGiven(resources, given)
       if (resources.length === 0) {
-        yield* progress.finish()
+        yield* progress.finish(
+          counts(catalog.config).join(', ') || 'nothing in it yet',
+        )
         yield* progress.start('Writing config')
         return [] as ExternalIdAssignment[]
       }

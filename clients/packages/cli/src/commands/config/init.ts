@@ -52,7 +52,7 @@ const file = Argument.String('file').pipe(
 const format = Flag.Literals('format', FORMATS).pipe(
   Flag.optional,
   Flag.withDescription(
-    'Write TypeScript (ts) or JSON (json). Detected from your project when omitted: ts when there is a package.json, json otherwise',
+    'Write TypeScript (ts), Python (py) or JSON (json). Detected from your project when omitted: ts when there is a package.json, json otherwise',
   ),
 )
 

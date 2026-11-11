@@ -3,9 +3,11 @@ import { Effect } from 'effect'
 import { BillingConfigError } from '@/schemas/BillingConfig'
 import {
   findUp,
-  type Loader,
+  type Language,
   readSource,
+  unwritable,
 } from '@/utils/billing-config/languages/language'
+import { renderPython } from '@/utils/billing-config/languages/python/render'
 
 const PYTHON = process.platform === 'win32' ? 'python' : 'python3'
 
@@ -32,9 +34,13 @@ const loadFailure = (file: string, script: string, stderr: string) => {
   })
 }
 
-export const python: Loader = {
+export const python: Language = {
+  format: 'py',
+  extension: '.py',
   extensions: ['.py'],
   defaultFiles: ['polar_config.py'],
+  manifest: undefined,
+  installer: undefined,
   load: (fs, run, file) =>
     Effect.gen(function* () {
       const source = yield* readSource(fs, file)
@@ -60,4 +66,6 @@ export const python: Loader = {
       })
       return { file, source, input, generated: true }
     }),
+  render: (document) =>
+    renderPython(document).pipe(Effect.mapError(unwritable('Python'))),
 }

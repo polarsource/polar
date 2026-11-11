@@ -277,6 +277,36 @@ describe('init', () => {
     expect((await run({ format: 'json' })).file).toBe('polar.config.json')
   })
 
+  test('writes a Python config with --format py', async () => {
+    api.routes[`GET ${exportUrl}`] = exported(
+      {
+        ...EMPTY,
+        meters: [
+          {
+            external_id: 'tool_call',
+            name: 'Tool calls',
+            filter: {
+              conjunction: 'and',
+              clauses: [
+                { property: 'name', operator: 'eq', value: 'tool_call' },
+              ],
+            },
+            aggregation: { func: 'count' },
+          },
+        ],
+      },
+      [],
+      true,
+    )
+
+    const result = await run({ format: 'py' })
+
+    expect(result.file).toBe('polar_config.py')
+    expect(await read('polar_config.py')).toContain(
+      'tool_call = Meter("Tool calls", on="tool_call")',
+    )
+  })
+
   test('refuses when the directory already has a config file', async () => {
     await writeFile(join(directory, 'polar.json'), '{}')
 

@@ -172,6 +172,7 @@ describe('polar config init', () => {
     ])
     expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
     expect(output).toContain('✔ Resolving organization\n    Acme (sandbox)')
+    expect(output).toContain('✔ Reading your catalog\n    nothing in it yet')
     expect(output).toContain('✔ Writing config\n    polar.config.ts')
     expect(output).toMatch(/Imported {6}0 meters, 0 benefits, 0 products/)
     expect(output).toContain('✔ Your billing config is ready')
@@ -182,6 +183,22 @@ describe('polar config init', () => {
     )
     expect(output).toContain('polar config plan')
     expect(output).toContain('polar config apply')
+  })
+
+  test('says what it read from the catalog', async () => {
+    const { output } = await run(
+      [],
+      {},
+      {
+        catalog: {
+          enabled: false,
+          config: { meters: [{}], benefits: [], products: [{}, {}] },
+          skipped: [],
+        },
+      },
+    )
+
+    expect(output).toContain('✔ Reading your catalog\n    1 meter, 2 products')
   })
 
   test('keeps the install command in the next steps when it fails or is skipped', async () => {

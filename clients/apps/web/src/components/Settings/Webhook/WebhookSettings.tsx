@@ -24,6 +24,9 @@ const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
     limit: 100,
     page: 1,
   })
+  const webhookEndpoints = endpoints.data?.items.filter(
+    (endpoint) => endpoint.format !== 'mcp',
+  )
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -34,7 +37,7 @@ const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
           title="We couldn't load your webhook endpoints"
           description="Refresh the page to try again."
         />
-      ) : endpoints.data?.items.length === 0 ? (
+      ) : webhookEndpoints?.length === 0 ? (
         <EmptyState
           icon={<Send />}
           title="No webhook endpoints"
@@ -42,12 +45,12 @@ const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
         />
       ) : (
         <SettingsGroup>
-          {!endpoints.data ? (
+          {!webhookEndpoints ? (
             <Box justifyContent="center" paddingVertical="3xl">
               <SpinnerNoMargin />
             </Box>
           ) : (
-            endpoints.data.items.map((endpoint) => (
+            webhookEndpoints.map((endpoint) => (
               <Endpoint
                 key={endpoint.id}
                 organization={org}
@@ -106,9 +109,6 @@ const Endpoint = ({
           </Text>
         </Box>
         <Box alignItems="center" columnGap="s" flexShrink={0}>
-          {endpoint.format === 'mcp' && (
-            <Status size="small" color="blue" status="MCP subscription" />
-          )}
           <WebhookSigningSchemeStatus
             organizationCreatedAt={organization.created_at}
             usesStandardWebhookSignature={

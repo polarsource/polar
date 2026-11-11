@@ -1,0 +1,21 @@
+server/tests/customer_meter/test_service.py
+  s_fb19aa989d9ac0::t_f2794e2d6aa3e2 10,1711-1756
+server/polar/customer_meter/service.py
+  s_fb19aa989d9ac0::t_b97d06658c6304 44-45,142-143,147,149,170-171,173-174,226,662-670,672-678,681-685
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5b22d934c727e84cf75339f8cfd74dad410998ed",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_31191f53cf9214 20-21
+  s_fb19aa989d9ac0::t_36ec4f6a614500 3,18-19,23-25
+  s_fb19aa989d9ac0::t_f224ecb5d799bb 22
+server/tests/reducer/test_service.py
+  s_fb19aa989d9ac0::t_23dd8847a6707c 1689-1735
+server/polar/reducer/types.py
+  s_fb19aa989d9ac0::t_b18263893d7f44 6-7,30-36
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_da5ff9414491e7 255,259
+  s_fb19aa989d9ac0::t_6eacd569275e6b 3,10-14,16-17,22,205-254
+  s_fb19aa989d9ac0::t_f94d0e3d0ab753 256-258
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_a9fa2f69d055fa 1,4,19,21,25,44-53,117-126,143-145,151,164-230,232-255,263-265,274
+  s_fb19aa989d9ac0::t_20cc685b7d0a48 17
+  s_fb19aa989d9ac0::t_0bb83162db0c26 231
+  s_fb19aa989d9ac0::t_8c841aa973411a 256-262,266,273,275
+  s_fb19aa989d9ac0::t_78a990b8a11912 267-272,276
+server/polar/billing_entry/service.py
+  s_fb19aa989d9ac0::t_97104dc9444334 16,19,24-32,35,75-91,225-290,335,337-344,369-377,446,513-536
+  s_fb19aa989d9ac0::t_c5a5d9400fdc7d 291-296,334
+  s_fb19aa989d9ac0::t_1ef843b1d6f52d 14
+  s_fb19aa989d9ac0::t_126efee29d2e50 297-323,336
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_ff1545e2d71028 11,13-15,27,36,40,42,53-54,63,1675-1936,1940-1949
+  s_fb19aa989d9ac0::t_823a8a041c278d 1950-1954,1958-1967
+  s_fb19aa989d9ac0::t_087881a6710f83 1955-1957
+  s_fb19aa989d9ac0::t_71c9d5c0202fd5 1937-1939
+  s_fb19aa989d9ac0::t_463202739ad9e0 1968-1992
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_7bd92dcc9c574b 49,241-312,353-358,370,372-374,420-421,1148,1153,1167-1168,1181-1203
+  s_fb19aa989d9ac0::t_84bfc714555855 1204
+  s_fb19aa989d9ac0::t_035d5eb258f2ed 1205
+server/polar/reducer/bucket_repository.py
+  s_fb19aa989d9ac0::t_6b5f3a62a2cd14 534-553,568,585-602
+  s_fb19aa989d9ac0::t_7a40b593208c24 603
+server/polar/models/product_price.py
+  s_fb19aa989d9ac0::t_d449307986cfac 242,274,348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a1e1c34f7b7ede4902f70c57d0c5dd9a51ae3f5",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

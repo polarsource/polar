@@ -16,6 +16,7 @@ from polar.meter.aggregation import AggregationFunction
 from polar.models import BillingInterval, Customer, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import is_metered_price
 from polar.redis import Redis
@@ -64,7 +65,9 @@ class BillingIntervalService:
         *,
         effective_at: datetime,
     ) -> None:
-        """Reconcile terms in the caller's transaction; failures are logged, not raised."""
+        """Reconcile terms in the caller's transaction. Failures are logged, not
+        raised, unless the organization bills from the reducers: its orders charge
+        what the intervals say."""
         try:
             async with session.begin_nested():
                 repository = BillingIntervalRepository.from_session(session)
@@ -76,6 +79,10 @@ class BillingIntervalService:
                 )
                 await repository.apply_changes(subscription, changes)
         except Exception:
+            if await OrganizationRepository.from_session(session).get_ids_with_feature(
+                {subscription.organization_id}, "reducer_billing_enabled"
+            ):
+                raise
             log.exception(
                 "Failed to record billing intervals",
                 subscription_id=subscription.id,

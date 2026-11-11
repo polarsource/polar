@@ -124,6 +124,7 @@ const installer: Installer = {
 }
 
 export const typescript: Language = {
+  title: 'TypeScript',
   format: 'ts',
   extension: '.ts',
   extensions: ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'],

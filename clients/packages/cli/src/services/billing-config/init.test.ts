@@ -277,6 +277,17 @@ describe('init', () => {
     expect((await run({ format: 'json' })).file).toBe('polar.config.json')
   })
 
+  test('picks Python in a project with a pyproject.toml, TypeScript when it also has a package.json', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+    const python = await run()
+    await rm(join(directory, 'polar_config.py'))
+    await project()
+    const both = await run()
+
+    expect(python.file).toBe('polar_config.py')
+    expect(both.file).toBe('polar.config.ts')
+  })
+
   test('writes a Python config with --format py', async () => {
     api.routes[`GET ${exportUrl}`] = exported(
       {

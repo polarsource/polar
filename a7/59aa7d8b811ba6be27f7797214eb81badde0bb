@@ -1,0 +1,22 @@
+clients/.changeset/pre.json
+  s_ad274d6187293a::t_f1e39bb562363b 24
+  s_ad274d6187293a::t_cc727e49882c00 1-23,25
+clients/.changeset/better-auth-prerelease.md
+  s_ad274d6187293a::t_e4644905e749a1 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a759aa7d8b811ba6be27f7797214eb81badde0bb",
+  "prompts": {},
+  "sessions": {
+    "s_ad274d6187293a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0ce2e-fe84-738e-9024-4185fc7c3c10",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

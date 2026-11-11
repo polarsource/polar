@@ -1,0 +1,24 @@
+clients/packages/cli/README.md
+  s_ad8ff7da1a0178::t_4bdfe4aadd5175 126,131,140-144,147-164,178-179
+  s_ad8ff7da1a0178::t_b14039db388764 165-177
+  s_ad8ff7da1a0178::t_036aa80861240c 220
+  s_ad8ff7da1a0178::t_9a7beb00a264da 145-146
+  s_ad8ff7da1a0178::t_4db5e3b6b304d8 30,119
+  s_ad8ff7da1a0178::t_beec58b4a828f0 180-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f6301ab30fd248c64ef961479933579b5cac3656",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

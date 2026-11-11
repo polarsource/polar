@@ -1,0 +1,50 @@
+server/polar/member/schemas.py
+  s_92e571d8ebe6ac::t_34cbb725953898 78,81-83
+  s_92e571d8ebe6ac::t_d7d971726b6927 49-53,76-77,79-80
+server/polar/api.py
+  s_92e571d8ebe6ac::t_48815f5e8a7eac 41
+  s_92e571d8ebe6ac::t_e6fc7750b4d9c4 138-139
+server/polar/member/endpoints.py
+  s_92e571d8ebe6ac::t_20809343725356 46-55
+  s_92e571d8ebe6ac::t_89ff6a8b53ca50 211,267,337
+  s_92e571d8ebe6ac::t_5aa2ef8c5c9968 185
+  s_92e571d8ebe6ac::t_c19392536fb1be 6
+  s_92e571d8ebe6ac::t_a6e9b186b7c6c6 268
+  s_92e571d8ebe6ac::t_3ada496028c00b 212
+  s_92e571d8ebe6ac::t_ecbcc23f075aed 125,372
+  s_92e571d8ebe6ac::t_6ded759102cb29 5,19-25,33-39,126-134,137-170,173-184,186-210,213-266,269-336,339-370,374
+  s_92e571d8ebe6ac::t_233f06b273df07 135-136,171-172
+  s_92e571d8ebe6ac::t_9f02b2df6dded5 338
+  s_92e571d8ebe6ac::t_5fd785ef7e39d9 40
+  s_92e571d8ebe6ac::t_1cc620ba5caacd 371
+  s_92e571d8ebe6ac::t_4eaa0fc471c566 373
+server/polar/member/service.py
+  s_92e571d8ebe6ac::t_b4ba1431779a84 543-544,554-556,561,576-587,592
+  s_92e571d8ebe6ac::t_837963004955e7 86-98
+  s_92e571d8ebe6ac::t_eb1bf1a8501fac 593
+server/tests/member/test_endpoints.py
+  s_92e571d8ebe6ac::t_7edb5443fc784f 1796-1810
+  s_92e571d8ebe6ac::t_fa8d3f551546ff 1401-1450
+  s_92e571d8ebe6ac::t_c30f400fe932aa 1533-1576
+  s_92e571d8ebe6ac::t_5de3c18e523353 1688-1704
+  s_92e571d8ebe6ac::t_8ca39204bdb5aa 1597,1682
+  s_92e571d8ebe6ac::t_5d994792f1d583 1390-1400,1451-1532,1577-1596,1598-1681,1683-1687,1705-1795,1811-1892
+clients/packages/client/src/v1.ts
+  s_92e571d8ebe6ac::t_29c8c6661cdf96 3620-3736,21671,21674-21696,21703-21710,43665-44031,58366-58368
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "0792b393adc410272d90027940e74e7a39421315",
+  "prompts": {},
+  "sessions": {
+    "s_92e571d8ebe6ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e321c43-66b5-4140-8c71-c5d20484975d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

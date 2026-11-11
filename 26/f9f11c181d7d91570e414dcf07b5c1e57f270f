@@ -1,0 +1,27 @@
+clients/packages/polar/src/client/webhooks.test.ts
+  s_fd3304141c7309::t_ebc3447a2099bf 5
+  s_fd3304141c7309::t_96b8e9668a534f 1-4,6-132
+clients/packages/cli/src/services/billing-config/apply.test.ts
+  s_fd3304141c7309::t_991f6141af38a4 223-272
+clients/packages/polar/src/schema/config.test.ts
+  s_fd3304141c7309::t_ed403e0a71848d 522,526-530,534,537-542,545-546
+  s_fd3304141c7309::t_7ffd6749a97736 480-521,523-525,531-533,535-536,543-544,547
+clients/packages/cli/src/utils/billing-config/tree.test.ts
+  s_fd3304141c7309::t_1278b59815b651 261-336
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "26f9f11c181d7d91570e414dcf07b5c1e57f270f",
+  "prompts": {},
+  "sessions": {
+    "s_fd3304141c7309": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "40b69caa-2535-4fe1-8059-c07dba2adce6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

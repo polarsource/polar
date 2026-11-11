@@ -1,0 +1,49 @@
+server/polar/subscription/tasks.py
+  s_055272d137234c::t_03714b182e5504 70-80,90-98
+server/polar/customer_meter/service.py
+  s_055272d137234c::t_03714b182e5504 276-299
+server/polar/event/repository.py
+  s_055272d137234c::t_03714b182e5504 303,305,315-319,322,329,343-345
+server/polar/subscription/service.py
+  s_055272d137234c::t_03714b182e5504 878-892,987-1042,1414-1426,1977-1985
+server/tests/e2e/lifecycle/test_usage_cycle.py
+  s_055272d137234c::t_03714b182e5504 1-140
+server/polar/models/subscription_meter.py
+  s_055272d137234c::t_03714b182e5504 23-30
+server/polar/billing_entry/service.py
+  s_055272d137234c::t_03714b182e5504 57-61,64-66,70,90-94,99,126-128,162-167,171,191-196,200,268-269,277,317-318,331
+server/polar/billing_entry/repository.py
+  s_055272d137234c::t_03714b182e5504 58,61-63,72,86-88,114-118,121-123,131-135,141-143,154-156,166-168,175-179,181,190-195
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_03714b182e5504 1906-1953
+server/polar/order/service.py
+  s_055272d137234c::t_03714b182e5504 4-5,19,27,82,106,109,1287,1307,1312-1318,1320-1336,1338,1340-1347,1349-1416,1418-1427,1429-1438,1440-1447,1450-1464,1466-1467,1469-1496,1498-1503,1505-1545,1547,1549-1562,1564-1585,1587,1589-1594,1596-1606,2433-2443,2960-2966
+server/polar/notifications/notification.py
+  s_055272d137234c::t_03714b182e5504 145-146
+server/polar/models/order.py
+  s_055272d137234c::t_03714b182e5504 60,68
+server/tests/e2e/infra/scheduler_simulator.py
+  s_055272d137234c::t_03714b182e5504 33,56,87
+server/polar/subscription/scheduler.py
+  s_055272d137234c::t_03714b182e5504 8,19-32,52,61,109,113-114,150
+server/tests/order/test_service.py
+  s_055272d137234c::t_03714b182e5504 3,123,2138-2241,2970-3005
+server/migrations/versions/2026-06-17-2114_add_carried_units_to_subscription_meter.py
+  s_055272d137234c::t_03714b182e5504 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "af4701a062de5d24bfff2d32f32f968a2c54d19d",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

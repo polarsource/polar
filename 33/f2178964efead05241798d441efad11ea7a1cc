@@ -1,0 +1,96 @@
+handbook/docs.json
+  s_5861e605661360::t_2cf995b7cecfbb 96-101,107-108
+  s_5861e605661360::t_a9c636b69253f1 102-106
+handbook/engineering/decisions/index.mdx
+  s_5861e605661360::t_ed616097032072 1-6,8-13,15-24,27-32,34-36,38-40,44-45,48-52,57-64,66-73,75-82
+  s_5861e605661360::t_8e8f08cd853d77 7,14,25-26,33,37,41-43,46-47,55-56,65,83
+  s_5861e605661360::t_601808f46c7dae 74
+  s_5861e605661360::t_1bfa04561e8080 84-88
+  s_5861e605661360::t_8a63fba95ff086 53-54
+handbook/engineering/decisions/0001-record-architecture-decisions.mdx
+  s_5861e605661360::t_8a6d2c37717610 29
+  s_5861e605661360::t_06dacf95c8af6e 43,46
+  s_5861e605661360::t_e9346ae3788e91 1-15,22,25-27,32-34,38,40-42,44,47-51
+  s_5861e605661360::t_c2529784111ac4 16,23-24
+  s_5861e605661360::t_f9b3cf54bcaf0f 31
+  s_5861e605661360::t_cf2983a9434f16 35-36,39
+  s_5861e605661360::t_7b33026f2e6844 17-21
+  s_5861e605661360::t_b8cf4d6b370191 28
+  s_5861e605661360::t_6a34dc55cce668 30
+  s_5861e605661360::t_ebc3264d2ade4b 37
+  s_5861e605661360::t_2a3e97b8c7d251 45
+handbook/engineering/decisions/0002-status-coded-polar-errors.mdx
+  s_5861e605661360::t_0dac1947dd6e37 18-41
+  s_5861e605661360::t_392c42d1080fd2 2
+  s_5861e605661360::t_2362c1889eb53c 7-8
+  s_5861e605661360::t_198c6f6f88daf9 1
+  s_5861e605661360::t_b4382b73a37cb5 3-6
+  s_5861e605661360::t_4011b555fddf98 9-11,15-17
+  s_5861e605661360::t_215428e4292ab1 42-44
+  s_5861e605661360::t_a6e429a5e98109 12-14,45-48
+handbook/engineering/decisions/0003-request-scoped-unit-of-work.mdx
+  s_5861e605661360::t_976562e25ca1e5 2
+  s_5861e605661360::t_487c288d979e2a 7-8
+  s_5861e605661360::t_e51c2d1dc69273 18-41
+  s_5861e605661360::t_f8cc72a0ce2bf6 1
+  s_5861e605661360::t_aa0e67ac511a76 3-6
+  s_5861e605661360::t_a27ef906d7d64a 9-11,15-17
+  s_5861e605661360::t_0180d3f9f575f8 42-44
+  s_5861e605661360::t_e2c07c2fd35361 12-14,45-48
+handbook/engineering/decisions/0004-orbit-box-design-system.mdx
+  s_5861e605661360::t_daa191b0ff554a 2
+  s_5861e605661360::t_eea3ba6ca87b80 18-41
+  s_032888550d121d::t_9849fbe3e05b98 1,3-17,42-47
+handbook/engineering/decisions/0005-auth-subject-and-scopes.mdx
+  s_5861e605661360::t_da065c76b03fd8 2
+  s_5861e605661360::t_cff84fa5109145 47
+  s_5861e605661360::t_61e9f9c199ea50 18-37
+  s_5861e605661360::t_63110de8cc2a99 41-46
+  s_5861e605661360::t_c3d571c86e7446 7-8
+  s_5861e605661360::t_26d05c372e5b94 1
+  s_5861e605661360::t_734dcb62760534 3-6
+  s_5861e605661360::t_9c36df8c856a1f 9-11,15-17
+  s_5861e605661360::t_7cb446560c2601 38-40
+  s_5861e605661360::t_17d336a1b6f877 48-50
+  s_5861e605661360::t_b85808f5d7de81 12-14,51-58
+handbook/engineering/decisions/0006-migration-and-backfill-safety.mdx
+  s_5861e605661360::t_62419511a9f6f3 2
+  s_5861e605661360::t_e6aa3dd3e4f25e 18-47
+  s_032888550d121d::t_155ae7a35de797 1,3-17,48-53
+server/AGENTS.md
+  s_5861e605661360::t_603bf483ac39d2 326
+  s_5861e605661360::t_6204b1ff7933c5 327
+handbook/engineering/decisions/template.mdx
+  s_5861e605661360::t_a5947f7d08105e 13
+  s_5861e605661360::t_73589d1fbfa4c5 7
+  s_5861e605661360::t_e996c3c4cd396c 9
+  s_5861e605661360::t_0e3e5766e7f615 19
+  s_5861e605661360::t_39322374bdf392 1-6,8,10-12,14-18,20-32,34-37
+  s_5861e605661360::t_d2ba0bda0fd139 33
+AGENTS.md
+  s_5861e605661360::t_33c056223b13f0 123-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "33f2178964efead05241798d441efad11ea7a1cc",
+  "prompts": {},
+  "sessions": {
+    "s_032888550d121d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b3f1b024-e41e-4e54-9906-bb1c6b19a408",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_5861e605661360": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "398f2c87-0e83-40a9-a21d-f3d84e9d6674",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

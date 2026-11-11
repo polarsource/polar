@@ -1,0 +1,65 @@
+server/polar/mcp_event/catalog.py
+  s_ef0ee0cf80beae::t_29293420a0a62c 5,13
+  s_ef0ee0cf80beae::t_7f47d3140ee19e 1,3,8-12,20-22
+server/tests/webhooks/test_tasks.py
+  s_ef0ee0cf80beae::t_6fea2da2a3c833 1,3,6,8,12-21,69-99,101-109,111-134,136-197,410-435
+  s_ef0ee0cf80beae::t_53226c9a1e9729 100,110,135
+server/polar/api.py
+  ai_agent 44,121-122
+server/polar/webhook/schemas.py
+  s_ef0ee0cf80beae::t_b8237507d722e0 87-88
+  s_ef0ee0cf80beae::t_fa9a052eb23d9b 108
+  s_ef0ee0cf80beae::t_00531eae6f2efd 89-107,109-112,115
+server/polar/mcp_event/endpoints.py
+  s_ef0ee0cf80beae::t_da8f0e62fb5722 1-78
+server/tests/webhooks/test_endpoints.py
+  s_ef0ee0cf80beae::t_53226c9a1e9729 59-70
+server/polar/models/webhook_endpoint.py
+  s_ef0ee0cf80beae::t_8ddb8f33205241 17,121-123
+server/polar/webhook/webhooks.py
+  s_ef0ee0cf80beae::t_83695f2bf59ce0 15,51,165-167,175-176,184-194
+server/tests/webhooks/test_webhooks.py
+  s_ef0ee0cf80beae::t_23ea23953d6066 703-705,738-740,775,788-790,818,851-853,888,901-903
+  s_ef0ee0cf80beae::t_53226c9a1e9729 392-416
+server/polar/webhook/service.py
+  ai_agent 38,474-485,966-969,971,1068-1071
+server/tests/webhooks/conftest.py
+  s_ef0ee0cf80beae::t_bef0cb86d84841 91-105
+server/polar/organization_review/collectors/setup.py
+  s_ef0ee0cf80beae::t_e765e8950957e8 13,328-329
+  s_ef0ee0cf80beae::t_22814152143deb 327,331-332,334
+server/polar/mcp_event/schemas.py
+  s_ef0ee0cf80beae::t_cfe5e43a74a876 1-6,8-32,34-38,40-65
+server/polar/webhook/constants.py
+  s_ef0ee0cf80beae::t_10205c49b327ac 20-23
+server/polar/webhook/repository.py
+  s_ef0ee0cf80beae::t_066e71ca313b4d 21,95,228-231,246-247
+  s_ef0ee0cf80beae::t_2f5897d63527e0 270-273
+server/polar/webhook/tasks.py
+  s_ef0ee0cf80beae::t_b8237507d722e0 125-126,182,239-240,242
+  s_ef0ee0cf80beae::t_10205c49b327ac 24-29,39,127-133,173,181,233-235,237-238
+  s_ef0ee0cf80beae::t_f414b208451592 22,86-99
+server/tests/organization_review/collectors/test_setup.py
+  s_ef0ee0cf80beae::t_53226c9a1e9729 8,53-56,61,325-336
+server/polar/mcp_event/repository.py
+  s_ef0ee0cf80beae::t_cfe5e43a74a876 1-22
+server/polar/mcp_event/service.py
+  s_ef0ee0cf80beae::t_cd33c1ea072275 1-116,118-176,179-184
+  s_ef0ee0cf80beae::t_da8f0e62fb5722 117,177
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2cfe55726e365a65adb374416ce95fdafbb16e17",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

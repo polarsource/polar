@@ -1,0 +1,21 @@
+server/migrations/versions/2026-07-29-0000_add_covering_index_for_deleted_customer_.py
+  s_5e53ae89aadf64::t_32f62638d5785b 1-42
+server/polar/models/customer.py
+  s_5e53ae89aadf64::t_00f3eeca7ed384 147-152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "bc11f2111f7d59ccd64d511e69044df57b6a896e",
+  "prompts": {},
+  "sessions": {
+    "s_5e53ae89aadf64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e635bf8-2f61-4e16-8603-030dfe2076da",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

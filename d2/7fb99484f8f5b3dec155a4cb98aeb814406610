@@ -1,0 +1,19 @@
+.github/workflows/test_client.yaml
+  s_9e6c3ddddb18fd::t_2cb54b8fd31c51 161-202,205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d27fb99484f8f5b3dec155a4cb98aeb814406610",
+  "prompts": {},
+  "sessions": {
+    "s_9e6c3ddddb18fd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7957033e-0d4b-40db-b83e-7865132036ec",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

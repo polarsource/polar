@@ -1,0 +1,21 @@
+clients/packages/cli/src/services/billing-config/load.ts
+  s_aacec20dbd7d03::t_7c606f2134c43a 71
+clients/packages/cli/src/services/billing-config/load.test.ts
+  s_aacec20dbd7d03::t_c3c645ab324608 183-187
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c0a831b8447b2ab407ef34fba8aa9aff24fcfa7a",
+  "prompts": {},
+  "sessions": {
+    "s_aacec20dbd7d03": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f4fe1533-75e1-422e-b318-2d2f72ca20c6",
+        "model": "claude-opus-5-5-medium"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

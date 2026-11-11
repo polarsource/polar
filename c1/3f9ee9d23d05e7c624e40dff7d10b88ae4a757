@@ -1,0 +1,36 @@
+server/polar/organization/tasks.py
+  s_11901477f1a622::t_4a692135d3418e 100,105-114
+  s_f5a2a38cc834d1::t_9a696cc2ba3ceb 115-116
+server/polar/organization/service.py
+  s_11901477f1a622::t_c80d387abda0fc 1554,1556-1559,1564-1568,1570-1572,1574-1586,1591-1618
+  s_11901477f1a622::t_cd2912ca338a17 1587-1590
+server/polar/organization/repository.py
+  s_11901477f1a622::t_6188f9ed7138de 293-294
+  s_11901477f1a622::t_e0ffb87ae05a63 232-237,239-240,246,248
+server/tests/organization/test_service.py
+  s_11901477f1a622::t_e3b4213f636e92 4659,4674,4682,4684-4685,4688,4690,4705,4711-4795,4814-4816,4818,4838-4840,4842,4864-4866,4868-4869,4886-4888,4890-4891,4913-4915,4917,4920-4931
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "c13f9ee9d23d05e7c624e40dff7d10b88ae4a757",
+  "prompts": {},
+  "sessions": {
+    "s_11901477f1a622": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9e2b8a13-3f8e-491d-bb55-58dc4ab15604",
+        "model": "auto-smart"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_f5a2a38cc834d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b9c6643-486c-4217-ac54-246f2b849883",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

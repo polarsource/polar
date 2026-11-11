@@ -1,0 +1,47 @@
+clients/packages/polar/examples/webhooks/polar.config.ts
+  s_fd3304141c7309::t_3dd58d9a059b0f 1-33
+clients/packages/polar/examples/webhooks/polar.ts
+  s_fd3304141c7309::t_3dd58d9a059b0f 1-7
+clients/packages/cli/src/schemas/BillingConfig.ts
+  s_fd3304141c7309::t_0284b030453321 42-47,54,66
+clients/packages/cli/src/services/billing-config/api.ts
+  s_fd3304141c7309::t_0284b030453321 59,69,73,82
+clients/packages/polar/src/internal/api/webhooks.ts
+  s_fd3304141c7309::t_36a05165d628d7 1-30
+clients/packages/polar/src/client/webhooks.ts
+  s_fd3304141c7309::t_ae7f46fe39a182 2
+  s_fd3304141c7309::t_36a05165d628d7 3,53-55,57-58,61,64
+  s_fd3304141c7309::t_cbfbc2205f5f43 9-13,46
+  s_fd3304141c7309::t_a2609a184c03e9 1,4-8,14-15,21-45,47-52,56,59-60,62-63,65-68,71-73
+  s_fd3304141c7309::t_ede7621caac780 16-20,69-70
+clients/packages/polar/src/client/actor.ts
+  s_fd3304141c7309::t_1877a8b5451e3a 28
+clients/packages/polar/src/schema/config.ts
+  s_fd3304141c7309::t_5a8669e808333f 17-25,31,127,133,142,145-150,179,191-192,214-226,281,294,302
+  s_fd3304141c7309::t_ae7f46fe39a182 282-290
+clients/packages/polar/examples/webhooks/handler.ts
+  s_fd3304141c7309::t_ae7f46fe39a182 26-28
+  s_fd3304141c7309::t_3dd58d9a059b0f 1-25,29-33
+clients/packages/polar/src/schema/webhook.ts
+  s_fd3304141c7309::t_ae7f46fe39a182 14-16
+  s_fd3304141c7309::t_de40072628f56a 75
+  s_fd3304141c7309::t_4913d0c29cfc5c 3-7,157
+  s_fd3304141c7309::t_9cef89a0d5bdc3 1-2,8-13,17-74,76-156,158-185
+clients/packages/polar/src/index.ts
+  s_fd3304141c7309::t_ae7f46fe39a182 62-67
+  s_fd3304141c7309::t_5a8669e808333f 16,68-75
+clients/packages/cli/src/utils/billing-config/entries.ts
+  s_fd3304141c7309::t_0284b030453321 98-105,122-125,134
+clients/packages/polar/examples/webhooks/route.ts
+  s_fd3304141c7309::t_3dd58d9a059b0f 1-9
+clients/packages/polar/src/schema/runtime.ts
+  s_fd3304141c7309::t_a5bd19d3cf10c8 3,20
+clients/packages/polar/src/runtime.ts
+  s_fd3304141c7309::t_1877a8b5451e3a 1-2,8,11-20,24-27,34,36-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b3ad33ce5f2f1a9bce3e645abbd94671c1309b05",
+  "prompts": {}
+}

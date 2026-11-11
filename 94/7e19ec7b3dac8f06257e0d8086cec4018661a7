@@ -1,0 +1,25 @@
+terraform/production/planetscale.tf
+  s_e4c59fec3b852e::t_fcf5332ce14895 11-16
+terraform/modules/planetscale_postgres/variables.tf
+  s_e4c59fec3b852e::t_a21648ea16db53 82-91
+terraform/modules/planetscale_postgres/outputs.tf
+  s_e4c59fec3b852e::t_0d0490d3c8d421 65-69
+terraform/modules/planetscale_postgres/main.tf
+  s_e4c59fec3b852e::t_a89f454732552b 48-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "947e19ec7b3dac8f06257e0d8086cec4018661a7",
+  "prompts": {},
+  "sessions": {
+    "s_e4c59fec3b852e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fae65b4e-2299-468d-8976-4fb3aaa638d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

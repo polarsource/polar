@@ -1,0 +1,23 @@
+server/polar/merchant_migration/adapters/stripe.py
+  s_1cbf1253d16ca4::t_7eda978e472f50 91-95,99
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_1cbf1253d16ca4::t_6ea598a2d79651 120-125
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_1cbf1253d16ca4::t_d1425f756ef543 118-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "fb9527d8dbba2524ed5b9595448cca296991c5e7",
+  "prompts": {},
+  "sessions": {
+    "s_1cbf1253d16ca4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "44f2e9d9-5e7f-492d-9a75-d2948d435cb9",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

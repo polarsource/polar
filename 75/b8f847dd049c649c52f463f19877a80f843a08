@@ -1,0 +1,19 @@
+clients/apps/app/app/_layout.tsx
+  s_9f046c8f9de256::t_d0f1aca1f8ab5b 24,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "75b8f847dd049c649c52f463f19877a80f843a08",
+  "prompts": {},
+  "sessions": {
+    "s_9f046c8f9de256": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "920ac674-a74f-4ed4-8684-2fdc4c1e6576",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

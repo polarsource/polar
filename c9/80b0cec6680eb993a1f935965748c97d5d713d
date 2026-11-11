@@ -1,0 +1,26 @@
+.claude/commands/polar-code-review.md
+  s_d3b1f35ea84a3a::t_62f0d578eb97f0 3,5-6
+AGENTS.md
+  s_d3b1f35ea84a3a::t_7757b173152d19 152
+.agents/skills/create-pr/SKILL.md
+  s_d3b1f35ea84a3a::t_3140d7273b87a5 56
+  s_d3b1f35ea84a3a::t_7bc09d1f8386e3 103-104,106-107,109,111,113,115,117-126
+.agents/commands/polar-code-review.md
+  s_d3b1f35ea84a3a::t_eaea0461042004 1-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c980b0cec6680eb993a1f935965748c97d5d713d",
+  "prompts": {},
+  "sessions": {
+    "s_d3b1f35ea84a3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "11df69ee-0dd4-45d2-ad75-3f8eaef0a421",
+        "model": "auto-smart"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

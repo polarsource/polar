@@ -1,0 +1,70 @@
+sdk/generator/typescript/template/package.json
+  s_1948f7c000ac71::t_5a2c08f202da15 76-77,85,94-95
+  s_1948f7c000ac71::t_5609ab30368dfe 35
+  s_1948f7c000ac71::t_c095fc32d28ac0 32-34
+sdk/generator/typescript/template/src/zod.test.ts
+  s_1948f7c000ac71::t_2e29371a24f2a7 5-10,54,66,73
+  s_1948f7c000ac71::t_dd5cce66da4b41 2-3,11-12,15,47
+  s_1948f7c000ac71::t_3dd2b6d16903d4 1,4,13-14,16-46,48-53,55-65,67-72,74-81
+sdk/generator/typescript/zod.py
+  s_1948f7c000ac71::t_c095fc32d28ac0 80-81,84
+  s_1948f7c000ac71::t_e291a4010095c7 74,78,82-83,95,98-103,107,109-115
+  s_1948f7c000ac71::t_90fe2070ddc1b0 89,91-93
+  s_1948f7c000ac71::t_a30f65371b5018 2,50,64,131
+  s_1948f7c000ac71::t_67590b1b18c074 33-40,126-127,136-142,145-152
+  s_1948f7c000ac71::t_b9f7bb0597c19d 1,3-32,41-49,51-63,65-73,75-77,79,85-88,90,94,96-97,104-106,108,116-125,128-130,132-135,143-144,153-198
+sdk/typescript/src/2027-01/zod.ts
+  ai_agent 1-12022
+sdk/generator/typescript/template/src/version/zod.ts
+  s_1948f7c000ac71::t_c095fc32d28ac0 1,5
+  s_1948f7c000ac71::t_90fe2070ddc1b0 10,12
+  s_1948f7c000ac71::t_19dfe7bd97ee57 2-4,6-9,11,13-16
+sdk/typescript/package.json
+  ai_agent 69-78,129-138,189-198,265-266,274-275,295-296
+sdk/typescript/pnpm-lock.yaml
+  ai_agent 214-216,1403-1405,2269-2270
+sdk/generator/typescript/template/README.md
+  s_1948f7c000ac71::t_1f35dbe0b748fa 300-334
+sdk/typescript/tsdown.config.ts
+  ai_agent 9,12,15
+sdk/typescript/src/2026-10/zod.ts
+  ai_agent 1-11897
+sdk/generator/tests/typescript/test_zod.py
+  s_1948f7c000ac71::t_595ca0379ca2e1 1-17,19-41,43-47,49,59-61,66-67,75-92,98,100-103,125,127-137,139-144
+  s_1948f7c000ac71::t_306b863263a99c 18,65,138,145-150
+  s_1948f7c000ac71::t_bfe71369b42029 42,62,68-74,93-97,99,104-124,126
+  s_1948f7c000ac71::t_e291a4010095c7 48,50-58,63-64
+sdk/generator/typescript/emitter.py
+  s_1948f7c000ac71::t_2ddb085aca76b2 166,238
+  s_1948f7c000ac71::t_67590b1b18c074 244
+  s_1948f7c000ac71::t_c095fc32d28ac0 28,239-243,245-249
+  s_1948f7c000ac71::t_e434f16151334c 116-119
+sdk/typescript/README.md
+  ai_agent 300-334
+sdk/typescript/src/2026-04/zod.ts
+  ai_agent 1-11866
+sdk/typescript/src/2027-01/models.ts
+  ai_agent 19291-19294
+sdk/CHANGELOG.md
+  s_1948f7c000ac71::t_0ad47c1415ad09 17
+sdk/typescript/src/zod.test.ts
+  ai_agent 1-84
+sdk/generator/typescript/template/tsdown.config.ts
+  s_1948f7c000ac71::t_c095fc32d28ac0 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3f30ce87041d43291017afcbac17c287a5cd8c92",
+  "prompts": {},
+  "sessions": {
+    "s_1948f7c000ac71": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e0ab2e82-88cf-49cb-aa72-78a7db35759c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

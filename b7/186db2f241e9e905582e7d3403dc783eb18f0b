@@ -1,0 +1,27 @@
+clients/packages/checkout/src/components/CheckoutPricingBreakdown.tsx
+  s_20a9f566cf0e23::t_2a854667e338d5 211
+clients/packages/checkout/src/components/CheckoutPricingBreakdown.test.tsx
+  s_20a9f566cf0e23::t_9dfadb4d43328d 133,137-140,144,146-147,149-151,153-158
+  s_20a9f566cf0e23::t_2c9d4d5e680c44 142,145,159-160
+  s_20a9f566cf0e23::t_1db77a41323626 141
+  s_20a9f566cf0e23::t_02b04d838c1e00 143
+  s_20a9f566cf0e23::t_3c6f263441271e 148
+  s_20a9f566cf0e23::t_e0f810acfb25d4 152
+  s_20a9f566cf0e23::t_4561f24d10b2d1 161-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "b7186db2f241e9e905582e7d3403dc783eb18f0b",
+  "prompts": {},
+  "sessions": {
+    "s_20a9f566cf0e23": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2600cc1e-e4be-4f9b-96ec-a192c8571359",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

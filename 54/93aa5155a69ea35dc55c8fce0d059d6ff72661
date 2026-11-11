@@ -1,0 +1,20 @@
+server/polar/observability/invariants/rules/payout_transactions_amount_invariant.py
+  s_5e53ae89aadf64::t_a5eee99465eba6 74
+  s_5e53ae89aadf64::t_8e8ca80e06bcb0 51-52,64,67-68,80,85,90-92,97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "5493aa5155a69ea35dc55c8fce0d059d6ff72661",
+  "prompts": {},
+  "sessions": {
+    "s_5e53ae89aadf64": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e635bf8-2f61-4e16-8603-030dfe2076da",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+handbook/engineering/design-documents/versioning.mdx
+  h_12064c78efc6c2 165-168,254-255,257-258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e6d9530bd57c8270c878f5715917056f5a95234f",
+  "prompts": {},
+  "humans": {
+    "h_12064c78efc6c2": {
+      "author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

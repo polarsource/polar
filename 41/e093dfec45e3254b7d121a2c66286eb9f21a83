@@ -1,0 +1,27 @@
+server/polar/kit/metadata.py
+  s_f39bdfaaa6f2bb::t_cc6ac9bb287d11 39-50
+server/polar/event/schemas.py
+  s_f39bdfaaa6f2bb::t_6178fd9a929c4d 53-57,118,120-122,128,134,136-138,142,144-146,153
+  s_f39bdfaaa6f2bb::t_4f185095232284 119,127,135,143
+server/tests/event/test_schemas.py
+  s_f39bdfaaa6f2bb::t_edaf36ffae0023 80
+  s_f39bdfaaa6f2bb::t_cad877025f7b4e 34-35
+  s_f39bdfaaa6f2bb::t_8686125f215a04 68-79,81-103
+  s_f39bdfaaa6f2bb::t_c64b207a81ef04 31-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "41e093dfec45e3254b7d121a2c66286eb9f21a83",
+  "prompts": {},
+  "sessions": {
+    "s_f39bdfaaa6f2bb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fce7bc07-21c8-4f3b-9398-c9dec6e6f722",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

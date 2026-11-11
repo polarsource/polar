@@ -1,0 +1,23 @@
+handbook/engineering/decisions/0001-record-architecture-decisions.mdx
+  s_9b093a6f1c15db::t_198c688aa5a040 3
+.agents/skills/adr-check/SKILL.md
+  s_9b093a6f1c15db::t_198c688aa5a040 53-54
+handbook/engineering/decisions/index.mdx
+  s_9b093a6f1c15db::t_198c688aa5a040 3,22,55-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "a489ffc8b220b2d9a025da42cefb65436f2c5c9d",
+  "prompts": {},
+  "sessions": {
+    "s_9b093a6f1c15db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "53e11c97-153e-4331-9edf-335cbbe3e885",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

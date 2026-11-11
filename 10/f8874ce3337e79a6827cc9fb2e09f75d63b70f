@@ -1,0 +1,11 @@
+server/AGENTS.md
+  ai_agent 194
+server/polar/auth/permission.py
+  ai_agent 104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "10f8874ce3337e79a6827cc9fb2e09f75d63b70f",
+  "prompts": {}
+}

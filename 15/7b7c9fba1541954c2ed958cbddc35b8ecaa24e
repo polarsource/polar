@@ -1,0 +1,102 @@
+clients/packages/cli/src/services/api-runtime.ts
+  s_6fd5968a24b7cc::t_a87833debf0854 4,13,24-26,46-47,62
+  s_6fd5968a24b7cc::t_3b901e17807b31 115-118
+  s_6fd5968a24b7cc::t_ba2e661523d1c2 18-23
+sdk/cli-commands/src/custom_fields/create.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 67-71
+sdk/cli-commands/src/discounts/create.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 251-252
+sdk/cli-commands/src/runtime.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 1,27
+sdk/cli-commands/src/files/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 49-50
+sdk/cli-commands/src/custom_fields/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 81-85
+sdk/cli-commands/src/orders/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 143-144
+sdk/cli-commands/README.md
+  s_6fd5968a24b7cc::t_d2623542e7fab5 46-52,57
+  s_6fd5968a24b7cc::t_8d1f0d1ae2f98a 53,58-60
+sdk/cli-commands/src/payments/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 87-88
+sdk/generator/cli_commands/emitter.py
+  s_6fd5968a24b7cc::t_9b020ff23b5105 207,210-215,225
+sdk/generator/cli_commands/template/src/command.ts.jinja
+  s_6fd5968a24b7cc::t_37e7e2aaba2504 81
+clients/packages/cli/README.md
+  s_6fd5968a24b7cc::t_4c0f3ae82a1e89 108-109
+  s_6fd5968a24b7cc::t_9f520ab81f1842 107,110
+sdk/cli-commands/src/meters/create.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 80-81
+sdk/cli-commands/src/metrics/get.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 688-689
+sdk/cli-commands/src/checkouts/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 94-95
+sdk/generator/tests/test_cli_commands.py
+  s_6fd5968a24b7cc::t_af114dd4735ef8 332-357
+clients/packages/cli/src/commands/api-organization.test.ts
+  s_6fd5968a24b7cc::t_1270efa690b61f 139,143,145-146,148
+  s_6fd5968a24b7cc::t_3dcf00b6404108 1-49,55,62-63,72-106,110-116,131-137,153-155,158-159,164-166,177-180,185,189-192,198-203,207-212,216,220-239
+  s_6fd5968a24b7cc::t_3b901e17807b31 50-54,56-61,64-71,107-109,117-130,138,140-142,144,149-152,156-157,160-163,167-176,181-184,186-188,193-197,204-206,213-215,217-219
+sdk/cli-commands/src/customers/create.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 88-89
+sdk/cli-commands/src/discounts/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 70-71
+sdk/cli-commands/src/license_keys/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 56-60
+sdk/cli-commands/src/refunds/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 90-91
+clients/packages/cli/src/cli.ts
+  s_6fd5968a24b7cc::t_4929f2396d4dc2 51-53
+sdk/cli-commands/src/customer_meters/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 88-92
+sdk/cli-commands/src/meters/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 76-77
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_6fd5968a24b7cc::t_b700f1c87e53cd 1,27
+sdk/cli-commands/src/events/list_names.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 83-87
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 110-114
+clients/packages/cli/src/commands/api-commands.test.ts
+  s_6fd5968a24b7cc::t_1e67a9102cd827 7,10,37-42,44-52
+  s_6fd5968a24b7cc::t_c72978f74876ed 130,183
+sdk/cli-commands/src/customers/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 85-86
+sdk/cli-commands/src/benefits/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 99-100
+sdk/cli-commands/src/benefits/create.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 76-77
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 47-51
+sdk/cli-commands/src/checkout_links/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 67-71
+clients/packages/cli/src/commands/destructive-flags.test.ts
+  s_6fd5968a24b7cc::t_6d4d4a5177297c 7,10,41-46,48-56
+sdk/cli-commands/src/products/create.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 132-133
+sdk/cli-commands/src/products/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 102-103
+sdk/cli-commands/src/event_types/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 98-99
+sdk/cli-commands/src/subscriptions/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 174-178
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_6fd5968a24b7cc::t_f46febf62ac425 79-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "157b7c9fba1541954c2ed958cbddc35b8ecaa24e",
+  "prompts": {},
+  "sessions": {
+    "s_6fd5968a24b7cc": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a09055-1564-7252-84cc-06826de70125",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,53 @@
+server/polar/merchant_migration/service.py
+  s_81f519e3bb364f::t_48f8ef7e3c4e45 315-316
+  s_81f519e3bb364f::t_76ae75b3598849 300-302,307-309
+  s_81f519e3bb364f::t_6553669f20145c 36
+  s_81f519e3bb364f::t_79fd57f225a7dd 286
+  s_81f519e3bb364f::t_f1bd1dee815324 292-294
+server/polar/merchant_migration/precheck.py
+  s_81f519e3bb364f::t_2a6885abb38352 541,546,548-549,551,554,558
+  s_81f519e3bb364f::t_ae0ed987ebc131 578,582,587-595,602-603,618,620-621,625,637,648,651-660,667-668,679,685-693,707-708
+  s_81f519e3bb364f::t_ca2ef6f4091516 335-336
+  s_81f519e3bb364f::t_5c376c04b2f2be 42
+  s_81f519e3bb364f::t_fba582b1a4d5d5 301-302
+  s_81f519e3bb364f::t_45025fbf3b369e 73-80,82-85,88
+  s_81f519e3bb364f::t_681e626049fa77 107-110
+  s_81f519e3bb364f::t_b544b537419406 761,766,775-778,782-784,796,799,805-816,823-827,833-834,839-843,847
+  s_81f519e3bb364f::t_1318eab1eed635 738-740,746
+  s_81f519e3bb364f::t_6ac7324f669634 7-8
+  s_81f519e3bb364f::t_7b09a71a9dee9e 460-471,478-479,484-486,503-504,508-513
+  s_81f519e3bb364f::t_0ca6d51af99fea 500
+  s_81f519e3bb364f::t_97676c58212620 514-515
+server/polar/merchant_migration/schemas.py
+  s_81f519e3bb364f::t_e70f33ac20a445 56-60
+  s_81f519e3bb364f::t_7044694c58af38 108-117
+server/tests/merchant_migration/test_precheck.py
+  s_81f519e3bb364f::t_f234b375cedbd9 29
+  s_81f519e3bb364f::t_a27e5fba94bef3 590,599-602
+  s_81f519e3bb364f::t_52a0948aed311d 707-708
+  s_81f519e3bb364f::t_0cf36ca46d7f9c 422-492
+  s_81f519e3bb364f::t_35cc40b48e6a97 768
+  s_81f519e3bb364f::t_6f3595b634860e 493,503,505
+  s_81f519e3bb364f::t_56c882a6cd5365 739-740,742,749,756,758,764-767,769-773
+  s_81f519e3bb364f::t_bdd4c6a7e55235 637,644-645,653-668
+  s_81f519e3bb364f::t_5db952083b7a83 669
+server/polar/merchant_migration/endpoints.py
+  s_81f519e3bb364f::t_ebfbdffe6db81f 171,180
+  s_81f519e3bb364f::t_01eee05d0d244e 21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "3aa803b595ff21799b3855abb148cb684071db5f",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

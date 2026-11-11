@@ -1,0 +1,27 @@
+server/polar/checkout/repository.py
+  s_9ac21b1821b7d5::t_8c79b5455de5a6 140-144
+server/tests/checkout/test_repository.py
+  s_9ac21b1821b7d5::t_4c0a1785b9297d 174
+  s_9ac21b1821b7d5::t_01bf2620db821a 172-173,175
+  s_9ac21b1821b7d5::t_c8447389757768 122-125
+server/migrations/versions/2026-09-28-1430_add_checkout_anonymized_at.py
+  s_9ac21b1821b7d5::t_a8e8bcaa5dad16 24-28
+server/scripts/anonymize_expired_checkouts.py
+  s_9ac21b1821b7d5::t_9c8d1a36b9afe0 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d7501f992e2f02b3d01dad86aa898196f729130e",
+  "prompts": {},
+  "sessions": {
+    "s_9ac21b1821b7d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4eeeaae0-49b3-432b-8fa2-e641f1dd7485",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

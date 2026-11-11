@@ -1,0 +1,19 @@
+server/polar/sentry.py
+  s_9f046c8f9de256::t_71568da72b727d 59-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0b30404b4da3b1ea901531c0babab5977aa0106c",
+  "prompts": {},
+  "sessions": {
+    "s_9f046c8f9de256": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "920ac674-a74f-4ed4-8684-2fdc4c1e6576",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

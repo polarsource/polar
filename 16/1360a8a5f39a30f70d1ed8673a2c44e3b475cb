@@ -1,0 +1,27 @@
+server/tests/benefit/grant/test_endpoints.py
+  s_5baa939665e021::t_4f3ec8e9908358 27-29
+server/tests/checkout_link/test_endpoints.py
+  s_5baa939665e021::t_4f3ec8e9908358 249
+server/tests/benefit/test_endpoints.py
+  s_5baa939665e021::t_4f3ec8e9908358 527-529,819-825
+server/tests/file/test_endpoints.py
+  s_5baa939665e021::t_4f3ec8e9908358 45,391
+server/tests/checkout/test_endpoints.py
+  s_5baa939665e021::t_4f3ec8e9908358 382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "161360a8a5f39a30f70d1ed8673a2c44e3b475cb",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+server/polar/billing_entry/repository.py
+  s_7245646c656b56::t_409bfa2b01ee67 6
+  s_7245646c656b56::t_59ed2d40673274 161-167,169-172,177-182,184-195,197-199,201
+server/migrations/versions/2026-08-17-1200_add_pending_link_billing_entry_index.py
+  s_7245646c656b56::t_10709c2693ecec 1-43
+server/polar/order/tasks.py
+  s_7245646c656b56::t_7754b041b597f2 74-80
+server/polar/models/billing_entry.py
+  s_7245646c656b56::t_319bca53fdc3fe 57-67
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "f7c51bb2508a1d8f46d017b85bfbf3263d5a165c",
+  "prompts": {},
+  "sessions": {
+    "s_7245646c656b56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cf9f0ba-d7de-4149-8d9c-a45d5c61101f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

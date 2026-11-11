@@ -1,0 +1,51 @@
+server/polar/subscription/service.py
+  s_81f519e3bb364f::t_73ec5663230d7f 682,685-690
+  s_28d2c7891e947f::t_0543584384f929 691
+server/polar/merchant_migration/precheck.py
+  s_81f519e3bb364f::t_cf533b04e83fe7 223,234,250,257
+  s_81f519e3bb364f::t_b5e7156df29f83 258-259
+  s_81f519e3bb364f::t_83c3c4160777ce 772-783
+server/tests/merchant_migration/test_service.py
+  s_81f519e3bb364f::t_81b98c0161847a 676-724
+  s_81f519e3bb364f::t_d25483dc9c164c 37
+  s_81f519e3bb364f::t_44a40d37fe94e9 64
+server/polar/merchant_migration/service.py
+  s_81f519e3bb364f::t_9c95a55f0d8004 38
+  s_81f519e3bb364f::t_15fa910830b5e3 136-144
+  s_81f519e3bb364f::t_e1f106a0efb85b 28
+  s_81f519e3bb364f::t_cc37b89fd72dca 311-317
+server/polar/merchant_migration/endpoints.py
+  s_81f519e3bb364f::t_01d13b2d163316 28
+  s_81f519e3bb364f::t_26182be2369937 164-165
+server/polar/merchant_migration/importer.py
+  s_81f519e3bb364f::t_be28b03fb53899 141,408,458-465
+  s_81f519e3bb364f::t_ce4ce7728a89bb 220,224-225,230,235,239,242-244,355,359-360,365,377,382,385-387
+  s_81f519e3bb364f::t_5df9c9e6fb5797 87-99,189,193-194,199,203,206-208
+  s_81f519e3bb364f::t_7a7319e20943c5 466
+clients/packages/client/src/v1.ts
+  s_81f519e3bb364f::t_cb310a185071f5 11929-11939,51429,51435-51437
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "898ca4705cd092bd5fd2f6a28c313e8f006f6837",
+  "prompts": {},
+  "sessions": {
+    "s_28d2c7891e947f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019fd0f2-c5e6-72a3-b1a5-c0310ac7db24",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

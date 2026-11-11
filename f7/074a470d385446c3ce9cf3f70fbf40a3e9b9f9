@@ -1,0 +1,19 @@
+clients/packages/polar/src/client/actor.ts
+  s_26e9f7497a6831::t_9e763824bca4bd 159-161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f7074a470d385446c3ce9cf3f70fbf40a3e9b9f9",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+clients/.changeset/export-polar-better-auth-plugin-type.md
+  s_85366b5bcb3fd0::t_b2f119afbee7e2 1-5
+sdk/typescript/src/2026-04/index.ts
+  ai_agent 3
+clients/adapters/better-auth/src/index.ts
+  s_85366b5bcb3fd0::t_b2f119afbee7e2 3
+clients/adapters/better-auth/src/server.ts
+  s_85366b5bcb3fd0::t_b2f119afbee7e2 12
+sdk/generator/typescript/template/src/version/index.ts
+  s_85366b5bcb3fd0::t_b2f119afbee7e2 3
+sdk/typescript/src/2026-10/index.ts
+  ai_agent 3
+sdk/typescript/src/2027-01/index.ts
+  ai_agent 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "c3613b18f2220ce4f9ea8e5226bb249bee87a8b6",
+  "prompts": {},
+  "sessions": {
+    "s_85366b5bcb3fd0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "be038a6d-9365-474d-b63c-b3ecaad4bcf9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

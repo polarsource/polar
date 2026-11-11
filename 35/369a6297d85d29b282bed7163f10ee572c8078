@@ -1,0 +1,29 @@
+server/polar/billing_entry/repository.py
+  s_7245646c656b56::t_a0f21e78bbd770 6,161-167,169-172,177-182,184-195,197-208,210-211
+server/polar/observability/invariants/rules/subscriptions_locked_invariant.py
+  s_7245646c656b56::t_92d5dcb301ef79 36-39
+server/tests/observability/invariants/rules/test_subscriptions_locked_invariant.py
+  s_7245646c656b56::t_c563be3d4ca517 35,59
+server/tests/billing_entry/test_service.py
+  s_7245646c656b56::t_a7ec1380f7ae76 7,625-626,629-639
+server/polar/order/tasks.py
+  s_7245646c656b56::t_254b6c2a987757 74-80
+server/polar/subscription/tasks.py
+  s_7245646c656b56::t_283150d78ad62d 46-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "35369a6297d85d29b282bed7163f10ee572c8078",
+  "prompts": {},
+  "sessions": {
+    "s_7245646c656b56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cf9f0ba-d7de-4149-8d9c-a45d5c61101f",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

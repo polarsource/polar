@@ -1,0 +1,54 @@
+server/polar/merchant_migration/adapters/stripe.py
+  s_28ea492cb26938::t_f696558163c5cb 1-30,37-88,93-168
+  s_28ea492cb26938::t_cb7934415516d9 91-92
+  s_28ea492cb26938::t_da37da08b07124 31-36
+  s_28ea492cb26938::t_6bb96b39a4a360 89-90
+server/tests/merchant_migration/test_service.py
+  s_28ea492cb26938::t_f696558163c5cb 1-2,9-13,15-18,35-43,136-241
+server/polar/merchant_migration/adapters/__init__.py
+  s_28ea492cb26938::t_f696558163c5cb 1-4
+server/polar/merchant_migration/adapters/base.py
+  s_28ea492cb26938::t_f696558163c5cb 1-20
+server/polar/merchant_migration/canonical.py
+  s_28ea492cb26938::t_f696558163c5cb 1-102
+server/polar/merchant_migration/precheck.py
+  s_28ea492cb26938::t_bbc551004d90cf 3-10,14,34-37,39-45,47-51,53-54,56,58-61,82,93-94,96-106,109,120,122
+  s_28ea492cb26938::t_1da33511460022 46,52,55
+  s_28ea492cb26938::t_f696558163c5cb 1-2,11-13,15-33,38,57,62-81,83-92,95,107-108,110-119,121,123-197
+server/tests/merchant_migration/test_endpoints.py
+  s_28ea492cb26938::t_f696558163c5cb 1,210-268
+  s_28ea492cb26938::t_9641ff7df42322 269-270
+server/polar/merchant_migration/endpoints.py
+  s_28ea492cb26938::t_6137c3c100acc1 19-22
+  s_28ea492cb26938::t_f696558163c5cb 18,88-93,104-110
+  s_28ea492cb26938::t_fc71a597aa6d8b 97
+  s_28ea492cb26938::t_4b907e1f4d514d 94-96,98-103
+server/polar/merchant_migration/schemas.py
+  s_28ea492cb26938::t_f696558163c5cb 1-2,5,12-28
+server/tests/merchant_migration/test_precheck.py
+  s_28ea492cb26938::t_f4ab0b18aa1949 148-150
+  s_28ea492cb26938::t_6f2d724d150495 35-40
+  s_28ea492cb26938::t_c8fec901225cd3 1-4,12,17,20-26,87-88,91,93-95,101-117,122-125,132-141,146-147,155-162,167-174,179-186,191-210,212-213,225-232,234-235
+  s_28ea492cb26938::t_f696558163c5cb 5-11,13-16,18-19,27-34,41-86,89-90,92,96-100,126-131,142-145,151-154,163-166,175-178,187-190,211,214-224,233,236-240
+  s_28ea492cb26938::t_92c29908fbe883 118-121
+server/polar/merchant_migration/service.py
+  s_28ea492cb26938::t_040f712463510f 133-134
+  s_28ea492cb26938::t_f696558163c5cb 18,21-22,24,65-81,104-132,135-169
+  s_28ea492cb26938::t_405104b323bd09 170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "995df90e5074f20484190f1226e7f5f1718caa0e",
+  "prompts": {},
+  "sessions": {
+    "s_28ea492cb26938": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3cdc938-a7ce-4baa-bd20-7ff6afb5d3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

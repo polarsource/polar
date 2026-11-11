@@ -1,0 +1,33 @@
+server/polar/customer_meter/tasks.py
+  s_203c33c3a8ce3d::t_a7167be251ccbc 26-31
+  s_203c33c3a8ce3d::t_905e8855c09c12 48-51
+  s_203c33c3a8ce3d::t_c3dd3c855edfb2 70-75
+  s_203c33c3a8ce3d::t_4dca4a2510268c 2
+server/scripts/fix_unreset_customer_meters.py
+  s_203c33c3a8ce3d::t_679adc466d880d 122
+server/tests/customer_meter/test_tasks.py
+  s_203c33c3a8ce3d::t_ea84d65b0f59a9 1-16
+server/polar/customer_meter/service.py
+  s_203c33c3a8ce3d::t_1735d102696be4 128-132,135
+  s_203c33c3a8ce3d::t_ff298845e1bb34 133-134,163-164
+  s_203c33c3a8ce3d::t_749c57ca0c0642 190
+  s_203c33c3a8ce3d::t_55a56161e2d94b 149
+server/tests/customer_meter/test_service.py
+  s_203c33c3a8ce3d::t_679adc466d880d 503
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5bfb29d3337b687c87455af030d088da101a7574",
+  "prompts": {},
+  "sessions": {
+    "s_203c33c3a8ce3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e8722df0-121c-4871-80e6-6ec22fdfcf3e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

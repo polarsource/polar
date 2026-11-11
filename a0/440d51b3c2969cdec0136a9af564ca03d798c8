@@ -1,0 +1,19 @@
+handbook/engineering/decisions/0006-migration-and-backfill-safety.mdx
+  s_5861e605661360::t_0402584ad1b34a 36-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "a0440d51b3c2969cdec0136a9af564ca03d798c8",
+  "prompts": {},
+  "sessions": {
+    "s_5861e605661360": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "398f2c87-0e83-40a9-a21d-f3d84e9d6674",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

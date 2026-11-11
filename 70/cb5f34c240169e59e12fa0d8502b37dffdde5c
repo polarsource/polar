@@ -1,0 +1,136 @@
+sdk/cli-commands/src/payments/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 88
+sdk/cli-commands/src/meters/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 81
+sdk/cli-commands/src/custom_fields/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 77
+sdk/cli-commands/src/events/list_names.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 84
+sdk/cli-commands/src/custom_fields/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 82
+sdk/cli-commands/src/metrics/get.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 689
+sdk/cli-commands/src/files/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 50
+clients/packages/cli/src/services/polar.ts
+  s_ee8d2f8014dc5b::t_a910c4af5a5d96 1,7-13,19-38,46,67,97-101,129-131
+clients/packages/cli/src/services/trigger.test.ts
+  s_ee8d2f8014dc5b::t_757e3449fe7df7 32,89,132,153-155
+sdk/cli-commands/src/event_types/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 99
+clients/packages/cli/src/services/api.ts
+  s_ee8d2f8014dc5b::t_0aca29a5948c98 53,55
+  s_ee8d2f8014dc5b::t_fc024080c6df5c 54
+sdk/cli-commands/src/customers/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 86
+sdk/cli-commands/src/checkouts/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 95
+sdk/cli-commands/src/benefit_grants/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 80
+clients/packages/cli/src/services/polar.test.ts
+  s_ee8d2f8014dc5b::t_b87410b3ff0a1a 137-165,167,171-173,175,181-182,184-196
+  s_ee8d2f8014dc5b::t_bc2544d01989df 166,168-170,176-180,183
+  s_ee8d2f8014dc5b::t_987185d0876c6f 174
+clients/packages/cli/src/services/trigger.ts
+  s_ee8d2f8014dc5b::t_0aca29a5948c98 13,74,150,153-155,191
+  s_ee8d2f8014dc5b::t_987185d0876c6f 176-179
+sdk/cli-commands/src/benefits/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 100
+sdk/cli-commands/src/customers/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 89
+sdk/cli-commands/src/orders/receipt.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 21
+sdk/cli-commands/src/webhooks/list_webhook_endpoints.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 48
+sdk/cli-commands/src/discounts/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 253
+sdk/cli-commands/src/runtime.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 30
+sdk/cli-commands/src/subscriptions/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 175
+clients/packages/cli/src/services/api-runtime.ts
+  s_ee8d2f8014dc5b::t_109f0552ca4bf9 64-65,94,147-150
+sdk/cli-commands/src/checkout_links/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 68
+clients/packages/cli/src/commands/trigger/index.ts
+  s_ee8d2f8014dc5b::t_0aca29a5948c98 100,106
+clients/packages/cli/src/services/organizations.test.ts
+  s_ee8d2f8014dc5b::t_757e3449fe7df7 37,83,177-188
+sdk/cli-commands/src/license_keys/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 57
+clients/packages/cli/src/commands/api-commands.test.ts
+  s_ee8d2f8014dc5b::t_987185d0876c6f 134,138-147
+sdk/cli-commands/src/meters/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 77
+sdk/cli-commands/src/products/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 103
+clients/packages/cli/src/services/organizations.ts
+  s_ee8d2f8014dc5b::t_109f0552ca4bf9 63-65
+sdk/cli-commands/src/discounts/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 71
+clients/packages/cli/src/commands/listen.test.ts
+  s_ee8d2f8014dc5b::t_757e3449fe7df7 78,139
+sdk/cli-commands/src/customer_seats/get_claim_info.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 27
+sdk/cli-commands/src/refunds/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 91
+sdk/generator/cli_commands/template/src/runtime.ts
+  s_ee8d2f8014dc5b::t_f6e5e27a0eb186 30
+clients/packages/cli/src/commands/api-organization.test.ts
+  s_ee8d2f8014dc5b::t_b8ed707c4f6be4 83-84,105,111,113,153,159,172,184,205-209,241-242
+  s_ee8d2f8014dc5b::t_987185d0876c6f 116
+  s_ee8d2f8014dc5b::t_68ca1efa60e219 169
+sdk/cli-commands/src/webhooks/create_webhook_endpoint.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 112
+clients/packages/cli/src/commands/listen.ts
+  s_ee8d2f8014dc5b::t_0aca29a5948c98 20,96,108,124,405
+sdk/cli-commands/README.md
+  s_ee8d2f8014dc5b::t_9665a2d1e5172b 66-73
+  s_ee8d2f8014dc5b::t_20cfd6c6d92b86 74-75
+sdk/generator/cli_commands/emitter.py
+  s_c0a2c247c2e537::t_1f6a39fb23ca54 37,42,47,51,60,63,81,99,113-114,117,123,128,131,148,150,152,158,168,196,216,219,222,232,256,262-263,288,291,295,297,299,304,310,320,326,329,334,341,348,366,373
+  s_ee8d2f8014dc5b::t_f6e5e27a0eb186 231
+sdk/cli-commands/src/products/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 133
+sdk/generator/tests/test_cli_commands.py
+  s_ee8d2f8014dc5b::t_0b8a34e10bbf5b 132,263,369,225,239,282,303,352,355,357-358,360-363
+  s_c0a2c247c2e537::t_01d96a586ea7c8 187,253,293,330
+  s_ee8d2f8014dc5b::t_62bbeb3693ee2b 334,359
+  s_ee8d2f8014dc5b::t_70f22b33840efb 356
+sdk/cli-commands/src/customer_meters/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 89
+clients/packages/cli/src/utils/test-utils/services.ts
+  s_ee8d2f8014dc5b::t_757e3449fe7df7 254-257,265,268-271
+clients/packages/cli/README.md
+  s_ee8d2f8014dc5b::t_9665a2d1e5172b 107-112
+sdk/cli-commands/src/benefits/create.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 86
+sdk/cli-commands/src/customer_seats/claim_seat.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 38
+sdk/cli-commands/src/orders/list.ts
+  s_ee8d2f8014dc5b::t_e0048bbb248896 144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "70cb5f34c240169e59e12fa0d8502b37dffdde5c",
+  "prompts": {},
+  "sessions": {
+    "s_c0a2c247c2e537": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db949023-236a-4dff-9904-9eb6b5c6dc19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_ee8d2f8014dc5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "77dfbcd2-7058-405a-96d6-f943a10eee92",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

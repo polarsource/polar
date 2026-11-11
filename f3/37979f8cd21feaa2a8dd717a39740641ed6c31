@@ -1,0 +1,24 @@
+server/polar/integrations/resend/client.py
+  s_c69b0abb1425c1::t_1af2213d9adff8 17,23-41,59,68,75,81,86
+server/tests/integrations/resend/test_service.py
+  s_c69b0abb1425c1::t_5789f4e8e27d69 9
+  s_c69b0abb1425c1::t_e2dc0fa38e5928 152
+server/tests/integrations/resend/test_client.py
+  s_c69b0abb1425c1::t_9ecbb0290acb70 1-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f337979f8cd21feaa2a8dd717a39740641ed6c31",
+  "prompts": {},
+  "sessions": {
+    "s_c69b0abb1425c1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fc2e50bf-98fb-4bd1-8b09-3823270b4487",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

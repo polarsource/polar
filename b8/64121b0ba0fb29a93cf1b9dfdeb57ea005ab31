@@ -1,0 +1,9 @@
+clients/.changeset/cli-v2.md
+  ai_agent 13-14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "b864121b0ba0fb29a93cf1b9dfdeb57ea005ab31",
+  "prompts": {}
+}

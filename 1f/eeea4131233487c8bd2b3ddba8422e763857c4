@@ -1,0 +1,17 @@
+server/polar/mcp_event/schemas.py
+  ai_agent 54
+server/polar/webhook/repository.py
+  ai_agent 21,220-229
+server/polar/mcp_event/catalog.py
+  ai_agent 48,53-57,60,63,66,70
+server/tests/mcp_event/test_endpoints.py
+  ai_agent 3,27-32,66,86,108,200-232,234,247
+server/polar/mcp_event/service.py
+  ai_agent 22,57-58,82,104-105,168-171,174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1feeea4131233487c8bd2b3ddba8422e763857c4",
+  "prompts": {}
+}

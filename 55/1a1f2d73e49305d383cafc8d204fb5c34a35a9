@@ -1,0 +1,23 @@
+server/polar/oauth2/tasks.py
+  s_31b22292f90499::t_6344155d566662 26-32
+server/tests/oauth2/test_tasks.py
+  s_31b22292f90499::t_05a651a47ca2c4 36-38
+  s_31b22292f90499::t_f494364f5062e3 1-4,7,9-10,13,20-24,29-35,39-53
+  s_31b22292f90499::t_9b369dfb53c525 14-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "551a1f2d73e49305d383cafc8d204fb5c34a35a9",
+  "prompts": {},
+  "sessions": {
+    "s_31b22292f90499": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "abac52b8-24fa-4c02-b252-8f0ca7a50b08",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

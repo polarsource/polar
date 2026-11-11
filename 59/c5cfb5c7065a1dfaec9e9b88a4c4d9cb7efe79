@@ -1,0 +1,41 @@
+server/tests/organization_review/test_agent.py
+  s_fd528823e8d35d::t_db972f052898be 139-199,201,215-234
+  s_fd528823e8d35d::t_2b962a83d2ef56 200,202-214
+  s_fd528823e8d35d::t_63e1c19e5f88f2 7-8,10,14-15,18
+server/polar/organization_review/schemas.py
+  s_fd528823e8d35d::t_06952758a70468 403-410
+server/polar/organization_review/analyzer.py
+  s_fd528823e8d35d::t_a5db9615d89e1e 677
+  s_fd528823e8d35d::t_4355d199beaa96 146-147
+  s_fd528823e8d35d::t_62cbc0f5b5fb3f 947-963
+server/tests/organization_review/test_analyzer.py
+  s_fd528823e8d35d::t_dd9964257611ab 268-294
+server/polar/organization_review/agent.py
+  s_fd528823e8d35d::t_27e1e9f47087b3 329-332
+  s_fd528823e8d35d::t_39c6e707ddd08b 54,60
+  s_fd528823e8d35d::t_f1c3b3e45a8c22 430,454
+  s_fd528823e8d35d::t_3189ac1ebfeac4 55-59,301,345
+  s_fd528823e8d35d::t_d13f036521db43 315-324
+  s_fd528823e8d35d::t_09c7fe90f26069 100-102
+  s_fd528823e8d35d::t_9e780589348d99 306-309
+  s_fd528823e8d35d::t_925002c767fe31 427-429,432-438
+  s_fd528823e8d35d::t_d7231c73fd851b 31
+  s_fd528823e8d35d::t_b7772c0083c975 302-305,311-314,326-328,333-339,341-344,353,355,362,364,370-399
+  s_fd528823e8d35d::t_c5e48b249c7e23 325,400-401
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59c5cfb5c7065a1dfaec9e9b88a4c4d9cb7efe79",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+server/polar/payout_account/tasks.py
+  s_995efc8d9db2f1::t_4ae08ec62e4123 4,18
+server/polar/payout_account/service.py
+  s_995efc8d9db2f1::t_0fd2a622fc8ed7 195
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4f690fba580ce21fcc50db6719b9600d9ee9892f",
+  "prompts": {},
+  "sessions": {
+    "s_995efc8d9db2f1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6694aa8d-7e07-49d1-bf12-7190cb5b8abf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

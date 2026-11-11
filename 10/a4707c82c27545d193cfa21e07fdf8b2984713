@@ -1,0 +1,29 @@
+server/polar/models/migration_record.py
+  s_5b6c091dc91776::t_2a7abd59a966f2 1-88
+server/polar/models/migration_job.py
+  s_5b6c091dc91776::t_fdd185230e23c0 1-68
+server/migrations/versions/2026-06-29-1148_add_migration_jobs_and_migration_records.py
+  s_5b6c091dc91776::t_887debe50134b3 1-10,12-16,18-24,125-129
+  s_5b6c091dc91776::t_e6dc3df954fd36 74
+  s_5b6c091dc91776::t_dab0e53d1c542a 17
+  s_5b6c091dc91776::t_93f645cca6d70e 11,25-73,75-124,130-163
+server/polar/models/__init__.py
+  s_5b6c091dc91776::t_2ff1fe3cd4b41b 43-48
+  s_5b6c091dc91776::t_3d5ab88b952792 164-169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "10a4707c82c27545d193cfa21e07fdf8b2984713",
+  "prompts": {},
+  "sessions": {
+    "s_5b6c091dc91776": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "625cc146-48a6-444d-94b1-11bf8c52669e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

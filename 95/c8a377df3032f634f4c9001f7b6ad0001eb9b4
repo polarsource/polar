@@ -1,0 +1,19 @@
+server/tests/oauth2/grants/test_jwt_bearer.py
+  s_5baa939665e021::t_c6d61cde85a080 2-66,68-69,71-72,75-119,126-198,200,206,220-222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "95c8a377df3032f634f4c9001f7b6ad0001eb9b4",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

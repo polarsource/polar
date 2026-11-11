@@ -1,0 +1,19 @@
+server/scripts/free_price_to_fixed_backfill.py
+  s_3728f65d60caf2::t_76f4d6ecf416a8 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "4bdeea77463cf3a91e57c9a8f2f3cd322182310a",
+  "prompts": {},
+  "sessions": {
+    "s_3728f65d60caf2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "72c409ca-724a-4953-a6bd-b37726adca37",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

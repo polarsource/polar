@@ -1,0 +1,19 @@
+clients/.changeset/cli-resume-subscription-confirmation.md
+  s_4a21b36047d59b::t_d3b735e428b53f 1-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "98dc31e1edde1607279eaad455c76be6e20a238d",
+  "prompts": {},
+  "sessions": {
+    "s_4a21b36047d59b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fc60-55e8-7fd2-95d8-12a1f1c0e089",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

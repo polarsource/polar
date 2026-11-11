@@ -1,0 +1,57 @@
+server/polar/reducer/bucket_repository.py
+  s_d8ff38491769f9::t_8f626bdd068422 244
+  s_d8ff38491769f9::t_430ea93331d41e 245,281
+  s_d8ff38491769f9::t_4d1b385d76d176 261-271
+  s_d8ff38491769f9::t_442b13671d10cd 290-291
+  s_d8ff38491769f9::t_86cf6bee7bdfdf 66-76
+  s_d8ff38491769f9::t_5c9de00fc791ec 10,257-259,276,287,297,310,315
+  s_d8ff38491769f9::t_f07b0b00567e19 15,20,25,252-254,260,272-275,277-280,282-286,288-289,292,294-296,309,311,314
+  s_d8ff38491769f9::t_7200a70ccd2c69 248-250
+  s_d8ff38491769f9::t_596570e11af6af 246-247
+  s_d8ff38491769f9::t_c86615795b733e 30-37,239,241-243,251,255-256,293,298-308,312-313,316
+server/polar/reducer/service.py
+  s_d8ff38491769f9::t_ccd69e6cee5c75 546-547
+  s_d8ff38491769f9::t_ce79522baaeeb6 500,523,541,557-560
+  s_d8ff38491769f9::t_c86615795b733e 494,498-499,502,505-507,509,515,518,553,561
+  s_d8ff38491769f9::t_12d743d503f957 569-593
+  s_d8ff38491769f9::t_86cf6bee7bdfdf 43
+  s_d8ff38491769f9::t_dc4b492bb6096e 510-511,519-520,522,525,531-533,535-540
+  s_d8ff38491769f9::t_8f626bdd068422 508
+  h_cc2173b7b86bcc 501
+  s_d8ff38491769f9::t_f07b0b00567e19 513-514
+  s_d8ff38491769f9::t_48a6650fccbae9 512,568
+  s_d8ff38491769f9::t_e9635286714819 516-517
+server/polar/reducer/redis_store.py
+  s_d8ff38491769f9::t_f07b0b00567e19 73-74,83
+server/polar/event/repository.py
+  s_d8ff38491769f9::t_f07b0b00567e19 404-414,423
+server/tests/reducer/test_service.py
+  s_d8ff38491769f9::t_8298cf4f5d5640 35-38
+  s_d8ff38491769f9::t_ce79522baaeeb6 1617,1621,1659,1663,1679,1683,1700,1704-1705,1749,1753-1754
+  s_d8ff38491769f9::t_310e4df1d8d254 1731,1744
+  s_d8ff38491769f9::t_9f2469564d06ce 1615,1707,1722-1730,1732-1734
+  s_d8ff38491769f9::t_a932a69282e0ae 1563,1568,1578,1582,1610,1613-1614,1618,1633,1642,1645-1657,1660,1672,1675-1676,1680-1681,1685,1693,1696,1698,1701,1715,1719,1750
+server/polar/outpost/service.py
+  s_d8ff38491769f9::t_8298cf4f5d5640 30,32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d391a51f6d93cc27558ff82917f4835ebb24a8b4",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_d8ff38491769f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "812199ed-027e-4b80-b538-e0a4f04ebcd6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

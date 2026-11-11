@@ -1,0 +1,21 @@
+sdk/typescript/src/base.ts
+  ai_agent 104
+sdk/generator/typescript/template/src/base.ts
+  s_88624536cc8bb7::t_4e8d023ac0ac7d 113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "69e6ef494ffd49df46cf9b015901884b14a094eb",
+  "prompts": {},
+  "sessions": {
+    "s_88624536cc8bb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2da821e-dc6a-4b05-8743-90c4d23a5449",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+server/polar/kit/services.py
+  s_993e379d6d5a27::t_cd7c1e5a0d994a 7
+  s_993e379d6d5a27::t_15fcf547eda26b 74,82,92,101-102,106
+server/polar/models/downloadable.py
+  s_993e379d6d5a27::t_30af0a66443f2c 12
+  s_993e379d6d5a27::t_d284bc6f48a0ff 32,34-35,37,44
+server/polar/customer_portal/service/downloadables.py
+  s_993e379d6d5a27::t_655b6750c19817 103-104
+server/migrations/versions/2026-06-19-1645_downloadables_member_level_uniqueness_.py
+  s_993e379d6d5a27::t_9eff61cd982476 9,20
+  s_993e379d6d5a27::t_bbd25e5ea7e197 48
+server/scripts/backfill_member_downloadables.py
+  s_993e379d6d5a27::t_1ed7c9bf7f0aca 73-75
+  s_993e379d6d5a27::t_eaf60c2a7980b6 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "ef2eb6b594144d195bf737fb85f950d2ac666cba",
+  "prompts": {},
+  "sessions": {
+    "s_993e379d6d5a27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1c31ca18-7baa-4be9-94ec-c9317093b7c4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

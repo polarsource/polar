@@ -1,0 +1,32 @@
+server/migrations/versions/2026-10-09-1200_add_external_id_to_webhook_endpoints.py
+  s_fd3304141c7309::t_adafa57a2bf4c4 1-67
+server/polar/webhook/repository.py
+  s_fd3304141c7309::t_5d81e7e5f58a9b 216-230
+server/polar/declarative_config/service.py
+  s_fd3304141c7309::t_1934a9e7cfaafa 25-27,47-53,58,64,115-123,165-167,183-188,206,297-349
+server/polar/declarative_config/schemas.py
+  s_fd3304141c7309::t_cd46659df72706 31-36,41,213-228,313,320-326
+  s_fd3304141c7309::t_fac79a25e89c02 259-264
+server/tests/declarative_config/test_endpoints.py
+  s_fd3304141c7309::t_0da30231a32b41 78
+server/polar/declarative_config/validation.py
+  s_fd3304141c7309::t_e092894ac9ef3b 25,30,45,93,98,572-638,656-658,669,680
+server/polar/declarative_config/endpoints.py
+  s_fd3304141c7309::t_1934a9e7cfaafa 23,81-83,96-97,110-113,115-117,132-133,152-153
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6142990e27d6daf457ea4a792426524a78ddd01f",
+  "prompts": {},
+  "sessions": {
+    "s_fd3304141c7309": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "40b69caa-2535-4fe1-8059-c07dba2adce6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

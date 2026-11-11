@@ -1,0 +1,25 @@
+.github/workflows/backoffice_reachability.yml
+  s_6ace771cb894f3::t_202504c2dc213d 41-42
+  s_6ace771cb894f3::t_580f5900f1a06b 26-31,38,44,48-64,66-69
+  s_6ace771cb894f3::t_ba627cd7be4176 2-4,6-21,23-25,32-37,39-40,43,45-47
+  s_6ace771cb894f3::t_11071b8e527127 1
+  s_6ace771cb894f3::t_b726ba0c2da023 5
+  s_6ace771cb894f3::t_27ad198b41ce0d 22
+  s_6ace771cb894f3::t_d088cc7567545d 65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "653cc0ff27e4bc56f5596348cd39f21a3807075f",
+  "prompts": {},
+  "sessions": {
+    "s_6ace771cb894f3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ea6c589-1e28-4622-93dd-f96a98eb4dad",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

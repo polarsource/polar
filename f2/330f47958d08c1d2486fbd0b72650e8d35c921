@@ -1,0 +1,27 @@
+server/polar/organization/endpoints.py
+  s_88624536cc8bb7::t_da36da8b713295 55,360-364,366-367
+server/polar/organization/resolver.py
+  s_88624536cc8bb7::t_774b1d37cc3288 52-55
+server/polar/user/endpoints.py
+  s_88624536cc8bb7::t_774b1d37cc3288 136-139,170-173
+server/polar/feedback/service.py
+  s_88624536cc8bb7::t_774b1d37cc3288 30-32
+server/polar/auth/middlewares.py
+  s_88624536cc8bb7::t_5e4af84a9654ab 258-259,265
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f2330f47958d08c1d2486fbd0b72650e8d35c921",
+  "prompts": {},
+  "sessions": {
+    "s_88624536cc8bb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2da821e-dc6a-4b05-8743-90c4d23a5449",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+server/migrations/versions/2026-09-17-0735_add_organization_risk_signals_account_evaluation_id.py
+  s_9b093a6f1c15db::t_6ccc81a2a96be5 33
+  s_9b093a6f1c15db::t_b71f82fe997f5e 34-36,61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "31d344942f44b88d9ad4af8345b0556c8adde8bd",
+  "prompts": {},
+  "sessions": {
+    "s_9b093a6f1c15db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "53e11c97-153e-4331-9edf-335cbbe3e885",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+dev/cli/shared.py
+  s_3e0979df60fe40::t_9abd2c58bf27ee 45,47-51,61,64,67
+  s_3e0979df60fe40::t_141255a8168316 80-85
+  s_3e0979df60fe40::t_eb652eadd9bb7b 68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "fd2eb8908b531c4fa0d61782ad89e5b8a285b3e0",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

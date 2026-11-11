@@ -1,0 +1,59 @@
+server/polar/webhook/schemas.py
+  s_ce40663d818538::t_a3a3b46642dd24 199-201
+sdk/generator/cli_commands/confirmation.py
+  s_ce40663d818538::t_cb69be5fb749c8 7,23,35-37,50
+  ai_agent 42-44
+server/polar/license_key/schemas.py
+  s_ce40663d818538::t_6169014606134f 184-185,187
+  s_ce40663d818538::t_e23f0e283ea290 186
+sdk/cli-commands/src/subscriptions/update.ts
+  s_ce40663d818538::t_23db4ffdcbcbad 3,5-6,13,156-166,170-183
+server/polar/meter/schemas.py
+  s_ce40663d818538::t_00a2c9c8564f8d 92
+sdk/cli-commands/src/meters/update.ts
+  s_ce40663d818538::t_23db4ffdcbcbad 3,5-6,13,80-88,92-101
+server/polar/subscription/schemas.py
+  s_ce40663d818538::t_cd47253e8cbed9 464,477-478,486
+sdk/generator/cli_commands/emitter.py
+  s_ce40663d818538::t_01577c52266939 190,192
+  s_ce40663d818538::t_311a96dd7007d3 110
+sdk/cli-commands/src/license_keys/update.ts
+  s_ce40663d818538::t_23db4ffdcbcbad 3,5-6,13,51-67,71-82
+sdk/generator/generator/ir.py
+  s_ce40663d818538::t_4bfa12687ff3b7 157-158,162-164
+  ai_agent 7-13,159-161
+  s_ce40663d818538::t_f82ab2df3e255b 141-142,144-156,165-168
+sdk/cli-commands/src/refunds/create.ts
+  s_ce40663d818538::t_23db4ffdcbcbad 3,5-6,13,61-69,73-74
+sdk/cli-commands/src/webhooks/update_webhook_endpoint.ts
+  s_ce40663d818538::t_23db4ffdcbcbad 3,5-6,15,100-108,112-123
+server/polar/license_key/endpoints.py
+  s_ce40663d818538::t_a9f64d8a03cb75 16
+  s_ce40663d818538::t_e23f0e283ea290 96-98
+server/polar/refund/schemas.py
+  s_ce40663d818538::t_1428f5398db52a 56
+sdk/cli-commands/README.md
+  s_ce40663d818538::t_d504cb0dfff997 73-84,105-114
+server/polar/meter/endpoints.py
+  s_ce40663d818538::t_dc144baa4efb8f 15
+  s_ce40663d818538::t_afcc1a258ad86f 81
+sdk/generator/tests/test_cli_commands.py
+  s_ce40663d818538::t_68b082a28de656 208-233,237,243-249,255-258
+  s_ce40663d818538::t_e23f0e283ea290 234-236,238-242,250-254,283-292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cc4cca3c9289aa3380035dfa133d80d1326ec7b3",
+  "prompts": {},
+  "sessions": {
+    "s_ce40663d818538": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a08629-e886-7252-84cc-06590948dfbe",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

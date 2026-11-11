@@ -1,0 +1,19 @@
+terraform/production/environment.tf
+  s_7ecead3a65436b::t_e64b166832e65d 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f84f8060664ec5deef6fc686259402c21ba0e84",
+  "prompts": {},
+  "sessions": {
+    "s_7ecead3a65436b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e34076a-5cc0-4bfe-9c44-ea2dd5c46cef",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

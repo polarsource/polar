@@ -1,0 +1,26 @@
+.github/workflows/migrations-unlock.yml
+  s_28094f8998717d::t_13ef85b37ee7f9 26-30
+  s_28094f8998717d::t_142c81ae812b52 1-25
+.github/workflows/test_server.yaml
+  s_28094f8998717d::t_557b045871738f 162-165,169-176
+  s_28094f8998717d::t_7278b239ed21ad 166-168
+.github/workflows/migrations-lock.yml
+  s_28094f8998717d::t_142c81ae812b52 1-23,29-35
+  s_28094f8998717d::t_00c5fef9813c26 24-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8b5b4efac2d58e57e57bab57c36519def72731ab",
+  "prompts": {},
+  "sessions": {
+    "s_28094f8998717d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de4cb567-3a96-4e3c-adb7-ff4920663258",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,77 @@
+clients/apps/web/src/components/Shared/AmountLabel.tsx
+  s_055272d137234c::t_d7f400d8d1e810 8
+clients/packages/checkout/src/components/AmountLabel.tsx
+  s_055272d137234c::t_d7f400d8d1e810 12
+server/polar/enums.py
+  s_055272d137234c::t_e8c5a126dceac9 88-93
+  s_055272d137234c::t_d7f400d8d1e810 58,69,71,73,79,87,94
+  s_055272d137234c::t_ee3133a2800c35 97-99,104,106-107,114-115
+  s_055272d137234c::t_ee35e7a79847c6 100-103,105,108-113,117-120,122-124,126-129,131-132
+  s_055272d137234c::t_2ea9bb57fafe84 116,121,125,130
+  s_055272d137234c::t_0ba50f72d57b90 133-134
+clients/packages/checkout/src/components/SeatDetailRow.tsx
+  s_055272d137234c::t_d7f400d8d1e810 11
+clients/apps/app/components/Products/ProductRow.tsx
+  s_055272d137234c::t_d7f400d8d1e810 18
+clients/packages/checkout/src/components/CheckoutProductSwitcher.tsx
+  s_055272d137234c::t_d7f400d8d1e810 152
+clients/apps/web/src/components/Subscriptions/SubscriptionDetails.tsx
+  s_055272d137234c::t_d7f400d8d1e810 18
+clients/apps/web/src/components/Customer/CustomerContextView.tsx
+  s_055272d137234c::t_d436552f21b99f 185-190,192-197,200
+clients/apps/app/components/Products/AmountLabel.tsx
+  s_055272d137234c::t_d7f400d8d1e810 10
+server/migrations/versions/2026-06-17-1034_add_meter_interval_to_product_and_.py
+  s_055272d137234c::t_90b205a9aeccb5 1-3,5-15,17-72
+  s_055272d137234c::t_fdd68e1179b8e9 4,16
+server/polar/models/product.py
+  s_055272d137234c::t_ee3133a2800c35 82-83,88,95
+  s_055272d137234c::t_07c1cdaf9b27da 84-87,89-94,97
+  s_055272d137234c::t_148bc341963032 25
+server/tests/product/test_schemas.py
+  s_055272d137234c::t_ee3133a2800c35 9,507,535-536,543-544,564,569-570,575,577-578,583,585-586,591-592,594,600-601,609
+  s_055272d137234c::t_6f85de2266d8c7 509,511,518
+  s_055272d137234c::t_07c1cdaf9b27da 7-8,10,501-506,508,510,512-517,519-534,537-542,545-563,565-568,571-574,576,579-582,584,587-590,593,595-599,602-608,610
+server/polar/models/subscription.py
+  s_055272d137234c::t_a76a7b872de531 132
+  s_055272d137234c::t_07c1cdaf9b27da 130-131,133,135-136,138-140,178-180,183,185-187,190
+  s_055272d137234c::t_ee3133a2800c35 128-129,134,137,177,181-182,184,188-189
+  s_055272d137234c::t_148bc341963032 33
+server/polar/product/schemas.py
+  s_055272d137234c::t_ee3133a2800c35 30,483,486,494,499-500,505-507,509-513,518-519,861,864,868,870
+  s_055272d137234c::t_148bc341963032 27
+  s_055272d137234c::t_07c1cdaf9b27da 4,15,26,28-29,31,484-485,487-493,495-498,501-504,508,514-517,520-521,862-863,865-867,869,871
+server/polar/models/subscription_update.py
+  s_055272d137234c::t_ee3133a2800c35 133-134
+server/tests/fixtures/random_objects.py
+  s_055272d137234c::t_07c1cdaf9b27da 461
+  s_055272d137234c::t_ee3133a2800c35 445-446,459-460,468-469
+server/polar/subscription/schemas.py
+  s_055272d137234c::t_ee3133a2800c35 90,93-94,98,101-102
+  s_055272d137234c::t_07c1cdaf9b27da 91-92,95-97,99-100,103-104
+server/polar/subscription/service.py
+  s_055272d137234c::t_ee3133a2800c35 563-564,574,676-678,878-881,883,946,950-951,953,959-960,962-963,965-968
+  s_055272d137234c::t_07c1cdaf9b27da 679-680,882,884-886,947-949,952,954-958,961,964,969-971
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_b7c8539e28bd98 1000
+  s_055272d137234c::t_8e8d69aa6d1a7f 1001,1003-1016,1018-1021,1023-1030,1034-1035
+  s_055272d137234c::t_07c1cdaf9b27da 399,401-413,415-425,428,430-433,435-436,438-455,460,1907-1921,1926-1932,1935-1937,1939
+  s_055272d137234c::t_6f85de2266d8c7 1906
+  s_055272d137234c::t_ee3133a2800c35 400,414,426-427,429,434,437,456-459,1002,1017,1022,1031-1033,1922-1925,1933-1934,1938
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.13",
+  "base_commit_sha": "988800f744ac05beca6f8f5092d206c60886b9c9",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

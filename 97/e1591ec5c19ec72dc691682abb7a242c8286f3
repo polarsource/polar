@@ -1,0 +1,29 @@
+server/tests/models/test_slack_app.py
+  s_eb87cbcf635926::t_7cb5bf593c419c 71,91,114
+server/tests/integrations/slack/test_service.py
+  s_eb87cbcf635926::t_8ac35c27d323cc 74-83
+server/polar/models/slack_app.py
+  s_eb87cbcf635926::t_ca5521578a02f0 96-98,101-103,106-108
+server/tests/integrations/slack/test_endpoints.py
+  s_eb87cbcf635926::t_8009b4acd04dd9 62-71
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  s_eb87cbcf635926::t_2986c02544de17 72-81
+server/tests/benefit/test_service.py
+  s_eb87cbcf635926::t_19fe2a8026e23a 67-76
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "97e1591ec5c19ec72dc691682abb7a242c8286f3",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

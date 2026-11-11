@@ -1,0 +1,20 @@
+server/scripts/backfill_usage_reducer_buckets.py
+  s_d8ff38491769f9::t_6d631e7fca9909 201,219,598
+  s_d8ff38491769f9::t_af409143331eea 104
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a36c4678bf80f982cdb5c8a0089f84f8140ae4c3",
+  "prompts": {},
+  "sessions": {
+    "s_d8ff38491769f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "812199ed-027e-4b80-b538-e0a4f04ebcd6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

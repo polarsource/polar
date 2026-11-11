@@ -1,0 +1,27 @@
+server/polar/models/meter_period.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 1-83
+server/migrations/versions/2026-08-17-1400_add_billing_entry_window_index.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 1-49
+server/polar/models/__init__.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 60,189-190
+server/migrations/versions/2026-08-17-1300_add_meter_periods.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 1-115
+server/polar/models/billing_entry.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 67-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "776657c1347ca5b459eb7e53840435b98fc2f451",
+  "prompts": {},
+  "sessions": {
+    "s_12f50c3568cc40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "776cb36c-a4a2-4a52-8ec1-9fafe0ec55b5",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

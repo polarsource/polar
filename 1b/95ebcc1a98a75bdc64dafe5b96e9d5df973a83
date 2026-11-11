@@ -1,0 +1,20 @@
+server/tests/e2e/conftest.py
+  s_fcff80e5f0afb1::t_895bf2ecb32ae4 12,100-103
+  s_fcff80e5f0afb1::t_41c3cc413095ce 104-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b95ebcc1a98a75bdc64dafe5b96e9d5df973a83",
+  "prompts": {},
+  "sessions": {
+    "s_fcff80e5f0afb1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f9b7d743-1892-409d-bda4-5f844277a4c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

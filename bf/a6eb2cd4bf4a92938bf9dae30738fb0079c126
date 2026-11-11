@@ -1,0 +1,19 @@
+server/polar/payment_method/tasks.py
+  s_0416cdce6272bf::t_f7be0ffa9bcecc 55-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "bfa6eb2cd4bf4a92938bf9dae30738fb0079c126",
+  "prompts": {},
+  "sessions": {
+    "s_0416cdce6272bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db7a8c4d-ac04-48c0-b57a-b0156ec8827c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+server/polar/integrations/slack/schemas.py
+  s_eb87cbcf635926::t_dd1fb16bffc7e6 120,154-162,176
+  s_eb87cbcf635926::t_661bcd2b83d401 166-171
+  s_eb87cbcf635926::t_a5e1fdcf5090a8 2,15
+  s_eb87cbcf635926::t_8f10bb3ce0df95 164-165,172-173
+  s_eb87cbcf635926::t_cad64f0de2dc86 163
+  s_eb87cbcf635926::t_39903190e579f1 174
+server/polar/integrations/slack/endpoints.py
+  s_eb87cbcf635926::t_01bac029241d4f 157
+  s_eb87cbcf635926::t_ef9c4ccc347ccd 232
+  s_eb87cbcf635926::t_d121b5eb9b4c5c 107
+server/tests/integrations/slack/test_endpoints.py
+  s_eb87cbcf635926::t_fde08e28e31843 706
+  s_eb87cbcf635926::t_d7f472b2dd3135 220-222
+clients/apps/web/src/hooks/queries/slack.ts
+  s_eb87cbcf635926::t_424fe5bb2bd3ed 35
+server/tests/integrations/slack/test_schemas.py
+  s_eb87cbcf635926::t_777917a8e083fc 50,52-54,78,88,106
+  s_eb87cbcf635926::t_da7a321979afd6 71-76
+clients/apps/web/src/components/Benefit/SlackSharedChannelBenefitForm.tsx
+  s_eb87cbcf635926::t_e8fd13758602f1 164-165
+  s_eb87cbcf635926::t_8f264230343bf9 79,89-90
+  s_eb87cbcf635926::t_42c88ef521a74a 29
+  s_eb87cbcf635926::t_0c575737ba7877 186
+  s_eb87cbcf635926::t_7d0fe1cf9d3148 326
+  s_eb87cbcf635926::t_2c9651afaf88a6 173,176
+  s_eb87cbcf635926::t_cac74bcf787a43 365
+  s_eb87cbcf635926::t_6868d00238934d 80-82
+server/tests/integrations/slack/test_service.py
+  s_eb87cbcf635926::t_dd773fe4d901ac 400
+  s_eb87cbcf635926::t_8f4f4d53cd4464 312
+  s_eb87cbcf635926::t_d9649cb9683146 175,177-178
+  s_eb87cbcf635926::t_72fb0ded3cd8d3 146-147
+  s_eb87cbcf635926::t_5c4bbf9d5d84ed 205
+  s_eb87cbcf635926::t_99c32f64d4817b 422
+clients/packages/client/src/v1.ts
+  s_eb87cbcf635926::t_297025c9d4e582 34254-34263,34299-34379,34402
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "386d1b75c2871185f83b2c88f154b4781f168589",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

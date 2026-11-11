@@ -1,0 +1,22 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewCatalog.ts
+  s_7019daae9ae40d::t_c6736214ad8935 20
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewCatalog.test.ts
+  s_7019daae9ae40d::t_f7e465c7dfad8c 47-50,54
+  s_7019daae9ae40d::t_95c0eeffd8ebe2 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "cb7d21a6053c967c2df66170998a0b30c6a144b2",
+  "prompts": {},
+  "sessions": {
+    "s_7019daae9ae40d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "5b4b5d08-2a72-4ae4-9b1a-883c1c505ecb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -232,6 +232,9 @@ class Settings(BaseSettings):
     # Full connection URL, as injected by managed Postgres integrations
     # (e.g. Neon). When set, its components take precedence over the parts above.
     POSTGRES_URL_NON_POOLING: str | None = None
+    # Dedicated role for migrations
+    POSTGRES_MIGRATION_USER: str | None = None
+    POSTGRES_MIGRATION_PWD: str | None = None
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
@@ -824,6 +827,20 @@ class Settings(BaseSettings):
             driver,
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PWD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DATABASE,
+            fallback_host=self.POSTGRES_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_PORT_FALLBACK,
+        )
+
+    def get_postgres_migration_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
+        if self.POSTGRES_MIGRATION_USER is None:
+            return self.get_postgres_dsn(driver)
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_MIGRATION_USER,
+            password=self.POSTGRES_MIGRATION_PWD,
             host=self.POSTGRES_HOST,
             port=self.POSTGRES_PORT,
             database=self.POSTGRES_DATABASE,

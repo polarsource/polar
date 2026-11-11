@@ -215,15 +215,22 @@ resource "render_web_service" "api" {
 
   custom_domains = var.api_service_config.custom_domains
 
-  env_vars = {
-    SERVICE_NAME             = { value = "api${local.env_suffix}" }
-    WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
-    FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
-    POLAR_BACKOFFICE_ENABLED = { value = "false" }
-    POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
-    POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
-    POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }
-  }
+  env_vars = merge(
+    {
+      SERVICE_NAME             = { value = "api${local.env_suffix}" }
+      WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
+      FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
+      POLAR_BACKOFFICE_ENABLED = { value = "false" }
+      POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
+      POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
+      POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }
+    },
+    # The pre-deploy command runs migrations on the API service.
+    var.postgres_config.migration_user == null ? {} : {
+      POLAR_POSTGRES_MIGRATION_USER = { value = var.postgres_config.migration_user }
+      POLAR_POSTGRES_MIGRATION_PWD  = { value = var.postgres_config.migration_password }
+    },
+  )
 }
 
 resource "render_web_service" "worker" {

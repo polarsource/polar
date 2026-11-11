@@ -47,16 +47,18 @@ module "planetscale" {
 
 locals {
   planetscale_postgres_config = {
-    host          = module.planetscale.host
-    port          = "6432"
-    user          = module.planetscale.bouncer_usernames["app"]
-    password      = var.planetscale_app_password
-    read_host     = module.planetscale.host
-    read_port     = "6432"
-    read_user     = module.planetscale.bouncer_usernames["read"]
-    read_password = var.planetscale_app_password
-    sslmode       = "verify-full"
-    sslrootcert   = "/etc/ssl/certs/ca-certificates.crt"
+    host               = module.planetscale.host
+    port               = "6432"
+    user               = module.planetscale.bouncer_usernames["app"]
+    password           = var.planetscale_app_password
+    read_host          = module.planetscale.host
+    read_port          = "6432"
+    read_user          = module.planetscale.bouncer_usernames["read"]
+    read_password      = var.planetscale_app_password
+    migration_user     = module.planetscale.migrator_role_username
+    migration_password = var.planetscale_migrator_password
+    sslmode            = "verify-full"
+    sslrootcert        = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
 

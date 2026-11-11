@@ -8656,20 +8656,52 @@ class TestSendTrialConversionReminderEmail:
         enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        organization: Organization,
         product: Product,
-        product_recurring_custom_price: Product,
         customer: Customer,
     ) -> None:
+        free_custom_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(0, None, None, "usd")],
+        )
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
-        subscription.product = product_recurring_custom_price
+        subscription.product = free_custom_product
         subscription.subscription_product_prices = [
-            SubscriptionProductPrice.from_price(
-                product_recurring_custom_price.prices[0], amount=0
-            )
+            SubscriptionProductPrice.from_price(free_custom_product.prices[0], amount=0)
         ]
         await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+
+    async def test_without_payment_method_full_forever_fixed_discount(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 100_000},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
 
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription

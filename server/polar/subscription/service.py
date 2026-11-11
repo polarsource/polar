@@ -487,8 +487,10 @@ def _is_payment_setup_required(subscription: Subscription) -> bool:
         return False
     if any(is_metered_price(price) for price in subscription.prices):
         return True
-    # `subscription.amount` is already discounted, and a discount that runs out
-    # still leaves renewals to charge, so look at the undiscounted prices.
+    # `subscription.amount` is already discounted. A discount that runs out
+    # still leaves renewals to charge, so then look at the undiscounted prices.
+    if discount is None or discount.duration == DiscountDuration.forever:
+        return subscription.amount > 0
     return sum(spp.amount for spp in subscription.subscription_product_prices) > 0
 
 

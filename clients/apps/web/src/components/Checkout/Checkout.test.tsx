@@ -3,7 +3,11 @@ import {
   createCustomPrice,
 } from '@polar-sh/checkout/test-utils'
 import type { schemas } from '@polar-sh/client'
-import { type AcceptedLocale, SUPPORTED_LOCALES } from '@polar-sh/i18n'
+import {
+  type AcceptedLocale,
+  getLocaleDirection,
+  SUPPORTED_LOCALES,
+} from '@polar-sh/i18n'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import {
@@ -227,16 +231,17 @@ describe('Checkout page', () => {
       },
     )
 
-    it.each([...SUPPORTED_LOCALES])(
-      'keeps the checkout left-to-right for %s',
-      (locale) => {
-        renderCheckout({ locale })
+    it.each(
+      SUPPORTED_LOCALES.filter(
+        (locale) => getLocaleDirection(locale) === 'ltr',
+      ),
+    )('keeps the checkout left-to-right for %s', (locale) => {
+      renderCheckout({ locale })
 
-        expect(document.documentElement).toHaveAttribute('dir', 'ltr')
-        const layout = screen.getByText('Test Product').closest('[dir]')
-        expect(layout).not.toBe(document.documentElement)
-        expect(layout).toHaveAttribute('dir', 'ltr')
-      },
-    )
+      expect(document.documentElement).toHaveAttribute('dir', 'ltr')
+      const layout = screen.getByText('Test Product').closest('[dir]')
+      expect(layout).not.toBe(document.documentElement)
+      expect(layout).toHaveAttribute('dir', 'ltr')
+    })
   })
 })

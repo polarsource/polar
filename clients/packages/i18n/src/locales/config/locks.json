@@ -1,5 +1,9 @@
 {
   "nl": [],
+  "he": [
+    "checkout.pricing.meteredIncluded",
+    "checkout.trialUnavailable.description"
+  ],
   "de": ["checkout.cta.subscribeNow", "checkout.cta.payNow"],
   "zh-TW": [
     "benefitTypes.meter_credit",

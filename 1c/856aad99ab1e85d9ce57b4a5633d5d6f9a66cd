@@ -1,0 +1,27 @@
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_20cc685b7d0a48 64-66,78-80
+  s_fb19aa989d9ac0::t_992eef0f2a0005 17,81
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_4aaa656908f3ae 18,262-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1c856aad99ab1e85d9ce57b4a5633d5d6f9a66cd",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

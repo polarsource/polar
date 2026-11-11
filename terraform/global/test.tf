@@ -8,6 +8,14 @@ resource "tfe_variable" "planetscale_app_password_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "planetscale_migrator_password_test" {
+  key             = "planetscale_migrator_password"
+  category        = "terraform"
+  description     = "PlanetScale migrator role password for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 data "tfe_project" "test" {
   name         = "test"
   organization = "polar-sh"

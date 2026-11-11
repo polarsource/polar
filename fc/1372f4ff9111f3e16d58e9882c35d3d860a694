@@ -1,0 +1,54 @@
+server/polar/subscription/service.py
+  s_fb19aa989d9ac0::t_597148f9ce3235 139,3231,3237-3240,3739-3772,3775
+  s_fb19aa989d9ac0::t_f9de5525b9e4f3 3773-3774,3776-3779
+  s_fb19aa989d9ac0::t_fb4c8f2205588b 3780
+server/polar/customer_meter/service.py
+  s_fb19aa989d9ac0::t_637647f6897021 49
+  s_fb19aa989d9ac0::t_cb229e90e99e93 44-45,143-144,148,150,164-169,177-178,180-181,233,669-677,679-685,688-692
+server/tests/customer_meter/test_service.py
+  s_fb19aa989d9ac0::t_31c2ab70be9c6d 12,37,41,1714-1786
+  s_fb19aa989d9ac0::t_40e0d72e8f8aa6 10
+server/polar/subscription/repository.py
+  s_fb19aa989d9ac0::t_14dae4d986d750 211-227
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_8ea2d78918423d 20,250-257,305-307
+  s_fb19aa989d9ac0::t_0bb83162db0c26 244,248-249,264-266,268-269
+  s_fb19aa989d9ac0::t_a9fa2f69d055fa 258
+  s_fb19aa989d9ac0::t_a2b3a4f8c7aa87 304
+  s_fb19aa989d9ac0::t_8a92de4c230544 245-247,259-263,267,270-285,297-303,308,333
+  s_fb19aa989d9ac0::t_8e0e6d8d59ed76 309-315,332,379-388
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_28f4a2147ff90e 24
+  s_fb19aa989d9ac0::t_1866ca900b4b8e 20-22
+server/tests/subscription/test_service.py
+  s_fb19aa989d9ac0::t_f75eccb89324b7 49,58,65,93-95,4962,4975,4986-5049,5054,5089
+server/polar/subscription/tasks.py
+  s_fb19aa989d9ac0::t_f6c3f68346c624 7,19,186-187,192-194
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_817389c946c018 1088
+  s_fb19aa989d9ac0::t_8bfcb4722fd1ca 363-427
+server/polar/reducer/bucket_repository.py
+  s_fb19aa989d9ac0::t_aabe17dd5a1632 554-580
+server/polar/billing_entry/service.py
+  s_fb19aa989d9ac0::t_b62fe611af3352 304-332,334,349,352
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_85e6d9db13d05e 1983-1986
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_90291f73b9d9cd 264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc1372f4ff9111f3e16d58e9882c35d3d860a694",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

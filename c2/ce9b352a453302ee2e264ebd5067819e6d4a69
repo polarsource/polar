@@ -1,0 +1,33 @@
+terraform/modules/render_service/main.tf
+  s_30b5b610fb0d13::t_b6a065d1210868 218-233
+terraform/modules/render_service/variables.tf
+  s_30b5b610fb0d13::t_b6a065d1210868 73-74
+terraform/test/planetscale.tf
+  s_30b5b610fb0d13::t_cf2989908b3ea7 50-57,60-61
+  s_30b5b610fb0d13::t_fcd55e988fc7ad 58-59
+terraform/test/variables.tf
+  s_30b5b610fb0d13::t_b7a2f9866b9686 18-28
+server/tests/test_config.py
+  s_30b5b610fb0d13::t_b6a065d1210868 91-110
+server/migrations/env.py
+  s_30b5b610fb0d13::t_b6a065d1210868 55
+server/polar/config.py
+  s_30b5b610fb0d13::t_b6a065d1210868 235-237,837-843
+  s_30b5b610fb0d13::t_ee16c17b6d2e29 844-850
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c2ce9b352a453302ee2e264ebd5067819e6d4a69",
+  "prompts": {},
+  "sessions": {
+    "s_30b5b610fb0d13": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7d15f158-b38f-4a02-9af3-2b93ef740156",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -109,6 +109,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Eenheden bijwerken mislukt',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minimaal {min} {unitLabelPlural}',
+        maximum: 'Maximaal {max} {unitLabelPlural}',
       },
       meteredChargesMayApply:
         'Er kunnen extra kosten op basis van verbruik van toepassing zijn',

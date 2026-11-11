@@ -3,7 +3,7 @@ import { Data, Schema } from 'effect'
 export const NO_CONFIG_FILE =
   'No billing config file found in the current directory'
 
-export const FORMATS = ['ts', 'json'] as const
+export const FORMATS = ['ts', 'py', 'json'] as const
 export const Format = Schema.Literals(FORMATS)
 export type Format = typeof Format.Type
 

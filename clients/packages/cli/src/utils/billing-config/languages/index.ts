@@ -6,7 +6,6 @@ import {
   exists,
   findUp,
   type Language,
-  type Loader,
 } from '@/utils/billing-config/languages/language'
 import { python } from '@/utils/billing-config/languages/python'
 import { typescript } from '@/utils/billing-config/languages/typescript'
@@ -14,9 +13,7 @@ import { typescript } from '@/utils/billing-config/languages/typescript'
 export type { Language } from '@/utils/billing-config/languages/language'
 export { exists } from '@/utils/billing-config/languages/language'
 
-export const LANGUAGES: ReadonlyArray<Language> = [typescript, json]
-
-const LOADERS: ReadonlyArray<Loader> = [typescript, python, json]
+export const LANGUAGES: ReadonlyArray<Language> = [typescript, python, json]
 
 const byFormat = Object.fromEntries(
   LANGUAGES.map((language) => [language.format, language]),
@@ -24,22 +21,22 @@ const byFormat = Object.fromEntries(
 
 export const languageFor = (format: Format): Language => byFormat[format]
 
-export const DEFAULT_CONFIG_FILES: ReadonlyArray<string> = LOADERS.flatMap(
-  (loader) => loader.defaultFiles,
+export const DEFAULT_CONFIG_FILES: ReadonlyArray<string> = LANGUAGES.flatMap(
+  (language) => language.defaultFiles,
 )
 
-export const languageOf = (file: string): Loader | undefined =>
+export const languageOf = (file: string): Language | undefined =>
   extname(file) === ''
     ? json
-    : LOADERS.find((loader) =>
-        loader.extensions.some((extension) => file.endsWith(extension)),
+    : LANGUAGES.find((language) =>
+        language.extensions.some((extension) => file.endsWith(extension)),
       )
 
 export const writableLanguageOf = (file: string): Language | undefined =>
   LANGUAGES.find((language) => file.endsWith(language.extension))
 
 export const supportedFiles = () =>
-  `Use a ${LOADERS.map(({ extensions }) => extensions[0]).join(', ')} or .js file.`
+  `Use a ${LANGUAGES.map(({ extension }) => extension).join(', ')} or .js file.`
 
 export const languageAt = (fs: FileSystem.FileSystem, directory: string) =>
   Effect.gen(function* () {

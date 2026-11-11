@@ -32,7 +32,7 @@ const literalPattern = (value: unknown) =>
     : new RegExp(`(?<![\\w.])${escape(String(value))}(?![\\w.])`)
 
 const FIELD_PATTERNS: Record<string, RegExp> = {
-  name: /displayName|(?<![\w.])name(?=\s*:)/,
+  name: /(?<![\w.])name(?=\s*:)/,
   filter: /\.where\(|\.on\(|(?<![\w.])filter(?=\s*:)/,
   aggregation:
     /\.(count|sum|max|min|avg|unique)\(|(?<![\w.])aggregation(?=\s*:)/,

@@ -1,4 +1,4 @@
-import { Effect, FileSystem, Option, Schema, Stdio } from 'effect'
+import { Effect, FileSystem, Option, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { announceAuthorization } from '@/commands/auth'
 import {
@@ -28,7 +28,7 @@ import {
   projectRoot,
 } from '@/utils/billing-config/languages'
 import { banner } from '@/utils/logo'
-import { confirm, select } from '@/utils/prompt'
+import { confirm, select, interactive } from '@/utils/prompt'
 import { section, target } from '@/utils/billing-config/review'
 import { output } from '@/utils/command'
 import {
@@ -96,11 +96,6 @@ type Required = typeof Required.Type
 
 const Init = Schema.Union([Written, Required])
 type Init = typeof Init.Type
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 type EnvironmentFlags = Record<PolarEnvironment, boolean>
 

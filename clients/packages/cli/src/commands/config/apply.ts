@@ -1,4 +1,4 @@
-import { Duration, Effect, Option, Stdio } from 'effect'
+import { Duration, Effect, Option } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import { changeCount, tally } from '@/utils/billing-config/entries'
 import { plural } from '@/utils/billing-config/problems'
@@ -28,6 +28,7 @@ import {
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
+import { interactive, keypress } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
@@ -65,32 +66,6 @@ const render = (
           : []),
         ui.blank,
       ]
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
-
-const keypress = (frame: string) =>
-  Prompt.Custom<boolean, boolean>(false, {
-    render: (_, action) =>
-      Effect.succeed(
-        action._tag === 'NextFrame'
-          ? frame
-          : action._tag === 'Submit'
-            ? `${frame}\n`
-            : '',
-      ),
-    process: (input) =>
-      Effect.succeed(
-        input.key.name === 'y'
-          ? { _tag: 'Submit', value: true }
-          : input.key.name === 'n' || input.key.name === 'escape'
-            ? { _tag: 'Submit', value: false }
-            : { _tag: 'Beep' },
-      ),
-    clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
-  })
 
 const approve = (
   config: LoadedConfig,

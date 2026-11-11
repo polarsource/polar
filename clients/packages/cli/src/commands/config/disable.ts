@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, Stdio } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import { ActiveOrganization } from '@/schemas/Auth'
 import { BillingConfigError } from '@/schemas/BillingConfig'
@@ -8,16 +8,12 @@ import { next, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
+import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const DisableOutput = Schema.Struct({
   organization: ActiveOrganization,
   disabled: Schema.Boolean,
-})
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
 const approve = (

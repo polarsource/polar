@@ -1,4 +1,4 @@
-import { Clock, Effect, Option, Stdio } from 'effect'
+import { Clock, Effect, Option } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -16,6 +16,7 @@ import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
+import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const reason = (entry: PruneEntry) =>
@@ -75,11 +76,6 @@ const report = (
     groups.join('\n\n'),
   )
 }
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const confirm =
   (

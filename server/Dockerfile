@@ -97,7 +97,8 @@ RUN --mount=type=bind,source=uv.lock,target=uv.lock \
   && update-ca-certificates \
   && uv sync --no-group dev --frozen \
   && uv tool install tinybird --python 3.13 \
-  && apt-get autoremove -y build-essential
+  && apt-get autoremove -y build-essential git \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy build artifacts in their own layers before the source, so they keep their
 # digests and are not re-uploaded when only the source changes.

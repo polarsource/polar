@@ -12,6 +12,7 @@ import {
   readSource,
   unwritable,
 } from '@/services/billing-config/languages/language'
+import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
 
 const PACKAGE = '@polar-sh/polar'
 const MANIFEST = 'package.json'
@@ -163,4 +164,6 @@ export const typescript: Language = {
     generateConfig(dropOptionalNulls(document)).pipe(
       Effect.mapError(unwritable('TypeScript')),
     ),
+  locate: ({ source, input }, path, got) =>
+    locateInScript(source, input, path, got),
 }

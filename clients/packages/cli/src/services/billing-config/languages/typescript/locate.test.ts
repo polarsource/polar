@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { locateInScript } from '@/services/billing-config/script-locations'
+import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
 
 const builder = [
   "import { defineConfig, eq } from '@polar-sh/polar'",

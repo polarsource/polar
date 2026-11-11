@@ -2,7 +2,7 @@ import { applyEdits, modify } from 'jsonc-parser'
 import {
   type Range,
   sectionRange,
-} from '@/services/billing-config/script-locations'
+} from '@/services/billing-config/languages/typescript/locate'
 
 export interface Removal {
   readonly section: string

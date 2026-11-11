@@ -16,6 +16,7 @@ from sqlalchemy import (
     and_,
     cast,
     column,
+    false,
     func,
     literal,
     literal_column,
@@ -573,33 +574,46 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         return result.tuples().all()
 
     def get_event_billed_by_other_order_clause(
-        self, reducer: Reducer, order_id: UUID
+        self,
+        reducer: Reducer,
+        order_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        bucket_size: timedelta,
     ) -> ColumnElement[bool]:
-        """Whether the reducer billed the event in an order other than `order_id`:
-        the first generation still open at its ingestion holds it."""
-        return (
-            select(
+        """Whether the reducer billed the event, of one of `identities`, in an order
+        other than `order_id`: the first generation still open at its ingestion
+        holds it."""
+        # One subquery per identity, bounded by the bucket size: Postgres won't
+        # serve a correlated identity or an open-ended start from the identity index.
+        return or_(
+            false(),
+            *(
                 and_(
-                    ReducerBucket.billed_at.is_not(None),
-                    ReducerBucket.order_id.is_distinct_from(order_id),
+                    _is_customer(Event, customer_id, external_customer_id),
+                    select(
+                        and_(
+                            ReducerBucket.billed_at.is_not(None),
+                            ReducerBucket.order_id.is_distinct_from(order_id),
+                        )
+                    )
+                    .where(
+                        ReducerBucket.organization_id == reducer.organization_id,
+                        ReducerBucket.reducer_id == reducer.id,
+                        _is_customer(ReducerBucket, customer_id, external_customer_id),
+                        ReducerBucket.bucket_start <= Event.timestamp,
+                        ReducerBucket.bucket_start > Event.timestamp - bucket_size,
+                        ReducerBucket.bucket_end > Event.timestamp,
+                        or_(
+                            ReducerBucket.sealed_at.is_(None),
+                            ReducerBucket.sealed_at >= Event.ingested_at,
+                        ),
+                    )
+                    .order_by(ReducerBucket.generation)
+                    .limit(1)
+                    .scalar_subquery()
+                    .is_(True),
                 )
-            )
-            .where(
-                ReducerBucket.organization_id == reducer.organization_id,
-                ReducerBucket.reducer_id == reducer.id,
-                ReducerBucket.customer_id.is_not_distinct_from(Event.customer_id),
-                ReducerBucket.external_customer_id.is_not_distinct_from(
-                    Event.external_customer_id
-                ),
-                ReducerBucket.bucket_start <= Event.timestamp,
-                ReducerBucket.bucket_end > Event.timestamp,
-                or_(
-                    ReducerBucket.sealed_at.is_(None),
-                    ReducerBucket.sealed_at >= Event.ingested_at,
-                ),
-            )
-            .order_by(ReducerBucket.generation)
-            .limit(1)
-            .scalar_subquery()
-            .is_(True)
+                for customer_id, external_customer_id in identities
+            ),
         )

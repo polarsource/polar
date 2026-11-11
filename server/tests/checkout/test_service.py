@@ -35,6 +35,7 @@ from polar.checkout.service import (
     NotConfirmedCheckout,
     NotOpenCheckout,
     PaymentError,
+    PaymentMethodCountryMismatch,
     SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
@@ -7082,6 +7083,100 @@ class TestConfirm:
             "CONFIRMATION_TOKEN_ID"
         )
 
+    @pytest.mark.parametrize(
+        ("payment_method_country", "billing_country", "ip_country"),
+        [
+            pytest.param("FR", "FR", "FR", id="all match"),
+            pytest.param("FR", "FR", "US", id="payment method and billing match"),
+            pytest.param("FR", "DE", "FR", id="payment method and IP match"),
+            pytest.param("US", "FR", "FR", id="billing and IP match"),
+            pytest.param(None, "FR", "US", id="unknown payment method country"),
+            pytest.param("DE", "FR", None, id="unknown IP country"),
+        ],
+    )
+    async def test_country_match(
+        self,
+        payment_method_country: str | None,
+        billing_country: str,
+        ip_country: str | None,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch.object(
+            checkout_service, "_get_ip_country", return_value=ip_country
+        )
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
+            payment_method_preview=SimpleNamespace(
+                card=SimpleNamespace(country=payment_method_country, fingerprint=None),
+                billing_details=None,
+            )
+        )
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": billing_country},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+
+    async def test_country_mismatch(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        mocker.patch.object(checkout_service, "_get_ip_country", return_value="US")
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
+            payment_method_preview=SimpleNamespace(
+                card=SimpleNamespace(country="DE", fingerprint=None),
+                billing_details=None,
+            )
+        )
+
+        with pytest.raises(PaymentMethodCountryMismatch):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+        stripe_service_mock.create_customer.assert_not_called()
+        stripe_service_mock.create_payment_intent.assert_not_called()
+
     async def test_wallet_payment_uses_provided_name_over_token(
         self,
         save_fixture: SaveFixture,
@@ -7125,7 +7220,6 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.customer_name == "Provided Name"
-        stripe_service_mock.get_confirmation_token.assert_not_called()
 
     async def test_wallet_payment_succeeds_on_stripe_error(
         self,

@@ -54,6 +54,7 @@ from .service import (
     ExpiredCheckoutError,
     NotOpenCheckout,
     PaymentError,
+    PaymentMethodCountryMismatch,
     SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
@@ -103,6 +104,7 @@ CheckoutForbiddenError = {
         | NotPermitted.schema()
         | PaymentNotReady.schema()
         | TrialAlreadyRedeemed.schema()
+        | PaymentMethodCountryMismatch.schema()
         | DiscountRedemptionLimitReached.schema(),
         SetSchemaReference("CheckoutForbiddenError"),
     ],
@@ -364,6 +366,7 @@ async def client_confirm(
     client_secret: CheckoutClientSecret,
     checkout_confirm: legacy_schemas.CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -376,7 +379,7 @@ async def client_confirm(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session, auth_subject, checkout, checkout_confirm, ip_geolocation_client
     )
 
 
@@ -399,6 +402,7 @@ async def client_confirm_v2027_01(
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -411,7 +415,7 @@ async def client_confirm_v2027_01(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session, auth_subject, checkout, checkout_confirm, ip_geolocation_client
     )
 
 

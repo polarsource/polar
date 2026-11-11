@@ -14852,6 +14852,7 @@ export interface components {
       | components['schemas']['NotPermitted']
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
+      | components['schemas']['PaymentMethodCountryMismatch']
       | components['schemas']['DiscountRedemptionLimitReached']
     /**
      * CheckoutLink
@@ -33506,6 +33507,17 @@ export interface components {
       exp_year: number
       /** Wallet */
       wallet?: string | null
+    }
+    /** PaymentMethodCountryMismatch */
+    PaymentMethodCountryMismatch: {
+      /**
+       * Error
+       * @example PaymentMethodCountryMismatch
+       * @constant
+       */
+      error: 'PaymentMethodCountryMismatch'
+      /** Detail */
+      detail: string
     }
     /** PaymentMethodGeneric */
     PaymentMethodGeneric: {

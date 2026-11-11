@@ -232,6 +232,16 @@ class TrialAlreadyRedeemed(CheckoutError):
         super().__init__(message, 403)
 
 
+class PaymentMethodCountryMismatch(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = (
+            "We couldn't verify your payment details. "
+            "Please make sure your billing address matches your payment method."
+        )
+        super().__init__(message, 403)
+
+
 class DiscountRedemptionLimitReached(CheckoutError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
@@ -1099,6 +1109,7 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         checkout = await self._update_checkout(session, checkout, checkout_confirm)
         # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
@@ -1109,7 +1120,11 @@ class CheckoutService:
                 ) as discount_redemption:
                     discount_redemption.checkout = checkout
                     return await self._confirm_inner(
-                        session, auth_subject, checkout, checkout_confirm
+                        session,
+                        auth_subject,
+                        checkout,
+                        checkout_confirm,
+                        ip_geolocation_client,
                     )
             except DiscountNotRedeemableError as e:
                 raise PolarRequestValidationError(
@@ -1124,7 +1139,7 @@ class CheckoutService:
                 ) from e
 
         return await self._confirm_inner(
-            session, auth_subject, checkout, checkout_confirm
+            session, auth_subject, checkout, checkout_confirm, ip_geolocation_client
         )
 
     async def _confirm_inner(
@@ -1133,6 +1148,7 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
     ) -> Checkout:
         errors: list[ValidationError] = []
         try:
@@ -1183,17 +1199,6 @@ class CheckoutService:
             checkout.payment_processor == PaymentProcessor.stripe
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
-            and (
-                checkout.customer_name is None
-                or (
-                    checkout.discount is not None
-                    and checkout.discount.max_redemptions_per_customer is not None
-                )
-                or (
-                    checkout.trial_end is not None
-                    and checkout.organization.prevent_trial_abuse
-                )
-            )
         ):
             try:
                 confirmation_token = await stripe_service.get_confirmation_token(
@@ -1266,6 +1271,16 @@ class CheckoutService:
             and isinstance(checkout_confirm, CheckoutConfirmSharedPaymentToken)
         ):
             self._validate_shared_payment_token(checkout)
+
+        if confirmation_token is not None and not self._has_matching_countries(
+            checkout, confirmation_token, ip_geolocation_client
+        ):
+            log.info(
+                "Checkout confirmation blocked by country mismatch",
+                checkout_id=str(checkout.id),
+                organization_id=str(checkout.organization_id),
+            )
+            raise PaymentMethodCountryMismatch(checkout)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -2806,6 +2821,29 @@ class CheckoutService:
                 session.add(checkout)
 
         return checkout
+
+    def _has_matching_countries(
+        self,
+        checkout: Checkout,
+        confirmation_token: stripe_lib.ConfirmationToken,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
+    ) -> bool:
+        card = getattr(confirmation_token.payment_method_preview, "card", None)
+        payment_method_country: str | None = getattr(card, "country", None)
+        billing_country = (
+            checkout.customer_billing_address.country
+            if checkout.customer_billing_address is not None
+            else None
+        )
+        ip_country = self._get_ip_country(
+            ip_geolocation_client, checkout.customer_ip_address
+        )
+
+        countries = [payment_method_country, billing_country, ip_country]
+        if any(country is None for country in countries):
+            return True
+
+        return len(set(countries)) < len(countries)
 
     def _get_ip_country(
         self,

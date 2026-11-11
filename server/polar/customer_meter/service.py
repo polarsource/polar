@@ -46,6 +46,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageSummary
+from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -159,6 +160,12 @@ class CustomerMeterService:
 
         if updated:
             enqueue_job("customer.state_changed", customer.id)
+
+        if updated and reducer_billing:
+            for subscription_id in await SubscriptionRepository.from_session(
+                session
+            ).get_metered_ids_by_customer(customer.id):
+                enqueue_job("subscription.update_meters", subscription_id)
 
     async def update_customer_meter(
         self,

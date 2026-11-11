@@ -262,6 +262,7 @@ class TestGetMeterCharge:
         )
 
         assert charge == MeterCharge(
+            units=Decimal(12),
             units_by_price={old_price_id: Decimal(4), new_price_id: Decimal(8)},
             period_shares={old_price_id: Decimal(1), new_price_id: Decimal(1)},
             credited_units=Decimal(3),

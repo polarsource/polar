@@ -553,6 +553,33 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return result.tuples().all()
 
+    async def get_pending_totals(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        start: datetime,
+        end: datetime,
+    ) -> Totals:
+        """count, sum, min and max of the identities' buckets not billed yet,
+        sealed or not, starting within [start, end)."""
+        result = await self.session.execute(
+            select(
+                func.coalesce(func.sum(ReducerBucket.count), 0),
+                func.coalesce(func.sum(ReducerBucket.sum), 0),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+            ).where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                _is_any_customer(identities),
+                ReducerBucket.billed_at.is_(None),
+                ReducerBucket.bucket_start >= start,
+                ReducerBucket.bucket_start < end,
+            )
+        )
+        return result.tuples().one()
+
     async def mark_ids_as_billed(
         self, bucket_ids: Sequence[UUID], order_id: UUID, *, billed_at: datetime
     ) -> int:

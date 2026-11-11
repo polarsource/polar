@@ -138,6 +138,7 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
+from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -3242,27 +3243,16 @@ class SubscriptionService:
         return int(organization.benefit_revocation_grace_period) == 0
 
     async def update_meters(
-        self, session: AsyncSession, subscription: Subscription
+        self, session: AsyncSession, redis: Redis, subscription: Subscription
     ) -> Subscription:
         # First reset all meters, since we're computing from every entry
         for subscription_meter in subscription.meters:
             subscription_meter.reset()
 
-        async for (
-            line_item,
-            _,
-        ) in billing_entry_service.compute_pending_subscription_line_items(
-            session, subscription
-        ):
-            if not isinstance(line_item, MeteredLineItem):
-                continue
-            subscription_meter_line = subscription.get_meter(line_item.price.meter)
-            if subscription_meter_line is not None:
-                subscription_meter_line.consumed_units += Decimal(
-                    line_item.consumed_units
-                )
-                subscription_meter_line.credited_units += line_item.credited_units
-                subscription_meter_line.amount += line_item.amount
+        if subscription.organization.is_reducer_billing_enabled:
+            await self._update_meters_from_reducers(session, redis, subscription)
+        else:
+            await self._update_meters_from_billing_entries(session, subscription)
 
         session.add(subscription)
         await self._after_subscription_updated(
@@ -3769,6 +3759,48 @@ class SubscriptionService:
             subscription.trial_start, product.trial_interval_count
         )
         return None if candidate_trial_end <= utc_now() else candidate_trial_end
+
+    async def _update_meters_from_billing_entries(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        async for (
+            line_item,
+            _,
+        ) in billing_entry_service.compute_pending_subscription_line_items(
+            session, subscription
+        ):
+            if not isinstance(line_item, MeteredLineItem):
+                continue
+            subscription_meter_line = subscription.get_meter(line_item.price.meter)
+            if subscription_meter_line is not None:
+                subscription_meter_line.consumed_units += Decimal(
+                    line_item.consumed_units
+                )
+                subscription_meter_line.credited_units += line_item.credited_units
+                subscription_meter_line.amount += line_item.amount
+
+    async def _update_meters_from_reducers(
+        self, session: AsyncSession, redis: Redis, subscription: Subscription
+    ) -> None:
+        charges = await billing_interval_service.get_pending_usage(
+            session,
+            redis,
+            subscription,
+            period_start=(
+                subscription.current_meter_period_start
+                or subscription.current_period_start
+            ),
+            cutoff=utc_now(),
+        )
+        for subscription_meter in subscription.meters:
+            charge = charges.get(subscription_meter.meter_id)
+            if charge is None:
+                continue
+            subscription_meter.consumed_units = charge.units
+            subscription_meter.credited_units = int(charge.credited_units)
+            subscription_meter.amount = (
+                await billing_entry_service.get_reducer_charge_amount(session, charge)
+            )
 
     async def _collect_pending_prorations(
         self, session: AsyncSession, subscription: Subscription

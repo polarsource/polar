@@ -5,6 +5,7 @@ import {
   type Language,
   readSource,
 } from '@/services/billing-config/languages/language'
+import { locateInJson } from '@/services/billing-config/languages/json/locate'
 
 export const json: Language = {
   title: 'JSON',
@@ -29,4 +30,6 @@ export const json: Language = {
     }),
   render: (document) =>
     Effect.succeed(`${JSON.stringify(dropOptionalNulls(document), null, 2)}\n`),
+  locate: ({ source }, path, _got, target) =>
+    locateInJson(source, path, target),
 }

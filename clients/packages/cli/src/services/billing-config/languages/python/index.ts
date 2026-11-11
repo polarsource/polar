@@ -7,6 +7,7 @@ import {
   readSource,
   unwritable,
 } from '@/services/billing-config/languages/language'
+import { locateInPython } from '@/services/billing-config/languages/python/locate'
 import { renderPython } from '@/services/billing-config/languages/python/render'
 
 const PYTHON = process.platform === 'win32' ? 'python' : 'python3'
@@ -69,4 +70,6 @@ export const python: Language = {
     }),
   render: (document) =>
     renderPython(document).pipe(Effect.mapError(unwritable('Python'))),
+  locate: ({ source, input }, path, got, target) =>
+    locateInPython(source, input, path, got, target),
 }

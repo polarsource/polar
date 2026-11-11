@@ -5,6 +5,7 @@ import {
   type ConfigDocument,
   type Format,
   type LoadedConfig,
+  type SourceLocation,
 } from '@/schemas/BillingConfig'
 import type { Run } from '@/utils/run'
 
@@ -35,6 +36,42 @@ export interface Language {
   readonly render: (
     document: ConfigDocument,
   ) => Effect.Effect<string, BillingConfigError>
+  readonly locate: (
+    config: LoadedConfig,
+    path: SourcePath,
+    got: unknown,
+    target: 'key' | 'value',
+  ) => SourceLocation | undefined
+}
+
+export type SourcePath = ReadonlyArray<string | number>
+
+export const escapePattern = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+export const span = (
+  source: string,
+  offset: number,
+  length: number,
+): SourceLocation => {
+  const before = source.slice(0, offset)
+  return {
+    line: before.split('\n').length,
+    column: offset - before.lastIndexOf('\n'),
+    length,
+  }
+}
+
+export const findIn = (
+  source: string,
+  pattern: RegExp,
+  from: number,
+  to: number,
+) => {
+  const match = pattern.exec(source.slice(from, to))
+  return match === null
+    ? undefined
+    : { offset: from + match.index, length: match[0].length }
 }
 
 export const readSource = (fs: FileSystem.FileSystem, file: string) =>

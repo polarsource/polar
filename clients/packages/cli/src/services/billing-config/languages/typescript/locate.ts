@@ -1,25 +1,10 @@
 import type { SourceLocation } from '@/schemas/BillingConfig'
-
-type Path = ReadonlyArray<string | number>
-
-const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-const positionOf = (source: string, offset: number) => {
-  const before = source.slice(0, offset)
-  return {
-    line: before.split('\n').length,
-    column: offset - before.lastIndexOf('\n'),
-  }
-}
-
-const span = (
-  source: string,
-  offset: number,
-  length: number,
-): SourceLocation => ({
-  ...positionOf(source, offset),
-  length,
-})
+import {
+  escapePattern as escape,
+  findIn as find,
+  type SourcePath as Path,
+  span,
+} from '@/services/billing-config/languages/language'
 
 const PARAMETERS = /^\s*:\s*(?:async\s*)?\([^)]*\)\s*=>/
 
@@ -40,13 +25,6 @@ const FIELD_PATTERNS: Record<string, RegExp> = {
   custom_label: /\.unit\(|(?<![\w.])custom_label(?=\s*:)/,
   meter_interval: /\.meterCycle\(|(?<![\w.])meter_interval(?=\s*:)/,
   meter_interval_count: /\.meterCycle\(|(?<![\w.])meter_interval_count(?=\s*:)/,
-}
-
-const find = (source: string, pattern: RegExp, from: number, to: number) => {
-  const match = pattern.exec(source.slice(from, to))
-  return match === null
-    ? undefined
-    : { offset: from + match.index, length: match[0].length }
 }
 
 export type Range = { start: number; end: number }

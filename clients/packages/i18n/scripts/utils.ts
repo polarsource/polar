@@ -112,15 +112,32 @@ const PLURAL_SAMPLE_COUNTS = [
 ]
 
 /**
+ * The exact counts (`=N`) that every plural in the source defines.
+ */
+export function getSharedExactCounts(
+  sourceKeys: Map<string, unknown>,
+  pluralPaths: Set<string>,
+): Set<number> {
+  return new Set(
+    Object.values(EXACT_COUNT_FOR_CATEGORY).filter(
+      (count) =>
+        pluralPaths.size > 0 &&
+        [...pluralPaths].every((path) => sourceKeys.has(`${path}.=${count}`)),
+    ),
+  )
+}
+
+/**
  * The plural category keys a locale may use, with sample counts for each,
- * based on its CLDR plural rules. `zero`, `one` and `two` are only included
- * when they cover more than their exact count, since the source's `=0`, `=1`
- * and `=2` keys already handle that count.
+ * based on its CLDR plural rules. `zero`, `one` and `two` are skipped when
+ * they cover only their exact count and every source plural already defines
+ * that count as `=0`, `=1` or `=2`.
  * e.g. { few: [2, 3, 4, 22, 23], many: [0, 5, 6, 7, 8] } for Polish,
  * { one: [0, 1], many: [1000000] } for French, {} for German.
  */
 export function getPluralCategorySamples(
   locale: string,
+  sharedExactCounts: ReadonlySet<number>,
 ): Record<string, number[]> {
   const rules = new Intl.PluralRules(locale)
   const samples: Record<string, number[]> = {}
@@ -130,7 +147,8 @@ export function getPluralCategorySamples(
       (n) => rules.select(n) === category,
     )
     const exact = EXACT_COUNT_FOR_CATEGORY[category]
-    if (counts.some((n) => n !== exact)) {
+    const onlyExact = counts.every((n) => n === exact)
+    if (counts.length > 0 && !(onlyExact && sharedExactCounts.has(exact))) {
       samples[category] = counts.slice(0, 5)
     }
   }
@@ -141,8 +159,33 @@ export function getPluralCategorySamples(
 /**
  * The plural category keys a locale may use. See getPluralCategorySamples.
  */
-export function getPluralCategoryKeys(locale: string): string[] {
-  return Object.keys(getPluralCategorySamples(locale))
+export function getPluralCategoryKeys(
+  locale: string,
+  sharedExactCounts: ReadonlySet<number>,
+): string[] {
+  return Object.keys(getPluralCategorySamples(locale, sharedExactCounts))
+}
+
+/**
+ * Whether a flat key is a plural variant used for a single count: an exact
+ * `=N`, or a category the locale's rules select for one count only (Arabic
+ * `two`). Such a variant may spell the count out instead of using `#`.
+ */
+export function isSingleCountVariant(
+  key: string,
+  pluralPaths: Set<string>,
+  locale: string,
+): boolean {
+  const separator = key.lastIndexOf('.')
+  if (!pluralPaths.has(key.slice(0, separator))) return false
+
+  const variant = key.slice(separator + 1)
+  if (variant.startsWith('=')) return true
+
+  const rules = new Intl.PluralRules(locale)
+  return (
+    PLURAL_SAMPLE_COUNTS.filter((n) => rules.select(n) === variant).length === 1
+  )
 }
 
 /**
@@ -413,6 +456,28 @@ export function extractPlaceholders(str: string): string[] {
   }
 
   return [...new Set(placeholders)].sort()
+}
+
+/**
+ * Check that a translation keeps its source's placeholders. With
+ * `countOptional`, the translation may leave out the `#` count placeholder.
+ */
+export function placeholdersMatch(
+  source: string,
+  translation: string,
+  countOptional = false,
+): boolean {
+  const expected = extractPlaceholders(source)
+  const actual = extractPlaceholders(translation)
+  if (arraysEqual(expected, actual)) return true
+
+  return (
+    countOptional &&
+    arraysEqual(
+      expected.filter((placeholder) => placeholder !== '#'),
+      actual,
+    )
+  )
 }
 
 /**

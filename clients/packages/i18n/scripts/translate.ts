@@ -8,8 +8,6 @@ import {
   type EntryValue,
   type NestedObject,
   type TranslationCache,
-  arraysEqual,
-  extractPlaceholders,
   findChangedKeys,
   findOrphanedKeys,
   findPluralPaths,
@@ -17,9 +15,12 @@ import {
   flattenKeysToStrings,
   getPluralCategoryKeys,
   getPluralCategorySamples,
+  getSharedExactCounts,
   getStringValue,
+  isSingleCountVariant,
   type LLMSourceEntry,
   normalizeResponse,
+  placeholdersMatch,
   prepareForLLM,
   resolveSourceKey,
   unflattenKeys,
@@ -53,10 +54,11 @@ async function callLLM(
   targetLocale: TranslatedLocale,
   sourceStrings: Record<string, LLMSourceEntry>,
   prompt: string,
+  sharedExactCounts: ReadonlySet<number>,
 ): Promise<Record<string, string>> {
   const localeName = LOCALE_NAMES[targetLocale] || targetLocale
   const pluralCategorySamples = Object.entries(
-    getPluralCategorySamples(targetLocale),
+    getPluralCategorySamples(targetLocale, sharedExactCounts),
   )
   const pluralCategories =
     pluralCategorySamples.length > 0
@@ -199,6 +201,7 @@ async function translate(
   log.info(`Targets: ${targetLocales.map((l) => log.cyan(l)).join(', ')}`)
 
   const stats = { translated: 0, skipped: 0, removed: 0 }
+  const sharedExactCounts = getSharedExactCounts(sourceKeys, pluralPaths)
 
   for (const locale of targetLocales) {
     const localeName = LOCALE_NAMES[locale] || locale
@@ -224,7 +227,7 @@ async function translate(
       existing,
     ).filter((key) => !lockedKeys.includes(key))
 
-    const pluralCategoryKeys = getPluralCategoryKeys(locale)
+    const pluralCategoryKeys = getPluralCategoryKeys(locale, sharedExactCounts)
     const orphanedKeys = findOrphanedKeys(
       sourceKeys,
       existing,
@@ -252,7 +255,12 @@ async function translate(
     let translations: Record<string, string> = {}
     if (changedKeys.length > 0) {
       const toTranslate = prepareForLLM(sourceKeys, changedKeys, pluralPaths)
-      translations = await callLLM(locale, toTranslate, prompt)
+      translations = await callLLM(
+        locale,
+        toTranslate,
+        prompt,
+        sharedExactCounts,
+      )
     }
 
     const existingFlat = flattenKeys(existing)
@@ -330,6 +338,7 @@ function validate(
   localeData: Map<SupportedLocale, NestedObject>,
 ): boolean {
   const errors: string[] = []
+  const sharedExactCounts = getSharedExactCounts(sourceKeys, pluralPaths)
 
   log.blank()
   log.step('Validating translations...')
@@ -362,7 +371,7 @@ function validate(
       }
     }
 
-    const pluralCategoryKeys = getPluralCategoryKeys(locale)
+    const pluralCategoryKeys = getPluralCategoryKeys(locale, sharedExactCounts)
     const extraKeys: string[] = []
     for (const key of translationKeys.keys()) {
       if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {
@@ -394,10 +403,8 @@ function validate(
       const sourceValue = sourceKey && sourceStrings.get(sourceKey)
       if (!sourceValue || !translationValue) continue
 
-      const sourcePlaceholders = extractPlaceholders(sourceValue)
-      const translationPlaceholders = extractPlaceholders(translationValue)
-
-      if (!arraysEqual(sourcePlaceholders, translationPlaceholders)) {
+      const countOptional = isSingleCountVariant(key, pluralPaths, locale)
+      if (!placeholdersMatch(sourceValue, translationValue, countOptional)) {
         placeholderErrors.push(key)
         errors.push(`${locale}.${key}: Placeholder mismatch`)
       }

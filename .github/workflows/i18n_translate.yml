@@ -5,6 +5,7 @@ on:
     paths:
       - "clients/packages/i18n/src/locales/en.ts"
       - "clients/packages/i18n/src/config.ts"
+      - "clients/packages/i18n/scripts/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -65,7 +65,9 @@ const MeteredChargesDetails = ({
   }
 
   const includedUnitsByMeter = getIncludedUnitsByMeter(product.benefits)
-  const numberFormat = new Intl.NumberFormat(locale)
+  const numberFormat = new Intl.NumberFormat(locale, {
+    numberingSystem: 'latn',
+  })
 
   return (
     <div className="dark:border-polar-700 mt-2 flex flex-col gap-y-2 border-t border-gray-200 pt-4">

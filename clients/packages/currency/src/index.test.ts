@@ -196,4 +196,30 @@ describe('formatCurrency', () => {
       )
     })
   })
+
+  describe('Numbering system', () => {
+    it.each([
+      'compact',
+      'standard',
+      'accounting',
+      'statistics',
+      'subcent',
+    ] as const)(
+      'uses Latin digits in %s mode for locales that default to others',
+      (mode) => {
+        expect(formatCurrency(mode, 'ar-SA')(123456, 'usd')).toMatch(
+          /1[.,]?234/,
+        )
+        expect(formatCurrency(mode, 'ar-EG')(123456, 'usd')).not.toMatch(
+          /[\u0660-\u0669]/,
+        )
+      },
+    )
+
+    it('hides unnecessary decimals for those locales', () => {
+      expect(formatCurrency('standard', 'ar-SA')(1000, 'usd')).not.toContain(
+        '00',
+      )
+    })
+  })
 })

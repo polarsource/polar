@@ -79,6 +79,7 @@ const formatCurrencyCompact = (
   const decimalFactor = getCurrencyDecimalFactor(currency)
   const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
+    numberingSystem: 'latn',
     currency,
     currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
@@ -95,6 +96,7 @@ const formatCurrencyStandard = (
   const decimalFactor = getCurrencyDecimalFactor(currency)
   const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
+    numberingSystem: 'latn',
     currency,
     currencyDisplay: 'symbol',
     minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
@@ -111,6 +113,7 @@ const formatCurrencyAccounting = (
   const decimalFactor = getCurrencyDecimalFactor(currency)
   const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
+    numberingSystem: 'latn',
     currency,
     currencyDisplay: 'symbol',
     minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
@@ -131,6 +134,7 @@ const formatCurrencyStatistics = (
   if (Math.abs(displayValue) >= 1_000_000) {
     return new Intl.NumberFormat(locales, {
       style: 'currency',
+      numberingSystem: 'latn',
       currency,
       currencyDisplay: 'narrowSymbol',
       notation: 'compact',
@@ -145,6 +149,7 @@ const formatCurrencyStatistics = (
   if (Math.abs(displayValue) >= 10_000) {
     return new Intl.NumberFormat(locales, {
       style: 'currency',
+      numberingSystem: 'latn',
       currency,
       currencyDisplay: 'narrowSymbol',
       minimumFractionDigits: 0,
@@ -156,6 +161,7 @@ const formatCurrencyStatistics = (
   return scrubTrailingZeros(
     new Intl.NumberFormat(locales, {
       style: 'currency',
+      numberingSystem: 'latn',
       currency,
       currencyDisplay: 'narrowSymbol',
       minimumFractionDigits: isDecimalCurrency(currency) ? 2 : 0,
@@ -172,6 +178,7 @@ const formatCurrencySubcent = (
   const decimalFactor = getCurrencyDecimalFactor(currency)
   const currencyNumberFormat = new Intl.NumberFormat(locales, {
     style: 'currency',
+    numberingSystem: 'latn',
     currency,
     currencyDisplay: 'narrowSymbol',
     minimumFractionDigits: 2,

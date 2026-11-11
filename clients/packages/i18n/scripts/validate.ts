@@ -2,12 +2,13 @@ import path from 'node:path'
 import * as log from './logger'
 import {
   type NestedObject,
-  arraysEqual,
-  extractPlaceholders,
   findPluralPaths,
   flattenKeys,
   flattenKeysToStrings,
   getPluralCategoryKeys,
+  getSharedExactCounts,
+  isSingleCountVariant,
+  placeholdersMatch,
   resolveSourceKey,
 } from './utils'
 
@@ -39,6 +40,7 @@ async function validate() {
   const sourceKeys = flattenKeys(defaultLocale)
   const sourceStrings = flattenKeysToStrings(defaultLocale)
   const pluralPaths = findPluralPaths(defaultLocale as Record<string, unknown>)
+  const sharedExactCounts = getSharedExactCounts(sourceKeys, pluralPaths)
   const targetLocales = SUPPORTED_LOCALES.filter(
     (l): l is TranslatedLocale => l !== DEFAULT_LOCALE,
   )
@@ -80,7 +82,7 @@ async function validate() {
       }
     }
 
-    const pluralCategoryKeys = getPluralCategoryKeys(locale)
+    const pluralCategoryKeys = getPluralCategoryKeys(locale, sharedExactCounts)
     const extraKeys: string[] = []
     for (const key of translationKeys.keys()) {
       if (!resolveSourceKey(key, sourceKeys, pluralPaths, pluralCategoryKeys)) {
@@ -109,10 +111,8 @@ async function validate() {
       const sourceValue = sourceKey && sourceStrings.get(sourceKey)
       if (!sourceValue || !translationValue) continue
 
-      const sourcePlaceholders = extractPlaceholders(sourceValue)
-      const translationPlaceholders = extractPlaceholders(translationValue)
-
-      if (!arraysEqual(sourcePlaceholders, translationPlaceholders)) {
+      const countOptional = isSingleCountVariant(key, pluralPaths, locale)
+      if (!placeholdersMatch(sourceValue, translationValue, countOptional)) {
         placeholderErrors.push(key)
         errors.push(`${locale}.${key}: Placeholder mismatch`)
       }

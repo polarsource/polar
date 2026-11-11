@@ -45,7 +45,8 @@ HARD REQUIREMENTS
    - CLDR plural categories that {TARGET_LOCALE} may add, with example counts: {PLURAL_CATEGORIES}.
    - A category key is used for every count in that category that has no exact `=N` variant. If that list is not `none` and a `_pluralOther` string needs a different word form for a category's counts, ALSO output a sibling key that replaces the final `other` segment with the category name. Examples: Polish `"checkout.seats.count.other": "# stanowisk"` plus `"checkout.seats.count.few": "# stanowiska"`; French `"checkout.seats.count.other": "# sièges"` plus `"checkout.seats.count.one": "# siège"`.
    - Only add category keys from that list, only for `_pluralOther` entries, and only when the form {TARGET_LOCALE} uses for those counts differs from `.other`. Never add category keys when the list is `none`.
-   - Category keys follow every placeholder rule and must always contain `#`.
+   - When you add a category key for every listed category, `.other` is left with the remaining counts only (in Arabic: 100, 101, 102), so write it in the form those counts take.
+   - Category keys follow every placeholder rule and must contain `#`. The one exception: a `.=N` variant, or a category listed with a single example count, may spell that count out in words instead of using `#` when that is how {TARGET_LOCALE} writes it (Arabic dual: "مقعدان", not "2 مقعدان").
 
 6. Preserve markup and formatting exactly:
    - HTML tags, attributes, entities
@@ -186,6 +187,9 @@ GRAMMAR & EDGE CASES
 - If grammar in {TARGET_LOCALE} requires reordering around placeholders, do so WITHOUT changing the placeholder.
 - Handle pluralization naturally (see rule 5), but never modify placeholder tokens.
 - If a string is ambiguous, assume it appears in a digital goods/subscription checkout context and choose accordingly. Never assume physical product context.
+
+- Follow the punctuation conventions of {TARGET_LOCALE}, not those of the English source: use its own comma and quotation marks, and place a comma after a closing quotation mark when the English puts it inside.
+- In right-to-left locales, when Latin-script text that ends in punctuation (such as "Polar Software, Inc.") is followed by right-to-left text, insert U+200E (left-to-right mark) right after that punctuation so it stays attached to the Latin text.
 
 ========================
 QUALITY CHECK (MENTAL, BEFORE RESPONDING)

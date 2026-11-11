@@ -109,6 +109,15 @@ class AmbiguousExternalWebhookEndpointID(WebhookError):
         )
 
 
+class MCPWebhookEndpointReadOnly(WebhookError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This endpoint is an MCP event subscription managed by the MCP client. "
+            "It can only be enabled, disabled or deleted.",
+            403,
+        )
+
+
 class EventDoesNotExist(WebhookError):
     def __init__(self, event_id: UUID) -> None:
         self.event_id = event_id
@@ -240,6 +249,10 @@ class WebhookService:
         )
         if not declarative_config:
             await assert_catalog_editable(session, endpoint.organization_id)
+        if endpoint.format == WebhookFormat.mcp and (
+            update_schema.model_fields_set - {"enabled"}
+        ):
+            raise MCPWebhookEndpointReadOnly()
         repository = WebhookEndpointRepository.from_session(session)
 
         is_enabling = update_schema.enabled is True and not endpoint.enabled
@@ -277,6 +290,8 @@ class WebhookService:
         await assert_resource_permission(
             session, auth_subject, endpoint, OrganizationPermission.organization_manage
         )
+        if endpoint.format == WebhookFormat.mcp:
+            raise MCPWebhookEndpointReadOnly()
         repository = WebhookEndpointRepository.from_session(session)
         return await repository.update(
             endpoint,

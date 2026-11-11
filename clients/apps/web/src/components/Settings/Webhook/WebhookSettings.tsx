@@ -106,6 +106,9 @@ const Endpoint = ({
           </Text>
         </Box>
         <Box alignItems="center" columnGap="s" flexShrink={0}>
+          {endpoint.format === 'mcp' && (
+            <Status size="small" color="blue" status="MCP subscription" />
+          )}
           <WebhookSigningSchemeStatus
             organizationCreatedAt={organization.created_at}
             usesStandardWebhookSignature={

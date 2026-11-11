@@ -38,7 +38,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@polar-sh/sdk": "1.0.2",
+    "@polar-sh/sdk": "1.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {

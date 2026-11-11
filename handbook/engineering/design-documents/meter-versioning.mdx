@@ -165,7 +165,8 @@ An `immediate` move splits the period in two. For count and sum, the two parts a
 - **Ingestion doesn't choose a version.** An event matches a version when it passes that version's filter. It is tested against every published version, as today, and every version that matches counts it. A message matches `meter_A` and `meter_B`. An image only matches `meter_B`. Each version has its own usage reducer and its own credit reducer, as today.
 - **Reading chooses.** A balance is the credits and the usage of the customer's version, since its last reset.
 - **Overage.** Each version bills the subscriptions whose metered price points to it. Alice's messages also match `meter_B`, but she has no price on it, so they are billed once.
-- **Cost.** An event that matches three versions is stored and reduced three times. A version with no customers left can stop matching events.
+- **Cost.** An event that matches three versions is stored and reduced three times. We accept this. Storage is cheap, and ingestion stays as fast as today because it never looks up the customer. The rows of a version that nobody uses can be dropped later.
+- **From ingestion to balance.** The balance update only recomputes the customer's version. So it does the same work as today, whatever the number of versions.
 
 #### Reading the balance
 
@@ -218,11 +219,11 @@ The portal, the customer meters API, and customer state show one row per meter. 
 - Is rejecting a second version at checkout acceptable for customers? The alternative is that the earliest subscription decides the version.
 - A filter can still point to a different kind of event. The plan shows the filter change and how many customers hold a balance. Is that enough?
 - A version that only changes the name could share the reducers of the previous one, so events are not reduced twice. We did not check this.
-- When does a version stop matching events? Probably when no balance points to it.
+- When does a version stop matching events, and when do we drop its meter events and buckets? Probably when it is not current and no balance points to it.
 - `immediate` moves on a max, min, average, or unique meter bill the period in two parts. Is a warning in the plan enough, or do we only allow `next_period` for those?
 - `immediate` moves: a product change revokes the old credit grant and grants the new one. With a reset in between, the order decides if the customer keeps the balance or gets the monthly credits twice. We propose to keep the balance.
 - Outpost: does the customer's version travel in every snapshot, or in a separate entry per customer?
-- Outpost and reducers: an event is reduced for every version it matches, but only the customer's version is ever read. Can we skip the others?
+- Outpost: the SDK writes one bucket per version that matches, in the merchant's Redis and in the merchant's request. Is that fine, or does the SDK skip the other versions once it knows the customer's?
 
 ## Security considerations
 
@@ -240,6 +241,6 @@ The portal, the customer meters API, and customer state show one row per meter. 
 - **Fixing billing is not enough.** Blocking two versions for one customer and billing each event once stop double billing. Credits still go to the wrong version.
 - **A new `external_id` is not a way out.** It is safe when the unit changes. For a filter fix, it splits the balance in the same way.
 - **A credit has no unit of its own.** The rule gives it one, so the aggregation has to stay.
-- **Ingestion doesn't need to know the customer.** Matching every version and choosing when we read keeps the hot path as it is.
+- **Ingestion doesn't need to know the customer.** Matching every version and choosing when we read keeps the hot path as it is. Matching only the customer's version and the current one would write fewer rows, but ingestion would need each customer's version, and the reducers and the Outpost SDK would need the same rule. We prefer extra rows that we can drop later.
 - **A rule change needs a meter reset.** A balance is recomputed over the open period with one rule. So a version changes at a reset, and a move in the middle of a period writes one. Max, min, average, and unique are then counted in two parts.
 - **Config changes to meters skip the draft today.** New rows per version fix this.

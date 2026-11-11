@@ -1,6 +1,7 @@
 import { Effect, FileSystem, Option, Schema } from 'effect'
 import { Argument, Command, Flag } from 'effect/cli'
 import { announceAuthorization } from '@/commands/auth'
+import { clients } from '@/schemas/AgentSetup'
 import {
   ActiveOrganization,
   AuthError,
@@ -14,6 +15,7 @@ import {
   FORMATS,
   InitResult,
 } from '@/schemas/BillingConfig'
+import { AgentSetup } from '@/services/agent-setup/service'
 import { Auth } from '@/services/auth'
 import {
   BillingConfig,
@@ -80,10 +82,19 @@ const externalIds = Flag.atLeast(
   0,
 )
 
+const CodingAgents = Schema.Struct({
+  names: Schema.Array(Schema.String),
+  ready: Schema.Boolean,
+})
+type CodingAgents = typeof CodingAgents.Type
+
 const Written = Schema.Struct({
   status: Schema.Literal('written'),
   ...InitResult.fields,
   organization: ActiveOrganization,
+  org: Schema.optionalKey(Schema.String),
+  caller: Schema.optionalKey(Schema.String),
+  agents: Schema.optionalKey(CodingAgents),
   next: Schema.Array(Schema.String),
 })
 type Written = typeof Written.Type
@@ -247,6 +258,23 @@ const detectFormat = (
     )
   })
 
+const detectAgents = (setup: (typeof AgentSetup)['Service']) =>
+  Effect.gen(function* () {
+    const statuses = yield* setup.detect(clients).pipe(
+      Effect.timeoutOrElse({
+        duration: '3 seconds',
+        orElse: () => Effect.succeed([]),
+      }),
+    )
+    const found = statuses.filter((status) => status.detected)
+    const ready = found.filter((status) => status.installed)
+    if (found.length === 0) return undefined
+    return {
+      names: (ready.length > 0 ? ready : found).map((status) => status.name),
+      ready: ready.length > 0,
+    } satisfies CodingAgents
+  })
+
 const packageOf = (command: ReadonlyArray<string>) => command.at(-1)!
 
 const confirmInstall = (
@@ -262,23 +290,61 @@ const confirmInstall = (
         )
       : Effect.succeed(true)
 
-const configCommand = (command: 'plan' | 'apply', file: string) =>
-  (DEFAULT_CONFIG_FILES as ReadonlyArray<string>).includes(file)
-    ? `polar config ${command}`
-    : `polar config ${command} ${file}`
+const configCommand = (
+  command: 'plan' | 'apply' | 'publish',
+  { file, org }: Pick<Written, 'file' | 'org'>,
+) =>
+  [
+    `polar config ${command}`,
+    ...((DEFAULT_CONFIG_FILES as ReadonlyArray<string>).includes(file)
+      ? []
+      : [file]),
+    ...(org === undefined ? [] : [`--org ${org}`]),
+  ].join(' ')
 
 const imported = ({ imported }: Pick<Written, 'imported'>) =>
   imported.meters + imported.benefits + imported.products
 
-const nextSteps = (result: Omit<Written, 'next' | 'status'>) => [
-  ...(result.install && result.install.status !== 'installed'
-    ? [result.install.command]
-    : []),
+type Outcome = Omit<Written, 'next' | 'status'>
+
+interface Style {
+  readonly command: (text: string) => string
+  readonly file: (text: string) => string
+}
+
+const PLAIN: Style = { command: (text) => text, file: (text) => text }
+const HIGHLIGHTED: Style = { command: ui.command, file: ui.bold }
+
+const agentSteps = (result: Outcome, { command, file }: Style) => [
+  `If you don't have the polar-config skill, run ${command('polar agent setup --skills project')} and read ${file('.agents/skills/polar-config/SKILL.md')}. It sets up Polar for this agent and adds the Polar skills to this project, so tell the user before you run it.`,
+  ...(imported(result) > 0
+    ? [
+        `${file(result.file)} matches the catalog on Polar, so the config is set up. If the user asked for no change, run ${command(configCommand('plan', result))} to confirm nothing would change, tell them it is ready and stop.`,
+        `Otherwise make their change in ${file(result.file)}. Ask the user for any price you cannot find, never invent one.`,
+      ]
+    : [
+        `Write the meters, benefits and products into ${file(result.file)} from this app's pricing. Ask the user for any price you cannot find, never invent one.`,
+      ]),
+  `Run ${command(`${configCommand('plan', result)} --json`)} and fix every error it reports in the file.`,
+  'Tell the user what would change and wait for their go-ahead.',
+  `Run ${command(`${configCommand('apply', result)} --confirm`)}. If it saves a draft, ask before running ${command(`${configCommand('publish', result)} --confirm`)}.`,
+]
+
+const manualSteps = (result: Outcome) => [
   imported(result) > 0
     ? `Review the meters, benefits and products in ${result.file}`
     : `Describe your meters, benefits and products in ${result.file}`,
-  configCommand('plan', result.file),
-  configCommand('apply', result.file),
+  configCommand('plan', result),
+  configCommand('apply', result),
+]
+
+const nextSteps = (result: Outcome) => [
+  ...(result.install && result.install.status !== 'installed'
+    ? [result.install.command]
+    : []),
+  ...(result.caller === undefined
+    ? manualSteps(result)
+    : agentSteps(result, PLAIN)),
 ]
 
 const importedSummary = ({ imported }: Pick<Written, 'imported'>) =>
@@ -336,8 +402,93 @@ const alreadyEnabledLines = (result: Written) =>
       ]
     : []
 
+const installStep = ({ install }: Pick<Written, 'install'>) =>
+  install && install.status !== 'installed'
+    ? [`Install the config package: ${ui.command(install.command)}`]
+    : []
+
+const agentName = (agents: Written['agents']) =>
+  agents?.names.length === 1 ? agents.names[0]! : 'your coding agent'
+
+const CONFIG_DOCS = 'https://polar.sh/docs/integrate/cli/config'
+
+type Rows = ReadonlyArray<readonly [string, string]>
+
+const options = (entries: ReadonlyArray<readonly [string, Rows]>) => {
+  const width = Math.max(
+    ...entries.flatMap(([, rows]) => rows.map(([label]) => label.length)),
+  )
+  return entries.flatMap(([title, rows], number) => [
+    ui.blank,
+    ui.heading(`${ui.dim(`Option ${number + 1}`)}  ${title}`),
+    ...ui
+      .keyValue(
+        rows.map(([label, value], index) => [
+          `${index + 1}  ${label.padEnd(width)}`,
+          value,
+        ]),
+      )
+      .split('\n')
+      .map((row) => `${ui.INDENT}${row}`),
+  ])
+}
+
+const guideLines = (result: Written) => {
+  const existing = imported(result) > 0
+  const file = ui.bold(result.file)
+  const plan = ui.command(configCommand('plan', result))
+  const apply = ui.command(configCommand('apply', result))
+  const docs = ['Read the docs', ui.cyan(CONFIG_DOCS)] as const
+  return [
+    ui.blank,
+    ui.heading('Next'),
+    `${ui.INDENT}${
+      existing
+        ? 'Your config matches what is on Polar. Pick one way to continue.'
+        : 'Your config is empty. Pick one way to fill it in.'
+    }`,
+    ...installStep(result).map((line) => `${ui.INDENT}${line}`),
+    ...options([
+      [
+        `Hand it to ${agentName(result.agents)}`,
+        [
+          ...(result.agents?.ready === false
+            ? [['Set up the agent', ui.command('polar agent setup')] as const]
+            : []),
+          ['Ask it', '"Help me set up billing with my Polar config"'],
+        ],
+      ],
+      [
+        'Do it yourself',
+        existing
+          ? [
+              docs,
+              ['Edit the config', file],
+              ['Preview the change', plan],
+              ['Apply it', apply],
+            ]
+          : [
+              docs,
+              ['Add your meters, benefits and products', file],
+              ['Preview what would be created', plan],
+              ['Create it on Polar', apply],
+            ],
+      ],
+    ]),
+  ]
+}
+
+const agentLines = (result: Written) => [
+  ui.blank,
+  ui.heading('Next'),
+  ...[...installStep(result), ...agentSteps(result, HIGHLIGHTED)].map(
+    (step, index) => `${ui.INDENT}${ui.INDENT}${index + 1}  ${step}`,
+  ),
+]
+
 const renderWritten = (result: Written) => [
   ui.success('Your billing config is ready'),
+  `${ui.INDENT}${ui.INDENT}${ui.dim('Nice work, your billing now lives in code')}`,
   ...alreadyEnabledLines(result),
   ...section(
     'Summary',
@@ -351,21 +502,7 @@ const renderWritten = (result: Written) => [
   ),
   ...keyedLines(result.keyed),
   ...skippedLines(result.skipped),
-  ...section(
-    'Next',
-    [
-      ...(result.install && result.install.status !== 'installed'
-        ? [
-            `${ui.INDENT}Install the config package: ${ui.command(result.install.command)}`,
-          ]
-        : []),
-      imported(result) > 0
-        ? `${ui.INDENT}Review the meters, benefits and products in ${ui.bold(result.file)}`
-        : `${ui.INDENT}Describe your meters, benefits and products in ${ui.bold(result.file)}`,
-      `${ui.INDENT}Preview what would be created with ${ui.command(configCommand('plan', result.file))}`,
-      `${ui.INDENT}Create it on Polar with ${ui.command(configCommand('apply', result.file))}`,
-    ].join('\n'),
-  ),
+  ...(result.caller === undefined ? guideLines(result) : agentLines(result)),
   ui.blank,
 ]
 
@@ -524,6 +661,20 @@ export const init = Command.make('init', {
               progress,
               say,
             )
+            const selected = yield* (yield* Organizations).selected.pipe(
+              Effect.orElseSucceed(() => undefined),
+            )
+            const active =
+              selected?.id === organization.id &&
+              selected.environment === organization.environment
+            const setup = yield* AgentSetup
+            const caller = setup.callingAgent?.name
+            yield* progress.start('Detecting who is running this')
+            const agents =
+              caller === undefined ? yield* detectAgents(setup) : undefined
+            yield* progress.finish(
+              caller === undefined ? 'A human' : `An agent, ${caller}`,
+            )
             const result = {
               file: prepared.file,
               format: prepared.format,
@@ -532,6 +683,9 @@ export const init = Command.make('init', {
               skipped: prepared.skipped,
               already_enabled: prepared.already_enabled,
               ...(install ? { install } : {}),
+              ...(active ? {} : { org: organization.id }),
+              ...(caller ? { caller } : {}),
+              ...(agents ? { agents } : {}),
               organization,
             }
             return {

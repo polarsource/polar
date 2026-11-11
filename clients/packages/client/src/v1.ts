@@ -10063,7 +10063,7 @@ export interface components {
     BenefitCustomCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10237,7 +10237,7 @@ export interface components {
     BenefitCustomUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10431,7 +10431,7 @@ export interface components {
     BenefitDiscordCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10634,7 +10634,7 @@ export interface components {
     BenefitDiscordUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10808,7 +10808,7 @@ export interface components {
     BenefitDownloadablesCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -10984,7 +10984,7 @@ export interface components {
     BenefitDownloadablesUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11106,7 +11106,7 @@ export interface components {
     BenefitFeatureFlagCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11271,7 +11271,7 @@ export interface components {
     BenefitFeatureFlagUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11389,7 +11389,7 @@ export interface components {
     BenefitGitHubRepositoryCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -11605,7 +11605,7 @@ export interface components {
     BenefitGitHubRepositoryUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -12625,7 +12625,7 @@ export interface components {
     BenefitLicenseKeysCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -12814,7 +12814,7 @@ export interface components {
     BenefitLicenseKeysUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -12937,7 +12937,7 @@ export interface components {
     BenefitMeterCreditCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13151,7 +13151,7 @@ export interface components {
     BenefitMeterCreditUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13351,7 +13351,7 @@ export interface components {
     BenefitSlackSharedChannelCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -13564,7 +13564,7 @@ export interface components {
     BenefitSlackSharedChannelUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -22950,7 +22950,7 @@ export interface components {
     DiscountFixedCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -23387,7 +23387,7 @@ export interface components {
     DiscountPercentageCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -23910,7 +23910,7 @@ export interface components {
     DiscountUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -27522,7 +27522,7 @@ export interface components {
     MeterCreate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -27792,7 +27792,7 @@ export interface components {
     MeterUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -34416,7 +34416,7 @@ export interface components {
     ProductCreateOneTime: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -34494,7 +34494,7 @@ export interface components {
     ProductCreateRecurring: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null
@@ -35748,7 +35748,7 @@ export interface components {
     ProductUpdate: {
       /**
        * External Id
-       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+       * @description An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
        * @example ext_1337
        */
       external_id?: string | null

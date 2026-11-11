@@ -121,6 +121,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: '無法更新單位數量',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: '最少 {min} {unitLabelPlural}',
+        maximum: '最多 {max} {unitLabelPlural}',
       },
       discount: {
         until: '{date}前有效',

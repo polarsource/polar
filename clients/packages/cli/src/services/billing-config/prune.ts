@@ -23,32 +23,35 @@ import {
   removeFromJson,
   removeFromScript,
 } from '@/services/billing-config/remove'
-import { removable } from '@/utils/billing-config/prune'
 
-const check = (
-  clients: Clients,
-  config: LoadedConfig,
-  organization: ActiveOrganization,
-) =>
-  Effect.gen(function* () {
-    const response = yield* post(clients, '/config/prune', config, organization)
-    if (response.status === 200) {
-      const body =
-        yield* HttpClientResponse.schemaBodyJson(PruneResponse)(response)
-      return body.entries
-    }
-    if (response.status === 422) {
-      return yield* new BillingConfigError({
-        message: `${config.file} is not a valid config`,
-        hint: 'Run polar config plan to see what to fix.',
-      })
-    }
-    return yield* unexpected(
-      response,
-      organization,
-      requiredScopes(config, 'read'),
-    )
-  }).pipe(Effect.scoped, Effect.catchTags(transportErrors))
+/** Lists the deprecated entries in the config and what still uses each. */
+export const deprecations =
+  (clients: Clients) =>
+  (config: LoadedConfig, organization: ActiveOrganization) =>
+    Effect.gen(function* () {
+      const response = yield* post(
+        clients,
+        '/config/prune',
+        config,
+        organization,
+      )
+      if (response.status === 200) {
+        const body =
+          yield* HttpClientResponse.schemaBodyJson(PruneResponse)(response)
+        return body.entries
+      }
+      if (response.status === 422) {
+        return yield* new BillingConfigError({
+          message: `${config.file} is not a valid config`,
+          hint: 'Run polar config plan to see what to fix.',
+        })
+      }
+      return yield* unexpected(
+        response,
+        organization,
+        requiredScopes(config, 'read'),
+      )
+    }).pipe(Effect.scoped, Effect.catchTags(transportErrors))
 
 const writeConfig = (
   fs: FileSystem.FileSystem,
@@ -108,70 +111,42 @@ const loadEdited = (
     return edited.input
   })
 
-const remove = (
-  fs: FileSystem.FileSystem,
-  load: ReturnType<typeof loader>,
-  config: LoadedConfig,
-  entries: ReadonlyArray<PruneEntry>,
-) =>
-  Effect.gen(function* () {
-    const removals = entries.map((entry) => ({
-      section: SECTIONS[entry.resource],
-      id: entry.external_id,
-    }))
-    const { source, missing } = config.generated
-      ? removeFromScript(config.source, removals)
-      : removeFromJson(config.source, config.input, removals)
-    if (missing.length > 0) {
-      return yield* new BillingConfigError({
-        message: `Could not find ${missing.map(({ id }) => id).join(', ')} in ${config.file}, nothing removed`,
+/** Removes `entries` from the config file, or nothing if it can't safely. */
+export const prune =
+  (fs: FileSystem.FileSystem, load: ReturnType<typeof loader>) =>
+  (config: LoadedConfig, entries: ReadonlyArray<PruneEntry>) =>
+    Effect.gen(function* () {
+      const removals = entries.map((entry) => ({
+        section: SECTIONS[entry.resource],
+        id: entry.external_id,
+      }))
+      const { source, missing } = config.generated
+        ? removeFromScript(config.source, removals)
+        : removeFromJson(config.source, config.input, removals)
+      if (missing.length > 0) {
+        return yield* new BillingConfigError({
+          message: `Could not find ${missing.map(({ id }) => id).join(', ')} in ${config.file}, nothing removed`,
+          hint: 'Remove the entries by hand.',
+        })
+      }
+      const unsafe = new BillingConfigError({
+        message: `Could not remove ${removals.map(({ id }) => id).join(', ')} from ${config.file} safely, nothing removed`,
         hint: 'Remove the entries by hand.',
       })
-    }
-    const unsafe = new BillingConfigError({
-      message: `Could not remove ${removals.map(({ id }) => id).join(', ')} from ${config.file} safely, nothing removed`,
-      hint: 'Remove the entries by hand.',
-    })
-    const edited = yield* loadEdited(fs, load, config, source).pipe(
-      Effect.mapError(() => unsafe),
-    )
-    if (!isDeepStrictEqual(edited, withoutRemovals(config.input, removals))) {
-      return yield* unsafe
-    }
-    const current = yield* fs
-      .readFileString(config.file)
-      .pipe(Effect.orElseSucceed(() => undefined))
-    if (current !== config.source) {
-      return yield* new BillingConfigError({
-        message: `${config.file} changed while pruning, nothing removed`,
-        hint: 'Run prune again.',
-      })
-    }
-    yield* writeConfig(fs, config.file, source)
-  })
-
-/**
- * Removes the deprecated entries no customer uses from the config file, after
- * `confirm` sees every deprecated entry. `confirm` fails to cancel.
- */
-export const prune =
-  (
-    fs: FileSystem.FileSystem,
-    load: ReturnType<typeof loader>,
-    clients: Clients,
-  ) =>
-  <R>(
-    config: LoadedConfig,
-    organization: ActiveOrganization,
-    confirm: (
-      entries: ReadonlyArray<PruneEntry>,
-    ) => Effect.Effect<void, BillingConfigError, R>,
-  ) =>
-    Effect.gen(function* () {
-      const entries = yield* check(clients, config, organization)
-      const unused = entries.filter(removable)
-      if (unused.length === 0) return { entries, removed: false }
-      yield* confirm(entries)
-      yield* remove(fs, load, config, unused)
-      return { entries, removed: true }
+      const edited = yield* loadEdited(fs, load, config, source).pipe(
+        Effect.mapError(() => unsafe),
+      )
+      if (!isDeepStrictEqual(edited, withoutRemovals(config.input, removals))) {
+        return yield* unsafe
+      }
+      const current = yield* fs
+        .readFileString(config.file)
+        .pipe(Effect.orElseSucceed(() => undefined))
+      if (current !== config.source) {
+        return yield* new BillingConfigError({
+          message: `${config.file} changed while pruning, nothing removed`,
+          hint: 'Run prune again.',
+        })
+      }
+      yield* writeConfig(fs, config.file, source)
     })

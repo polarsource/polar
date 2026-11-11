@@ -20,7 +20,7 @@ import {
 } from '@/services/billing-config/init'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
-import { prune } from '@/services/billing-config/prune'
+import { deprecations, prune } from '@/services/billing-config/prune'
 import { catalogs, publish } from '@/services/billing-config/publish'
 import { authenticatedClient } from '@/services/client'
 import { type Ran, run } from '@/utils/run'
@@ -55,17 +55,17 @@ export class BillingConfig extends Context.Service<
       command: ReadonlyArray<string>,
       directory: string,
     ) => Effect.Effect<Ran>
-    prune: <R>(
+    deprecations: (
       config: LoadedConfig,
       organization: ActiveOrganization,
-      confirm: (
-        entries: ReadonlyArray<PruneEntry>,
-      ) => Effect.Effect<void, BillingConfigError, R>,
     ) => Effect.Effect<
-      { entries: ReadonlyArray<PruneEntry>; removed: boolean },
-      AuthError | BillingConfigError,
-      R
+      ReadonlyArray<PruneEntry>,
+      AuthError | BillingConfigError
     >
+    prune: (
+      config: LoadedConfig,
+      entries: ReadonlyArray<PruneEntry>,
+    ) => Effect.Effect<void, BillingConfigError>
     catalogs: (
       organization: ActiveOrganization,
     ) => Effect.Effect<Catalogs, AuthError | BillingConfigError>
@@ -93,7 +93,8 @@ const make = Effect.gen(function* () {
     apply: apply(clients),
     init: init(fs, clients),
     install: run,
-    prune: prune(fs, load, clients),
+    deprecations: deprecations(clients),
+    prune: prune(fs, load),
     catalogs: catalogs(clients),
     publish: publish(clients),
     disable: disable(clients),

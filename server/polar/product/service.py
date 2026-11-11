@@ -200,6 +200,8 @@ class ProductService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         id: uuid.UUID,
+        *,
+        for_update: bool = False,
     ) -> Product | None:
         repository = ProductRepository.from_session(session)
         org_ids = await get_accessible_org_ids(
@@ -210,6 +212,8 @@ class ProductService:
             .where(Product.id == id)
             .options(undefer(Product.is_deletable), *repository.get_eager_options())
         )
+        if for_update:
+            statement = statement.with_for_update(of=Product)
         return await repository.get_one_or_none(statement)
 
     async def get_by_external_ids(

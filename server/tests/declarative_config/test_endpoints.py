@@ -146,6 +146,27 @@ class TestApply:
         [error] = response.json()["detail"]
         assert error["loc"] == ["body", "meters", 0, "agregation"]
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_invalid_external_id(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/config/apply",
+            json={
+                "meters": [{**METER, "external_id": "tool calls"}],
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+        [error] = response.json()["detail"]
+        assert error["loc"] == ["body", "meters", 0, "external_id"]
+        assert error["type"] == "string_pattern_mismatch"
+
     @pytest.mark.parametrize(
         "price",
         [

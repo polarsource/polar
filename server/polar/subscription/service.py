@@ -105,6 +105,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.discount import DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -4624,6 +4625,8 @@ class SubscriptionService:
             return
         if subscription.trial_end is None:
             return
+        if self._is_free_after_trial(subscription, subscription.trial_end):
+            return
         if (
             subscription.payment_method_id is None
             and subscription.customer.default_payment_method_id is None
@@ -4650,6 +4653,23 @@ class SubscriptionService:
             deduplication_key=subscription_trial_conversion_reminder_key(
                 subscription.id, subscription.trial_end.date()
             ),
+        )
+
+    def _is_free_after_trial(
+        self, subscription: Subscription, trial_end: datetime
+    ) -> bool:
+        discount = subscription.discount
+        if discount is None or subscription.amount > 0:
+            return False
+        if discount.is_repetition_expired(
+            subscription.discount_applied_at or trial_end, trial_end
+        ):
+            return False
+        covers_usage = (
+            isinstance(discount, DiscountPercentage) and discount.basis_points == 10_000
+        )
+        return covers_usage or not any(
+            is_metered_price(price) for price in subscription.prices
         )
 
     async def _send_customer_email(

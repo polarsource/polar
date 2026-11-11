@@ -8,7 +8,7 @@ import { dropOptionalNulls } from '@/utils/billing-config/languages/language'
 const WIDTH = 88
 const INDENT = '    '
 
-const IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/
+const IDENTIFIER = /^(?!__)[A-Za-z_][A-Za-z0-9_]*$/
 
 const RESERVED = new Set(
   'False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield _entries'.split(

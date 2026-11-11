@@ -52,18 +52,21 @@ export const NOUNS = [
   ['webhooks', 'webhook'],
 ] as const
 
-export const found = (config: LoadedConfig) => {
-  const sections = record(config.input) ?? {}
-  const counts = NOUNS.flatMap(([section, noun]) => {
+export const counts = (input: unknown) => {
+  const sections = record(input) ?? {}
+  return NOUNS.flatMap(([section, noun]) => {
     const items = sections[section]
     return Array.isArray(items) && items.length > 0
       ? [plural(items.length, noun)]
       : []
   })
-  const settings = record(sections['settings'])
+}
+
+export const found = (config: LoadedConfig) => {
+  const settings = record(record(config.input)?.['settings'])
   const all = [
     ...(settings && Object.keys(settings).length > 0 ? ['settings'] : []),
-    ...counts,
+    ...counts(config.input),
   ]
   return all.length === 0 ? 'nothing to apply' : all.join(', ')
 }

@@ -136,6 +136,10 @@ config = Config(meters=Meters)
     ['an external ID with a dash', { ...toolCall, external_id: 'tool-call' }],
     ['a Python keyword as external ID', { ...toolCall, external_id: 'class' }],
     [
+      'an external ID Python would mangle inside a class',
+      { ...toolCall, external_id: '__tool_call' },
+    ],
+    [
       'several events',
       {
         ...toolCall,

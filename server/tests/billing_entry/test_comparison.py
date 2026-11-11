@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import func, select
 
 from polar.billing_entry.comparison import Adjustment, Quantities, compare, explain
 from polar.enums import SubscriptionRecurringInterval
@@ -192,3 +193,59 @@ class TestCompare:
             "carried_over_usage": Adjustment(usage=Decimal(10))
         }
         assert comparison.match is True
+
+    async def test_slow_explanation_leaves_the_session_usable(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        order = await create_order(save_fixture, customer=customer)
+        mocker.patch(
+            "polar.billing_entry.comparison.EXPLAIN_STATEMENT_TIMEOUT", "100ms"
+        )
+
+        async def sleep(
+            session: AsyncSession, *args: object, **kwargs: object
+        ) -> dict[str, Adjustment]:
+            await session.execute(select(func.pg_sleep(5)))
+            return {}
+
+        mocker.patch(
+            "polar.billing_entry.comparison._get_usage_adjustments", side_effect=sleep
+        )
+        log_exception = mocker.patch("polar.billing_entry.comparison.log.exception")
+
+        comparison = await compare(
+            session,
+            subscription,
+            meter,
+            order.id,
+            [],
+            legacy=Quantities(usage=Decimal(22), credits=Decimal(0), net=Decimal(22)),
+            reducer=Quantities(usage=Decimal(12), credits=Decimal(0), net=Decimal(12)),
+            cutoff=utc_now(),
+        )
+
+        log_exception.assert_called_once()
+        assert comparison.adjustments == {}
+        assert (await session.execute(select(1))).scalar_one() == 1

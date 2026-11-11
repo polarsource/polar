@@ -25,7 +25,7 @@ We propose to version the rule and to share the balance:
 
 1. **A meter change creates a new row**, like products and benefits. A row is a **meter version**. All rows with the same `external_id` are versions of one meter.
 2. **One balance per customer and meter `external_id`.** Credits, rollover, and resets belong to the balance, whatever catalog they come from.
-3. **A customer is counted with one version at a time.** It only changes when the merchant moves them, and only at a meter reset.
+3. **A customer is counted with one version at a time.** It only changes when the merchant moves them. A move can happen at any time. The default is the next meter reset.
 4. **The aggregation never changes.** A version can change the filter and the display fields. Counting something else is a new meter, with a new `external_id`.
 
 Like versioning, this only applies to organizations that use declarative config.
@@ -69,7 +69,6 @@ Asking the merchant for a new `external_id` gives the same result, done by hand.
 
 - Changing the aggregation. That is a new meter with a new `external_id`.
 - Converting a balance from one meter to another.
-- `immediate` moves for a product whose meter version changes. The first version is `next_period` only.
 - A top-up feature. A top-up stays a one-time product with a meter credit benefit.
 - Organizations without declarative config. They keep one row per meter.
 
@@ -134,22 +133,32 @@ Every credit is written on the customer's version: benefit credits, rollover, ma
 
 #### Moving customers
 
-Publishing never moves a customer. A move is the bulk subscription update of the versioning doc. When the target product uses another meter version, the move applies at renewal:
+Publishing never moves a customer. A move is the bulk subscription update of the versioning doc. A version always changes at a meter reset, so no usage is counted with two versions. The move decides when that reset happens.
+
+**At the next meter reset** (`next_period`). This is the default, and what we recommend:
 
 1. The period that ends is counted and billed with the old version.
 2. The meter is reset. Rollover credits are computed on the old version.
 3. The balance points to the new version. The reset, the rollover credits, and the credits of the new period are written on the new version.
 
-Alice has 4,000 unused rollover credits when she is moved:
-
-| | Before the move | After the move |
-|---|---|---|
-| Version | `meter_A` | `meter_B` |
-| Rollover credits | 4,000 | 4,000 |
-| Monthly credits | 5,000 | 5,000 |
-| An image costs | Nothing | 1 credit |
-
 Credits without rollover end with the period, as at every renewal today.
+
+**Right away** (`immediate`). The move writes a meter reset at that moment:
+
+1. Usage until the move is counted with the old version. Overage is billed with the old price.
+2. The meter is reset. The unused balance is carried to the new version as it is, with or without rollover. The monthly credits are not granted again.
+3. From the move, usage is counted with the new version. The period keeps its end date.
+
+Alice has 15,000 credits and has sent 6,000 messages when she is moved:
+
+| | `next_period`, on the 1st | `immediate`, on the 20th |
+|---|---|---|
+| Counted with `meter_A` | The whole month | Until the 20th |
+| Overage | None | None |
+| Balance on `meter_B` after the move | 14,000: 9,000 rollover and 5,000 for the new month | 9,000 |
+| An image costs | 1 credit from the 1st | 1 credit from the 20th |
+
+An `immediate` move splits the period in two. For count and sum, the two parts add up. For max, min, average, and unique, each part is counted on its own: 3 servers before the move and 2 after are billed as 3 and as 2. The plan says so before the move runs.
 
 #### Events, reducers, and billing
 
@@ -161,6 +170,19 @@ Credits without rollover end with the period, as at every renewal today.
 #### Reading the balance
 
 The portal, the customer meters API, and customer state show one row per meter. Its `meter_id` is the customer's version, so it changes after a move. We add the meter's `external_id` to these responses, and the docs tell merchants to read a balance by `external_id`, as for products.
+
+#### Outpost
+
+[Outpost](/engineering/design-documents/outpost) keeps a local copy of each customer's usage and credits, per reducer. Tracking, pulling, and resets keep working. The read side needs three changes:
+
+| Area | Today | What changes |
+|---|---|---|
+| Reading a balance | `meter(customer, meter_id)` finds the reducers of that meter id | A read by the meter's `external_id`, resolved to the customer's version. With another version's id, the read returns nothing or a wrong balance |
+| The customer's version | Not known. A snapshot has a reducer and a customer | Polar sends the version with the customer's snapshots, and logs a change when a customer is moved |
+| Configuration | Lists every reducer of an active meter, with its meter ids | Each reducer also has the meter's `external_id`, so the SDK can group versions |
+| Tracking an event | One Redis write per matching reducer | Nothing. An event that matches two versions is written twice |
+| Meter reset | A reset seals the customer's buckets of that meter. Snapshots only count unsealed buckets | Nothing. A move writes the reset on the new version, so what that version counted before the move is sealed out |
+| A move in the middle of a period | A resumed subscription already resets at any time, and reducers split the 5-minute slot at the reset | Nothing. The SDK reads the old version until its next pull, 30 seconds today |
 
 ### What changes for merchants and customers
 
@@ -183,9 +205,9 @@ The portal, the customer meters API, and customer state show one row per meter. 
 | One version per customer, and each event billed once ([#16430](https://github.com/polarsource/polar/pull/16430), [#16431](https://github.com/polarsource/polar/pull/16431)) | Kept. The check also has to cover subscriptions that only credit the meter. A one-time top-up is never rejected |
 | Credits | New. Benefit grants, cycles, and revocations find the customer's version before they write. Today only a manual credit by `external_meter_id` does it |
 | Balance rows | New. One row per customer and `external_id`. No row for the other versions |
-| Moves | New. The balance is carried to the new version at the reset |
+| Moves | New. The balance is carried to the new version at the reset. An `immediate` move writes that reset itself. Today an immediate product change writes none |
 | Reducers | Same model: one usage and one credit reducer per meter row. Reads use the customer's version |
-| Outpost | The SDK reads a balance by `meter_id`. It needs a read by `external_id`, and to know the customer's version |
+| Outpost | A read by `external_id`, the customer's version in the snapshots, and the meter's `external_id` in the configuration. See [Outpost](#outpost) |
 | Versioning doc | Meter versioning leaves "Out of scope". "Change a meter" becomes a new version |
 
 ## Open questions
@@ -197,8 +219,10 @@ The portal, the customer meters API, and customer state show one row per meter. 
 - A filter can still point to a different kind of event. The plan shows the filter change and how many customers hold a balance. Is that enough?
 - A version that only changes the name could share the reducers of the previous one, so events are not reduced twice. We did not check this.
 - When does a version stop matching events? Probably when no balance points to it.
-- `immediate` moves need a reset in the middle of a period. Do we want them?
-- Outpost: how does the SDK learn the version of each customer?
+- `immediate` moves on a max, min, average, or unique meter bill the period in two parts. Is a warning in the plan enough, or do we only allow `next_period` for those?
+- `immediate` moves: a product change revokes the old credit grant and grants the new one. With a reset in between, the order decides if the customer keeps the balance or gets the monthly credits twice. We propose to keep the balance.
+- Outpost: does the customer's version travel in every snapshot, or in a separate entry per customer?
+- Outpost and reducers: an event is reduced for every version it matches, but only the customer's version is ever read. Can we skip the others?
 
 ## Security considerations
 
@@ -217,5 +241,5 @@ The portal, the customer meters API, and customer state show one row per meter. 
 - **A new `external_id` is not a way out.** It is safe when the unit changes. For a filter fix, it splits the balance in the same way.
 - **A credit has no unit of its own.** The rule gives it one, so the aggregation has to stay.
 - **Ingestion doesn't need to know the customer.** Matching every version and choosing when we read keeps the hot path as it is.
-- **A rule can't change in the middle of a period.** A balance is recomputed over the open period with one rule, and max, min, average, and unique can't be split in two. So a version changes at a reset.
+- **A rule change needs a meter reset.** A balance is recomputed over the open period with one rule. So a version changes at a reset, and a move in the middle of a period writes one. Max, min, average, and unique are then counted in two parts.
 - **Config changes to meters skip the draft today.** New rows per version fix this.

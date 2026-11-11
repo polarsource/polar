@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { Effect } from 'effect'
-import { renderPython } from '@/utils/billing-config/languages/python/render'
+import { renderPython } from '@/services/billing-config/languages/python/render'
 
 const event = (name: string) => ({
   property: 'name',

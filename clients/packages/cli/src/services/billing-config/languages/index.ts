@@ -1,17 +1,17 @@
 import { extname, join } from 'node:path'
 import { Effect, type FileSystem } from 'effect'
 import type { Format } from '@/schemas/BillingConfig'
-import { json } from '@/utils/billing-config/languages/json'
+import { json } from '@/services/billing-config/languages/json'
 import {
   exists,
   findUp,
   type Language,
-} from '@/utils/billing-config/languages/language'
-import { python } from '@/utils/billing-config/languages/python'
-import { typescript } from '@/utils/billing-config/languages/typescript'
+} from '@/services/billing-config/languages/language'
+import { python } from '@/services/billing-config/languages/python'
+import { typescript } from '@/services/billing-config/languages/typescript'
 
-export type { Language } from '@/utils/billing-config/languages/language'
-export { exists } from '@/utils/billing-config/languages/language'
+export type { Language } from '@/services/billing-config/languages/language'
+export { exists } from '@/services/billing-config/languages/language'
 
 export const LANGUAGES: ReadonlyArray<Language> = [typescript, python, json]
 
@@ -20,10 +20,6 @@ const byFormat = Object.fromEntries(
 ) as Record<Format, Language>
 
 export const languageFor = (format: Format): Language => byFormat[format]
-
-export const DEFAULT_CONFIG_FILES: ReadonlyArray<string> = LANGUAGES.flatMap(
-  (language) => language.defaultFiles,
-)
 
 export const languageOf = (file: string): Language | undefined =>
   extname(file) === ''

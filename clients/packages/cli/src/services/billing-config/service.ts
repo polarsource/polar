@@ -30,6 +30,13 @@ export type {
   NameResources,
   Prepared,
 } from '@/services/billing-config/init'
+export {
+  languageFor,
+  LANGUAGES,
+  languagesAt,
+  MANIFESTS,
+  projectRoot,
+} from '@/services/billing-config/languages'
 export { output, type Ran, type Run } from '@/utils/run'
 
 export class BillingConfig extends Context.Service<

@@ -7,6 +7,23 @@ export const FORMATS = ['ts', 'py', 'json'] as const
 export const Format = Schema.Literals(FORMATS)
 export type Format = typeof Format.Type
 
+export const CONFIG_FILES: Record<Format, ReadonlyArray<string>> = {
+  ts: [
+    'polar.config.ts',
+    'polar.config.mts',
+    'polar.config.cts',
+    'polar.config.js',
+    'polar.config.mjs',
+    'polar.config.cjs',
+  ],
+  py: ['polar_config.py'],
+  json: ['polar.config.json', 'polar.json'],
+}
+
+export const DEFAULT_CONFIG_FILES: ReadonlyArray<string> = FORMATS.flatMap(
+  (format) => CONFIG_FILES[format],
+)
+
 const IssueSeverity = Schema.Literals(['error', 'warning'])
 
 const ServerPath = Schema.Array(Schema.Union([Schema.String, Schema.Finite]))

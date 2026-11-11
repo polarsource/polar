@@ -1,17 +1,17 @@
 import { Effect } from 'effect'
-import { BillingConfigError } from '@/schemas/BillingConfig'
+import { BillingConfigError, CONFIG_FILES } from '@/schemas/BillingConfig'
 import {
   dropOptionalNulls,
   type Language,
   readSource,
-} from '@/utils/billing-config/languages/language'
+} from '@/services/billing-config/languages/language'
 
 export const json: Language = {
   title: 'JSON',
   format: 'json',
   extension: '.json',
   extensions: ['.json'],
-  defaultFiles: ['polar.config.json', 'polar.json'],
+  defaultFiles: CONFIG_FILES.json,
   manifest: undefined,
   installer: undefined,
   load: (fs, _run, file) =>

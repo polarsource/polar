@@ -1,0 +1,36 @@
+terraform/sandbox/planetscale.tf
+  s_30b5b610fb0d13::t_d8f0b813ed8247 10
+terraform/modules/planetscale_postgres/outputs.tf
+  s_30b5b610fb0d13::t_5fa75f853a41fe 67
+  s_30b5b610fb0d13::t_8903fea0c82a57 34,39,69-70
+  s_30b5b610fb0d13::t_49e9d06b376c58 32-33,35-38,40-41
+  s_30b5b610fb0d13::t_f7c6bc51a1f208 3,68
+  s_30b5b610fb0d13::t_b995537dc3c3d2 66,71-73
+terraform/modules/planetscale_postgres/variables.tf
+  s_30b5b610fb0d13::t_297503c9e9bfac 27,29-32
+  h_cc2173b7b86bcc 28
+terraform/modules/planetscale_postgres/main.tf
+  s_30b5b610fb0d13::t_c3aacc49f85700 29-30
+  s_30b5b610fb0d13::t_31efbab9418b38 28,31-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "257105b6d4eb1027c6b3a2603cac083c95b3468e",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_30b5b610fb0d13": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7d15f158-b38f-4a02-9af3-2b93ef740156",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

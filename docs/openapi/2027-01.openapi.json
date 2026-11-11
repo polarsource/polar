@@ -2461,6 +2461,56 @@
             "description": "Exclude benefits with these IDs."
           },
           {
+            "name": "catalog_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CatalogID Filter",
+              "description": "Filter by catalog ID."
+            },
+            "description": "Filter by catalog ID."
+          },
+          {
+            "name": "catalog_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CatalogStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CatalogStatus Filter",
+              "description": "Filter by catalog status."
+            },
+            "description": "Filter by catalog status."
+          },
+          {
             "name": "query",
             "in": "query",
             "required": false,
@@ -5054,6 +5104,56 @@
               "description": "Filter by organization ID."
             },
             "description": "Filter by organization ID."
+          },
+          {
+            "name": "catalog_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CatalogID Filter",
+              "description": "Filter by catalog ID."
+            },
+            "description": "Filter by catalog ID."
+          },
+          {
+            "name": "catalog_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CatalogStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CatalogStatus Filter",
+              "description": "Filter by catalog status."
+            },
+            "description": "Filter by catalog status."
           },
           {
             "name": "query",
@@ -23200,6 +23300,59 @@
         ],
         "parameters": [
           {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4",
+                  "examples": [
+                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                  ],
+                  "description": "The organization ID."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4",
+                    "examples": [
+                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                    ],
+                    "description": "The organization ID."
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "OrganizationID Filter",
+              "description": "Filter by organization ID."
+            },
+            "description": "Filter by organization ID."
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 3
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query",
+              "description": "Query to filter events."
+            },
+            "description": "Query to filter events."
+          },
+          {
             "name": "filter",
             "in": "query",
             "required": false,
@@ -23254,40 +23407,6 @@
               "title": "End Timestamp"
             },
             "description": "Filter events before this timestamp."
-          },
-          {
-            "name": "organization_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid4",
-                  "examples": [
-                    "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                  ],
-                  "description": "The organization ID."
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "type": "string",
-                    "format": "uuid4",
-                    "examples": [
-                      "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
-                    ],
-                    "description": "The organization ID."
-                  }
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "OrganizationID Filter",
-              "description": "Filter by organization ID."
-            },
-            "description": "Filter by organization ID."
           },
           {
             "name": "customer_id",
@@ -23408,24 +23527,6 @@
               "description": "Filter by event source."
             },
             "description": "Filter by event source."
-          },
-          {
-            "name": "query",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Query",
-              "description": "Query to filter events."
-            },
-            "description": "Query to filter events."
           },
           {
             "name": "parent_id",
@@ -31917,6 +32018,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitCustomProperties"
           },
@@ -31941,6 +32047,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -32631,6 +32738,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDiscordProperties"
           },
@@ -32655,6 +32767,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -33346,6 +33459,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitDownloadablesProperties"
           },
@@ -33370,6 +33488,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -33894,6 +34013,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitFeatureFlagProperties"
           },
@@ -33918,6 +34042,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -34399,6 +34524,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitGitHubRepositoryProperties"
           },
@@ -34423,6 +34553,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -37104,6 +37235,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitLicenseKeysProperties"
           },
@@ -37128,6 +37264,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -37748,6 +37885,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitMeterCreditProperties"
           },
@@ -37772,6 +37914,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -38522,6 +38665,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the benefit. None for benefits not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the benefit."
+          },
           "properties": {
             "$ref": "#/components/schemas/BenefitSlackSharedChannelProperties"
           },
@@ -38546,6 +38694,7 @@
           "metadata",
           "visibility",
           "catalog_id",
+          "is_current",
           "properties",
           "visibility_configurable"
         ],
@@ -39514,6 +39663,15 @@
         ],
         "title": "CardPaymentMetadata",
         "description": "Additional metadata for a card payment method."
+      },
+      "CatalogStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "live",
+          "archived"
+        ],
+        "title": "CatalogStatus"
       },
       "Checkout": {
         "properties": {
@@ -42195,6 +42353,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the product."
+          },
           "prices": {
             "items": {
               "oneOf": [
@@ -42243,6 +42406,7 @@
           "is_archived",
           "organization_id",
           "catalog_id",
+          "is_current",
           "prices",
           "benefits",
           "medias"
@@ -43825,6 +43989,14 @@
               }
             ],
             "title": "Attached Custom Fields"
+          },
+          "payment_method_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Payment Method Types",
+            "description": "Payment method types to offer in the payment form."
           }
         },
         "type": "object",
@@ -43881,7 +44053,8 @@
           "prices",
           "discount",
           "organization",
-          "attached_custom_fields"
+          "attached_custom_fields",
+          "payment_method_types"
         ],
         "title": "CheckoutPublic",
         "description": "Checkout session data retrieved using the client secret."
@@ -44465,6 +44638,14 @@
             ],
             "title": "Attached Custom Fields"
           },
+          "payment_method_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Payment Method Types",
+            "description": "Payment method types to offer in the payment form."
+          },
           "customer_session_token": {
             "anyOf": [
               {
@@ -44532,6 +44713,7 @@
           "discount",
           "organization",
           "attached_custom_fields",
+          "payment_method_types",
           "customer_session_token"
         ],
         "title": "CheckoutPublicConfirmed",
@@ -68500,6 +68682,11 @@
             ],
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the product."
           }
         },
         "type": "object",
@@ -68520,7 +68707,8 @@
           "is_recurring",
           "is_archived",
           "organization_id",
-          "catalog_id"
+          "catalog_id",
+          "is_current"
         ],
         "title": "OrderProduct"
       },
@@ -73404,6 +73592,11 @@
             "title": "Catalog Id",
             "description": "ID of the catalog that introduced this version of the product. None for products not managed by declarative config."
           },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the product."
+          },
           "external_id": {
             "anyOf": [
               {
@@ -73483,6 +73676,7 @@
           "is_archived",
           "organization_id",
           "catalog_id",
+          "is_current",
           "external_id",
           "metadata",
           "is_deletable",

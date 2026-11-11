@@ -753,6 +753,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
         )
 
+    async def get_order_item_entries_identities(
+        self, order_item_ids: Sequence[UUID]
+    ) -> Sequence[tuple[UUID | None, str | None]]:
+        statement = (
+            self.get_by_order_item_entries_statement(order_item_ids)
+            .with_only_columns(Event.customer_id, Event.external_customer_id)
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return [(row[0], row[1]) for row in result]
+
     async def get_pending_meter_credits(
         self,
         subscription: UUID,

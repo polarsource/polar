@@ -18,6 +18,7 @@ from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
 from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.repository import ReducerRepository
+from polar.reducer.service import REDUCER_BUCKET_SIZE
 
 log = structlog.get_logger(__name__)
 
@@ -215,15 +216,19 @@ async def _get_carried_over_usage(
     )
     if reducer is None:
         return 0.0
+    repository = EventRepository.from_session(session)
     return await meter_service.get_quantity(
         session,
         meter,
-        EventRepository.from_session(session)
-        .get_by_order_item_entries_statement(order_item_ids)
-        .where(
+        repository.get_by_order_item_entries_statement(order_item_ids).where(
             ReducerBucketRepository.from_session(
                 session
-            ).get_event_billed_by_other_order_clause(reducer, order_id)
+            ).get_event_billed_by_other_order_clause(
+                reducer,
+                order_id,
+                await repository.get_order_item_entries_identities(order_item_ids),
+                bucket_size=REDUCER_BUCKET_SIZE,
+            )
         ),
     )
 

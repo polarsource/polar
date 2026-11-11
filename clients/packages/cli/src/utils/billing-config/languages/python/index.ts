@@ -7,7 +7,7 @@ import {
   readSource,
   unwritable,
 } from '@/utils/billing-config/languages/language'
-import { renderPython } from '@/utils/billing-config/languages/python-render'
+import { renderPython } from '@/utils/billing-config/languages/python/render'
 
 const PYTHON = process.platform === 'win32' ? 'python' : 'python3'
 

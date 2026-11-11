@@ -2,14 +2,19 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from githubkit.exception import RequestFailed
+from httpx_oauth.oauth2 import OAuth2Token
 from pytest_mock import MockerFixture
 
+from polar.exceptions import ResourceAlreadyExists
 from polar.integrations.github_repository_benefit.service import (
     github_repository_benefit_user_service,
 )
 from polar.integrations.github_repository_benefit.types import SimpleUser
-from polar.models import OAuthAccount
+from polar.models import OAuthAccount, User
 from polar.models.user import OAuthPlatform
+from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_oauth_account
 
 
 @pytest.mark.anyio
@@ -134,3 +139,52 @@ class TestGetBillingPlan:
         assert call_kwargs["organization"] == "test-org"
         assert call_kwargs["error_type"] == "ValueError"
         assert call_kwargs["error_message"] == "Unexpected error"
+
+
+@pytest.mark.anyio
+class TestCreateOAuthAccount:
+    async def test_duplicate_account_raises_resource_already_exists_and_rolls_back(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        user_second: User,
+        mocker: MockerFixture,
+    ) -> None:
+        existing = await create_oauth_account(
+            save_fixture, user_second, OAuthPlatform.github_repository_benefit
+        )
+
+        mock_client = MagicMock()
+        mock_user_response = MagicMock()
+        mock_user_response.parsed_data.id = existing.account_id
+        mock_user_response.parsed_data.login = "existing-user"
+        mock_client.rest.users.async_get_authenticated = AsyncMock(
+            return_value=mock_user_response
+        )
+        mocker.patch(
+            "polar.integrations.github.client.get_client",
+            return_value=mock_client,
+        )
+        mocker.patch(
+            "polar.integrations.github.client.ensure_expected_response",
+        )
+        mocker.patch(
+            "polar.integrations.github.service.user.github_user.fetch_authenticated_user_primary_email",
+            new=AsyncMock(return_value=("existing@example.com", True)),
+        )
+
+        token_data = OAuth2Token(
+            {
+                "access_token": "new_token",
+                "expires_at": 1794409366,
+                "refresh_token": "new_refresh_token",
+            }
+        )
+
+        with pytest.raises(ResourceAlreadyExists):
+            await github_repository_benefit_user_service.create_oauth_account(
+                session, user, token_data
+            )
+
+        await session.flush()

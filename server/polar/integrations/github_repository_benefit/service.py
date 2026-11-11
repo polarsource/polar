@@ -102,7 +102,7 @@ class GitHubRepositoryBenefitUserService:
             account_id=str(account_id),
             account_email=account_email,
             account_username=account_username,
-            user=user,
+            user_id=user.id,
         )
         await oauth_account.set_tokens(
             access_token=access_token,
@@ -112,10 +112,11 @@ class GitHubRepositoryBenefitUserService:
         try:
             async with session.begin_nested():
                 session.add(oauth_account)
-            await session.flush()
+                await session.flush()
         except IntegrityError as e:
             raise ResourceAlreadyExists() from e
 
+        user.oauth_accounts.append(oauth_account)
         return oauth_account
 
     async def update_oauth_account(

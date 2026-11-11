@@ -22,7 +22,11 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
-from .service import github_oauth_client, github_repository_benefit_user_service
+from .service import (
+    GitHubRepositoryBenefitAccountNotConnected,
+    github_oauth_client,
+    github_repository_benefit_user_service,
+)
 
 router = APIRouter(
     prefix="/integrations/github_repository_benefit",
@@ -102,9 +106,20 @@ async def user_callback(
             token_data,
         )
     except ResourceAlreadyExists:
-        await github_repository_benefit_user_service.update_oauth_account(
-            session, auth_subject.subject, token_data
-        )
+        try:
+            await github_repository_benefit_user_service.update_oauth_account(
+                session, auth_subject.subject, token_data
+            )
+        except GitHubRepositoryBenefitAccountNotConnected:
+            return_to = state["return_to"]
+            redirect_url = get_safe_return_url(
+                add_query_parameters(
+                    return_to,
+                    toast="true",
+                    error="This GitHub account is already connected to another Polar user.",
+                )
+            )
+            return RedirectResponse(redirect_url, 303)
 
     return_to = state["return_to"]
     redirect_url = get_safe_return_url(add_query_parameters(return_to))

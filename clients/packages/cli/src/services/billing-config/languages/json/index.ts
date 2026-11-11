@@ -6,6 +6,7 @@ import {
   readSource,
 } from '@/services/billing-config/languages/language'
 import { locateInJson } from '@/services/billing-config/languages/json/locate'
+import { removeFromJson } from '@/services/billing-config/languages/json/remove'
 
 export const json: Language = {
   title: 'JSON',
@@ -32,4 +33,6 @@ export const json: Language = {
     Effect.succeed(`${JSON.stringify(dropOptionalNulls(document), null, 2)}\n`),
   locate: ({ source }, path, _got, target) =>
     locateInJson(source, path, target),
+  remove: ({ source, input }, removals) =>
+    removeFromJson(source, input, removals),
 }

@@ -15,6 +15,7 @@ import { loader } from '@/services/billing-config/load'
 import { deprecations, prune } from '@/services/billing-config/prune'
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
+import type { Run } from '@/utils/run'
 import { fakeAuth } from '@/utils/test-utils/services'
 
 const pruneUrl = 'https://sandbox-api.polar.sh/v1/config/prune'
@@ -62,6 +63,7 @@ const run = <A>(
     },
     config: LoadedConfig,
   ) => Effect.Effect<A, AuthError | BillingConfigError>,
+  spawn?: Run,
 ) =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -71,7 +73,7 @@ const run = <A>(
         production: yield* authenticatedClient('production'),
         local: yield* authenticatedClient('local'),
       }
-      const load = loader(fs)
+      const load = loader(fs, spawn)
       return yield* use(
         { deprecations: deprecations(clients), prune: prune(fs, load) },
         yield* load(file),
@@ -175,5 +177,40 @@ describe('prune with a script config', () => {
       message: expect.stringContaining('Could not remove apples'),
     })
     expect(await readFile(file, 'utf8')).toBe(source)
+  })
+})
+
+describe('prune with a Python config', () => {
+  const python = [
+    'class Meters(MeterSet):',
+    '    apples = Meter("Apples", on="apple", deprecated=True)',
+    '    pears = Meter("Pears", on="pear")',
+    '',
+    '',
+    'config = Config(meters=Meters)',
+    '',
+  ].join('\n')
+
+  const interpret: Run = (command) =>
+    Effect.promise(async () => {
+      const declared = await readFile(command.at(-1)!, 'utf8')
+      const meters = [
+        ...declared.matchAll(/^ {4}(\w+) = Meter\((.*)\)$/gm),
+      ].map(([, external_id, options]) => ({
+        external_id,
+        ...(options!.includes('deprecated=True') ? { deprecated: true } : {}),
+      }))
+      return { ok: true, stdout: JSON.stringify({ meters }), stderr: '' }
+    })
+
+  test('removes the unused entries', async () => {
+    file = join(file, '..', 'polar_config.py')
+    await writeFile(file, python)
+
+    await run((service, config) => service.prune(config, [apples]), interpret)
+
+    expect(await readFile(file, 'utf8')).toBe(
+      python.replace(/^ {4}apples.*\n/m, ''),
+    )
   })
 })

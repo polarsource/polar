@@ -13,6 +13,7 @@ import {
   unwritable,
 } from '@/services/billing-config/languages/language'
 import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
+import { removeFromScript } from '@/services/billing-config/languages/typescript/remove'
 
 const PACKAGE = '@polar-sh/polar'
 const MANIFEST = 'package.json'
@@ -166,4 +167,5 @@ export const typescript: Language = {
     ),
   locate: ({ source, input }, path, got) =>
     locateInScript(source, input, path, got),
+  remove: ({ source }, removals) => removeFromScript(source, removals),
 }

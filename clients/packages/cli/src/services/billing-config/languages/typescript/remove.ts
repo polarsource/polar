@@ -1,13 +1,8 @@
-import { applyEdits, modify } from 'jsonc-parser'
+import type { Removal } from '@/services/billing-config/languages/language'
 import {
   type Range,
   sectionRange,
 } from '@/services/billing-config/languages/typescript/locate'
-
-export interface Removal {
-  readonly section: string
-  readonly id: string
-}
 
 const STRINGS_AND_COMMENTS =
   /\/\/[^\n]*|\/\*[\s\S]*?\*\/|(['"`])(?:\\[\s\S]|(?!\1)[^\\])*\1/g
@@ -125,43 +120,6 @@ export const removeFromScript = (
       .toSorted((a, b) => b.start - a.start)
       .reduce(
         (text, { start, end }) => text.slice(0, start) + text.slice(end),
-        source,
-      ),
-    missing,
-  }
-}
-
-export const removeFromJson = (
-  source: string,
-  input: unknown,
-  removals: ReadonlyArray<Removal>,
-) => {
-  const sections = (input ?? {}) as Record<string, unknown>
-  const targets = removals.map((removal) => {
-    const items = sections[removal.section]
-    return {
-      removal,
-      index: Array.isArray(items)
-        ? items.findIndex(
-            (item: { external_id?: unknown }) =>
-              item?.external_id === removal.id,
-          )
-        : -1,
-    }
-  })
-  const missing = targets
-    .filter(({ index }) => index === -1)
-    .map(({ removal }) => removal)
-  if (missing.length > 0) return { source, missing }
-  return {
-    source: targets
-      .toSorted((a, b) => b.index - a.index)
-      .reduce(
-        (text, { removal, index }) =>
-          applyEdits(
-            text,
-            modify(text, [removal.section, index], undefined, {}),
-          ),
         source,
       ),
     missing,

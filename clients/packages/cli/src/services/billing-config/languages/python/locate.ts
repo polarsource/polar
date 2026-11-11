@@ -27,7 +27,7 @@ const literalOf = (value: unknown) => {
     : undefined
 }
 
-const classBody = (source: string, section: string) => {
+export const classBody = (source: string, section: string) => {
   const whole = { start: 0, end: source.length }
   const name = new RegExp(
     `\\b${escapePattern(section)}\\s*=\\s*([A-Za-z_]\\w*)`,
@@ -40,7 +40,11 @@ const classBody = (source: string, section: string) => {
   return { start, end: next === null ? source.length : start + next.index }
 }
 
-const entryOf = (source: string, section: string, externalId: string) => {
+export const entryOf = (
+  source: string,
+  section: string,
+  externalId: string,
+) => {
   const declaration = new RegExp(
     `^([ \\t]+)${escapePattern(externalId)}[ \\t]*(?::[^=\\n]+)?=(?!=)`,
     'gm',

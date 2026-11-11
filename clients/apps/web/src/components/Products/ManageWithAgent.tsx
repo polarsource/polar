@@ -1,6 +1,8 @@
 'use client'
 
 import { useModal } from '@/components/Modal/useModal'
+import { toast } from '@/components/Toast/use-toast'
+import { useSafeCopy } from '@/hooks/clipboard'
 import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
 import { Button, Modal, Text } from '@polar-sh/orbit'
@@ -14,6 +16,7 @@ const SETUP_COMMANDS = [
 ]
 
 const CommandBlock = () => {
+  const safeCopy = useSafeCopy(toast)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
@@ -23,7 +26,7 @@ const CommandBlock = () => {
   }, [copied])
 
   const copy = async () => {
-    await navigator.clipboard.writeText(SETUP_COMMANDS.join('\n'))
+    await safeCopy(SETUP_COMMANDS.join('\n'))
     setCopied(true)
   }
 

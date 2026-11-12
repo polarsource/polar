@@ -1,13 +1,13 @@
 'use client'
 
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PublishedAt } from '../VersionList'
+import { PublishedAt } from '../PublishedAt'
 import { VersionDiff } from './VersionDiff'
 
 type Organization = schemas['Organization']
@@ -43,7 +43,7 @@ export default function VersionPage({
     notFound()
   }
   if (!catalog) {
-    return <MasterDetailLayoutContent />
+    return <DashboardBody title={null} />
   }
 
   const versionsPath = `/dashboard/${organization.slug}/products/versions`
@@ -63,9 +63,22 @@ export default function VersionPage({
   const productsPath = `/dashboard/${organization.slug}/products`
 
   return (
-    <MasterDetailLayoutContent
+    <DashboardBody
+      title={null}
       header={
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
+          <Link href={versionsPath}>
+            <Box
+              as="span"
+              color={{ base: 'text-secondary', hover: 'text-primary' }}
+              transitionProperty="colors"
+              transitionDuration="fast"
+            >
+              <Text as="span" color="inherit">
+                ← Versions
+              </Text>
+            </Box>
+          </Link>
           <Box alignItems="center" columnGap="l" minWidth={0}>
             <Text variant="heading-xs" as="h1" truncate>
               {catalog.name ?? 'Untitled'}
@@ -121,6 +134,6 @@ export default function VersionPage({
           />
         ) : null}
       </Box>
-    </MasterDetailLayoutContent>
+    </DashboardBody>
   )
 }

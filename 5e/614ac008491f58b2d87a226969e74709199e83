@@ -1,0 +1,19 @@
+server/polar/billing_entry/service.py
+  s_707b72e9bc5329::t_99e022c7f9b454 261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5e614ac008491f58b2d87a226969e74709199e83",
+  "prompts": {},
+  "sessions": {
+    "s_707b72e9bc5329": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce2322e5-0435-4d4c-992a-d1ce2a830ec3",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

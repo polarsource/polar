@@ -1415,6 +1415,9 @@ class SubscriptionService:
     def should_expire_trial(self, subscription: Subscription) -> bool:
         if not subscription.trialing or subscription.cancel_at_period_end:
             return False
+        return self._requires_payment_method(subscription)
+
+    def _requires_payment_method(self, subscription: Subscription) -> bool:
         if (
             subscription.payment_method_id is not None
             or subscription.customer.default_payment_method_id is not None
@@ -4650,10 +4653,7 @@ class SubscriptionService:
             return
         if self._is_free_after_trial(subscription, subscription.trial_end):
             return
-        if (
-            subscription.payment_method_id is None
-            and subscription.customer.default_payment_method_id is None
-        ):
+        if self._requires_payment_method(subscription):
             return await self._send_customer_email(
                 session,
                 subscription,

@@ -8638,45 +8638,32 @@ class TestSendTrialConversionReminderEmail:
             f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
         )
 
-    async def test_with_subscription_payment_method(
+    @pytest.mark.parametrize(
+        "case",
+        ["subscription_payment_method", "customer_payment_method"],
+    )
+    async def test_payment_method_not_required(
         self,
         enqueue_email_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
+        case: str,
     ) -> None:
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
-        subscription.payment_method = await create_payment_method(
-            save_fixture, customer
-        )
+        if case == "subscription_payment_method":
+            subscription.payment_method = await create_payment_method(
+                save_fixture, customer
+            )
+        else:
+            customer.default_payment_method = await create_payment_method(
+                save_fixture, customer
+            )
+            await save_fixture(customer)
         await save_fixture(subscription)
-
-        await subscription_service.send_trial_conversion_reminder_email(
-            session, subscription
-        )
-
-        enqueue_email_mock.assert_called_once()
-        email = enqueue_email_mock.call_args[0][0]
-        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
-
-    async def test_with_customer_default_payment_method(
-        self,
-        enqueue_email_mock: MagicMock,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_trialing_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        customer.default_payment_method = await create_payment_method(
-            save_fixture, customer
-        )
-        await save_fixture(customer)
 
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription
@@ -8817,7 +8804,7 @@ class TestSendTrialConversionReminderEmail:
 
         enqueue_email_mock.assert_called_once()
         email = enqueue_email_mock.call_args[0][0]
-        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
+        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
 
     async def test_disabled_by_conversion_reminder_setting(
         self,

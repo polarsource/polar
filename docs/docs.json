@@ -41,7 +41,7 @@
         "icon": "compass",
         "groups": [
           {
-            "group": "Bootup",
+            "group": "Get Started",
             "pages": ["introduction", "migrate"]
           },
           {

@@ -82,8 +82,7 @@ class BenefitGrantRepository(
     ) -> Sequence[BenefitGrant]:
         statement = self.get_base_statement().where(
             BenefitGrant.scope == scope,
-            BenefitGrant.is_granted,
-            BenefitGrant.manually_revoked_at.is_(None),
+            BenefitGrant.is_granted_and_unsuppressed,
             ~BenefitGrant.is_deleted,
         )
         return await self.get_all(statement)
@@ -117,8 +116,7 @@ class BenefitGrantRepository(
             self.get_base_statement()
             .where(
                 BenefitGrant.benefit_id == benefit.id,
-                BenefitGrant.is_granted,
-                BenefitGrant.manually_revoked_at.is_(None),
+                BenefitGrant.is_granted_and_unsuppressed,
                 ~BenefitGrant.is_deleted,
             )
             .options(*options)
@@ -209,7 +207,7 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.benefit_id == benefit.id,
                 BenefitGrant.customer_id == customer.id,
-                BenefitGrant.is_granted,
+                BenefitGrant.is_granted_and_unsuppressed,
                 ~BenefitGrant.is_deleted,
             )
             .options(*options)

@@ -230,6 +230,15 @@ class BenefitGrant(RecordModel):
         return type_coerce(cls.granted_at.is_not(None), Boolean)
 
     @hybrid_property
+    def is_granted_and_unsuppressed(self) -> bool:
+        return self.is_granted and self.manually_revoked_at is None
+
+    @is_granted_and_unsuppressed.inplace.expression
+    @classmethod
+    def _is_granted_and_unsuppressed_expression(cls) -> ColumnElement[bool]:
+        return and_(cls.is_granted, cls.manually_revoked_at.is_(None))
+
+    @hybrid_property
     def is_revoked(self) -> bool:
         return self.revoked_at is not None
 

@@ -448,6 +448,46 @@ class TestRevokeBenefit:
         assert updated_grant.is_revoked
         benefit_strategy_mock.revoke.assert_not_called()
 
+    async def test_suppressed_overlapping_grant_does_not_keep_provider_access(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+            member=None,
+        )
+        other_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            order=order,
+            member=None,
+        )
+        for suppressed in (grant, other_grant):
+            suppressed.manually_revoked_at = utc_now()
+            await save_fixture(suppressed)
+
+        revoked = await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit_organization, grant=grant
+        )
+
+        assert revoked.is_revoked
+        assert other_grant.is_granted
+        benefit_strategy_mock.revoke.assert_awaited_once()
+
     async def test_several_benefit_grants_should_individual_revoke(
         self,
         session: AsyncSession,

@@ -349,9 +349,7 @@ class BenefitGrantService:
             )
 
         granted_benefit_ids = {
-            g.benefit_id
-            for g in existing_grants
-            if g.is_granted and g.manually_revoked_at is None
+            g.benefit_id for g in existing_grants if g.is_granted_and_unsuppressed
         }
         # Don't retry grants that failed due to required customer action
         errored_benefit_ids = {

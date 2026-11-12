@@ -1256,6 +1256,10 @@ class SubscriptionService:
             return await repository.release_scheduler_lock(subscription)
 
         cycle_at = subscription.current_period_end
+        # With a meter cycle, the renewal only bills the usage since its last settlement.
+        usage_period_start = (
+            subscription.current_meter_period_start or subscription.current_period_start
+        )
         revoke = subscription.cancel_at_period_end
 
         # Subscription is due to pause: it enters the paused state at the end of
@@ -1395,7 +1399,11 @@ class SubscriptionService:
 
         if payment_mode == PaymentMode.sync:
             await self._create_subscription_update_order(
-                session, subscription, billing_reason, cutoff=cycle_at
+                session,
+                subscription,
+                billing_reason,
+                cutoff=cycle_at,
+                period_start=usage_period_start,
             )
         else:
             enqueue_job(
@@ -1403,6 +1411,7 @@ class SubscriptionService:
                 subscription.id,
                 billing_reason,
                 cutoff=cycle_at.isoformat(),
+                period_start=usage_period_start.isoformat(),
             )
 
         if not revoke:
@@ -1593,6 +1602,11 @@ class SubscriptionService:
             cutoff.isoformat(),
             [spp.product_price_id for spp in subscription.subscription_product_prices],
             subscription.product_id,
+            period_start=(
+                subscription.current_meter_period_start.isoformat()
+                if subscription.current_meter_period_start is not None
+                else None
+            ),
         )
 
     def check_meter_cycle_lag(self, subscription: Subscription) -> None:
@@ -4921,6 +4935,7 @@ class SubscriptionService:
         ),
         *,
         cutoff: datetime | None = None,
+        period_start: datetime | None = None,
     ) -> Order:
         from polar.order.service import order as order_service
 
@@ -4929,6 +4944,7 @@ class SubscriptionService:
             subscription,
             billing_reason,
             cutoff=cutoff,
+            period_start=period_start,
             payment_mode=PaymentMode.sync,
         )
 

@@ -12,9 +12,11 @@ import structlog
 from babel.dates import format_date
 
 from polar.billing_interval.service import billing_interval as billing_interval_service
+from polar.billing_interval.types import MeterCharge
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
-from polar.kit.math import non_negative_running_sum
+from polar.exceptions import PolarError
+from polar.kit.math import non_negative_running_sum, polar_round
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
@@ -29,6 +31,7 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.reducer.service import reducer as reducer_service
 
 from .comparison import Comparison, Quantities, compare
 from .repository import BillingEntryRepository
@@ -59,6 +62,23 @@ class MeteredLineItem:
     currency: str
     label: str
     proration: Literal[False] = False
+
+
+class ReducerUsageAlreadyBilled(PolarError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        super().__init__(
+            f"Reducer usage of subscription {subscription.id} was billed by "
+            "another order while its order was created.",
+            409,
+        )
+
+
+async def _no_line_items() -> AsyncGenerator[
+    tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+]:
+    return
+    yield
 
 
 class BillingEntryService:
@@ -194,6 +214,112 @@ class BillingEntryService:
                     ),
                 )
 
+    @contextlib.asynccontextmanager
+    async def _create_order_items_from_reducers(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        static_line_items: AsyncIterable[
+            tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]
+        ],
+        *,
+        include_metered: bool = True,
+        period_start: datetime | None,
+        cutoff: datetime,
+        reducer_cutoff: datetime,
+        paid_on_creation: bool = False,
+    ) -> AsyncGenerator[Sequence[OrderItem]]:
+        """Like `_create_order_items`, with the metered usage read from the
+        reducers instead of the pending billing entries. The order bills the
+        period from `period_start` to `reducer_cutoff`.
+
+        The order bills exactly the buckets it read: usage arriving while it is
+        created is left to the next order. Buckets another order billed in the
+        meantime roll the order back to be retried, unless it is
+        `paid_on_creation`: it is charged before they are marked and the payment
+        can't be rolled back, so it is logged instead."""
+        meter_ids = (
+            await billing_interval_service.get_meter_ids(session, subscription)
+            if include_metered
+            else set()
+        )
+
+        async with self._create_order_items(
+            session,
+            subscription,
+            static_line_items,
+            cutoff=cutoff,
+            reducer_cutoff=reducer_cutoff,
+        ) as static_items:
+            usage, bucket_ids = (
+                await billing_interval_service.seal_usage(
+                    session,
+                    subscription,
+                    meter_ids,
+                    period_start=period_start,
+                    cutoff=reducer_cutoff,
+                )
+                if meter_ids
+                else ({}, [])
+            )
+            metered_items = [
+                item
+                for charge in usage.values()
+                for item in await self._get_reducer_order_items(session, charge)
+            ]
+
+            yield [*static_items, *metered_items]
+
+            if metered_items:
+                billed = await reducer_service.mark_as_billed(
+                    session, bucket_ids, order_id=metered_items[0].order_id
+                )
+                if billed != len(bucket_ids):
+                    if not paid_on_creation:
+                        raise ReducerUsageAlreadyBilled(subscription)
+                    log.error(
+                        "Reducer usage was billed by another order after the order "
+                        "was paid",
+                        subscription_id=subscription.id,
+                        order_id=metered_items[0].order_id,
+                    )
+
+    async def _get_reducer_order_items(
+        self, session: AsyncSession, charge: MeterCharge
+    ) -> list[OrderItem]:
+        """One item per price the meter's usage is charged at. Credits come off
+        a sum or count at the oldest price first. A max, min or average is charged
+        above the credits at every price, for its share of the period."""
+        repository = ProductPriceRepository.from_session(session)
+        items: list[OrderItem] = []
+        credited_units = charge.credited_units
+        for price_id, units in charge.units_by_price.items():
+            if units <= 0:
+                continue
+            price = cast(
+                MeteredPrice, await repository.get_by_id(price_id, include_deleted=True)
+            )
+            amount, amount_label = price.get_amount_and_label(
+                float(units), credited_units
+            )
+            period_share = charge.period_shares[price_id]
+            if period_share < 1:
+                amount = polar_round(amount * period_share)
+                amount_label += f" — {period_share:.0%} of the period"
+            items.append(
+                OrderItem(
+                    label=f"{price.meter.name} — {amount_label}",
+                    amount=amount,
+                    net_amount=amount,
+                    tax_amount=0,
+                    proration=False,
+                    product_price=price,
+                )
+            )
+            if price.meter.aggregation.is_summable():
+                credited_units = max(Decimal(0), credited_units - units)
+        return items
+
     def create_order_items_from_pending(
         self,
         session: AsyncSession,
@@ -202,8 +328,23 @@ class BillingEntryService:
         include_metered: bool = True,
         cutoff: datetime | None = None,
         reducer_cutoff: datetime | None = None,
+        period_start: datetime | None = None,
+        paid_on_creation: bool = False,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         cutoff = cutoff or utc_now()
+        if subscription.organization.is_reducer_billing_enabled:
+            return self._create_order_items_from_reducers(
+                session,
+                subscription,
+                self.compute_pending_subscription_line_items(
+                    session, subscription, include_metered=False, cutoff=cutoff
+                ),
+                include_metered=include_metered,
+                period_start=period_start,
+                cutoff=cutoff,
+                reducer_cutoff=reducer_cutoff or cutoff,
+                paid_on_creation=paid_on_creation,
+            )
         return self._create_order_items(
             session,
             subscription,
@@ -221,6 +362,7 @@ class BillingEntryService:
         *,
         cutoff: datetime | None = None,
         price_ids: Sequence[uuid.UUID] | None = None,
+        period_start: datetime | None = None,
     ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
         """
         Build order items from the subscription's pending *metered* billing entries
@@ -228,6 +370,15 @@ class BillingEntryService:
         which settles usage between billing renewals.
         """
         cutoff = cutoff or utc_now()
+        if subscription.organization.is_reducer_billing_enabled:
+            return self._create_order_items_from_reducers(
+                session,
+                subscription,
+                _no_line_items(),
+                period_start=period_start,
+                cutoff=cutoff,
+                reducer_cutoff=cutoff,
+            )
         return self._create_order_items(
             session,
             subscription,

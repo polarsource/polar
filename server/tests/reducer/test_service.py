@@ -1187,7 +1187,7 @@ class TestBillBuckets:
             session, [max_reducer], external_customer, until=NEXT_BUCKET_START
         )
 
-        quantities = await reducer_service._bill_buckets(
+        quantities, _ = await reducer_service._bill_buckets(
             session,
             [max_reducer],
             external_customer,
@@ -1231,7 +1231,7 @@ class TestBillBuckets:
                 session, [max_reducer], external_customer, until=at
             )
 
-        quantities = await reducer_service._bill_buckets(
+        quantities, _ = await reducer_service._bill_buckets(
             session,
             [max_reducer],
             external_customer,
@@ -1270,14 +1270,16 @@ class TestBillBuckets:
         )
 
         quantities = [
-            await reducer_service._bill_buckets(
-                session,
-                [max_reducer],
-                external_customer,
-                order_id=order.id,
-                since=START,
-                until=NEXT_BUCKET_START,
-            )
+            (
+                await reducer_service._bill_buckets(
+                    session,
+                    [max_reducer],
+                    external_customer,
+                    order_id=order.id,
+                    since=START,
+                    until=NEXT_BUCKET_START,
+                )
+            )[0]
             for _ in range(2)
         ]
 
@@ -1345,7 +1347,7 @@ class TestBillBuckets:
             session, [reducer], external_customer, until=NEXT_BUCKET_START
         )
 
-        quantities = await reducer_service._bill_buckets(
+        quantities, _ = await reducer_service._bill_buckets(
             session,
             [reducer],
             external_customer,
@@ -1553,11 +1555,14 @@ class TestBill:
         observe = mocker.patch.object(
             reducer_service,
             "_bill_windows",
-            return_value=[WindowUsage(window, UsageSummary(3, Decimal(3), None, None))],
+            return_value=(
+                [WindowUsage(window, UsageSummary(3, Decimal(3), None, None))],
+                [],
+            ),
         )
         seal = mocker.patch.object(reducer_service, "_seal_buckets")
         bill = mocker.patch.object(
-            reducer_service, "_bill_buckets", return_value={credit.id: Decimal(2)}
+            reducer_service, "_bill_buckets", return_value=({credit.id: Decimal(2)}, [])
         )
         order_id = uuid.uuid4()
 
@@ -1685,6 +1690,63 @@ class TestBill:
             (BUCKET_START, CUTOFF, None),
             (CUTOFF, NEXT_BUCKET_START, order.id),
         ]
+
+    async def test_marks_as_billed_only_the_buckets_seal_usage_returned(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await create_tokens_event(
+            save_fixture, organization, 3, timestamp=CUTOFF, ingested_at=INGESTED_AT
+        )
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+        windows = [usage_window(meter, CUTOFF, NEXT_BUCKET_START)]
+
+        sealed, bucket_ids = await reducer_service.seal_usage(
+            session,
+            external_customer,
+            [meter.id],
+            windows=windows,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        assert [usage.summary.count for usage in sealed[meter.id].windows] == [1]
+        assert all(bucket.billed_at is None for bucket in await get_buckets(session))
+
+        await reducer_service.rollup(
+            session,
+            redis,
+            organization.id,
+            [build_event(organization, timestamp=CUTOFF, metadata={"tokens": 5})],
+        )
+        await reducer_service.seal_usage(
+            session,
+            external_customer,
+            [meter.id],
+            windows=windows,
+            cutoff=NEXT_BUCKET_START,
+        )
+        billed = await reducer_service.mark_as_billed(
+            session, bucket_ids, order_id=order.id
+        )
+
+        assert billed == len(bucket_ids)
+        assert [
+            (bucket.generation, bucket.count, bucket.order_id)
+            for bucket in await get_buckets(session)
+            if bucket.bucket_start == CUTOFF
+            and (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [(1, 1, order.id), (2, 1, None)]
 
 
 SUM_TOKENS = PropertyAggregation(func=AggregationFunction.sum, property="tokens")

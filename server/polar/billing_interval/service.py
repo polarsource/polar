@@ -1,30 +1,36 @@
+import contextlib
 import dataclasses
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
-from datetime import UTC, datetime
+from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from itertools import pairwise
 from uuid import UUID
 
 import structlog
 
+from polar.event.repository import EventRepository
 from polar.exceptions import PolarError
 from polar.logging import Logger
+from polar.meter.aggregation import AggregationFunction
 from polar.models import BillingInterval, Customer, Subscription
 from polar.models.billing_interval import UsagePolicy
 from polar.models.subscription import SubscriptionStatus
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import is_metered_price
+from polar.reducer.service import finalize_quantity, merge_summaries
 from polar.reducer.service import reducer as reducer_service
-from polar.reducer.types import UsageWindow
+from polar.reducer.types import MeterUsage, UsageWindow, WindowUsage
 from polar.subscription.repository import SubscriptionRepository
 
 from .repository import BillingIntervalRepository
-from .types import IntervalChangePlan, SubscriptionMeterBillingState
+from .types import IntervalChangePlan, MeterCharge, SubscriptionMeterBillingState
 
 log: Logger = structlog.get_logger()
 
 BILL_USAGE_LOCK_TIMEOUT = "2s"
+
+SUMMABLE_FUNCTIONS = (AggregationFunction.cnt, AggregationFunction.sum)
 
 USAGE_POLICIES = {
     SubscriptionStatus.active: UsagePolicy.charge,
@@ -37,6 +43,16 @@ USAGE_POLICIES = {
 class BillingIntervalConflict(PolarError):
     def __init__(self, message: str) -> None:
         super().__init__(message, 409)
+
+
+class ReducerUsageUnavailable(PolarError):
+    def __init__(self, subscription: Subscription, meter_ids: Iterable[UUID]) -> None:
+        self.subscription = subscription
+        self.meter_ids = sorted(meter_ids)
+        super().__init__(
+            f"Reducer usage of subscription {subscription.id} is unavailable "
+            f"for meters {', '.join(str(meter_id) for meter_id in self.meter_ids)}."
+        )
 
 
 class BillingIntervalService:
@@ -102,6 +118,16 @@ class BillingIntervalService:
         )
         return resolve_ownership(intervals, subscription_starts, cutoff=cutoff)
 
+    async def get_meter_ids(
+        self, session: AsyncReadSession, subscription: Subscription
+    ) -> set[UUID]:
+        """The meters the subscription has intervals on, including those it no
+        longer has a price for."""
+        intervals = await BillingIntervalRepository.from_session(
+            session
+        ).get_by_subscription(subscription.id)
+        return {interval.meter_id for interval in intervals}
+
     async def bill_usage(
         self,
         session: AsyncSession,
@@ -117,27 +143,16 @@ class BillingIntervalService:
         BILL_USAGE_LOCK_TIMEOUT, are rolled back and logged, so they never affect
         the order."""
         meter_ids = sorted(meter_ids)
-        repository = BillingIntervalRepository.from_session(session)
         try:
-            async with (
-                repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
-                session.begin_nested(),
-            ):
-                windows: list[UsageWindow] = []
-                for meter_id in meter_ids:
-                    windows.extend(
-                        await self.get_usage_windows(
-                            session, subscription.customer, meter_id, cutoff=cutoff
-                        )
-                    )
+            async with self._settlement_windows(
+                session, subscription, meter_ids, cutoff=cutoff
+            ) as windows:
                 quantities = await reducer_service.bill(
                     session,
                     subscription.customer,
                     meter_ids,
                     order_id=order_id,
-                    windows=select_settlement_windows(
-                        windows, billing_subscription_id=subscription.id
-                    ),
+                    windows=windows,
                     cutoff=cutoff,
                 )
         except Exception:
@@ -149,6 +164,217 @@ class BillingIntervalService:
             )
             quantities = {}
         return quantities
+
+    async def seal_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Iterable[UUID],
+        *,
+        period_start: datetime | None,
+        cutoff: datetime,
+    ) -> tuple[dict[UUID, MeterCharge], list[UUID]]:
+        """Seals the usage an order billing the period from `period_start` to
+        `cutoff` charges, at the price of the interval it falls in, and returns it
+        with the ids of its buckets, for `reducer.mark_as_billed` once the order
+        exists. Failures raise, and so does a meter without usage."""
+        meter_ids = sorted(meter_ids)
+        async with self._settlement_windows(
+            session, subscription, meter_ids, cutoff=cutoff
+        ) as windows:
+            period_starts = await self._get_usage_period_starts(
+                session,
+                subscription.customer,
+                meter_ids,
+                windows,
+                period_start=period_start,
+                cutoff=cutoff,
+            )
+            usage, bucket_ids = await reducer_service.seal_usage(
+                session,
+                subscription.customer,
+                meter_ids,
+                windows=split_windows(windows, at=period_starts),
+                cutoff=cutoff,
+            )
+        if usage.keys() != set(meter_ids):
+            raise ReducerUsageUnavailable(subscription, set(meter_ids) - usage.keys())
+        intervals = await BillingIntervalRepository.from_session(
+            session
+        ).get_by_subscription(subscription.id)
+        price_ids = {interval.id: interval.product_price_id for interval in intervals}
+        charges = {
+            meter_id: get_meter_charge(
+                meter_usage,
+                price_ids,
+                period_start=period_starts[meter_id],
+                cutoff=cutoff,
+            )
+            for meter_id, meter_usage in usage.items()
+        }
+        return charges, bucket_ids
+
+    async def _get_usage_period_starts(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter_ids: Sequence[UUID],
+        windows: Sequence[UsageWindow],
+        *,
+        period_start: datetime | None,
+        cutoff: datetime,
+    ) -> dict[UUID, datetime | None]:
+        """The start of the usage an order billing from `period_start` to `cutoff`
+        settles on each meter."""
+        repository = EventRepository.from_session(session)
+        period_starts: dict[UUID, datetime | None] = {}
+        for meter_id in meter_ids:
+            reset = await repository.get_latest_meter_reset(
+                customer, meter_id, cutoff=cutoff
+            )
+            period_starts[meter_id] = get_usage_period_start(
+                period_start,
+                None if reset is None else reset.timestamp,
+                [window for window in windows if window.meter_id == meter_id],
+            )
+        return period_starts
+
+    @contextlib.asynccontextmanager
+    async def _settlement_windows(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        meter_ids: Sequence[UUID],
+        *,
+        cutoff: datetime,
+    ) -> AsyncIterator[tuple[UsageWindow, ...]]:
+        """The windows the subscription settles on the meters, in a savepoint
+        that doesn't wait on a lock for longer than BILL_USAGE_LOCK_TIMEOUT."""
+        repository = BillingIntervalRepository.from_session(session)
+        async with (
+            repository.local_lock_timeout(BILL_USAGE_LOCK_TIMEOUT),
+            session.begin_nested(),
+        ):
+            windows: list[UsageWindow] = []
+            for meter_id in meter_ids:
+                windows.extend(
+                    await self.get_usage_windows(
+                        session, subscription.customer, meter_id, cutoff=cutoff
+                    )
+                )
+            yield select_settlement_windows(
+                windows, billing_subscription_id=subscription.id
+            )
+
+
+def get_usage_period_start(
+    period_start: datetime | None,
+    last_reset_at: datetime | None,
+    windows: Sequence[UsageWindow],
+) -> datetime | None:
+    """The start of the usage an order settles on a meter: `period_start`, or
+    earlier if nothing was settled since. A subscription that isn't active keeps
+    its meter clock running without settling or resetting the meter, so its
+    usage since the last reset, or since it started, is still to bill."""
+    if period_start is None:
+        return None
+    unsettled_since = (
+        last_reset_at
+        if last_reset_at is not None
+        else min((window.start for window in windows), default=period_start)
+    )
+    return min(period_start, unsettled_since)
+
+
+def split_windows(
+    windows: Sequence[UsageWindow], *, at: Mapping[UUID, datetime | None]
+) -> tuple[UsageWindow, ...]:
+    """Splits each window the datetime of its meter falls inside, so the usage
+    before it and from it is observed apart."""
+    split: list[UsageWindow] = []
+    for window in windows:
+        split_at = at.get(window.meter_id)
+        if split_at is not None and window.start < split_at < window.end:
+            split.append(dataclasses.replace(window, end=split_at))
+            split.append(dataclasses.replace(window, start=split_at))
+        else:
+            split.append(window)
+    return tuple(split)
+
+
+def get_meter_charge(
+    usage: MeterUsage,
+    price_ids: Mapping[UUID, UUID],
+    *,
+    period_start: datetime | None,
+    cutoff: datetime,
+) -> MeterCharge:
+    """The meter's usage by the price of the interval each window is in, for an
+    order billing the period from `period_start` to `cutoff`.
+    `price_ids` are the price ids by interval id.
+
+    A max, min or average only counts the usage of the billed period. Usage
+    arriving late for an earlier period is left out: that period's value is
+    already billed, and a late reading can't be added to it like a sum can."""
+    windows_by_price: dict[UUID, list[WindowUsage]] = defaultdict(list)
+    for window_usage in sorted(usage.windows, key=lambda usage: usage.window.start):
+        if (
+            usage.function not in SUMMABLE_FUNCTIONS
+            and period_start is not None
+            and window_usage.window.end <= period_start
+        ):
+            continue
+        price_id = price_ids[window_usage.window.interval_id]
+        windows_by_price[price_id].append(window_usage)
+    return MeterCharge(
+        units_by_price={
+            price_id: finalize_quantity(
+                merge_summaries([window_usage.summary for window_usage in windows]),
+                usage.function,
+            )
+            for price_id, windows in windows_by_price.items()
+        },
+        period_shares={
+            price_id: get_period_share(
+                usage.function,
+                [window_usage.window for window_usage in windows],
+                period_start=period_start,
+                cutoff=cutoff,
+            )
+            for price_id, windows in windows_by_price.items()
+        },
+        credited_units=usage.credits,
+    )
+
+
+def get_period_share(
+    function: AggregationFunction,
+    windows: Sequence[UsageWindow],
+    *,
+    period_start: datetime | None,
+    cutoff: datetime,
+) -> Decimal:
+    """The share of the billed period, from `period_start` to `cutoff`, the windows
+    cover. A max, min or average doesn't shrink with its window, so it is charged
+    for that share only. Sums and counts are charged in full."""
+    if function in SUMMABLE_FUNCTIONS or period_start is None or period_start >= cutoff:
+        return Decimal(1)
+    covered = sum(
+        (
+            min(window.end, cutoff) - max(window.start, period_start)
+            for window in windows
+            if window.end > period_start
+        ),
+        timedelta(0),
+    )
+    if not covered:
+        return Decimal(1)
+    microsecond = timedelta(microseconds=1)
+    return min(
+        Decimal(1),
+        Decimal(covered // microsecond)
+        / Decimal((cutoff - period_start) // microsecond),
+    )
 
 
 def get_interval_boundaries(

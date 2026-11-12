@@ -181,6 +181,7 @@ async def create_subscription_order(
     subscription_id: Annotated[uuid.UUID, LoggableField],
     order_reason: Annotated[OrderBillingReasonInternal, LoggableField],
     cutoff: Annotated[str | None, LoggableField] = None,
+    period_start: Annotated[str | None, LoggableField] = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -207,6 +208,7 @@ async def create_subscription_order(
                 subscription_id,
                 order_reason,
                 cutoff=billing_cutoff.isoformat(),
+                period_start=period_start,
             ):
                 return
 
@@ -225,6 +227,11 @@ async def create_subscription_order(
                 order_reason,
                 cutoff=billing_cutoff,
                 reducer_cutoff=reducer_cutoff,
+                period_start=(
+                    datetime.fromisoformat(period_start)
+                    if period_start is not None
+                    else None
+                ),
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.
@@ -243,6 +250,7 @@ async def create_meter_cycle_order(
     cutoff: Annotated[str, LoggableField],
     price_ids: Annotated[list[uuid.UUID], LoggableField],
     product_id: Annotated[uuid.UUID, LoggableField],
+    period_start: Annotated[str | None, LoggableField] = None,
 ) -> None:
     billing_cutoff = datetime.fromisoformat(cutoff)
     if _defer_until_grace_period_elapsed(
@@ -252,6 +260,7 @@ async def create_meter_cycle_order(
         cutoff,
         price_ids,
         product_id,
+        period_start=period_start,
     ):
         return
 
@@ -278,6 +287,11 @@ async def create_meter_cycle_order(
             cutoff=billing_cutoff,
             price_ids=price_ids,
             product=product,
+            period_start=(
+                datetime.fromisoformat(period_start)
+                if period_start is not None
+                else None
+            ),
         )
 
 

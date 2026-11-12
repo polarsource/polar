@@ -1423,6 +1423,7 @@ class OrderService:
         *,
         cutoff: datetime | None = None,
         reducer_cutoff: datetime | None = None,
+        period_start: datetime | None = None,
         payment_mode: PaymentMode = PaymentMode.background,
     ) -> Order:
         """
@@ -1434,6 +1435,7 @@ class OrderService:
             billing_reason: The reason for billing the subscription.
             cutoff: The exclusive usage billing cutoff for the order.
             reducer_cutoff: The reducer's usage billing cutoff, if not `cutoff`.
+            period_start: The start of the period whose usage the order bills.
             payment_mode: The mode of payment, either "sync" or "background".
                 In "background" mode, the order will be created with pending status
                 and payment will be triggered asynchronously.
@@ -1453,6 +1455,8 @@ class OrderService:
             include_metered=include_metered,
             cutoff=cutoff,
             reducer_cutoff=reducer_cutoff,
+            period_start=period_start,
+            paid_on_creation=payment_mode == PaymentMode.sync,
         ) as items:
             if len(items) == 0:
                 raise NoPendingBillingEntries(subscription)
@@ -1649,9 +1653,14 @@ class OrderService:
         cutoff: datetime | None = None,
         price_ids: Sequence[uuid.UUID] | None = None,
         product: Product | None = None,
+        period_start: datetime | None = None,
     ) -> Order | None:
         async with billing_entry_service.create_metered_order_items_from_pending(
-            session, subscription, cutoff=cutoff, price_ids=price_ids
+            session,
+            subscription,
+            cutoff=cutoff,
+            price_ids=price_ids,
+            period_start=period_start,
         ) as items:
             if len(items) == 0:
                 return None

@@ -495,6 +495,18 @@ jobs:
         if: matrix.shard == 'tinybird'
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: 🐦 Lift Tinybird ingestion rate limit
+        if: matrix.shard == 'tinybird'
+        continue-on-error: true
+        env:
+          TINYBIRD_CONTAINER: ${{ job.services.tinybird.id }}
+        run: |
+          docker cp .github/scripts/tinybird_hfi_config.py "$TINYBIRD_CONTAINER":/tmp/hfi_config.py
+          docker exec "$TINYBIRD_CONTAINER" sh -c '
+            cp /app/local/config/hfi_config.pyc /app/local/config/hfi_config_original.pyc &&
+            python -c "import py_compile; py_compile.compile(\"/tmp/hfi_config.py\", cfile=\"/app/local/config/hfi_config.pyc\", doraise=True)" &&
+            supervisorctl restart tinybird-hfi'
+
       - name: 🐦 Prepare Tinybird workspace
         if: matrix.shard == 'tinybird'
         working-directory: ./server

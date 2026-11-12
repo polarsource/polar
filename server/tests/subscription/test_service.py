@@ -3020,6 +3020,53 @@ class TestCycle:
 
 @pytest.mark.anyio
 class TestCycleMeters:
+    async def test_trial_added_to_active_subscription_does_not_start_discount(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        now = utc_now()
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=31)
+        subscription.current_meter_period_end = now - timedelta(seconds=1)
+        await save_fixture(subscription)
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_trial(
+                session,
+                ctx,
+                subscription,
+                trial_end=subscription.current_period_end + timedelta(days=30),
+            )
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.update_discount(
+                session, ctx, subscription, discount=discount.id
+            )
+        subscription.scheduler_locked_at = utc_now()
+
+        updated = await subscription_service.cycle_meters(session, subscription)
+
+        assert updated.discount_applied_at is None
+
     async def test_advances_clock_resets_and_regrants_without_overage(
         self,
         session: AsyncSession,

@@ -104,7 +104,6 @@ async def user_callback(
         log.info(
             "github_repository_benefit.user_callback.access_token_missing",
             user_id=str(auth_subject.subject.id),
-            oauth2_token_data_keys=list(token_data.keys()),
         )
         redirect_url = get_safe_return_url(
             add_query_parameters(

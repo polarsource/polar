@@ -4,7 +4,10 @@ os.environ["POLAR_ENV"] = "testing"
 
 
 from tests.fixtures import *  # noqa
+import freezegun
 import pytest
+
+freezegun.configure(extend_ignore_list=["_pytest.timing"])
 
 
 def pytest_configure(config: pytest.Config) -> None:

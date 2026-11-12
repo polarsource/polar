@@ -1,0 +1,23 @@
+server/polar/benefit/grant/repository.py
+  s_feb647f1338f47::t_23d77d776a9338 70-72,75-79
+server/polar/benefit/grant/scope.py
+  s_feb647f1338f47::t_809f1139fc2c62 100-103
+server/tests/benefit/test_tasks.py
+  s_feb647f1338f47::t_5961d3702bc9c6 4,7,22,31-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ea932ad1818facacdbf800f74a83c30515866230",
+  "prompts": {},
+  "sessions": {
+    "s_feb647f1338f47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c473-d69e-7e73-b567-f9f591836add",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

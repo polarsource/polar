@@ -175,8 +175,10 @@ export const GrantFigure = () => {
       <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr 1fr' }} gap="xs">
         <Sheet title="Checkout">
           <Box justifyContent="between" alignItems="baseline" columnGap="l">
-            <Text variant="heading-xxs">Business</Text>
-            <Text variant="heading-xxs" tabularNums>
+            <Text variant="heading-xxs" as="p">
+              Business
+            </Text>
+            <Text variant="heading-xxs" as="p" tabularNums>
               $2,499
               <Text as="span" variant="body" color="muted">
                 {' '}

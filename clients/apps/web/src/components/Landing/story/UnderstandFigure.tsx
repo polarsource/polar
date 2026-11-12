@@ -32,7 +32,7 @@ export const UnderstandFigure = () => {
               <Text variant="caption" color="muted">
                 Gross margin
               </Text>
-              <Text variant="heading-xs" tabularNums>
+              <Text variant="heading-xs" as="p" tabularNums>
                 {percent(marginShown)}
               </Text>
             </Box>
@@ -40,7 +40,7 @@ export const UnderstandFigure = () => {
               <Text variant="caption" color="muted">
                 Inference cost
               </Text>
-              <Text variant="heading-xs" tabularNums>
+              <Text variant="heading-xs" as="p" tabularNums>
                 {dollars(cost, 2)}
               </Text>
             </Box>

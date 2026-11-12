@@ -23,9 +23,11 @@ export const Sheet = ({
     <Box flexDirection="column" rowGap="l" padding="xl" height="100%">
       <Box justifyContent="between" alignItems="baseline" columnGap="l">
         <Box alignItems="baseline" columnGap="m" flexWrap="wrap">
-          <Text variant={large ? 'heading-xxs' : 'body'}>{title}</Text>
+          <Text as="p" variant={large ? 'heading-xxs' : 'body'}>
+            {title}
+          </Text>
           {subtitle ? (
-            <Text variant={large ? 'heading-xxs' : 'body'} color="muted">
+            <Text as="p" variant={large ? 'heading-xxs' : 'body'} color="muted">
               {subtitle}
             </Text>
           ) : null}

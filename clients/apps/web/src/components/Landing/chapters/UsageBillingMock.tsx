@@ -24,7 +24,7 @@ const Stat = ({
     <Text variant="caption" color="muted">
       {label}
     </Text>
-    <Text variant="heading-xs" tabularNums>
+    <Text variant="heading-xs" as="p" tabularNums>
       {value}
       {sub ? (
         <Text as="span" variant="heading-xs" color="muted">
@@ -145,7 +145,7 @@ export const UsageBillingMock = () => {
                     <Text variant="caption" color="muted">
                       Inference cost
                     </Text>
-                    <Text variant="heading-xs" tabularNums>
+                    <Text variant="heading-xs" as="p" tabularNums>
                       {dollars(cost, 2)}
                     </Text>
                   </Box>

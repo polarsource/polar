@@ -51278,6 +51278,15 @@ export interface operations {
           'application/json': components['schemas']['Unauthorized']
         }
       }
+      /** @description Cannot reactivate a license key for a manually revoked benefit grant. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description License key not found. */
       404: {
         headers: {

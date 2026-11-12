@@ -135,28 +135,6 @@ resource "cloudflare_dns_record" "test_api_events" {
   ttl     = 1
 }
 
-resource "cloudflare_ruleset" "origin" {
-  count   = local.test_enabled ? 1 : 0
-  zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "Origin rules"
-  kind    = "zone"
-  phase   = "http_request_origin"
-
-  rules = [
-    {
-      description = "Route Test event ingestion to api-events-test"
-      expression  = "(http.host eq \"test-api.polar.sh\" and http.request.uri.path eq \"/v1/events/ingest\")"
-      action      = "route"
-      action_parameters = {
-        host_header = "test-api-events.polar.sh"
-        origin = {
-          host = "test-api-events.polar.sh"
-        }
-      }
-    },
-  ]
-}
-
 resource "cloudflare_dns_record" "worker" {
   for_each = merge(module.test[*].worker_urls...)
 

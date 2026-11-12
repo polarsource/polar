@@ -204,11 +204,7 @@ class Event(Model, MetadataMixin):
         String, nullable=True, index=True
     )
 
-    member_id: Mapped[UUID | None] = mapped_column(
-        Uuid,
-        nullable=True,
-        index=True,
-    )
+    member_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True)
 
     external_member_id: Mapped[str | None] = mapped_column(String, nullable=True)
 

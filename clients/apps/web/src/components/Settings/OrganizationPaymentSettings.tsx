@@ -34,7 +34,7 @@ type FormSchema = Pick<
   'default_presentment_currency' | 'default_tax_behavior'
 >
 
-const taxBehaviorOptionDisplayNames: Record<
+export const taxBehaviorOptionDisplayNames: Record<
   schemas['TaxBehaviorOption'],
   string
 > = {

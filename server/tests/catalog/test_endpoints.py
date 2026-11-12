@@ -155,6 +155,56 @@ class TestList:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_changes(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog],
+        product: Product,
+        product_second: Product,
+        product_one_time: Product,
+    ) -> None:
+        draft, live, archived = catalogs
+        draft.parent = live
+        await save_fixture(draft)
+        team = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        perk, perk_second, extra = [
+            await create_benefit(save_fixture, organization=organization)
+            for _ in range(3)
+        ]
+        for catalog, item, external_id in (
+            (archived, product, "pro"),
+            (archived, product_one_time, "lifetime"),
+            (live, product_second, "pro"),
+            (live, team, "team"),
+            (live, perk, "perk"),
+            (draft, product_second, "pro"),
+            (draft, team, "team"),
+            (draft, perk_second, "perk"),
+            (draft, extra, "extra"),
+        ):
+            await save_fixture(
+                CatalogProduct(catalog=catalog, product=item, external_id=external_id)
+                if isinstance(item, Product)
+                else CatalogBenefit(
+                    catalog=catalog, benefit=item, external_id=external_id
+                )
+            )
+
+        response = await client.get("/v1/catalogs/")
+
+        assert response.status_code == 200
+        assert [item["changes"] for item in response.json()["items"]] == [
+            {"added_count": 1, "changed_count": 1, "removed_count": 0},
+            {"added_count": 2, "changed_count": 1, "removed_count": 1},
+            None,
+        ]
+
 
 @pytest.mark.anyio
 class TestGet:
@@ -224,6 +274,11 @@ class TestGet:
         json = response.json()
         assert json["id"] == str(live.id)
         assert json["parent_id"] == str(archived.id)
+        assert json["changes"] == {
+            "added_count": 0,
+            "changed_count": 1,
+            "removed_count": 0,
+        }
         assert json["products"] == [
             {"external_id": "lifetime", "product_id": str(product_one_time.id)},
             {"external_id": "pro", "product_id": str(product_second.id)},

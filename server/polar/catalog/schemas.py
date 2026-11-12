@@ -9,6 +9,16 @@ from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
 
 
+class CatalogChanges(Schema):
+    """How a catalog differs from its parent, in products and benefits."""
+
+    added_count: int = Field(description="Keys the parent doesn't list.")
+    changed_count: int = Field(description="Keys listed with a new version.")
+    removed_count: int = Field(
+        description="Keys the parent lists but this catalog doesn't."
+    )
+
+
 class Catalog(IDSchema, TimestampedSchema):
     """A version of an organization's product catalog."""
 
@@ -31,6 +41,9 @@ class Catalog(IDSchema, TimestampedSchema):
     published_at: datetime | None = Field(
         description="When the catalog was published. Null for drafts."
     )
+    changes: CatalogChanges | None = Field(
+        description="What changed since the parent catalog. Null for the first one."
+    )
 
 
 class CatalogProduct(Schema):
@@ -52,10 +65,7 @@ class CatalogVersion(Catalog):
     )
     benefits: list[CatalogBenefit] = Field(
         validation_alias="benefit_members",
-        description=(
-            "The benefits in this version, ordered by key. Empty for versions "
-            "published before benefits were versioned."
-        ),
+        description="The benefits in this version, ordered by key.",
     )
 
 

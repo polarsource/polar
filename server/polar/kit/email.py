@@ -91,23 +91,12 @@ def normalize_email_sql(
     """SQL counterpart of `normalize_email`, applying the same provider rules
     to an email column so stored addresses compare against a normalized one."""
     lowered = func.lower(email)
-    local_part = func.regexp_replace(
-        func.regexp_replace(lowered, r"@[^@]*$", ""), r"\+.*$", ""
-    )
-    domain = func.substring(lowered, r"@([^@]*)$")
+    local_part = func.split_part(func.split_part(lowered, "@", 1), "+", 1)
+    domain = func.split_part(lowered, "@", 2)
 
-    canonical_domain = case(
-        *((domain == alias, canonical) for alias, canonical in _DOMAIN_ALIASES.items()),
-        else_=domain,
-    )
-    canonical_local_part = case(
-        *(
-            (canonical_domain == provider, func.translate(local_part, chars, ""))
-            for provider, chars in _TRANSPARENT_LOCAL_PART_CHARS.items()
-        ),
-        else_=local_part,
-    )
-    return canonical_local_part + "@" + canonical_domain
+    canonical_domain = case(_DOMAIN_ALIASES, value=domain, else_=domain)
+    transparent = case(_TRANSPARENT_LOCAL_PART_CHARS, value=canonical_domain, else_="")
+    return func.translate(local_part, transparent, "") + "@" + canonical_domain
 
 
 def mask_email(email: str) -> str:

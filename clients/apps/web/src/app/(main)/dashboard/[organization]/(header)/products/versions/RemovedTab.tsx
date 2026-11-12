@@ -105,7 +105,7 @@ const groups = [
   {
     status: 'removed',
     title: 'Removed',
-    description: 'No customers left.',
+    description: 'No customers left. Safe to delete from your config.',
   },
 ] as const
 

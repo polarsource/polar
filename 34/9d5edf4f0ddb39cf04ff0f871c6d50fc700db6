@@ -1,0 +1,19 @@
+terraform/test/render.tf
+  s_45c47282032bc6::t_6d46ba52fc9c84 139-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "349d5edf4f0ddb39cf04ff0f871c6d50fc700db6",
+  "prompts": {},
+  "sessions": {
+    "s_45c47282032bc6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aca596f7-cc6d-4f2a-a406-5916fd2647c3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

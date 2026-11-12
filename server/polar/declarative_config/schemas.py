@@ -544,11 +544,13 @@ class Config(Schema):
         description=(
             "Custom fields to create or update, matched by `slug`. "
             "A change creates a new version of the field, and of every product "
-            "asking for it. Earlier versions keep the field as it was. "
+            "in `products` asking for it. Earlier versions keep the field as it "
+            "was. "
             "Omitted `metadata` is left untouched. "
             "Changing a slug creates a new field. "
             "Existing custom fields that aren't listed leave the catalog, and "
-            "their answers are kept. "
+            "their answers are kept. Custom fields that pulling the config "
+            "doesn't export are left untouched. "
             "All custom fields are left untouched when `custom_fields` is omitted."
         ),
     )

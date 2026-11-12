@@ -1,7 +1,7 @@
 """drop ix_events_member_id
 
 Revision ID: 5c1e8a3f9d27
-Revises: 367fe9fac05f
+Revises: 8a4d2f6b1e93
 Create Date: 2026-11-12 12:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5c1e8a3f9d27"
-down_revision = "367fe9fac05f"
+down_revision = "8a4d2f6b1e93"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

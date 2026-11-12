@@ -178,20 +178,53 @@
             ]
           },
           {
-            "group": "Integrate",
+            "group": "API",
             "pages": [
               "integrate/authentication",
+              "integrate/oat",
               "integrate/sandbox",
               "integrate/customer-state",
-              "integrate/mcp",
               {
-                "group": "SDKs",
+                "group": "Webhooks",
                 "pages": [
-                  "integrate/sdk/introduction",
-                  "integrate/sdk/python",
-                  "integrate/sdk/typescript"
+                  "integrate/webhooks/endpoints",
+                  "integrate/webhooks/delivery",
+                  "integrate/webhooks/events"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "SDKs & Frameworks",
+            "pages": [
+              "integrate/sdk/introduction",
+              "integrate/sdk/python",
+              "integrate/sdk/typescript",
+              {
+                "group": "Framework Adapters",
+                "pages": [
+                  "integrate/sdk/adapters/introduction",
+                  "integrate/sdk/adapters/better-auth",
+                  "integrate/sdk/adapters/laravel",
+                  "integrate/sdk/adapters/nextjs",
+                  "integrate/sdk/adapters/nuxt",
+                  "integrate/sdk/adapters/tanstack-start"
                 ]
               },
+              {
+                "group": "Framework Guides",
+                "pages": [
+                  "guides/encore",
+                  "guides/laravel",
+                  "guides/nextjs"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "integrate/mcp",
               {
                 "group": "CLI",
                 "pages": [
@@ -236,38 +269,15 @@
                     ]
                   }
                 ]
-              },
-              {
-                "group": "Framework Adapters",
-                "pages": [
-                  "integrate/sdk/adapters/introduction",
-                  "integrate/sdk/adapters/better-auth",
-                  "integrate/sdk/adapters/laravel",
-                  "integrate/sdk/adapters/nextjs",
-                  "integrate/sdk/adapters/nuxt",
-                  "integrate/sdk/adapters/tanstack-start"
-                ]
-              },
-              {
-                "group": "Framework Guides",
-                "pages": ["guides/encore", "guides/laravel", "guides/nextjs"]
-              },
-              {
-                "group": "Webhooks",
-                "pages": [
-                  "integrate/webhooks/endpoints",
-                  "integrate/webhooks/delivery",
-                  "integrate/webhooks/events"
-                ]
-              },
-              {
-                "group": "OAuth 2.0",
-                "pages": [
-                  "integrate/oauth2/introduction",
-                  "integrate/oauth2/setup",
-                  "integrate/oauth2/connect"
-                ]
               }
+            ]
+          },
+          {
+            "group": "Extend Polar",
+            "pages": [
+              "integrate/oauth2/introduction",
+              "integrate/oauth2/setup",
+              "integrate/oauth2/connect"
             ]
           },
           {

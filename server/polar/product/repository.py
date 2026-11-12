@@ -100,6 +100,31 @@ class ProductRepository(
         )
         return await self.get_all(statement)
 
+    async def get_current_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> Sequence[tuple[Product, UUID]]:
+        """Current products with a metered price on one of the meters, with
+        that meter."""
+        # The subclass attribute would add a polymorphic filter and drop tiered prices.
+        meter_id = ProductPrice.__table__.c.meter_id
+        statement = (
+            select(Product, meter_id)
+            .join(ProductPrice, ProductPrice.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_current,
+                ~Product.is_archived,
+                Product.deleted_at.is_(None),
+                ProductPrice.is_metered,
+                ~ProductPrice.is_archived,
+                ~ProductPrice.is_deleted,
+                meter_id.in_(meter_ids),
+            )
+            .options(undefer(Product.external_id))
+        )
+        result = await self.session.execute(statement)
+        return list(dict.fromkeys((product, id) for product, id in result.tuples()))
+
     async def get_all_by_external_ids(
         self,
         organization_id: UUID,

@@ -132,11 +132,6 @@ class Event(Model, MetadataMixin):
             literal_column("ingested_at DESC"),
         ),
         Index(
-            "ix_events_external_customer_id_pattern",
-            "external_customer_id",
-            postgresql_ops={"external_customer_id": "text_pattern_ops"},
-        ),
-        Index(
             "ix_events_organization_id_source_id",
             "organization_id",
             "source",

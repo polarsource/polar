@@ -95,7 +95,7 @@ export const MeasureFigure = () => {
                       {meter.fold}
                     </Text>
                   </Box>
-                  <Text variant="heading-xxs" tabularNums>
+                  <Text variant="heading-xxs" as="p" tabularNums>
                     {compact(readings[i])}
                   </Text>
                 </Box>

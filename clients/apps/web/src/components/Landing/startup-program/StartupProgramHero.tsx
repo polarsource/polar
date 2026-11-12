@@ -18,7 +18,7 @@ export const StartupProgramHero = () => {
   return (
     <Box flexDirection="column" rowGap="3xl">
       <Box flexDirection="column" rowGap="2xl">
-        <Text variant="heading-xs" wrap="balance">
+        <Text variant="heading-xs" as="p" wrap="balance">
           Handle usage-based billing, global tax compliance and real-time cost
           analytics in one platform, so you can scale your business without the
           operational drag.
@@ -55,7 +55,9 @@ export const StartupProgramHero = () => {
         backgroundColor="background-secondary"
       >
         <Box flexDirection="column" rowGap="m">
-          <Text variant="heading-s">Scale</Text>
+          <Text variant="heading-s" as="h2">
+            Scale
+          </Text>
           <Text variant="body" color="muted">
             For fast growing businesses
           </Text>
@@ -63,7 +65,9 @@ export const StartupProgramHero = () => {
 
         <Box flexDirection="column" rowGap="s">
           <Box flexDirection="row" alignItems="baseline" columnGap="m">
-            <Text variant="heading-s">Free</Text>
+            <Text variant="heading-s" as="p">
+              Free
+            </Text>
             <Text variant="body" color="muted">
               for 1 year
             </Text>

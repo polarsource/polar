@@ -469,11 +469,13 @@ dependencies = [
  "logfire",
  "redis",
  "rustls",
+ "serde",
  "serde_json",
  "sqlx",
  "tokio",
  "tower-http 0.7.1",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -2316,6 +2318,18 @@ name = "utf_types"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a3b425286980a367278453f3b6d28cdcb134b574e5a35824a6ff5eebad50bb6"
+
+[[package]]
+name = "uuid"
+version = "1.29.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bed99139f7dac9b5cfe5f17be4d66dc7079a34dee1d74bcc77217119240e267c"
+dependencies = [
+ "getrandom 0.4.3",
+ "js-sys",
+ "serde_core",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "valuable"

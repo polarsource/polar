@@ -1417,8 +1417,6 @@ class SubscriptionService:
         subscription: Subscription,
         period_start: datetime | None = None,
     ) -> None:
-        # The trial doesn't use up a once or repeating discount: its duration
-        # starts counting at the first paid cycle.
         if subscription.discount is None or subscription.trialing:
             return
 

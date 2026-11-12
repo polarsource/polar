@@ -1,0 +1,34 @@
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_b97d06658c6304 266-282,321
+  s_fb19aa989d9ac0::t_f199d91761923d 12,224-232,258-261,283-290,319-320,322-337,339,341-342,345-348
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_08193c2b08b658 1960-1998
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_c4d7c3e28e408d 15,324-355,357,359,361-363
+server/polar/billing_entry/service.py
+  s_707b72e9bc5329::t_99e022c7f9b454 261
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "99eb56a55991de834bec404a94443999b4c55c0c",
+  "prompts": {},
+  "sessions": {
+    "s_707b72e9bc5329": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce2322e5-0435-4d4c-992a-d1ce2a830ec3",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

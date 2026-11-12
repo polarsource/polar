@@ -1,0 +1,24 @@
+clients/apps/web/next.config.mjs
+  s_2411e7f448f265::t_2ce0fab670be52 105-107
+server/polar/kit/versioning.py
+  s_2411e7f448f265::t_3578ac9d496131 585-587,590,595-602
+server/tests/test_openapi.py
+  s_2411e7f448f265::t_9eafaecfb0d247 24
+  s_2411e7f448f265::t_56a5c84b8a869d 42-49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "22de036b6ac2ec089cba867076288e74dc8e220b",
+  "prompts": {},
+  "sessions": {
+    "s_2411e7f448f265": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "36d6744c-c87b-40b9-882c-da95c1b2c126",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

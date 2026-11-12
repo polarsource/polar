@@ -1,0 +1,23 @@
+server/migrations/versions/2026-07-16-1538_add_organization_risk_signals.py
+  s_a708218e2a68df::t_cfeb861d0725e9 1-84
+server/polar/models/organization_risk_signal.py
+  s_a708218e2a68df::t_cfeb861d0725e9 1-54
+server/polar/models/__init__.py
+  s_a708218e2a68df::t_cfeb861d0725e9 69,194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "05fc0e22fdbb7cd0012c990215250d7651595d11",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

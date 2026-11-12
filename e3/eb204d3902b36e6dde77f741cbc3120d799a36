@@ -1,0 +1,39 @@
+clients/apps/web/src/app/(main)/agent/claim/page.tsx
+  s_5baa939665e021::t_6a40537dc830b6 1-29
+clients/apps/web/src/app/(main)/agent/claim/AgentClaimSummary.tsx
+  s_5baa939665e021::t_2c43bac262b6f0 1-3,5-14,17-22,35,57-60,62-75
+clients/apps/web/src/app/(main)/agent/claim/ClaimAgentPage.test.tsx
+  s_5baa939665e021::t_c0511c42660ddf 1-8,10-28,32-71,73-78,82-113,116-119,122-126,128-141,143-145,153,155-168,170-171,173-174,176-183
+clients/apps/web/src/app/(main)/agent/claim/AgentClaimCodeForm.tsx
+  s_5baa939665e021::t_ad11ec7fc6782a 1-50,52-64
+clients/apps/web/src/hooks/queries/agents.ts
+  s_5baa939665e021::t_7dfe4c8750b81e 1-13,15-22
+clients/apps/web/src/app/(main)/agent/claim/claimErrors.ts
+  s_5baa939665e021::t_cf614425b0eb40 1-8,14-18,22,24-32,35,39,42,44-45,47,55,57-59,61,63,65-66
+  s_5baa939665e021::t_0174f47c1c81ef 40
+clients/apps/web/src/proxy.test.ts
+  s_5baa939665e021::t_1e6691a8086b28 356-370
+clients/apps/web/src/app/(main)/agent/claim/claimContinuation.ts
+  s_5baa939665e021::t_654a0c812134dd 1-4,13
+clients/apps/web/src/app/(main)/agent/claim/ClaimAgentPage.tsx
+  s_5baa939665e021::t_9feb9bf0bab42a 1-7,9-14,16-21,26-43,45-89,93-95,97-111,114,119,122-123,125,127-128,130-134,143-145,155-159
+clients/apps/web/src/app/(main)/agent/claim/useClaimAgent.ts
+  s_5baa939665e021::t_75aa84466b17d6 1-10,14-15,20-24,27-38,46-47,50-54,56-59,61-62,64,76-87,89-96,98-108,112-114
+  s_5baa939665e021::t_a44cb53f899d46 41-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e3eb204d3902b36e6dde77f741cbc3120d799a36",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

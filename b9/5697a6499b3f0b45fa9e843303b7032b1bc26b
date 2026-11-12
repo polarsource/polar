@@ -1,0 +1,23 @@
+server/polar/worker/scheduler.py
+  s_6f32a2b1915810::t_daa0d8cd000dcc 32-37,41,44
+  s_6f32a2b1915810::t_146d52db1efc58 28
+  s_6f32a2b1915810::t_1491f1da4dc2ef 26-27
+server/tests/worker/test_health.py
+  s_6f32a2b1915810::t_99ec2ffda78775 176-200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "b95697a6499b3f0b45fa9e843303b7032b1bc26b",
+  "prompts": {},
+  "sessions": {
+    "s_6f32a2b1915810": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6025f7d1-117d-420b-b9fe-a5eb535520c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

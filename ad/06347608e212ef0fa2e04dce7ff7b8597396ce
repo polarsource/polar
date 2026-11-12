@@ -1,0 +1,21 @@
+server/polar/oauth2/authorization_server.py
+  s_5baa939665e021::t_d4421f02abd6c7 331
+server/tests/agent/test_endpoints.py
+  s_5baa939665e021::t_d4421f02abd6c7 57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ad06347608e212ef0fa2e04dce7ff7b8597396ce",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

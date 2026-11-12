@@ -1,0 +1,70 @@
+clients/packages/polar/package.json
+  s_0b9fbfe84442f2::t_ecf344552623f1 44,53-54
+clients/packages/polar/src/client/actor.test.ts
+  s_0b9fbfe84442f2::t_ed72bfd58830fe 152
+  s_0b9fbfe84442f2::t_a2aad2149eeb77 2,5,89-151,153-171
+clients/packages/polar/src/client/actor.ts
+  s_0b9fbfe84442f2::t_ed72bfd58830fe 2,50-69,74,197
+  s_0b9fbfe84442f2::t_c852d8acc25fa7 12,39-46,48
+  s_0b9fbfe84442f2::t_4d74d01b0a127c 13,47,49,70-73,91-94,187-196,198-200
+clients/packages/polar/src/schema/event.ts
+  s_0b9fbfe84442f2::t_ba8198950d4b53 53,60-71,74-79,81-92,94-95,105-119
+  s_0b9fbfe84442f2::t_6ef07232bc57df 1,3-10,14-15,17-26,30-34,42,45-49,51-52
+  s_0b9fbfe84442f2::t_ed72bfd58830fe 2,54-59,93
+  s_0b9fbfe84442f2::t_4aa6b6481c751b 72-73,80,96-104
+  s_0b9fbfe84442f2::t_5ba7285d1ada30 11-13,16,27-29,35-41,43-44,50
+clients/packages/polar/src/schema/meter.test.ts
+  s_0b9fbfe84442f2::t_8c39e805c18161 77,81,83,172
+  s_0b9fbfe84442f2::t_3eeb176feea945 1,69,76,86,88,90-91,93-96,106,118,148,169-170,173-176
+  s_0b9fbfe84442f2::t_42981059f67881 187-198
+  s_0b9fbfe84442f2::t_f31427d82dbdfc 4,98-99,120-121
+  s_0b9fbfe84442f2::t_8afcfa21bb7541 2-3,70-75,78-80,82,84-85,87,89,92,97,100-105,107-117,119,122-147,149-168,171,177-185
+clients/packages/polar/src/index.ts
+  s_0b9fbfe84442f2::t_4d74d01b0a127c 11-12
+clients/packages/polar/src/schema/config.ts
+  s_0b9fbfe84442f2::t_60d1563ad313cd 53-54,56,62-63,65,69,72-73,75-76,82-84,87,118,120-122
+  s_0b9fbfe84442f2::t_e40571442144ac 4-9,50-51,78,80-81,86
+  s_0b9fbfe84442f2::t_d618bb089b134a 79,85
+  s_0b9fbfe84442f2::t_5ba7285d1ada30 10,55,58-60,64,74,77
+clients/packages/polar/src/schema/meter.ts
+  s_0b9fbfe84442f2::t_bc364c2644f75f 2-5,7,9,11,80-81,83-96,98-102,106,109-111,114-125,127-128,136-137,144-146,151-173,190,194,212,223
+  s_0b9fbfe84442f2::t_f90cc312c477c3 262-263,288,290
+  s_0b9fbfe84442f2::t_4aa6b6481c751b 8,104,107-108,129-134,141-143,178-182,193,218,230,234,238,242,246
+  s_0b9fbfe84442f2::t_ed72bfd58830fe 82
+  s_0b9fbfe84442f2::t_d618bb089b134a 6,10,184,189,264-287,289,291
+  s_0b9fbfe84442f2::t_90bff7d68c139c 97,105
+clients/packages/polar/src/schema/config.test.ts
+  s_0b9fbfe84442f2::t_4cfe1de178d524 167-168,171,177-182
+  s_0b9fbfe84442f2::t_424ebd1a9d31fb 1-3,5,66-81,83-84,89,93-141,165-166,169-170,175-176,185-198,209-218,220-221,225-233,237-243
+  s_0b9fbfe84442f2::t_d6de7d6880bd84 199-208
+  s_0b9fbfe84442f2::t_1354e85cc8bb22 219,234-236
+  s_0b9fbfe84442f2::t_8c39e805c18161 146,150,156,158,160,172-174,223
+  s_0b9fbfe84442f2::t_c534f4774777af 82,85,88,145,149,151,157,222,224
+  s_0b9fbfe84442f2::t_c852d8acc25fa7 142-144,147-148,152-155,159,161-164
+  s_0b9fbfe84442f2::t_f31427d82dbdfc 86-87,90-92,183-184
+clients/packages/polar/src/schema/runtime.ts
+  s_0b9fbfe84442f2::t_d42ed3cbf96278 1,4
+clients/packages/polar/examples/example-configs.ts
+  s_0b9fbfe84442f2::t_8b0fb34388877b 13,48-54,56,64,69,74,79,111-112
+  s_0b9fbfe84442f2::t_9a21b8152ff919 27,32,34-38,55,57-58,98,105-110,131,138-143,147
+  s_0b9fbfe84442f2::t_9c738e458b036d 2,11,115-130,134-135,144
+  s_0b9fbfe84442f2::t_6a92f79994ccca 3,6,8-9,12,19-26,84-96,101-102,113-114,148-149
+  s_0b9fbfe84442f2::t_33910c26b89a19 99,103,132,136
+  s_0b9fbfe84442f2::t_076c7a84d75ce0 14,29,63,68,73,78,100,104,133,137,145-146
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8b397cb52e703e90e0c26986cae28b70a4747c83",
+  "prompts": {},
+  "sessions": {
+    "s_0b9fbfe84442f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f40c5f05-dc29-4096-b206-7662d6cf88cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+clients/apps/mcp/src/auth.ts
+  s_8113b980a37313::t_fdfc8c43496200 32,36-38
+  s_8113b980a37313::t_d200c66b5056ab 49
+clients/apps/mcp/src/tools/execute.ts
+  s_8113b980a37313::t_25cdd43d0bacf4 60,65
+  s_8113b980a37313::t_d2729a9e49c2a0 14,16-27
+clients/apps/mcp/src/results.ts
+  s_8113b980a37313::t_8fc7b47c51458b 30
+clients/apps/mcp/test/server.test.ts
+  s_8113b980a37313::t_be81efe40804c2 53,74-77,149,162-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "885559b6bf404f36363ec45a914c95fa2024b98c",
+  "prompts": {},
+  "sessions": {
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

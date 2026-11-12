@@ -1,0 +1,21 @@
+server/tests/backoffice/merchant_migrations/test_status.py
+  s_58dee6ae89ef8e::t_c0813277b557f1 183,185,190-191
+server/polar/backoffice/merchant_migrations/status.py
+  s_58dee6ae89ef8e::t_74ae9e3c22668a 303-304,306-308
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "94c496b987b0650246226fe1551fc2f9cf15467d",
+  "prompts": {},
+  "sessions": {
+    "s_58dee6ae89ef8e": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8ad67ea1-b920-483c-bea8-112999c09b23",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -1,0 +1,59 @@
+server/polar/merchant_migration/precheck.py
+  s_ef3184efede061::t_8fbbffa12d2ef4 62
+  s_ef3184efede061::t_494e6544b382d8 330-331
+  s_ef3184efede061::t_07020f0298af54 795,798-800
+  s_ef3184efede061::t_a34e4654f2d54b 903
+  s_ef3184efede061::t_70ae3298f31015 867,874-876,878,881-883
+  s_ef3184efede061::t_41674ce9a73354 250,252
+  s_ef3184efede061::t_890146ab50ba84 84
+  s_ef3184efede061::t_95be2b89341c04 967
+  s_ef3184efede061::t_8b926abbef79e5 340-343
+  s_ef3184efede061::t_1e1575baca6333 975
+  s_ef3184efede061::t_16bd59c427d01e 734,740-741
+  s_ef3184efede061::t_a37d7558ab22bd 1004,1010
+  s_ef3184efede061::t_07d132850c75de 143,148,156,160
+  s_ef3184efede061::t_524e97e668f400 701,704
+  s_ef3184efede061::t_cc9ea7d382bc78 226-234,241-245,248,254-258,264-270
+  s_ef3184efede061::t_8e27415d4ec5b9 171,187
+  s_ef3184efede061::t_ae541ef8819ec9 336-339,344-345
+  s_ef3184efede061::t_57839559b71ea1 908-912,916-919
+  s_ef3184efede061::t_de6ee92a1fafae 302,306
+  s_ef3184efede061::t_417ea7fa65e012 319-329,332-334
+  s_ef3184efede061::t_c3242b73c51b0b 235-240,246-247,249,251,253,259-263
+  s_ef3184efede061::t_0ec057b5fd8185 335
+server/polar/merchant_migration/importer.py
+  s_ef3184efede061::t_39cd3ec699c543 348,353
+  s_ef3184efede061::t_a19b866136c2b8 187-189,349-352
+server/tests/merchant_migration/test_precheck.py
+  s_ef3184efede061::t_b733e282544cde 230-232,234-235,237-253,298-326
+  s_ef3184efede061::t_5361101e7a99c5 233,236
+  s_ef3184efede061::t_421238e985994d 981-1004
+  s_ef3184efede061::t_cc2773ee12fef4 267-269,291-293
+  s_ef3184efede061::t_987799561aeb3f 469,488,502,525,537,552,572,587,603,620,639,658,674,717,729,742,759,778,787,815,826,844,861,879,905,924,934,943,960,975,1009
+  s_ef3184efede061::t_667ebab3399292 254-266,270-290,294-297
+  s_ef3184efede061::t_cd40992af242b9 679-711
+  s_ef3184efede061::t_9fa604860d5ede 46-47,49-51
+server/polar/merchant_migration/service.py
+  s_ef3184efede061::t_aa2b7da453df03 485,497-500
+  s_ef3184efede061::t_e7a5068e15f596 264,308,484
+  s_ef3184efede061::t_262a1339501579 455-464
+server/tests/merchant_migration/test_service.py
+  s_ef3184efede061::t_2f19df8cb032da 1218-1256
+  s_ef3184efede061::t_bbeb08f513c326 563-583
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "b26f483e92cfdbaf3bdb973ee5061743647618b2",
+  "prompts": {},
+  "sessions": {
+    "s_ef3184efede061": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db052c99-d817-4667-883e-2de6350a7d66",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

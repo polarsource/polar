@@ -1,0 +1,27 @@
+clients/pnpm-lock.yaml
+  ai_agent 1015-1016
+clients/packages/cli/package.json
+  s_0de269cd684219::t_4c3f46c34993be 34
+clients/packages/cli/src/services/polar.ts
+  s_0de269cd684219::t_87fc6bd968a078 1,31-32
+clients/packages/cli/src/prompts/organizations.ts
+  s_0de269cd684219::t_ae270f703e43fc 20,90
+clients/packages/cli/src/services/oauth.ts
+  s_0de269cd684219::t_ac3e0ffb59025b 6,455,539
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "745bbbbf76d4c74020c1ef4e608f7b2bcc874600",
+  "prompts": {},
+  "sessions": {
+    "s_0de269cd684219": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a085f9-4446-7252-84cc-0654b4306ba5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

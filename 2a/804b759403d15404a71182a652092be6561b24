@@ -1,0 +1,20 @@
+server/polar/organization/tasks.py
+  s_a8cf4ebc6c98f2::t_5942a075356487 1103-1105,1107,1110,1112,1114-1116,1121-1122
+  s_a8cf4ebc6c98f2::t_8e75717746652d 1106,1108-1109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "2a804b759403d15404a71182a652092be6561b24",
+  "prompts": {},
+  "sessions": {
+    "s_a8cf4ebc6c98f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a98856f2-49e2-465d-a6e9-7241955918e8",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+sdk/CHANGELOG.md
+  s_ee9c3ef91a1889::t_e236d9c520a2c0 15-17,23
+  s_ee9c3ef91a1889::t_3716a591a203b0 20,22
+  s_ee9c3ef91a1889::t_4f8524a02515ea 18-19,21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0e9b7fea1baab5e2535bead39f530cd61ae13a51",
+  "prompts": {},
+  "sessions": {
+    "s_ee9c3ef91a1889": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9de78872-4fa6-443e-b792-3d6204ab214a",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}

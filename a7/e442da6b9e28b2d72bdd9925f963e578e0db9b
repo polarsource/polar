@@ -1,0 +1,40 @@
+server/polar/models/billing_entry.py
+  s_7245646c656b56::t_98b77fbe0d7998 60-66
+server/migrations/versions/2026-08-17-1200_add_pending_link_billing_entry_index.py
+  s_7245646c656b56::t_cedc6668db2c58 1-50
+server/tests/billing_entry/test_service.py
+  s_7245646c656b56::t_c7f58a92a68a4f 629
+  s_7245646c656b56::t_a7ec1380f7ae76 7,625-626,630-638
+server/polar/subscription/tasks.py
+  s_7245646c656b56::t_283150d78ad62d 46-48,50-51
+  s_7245646c656b56::t_4569c28d57e9ea 49
+server/polar/observability/invariants/rules/subscriptions_locked_invariant.py
+  s_7245646c656b56::t_92d5dcb301ef79 38
+  s_7245646c656b56::t_d30e10856a5736 36-37
+server/polar/order/tasks.py
+  s_7245646c656b56::t_4de31d3f3df351 77
+  s_7245646c656b56::t_254b6c2a987757 74-76,78-79
+server/tests/observability/invariants/rules/test_subscriptions_locked_invariant.py
+  s_7245646c656b56::t_c563be3d4ca517 35,59
+server/polar/billing_entry/repository.py
+  s_7245646c656b56::t_68ef0cfa7b3de9 161-162
+  s_7245646c656b56::t_b65ba7fbc51eb4 193
+  s_7245646c656b56::t_f2bf3b695884f8 176-177
+  s_7245646c656b56::t_a0f21e78bbd770 6,163-166,168-171,178,180-191,194-202,204-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "a7e442da6b9e28b2d72bdd9925f963e578e0db9b",
+  "prompts": {},
+  "sessions": {
+    "s_7245646c656b56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cf9f0ba-d7de-4149-8d9c-a45d5c61101f",
+        "model": "claude-fable-5"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -1,0 +1,20 @@
+server/scripts/unset_subscription_license_key_expiration.py
+  s_28a775e35e952e::t_e1462a973ad77f 1-2,4,7,10-11,21,33-92
+  s_28a775e35e952e::t_4bcbe4c1614a02 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "591f2fa182a5185c7460595025c7756b1d62b5a4",
+  "prompts": {},
+  "sessions": {
+    "s_28a775e35e952e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6949742e-5a5c-4677-8691-6a39620ed329",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

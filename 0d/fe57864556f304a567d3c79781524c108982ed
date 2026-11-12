@@ -1,0 +1,22 @@
+server/polar/checkout/tasks.py
+  s_9ac21b1821b7d5::t_c5f32eb2326845 1,5-7,9-10,24-25,85-116
+server/tests/checkout/test_tasks.py
+  s_9ac21b1821b7d5::t_4664db7d71bfbb 1-7,9-74,77-81,84-88
+  s_9ac21b1821b7d5::t_8795a8415f6e83 8,75-76,82-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0dfe57864556f304a567d3c79781524c108982ed",
+  "prompts": {},
+  "sessions": {
+    "s_9ac21b1821b7d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4eeeaae0-49b3-432b-8fa2-e641f1dd7485",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

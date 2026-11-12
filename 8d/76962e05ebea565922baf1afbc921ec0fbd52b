@@ -1,0 +1,20 @@
+server/tests/oauth2/test_tasks.py
+  s_31b22292f90499::t_63ddc1e1c705db 48
+  s_31b22292f90499::t_b5caf8b31f9925 22-28,34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8d76962e05ebea565922baf1afbc921ec0fbd52b",
+  "prompts": {},
+  "sessions": {
+    "s_31b22292f90499": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "abac52b8-24fa-4c02-b252-8f0ca7a50b08",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

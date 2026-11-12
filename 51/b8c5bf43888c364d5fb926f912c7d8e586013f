@@ -1,0 +1,26 @@
+server/tests/subscription/test_service.py
+  s_41e1d2eca95ab2::t_7506303f5d4270 1858-1860,1864
+  s_41e1d2eca95ab2::t_6df365dc1fb821 1832-1857,1861-1863,1865-1912
+server/polar/subscription/service.py
+  s_41e1d2eca95ab2::t_645ebd184af7d3 812-832
+server/polar/models/subscription_update.py
+  s_41e1d2eca95ab2::t_d3c0f1f8080509 124
+  s_41e1d2eca95ab2::t_406f6facb0b6a0 125-126
+  s_41e1d2eca95ab2::t_2fe60002ebad7b 127,131-132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "51b8c5bf43888c364d5fb926f912c7d8e586013f",
+  "prompts": {},
+  "sessions": {
+    "s_41e1d2eca95ab2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1b4fdcdb-8f54-4e4d-94cf-1c81f69aceea",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,55 @@
+server/polar/billing_entry/service.py
+  h_6aa6f5c50f181e 15,18,23-31,74-81,84-90,224-282,284-285,287-289,311-314,316,327-328,330
+  s_fb19aa989d9ac0::t_ffd424dd91c2f6 334-336,365-367,439,520-529
+  s_fb19aa989d9ac0::t_aea0c6a2c4e5cf 290-310,315,329,362
+  s_fb19aa989d9ac0::t_3cd60cc1831d07 82-83,283,286,331-333,337,363-364,368-370,506-519
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_6c80fff4e07a7e 20-21
+  h_6aa6f5c50f181e 3,18-19,22-24
+  s_fb19aa989d9ac0::t_6650ff76d3592f 25
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_18d877fa689183 273-312,353-358,370,372-374,420-421,1167-1168,1181-1204
+  h_6aa6f5c50f181e 49,241-272,1148,1153
+  s_fb19aa989d9ac0::t_e74b28fc315467 1205
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_784a1f013881e7 125,144,250-265,273-275
+  s_fb19aa989d9ac0::t_3dc02e7c9d2d1e 232
+  h_6aa6f5c50f181e 1,4,19,21,25,44-53,117-124,143,164-231,233-249
+  s_fb19aa989d9ac0::t_029cc558deb928 126,145,151,266-272,276
+server/polar/reducer/types.py
+  h_6aa6f5c50f181e 6,30-36
+  s_fb19aa989d9ac0::t_a034688a03f853 7
+server/tests/reducer/test_service.py
+  h_6aa6f5c50f181e 1689-1735
+server/tests/billing_entry/test_service.py
+  h_6aa6f5c50f181e 11,13-14,26,35,39,41,52-53,62,1674-1936,1940-1947
+  s_fb19aa989d9ac0::t_d5888f7a53e920 1937-1939
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_91c976c1940923 256-258
+  h_6aa6f5c50f181e 3,10-14,16-17,205-255,259
+  s_fb19aa989d9ac0::t_1a19d60ec2952a 22
+server/polar/reducer/bucket_repository.py
+  h_6aa6f5c50f181e 534-553,568,585-602
+  s_fb19aa989d9ac0::t_8044a5fe013fa9 603
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "950bcff49f44c2f61aecc81b20726bcf5bc9db2c",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

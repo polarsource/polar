@@ -1,0 +1,19 @@
+clients/packages/cli/README.md
+  s_ad8ff7da1a0178::t_beec58b4a828f0 155-158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3541db4a8194a538f1cc205fbe28e13817d6bda9",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

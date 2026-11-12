@@ -1,0 +1,19 @@
+sdk/generator/cli_commands/emitter.py
+  s_c0a2c247c2e537::t_1f6a39fb23ca54 37,42,47,51,60,63,81,99,113-114,117,123,128,131,148,150,152,158,168,179,199,202,205,220,243,249-250,275,278,282,284,286,291,297,307,313,316,321,328,335,353,360
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "65d24c9f4334127a66dc529f376240f42f332982",
+  "prompts": {},
+  "sessions": {
+    "s_c0a2c247c2e537": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db949023-236a-4dff-9904-9eb6b5c6dc19",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

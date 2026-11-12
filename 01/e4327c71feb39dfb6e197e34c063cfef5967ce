@@ -1,0 +1,40 @@
+server/migrations/versions/2026-11-10-1519_add_scheduled_crons.py
+  s_14174ed1dd5588::t_c7e5e767df75cd 1-27,29-38
+  s_14174ed1dd5588::t_fbc1c6e8b0cc9a 28
+server/polar/models/scheduled_cron.py
+  s_14174ed1dd5588::t_dd39c3b6933c4b 1-12,14-16
+  s_14174ed1dd5588::t_fbc1c6e8b0cc9a 13
+server/polar/models/__init__.py
+  s_14174ed1dd5588::t_2ce4178b098ca1 121,270
+server/polar/worker/scheduler.py
+  s_14174ed1dd5588::t_c490f7be0d1b6a 22,79-81
+server/polar/worker/_broker.py
+  s_14174ed1dd5588::t_9fe3a15c041515 74,84
+server/tests/scheduler/test_cron.py
+  s_14174ed1dd5588::t_7c408320879827 1-12,14-59,69,74-125,127-128,130-140,146-157
+  s_14174ed1dd5588::t_fbc1c6e8b0cc9a 13,60-68,70-73,126,129,141-145,158
+server/polar/worker/_cron.py
+  s_14174ed1dd5588::t_de1941ee4d9f4b 1-42,48-49,51-52,54-77,80-115
+  s_14174ed1dd5588::t_fbc1c6e8b0cc9a 43-47,50,53,78-79
+server/polar/worker/repository.py
+  s_14174ed1dd5588::t_08212fa0a83303 1-2,6-15,23,31-56
+  s_14174ed1dd5588::t_fbc1c6e8b0cc9a 16-22,24-30
+  s_14174ed1dd5588::t_d532fe4c910492 3-5,57-67
+  s_14174ed1dd5588::t_d36e42cce825e1 68-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01e4327c71feb39dfb6e197e34c063cfef5967ce",
+  "prompts": {},
+  "sessions": {
+    "s_14174ed1dd5588": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ab22d40-5c39-4070-ba6a-3b72affbb128",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

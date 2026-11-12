@@ -1,0 +1,25 @@
+handbook/engineering/design-documents/multi-product-subscriptions.mdx
+  s_15ed1570d54559::t_1f925927050b70 82-83,87
+  h_cc2173b7b86bcc 84-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0af3d172e1469740e7b681c9d8202aa1ff8d5045",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_15ed1570d54559": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2ec1926e-83ac-4658-868a-2c6e396afaf7",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

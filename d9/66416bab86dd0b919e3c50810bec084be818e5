@@ -1,0 +1,23 @@
+handbook/engineering/data-flows.mdx
+  s_b1097828efcbf3::t_98b97dbe7cc387 185-187
+  s_b1097828efcbf3::t_0ea6fd0e1be089 82-85
+  s_b1097828efcbf3::t_e52b9bb52b18de 93
+  s_b1097828efcbf3::t_8ac877ecf47a66 178
+  s_b1097828efcbf3::t_177023968b5909 188
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d966416bab86dd0b919e3c50810bec084be818e5",
+  "prompts": {},
+  "sessions": {
+    "s_b1097828efcbf3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4574099-7657-44e0-8691-fbe4fbcc26ae",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+server/emails/src/emails/index.ts
+  s_c048718634e803::t_0a3e60e6713ad7 16,53
+server/emails/src/emails/payment_method_expiration_reminder.tsx
+  s_c048718634e803::t_0a3e60e6713ad7 1-77
+server/polar/email/schemas.py
+  s_c048718634e803::t_8d0437e589f2c1 24
+  s_c048718634e803::t_0a3e60e6713ad7 42,265,273-275,277,573
+  s_c048718634e803::t_fb3864a9032cb4 266-267,269-272,276,278-279
+  s_c048718634e803::t_9ce85fb604c29e 268
+server/emails/src/types/openapi.ts
+  s_c048718634e803::t_631dfbbb49f709 2264-2265
+  s_c048718634e803::t_a7c776703401ab 1985-1986,2248-2249,2252,2255-2256,2258-2259
+  s_c048718634e803::t_496805122a7eb2 2200-2247,2250-2251,2253-2254,2257,2260-2263,2266-2275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "3d134834edce8354c6a174f327fce2e7e2c19240",
+  "prompts": {},
+  "sessions": {
+    "s_c048718634e803": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c4cab576-6da1-43cb-9272-0cd01c564d76",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

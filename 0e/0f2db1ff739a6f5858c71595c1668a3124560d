@@ -1,0 +1,35 @@
+clients/apps/app/components/Products/ProductRow.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 19
+clients/apps/web/src/components/Subscriptions/SubscriptionDetails.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 18
+clients/packages/checkout/src/components/CheckoutProductSwitcher.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 152
+clients/packages/checkout/src/components/AmountLabel.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 12
+server/polar/enums.py
+  s_055272d137234c::t_aa3c98a51c44e0 58,69,71,73,79,87-132
+clients/apps/web/src/components/Shared/AmountLabel.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 8
+clients/apps/web/src/components/Customer/CustomerContextView.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 194,199,204
+clients/packages/checkout/src/components/SeatDetailRow.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 11
+clients/apps/app/components/Products/AmountLabel.tsx
+  s_055272d137234c::t_aa3c98a51c44e0 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "0e0f2db1ff739a6f5858c71595c1668a3124560d",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

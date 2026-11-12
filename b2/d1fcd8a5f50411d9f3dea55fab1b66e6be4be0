@@ -1,0 +1,26 @@
+server/tests/merchant_migration/test_precheck.py
+  s_3994309354b59a::t_c5436908430d8d 1417-1422
+  s_3994309354b59a::t_203632133677e3 1380,1382-1388,1394
+server/tests/merchant_migration/test_importer.py
+  s_3994309354b59a::t_74d110a6b95928 5
+  s_3994309354b59a::t_351889d43f1896 17-29
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_3994309354b59a::t_f53993bfec856e 2504-2521,2528,2534
+  s_3994309354b59a::t_b41d3633ecba9a 362,368-369
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b2d1fcd8a5f50411d9f3dea55fab1b66e6be4be0",
+  "prompts": {},
+  "sessions": {
+    "s_3994309354b59a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "db4e6884-e94a-4022-8218-3a720538e6ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

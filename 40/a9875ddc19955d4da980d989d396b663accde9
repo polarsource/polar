@@ -1,0 +1,22 @@
+clients/apps/mcp/src/log.ts
+  s_f09038ea289517::t_cdfb7d09433649 13-14
+clients/apps/mcp/test/server.test.ts
+  s_f09038ea289517::t_647623396ad3c6 567
+  s_f09038ea289517::t_6d696e08cbb93e 575
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "40a9875ddc19955d4da980d989d396b663accde9",
+  "prompts": {},
+  "sessions": {
+    "s_f09038ea289517": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8dd959ce-84ec-4a90-9abe-82fabadc7ccd",
+        "model": "unknown"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+server/migrations/versions/2026-09-01-1104_add_secret_generated_at_to_webhook_.py
+  s_8328894b8c4ada::t_9f9eeae371f475 4
+  s_8328894b8c4ada::t_79e531fbef7ed9 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "154097db2a50b8730f3f07069bec1ef074155467",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

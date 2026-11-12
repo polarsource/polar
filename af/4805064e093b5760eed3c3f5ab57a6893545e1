@@ -1,0 +1,30 @@
+dev/cli/shared.py
+  s_e92c10b92a1a9d::t_fd159969c22871 16-19
+dev/setup-environment
+  s_e92c10b92a1a9d::t_10e970b28015f0 19,31-33,35-36
+  s_e92c10b92a1a9d::t_3cd00aa41660df 34
+  s_e92c10b92a1a9d::t_9389e8b63aa638 215-216,221,227
+dev/cli/secrets_io.py
+  s_e92c10b92a1a9d::t_fb51a64843a115 1-116
+dev/cli/up_steps/09_configure_integrations.py
+  s_e92c10b92a1a9d::t_cc704f0343ffef 77
+dev/cli/stripe_config.py
+  s_e92c10b92a1a9d::t_8ee61607953f05 126,130-132,134-138,141-143,150-158
+  s_e92c10b92a1a9d::t_22d02cdc145098 119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "af4805064e093b5760eed3c3f5ab57a6893545e1",
+  "prompts": {},
+  "sessions": {
+    "s_e92c10b92a1a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "74f2da85-babf-4537-983e-9db3057751aa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

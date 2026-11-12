@@ -1,0 +1,25 @@
+server/polar/webhook/tasks.py
+  s_da9f37e971757c::t_a9ca649c7533a1 185-189
+  s_da9f37e971757c::t_030a8fdf7a54e1 206-210
+  s_da9f37e971757c::t_91c008c76f3cbd 230-245
+server/tests/webhooks/test_tasks.py
+  s_da9f37e971757c::t_8bab85425ed2c4 1
+  s_da9f37e971757c::t_f23d504d40b21f 12-15
+  s_da9f37e971757c::t_173b0cac451069 252-262
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "43e7829619becd36cf21e7f6e77f788e07d046c6",
+  "prompts": {},
+  "sessions": {
+    "s_da9f37e971757c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "80f2d6f8-d46a-40fe-813d-7af0663f3e00",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

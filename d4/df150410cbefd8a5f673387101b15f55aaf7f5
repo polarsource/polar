@@ -1,0 +1,32 @@
+dev/cli/stripe_config.py
+  s_e92c10b92a1a9d::t_bcd882a11a44be 268,270-274
+  s_e92c10b92a1a9d::t_d227d8e1444004 287
+  s_e92c10b92a1a9d::t_cc71865900c421 124-126,129-130,133-135
+  s_e92c10b92a1a9d::t_4282402b94431b 328-333,337-343
+dev/cli/up_steps/09_configure_integrations.py
+  s_e92c10b92a1a9d::t_0031c66f860e7f 72-80,88-92
+dev/cli/shared.py
+  s_e92c10b92a1a9d::t_727a50e0b48ccd 63-80,86-88,93-109,113-116
+  s_e92c10b92a1a9d::t_56f68c4884ad06 110-112
+  s_e92c10b92a1a9d::t_27ceb27be75944 3,8-9
+  s_e92c10b92a1a9d::t_8c21bdcd302f1b 49-53,56-60
+  s_e92c10b92a1a9d::t_4d5a5bcba0c417 61-62
+DEVELOPMENT.md
+  s_e92c10b92a1a9d::t_422f2a2ecade41 183-184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "d4df150410cbefd8a5f673387101b15f55aaf7f5",
+  "prompts": {},
+  "sessions": {
+    "s_e92c10b92a1a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "74f2da85-babf-4537-983e-9db3057751aa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

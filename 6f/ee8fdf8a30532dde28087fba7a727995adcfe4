@@ -1,0 +1,97 @@
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_087881a6710f83 1955-1957
+  s_fb19aa989d9ac0::t_463202739ad9e0 1968-1981,1988-1994
+  s_fb19aa989d9ac0::t_71c9d5c0202fd5 1937-1939
+  s_fb19aa989d9ac0::t_823a8a041c278d 1950-1954,1958-1967
+  s_fb19aa989d9ac0::t_9a176038c4ae12 1982,1987
+  s_fb19aa989d9ac0::t_0dc3b3fbd28ab8 1983-1986
+  s_fb19aa989d9ac0::t_ff1545e2d71028 11,13-15,27,36,40,42,53-54,63,1675-1936,1940-1949
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_8c841aa973411a 252-255,259,266,283,287,302
+  s_fb19aa989d9ac0::t_20cc685b7d0a48 18
+  s_fb19aa989d9ac0::t_8a92de4c230544 233,250
+  s_fb19aa989d9ac0::t_6b36e488ae5650 5,14,270,273-278,281-282,284-286,290,293-301,304-335,361,370
+  s_fb19aa989d9ac0::t_8ea2d78918423d 251,268-269
+  s_fb19aa989d9ac0::t_78a990b8a11912 260-265,289
+  s_fb19aa989d9ac0::t_a9fa2f69d055fa 1,4,20,22,26,32-33,47-56,120-129,146-148,154,167-230,232,234-249,256-258,267,271-272,280,288,291-292,303
+  s_fb19aa989d9ac0::t_0bb83162db0c26 231,279
+  s_fb19aa989d9ac0::t_bd950e94dfa713 336-360,362-369,371-372
+server/polar/customer_meter/service.py
+  s_fb19aa989d9ac0::t_699a855279b9d5 44-45,142-143,147,149,170-171,173-174,226,662-670,672-678,681-685
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_3bb2045cdd530d 1204
+  s_fb19aa989d9ac0::t_035d5eb258f2ed 1203
+  s_fb19aa989d9ac0::t_7bd92dcc9c574b 49,241-312,353-358,370,372-374,420-421,1148,1153,1167-1168,1181-1201
+  s_fb19aa989d9ac0::t_84bfc714555855 1202
+  s_fb19aa989d9ac0::t_cac7c619257741 1205
+server/tests/subscription/test_service.py
+  s_fb19aa989d9ac0::t_913aa485eebb9d 1834,2166,2259,2353,2647,2777
+  s_fb19aa989d9ac0::t_01bf3c5b1bd5e1 5647,5933,6547,6587
+server/tests/e2e/lifecycle/test_reducer_billing.py
+  s_fb19aa989d9ac0::t_6ba018e3ee6eba 1-340
+  s_fb19aa989d9ac0::t_8a2bfb3491dd58 341-449
+server/tests/order/test_tasks.py
+  s_fb19aa989d9ac0::t_091aa84a3d9e1c 89,123,165,198,227
+server/polar/models/product_price.py
+  s_fb19aa989d9ac0::t_d449307986cfac 242,274,348
+server/polar/reducer/bucket_repository.py
+  s_fb19aa989d9ac0::t_6b5f3a62a2cd14 534-553,568,585-602
+  s_fb19aa989d9ac0::t_7a40b593208c24 603
+server/polar/order/service.py
+  s_fb19aa989d9ac0::t_a16e9e4b7ecabe 1426,1438,1458,1655,1658-1662
+server/tests/reducer/test_service.py
+  s_fb19aa989d9ac0::t_23dd8847a6707c 1689-1735
+server/polar/subscription/service.py
+  s_fb19aa989d9ac0::t_254c79780d3c0a 1253-1256,1396-1400,1408,1599-1603
+  s_fb19aa989d9ac0::t_4af54189b8fb7c 4895,4904
+server/polar/billing_entry/service.py
+  s_fb19aa989d9ac0::t_e70ec3df2de382 304-332,349,352,385
+  s_fb19aa989d9ac0::t_126efee29d2e50 350-351
+  s_fb19aa989d9ac0::t_530ba72455f4f0 297-303,333-336,345,348,353
+  s_fb19aa989d9ac0::t_1ef843b1d6f52d 14
+  s_fb19aa989d9ac0::t_c5a5d9400fdc7d 291-296
+  s_fb19aa989d9ac0::t_97104dc9444334 16,19-20,24-32,35,75-91,225-290,355-359,388-391,393-394,463,530-553
+  s_fb19aa989d9ac0::t_5b62f81aee8a0b 354,377,386-387,392
+server/polar/order/tasks.py
+  s_fb19aa989d9ac0::t_1d09201f248e53 184,211,230-234,253,263,290-294
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_28f4a2147ff90e 20-22
+  s_fb19aa989d9ac0::t_31191f53cf9214 23
+  s_fb19aa989d9ac0::t_f224ecb5d799bb 24
+  s_fb19aa989d9ac0::t_36ec4f6a614500 3,18-19,25-27
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_4aaa656908f3ae 19,258-293
+  s_fb19aa989d9ac0::t_f94d0e3d0ab753 252,256
+  s_fb19aa989d9ac0::t_188897bf72477e 294-297,299-309
+  s_fb19aa989d9ac0::t_6eacd569275e6b 4,11-16,18,31-32,209-250,298
+  s_fb19aa989d9ac0::t_b400b5425e6746 310-336
+  s_fb19aa989d9ac0::t_da5ff9414491e7 251,257
+  s_fb19aa989d9ac0::t_b919a3e1903946 253-255
+  s_fb19aa989d9ac0::t_2d37f2ce0459bb 1,24,337
+server/polar/reducer/types.py
+  s_fb19aa989d9ac0::t_b18263893d7f44 6-7,30-36
+server/tests/customer_meter/test_service.py
+  s_fb19aa989d9ac0::t_31c2ab70be9c6d 1711-1756
+  s_fb19aa989d9ac0::t_ad3fac284a2a15 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6fee8fdf8a30532dde28087fba7a727995adcfe4",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

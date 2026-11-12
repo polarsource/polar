@@ -1,0 +1,40 @@
+server/polar/reducer/service.py
+  s_6534554e6c812d::t_95ae599c387769 705
+  s_6534554e6c812d::t_f6225f4082bde0 710,720,724-725
+  s_6534554e6c812d::t_55300cd5f4dba7 680
+  s_6534554e6c812d::t_cc6e9de409be74 3
+  s_6534554e6c812d::t_1a7d5975b15ea5 588-604,641-645,647,654,665-667,670,673-679,681-685,706-709,721-723
+  s_6534554e6c812d::t_e467e07d6dbb91 650-653
+server/polar/customer_meter/service.py
+  s_6534554e6c812d::t_017a0096086382 150-152
+  s_6534554e6c812d::t_984a34547b765b 46,153,733-785
+  s_6534554e6c812d::t_03fc31b76baf77 5
+  s_6534554e6c812d::t_0b85a13a625266 594,615,617
+  s_6534554e6c812d::t_a5233e71f426e8 616,618
+  s_6534554e6c812d::t_ab699d19a4e52d 786
+server/tests/customer_meter/test_service.py
+  s_6534554e6c812d::t_95ae599c387769 27,963-965,1000-1003,1006,1020-1022
+  s_6534554e6c812d::t_a169ea6a3af64b 1004-1005,1007-1019
+  s_6534554e6c812d::t_1cbecb8bf9aa98 966-999,1023-1024
+server/tests/reducer/test_service.py
+  s_6534554e6c812d::t_95ae599c387769 2154
+  s_6534554e6c812d::t_2c2006e63c5e0f 2088-2089,2092,2096,2137,2153
+  s_6534554e6c812d::t_a75bbea433ce41 24
+  s_6534554e6c812d::t_58dcdf85807e39 2075-2087,2090-2091,2093-2095,2097-2136,2138-2152,2155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e92575f6cfca5996e3c1253eee829822de2e552a",
+  "prompts": {},
+  "sessions": {
+    "s_6534554e6c812d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f8acfbb7-11c9-4c08-9531-39cc5f27b6ba",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

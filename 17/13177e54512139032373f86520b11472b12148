@@ -1,0 +1,9 @@
+clients/apps/web/next.config.mjs
+  ai_agent 384
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1713177e54512139032373f86520b11472b12148",
+  "prompts": {}
+}

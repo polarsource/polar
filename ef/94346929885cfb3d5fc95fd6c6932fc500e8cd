@@ -1,0 +1,20 @@
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_995efc8d9db2f1::t_0b4e25d298e374 168-169
+  s_995efc8d9db2f1::t_2020cbcf9f65b4 242,246
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ef94346929885cfb3d5fc95fd6c6932fc500e8cd",
+  "prompts": {},
+  "sessions": {
+    "s_995efc8d9db2f1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6694aa8d-7e07-49d1-bf12-7190cb5b8abf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

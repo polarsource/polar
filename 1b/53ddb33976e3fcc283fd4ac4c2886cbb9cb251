@@ -1,0 +1,40 @@
+server/polar/merchant_migration/importer.py
+  s_81f519e3bb364f::t_0da3eefeecde4e 215-216
+  s_81f519e3bb364f::t_28355a8dfa2033 331-332
+  s_81f519e3bb364f::t_459578f75be330 1-85,88-214,217-330,333-354,357-506
+  s_81f519e3bb364f::t_2f0a682646003d 86-87
+  s_81f519e3bb364f::t_4e12bd85fcc860 355-356
+server/polar/merchant_migration/service.py
+  s_81f519e3bb364f::t_c6fab275536850 27,35,42-46,126-133,242-244,267-312,315,317,325-326,332-335
+server/polar/subscription/repository.py
+  s_81f519e3bb364f::t_c6fab275536850 140-142,145-162
+  s_81f519e3bb364f::t_7a5a353523713b 143-144
+server/polar/customer/service.py
+  s_81f519e3bb364f::t_c6fab275536850 282,304
+server/tests/merchant_migration/test_endpoints.py
+  s_81f519e3bb364f::t_c6fab275536850 11,363-464
+  s_81f519e3bb364f::t_48470a1f29fc1d 465-466
+server/polar/merchant_migration/schemas.py
+  s_81f519e3bb364f::t_c6fab275536850 109-143
+server/polar/merchant_migration/endpoints.py
+  s_81f519e3bb364f::t_c6fab275536850 19-20,27,148-179
+  s_81f519e3bb364f::t_74ecc61752b54e 180-181
+server/tests/merchant_migration/test_service.py
+  s_81f519e3bb364f::t_c6fab275536850 6-7,11-12,18,24-25,37,47,51,64,591-1125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1b53ddb33976e3fcc283fd4ac4c2886cbb9cb251",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

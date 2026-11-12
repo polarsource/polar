@@ -1,0 +1,25 @@
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_b97d06658c6304 18,67-69,81-84
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_b21c23d5300a40 36,210-212,225-228
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_6e97f0d8136c60 20,339-374
+server/tests/reducer/test_service.py
+  s_fb19aa989d9ac0::t_d36f42e8897110 1530-1556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ac996500bc6f4e53f86ca1fff9cbcd23e4465be9",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

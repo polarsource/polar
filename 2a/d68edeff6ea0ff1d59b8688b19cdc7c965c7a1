@@ -1,0 +1,215 @@
+server/polar/merchant_migration/adapters/__init__.py
+  s_28ea492cb26938::t_6119e87f2480ee 1-4
+server/polar/merchant_migration/adapters/base.py
+  s_3fdbc7df8c9e35::t_0050f8f33f2cf3 1-14
+server/polar/merchant_migration/adapters/stripe.py
+  s_3fdbc7df8c9e35::t_1ef89491198305 1-198
+server/polar/merchant_migration/canonical.py
+  s_3fdbc7df8c9e35::t_fdcf0ba3b40d5d 1-46,50-97,100
+.agents/skills/local-environment/AGENTS.md
+  s_aa91bef2f613ad::t_9581a7b8a59916 344
+.agents/skills/local-environment/rules/service-architecture.md
+  s_aa91bef2f613ad::t_c2be73fb7ed2cd 51
+.agents/skills/render-env/SKILL.md
+  s_aa91bef2f613ad::t_004e5f09c9e83c 87
+CONTRIBUTING.md
+  s_aa91bef2f613ad::t_c3665ebb4a355f 86-87
+DEVELOPMENT.md
+  s_aa91bef2f613ad::t_4b00e8cd29c087 170
+README.md
+  s_aa91bef2f613ad::t_d0f45f6829066d 49-50
+clients/AGENTS.md
+  s_aa91bef2f613ad::t_18f8c6f7ffbf1d 40,614,619-625
+clients/apps/app/README.md
+  s_aa91bef2f613ad::t_2ccbd2941cfb83 143
+clients/apps/web/e2e/healing/prompts/e2e-checkout-healing.md
+  s_aa91bef2f613ad::t_49c327b274d6ea 19,23
+clients/apps/web/src/app/(main)/auth/page.tsx
+  s_aa91bef2f613ad::t_82fe9e9e06a4b3 1-2,45-69
+clients/apps/web/src/app/(main)/auth/sso/[slug]/page.tsx
+  s_aa91bef2f613ad::t_ec5b93c5147f51 2-3,38-55
+clients/apps/web/src/app/(main)/dashboard/[organization]/layout.tsx
+  s_aa91bef2f613ad::t_1504799d0d36c2 4-5,7,14-17,31,34-40,42-43,49
+clients/apps/web/src/app/(main)/oauth2/authorize/components/CreateOrganizationForm.tsx
+  s_aa91bef2f613ad::t_1c9c1112ee3064 8,84
+clients/apps/web/src/components/Auth/Auth.tsx
+  s_aa91bef2f613ad::t_5c317a5c05a0d1 123-141
+clients/apps/web/src/components/Checkout/Embed/CheckoutEmbedLayout.tsx
+  s_aa91bef2f613ad::t_edf9ab694525ab 18-19
+clients/apps/web/src/components/Customer/CustomerListSidebar.tsx
+  s_aa91bef2f613ad::t_1977e1075b9b6f 58,66
+clients/apps/web/src/components/Layout/Dashboard/DashboardSidebar.tsx
+  s_aa91bef2f613ad::t_dd00c2586c02eb 235-243
+clients/apps/web/src/components/Metrics/MetricChartBox.tsx
+  s_aa91bef2f613ad::t_dd6169a4a986b9 164-168,342,356
+clients/packages/checkout/README.md
+  s_aa91bef2f613ad::t_4ac2eeb2a1d7a6 82-88,167-178
+clients/packages/checkout/package.json
+  s_aa91bef2f613ad::t_13f32e503dea60 7
+clients/packages/checkout/src/components/CheckoutForm.tsx
+  s_aa91bef2f613ad::t_e7ca488f6a3fd0 277-278,282
+clients/packages/client/src/v1.ts
+  s_aa91bef2f613ad::t_298f8b9e57135c 33073
+clients/packages/i18n/src/locales/config/.cache.json
+  s_aa91bef2f613ad::t_e8b5e674ed9d0d 11-12,48-61,68-73,137,160-162,212-213,249-262,269-274,338,361-363,413-414,450-463,470-475,539,562-564,614-615,651-664,671-676,740,763-765,815-816,852-865,872-877,941,964-966,1016-1017,1053-1066,1073-1078,1142,1157-1159,1209-1210,1246-1259,1266-1271,1348-1350,1352,1421-1434,1441-1446,1510,1525-1527,1532-1533,1595-1596,1632-1645,1652-1657,1721,1736-1738,1788-1789,1825-1838,1845-1850,1914,1929-1931,1982-1983,2021,2031-2034,2036-2044,2057-2059,2068-2074,2174-2175,2212-2216,2218-2226,2239-2241,2249-2255,2368-2369,2406,2416-2419,2421-2429,2442-2444,2453-2459
+clients/packages/i18n/src/locales/de.ts
+  s_aa91bef2f613ad::t_1bc7db9ad4ce86 36-37,49,51-62,114-136,164-168,182-184,186-196,287
+clients/packages/i18n/src/locales/en.ts
+  s_aa91bef2f613ad::t_1c7ced5a0ddd61 19-20,99,137-148,157-179,215-219,234-237,240-250
+clients/packages/i18n/src/locales/es.ts
+  s_aa91bef2f613ad::t_3ae91a42b8f5cd 36-37,49,51-62,114-136,164-168,181-183,185-195,283
+clients/packages/i18n/src/locales/fr.ts
+  s_aa91bef2f613ad::t_419428b4d4c320 36-37,49,51-62,114-136,164-168,181-183,185-195,285
+clients/packages/i18n/src/locales/hu.ts
+  s_aa91bef2f613ad::t_7c1cb67f359f36 36-37,49,51-62,114-136,164-168,181-183,185-195,282
+clients/packages/i18n/src/locales/it.ts
+  s_aa91bef2f613ad::t_b5d03b5ac7a1cc 36-37,75,77-88,114-136,164-168,181-183,185-195,284
+clients/packages/i18n/src/locales/ja.ts
+  s_aa91bef2f613ad::t_05a8a1e38d6322 19-20,76,97-108,114-136,164-168,183-186,189-199
+clients/packages/i18n/src/locales/ko.ts
+  s_aa91bef2f613ad::t_7ed052cdd643ce 36-37,49,51-62,114-136,164-168,181-183,185-195,280
+clients/packages/i18n/src/locales/nl.ts
+  s_aa91bef2f613ad::t_e52b04266870c5 36-37,49,51-62,114-136,164-168,181-183,185-195,284
+clients/packages/i18n/src/locales/pl.ts
+  s_aa91bef2f613ad::t_83b0a7ea0d681f 19-20,75,77-88,114-136,164-168,181-183,185-195,284
+clients/packages/i18n/src/locales/pt-PT.ts
+  s_aa91bef2f613ad::t_9aa56fefb949d4 36-37,49,51-62,114-136,164-168,181-183,185-195,282
+clients/packages/i18n/src/locales/pt.ts
+  s_aa91bef2f613ad::t_32d86b37d60150 36-37,49,51-62,114-136,164-168,181-183,185-195,282
+clients/packages/i18n/src/locales/sv.ts
+  s_aa91bef2f613ad::t_a1f07f8673ea0d 36-37,49,51-62,114-136,164-168,181-183,185-195,281
+clients/packages/i18n/src/locales/tr.ts
+  s_aa91bef2f613ad::t_2ea7b2b4ce6b9b 19-20,75,77-88,114-136,164-168,183-186,189-199
+clients/packages/orbit/src/components/Button.tsx
+  s_aa91bef2f613ad::t_f6b7a547f8de9f 125-147
+clients/packages/orbit/src/components/ui/table.tsx
+  s_aa91bef2f613ad::t_329b2007679ae9 48-65,117-141
+clients/packages/orbit/src/index.ts
+  s_aa91bef2f613ad::t_d4bf10d34db36a 6
+clients/packages/ui/src/components/atoms/Card.tsx
+  s_aa91bef2f613ad::t_b4adb695cdf0db 5-6,9,42-63,77-90
+clients/packages/ui/src/components/atoms/InputOTP.tsx
+  s_aa91bef2f613ad::t_5232eef8c87715 4,8
+clients/packages/ui/src/components/ui/card.tsx
+  s_aa91bef2f613ad::t_5ed1b6ea5100a7 38-70,80-95
+clients/packages/ui/src/components/ui/command.tsx
+  s_aa91bef2f613ad::t_510f2d8cd1c734 3,8,27-38,139-154,157,164
+clients/packages/ui/src/components/ui/input-otp.tsx
+  s_aa91bef2f613ad::t_b0744fc266d512 4,69-76
+docs/features/checkout/session.mdx
+  s_aa91bef2f613ad::t_55a2b8501ae4a2 154,159
+docs/features/orders.mdx
+  s_aa91bef2f613ad::t_1ee5eca5714a18 135
+docs/integrate/webhooks/delivery.mdx
+  s_aa91bef2f613ad::t_d44fa8e63d3252 168
+docs/merchant-of-record/account-reviews.mdx
+  s_aa91bef2f613ad::t_ce43acdd26a61a 14
+handbook/engineering/design-documents/merchant-migrations.mdx
+  s_aa91bef2f613ad::t_3d454341abd3b6 6,83,85-86,221
+handbook/engineering/design-documents/secrets-encryption.mdx
+  s_aa91bef2f613ad::t_c6d4a5ce878370 212,222
+server/emails/src/components/AccountUnlinkDetails.tsx
+  s_aa91bef2f613ad::t_855940c873a4be 1-83
+server/emails/src/emails/index.ts
+  s_aa91bef2f613ad::t_8bd348814bdecb 14,49
+server/emails/src/emails/notification_credits_granted.tsx
+  s_aa91bef2f613ad::t_7cec0ce7035ca8 40
+server/emails/src/emails/notification_new_subscription.tsx
+  s_aa91bef2f613ad::t_16255662f276b3 8,10-11,26-30
+server/emails/src/emails/organization_account_unlink.tsx
+  s_aa91bef2f613ad::t_8b4092a50d784a 1-3,5-9,11-41,45-51
+server/emails/src/emails/subscription_confirmation.tsx
+  s_aa91bef2f613ad::t_55768ae8a2aea2 54-57
+server/emails/src/emails/subscription_past_due.tsx
+  s_aa91bef2f613ad::t_98b9de69f1531a 59-63
+server/emails/src/emails/subscription_renewal_reminder.tsx
+  s_aa91bef2f613ad::t_d4b2058dbfad1d 48-51
+server/emails/src/emails/subscription_uncanceled.tsx
+  s_aa91bef2f613ad::t_115082dd1647d8 39-42
+server/polar/auth/factors.py
+  s_aa91bef2f613ad::t_946a99b006aec7 314-315
+server/polar/authz/repository.py
+  s_aa91bef2f613ad::t_aa306456837e9c 8,56-57
+server/polar/backoffice/impersonation/endpoints.py
+  s_aa91bef2f613ad::t_a153951398b4f9 94,106,118,173
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_aa91bef2f613ad::t_bf97bedd25d460 30-31,3701-3787
+server/polar/backoffice/payouts/endpoints.py
+  s_aa91bef2f613ad::t_89e2cfd280f920 280
+server/polar/email/schemas.py
+  s_aa91bef2f613ad::t_95bd433d7cec15 39,509-520,544
+server/polar/integrations/slack/service.py
+  s_aa91bef2f613ad::t_dafb15f8de3220 273
+server/polar/kit/locale.py
+  s_aa91bef2f613ad::t_a92e2340ea2216 6-12,18,20-21,26
+server/polar/merchant_migration/endpoints.py
+  s_28ea492cb26938::t_8340e14b10c79a 18-22,88-110
+server/polar/merchant_migration/precheck.py
+  s_28ea492cb26938::t_66b6702980b9af 1-266
+server/polar/merchant_migration/schemas.py
+  s_28ea492cb26938::t_1b60d83a516d4f 1-2,5,9-25
+server/polar/merchant_migration/service.py
+  s_28ea492cb26938::t_e7fcbc235425d7 18,21-22,24,65-81,104-170
+server/polar/models/subscription_update.py
+  s_aa91bef2f613ad::t_2dbeaff70a14dc 124-125
+server/polar/organization/endpoints.py
+  s_aa91bef2f613ad::t_4dd7c93e8fd569 265
+server/polar/sso/endpoints.py
+  s_aa91bef2f613ad::t_d89697057ce54a 111,124,131,143
+server/polar/subscription/service.py
+  s_aa91bef2f613ad::t_4894c21ac5d006 809-811,815
+server/polar/user/endpoints.py
+  s_aa91bef2f613ad::t_89b39a50397577 68,70-75,81
+server/polar/user/schemas.py
+  s_aa91bef2f613ad::t_50942a5723133e 46-47
+server/tests/authz/test_service.py
+  s_aa91bef2f613ad::t_820bc684bcd125 7
+server/tests/merchant_migration/test_precheck.py
+  s_28ea492cb26938::t_33d5f7b07fceb9 1,3,5-45,49-69,72-98,101-102,105-113,116-143,145-149,151-153,155-159,161-163,165-167,169-171,173-178,180-187,189-196,198-205,207-230,232-250,252-253
+server/tests/merchant_migration/test_service.py
+  s_28ea492cb26938::t_369419e61f1a0c 1-2,9-13,15-18,35-43,136-241
+server/tests/organization/test_endpoints.py
+  s_aa91bef2f613ad::t_1661ea6293e1f2 10
+server/tests/organization/test_service.py
+  s_aa91bef2f613ad::t_3ef3189638d2fb 21,57
+server/tests/sso/test_endpoints.py
+  s_aa91bef2f613ad::t_13b5f458b1b57f 7
+terraform/sandbox/render.tf
+  s_aa91bef2f613ad::t_544a57137a43ed 126
+terraform/test/render.tf
+  s_aa91bef2f613ad::t_ea0453b7689c86 134
+server/tests/merchant_migration/test_endpoints.py
+  s_aa91bef2f613ad::t_2df269751317ab 1,210-270
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.9",
+  "base_commit_sha": "2ad68edeff6ea0ff1d59b8688b19cdc7c965c7a1",
+  "prompts": {},
+  "sessions": {
+    "s_28ea492cb26938": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3cdc938-a7ce-4baa-bd20-7ff6afb5d3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_3fdbc7df8c9e35": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "db41ec7a-210a-4431-b8dc-4a9a8e12678d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_aa91bef2f613ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aa4d767d-ab95-4188-8c1a-945538188f23",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

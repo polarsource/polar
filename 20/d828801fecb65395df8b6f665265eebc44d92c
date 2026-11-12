@@ -1,0 +1,20 @@
+sdk/CHANGELOG.md
+  s_54e42286d73777::t_b6122920a6124d 17
+  s_54e42286d73777::t_ec9c7c56bab0cb 15-16,18-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "20d828801fecb65395df8b6f665265eebc44d92c",
+  "prompts": {},
+  "sessions": {
+    "s_54e42286d73777": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0fb5b-cb12-72b0-8a1e-3db47d8586b2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}

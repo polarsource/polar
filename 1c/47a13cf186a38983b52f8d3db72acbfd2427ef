@@ -1,0 +1,21 @@
+clients/apps/web/CLAUDE.md
+  s_952b2c22869d33::t_9a3e417c2bcafd 1
+clients/apps/web/AGENTS.md
+  s_952b2c22869d33::t_2fdedcbd7931d0 1-9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1c47a13cf186a38983b52f8d3db72acbfd2427ef",
+  "prompts": {},
+  "sessions": {
+    "s_952b2c22869d33": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a10de0-13f1-7693-97ac-491187da023f",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

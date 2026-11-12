@@ -1,0 +1,44 @@
+server/polar/kit/encryption.py
+  s_5b881bade6edbb::t_66e9304cdae2c8 86
+terraform/test/render.tf
+  s_5b881bade6edbb::t_6bb496e2a550aa 223-224
+  s_5b881bade6edbb::t_bc133ea5be1368 222,225-226
+terraform/production/aws.tf
+  s_5b881bade6edbb::t_1a8fb64f05eebf 1-12
+terraform/modules/render_service/variables.tf
+  s_5b881bade6edbb::t_29f396813d89c7 197-198
+  s_5b881bade6edbb::t_82769cf25ff1fd 194-196,199-201
+terraform/sandbox/render.tf
+  s_5b881bade6edbb::t_0fc6036ee8ea56 237-241
+terraform/modules/render_secrets_kms/main.tf
+  s_5b881bade6edbb::t_a1b88cfcf36238 83-84,88
+  s_5b881bade6edbb::t_46f6a90edd0f2c 12-13
+  s_5b881bade6edbb::t_039644a2b1d683 1-11,14-59,62-82,85-87,89-124
+  s_5b881bade6edbb::t_72500e76c45728 60-61
+terraform/sandbox/aws.tf
+  s_5b881bade6edbb::t_faa564765fa849 5-13
+terraform/production/render.tf
+  s_5b881bade6edbb::t_707c8e4d97ac18 339-343
+terraform/modules/render_service/main.tf
+  s_5b881bade6edbb::t_deabfff77ae8fa 130-131
+  s_5b881bade6edbb::t_9b9739468154c7 132-140
+  s_5b881bade6edbb::t_5e7153f71a30a7 460-464
+terraform/test/aws.tf
+  s_5b881bade6edbb::t_61060aab405556 7-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.5",
+  "base_commit_sha": "8182e64d2f5b09f91ca743efb3dd7cf11cad72b1",
+  "prompts": {},
+  "sessions": {
+    "s_5b881bade6edbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a11f7bb0-49de-45e4-8617-e4cbaad4b68d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

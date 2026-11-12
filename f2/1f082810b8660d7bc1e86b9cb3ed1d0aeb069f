@@ -1,0 +1,19 @@
+.agents/skills/adr-check/SKILL.md
+  s_5861e605661360::t_b22240766aaf33 55-60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "f21f082810b8660d7bc1e86b9cb3ed1d0aeb069f",
+  "prompts": {},
+  "sessions": {
+    "s_5861e605661360": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "398f2c87-0e83-40a9-a21d-f3d84e9d6674",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

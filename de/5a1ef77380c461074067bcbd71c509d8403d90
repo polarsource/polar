@@ -1,0 +1,322 @@
+sdk/typescript/src/2026-10/services/customer_seats.ts
+  ai_agent 1,34,79,117,155,195,234,270
+sdk/typescript/src/2026-04/services/customer_meters.ts
+  ai_agent 1,10,72,102,137
+sdk/typescript/src/2027-01/services/customer_portal/organizations.ts
+  ai_agent 1,6,42
+sdk/typescript/src/2026-04/services/customer_portal/index.ts
+  ai_agent 1,16
+sdk/typescript/src/2026-10/services/files.ts
+  ai_agent 1,13,63,90,114,155,191,227
+sdk/typescript/src/2026-04/services/customer_portal/orders.ts
+  ai_agent 1,25,83,113,145,182,214,248,280,315,357
+sdk/typescript/src/2027-01/services/customer_portal/customer_session.ts
+  ai_agent 1,4,30,57
+sdk/typescript/src/2026-10/services/customer_meters.ts
+  ai_agent 1,10,72,102,137
+sdk/typescript/src/2026-04/services/orders.ts
+  ai_agent 1,27,99,137,165,214,248,277,328,362,398,433
+sdk/typescript/src/2026-04/services/webhooks.ts
+  ai_agent 1,14,68,97,130,164,198,237,271,341,376,411
+sdk/generator/typescript/template/src/version/client.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 1,23
+  s_85366b5bcb3fd0::t_e002b0fd334123 34
+sdk/typescript/src/2026-04/client.ts
+  ai_agent 1,43,50
+sdk/typescript/src/2026-04/services/customer_portal/members.ts
+  ai_agent 1,26,84,109,152,196,246
+sdk/typescript/src/2026-10/services/disputes.ts
+  ai_agent 1,6,60,89,123,163
+sdk/typescript/src/2026-10/services/oauth2/index.ts
+  ai_agent 1,14,43,67,91,115,140
+sdk/typescript/src/2027-01/services/customer_sessions.ts
+  ai_agent 1,10,49
+sdk/typescript/src/2026-10/services/customer_portal/customer_session.ts
+  ai_agent 1,4,30,57
+sdk/typescript/src/2026-04/services/payments.ts
+  ai_agent 1,6,68,101,136
+sdk/typescript/src/2026-10/services/customer_portal/index.ts
+  ai_agent 1,16
+sdk/typescript/src/2026-10/services/customer_portal/customer_meters.ts
+  ai_agent 1,10,68,96,131
+sdk/typescript/src/2027-01/services/customer_portal/benefit_grants.ts
+  ai_agent 1,12,80,113,147,189
+sdk/typescript/src/2026-04/services/benefits.ts
+  ai_agent 1,25,85,117,141,175,215,262,322,348,418,448
+sdk/typescript/src/2026-10/services/benefit_grants.ts
+  ai_agent 1,6,68,99
+sdk/typescript/src/2026-04/services/meters.ts
+  ai_agent 1,17,73,103,127,161,190,248
+sdk/typescript/src/2026-10/services/benefits.ts
+  ai_agent 1,25,85,117,141,175,215,262,322,348,418,448
+sdk/typescript/src/2026-04/services/customer_sessions.ts
+  ai_agent 1,10,49
+sdk/typescript/src/2027-01/services/customer_portal/license_keys.ts
+  ai_agent 1,23,79,105,142,184,224,264,300
+sdk/generator/typescript/template/src/outpost/telemetry.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 24,108,128,137
+sdk/typescript/src/2026-04/services/customer_portal/customers.ts
+  ai_agent 1,26,52,83,131,159,192,225,259,290,327,361
+sdk/typescript/src/2026-10/services/event_types.ts
+  ai_agent 1,13,81,114,154
+sdk/typescript/src/2026-10/services/customer_portal/downloadables.ts
+  ai_agent 1,6,56,83
+sdk/typescript/src/outpost/client.test.ts
+  ai_agent 11,88,172
+sdk/typescript/src/2026-04/services/event_types.ts
+  ai_agent 1,13,81,114,154
+sdk/typescript/src/2026-04/services/customer_portal/subscriptions.ts
+  ai_agent 1,18,78,107,141,175,219
+sdk/typescript/src/2027-01/services/customer_portal/customers.ts
+  ai_agent 1,26,52,83,131,159,192,225,259,290,327,361
+sdk/typescript/src/2026-04/services/checkouts.ts
+  ai_agent 1,27,93,125,149,183,224,263,306,354
+sdk/typescript/src/2026-04/services/events.ts
+  ai_agent 1,18,83,147,178,212,240
+sdk/typescript/src/2026-04/services/discounts.ts
+  ai_agent 1,12,70,98,122,156,190,230
+sdk/typescript/src/2026-04/services/customer_portal/customer_session.ts
+  ai_agent 1,4,30,57
+sdk/typescript/src/2027-01/services/customers/members.ts
+  ai_agent 1,18,82,110,154,221,253,296,336,372,416,458,500,545
+sdk/typescript/src/2027-01/services/event_types.ts
+  ai_agent 1,13,81,114,154
+sdk/typescript/src/outpost/receive.bench.ts
+  ai_agent 3,18
+sdk/generator/typescript/template/src/metering/client.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 8,22
+sdk/typescript/src/2027-01/services/metrics.ts
+  ai_agent 1,15,66,121,147,184,217,249,281,319
+sdk/typescript/src/2026-10/services/customer_portal/license_keys.ts
+  ai_agent 1,23,79,105,142,184,224,264,300
+sdk/typescript/src/2026-04/services/customer_portal/organizations.ts
+  ai_agent 1,6,42
+sdk/typescript/src/2027-01/services/discounts.ts
+  ai_agent 1,12,72,101,125,159,193,233
+sdk/typescript/src/2027-01/services/oauth2/clients/index.ts
+  ai_agent 1,5
+sdk/typescript/src/2027-01/services/events.ts
+  ai_agent 1,18,83,147,178,212,242
+sdk/generator/typescript/template/src/outpost/receive.bench.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 3,18
+sdk/typescript/src/2026-04/services/metrics.ts
+  ai_agent 1,15,64,117,143,180,213,245,277,315
+sdk/typescript/src/2026-10/services/products.ts
+  ai_agent 1,20,84,118,142,176,217,258,300
+sdk/generator/typescript/template/src/version/index.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 3
+sdk/typescript/src/2027-01/services/orders.ts
+  ai_agent 1,27,101,140,168,219,253,282,333,367,403,438
+sdk/typescript/src/2027-01/services/license_keys.ts
+  ai_agent 1,26,90,118,157,198,240,282,319,356,389
+sdk/typescript/src/2027-01/services/oauth2/index.ts
+  ai_agent 1,14,43,67,91,115,140
+sdk/typescript/src/2026-04/services/organizations.ts
+  ai_agent 1,18,74,101,136,170,214
+sdk/typescript/src/outpost/telemetry.test.ts
+  ai_agent 9,32,66
+sdk/typescript/src/2026-10/services/discounts.ts
+  ai_agent 1,12,70,98,122,156,190,230
+sdk/typescript/src/2026-04/services/subscriptions.ts
+  ai_agent 1,25,110,153,191,242,276,314,360
+sdk/typescript/src/2026-04/services/products.ts
+  ai_agent 1,20,84,118,142,176,217,258,300
+sdk/typescript/src/2026-04/services/customer_portal/downloadables.ts
+  ai_agent 1,6,56,83
+sdk/typescript/src/2027-01/services/customer_portal/orders.ts
+  ai_agent 1,25,83,113,145,182,214,248,280,315,357
+sdk/typescript/src/2026-10/services/webhooks.ts
+  ai_agent 1,14,68,97,130,164,198,237,271,341,376,411
+sdk/typescript/src/2026-04/services/oauth2/clients/oauth2.ts
+  ai_agent 1,6,37,67,102,133
+sdk/typescript/src/2027-01/services/customer_portal/members.ts
+  ai_agent 1,26,84,109,152,196,246
+sdk/generator/typescript/template/src/base.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 146
+sdk/generator/typescript/template/src/outpost/telemetry.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 9,32,66
+sdk/typescript/src/2026-10/services/customer_portal/subscriptions.ts
+  ai_agent 1,18,78,107,141,175,219
+sdk/typescript/src/2026-10/services/metrics.ts
+  ai_agent 1,15,64,117,143,180,213,245,277,315
+sdk/typescript/src/2027-01/services/customer_meters.ts
+  ai_agent 1,19,83,114,148,189,232
+sdk/typescript/src/2027-01/services/products.ts
+  ai_agent 1,20,86,121,145,179,220,261,303
+sdk/typescript/src/2026-04/services/oauth2/index.ts
+  ai_agent 1,14,43,67,91,115,140
+sdk/typescript/src/2026-10/services/customer_portal/wallets.ts
+  ai_agent 1,10,60,86,119
+sdk/typescript/src/2026-04/services/customer_portal/customer_meters.ts
+  ai_agent 1,10,68,96,131
+sdk/typescript/src/2027-01/client.ts
+  ai_agent 1,43,50
+sdk/typescript/src/2026-04/services/files.ts
+  ai_agent 1,13,63,90,114,155,191,227
+sdk/typescript/src/outpost/testing.ts
+  ai_agent 11,49,89
+sdk/typescript/src/2027-01/services/custom_fields.ts
+  ai_agent 1,13,73,102,132,166,200,240
+sdk/typescript/src/2026-10/services/customer_portal/organizations.ts
+  ai_agent 1,6,42
+sdk/typescript/src/2027-01/index.ts
+  ai_agent 3
+sdk/typescript/src/2026-10/services/oauth2/clients/oauth2.ts
+  ai_agent 1,6,37,67,102,133
+sdk/typescript/src/2027-01/services/customer_portal/downloadables.ts
+  ai_agent 1,6,56,83
+sdk/typescript/src/2026-04/index.ts
+  ai_agent 3
+sdk/typescript/src/2027-01/services/customer_portal/customer_meters.ts
+  ai_agent 1,10,68,96,131
+sdk/typescript/src/2027-01/services/oauth2/clients/oauth2.ts
+  ai_agent 1,6,37,67,102,133
+sdk/typescript/src/2026-04/services/refunds.ts
+  ai_agent 1,6,68,101,128
+sdk/typescript/src/2026-10/services/license_keys.ts
+  ai_agent 1,26,90,118,157,198,240,282,319,356,389
+sdk/typescript/src/2027-01/services/payments.ts
+  ai_agent 1,6,68,101,136
+sdk/typescript/src/2026-04/services/benefit_grants.ts
+  ai_agent 1,6,68,99
+sdk/typescript/src/2027-01/services/refunds.ts
+  ai_agent 1,6,68,101,128
+sdk/typescript/src/base.test.ts
+  ai_agent 3,24,39,58,77,106,124,190,200
+sdk/typescript/src/outpost/telemetry.ts
+  ai_agent 24,108,128,137
+sdk/typescript/src/2027-01/services/checkouts.ts
+  ai_agent 1,27,95,128,152,186,227,266,309,357
+sdk/typescript/src/2027-01/services/customer_portal/index.ts
+  ai_agent 1,16
+sdk/typescript/src/2027-01/services/customers/index.ts
+  ai_agent 1,18,82,113,139,176,210,267,306,340,387,426,466,506,566,596,656,687
+sdk/generator/typescript/template/src/version/services/service.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 1,14,110,174
+sdk/typescript/src/2027-01/services/benefits.ts
+  ai_agent 1,25,87,120,144,178,218,265,325,351,421,451
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 10,88,172
+sdk/typescript/src/2027-01/services/webhooks.ts
+  ai_agent 1,18,72,101,134,170,204,238,277,311,381,416,451
+sdk/typescript/src/2027-01/services/customer_portal/wallets.ts
+  ai_agent 1,10,60,86,119
+sdk/typescript/src/2027-01/services/customer_seats.ts
+  ai_agent 1,34,79,117,155,195,234,270
+sdk/typescript/src/2026-10/services/oauth2/clients/index.ts
+  ai_agent 1,5
+sdk/typescript/src/2027-01/services/checkout_links.ts
+  ai_agent 1,12,70,98,131,165,199,239
+sdk/typescript/src/outpost/client.ts
+  ai_agent 22,357
+sdk/generator/typescript/template/src/outpost/testing.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 11,49,89
+sdk/typescript/src/2026-04/services/customers/index.ts
+  ai_agent 1,18,82,113,139,176,210,267,306,340,387,426,466,506,566,596,656,687
+sdk/generator/typescript/template/src/metering/client.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 10,137,150,393
+sdk/typescript/src/2026-10/services/orders.ts
+  ai_agent 1,27,99,137,165,214,248,277,328,362,398,433
+sdk/typescript/src/base.ts
+  ai_agent 137
+sdk/typescript/src/metering/client.ts
+  ai_agent 10,137,150,393
+sdk/typescript/src/2026-10/services/customer_portal/members.ts
+  ai_agent 1,26,84,109,152,196,246
+sdk/typescript/src/2026-04/services/checkout_links.ts
+  ai_agent 1,12,70,98,131,165,199,239
+sdk/typescript/src/2026-04/services/customer_portal/license_keys.ts
+  ai_agent 1,23,79,105,142,184,224,264,300
+sdk/typescript/src/2026-04/services/disputes.ts
+  ai_agent 1,6,60,89,123,163
+sdk/typescript/src/2026-10/services/customer_portal/orders.ts
+  ai_agent 1,25,83,113,145,182,214,248,280,315,357
+sdk/typescript/src/2027-01/services/meters.ts
+  ai_agent 1,17,75,106,130,166,200,229,287
+sdk/typescript/src/2026-10/services/custom_fields.ts
+  ai_agent 1,13,73,102,132,166,200,240
+sdk/typescript/src/2026-10/services/refunds.ts
+  ai_agent 1,6,68,101,128
+sdk/typescript/src/2026-04/services/customer_portal/seats.ts
+  ai_agent 1,29,72,110,145,182,237,266
+sdk/typescript/src/2026-10/services/customer_sessions.ts
+  ai_agent 1,10,49
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 23,361
+sdk/typescript/src/2026-04/services/customers/members.ts
+  ai_agent 1,18,82,110,154,221,253,296,336,372,416,458,500,545
+sdk/typescript/src/2026-10/services/customers/index.ts
+  ai_agent 1,18,82,113,139,176,210,267,306,340,387,426,466,506,566,596,656,687
+sdk/typescript/src/2026-04/services/customer_portal/wallets.ts
+  ai_agent 1,10,60,86,119
+sdk/generator/typescript/template/src/base.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 2,28,43,62,84,119,138,207,217
+sdk/typescript/src/2026-10/services/customer_portal/customers.ts
+  ai_agent 1,26,52,83,131,159,192,225,259,290,327,361
+sdk/typescript/src/2026-10/index.ts
+  ai_agent 3
+sdk/typescript/src/2026-10/services/meters.ts
+  ai_agent 1,17,73,103,127,161,190,248
+sdk/typescript/src/2027-01/services/benefit_grants.ts
+  ai_agent 1,6,74,108
+sdk/typescript/src/2027-01/services/files.ts
+  ai_agent 1,13,63,90,114,155,191,227
+sdk/typescript/src/2026-10/services/checkout_links.ts
+  ai_agent 1,12,70,98,131,165,199,239
+sdk/typescript/src/2026-04/services/customer_seats.ts
+  ai_agent 1,34,79,117,155,195,234,270
+sdk/typescript/src/2026-10/services/customer_portal/benefit_grants.ts
+  ai_agent 1,12,80,113,147,189
+sdk/typescript/src/2027-01/services/customer_portal/subscriptions.ts
+  ai_agent 1,18,78,107,141,175,219
+sdk/typescript/src/2026-10/services/payments.ts
+  ai_agent 1,6,68,101,136
+sdk/typescript/src/2027-01/services/organizations.ts
+  ai_agent 1,18,74,101,136,170,214
+sdk/typescript/src/2027-01/services/disputes.ts
+  ai_agent 1,6,60,89,123,163
+sdk/typescript/src/2027-01/services/customer_portal/seats.ts
+  ai_agent 1,29,72,110,145,182,237,266
+sdk/typescript/src/2026-10/services/customer_portal/seats.ts
+  ai_agent 1,29,72,110,145,182,237,266
+sdk/typescript/src/2026-04/services/license_keys.ts
+  ai_agent 1,26,90,118,157,198,240,282,319,356,389
+sdk/typescript/src/2027-01/services/subscriptions.ts
+  ai_agent 1,25,112,156,194,247,281,319,365
+sdk/typescript/src/metering/client.test.ts
+  ai_agent 9,22
+sdk/typescript/src/2026-10/services/checkouts.ts
+  ai_agent 1,27,93,125,149,183,224,263,306,354
+sdk/typescript/src/2026-10/client.ts
+  ai_agent 1,43,50
+sdk/typescript/src/2026-10/services/subscriptions.ts
+  ai_agent 1,25,110,153,191,242,276,314,360
+sdk/typescript/src/2026-04/services/oauth2/clients/index.ts
+  ai_agent 1,5
+sdk/typescript/src/2026-10/services/customers/members.ts
+  ai_agent 1,18,82,110,154,221,253,296,336,372,416,458,500,545
+sdk/typescript/src/2026-10/services/events.ts
+  ai_agent 1,18,83,147,178,212,240
+sdk/typescript/src/2026-10/services/organizations.ts
+  ai_agent 1,18,74,101,136,170,214
+sdk/typescript/src/2026-04/services/customer_portal/benefit_grants.ts
+  ai_agent 1,12,80,113,147,189
+sdk/typescript/src/2026-04/services/custom_fields.ts
+  ai_agent 1,13,73,102,132,166,200,240
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "de5a1ef77380c461074067bcbd71c509d8403d90",
+  "prompts": {},
+  "sessions": {
+    "s_85366b5bcb3fd0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "be038a6d-9365-474d-b63c-b3ecaad4bcf9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

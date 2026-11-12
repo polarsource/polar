@@ -1,0 +1,40 @@
+handbook/docs.json
+  s_b12b6d33629e94::t_cd0c6613da0ad0 61-62
+handbook/engineering/guides.mdx
+  s_b12b6d33629e94::t_670a2a685450bc 10-11
+  s_b12b6d33629e94::t_cd0c6613da0ad0 12
+handbook/engineering/guides/sandbox-database-role.mdx
+  s_b12b6d33629e94::t_ad19e95dfecce4 68-69,82-83,109
+  s_b12b6d33629e94::t_d41233b98f073f 22-24,29-32
+  s_b12b6d33629e94::t_5df7ca307fc492 91-92
+  s_b12b6d33629e94::t_184435471b1f07 58
+  s_b12b6d33629e94::t_d56c90625907a9 35,37-43,48,56-57,132,139,142-143
+  s_b12b6d33629e94::t_fe41967479421d 47,50,88,97,111,114
+  s_b12b6d33629e94::t_65f1ed17e0cf14 102
+  s_b12b6d33629e94::t_31f5eebb0d90f1 52,55,59-61,66
+  s_b12b6d33629e94::t_0c462a92086d02 116-128
+  s_b12b6d33629e94::t_5b8a03a0798495 14,27-28
+  s_b12b6d33629e94::t_d5917f662a3380 1-5,12,49,108,141
+  s_b12b6d33629e94::t_d74c89ffb6931f 62-65,70-81,85-86,104
+  s_b12b6d33629e94::t_c665fe28dfd18d 11,15-16,19,53,87,89,94,103,105-107,110
+  s_b12b6d33629e94::t_04bc6fd94e75f2 13,33,44,67,93,101,113,115,129,131,133,136-138,140
+  s_b12b6d33629e94::t_e05dbb6050d098 6,8-9,20,46,54,90,112,130,134-135
+  s_b12b6d33629e94::t_76cd992c101990 36,45,51,84,95-96,98-100
+  s_b12b6d33629e94::t_c6d6b5fb50bb13 7,10,17-18,21,25-26,34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4a7b75bac3eefb40d13e7a4556fa5a0bab5a0813",
+  "prompts": {},
+  "sessions": {
+    "s_b12b6d33629e94": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b3c1f0d-d2b9-427f-9010-948d9c170904",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

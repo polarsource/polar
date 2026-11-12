@@ -1,0 +1,19 @@
+handbook/engineering/design-documents/merchant-migrations.mdx
+  s_c32bc7f6e4485b::t_c9279a3fe08a33 84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "b41e7a17bae0c9552e3272552149db6b8423ff32",
+  "prompts": {},
+  "sessions": {
+    "s_c32bc7f6e4485b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "331a697f-8b06-4626-8f5b-935aad6d56b8",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

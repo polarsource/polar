@@ -1,0 +1,38 @@
+server/polar/customer_meter/endpoints.py
+  s_4f8e44c669851c::t_6d1a1e2a701c15 144
+  s_4f8e44c669851c::t_413c586c4e07a2 152
+  s_4f8e44c669851c::t_ddc25984191e55 15
+  s_4f8e44c669851c::t_38fc6501b4a45c 16
+  s_4f8e44c669851c::t_b94719edcbdad2 153
+server/polar/reducer/service.py
+  s_4f8e44c669851c::t_582127d28bb9d2 305-309,334-346
+  s_4f8e44c669851c::t_809504f0ced267 1
+  s_4f8e44c669851c::t_413c586c4e07a2 304
+  s_4f8e44c669851c::t_48650e85af3459 310-333,349-351
+  s_4f8e44c669851c::t_944c4221b3a706 14,23-31
+  s_4f8e44c669851c::t_b579b58094b91a 347-348
+  s_4f8e44c669851c::t_46afc723adad88 352
+server/tests/reducer/test_service.py
+  s_4f8e44c669851c::t_e20d62287fd08c 1235-1237,1263-1265
+  s_4f8e44c669851c::t_22d2cb0bd53985 1240-1246,1252
+  s_4f8e44c669851c::t_2a0c00fffa1581 1191-1210,1212-1234,1238-1239,1247-1251,1253-1262,1266-1267
+  s_4f8e44c669851c::t_e988deb2627797 19-27
+  s_4f8e44c669851c::t_413c586c4e07a2 1211
+  s_4f8e44c669851c::t_a2a44046a19a53 8,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "710e8bc3f2d079f544491b3dff19c7d576999437",
+  "prompts": {},
+  "sessions": {
+    "s_4f8e44c669851c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0067be9a-0979-4c4a-9c15-598f2781d224",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

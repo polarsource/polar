@@ -1,0 +1,20 @@
+server/scripts/fix_unreset_customer_meters.py
+  s_203c33c3a8ce3d::t_d8fd93a3c18c61 90-92,94-108,110-111
+  s_203c33c3a8ce3d::t_0752f60b50eac0 36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "420c48db94b0e01f86baf2ef5017953e0eefdf49",
+  "prompts": {},
+  "sessions": {
+    "s_203c33c3a8ce3d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e8722df0-121c-4871-80e6-6ec22fdfcf3e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

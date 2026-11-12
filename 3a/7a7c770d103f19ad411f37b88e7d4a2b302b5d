@@ -1,0 +1,16 @@
+handbook/engineering/decisions/0015-dedicated-event-ingestion-architecture.mdx
+  h_cc2173b7b86bcc 1-43
+handbook/engineering/decisions/index.mdx
+  h_cc2173b7b86bcc 113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a7a7c770d103f19ad411f37b88e7d4a2b302b5d",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

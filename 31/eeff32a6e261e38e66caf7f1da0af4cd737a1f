@@ -1,0 +1,16 @@
+server/polar/worker/_broker.py
+  h_6aa6f5c50f181e 74,84
+server/polar/worker/scheduler.py
+  h_6aa6f5c50f181e 22,79-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "31eeff32a6e261e38e66caf7f1da0af4cd737a1f",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

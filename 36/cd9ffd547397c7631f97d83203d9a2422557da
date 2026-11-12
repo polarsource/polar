@@ -1,0 +1,25 @@
+terraform/global/sandbox.tf
+  s_032888550d121d::t_83eb8be8957600 505-520
+terraform/production/variables.tf
+  s_032888550d121d::t_83eb8be8957600 511-520
+terraform/global/production.tf
+  s_032888550d121d::t_83eb8be8957600 587-602
+terraform/sandbox/variables.tf
+  s_032888550d121d::t_83eb8be8957600 428-437
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "36cd9ffd547397c7631f97d83203d9a2422557da",
+  "prompts": {},
+  "sessions": {
+    "s_032888550d121d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b3f1b024-e41e-4e54-9906-bb1c6b19a408",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

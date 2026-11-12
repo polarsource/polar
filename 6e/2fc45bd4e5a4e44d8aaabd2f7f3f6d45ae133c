@@ -1,0 +1,21 @@
+server/polar/kit/http.py
+  s_2c213c50e532b9::t_d0b3ec742423d2 200
+clients/apps/web/src/utils/api/index.ts
+  s_2c213c50e532b9::t_e494ee66825388 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "6e2fc45bd4e5a4e44d8aaabd2f7f3f6d45ae133c",
+  "prompts": {},
+  "sessions": {
+    "s_2c213c50e532b9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaab0d2-e0ef-48c5-9dc4-4a5526525da6",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

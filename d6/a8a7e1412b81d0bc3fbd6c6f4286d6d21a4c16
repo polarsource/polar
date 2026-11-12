@@ -1,0 +1,25 @@
+clients/packages/cli/src/services/updater.ts
+  s_72cfaa3f37456b::t_e0e263dac7ed9f 23,52-56,63
+clients/packages/cli/src/services/updater.test.ts
+  s_72cfaa3f37456b::t_5d7671d5f5d050 338-349
+clients/packages/cli/src/services/agent-setup/plugins.test.ts
+  s_72cfaa3f37456b::t_5d7671d5f5d050 42-60,123-139
+clients/packages/cli/src/services/agent-setup/plugins.ts
+  s_72cfaa3f37456b::t_e0e263dac7ed9f 1,13-18,84-90,153-160,204-209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d6a8a7e1412b81d0bc3fbd6c6f4286d6d21a4c16",
+  "prompts": {},
+  "sessions": {
+    "s_72cfaa3f37456b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b6a58254-67d9-4db5-b902-3a1664ad897b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

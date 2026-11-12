@@ -1,0 +1,25 @@
+clients/packages/generator/package.json
+  s_26e9f7497a6831::t_694b849a2fa60b 1-37
+clients/packages/generator/tsconfig.json
+  s_26e9f7497a6831::t_c7888b0ad8ceae 1-9
+clients/pnpm-lock.yaml
+  ai_agent 1304-1318,4821-4823,7178-7336,8731-8739,9658-9661,9943-9946,11738-11741,12650-12652,13139-13141,13177-13198,13955-13988,14091-14093,14426-14429,14978-14986,18701-18704,21464-21472,21695-21768,23190-23193,24304-24307,24665-24666,27423-27424,28389-28390,29046-29047,29078-29094,29986-30011,30154-30158,30464-30465,30773-30779,31133-31170
+clients/packages/generator/src/index.ts
+  s_26e9f7497a6831::t_3f3ef6d56b4334 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "10bc5d0fa79b3884ff8f9c8855ffd3cf05ceaae5",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

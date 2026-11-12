@@ -1,0 +1,27 @@
+server/tests/billing_entry/test_comparison.py
+  s_370fd936af68ee::t_366e958aa21df7 59,64-65,87,90,97-98,176-177
+  s_370fd936af68ee::t_c412520480eba3 143,154,165
+server/polar/billing_entry/comparison.py
+  s_370fd936af68ee::t_07fb4b6f4d88c6 21,219,223,226-231
+server/polar/reducer/bucket_repository.py
+  s_370fd936af68ee::t_07fb4b6f4d88c6 19,577-582,584-586,590,605,617-618
+  s_370fd936af68ee::t_a2fc1c15dd6348 587-589,591,593-604,606-615
+server/polar/event/repository.py
+  s_370fd936af68ee::t_07fb4b6f4d88c6 756-766
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b9ddec142126a318a39864fc900e863b24fe6735",
+  "prompts": {},
+  "sessions": {
+    "s_370fd936af68ee": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ef2d1b8-ebc0-4839-b0de-495c71553b38",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

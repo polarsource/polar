@@ -1,0 +1,16 @@
+server/polar/subscription/service.py
+  h_cc2173b7b86bcc 1238-1239,1245
+server/tests/subscription/test_service.py
+  h_cc2173b7b86bcc 1348
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "6a59c44b9c396ed357ed3eecb4c39a3c8164222c",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

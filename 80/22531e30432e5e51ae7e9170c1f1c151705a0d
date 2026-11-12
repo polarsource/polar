@@ -1,0 +1,19 @@
+clients/packages/cli/src/services/agent-setup/skills.ts
+  s_8c38be7e3f6507::t_072392333f8d44 164-167,169-179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8022531e30432e5e51ae7e9170c1f1c151705a0d",
+  "prompts": {},
+  "sessions": {
+    "s_8c38be7e3f6507": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abef6a4c-1cb0-41f1-b6a0-765d1dc3a579",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

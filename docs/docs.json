@@ -45,38 +45,14 @@
             "pages": ["introduction", "migrate"]
           },
           {
-            "group": "Features",
+            "group": "Products & Pricing",
             "pages": [
               "features/products",
-              {
-                "group": "Usage Based Billing",
-                "pages": [
-                  "features/usage-based-billing/introduction",
-                  "features/usage-based-billing/event-ingestion",
-                  {
-                    "group": "Ingestion Strategies",
-                    "pages": [
-                      "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
-                      "features/usage-based-billing/ingestion-strategies/llm-strategy",
-                      "features/usage-based-billing/ingestion-strategies/s3-strategy",
-                      "features/usage-based-billing/ingestion-strategies/stream-strategy",
-                      "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
-                    ]
-                  },
-                  "features/usage-based-billing/meters",
-                  "features/usage-based-billing/credits",
-                  "features/usage-based-billing/billing"
-                ]
-              },
-              {
-                "group": "Cost Insights",
-                "tag": "Beta",
-                "pages": [
-                  "features/cost-insights/introduction",
-                  "features/cost-insights/cost-events",
-                  "features/cost-insights/cost-traces"
-                ]
-              },
+              "features/unit-based-pricing",
+              "features/seat-based-pricing",
+              "features/usage-based-billing/billing",
+              "features/tax-inclusive-pricing",
+              "features/discounts",
               {
                 "group": "Benefits",
                 "pages": [
@@ -90,41 +66,59 @@
                   "features/benefits/license-keys",
                   "features/benefits/slack-shared-channel"
                 ]
-              },
-              {
-                "group": "Checkout",
-                "pages": [
-                  "features/checkout/links",
-                  "features/checkout/session",
-                  "features/checkout/payment-methods",
-                  "features/checkout/localization",
-                  {
-                    "group": "Embeds",
-                    "pages": ["features/checkout/embed", "features/checkout/embed-payment-method"]
-                  }
-                ]
-              },
-              "features/seat-based-pricing",
-              "features/unit-based-pricing",
+              }
+            ]
+          },
+          {
+            "group": "Checkout",
+            "pages": [
+              "features/checkout/links",
+              "features/checkout/session",
+              "features/checkout/payment-methods",
+              "features/checkout/localization",
               "features/custom-fields",
-              "features/discounts",
-              "features/tax-inclusive-pricing",
               {
-                "group": "Subscriptions",
+                "group": "Embeds",
                 "pages": [
-                  "features/subscriptions/introduction",
-                  "features/subscriptions/manage",
-                  "features/subscriptions/proration",
-                  "features/subscriptions/failed-payments",
-                  "features/subscriptions/trials"
+                  "features/checkout/embed",
+                  "features/checkout/embed-payment-method"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Subscriptions",
+            "pages": [
+              "features/subscriptions/introduction",
+              "features/subscriptions/manage",
+              "features/subscriptions/proration",
+              "features/subscriptions/trials",
+              "features/subscriptions/failed-payments"
+            ]
+          },
+          {
+            "group": "Metering",
+            "pages": [
+              "features/usage-based-billing/introduction",
+              "features/usage-based-billing/event-ingestion",
+              {
+                "group": "Ingestion Strategies",
+                "pages": [
+                  "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
+                  "features/usage-based-billing/ingestion-strategies/llm-strategy",
+                  "features/usage-based-billing/ingestion-strategies/s3-strategy",
+                  "features/usage-based-billing/ingestion-strategies/stream-strategy",
+                  "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
                 ]
               },
-              "features/orders",
-              "features/refunds",
-              "features/analytics",
+              "features/usage-based-billing/meters",
+              "features/usage-based-billing/credits"
+            ]
+          },
+          {
+            "group": "Customer Management",
+            "pages": [
               "features/customer-management",
-              "features/team-management",
-              "features/sso",
               {
                 "group": "Customer Portal",
                 "pages": [
@@ -132,26 +126,55 @@
                   "features/customer-portal/navigate-customers",
                   "features/customer-portal/settings"
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "features/analytics",
               {
-                "group": "Finance & Payouts",
+                "group": "Cost Insights",
+                "tag": "Beta",
                 "pages": [
-                  "features/finance/accounts",
-                  "features/finance/balance",
-                  "features/finance/payouts"
-                ]
-              },
-              {
-                "group": "Integrations",
-                "pages": [
-                  "features/integrations/affonso",
-                  "features/integrations/fernand",
-                  "features/integrations/framer",
-                  "features/integrations/paritydeals",
-                  "features/integrations/raycast",
-                  "features/integrations/zapier"
+                  "features/cost-insights/introduction",
+                  "features/cost-insights/cost-events",
+                  "features/cost-insights/cost-traces"
                 ]
               }
+            ]
+          },
+          {
+            "group": "Payments",
+            "pages": [
+              "features/orders",
+              "features/refunds"
+            ]
+          },
+          {
+            "group": "Payouts",
+            "pages": [
+              "features/finance/accounts",
+              "features/finance/balance",
+              "features/finance/payouts"
+            ]
+          },
+          {
+            "group": "Account Management",
+            "pages": [
+              "features/team-management",
+              "features/sso"
+            ]
+          },
+          {
+            "group": "Third-party Integrations",
+            "pages": [
+              "features/integrations/affonso",
+              "features/integrations/fernand",
+              "features/integrations/framer",
+              "features/integrations/paritydeals",
+              "features/integrations/raycast",
+              "features/integrations/zapier"
             ]
           },
           {

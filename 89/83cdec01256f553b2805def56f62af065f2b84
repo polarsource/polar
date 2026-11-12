@@ -1,0 +1,21 @@
+.github/scripts/tinybird_hfi_config.py
+  s_6f35f64d56f447::t_670a09bbe6a974 1-17
+.github/workflows/test_server.yaml
+  s_6f35f64d56f447::t_040b7f1107ff59 498-509
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8983cdec01256f553b2805def56f62af065f2b84",
+  "prompts": {},
+  "sessions": {
+    "s_6f35f64d56f447": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03a38869-f365-406c-91e1-00b538d38839",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

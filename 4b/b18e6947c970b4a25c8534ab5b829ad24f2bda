@@ -1,0 +1,44 @@
+sdk/generator/typescript/template/src/outpost/testing.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 11,49,89
+sdk/generator/typescript/template/src/outpost/telemetry.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 24,108,128,137
+sdk/generator/typescript/template/src/version/services/service.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 1,14,110,174
+sdk/generator/typescript/template/src/outpost/receive.bench.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 3,18
+sdk/generator/typescript/template/src/outpost/client.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 10,88,172
+sdk/generator/typescript/template/src/base.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 146
+sdk/generator/typescript/template/src/outpost/client.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 23,361
+sdk/generator/typescript/template/src/base.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 2,28,43,62,84,119,138,207,217
+sdk/generator/typescript/template/src/metering/client.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 8,22
+sdk/generator/typescript/template/src/metering/client.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 10,137,150,393
+sdk/generator/typescript/template/src/version/index.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 3
+sdk/generator/typescript/template/src/outpost/telemetry.test.ts
+  s_85366b5bcb3fd0::t_2939da656afd1d 9,32,66
+sdk/generator/typescript/template/src/version/client.ts
+  s_85366b5bcb3fd0::t_e002b0fd334123 34
+  s_85366b5bcb3fd0::t_2939da656afd1d 1,23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4bb18e6947c970b4a25c8534ab5b829ad24f2bda",
+  "prompts": {},
+  "sessions": {
+    "s_85366b5bcb3fd0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "be038a6d-9365-474d-b63c-b3ecaad4bcf9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

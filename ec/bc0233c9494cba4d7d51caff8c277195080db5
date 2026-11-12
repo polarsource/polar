@@ -1,0 +1,81 @@
+clients/apps/mcp/src/server.ts
+  s_8113b980a37313::t_7dc42d1058858d 9
+  s_0423d89ed45acf::t_48254c745c9600 2,12,16,18-19,22
+clients/apps/mcp/test/workers.ts
+  ai_agent 3-10
+  s_0423d89ed45acf::t_3d2db1f6358dbf 1-2,11-23
+clients/apps/mcp/src/auth.ts
+  s_8113b980a37313::t_13f1b7dd023dfe 1,5,8-10,26-38,40,47-48
+  s_0423d89ed45acf::t_6275f5f8630716 2-3,13-19,21-25,41-46,50-53,55-57
+clients/apps/mcp/test/boundaries.test.ts
+  s_0423d89ed45acf::t_391381c11e081a 2-3,5-7,13-18,20-22,24-28,30-33,35-38,40-54,56-57,59-68,70-72,74-77,81-82,84-86,88-91,93-98,100-104,106,108-113,116-122,124,126-133,135-139,141-146,148-161,163-167
+  s_0423d89ed45acf::t_3850d3960fbcee 1,8-12,69,99
+  s_0423d89ed45acf::t_f7c0f0be78e0e3 78,80
+  s_8113b980a37313::t_14371628653ce7 4,162
+clients/apps/mcp/package.json
+  s_0423d89ed45acf::t_c4f28878e23ec0 18
+  s_0423d89ed45acf::t_cffa0847f71ddb 10-11,26-27
+clients/apps/mcp/src/tools/execute.ts
+  s_8113b980a37313::t_7dc42d1058858d 5,66,70,79,91-96,101-102
+  s_0423d89ed45acf::t_d0951c0c4b8e04 3,6,69,71,77-78,81-82,89-90,99,103-104,106
+clients/apps/mcp/src/sandbox.ts
+  s_8113b980a37313::t_7dc42d1058858d 20-22,25-46,61-74,76
+  s_0423d89ed45acf::t_bd2373cf11e374 1-2,18-19,23-24,75
+clients/apps/mcp/test/client.ts
+  s_0423d89ed45acf::t_d223cf20a90d0e 1-27,32-34
+  ai_agent 28-31
+clients/pnpm-lock.yaml
+  ai_agent 756,758,778-780
+clients/apps/mcp/src/index.ts
+  s_0423d89ed45acf::t_427a722679a743 6-8,11,29-34,48-50,52-53,85-86,91,95-96,98-101,106,108,110-112
+  s_8113b980a37313::t_7dc42d1058858d 51,55,94
+  s_0423d89ed45acf::t_a18edee42f8007 93,104
+clients/apps/mcp/vitest.config.ts
+  s_0423d89ed45acf::t_94d402f20be865 1-5,8-11
+  ai_agent 6-7
+clients/apps/mcp/src/tools/operations.ts
+  s_8113b980a37313::t_7bf1cf7490e659 103,105
+  s_8113b980a37313::t_2f56c645a6b3cc 10,65-86,88-93,96-100,102,104,106,108-126
+  s_0423d89ed45acf::t_aa57b2d95dae07 6-7,18,87
+clients/apps/mcp/src/results.ts
+  s_8113b980a37313::t_d52bbe917fa2ab 1,5,10,36-39,43-45
+  s_8113b980a37313::t_7dc42d1058858d 40-42
+  s_0423d89ed45acf::t_49d0329dce55d7 2-4,6,8-9,11-14,26,30,35
+  s_0423d89ed45acf::t_d9b432b2be41a2 7
+  s_0423d89ed45acf::t_3a1e0bbe818ea2 22
+clients/apps/mcp/test/server.test.ts
+  s_0423d89ed45acf::t_78b02197d1489b 3,123,133,192
+  s_0423d89ed45acf::t_1e4142d03ca612 1-2,4-21,23-24,26-35,37-41,43-46,48-68,70-82,84-90,92-95,97,99-100,102-103,105-106,108-112,114-120,122,124-130,132,134-140,143-153,155,157-158,160-164,166-168,170-182,185,187-188,190-191,193-197,199-206,208,210-211,213-219,221,223-224
+clients/apps/mcp/src/clients.ts
+  ai_agent 23-28,31
+  s_0423d89ed45acf::t_bbeec159335a9e 2,29-30,32,35-37
+clients/apps/mcp/tsconfig.json
+  ai_agent 16-22
+clients/apps/mcp/src/tools/search.ts
+  s_8113b980a37313::t_7dc42d1058858d 3,50,53
+  s_0423d89ed45acf::t_85a9c6880e0da9 2,4,52,54,60-64,70-80,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ecbc0233c9494cba4d7d51caff8c277195080db5",
+  "prompts": {},
+  "sessions": {
+    "s_0423d89ed45acf": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a11a3e-8340-7732-9012-a8b757d448a3",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_8113b980a37313": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41aad960-5555-470b-b8d3-68fd0a8ea3d2",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

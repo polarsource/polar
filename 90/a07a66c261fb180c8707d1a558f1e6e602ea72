@@ -1,0 +1,39 @@
+server/polar/observability/metrics.py
+  s_4d4636e2b49a37::t_827d2a985f5254 13,50-54
+  s_4d4636e2b49a37::t_de7d4f31a1e86e 55-62
+server/polar/event/mover.py
+  s_4d4636e2b49a37::t_a7b98df65352b9 24
+  s_4d4636e2b49a37::t_fcc74f3c468ab3 16
+  s_4d4636e2b49a37::t_52e59327cbaebd 20
+  s_4d4636e2b49a37::t_4627409f8b1f67 17,25,55-56,99
+  s_4d4636e2b49a37::t_addf2a4440e640 26
+  s_4d4636e2b49a37::t_fd7433febac6ca 46-54,63,69-74
+server/polar/observability/__init__.py
+  s_4d4636e2b49a37::t_233b5cf138de78 36
+  s_4d4636e2b49a37::t_84458d9af0e127 12
+  s_4d4636e2b49a37::t_457e4bfcff1e96 13
+  s_4d4636e2b49a37::t_483c791aaf93fd 34-35
+server/tests/event/test_repository.py
+  s_4d4636e2b49a37::t_f484bd0e98af63 12
+  s_4d4636e2b49a37::t_1e6ea739b5c974 474-488,494-508
+  s_4d4636e2b49a37::t_448e8a88ce56ac 489-493
+server/polar/event/repository.py
+  s_4d4636e2b49a37::t_3cd91a005e197e 190-193,195-196
+  s_4d4636e2b49a37::t_4627409f8b1f67 194,197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "90a07a66c261fb180c8707d1a558f1e6e602ea72",
+  "prompts": {},
+  "sessions": {
+    "s_4d4636e2b49a37": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "99338676-9c78-4183-8604-0955d5e7b0eb",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}

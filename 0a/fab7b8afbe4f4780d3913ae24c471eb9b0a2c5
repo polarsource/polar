@@ -1,0 +1,280 @@
+clients/packages/client/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-12
+clients/packages/i18n/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-18
+server/tests/payout/test_service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1910-1911,1939,1941
+clients/adapters/better-auth/CHANGELOG.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3-15
+dev/docker/docker-compose.dev.yml
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 106
+clients/adapters/nuxt/src/runtime/server/checkoutHandler.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 6-10,22-26,64,108-112
+docs/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 17,22-23
+server/Dockerfile
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 20
+clients/packages/checkout/src/checkout.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 8
+server/polar/exception_handlers.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 20
+server/polar/meter/service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 57-63,69-73,157-183,227,233,238-252
+  s_d3ae8d5cd7c768::t_19fd9d7e8c9253 253
+server/polar/payout/repository.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 93-94
+clients/packages/cli/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-14
+server/polar/invoice/generator.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 297-299,323-326,473,499
+server/tests/declarative_config/test_endpoints.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-156
+server/migrations/versions/2026-10-07-1049_add_reducers_and_reducer_buckets.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-139
+clients/adapters/better-auth/src/__tests__/utils/mocks.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 114
+server/polar/api.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 20,170-171
+clients/adapters/nuxt/CHANGELOG.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3-13
+clients/packages/polar/.oxlintrc.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 22,30
+clients/packages/i18n/src/locales/de.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 258-259
+server/emails/src/types/openapi.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 2293-2298
+.github/workflows/test_server.yaml
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 447
+server/polar/declarative_config/schemas.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-83
+server/tests/payout_account/test_service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 458
+server/tests/meter/test_service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 201-226,370-417
+  s_d3ae8d5cd7c768::t_c6cdf372006701 418
+clients/adapters/nextjs/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-10
+server/polar/exceptions.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 37-40
+clients/apps/demo-app/tsconfig.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-12
+server/polar/models/organization.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 754-755
+  s_d3ae8d5cd7c768::t_084f9d81743d7d 753
+  s_d3ae8d5cd7c768::t_8458a504775ee9 756
+clients/adapters/nuxt/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3
+clients/adapters/adapter-utils/src/ipAddress/ipAddress.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-30
+clients/packages/currency/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-14
+server/emails/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 6-7,12,32
+clients/adapters/nextjs/README.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 37-40
+clients/adapters/better-auth/README.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 304-305
+clients/adapters/better-auth/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3,43,67
+clients/packages/polar/lint/rules/client-boundaries.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 11,39-40
+clients/adapters/nuxt/README.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 71-74
+clients/packages/polar/src/internal/api/utils.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-10
+server/polar/declarative_config/service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-172
+clients/adapters/nextjs/src/checkout/checkout.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 6-10,21-25,35,79-82
+clients/packages/checkout/src/payment-method.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 8
+clients/packages/i18n/src/locales/config/locks.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 2-3
+clients/packages/polar/src/sdk.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-15
+server/polar/backoffice/payout_accounts/endpoints.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 333
+clients/packages/polar/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-9
+clients/packages/checkout/src/providers/CheckoutFormProvider.test.tsx
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 734-737
+clients/packages/orbit/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 35,61
+clients/adapters/nextjs/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3,27,48
+server/tests/invoice/test_generator.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 397-400
+server/polar/models/meter_reducer.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-30
+clients/adapters/adapter-utils/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3,28,41-42,47
+clients/packages/polar/src/index.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-6,14-29
+server/polar/declarative_config/endpoints.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-52
+clients/packages/polar/src/internal/api/events.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-21
+server/polar/oauth2/service/oauth2_grant.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 4,8,13-15,27-34,36,38-55
+clients/adapters/tanstack-start/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3,27,48
+clients/packages/checkout/CHANGELOG.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3-8
+clients/packages/checkout/src/react/payment-method.test.tsx
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 9
+clients/packages/checkout/src/react/payment-method.tsx
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 33,40,48
+clients/adapters/tanstack-start/src/checkout/checkout.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 6-10,20-24,34,78-81
+clients/packages/currency/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 23,37
+clients/scripts/measure-adapter-bundles.mjs
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 6-7
+clients/packages/checkout/src/providers/CheckoutFormProvider.tsx
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 330
+clients/packages/ui/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 23,65
+clients/adapters/better-auth/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-10
+clients/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 24
+clients/packages/checkout/src/payment-method.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 170,184,580
+clients/adapters/adapter-utils/src/index.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 9-13
+clients/apps/demo-app/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-10
+clients/packages/checkout/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-43
+clients/packages/polar/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 34,47
+dev/docker/scripts/startup.sh
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 53-54
+clients/packages/polar/lint/rules/client-boundaries.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 24-27,43
+  s_d3ae8d5cd7c768::t_b509ed95ffc2ba 23
+server/polar/sentry.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3,28-79,97-110,122
+server/polar/payout_account/service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 236,238-239
+clients/pnpm-workspace.yaml
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 84
+clients/adapters/adapter-utils/CHANGELOG.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3-8
+server/polar/models/__init__.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 62,106-107,198,241-242
+clients/packages/client/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 17,30
+server/tests/meter/test_endpoints.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 7,9-10,121-168
+  s_d3ae8d5cd7c768::t_da384ddec9be05 169
+server/tests/test_sentry.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-3,7-33,37-38,40-60,62-113,117,120-176,179,181,184-185
+server/tests/declarative_config/conftest.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-15
+infra/preview/deploy.sh
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 139
+clients/adapters/adapter-utils/src/ipAddress/ipAddress.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-27
+clients/packages/polar/src/internal/api/customer-meters.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-15
+server/tests/oauth2/service/test_oauth2_grant.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-48
+clients/apps/demo-app/index.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-60
+server/polar/kit/repository/__init__.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 4,16
+clients/packages/orbit/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-12
+clients/adapters/better-auth/src/__tests__/plugins/checkout.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 25,34,36-37,696-733
+clients/adapters/tanstack-start/src/checkout/checkout.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 163-185
+clients/adapters/nextjs/CHANGELOG.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3-13
+clients/adapters/tanstack-start/CHANGELOG.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3-14
+server/tests/fixtures/random_objects.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 2295-2296,2305-2306
+server/polar/kit/repository/base.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 5,36-40,361-371
+  s_d3ae8d5cd7c768::t_af77563286339c 372-373
+server/polar/models/reducer.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-36
+server/polar/organization/schemas.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 50,254-260
+  s_d3ae8d5cd7c768::t_084f9d81743d7d 247
+  s_d3ae8d5cd7c768::t_9568691d50b826 261-263
+clients/adapters/tanstack-start/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-10
+clients/packages/checkout/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 7,14,99
+clients/packages/ui/tsdown.config.mts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-13
+server/polar/models/reducer_bucket.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-71
+clients/adapters/nextjs/src/checkout/checkout.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 334-358
+clients/apps/demo-app/polar.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-25
+server/emails/tsdown.config.mjs
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-11
+server/polar/logfire.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 117-132
+clients/adapters/nuxt/test/checkoutHandler.test.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 39-40,292-310
+  s_d3ae8d5cd7c768::t_2a3d4c0d05f20d 311
+server/tests/declarative_config/test_service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-286
+clients/packages/cli/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 13,55
+server/tests/backoffice/payout_accounts/test_endpoints.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 187,213-214
+clients/adapters/adapter-utils/tsdown.config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-9
+server/polar/meter/repository.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 5,8-12,16-20,36-41,43-50,52-53
+  s_d3ae8d5cd7c768::t_2e1f54e77710dd 1,35,42,51,54
+clients/adapters/tanstack-start/README.md
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 44-47
+clients/packages/i18n/package.json
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 18,48
+clients/adapters/better-auth/src/plugins/checkout.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 9,13-16,50-54,250-251,257-263
+server/polar/meter/schemas.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 2,7,30,56,68-78,105
+server/polar/kit/external_id.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 3,7-10,12,18-40
+clients/packages/polar/src/schema/config.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-26
+server/polar/checkout/service.py
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 143-146,1308,1310-1311,1313-1318
+clients/packages/polar/src/client/actor.ts
+  s_d3ae8d5cd7c768::t_b6c721b8f0539a 1-174
+clients/packages/client/src/v1.ts
+  s_d3ae8d5cd7c768::t_66fd1aedc514af 6016-6041,15764-15897,25900-25905,25966-25971,26230-26235,29679-29684,61650-61713,70345-70347
+clients/pnpm-lock.yaml
+  s_d3ae8d5cd7c768::t_5072ca52544dda 290-292,329-331,359-361,369,371,403,405,434,436,505,507,738-747,897,1209,1211,1261-1263,1292,1294,1307,1309,1340,1342,1416,1418,1443,1445,1560,1562,4816-4818,7173-7307,8687-8695,9614-9617,9899-9902,11686-11689,12598-12600,13083-13085,13121-13142,13896-13898,13901-13909,13911,13913,13915-13921,13925-13931,14013-14015,14348-14351,14900-14908,17439,18581,18619-18622,21382-21390,21613-21686,21741-21742,22141,22290-22291,23100-23103,24214-24217,24575-24576,27300-27301,28135,28152,28257-28258,28912-28913,28944-28960,29086,29844,29846-29855,29858-29859,29861,29864-29870,29984-29988,30294-30295,30603-30609,30963-31001
+docs/openapi/2027-01.openapi.json
+  s_d3ae8d5cd7c768::t_b3aad16334238f 23657,23661,23868,23872,61962-61976,62099,62114-62128,62644-62658,78396-78399
+docs/pnpm-lock.yaml
+  s_d3ae8d5cd7c768::t_06754674528cfe 182-183,192-193,195-196,855-856,860-861,863-864,867-868,874-875,882-883,885-886,889-890,893-897,899-900,986-987,990-991,994-995,998-999,1006-1007,1010-1011,1014-1015,1183-1184,2960-2961,3936-3937,3939-3941,4521,4524,4526,4529,4531,4533-4534,4536,4538,4542,4549,4551,4553-4555,4557,4559,4561-4562,4565,4567,4572,4576,4578-4579,4581,4583,4585-4586,4588,4590,4593-4594,4596-4609,4611,4613,4615-4616,4619,4621,4623,4625,4628,4630,4633,4635,4638,4640,4642,4682,4691,4696,4712,4714-4720,4727,4761,4769,4772-4773,4775,4833,4835-4840,4850,4859,4866,4876,4886,4903,4905-4907,4909,4914-4915,4923,4930,4932-4934,4957,4965,4967,4984-4985,4997,4999-5000,5114,5116,5118,5120,5122,5125,5127-5128,5134,5136-5137,5139-5141,5146,5148,5151,5153-5155,5158,5160,5238,5379-5380,5384,5392,5422,5424,5438,5442,5481-5482,5579,5605-5606,5612-5613,5625,5627-5628,5639,5644,5651-5652,5708-5709,5748-5749,5805,5902,5916-5917,5992,6017-6018,6049,6056,6071-6072,6079,6192,6240,6244-6245,6280-6281,6290,6395,6399-6400,6446,6449,6457,6599,6616,6897,6917,6940,6996,6998-7001,7013-7014,7035-7036,7217-7218,7287-7288,7301,7360,7369,7379,7388,7395,7435,7448,7476,7490,7678-7679,7863,7865,7874,7882-7883,7916-7917,8065,8071,8076,8094,8128-8129,8203-8204,8231,8233-8234,8248,8265,8283,8357,8359-8360,8417,8435,8442,8457,8515,8559-8560,8742,8746,8750,8781,8856-8857,8896,8902,8940,9085,9106,9122,9129,9242-9243,9254,9256,9311,9509,9515,9532-9533
+server/emails/pnpm-lock.yaml
+  s_d3ae8d5cd7c768::t_26a150622584db 180,199,209-211,817-819,1064-1066,1091-1093,1097-1099,1103-1105,1109-1111,1115-1117,1121-1123,1127-1129,1134-1136,1141-1143,1148-1150,1155-1157,1162-1164,1169-1171,1175-1177,1181-1183,1187-1188,1349-1483,1601-1603,1704-1706,1728-1736,1743-1746,1823-1826,1841-1843,1861-1864,2056-2063,2126-2129,2176-2178,2219-2220,2231-2255,2413-2415,2418-2426,2428-2434,2436,2438,2442-2448,2475-2477,2502-2505,2555-2563,2606,2618,2947-2948,3063-3066,3116,3119,3122,3125,3128,3131,3134,3137,3140,3143,3146,3149,3152,3155,3158,3161,3271,3275,3298-3371,3467,3553-3554,3579-3580,3587-3588,3595,3707-3710,3725-3726,3753-3754,3900-3903,3990,3992,4039-4040,4053,4056,4076,4108,4119-4133,4135-4136,4138-4152,4210,4219,4226,4232-4234,4372-4384,4386-4387,4391-4397,4436-4440,4461-4462,4496-4534
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0afab7b8afbe4f4780d3913ae24c471eb9b0a2c5",
+  "prompts": {},
+  "sessions": {
+    "s_d3ae8d5cd7c768": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4463dab5-4038-442a-9aac-220e3dda6930",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,33 @@
+clients/packages/checkout/src/hooks/webmcp.ts
+  s_dba7a44a2adb25::t_2be685708be961 1-461
+clients/packages/checkout/src/hooks/webmcp.test.ts
+  s_dba7a44a2adb25::t_2be685708be961 1-107
+clients/packages/checkout/src/components/CheckoutForm.tsx
+  s_dba7a44a2adb25::t_2be685708be961 45-49,91-92,111-112,292,296-319,321-328,885-886,906,980-991
+  s_dba7a44a2adb25::t_9bbf8cfb401ec5 95,115,320,854
+clients/.changeset/checkout-webmcp-tools.md
+  s_dba7a44a2adb25::t_9bbf8cfb401ec5 1-5
+clients/apps/web/src/components/Checkout/Checkout.tsx
+  s_dba7a44a2adb25::t_9bbf8cfb401ec5 401
+clients/packages/checkout/src/components/CheckoutForm.test.tsx
+  s_dba7a44a2adb25::t_744f7bf1776a6d 310,325-336,340-342,346,351-384
+  s_dba7a44a2adb25::t_ea6f22f0e8492e 316
+  s_dba7a44a2adb25::t_30b79f4259b228 296-309,311-315,317-318,322-324,337-339,343-345,347-350,385-388
+  s_dba7a44a2adb25::t_53d4913f47669c 319-321
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8d24c22f24d972291ac2a3ed876bf8642c18785c",
+  "prompts": {},
+  "sessions": {
+    "s_dba7a44a2adb25": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37457a38-901d-4741-a7db-7d655d9f43c3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

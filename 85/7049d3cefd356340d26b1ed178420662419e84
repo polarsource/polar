@@ -1,0 +1,22 @@
+server/tests/observability/observability/test_pii_validation.py
+  s_ccb2229a5e4e1a::t_c2147246d9fb07 295-297
+  s_ccb2229a5e4e1a::t_471f3203e7d1af 266-270,281-282,289,294,298
+server/polar/observability/pii.py
+  s_ccb2229a5e4e1a::t_124427b241b86c 45,198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "857049d3cefd356340d26b1ed178420662419e84",
+  "prompts": {},
+  "sessions": {
+    "s_ccb2229a5e4e1a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0a4da-4b4d-74e9-82f2-00e4aa8dceaa",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

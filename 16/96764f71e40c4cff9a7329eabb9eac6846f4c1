@@ -1,0 +1,21 @@
+server/polar/exceptions.py
+  s_80f67386d0d630::t_ff1da761d8b161 147-148
+server/tests/test_exception_handlers.py
+  s_80f67386d0d630::t_ff1da761d8b161 111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1696764f71e40c4cff9a7329eabb9eac6846f4c1",
+  "prompts": {},
+  "sessions": {
+    "s_80f67386d0d630": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7d76b39-7ccf-4ba9-afa1-3ecdc469f263",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

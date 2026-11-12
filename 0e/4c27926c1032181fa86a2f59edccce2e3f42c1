@@ -1,0 +1,21 @@
+server/polar/worker/_broker.py
+  s_55425a4ea3c9b4::t_0cce585e3d897d 178,196
+server/polar/worker/run_without_db.py
+  s_55425a4ea3c9b4::t_0cce585e3d897d 1-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "0e4c27926c1032181fa86a2f59edccce2e3f42c1",
+  "prompts": {},
+  "sessions": {
+    "s_55425a4ea3c9b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "142d8293-14bc-46bf-a97c-7bc7f8358d23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

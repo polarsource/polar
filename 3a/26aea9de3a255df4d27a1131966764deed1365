@@ -1,0 +1,23 @@
+server/polar/organization_review/agent.py
+  s_fd528823e8d35d::t_f56dbc5db92c75 56-57
+  s_fd528823e8d35d::t_468eac4f8ddb28 398-400
+server/tests/organization_review/test_agent.py
+  s_fd528823e8d35d::t_15d011fe31fca8 8
+  s_fd528823e8d35d::t_d5debd8c99bb33 270-290
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a26aea9de3a255df4d27a1131966764deed1365",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

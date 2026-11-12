@@ -1,0 +1,22 @@
+handbook/engineering/decisions/0014-agent-auth-subject.mdx
+  s_5baa939665e021::t_31d32c77c1bc34 3,34-38,43,48,57,64,66,75
+  s_5baa939665e021::t_1288c5175f9a50 24-27
+handbook/engineering/decisions/0005-auth-subject-and-scopes.mdx
+  s_5baa939665e021::t_31d32c77c1bc34 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f441f973ad76df981d7549986822fca317a89423",
+  "prompts": {},
+  "sessions": {
+    "s_5baa939665e021": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1e6ad0e-bb8a-4d1f-9c74-80394e051308",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

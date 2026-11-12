@@ -1,0 +1,21 @@
+server/scripts/backfill_slack_app_encrypted_secrets.py
+  s_eb87cbcf635926::t_ba2a33df97df9b 1-193
+server/tests/scripts/test_backfill_slack_app_encrypted_secrets.py
+  s_eb87cbcf635926::t_ba2a33df97df9b 1-220
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "147497ab085c27dd0023a7016dd7f70ce0808a9a",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

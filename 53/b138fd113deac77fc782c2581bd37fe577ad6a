@@ -1,0 +1,31 @@
+server/polar/billing_entry/service.py
+  s_fb19aa989d9ac0::t_c5a5d9400fdc7d 290-316,318,329,331
+server/polar/billing_interval/service.py
+  s_fb19aa989d9ac0::t_0bb83162db0c26 19,226-255,265-283,300-301,313-316
+server/polar/billing_interval/types.py
+  s_fb19aa989d9ac0::t_f224ecb5d799bb 20-21,23
+server/polar/reducer/bucket_repository.py
+  s_fb19aa989d9ac0::t_aabe17dd5a1632 554-580
+server/polar/reducer/service.py
+  s_fb19aa989d9ac0::t_8bfcb4722fd1ca 363-430
+server/tests/billing_entry/test_service.py
+  s_fb19aa989d9ac0::t_71c9d5c0202fd5 1937-1939
+server/tests/billing_interval/test_service_usage_windows.py
+  s_fb19aa989d9ac0::t_da5ff9414491e7 257-259
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "53b138fd113deac77fc782c2581bd37fe577ad6a",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

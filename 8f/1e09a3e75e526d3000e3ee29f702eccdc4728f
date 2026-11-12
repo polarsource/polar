@@ -1,0 +1,24 @@
+server/polar/models/subscription_meter.py
+  s_055272d137234c::t_ec9ed6da539ce2 23-30
+server/polar/customer_meter/service.py
+  s_055272d137234c::t_1bf96347fca5dd 276-299
+server/migrations/versions/2026-06-17-2114_add_carried_units_to_subscription_meter.py
+  s_055272d137234c::t_7b8314baad276d 25-26,28-34
+  s_055272d137234c::t_480be3d017d403 1-24,27,35-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "8f1e09a3e75e526d3000e3ee29f702eccdc4728f",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

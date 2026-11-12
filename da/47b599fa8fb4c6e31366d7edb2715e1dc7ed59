@@ -1,0 +1,21 @@
+server/polar/models/webhook_endpoint.py
+  s_ef0ee0cf80beae::t_052d5c9d811618 76,113-118
+server/polar/mcp_event/catalog.py
+  s_ef0ee0cf80beae::t_10fe31dd9a3c3f 2,4-6,9-14,16-40,42-45,49-50,52-53,55-56,58-60,62-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "da47b599fa8fb4c6e31366d7edb2715e1dc7ed59",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

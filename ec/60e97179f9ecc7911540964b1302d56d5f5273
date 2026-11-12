@@ -1,0 +1,78 @@
+server/polar/observability/s3_span_exporter.py
+  s_34373429a07d3c::t_4e931b60695680 13-15,47,50,57
+server/tests/observability/observability/test_pii_span_processor.py
+  s_ccb2229a5e4e1a::t_682db814c3fb4b 45-46
+  s_ccb2229a5e4e1a::t_90784ceb308592 1-6,8-18,20-29,32-44,47-56,61,63-95,99
+  s_ccb2229a5e4e1a::t_c2ec6454e5bfd1 7,57,62,96-98
+  s_ccb2229a5e4e1a::t_a3d6151b0f7e51 19
+  s_ccb2229a5e4e1a::t_89e303b0404084 58-60
+  s_ccb2229a5e4e1a::t_79e33c3d16b4f5 30-31
+server/polar/logfire.py
+  s_ccb2229a5e4e1a::t_cd59553879bc52 10,31-37,125,182,210
+  s_34373429a07d3c::t_6e36da0dde2929 203-206
+  s_ccb2229a5e4e1a::t_b13fa59a5481d2 209,211-216
+  s_34373429a07d3c::t_9308cbe6e3fe35 122-124
+server/polar/observability/pii_span_processor.py
+  s_ccb2229a5e4e1a::t_eed2121107ef84 14,16-17
+  s_ccb2229a5e4e1a::t_5dafbbaeafe786 2-7,13,15,18
+  s_ccb2229a5e4e1a::t_4a457e9f3ab082 1,8-12,19-43
+server/polar/logging.py
+  s_34373429a07d3c::t_fb8147e052d14a 11
+  s_34373429a07d3c::t_7ce03181e2909c 58
+  s_34373429a07d3c::t_a022e7d4a95871 90
+  s_34373429a07d3c::t_85615f382236ba 17
+  s_34373429a07d3c::t_cc665ba76a03a7 16,18-21
+server/polar/worker/_asyncio.py
+  s_34373429a07d3c::t_ff143478d06e47 16
+  s_34373429a07d3c::t_43516f411d8f5c 190
+server/tests/observability/observability/test_s3_span_exporter.py
+  s_ccb2229a5e4e1a::t_682db814c3fb4b 116-119
+  s_ccb2229a5e4e1a::t_1cfb1551f8cf2a 108-115,120-139
+server/tests/observability/observability/test_pii.py
+  s_34373429a07d3c::t_8155a48086d570 1
+  s_34373429a07d3c::t_8028ecc74931ea 146-150,152-167
+  s_34373429a07d3c::t_4bb7acd601811a 5-6
+  s_34373429a07d3c::t_945052e074da59 54-55,58
+  s_34373429a07d3c::t_9b6674377e9e60 14-15,17-53,56-57,59-90,142-145
+  s_ccb2229a5e4e1a::t_841e66ff85b5be 3,107,118-120,128-141
+  s_ccb2229a5e4e1a::t_b2c5d3affe05d5 124-127
+  s_34373429a07d3c::t_9ab40408e7b160 2,4,7-13
+  s_34373429a07d3c::t_a3083bcc9f5626 151
+  s_ccb2229a5e4e1a::t_1b15c1e9dee362 102-104,108-117,121-123
+  s_34373429a07d3c::t_f214d0e6e5809c 91-101,105-106
+server/pyproject.toml
+  s_ccb2229a5e4e1a::t_8a33a96206c582 74
+server/polar/observability/pii.py
+  s_ccb2229a5e4e1a::t_e52bbc15905ad8 36,44-45,127-128,130,134-139,207,210,229
+  s_34373429a07d3c::t_debbee7d2a97b3 230-232,234
+  s_34373429a07d3c::t_afc46598e79089 221-222
+  s_34373429a07d3c::t_2d130fba73ba14 157
+  s_34373429a07d3c::t_171551ed55d3c1 1-35,37-43,46-49,51-126,129,140-156,158-206,211-220,223
+  s_ccb2229a5e4e1a::t_18c170e63ae07e 131-133,208-209
+  s_ccb2229a5e4e1a::t_2c614d15b39f1d 50,226-228
+  s_34373429a07d3c::t_91bef3c75ad8a9 224-225,233,235-240
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ec60e97179f9ecc7911540964b1302d56d5f5273",
+  "prompts": {},
+  "sessions": {
+    "s_34373429a07d3c": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "38908543-3366-4600-986b-dfb831126d60",
+        "model": "grok-4.6"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_ccb2229a5e4e1a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0a4da-4b4d-74e9-82f2-00e4aa8dceaa",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

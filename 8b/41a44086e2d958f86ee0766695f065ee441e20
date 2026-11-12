@@ -1,0 +1,26 @@
+server/polar/models/migration_record.py
+  s_215dc83b4bbb5d::t_057096a46cd7d9 1-97
+server/polar/models/migration_job.py
+  s_215dc83b4bbb5d::t_34c735b4365fbc 1-70
+server/polar/models/__init__.py
+  s_215dc83b4bbb5d::t_4e848cc5984a15 43-48
+  s_215dc83b4bbb5d::t_a1e07fd49d1927 164-169
+server/migrations/versions/2026-06-29-1118_add_migration_jobs_and_migration_.py
+  s_215dc83b4bbb5d::t_80ab2334c7b63a 1-173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "8b41a44086e2d958f86ee0766695f065ee441e20",
+  "prompts": {},
+  "sessions": {
+    "s_215dc83b4bbb5d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c268d1e3-1d55-4aa2-b152-60e358c279e2",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

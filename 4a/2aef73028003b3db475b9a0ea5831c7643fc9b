@@ -1,0 +1,21 @@
+server/polar/app.py
+  s_25e288e19c2ec1::t_053e6bf2821729 42,285
+server/polar/logfire.py
+  s_25e288e19c2ec1::t_053e6bf2821729 292-295,300
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4a2aef73028003b3db475b9a0ea5831c7643fc9b",
+  "prompts": {},
+  "sessions": {
+    "s_25e288e19c2ec1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5f88229d-970b-4736-83af-460ae4c8935e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

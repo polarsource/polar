@@ -1,0 +1,27 @@
+server/polar/worker/_health.py
+  s_55425a4ea3c9b4::t_6326b24dd2c6dc 114-130,132-134,136
+  s_55425a4ea3c9b4::t_8e3d46283e3604 26
+  s_55425a4ea3c9b4::t_fec7c7dff1900b 44-46,49-51
+  s_55425a4ea3c9b4::t_927babec8f1ac9 144-152,155,160,164,175-182
+server/polar/worker/_broker.py
+  s_55425a4ea3c9b4::t_fb8422067b58d5 199
+server/tests/worker/test_health.py
+  s_55425a4ea3c9b4::t_e85eef42f14f4c 196-262
+  s_55425a4ea3c9b4::t_86876256b00131 7,18-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "e54f872b8d03e581f26f43419497065b894af977",
+  "prompts": {},
+  "sessions": {
+    "s_55425a4ea3c9b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "142d8293-14bc-46bf-a97c-7bc7f8358d23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

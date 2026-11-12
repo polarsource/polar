@@ -1,0 +1,25 @@
+docs/docs.json
+  s_2335a63d55a9da::t_aa03d3f075b6be 36
+docs/migrate-away.mdx
+  s_2335a63d55a9da::t_4a2452df0c4ff0 91
+  s_2335a63d55a9da::t_f34dd50ae1f0f5 55
+  s_2335a63d55a9da::t_b0ea5f6f4b6745 27,29
+  s_2335a63d55a9da::t_4121bf29bfc540 22
+  s_2335a63d55a9da::t_f994dffe4337c2 1-21,23-26,28,30-54,56-87,89-90,92-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "d68c47dafa9e88063d0290e8c5e24a053f62997e",
+  "prompts": {},
+  "sessions": {
+    "s_2335a63d55a9da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6395c387-8917-4be0-9577-dc35ca7788b8",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

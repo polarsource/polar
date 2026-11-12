@@ -1,0 +1,23 @@
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  s_eb87cbcf635926::t_50a8645c988ddf 1597,1599-1626
+  s_eb87cbcf635926::t_9be9a84cff3cf8 1596
+  s_eb87cbcf635926::t_06ecf32ccc0c8f 1598
+server/tests/integrations/slack/test_endpoints.py
+  s_eb87cbcf635926::t_2adab3a270d0d7 707-739
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "597b35c2f05c5e19c71d32bba993d4c605622a0a",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

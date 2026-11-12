@@ -1,0 +1,39 @@
+server/emails/src/types/openapi.ts
+  s_055272d137234c::t_277cccb2dddb77 1397,1410
+server/tests/e2e/lifecycle/test_meter_cycle.py
+  s_055272d137234c::t_5ee3c29b7f639b 39,56
+server/polar/order/service.py
+  s_055272d137234c::t_3ac9b84ce8d81a 2996-2997
+  s_055272d137234c::t_651bde864e9f25 3147-3149
+  s_055272d137234c::t_7766e3a598bb1e 1402-1404
+  s_055272d137234c::t_ac086fa2412cd5 3133-3134
+server/polar/subscription/service.py
+  s_055272d137234c::t_78979cd5fde571 3735-3736
+  s_055272d137234c::t_ea14f020ed00ad 1234-1236
+  s_055272d137234c::t_7a7d4017eb1c81 1239
+  s_055272d137234c::t_43505f898d5c41 1013-1014,1016-1017
+  s_055272d137234c::t_b08a6b235ffe44 1210-1212
+  s_055272d137234c::t_e5f247fb511464 1667-1668
+  s_055272d137234c::t_d28208e45c8e18 1201-1202
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_2f21a84028f1bb 2459-2499
+  s_055272d137234c::t_19497599cb040c 6647-6698
+server/polar/subscription/tasks.py
+  s_055272d137234c::t_4fdc646f967fd7 79,85-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "c0d4b6c84bfa896cc1b02b162cb5dd4036d73e25",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

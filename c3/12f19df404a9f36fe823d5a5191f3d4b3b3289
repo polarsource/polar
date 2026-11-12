@@ -1,0 +1,21 @@
+server/tests/organization_review/collectors/test_setup.py
+  s_a73d7938807c2e::t_a17a03909b8b81 586-606
+server/tests/organization_review/collectors/test_website.py
+  s_a73d7938807c2e::t_c30730d33ffa8b 634-637
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "c312f19df404a9f36fe823d5a5191f3d4b3b3289",
+  "prompts": {},
+  "sessions": {
+    "s_a73d7938807c2e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1f06abea-62a1-49a6-b7d5-c5b099dda4d5",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

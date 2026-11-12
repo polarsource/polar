@@ -1,0 +1,40 @@
+server/polar/merchant_migration/canonical.py
+  s_b8e01f35a8b60a::t_190352b136894d 121-123
+server/tests/merchant_migration/test_endpoints.py
+  s_b8e01f35a8b60a::t_372345322320a2 282,344,409,439
+server/polar/merchant_migration/adapters/stripe.py
+  s_b8e01f35a8b60a::t_48e81f5a722709 113
+  s_b8e01f35a8b60a::t_5d8e613d781935 108-111,115-119,122
+server/tests/merchant_migration/test_precheck.py
+  s_b8e01f35a8b60a::t_372345322320a2 51,199
+  s_b8e01f35a8b60a::t_5690ec88f60fa9 53-55
+  s_b8e01f35a8b60a::t_8c95672ce04f3e 197,201-202
+  s_b8e01f35a8b60a::t_6308bd59b82a89 200
+server/tests/merchant_migration/test_service.py
+  s_b8e01f35a8b60a::t_372345322320a2 100
+server/polar/merchant_migration/precheck.py
+  s_b8e01f35a8b60a::t_0d0c04b1b93e91 209,212,214-215
+handbook/engineering/design-documents/merchant-migrations.mdx
+  s_b8e01f35a8b60a::t_71c353c920d508 289
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_b8e01f35a8b60a::t_9d39b9bf1f933f 105-113,119-120,134,144
+  s_b8e01f35a8b60a::t_372345322320a2 118,133,149,164
+  s_b8e01f35a8b60a::t_0d06816f108078 136-138
+  s_b8e01f35a8b60a::t_7aa3f868be19f8 114-117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "3d35b6428a42c2c69574426fd29192bc3904c751",
+  "prompts": {},
+  "sessions": {
+    "s_b8e01f35a8b60a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0dbbd702-cabf-4327-ac63-7e7920afc67d",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

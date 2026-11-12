@@ -1,0 +1,51 @@
+sdk/generator/typescript/template/.agents/skills/polar-typescript-sdk/SKILL.md
+  s_88624536cc8bb7::t_2f060000d1cc5b 15
+sdk/typescript/README.md
+  ai_agent 70-71,74,76,81
+sdk/typescript/src/2026-04/client.ts
+  ai_agent 1,51-53,84
+sdk/python/tests/test_base.py
+  ai_agent 329,332,334,336
+sdk/generator/python/template/tests/test_base.py
+  s_88624536cc8bb7::t_2f060000d1cc5b 301,304,306,308
+sdk/python/polar/.agents/skills/polar-python-sdk/SKILL.md
+  ai_agent 15
+sdk/generator/python/template/README.md
+  s_88624536cc8bb7::t_2f060000d1cc5b 129-130,133,137
+sdk/typescript/src/2026-04/index.ts
+  ai_agent 3
+sdk/generator/typescript/template/src/version/index.ts
+  s_88624536cc8bb7::t_54d2ebb3dfc803 3
+sdk/generator/typescript/template/README.md
+  s_88624536cc8bb7::t_2f060000d1cc5b 70-71,74,76,81
+sdk/generator/typescript/template/src/version/client.ts
+  s_88624536cc8bb7::t_54d2ebb3dfc803 1,35-37,46
+sdk/typescript/.agents/skills/polar-typescript-sdk/SKILL.md
+  ai_agent 15
+sdk/typescript/src/2026-10/client.ts
+  ai_agent 1,51-53,84
+sdk/generator/python/template/polar/.agents/skills/polar-python-sdk/SKILL.md
+  s_88624536cc8bb7::t_2f060000d1cc5b 15
+sdk/typescript/src/2026-10/index.ts
+  ai_agent 3
+sdk/python/polar/v2027_01/client.py
+  ai_agent 58,62,114,118
+sdk/python/README.md
+  ai_agent 127-128,131,135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d6b9ed8dfe094080689a74be487342758fd66e9f",
+  "prompts": {},
+  "sessions": {
+    "s_88624536cc8bb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2da821e-dc6a-4b05-8743-90c4d23a5449",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+server/polar/customer/service.py
+  s_81f519e3bb364f::t_c6fab275536850 282,304
+server/polar/subscription/repository.py
+  s_81f519e3bb364f::t_c6fab275536850 140-163
+server/polar/merchant_migration/importer.py
+  s_81f519e3bb364f::t_459578f75be330 1-512
+server/tests/merchant_migration/test_service.py
+  s_81f519e3bb364f::t_c6fab275536850 6-7,11-12,18,24-25,37,47,51,64,591-1125
+server/tests/merchant_migration/test_endpoints.py
+  s_81f519e3bb364f::t_c6fab275536850 11,363-464
+  s_81f519e3bb364f::t_48470a1f29fc1d 465-466
+server/polar/merchant_migration/service.py
+  s_81f519e3bb364f::t_c6fab275536850 27,35,42-46,126-133,242-244,267-312,315,317,325-326,332-335
+server/polar/merchant_migration/schemas.py
+  s_81f519e3bb364f::t_c6fab275536850 109-143
+server/polar/merchant_migration/endpoints.py
+  s_81f519e3bb364f::t_c6fab275536850 19-20,27,148-179
+  s_81f519e3bb364f::t_74ecc61752b54e 180-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "45dc34609a52c4eab134fc58555e33e4c4d4d874",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

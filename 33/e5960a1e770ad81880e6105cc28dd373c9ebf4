@@ -1,0 +1,31 @@
+server/migrations/versions/2026-11-10-1519_add_scheduled_crons.py
+  s_14174ed1dd5588::t_c7e5e767df75cd 1-37
+server/polar/models/__init__.py
+  s_14174ed1dd5588::t_2ce4178b098ca1 121,270
+server/polar/models/scheduled_cron.py
+  s_14174ed1dd5588::t_dd39c3b6933c4b 1-15
+server/polar/worker/_broker.py
+  s_14174ed1dd5588::t_9fe3a15c041515 74,84
+server/polar/worker/_cron.py
+  s_14174ed1dd5588::t_de1941ee4d9f4b 1-124
+server/polar/worker/scheduler.py
+  s_14174ed1dd5588::t_c490f7be0d1b6a 22,79-81
+server/tests/scheduler/test_cron.py
+  s_14174ed1dd5588::t_7c408320879827 1-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33e5960a1e770ad81880e6105cc28dd373c9ebf4",
+  "prompts": {},
+  "sessions": {
+    "s_14174ed1dd5588": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5ab22d40-5c39-4070-ba6a-3b72affbb128",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

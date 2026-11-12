@@ -1,0 +1,21 @@
+server/migrations/versions/2026-11-10-0925_add_mcp_subscription_fields_to_webhook_.py
+  s_ef0ee0cf80beae::t_68648a6e05786d 20-21,25,31-49,54,56-66
+server/polar/models/webhook_endpoint.py
+  s_ef0ee0cf80beae::t_83eca784126c98 88-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "93044a09711aa56d2106e675617087436cff08a9",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+server/polar/models/merchant_migration.py
+  s_5b6c091dc91776::t_b884a516c031e6 1-69
+server/polar/models/__init__.py
+  s_5b6c091dc91776::t_ac454bc6d90722 165-170
+  s_5b6c091dc91776::t_d2f028f5c895e9 40-49
+server/migrations/versions/2026-06-29-1148_add_merchant_migration_tables.py
+  s_5b6c091dc91776::t_2cb4cf68283dd7 1-167
+server/polar/models/merchant_migration_record.py
+  s_5b6c091dc91776::t_70cf124aa79685 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "e762d415b4f539ebee19a5afbd647c9d5939ceea",
+  "prompts": {},
+  "sessions": {
+    "s_5b6c091dc91776": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "625cc146-48a6-444d-94b1-11bf8c52669e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

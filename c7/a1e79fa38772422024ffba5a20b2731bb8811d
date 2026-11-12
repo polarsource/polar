@@ -1,0 +1,50 @@
+server/polar/merchant_migration/endpoints.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 10,35-74,77,87
+  s_7debf674f53741::t_cba256c7ab7441 19
+server/polar/merchant_migration/schemas.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 4,7-19,41-49,56
+  s_7debf674f53741::t_5f3ff42b893e7e 50-55
+  s_7debf674f53741::t_d628cef7573cfa 2
+server/polar/models/organization.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 638-641
+clients/packages/client/src/v1.ts
+  s_7debf674f53741::t_0d617136ce12d6 4881-4904,21699-21704,22246-22271,22290-22301,25736-25741,47995-48062,59889-59899
+server/tests/merchant_migration/test_service.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 2,17,47-72,77-80,85-99,103,107,114-119,124,131-133
+  s_7debf674f53741::t_ea1a19c607d94c 73-76,81-84
+server/polar/merchant_migration/service.py
+  s_7debf674f53741::t_219623f13d7f2a 117
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 1,6-7,12,16,36-37,88-99,119-127,130-155,222-229,235,239-241,245,248-249,298-302
+  s_7debf674f53741::t_a40b5e6c0b6032 168
+  s_7debf674f53741::t_a239f5d7e65267 128-129
+  s_7debf674f53741::t_9504af9e0c1ba0 28
+  s_7debf674f53741::t_bbd0b117bfbb5a 303
+  s_7debf674f53741::t_db061562f4c1e7 118
+server/polar/models/merchant_migration.py
+  s_7debf674f53741::t_78e70fa8859a3e 78,80-81,86-87
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 70-76,79,82
+  s_7debf674f53741::t_36ad938dff9c3e 77,83-85,88
+server/polar/organization/schemas.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 190-196
+server/polar/merchant_migration/repository.py
+  s_7debf674f53741::t_0745fde93684bf 38,40-41,43-44,47-57
+server/tests/merchant_migration/test_endpoints.py
+  s_7debf674f53741::t_2c5b2ffb9cd3ed 11,30-53,55-63,65-76,78-93,95-104,106-118,124,129-134,137,140,142,148,154,157,165,175,181,189,201-203,205,211,217,220,235,241,248,305-341,356,362,379
+  s_7debf674f53741::t_b501374d9f5473 54,64,77,94,105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c7a1e79fa38772422024ffba5a20b2731bb8811d",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

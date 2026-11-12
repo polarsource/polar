@@ -1,0 +1,22 @@
+AGENTS.md
+  s_d3b1f35ea84a3a::t_76167f1da721e7 25
+.agents/skills/create-pr/SKILL.md
+  s_d3b1f35ea84a3a::t_73a64293f85438 100,102-104,106,109-110
+  s_d3b1f35ea84a3a::t_3a8d777700200f 55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "c1af997c54dd845eae4ab6b1bcb8d55fb1de7c53",
+  "prompts": {},
+  "sessions": {
+    "s_d3b1f35ea84a3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "11df69ee-0dd4-45d2-ad75-3f8eaef0a421",
+        "model": "auto-smart"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

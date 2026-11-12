@@ -1,0 +1,42 @@
+server/tests/fixtures/random_objects.py
+  s_055272d137234c::t_07c1cdaf9b27da 434-435,448-450,457-458
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_8e8d69aa6d1a7f 1001-1035
+  s_055272d137234c::t_07c1cdaf9b27da 399-460,1906-1939
+server/migrations/versions/2026-06-17-1034_add_usage_interval_to_product_and_.py
+  s_055272d137234c::t_edcb2c3f874071 4
+  s_055272d137234c::t_07c1cdaf9b27da 1-3,5-15,17-72
+  s_055272d137234c::t_11c6581e63bd80 16
+server/polar/subscription/schemas.py
+  s_055272d137234c::t_07c1cdaf9b27da 89-103
+server/polar/enums.py
+  s_055272d137234c::t_ee35e7a79847c6 97-134
+server/polar/models/product.py
+  s_055272d137234c::t_07c1cdaf9b27da 25,82-95
+server/tests/product/test_schemas.py
+  s_055272d137234c::t_07c1cdaf9b27da 7-10,501-610
+server/polar/models/subscription_update.py
+  s_055272d137234c::t_57007e4a8f547f 133-134
+server/polar/subscription/service.py
+  s_055272d137234c::t_07c1cdaf9b27da 563-564,574,676-680,878-886,946-971
+server/polar/models/subscription.py
+  s_055272d137234c::t_07c1cdaf9b27da 33,127-139,176-189
+server/polar/product/schemas.py
+  s_055272d137234c::t_07c1cdaf9b27da 4,15,26-31,486-524,864-873
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "8eab77e39cb77fb3e536c24391319778b556ca74",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

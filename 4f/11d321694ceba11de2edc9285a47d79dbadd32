@@ -1,0 +1,24 @@
+server/scripts/review_grandfathered_orgs.py
+  s_1653535bb86565::t_99e462a4285737 245
+  s_1653535bb86565::t_6e2011a289045a 332-336
+  s_1653535bb86565::t_3e7fb5c9026887 1-24,36-223,229-244,246-294,296-331,337-426
+  s_1653535bb86565::t_43386e20897271 295
+  s_1653535bb86565::t_e8989d374d5249 25-35
+  s_1653535bb86565::t_dcb571e5685f2e 224-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "4f11d321694ceba11de2edc9285a47d79dbadd32",
+  "prompts": {},
+  "sessions": {
+    "s_1653535bb86565": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1fc9886b-98fa-40ea-a682-f13c30675d7c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+server/polar/billing_entry/service.py
+  h_6aa6f5c50f181e 15,18,23-31,74-90,224-316,327-330,520-529
+  s_fb19aa989d9ac0::t_ffd424dd91c2f6 331-337,362-370,439,506-519
+server/polar/billing_interval/types.py
+  h_6aa6f5c50f181e 3,18-25
+server/tests/billing_interval/test_service_usage_windows.py
+  h_6aa6f5c50f181e 3,10-14,16-17,205-259
+  s_fb19aa989d9ac0::t_22909c87741ceb 22
+server/tests/reducer/test_service.py
+  h_6aa6f5c50f181e 1689-1735
+server/polar/reducer/bucket_repository.py
+  h_6aa6f5c50f181e 534-553,568,585-603
+server/polar/reducer/service.py
+  h_6aa6f5c50f181e 49,241-272,1148,1153
+  s_fb19aa989d9ac0::t_18d877fa689183 273-312,353-358,370,372-374,420-421,1167-1168,1181-1205
+server/polar/billing_interval/service.py
+  h_6aa6f5c50f181e 1,4,19,21,25,44-53,117-125,143-144,164-259
+  s_fb19aa989d9ac0::t_784a1f013881e7 126,145,151,260-276
+server/polar/reducer/types.py
+  h_6aa6f5c50f181e 6-7,30-36
+server/tests/billing_entry/test_service.py
+  h_6aa6f5c50f181e 11,13-14,26,35,39,41,52-53,62,1674-1947
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "34af70557615a79f8297027792011fae06cfa36a",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

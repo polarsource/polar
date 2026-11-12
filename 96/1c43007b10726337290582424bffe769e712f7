@@ -1,0 +1,9 @@
+clients/apps/mcp/scripts/generate-spec.ts
+  ai_agent 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "961c43007b10726337290582424bffe769e712f7",
+  "prompts": {}
+}

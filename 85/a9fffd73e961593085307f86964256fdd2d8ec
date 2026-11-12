@@ -1,0 +1,33 @@
+server/polar/webhook/repository.py
+  s_ef0ee0cf80beae::t_9e126c1ae15942 21,265-274
+server/tests/mcp_event/test_endpoints.py
+  s_ef0ee0cf80beae::t_7f0807e605bbb8 3,27-32,66,86,108,200-212,214-232,234,247
+  s_ef0ee0cf80beae::t_d4cf692a4f0014 213
+server/polar/mcp_event/catalog.py
+  s_ef0ee0cf80beae::t_9713903e70f6d1 54-56
+  s_ef0ee0cf80beae::t_9e126c1ae15942 48,53,57,60,63,66,70
+server/migrations/versions/2026-11-05-0930_add_mcp_subscription_fields_to_webhook_.py
+  s_ef0ee0cf80beae::t_37a5f7b3c6be71 5
+server/polar/mcp_event/schemas.py
+  s_ef0ee0cf80beae::t_9e126c1ae15942 54
+clients/apps/mcp/test/events.test.ts
+  s_ef0ee0cf80beae::t_9713903e70f6d1 90
+server/polar/mcp_event/service.py
+  s_ef0ee0cf80beae::t_9e126c1ae15942 22,57-58,82,104-105,168-171,174
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "85a9fffd73e961593085307f86964256fdd2d8ec",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

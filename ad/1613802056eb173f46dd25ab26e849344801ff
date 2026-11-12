@@ -1,0 +1,21 @@
+server/polar/organization/service.py
+  s_11901477f1a622::t_8043186a45bc82 101-105
+  s_11901477f1a622::t_c3481ba0c2afb7 1573-1580
+  s_11901477f1a622::t_d19023e02ab2d5 1607-1612
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ad1613802056eb173f46dd25ab26e849344801ff",
+  "prompts": {},
+  "sessions": {
+    "s_11901477f1a622": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9e2b8a13-3f8e-491d-bb55-58dc4ab15604",
+        "model": "auto-smart"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

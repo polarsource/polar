@@ -1,0 +1,69 @@
+server/polar/kit/schemas.py
+  s_5b881bade6edbb::t_73b44e6e5dce90 2,140-164
+server/polar/product/schemas.py
+  s_5b881bade6edbb::t_85814ca0e49f1b 51,90
+server/polar/worker/_sqs.py
+  s_5b881bade6edbb::t_3ef3e06e7d2477 2,37,62,66,69
+terraform/modules/render_service/main.tf
+  s_5b881bade6edbb::t_c89a80f52e6338 127
+terraform/organization/production.tf
+  s_5b881bade6edbb::t_668d14da405e0a 341-342
+terraform/organization/sandbox.tf
+  s_5b881bade6edbb::t_947aa43468ea6d 18-19
+terraform/organization/test.tf
+  s_5b881bade6edbb::t_83adc9e5ed3c63 17-18
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/billing/change-plan/ChangePlanPage.tsx
+  s_623aabf115ece1::t_51594c8f9a14c7 57
+clients/apps/web/src/app/(main)/oauth2/authorize/components/CreateOrganizationForm.tsx
+  s_623aabf115ece1::t_772467d72341e7 220,232,242
+clients/apps/web/src/app/(main)/oauth2/authorize/components/SupportedUseCases.tsx
+  s_623aabf115ece1::t_c0452b332a4a1e 39
+clients/apps/web/src/components/Landing/resources/WhyPolarPage.tsx
+  s_623aabf115ece1::t_b4e4313c82e1c8 190,197
+clients/apps/web/src/components/Onboarding/AUPBlocker.tsx
+  s_623aabf115ece1::t_c9e6cf6dc5bea3 27
+clients/apps/web/src/components/Onboarding/SandboxFormFields.tsx
+  s_623aabf115ece1::t_36309b7d89c915 180,189,198
+clients/apps/web/src/components/Onboarding/TermsCheckbox.tsx
+  s_623aabf115ece1::t_bc7c86e3bb93de 52,61,70
+sdk/generator/cli.py
+  s_623aabf115ece1::t_52be6e8103f644 17
+server/polar/benefit/schemas.py
+  s_623aabf115ece1::t_b4e5f1af06308e 29,81-85
+server/polar/integrations/polar/service.py
+  s_623aabf115ece1::t_cc45e05450504f 915
+server/polar/models/organization.py
+  s_623aabf115ece1::t_1d87b867af40b0 864-865
+server/polar/organization/schemas.py
+  s_623aabf115ece1::t_ba447554f5c11f 31,51
+server/polar/worker/aws_lambda.py
+  s_623aabf115ece1::t_537589ae44567c 12-13,48
+server/polar/worker/sqs.py
+  s_623aabf115ece1::t_705248e944643e 12,35-39
+server/tests/integrations/polar/test_service.py
+  s_623aabf115ece1::t_e4460818654390 226,1526
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "fb61dad4800917c2fb1825bb927ab33695faa4c2",
+  "prompts": {},
+  "sessions": {
+    "s_5b881bade6edbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a11f7bb0-49de-45e4-8617-e4cbaad4b68d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_623aabf115ece1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bd927cd5-ae76-4ec4-9f66-e3d2a97f26cf",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

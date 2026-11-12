@@ -1,0 +1,19 @@
+.agents/skills/local-environment/rules/payment-testing.md
+  s_3e0979df60fe40::t_40f4e49292d23c 57-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "2ab9e7d8637716b1c1aacfe73a4d8a0f785355ab",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

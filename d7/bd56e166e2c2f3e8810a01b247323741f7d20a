@@ -1,0 +1,40 @@
+server/tests/models/test_oauth2_client.py
+  s_0f7743d4fc007d::t_1c7fd8d0d91a4d 79-80
+  s_0f7743d4fc007d::t_4dd9a814664371 1-78,81-157
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_0f7743d4fc007d::t_24cd7936721026 14,234-279
+server/polar/oauth2/mcp_client.py
+  s_0f7743d4fc007d::t_9ef6a80264e8e2 30-35
+server/polar/oauth2/service/oauth2_client.py
+  s_0f7743d4fc007d::t_05acaaee1110ca 77,82-83
+server/polar/oauth2/authorization_server.py
+  s_0f7743d4fc007d::t_1c6b6bcf663ac3 117-121
+server/tests/scripts/test_backfill_oauth2_client_encrypted_secrets.py
+  s_0f7743d4fc007d::t_f75f0e5feeff04 1-194
+server/polar/models/oauth2_client.py
+  s_0f7743d4fc007d::t_ba57765b0a6b96 8-9,11,17-25,33-42,46-53,70-173
+server/scripts/backfill_oauth2_client_encrypted_secrets.py
+  s_0f7743d4fc007d::t_26c8d6e5adf873 1-210
+server/polar/kit/encryption.py
+  s_0f7743d4fc007d::t_9d0cbc1cceeb84 53-56,69,75-77,92-104,106-108,112-114,143-146,151,154-171
+server/migrations/versions/2026-07-08-1700_add_oauth2_client_encrypted_secrets.py
+  s_0f7743d4fc007d::t_0c55cd7c2c9e45 1-69
+server/tests/kit/test_encryption.py
+  s_0f7743d4fc007d::t_f290c653002fb1 23-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d7bd56e166e2c2f3e8810a01b247323741f7d20a",
+  "prompts": {},
+  "sessions": {
+    "s_0f7743d4fc007d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "299594a3-6ad8-4b90-9ec6-26f9be57e324",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

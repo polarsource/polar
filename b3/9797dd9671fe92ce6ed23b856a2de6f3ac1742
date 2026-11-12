@@ -1,0 +1,25 @@
+server/tests/models/test_slack_app.py
+  s_aa91bef2f613ad::t_1431c2c867734c 1-112
+server/migrations/versions/2026-07-02-1000_add_slack_app_encrypted_secrets.py
+  s_aa91bef2f613ad::t_1431c2c867734c 1-42
+server/polar/models/slack_app.py
+  s_aa91bef2f613ad::t_1431c2c867734c 9,13-25,47-51,55-59,73-77,94-126
+server/polar/integrations/slack/service.py
+  s_aa91bef2f613ad::t_1431c2c867734c 125-131,138-140,142-144,157,281,288-291,322
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.8",
+  "base_commit_sha": "b39797dd9671fe92ce6ed23b856a2de6f3ac1742",
+  "prompts": {},
+  "sessions": {
+    "s_aa91bef2f613ad": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "aa4d767d-ab95-4188-8c1a-945538188f23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

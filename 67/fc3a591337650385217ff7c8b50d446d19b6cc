@@ -1,0 +1,19 @@
+clients/apps/web/src/components/Customer/CustomerContextView.tsx
+  s_055272d137234c::t_5e23770475876d 193-198,200-205
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "67fc3a591337650385217ff7c8b50d446d19b6cc",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

@@ -1,0 +1,19 @@
+server/migrations/versions/2026-09-28-1430_add_checkout_anonymized_at.py
+  s_9ac21b1821b7d5::t_62e08fc39fee00 22-24,32-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ec3ac3ad8974904646c98519e33f93f663e2b9ce",
+  "prompts": {},
+  "sessions": {
+    "s_9ac21b1821b7d5": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4eeeaae0-49b3-432b-8fa2-e641f1dd7485",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+clients/packages/cli/scripts/npm-postinstall.mjs
+  s_ad8ff7da1a0178::t_fff3c21e1e681c 1-3,5-38,40-54,57-59,77-94,96-97,106-117
+  s_ad8ff7da1a0178::t_a84b993f7062c4 4
+  s_ad8ff7da1a0178::t_1011e9b41ef539 39,95,98-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e25dfd2cf613117808eb560f4cd0c54754b45187",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+server/polar/merchant_migration/precheck.py
+  s_3994309354b59a::t_ae3f6915131e5b 1399-1403,1405-1415
+  s_3994309354b59a::t_67d4455da5c4c2 1348
+  s_3994309354b59a::t_9760c4430cdba8 257-259
+  s_3994309354b59a::t_3f7c262eca14c2 1404
+  s_3994309354b59a::t_0e87fe62219564 252-254
+server/tests/merchant_migration/test_precheck.py
+  s_3994309354b59a::t_39ab6f9e813621 1397
+server/tests/merchant_migration/test_cutover.py
+  s_3994309354b59a::t_e8ca27806510cb 2444
+server/polar/merchant_migration/importer.py
+  s_3994309354b59a::t_0c0a5736ae7cb7 248
+  s_3994309354b59a::t_5cb5a2c1a764d5 230-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bee11b12bd5f14f9dfe278018c69da149e10c509",
+  "prompts": {},
+  "sessions": {
+    "s_3994309354b59a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "db4e6884-e94a-4022-8218-3a720538e6ab",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

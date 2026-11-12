@@ -1,0 +1,24 @@
+server/polar/mcp_event/catalog.py
+  s_ef0ee0cf80beae::t_10fe31dd9a3c3f 1-64
+server/polar/models/webhook_endpoint.py
+  s_ef0ee0cf80beae::t_052d5c9d811618 76,89-96,113-118
+server/migrations/versions/2026-11-03-1018_add_mcp_subscription_fields_to_webhook_.py
+  s_ef0ee0cf80beae::t_87bb1ac602dfc3 20,22,40-58,65-75
+  s_ef0ee0cf80beae::t_9b920713b62801 1-19,21,23-39,59-64,76-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "63561b20597edf61c03a91b15b50e82b37e264b8",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

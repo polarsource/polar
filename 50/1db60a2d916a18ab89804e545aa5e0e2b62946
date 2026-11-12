@@ -1,0 +1,53 @@
+handbook/docs.json
+  s_12f50c3568cc40::t_32dd656a44cfc3 93-94
+handbook/engineering/design-documents/metered-billing-periods.mdx
+  s_12f50c3568cc40::t_17d5466d5c9fc4 1-281,312-399
+server/polar/models/meter_period.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 1-83
+server/migrations/versions/2026-08-17-1400_add_billing_entry_window_index.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 1-49
+server/polar/models/__init__.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 60,189-190
+server/migrations/versions/2026-08-17-1300_add_meter_periods.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 1-115
+server/polar/models/billing_entry.py
+  s_12f50c3568cc40::t_45a4736e07f1b7 67-75
+server/polar/meter_period/repository.py
+  s_12f50c3568cc40::t_49884c4098f7cf 1-111
+server/polar/subscription/service.py
+  s_12f50c3568cc40::t_c10ba89101d915 72,1139-1155
+  s_12f50c3568cc40::t_febe3ed3142eaf 1156
+server/tests/meter_period/test_service.py
+  s_12f50c3568cc40::t_49884c4098f7cf 1-635
+server/polar/billing_entry/service.py
+  s_12f50c3568cc40::t_49884c4098f7cf 19-21,70-77,111-115,216-253,345-364
+  s_12f50c3568cc40::t_b1180f6d30503d 365
+server/polar/meter_period/service.py
+  s_12f50c3568cc40::t_49884c4098f7cf 1-299
+server/polar/organization/schemas.py
+  s_12f50c3568cc40::t_49884c4098f7cf 196-202
+server/tests/billing_entry/test_service.py
+  s_12f50c3568cc40::t_49884c4098f7cf 9,20,114,120,1289-1487
+server/polar/models/organization.py
+  s_12f50c3568cc40::t_49884c4098f7cf 734-740
+server/polar/subscription/tasks.py
+  s_12f50c3568cc40::t_49884c4098f7cf 5,163
+server/polar/event/repository.py
+  s_12f50c3568cc40::t_49884c4098f7cf 513-605
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "501db60a2d916a18ab89804e545aa5e0e2b62946",
+  "prompts": {},
+  "sessions": {
+    "s_12f50c3568cc40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "776cb36c-a4a2-4a52-8ec1-9fafe0ec55b5",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

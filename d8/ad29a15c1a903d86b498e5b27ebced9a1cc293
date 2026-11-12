@@ -1,0 +1,21 @@
+server/scripts/backfill_member_downloadables.py
+  s_993e379d6d5a27::t_a6f3546b131a27 103-108
+server/migrations/versions/2026-06-22-2010_downloadables_member_level_uniqueness_.py
+  s_993e379d6d5a27::t_0989a2c62de223 90,92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "d8ad29a15c1a903d86b498e5b27ebced9a1cc293",
+  "prompts": {},
+  "sessions": {
+    "s_993e379d6d5a27": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1c31ca18-7baa-4be9-94ec-c9317093b7c4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

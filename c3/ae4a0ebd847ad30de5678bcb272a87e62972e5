@@ -1,0 +1,19 @@
+server/tests/metrics/test_service.py
+  s_8fccaa7ed95c99::t_e41bfd16d1f32c 5674-5684,5690-5692,5696-5702,5704-5705,5707-5716,5718-5720
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c3ae4a0ebd847ad30de5678bcb272a87e62972e5",
+  "prompts": {},
+  "sessions": {
+    "s_8fccaa7ed95c99": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "3dcd5561-b7a3-4cf6-9e9e-9c19ff08ab4f",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

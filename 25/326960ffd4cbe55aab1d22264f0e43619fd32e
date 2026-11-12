@@ -1,0 +1,19 @@
+server/polar/merchant_migration/service.py
+  s_7135f7ba91de29::t_dd5f3d91e0a0ba 1302-1306,1310-1313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "25326960ffd4cbe55aab1d22264f0e43619fd32e",
+  "prompts": {},
+  "sessions": {
+    "s_7135f7ba91de29": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8ae9ab6b-edf6-40a9-a6bd-339767b9f031",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

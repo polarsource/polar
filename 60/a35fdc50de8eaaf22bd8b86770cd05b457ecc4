@@ -1,0 +1,19 @@
+clients/apps/web/src/components/Settings/Webhook/WebhookForm.tsx
+  s_6235e3dc756ce9::t_e4f215bcce0311 191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "60a35fdc50de8eaaf22bd8b86770cd05b457ecc4",
+  "prompts": {},
+  "sessions": {
+    "s_6235e3dc756ce9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee90536f-4bee-4cb1-8a12-6bfa7483ec20",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

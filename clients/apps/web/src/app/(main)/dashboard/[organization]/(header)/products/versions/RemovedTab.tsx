@@ -14,7 +14,10 @@ type RemovedItem = schemas['RemovedCatalogItem']
 const kinds = [
   { resource: 'product', title: 'Products' },
   { resource: 'benefit', title: 'Benefits' },
+  { resource: 'meter', title: 'Meters' },
 ] as const
+
+const paths = { product: '', benefit: '/benefits', meter: '/meters' } as const
 
 const columns = {
   base: 'minmax(0, 1fr) 112px 16px',
@@ -30,10 +33,7 @@ const RemovedRow = ({
 }) => {
   const router = useRouter()
   const base = `/dashboard/${organization.slug}/products`
-  const href =
-    item.resource === 'product'
-      ? `${base}/${item.last_item_id}`
-      : `${base}/benefits/${item.last_item_id}`
+  const href = `${base}${paths[item.resource]}/${item.last_item_id}`
   const removedIn = item.removed_in_catalog
   const stop = (event: React.MouseEvent) => event.stopPropagation()
   return (

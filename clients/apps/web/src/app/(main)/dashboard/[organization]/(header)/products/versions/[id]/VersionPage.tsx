@@ -60,6 +60,11 @@ export default function VersionPage({
       benefits.map((row) => [row.external_id, row.benefit_id]),
     ),
   )
+  const meterIds = new Map(
+    catalogs.flatMap(({ meters }) =>
+      meters.map((row) => [row.external_id, row.meter_id]),
+    ),
+  )
   const productsPath = `/dashboard/${organization.slug}/products`
 
   return (
@@ -130,6 +135,10 @@ export default function VersionPage({
             benefitHref={(externalId) => {
               const id = benefitIds.get(externalId)
               return id ? `${productsPath}/benefits/${id}` : undefined
+            }}
+            meterHref={(externalId) => {
+              const id = meterIds.get(externalId)
+              return id ? `${productsPath}/meters/${id}` : undefined
             }}
           />
         ) : null}

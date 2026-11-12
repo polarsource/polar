@@ -14028,7 +14028,7 @@ export interface components {
     }
     /**
      * CatalogChanges
-     * @description How a catalog differs from its parent, in products and benefits.
+     * @description How a catalog differs from its parent, in products, benefits and meters.
      */
     CatalogChanges: {
       /**
@@ -14068,6 +14068,20 @@ export interface components {
       error: 'CatalogImportNotReady'
       /** Detail */
       detail: string
+    }
+    /** CatalogMeter */
+    CatalogMeter: {
+      /**
+       * External Id
+       * @description Key of the meter in the catalog.
+       */
+      external_id: string
+      /**
+       * Meter Id
+       * Format: uuid4
+       * @description The meter version in this catalog.
+       */
+      meter_id: string
     }
     /** CatalogNotDraft */
     CatalogNotDraft: {
@@ -14112,7 +14126,7 @@ export interface components {
     CatalogStatus: 'draft' | 'live' | 'archived'
     /**
      * CatalogVersion
-     * @description A catalog version with its products and benefits.
+     * @description A catalog version with its products, benefits and meters.
      */
     CatalogVersion: {
       /**
@@ -14169,6 +14183,11 @@ export interface components {
        * @description The benefits in this version, ordered by key.
        */
       benefits: components['schemas']['CatalogBenefit'][]
+      /**
+       * Meters
+       * @description The meters in this version, ordered by key.
+       */
+      meters: components['schemas']['CatalogMeter'][]
     }
     /** Changes */
     Changes: {
@@ -36208,13 +36227,13 @@ export interface components {
       status: components['schemas']['RemovedCatalogItemStatus']
       /**
        * Customers Count
-       * @description Customers with a billable subscription on, or a scheduled change to, the product; customers granted the benefit.
+       * @description Customers with a billable subscription on, or a scheduled change to, the product; customers granted the benefit; customers with a billable subscription billing the meter.
        */
       customers_count: number
       /**
        * Last Item Id
        * Format: uuid4
-       * @description ID of the product or benefit in the last catalog that listed it.
+       * @description ID of the product, benefit or meter in the last catalog that listed it.
        */
       last_item_id: string
       /** @description First catalog that listed it. */
@@ -36228,7 +36247,7 @@ export interface components {
      * RemovedCatalogItemResource
      * @enum {string}
      */
-    RemovedCatalogItemResource: 'product' | 'benefit'
+    RemovedCatalogItemResource: 'product' | 'benefit' | 'meter'
     /**
      * RemovedCatalogItemStatus
      * @enum {string}
@@ -75331,7 +75350,7 @@ export const refundStatusValues: ReadonlyArray<
 > = ['pending', 'succeeded', 'failed', 'canceled']
 export const removedCatalogItemResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RemovedCatalogItemResource']
-> = ['product', 'benefit']
+> = ['product', 'benefit', 'meter']
 export const removedCatalogItemStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RemovedCatalogItemStatus']
 > = ['deprecated', 'removed']

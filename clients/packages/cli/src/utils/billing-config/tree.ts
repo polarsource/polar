@@ -190,15 +190,15 @@ export const formatTree = (
     webhooks: documents(input, 'webhooks'),
   }
 
-  const updated = updatedIds(entries, 'benefits')
-  const meters = updatedIds(entries, 'meters')
+  const updatedBenefits = updatedIds(entries, 'benefits')
+  const updatedMeters = updatedIds(entries, 'meters')
   const meterUses = (entry: AppliedEntry) => {
     const used = usedMeters(entry)
-    return used.some((id) => meters.has(id))
+    return used.some((id) => updatedMeters.has(id))
       ? used.map((id) =>
           reference('meter')({
             id,
-            status: meters.has(id) ? 'updated' : 'kept',
+            status: updatedMeters.has(id) ? 'updated' : 'kept',
           }),
         )
       : []
@@ -218,7 +218,7 @@ export const formatTree = (
   const product = (entry: AppliedEntry) => {
     if (entry.action === 'removed') return removal(entry)
     const document = docs.products.get(entry.id)
-    const granted = grants(entry, document, updated)
+    const granted = grants(entry, document, updatedBenefits)
     const regranted = granted.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'

@@ -88,7 +88,7 @@ module "test" {
 
   additional_api_services = {
     api-events-test = {
-      custom_domains = [{ name = "api-events-test.polar.sh" }]
+      custom_domains = [{ name = "test-api-events.polar.sh" }]
       autoscaling    = { min = 3, max = 6 }
     }
   }
@@ -125,15 +125,36 @@ resource "cloudflare_dns_record" "test_api" {
   ttl     = 1
 }
 
-resource "cloudflare_dns_record" "additional_api" {
-  for_each = merge(module.test[*].additional_api_service_urls...)
-
+resource "cloudflare_dns_record" "test_api_events" {
+  count   = local.test_enabled ? 1 : 0
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "${each.key}.polar.sh"
+  name    = "test-api-events.polar.sh"
   type    = "CNAME"
-  content = replace(each.value, "https://", "")
+  content = replace(module.test[0].additional_api_service_urls["api-events-test"], "https://", "")
   proxied = true
   ttl     = 1
+}
+
+resource "cloudflare_ruleset" "origin" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "Origin rules"
+  kind    = "zone"
+  phase   = "http_request_origin"
+
+  rules = [
+    {
+      description = "Route Test event ingestion to api-events-test"
+      expression  = "(http.host eq \"test-api.polar.sh\" and http.request.uri.path eq \"/v1/events/ingest\")"
+      action      = "route"
+      action_parameters = {
+        host_header = "test-api-events.polar.sh"
+        origin = {
+          host = "test-api-events.polar.sh"
+        }
+      }
+    },
+  ]
 }
 
 resource "cloudflare_dns_record" "worker" {

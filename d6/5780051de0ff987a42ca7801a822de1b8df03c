@@ -1,0 +1,31 @@
+clients/apps/web/src/components/Benefit/BenefitGrantStatus.tsx
+  s_feb647f1338f47::t_7754cea6edcd04 10-20,25-26,34-35
+clients/apps/web/src/components/Customer/CustomerPage/GrantBenefitSheet.tsx
+  s_feb647f1338f47::t_3028c307efe57b 65,80,91,97,187
+  s_feb647f1338f47::t_7dab5be31dadbd 229
+  s_feb647f1338f47::t_b835e2524bb1c7 76-77,120-122,133-137,149-158,160-162,165-171,178-185,191-193,197-201,203-209,215-219,221-228,230-231
+  s_feb647f1338f47::t_1a106e1734c3ce 1-64,66-75,78-79,81-90,92-96,98-119,123-132,138-148,159,163-164,172-177,186,188-190,194-196,202,210-214,220,232-235
+clients/apps/web/src/components/Customer/CustomerPage/CustomerBenefitGrantsTable.tsx
+  s_feb647f1338f47::t_b835e2524bb1c7 71-75,100-101,132-142,156,160-162
+  s_feb647f1338f47::t_3fcdc232059d18 5-7,9-10,16-17,28-33,45-50,66-70,76-78,99,102-103,108-109,124-131,151-155,157-159,163-174
+clients/apps/web/src/components/Customer/CustomerPage/CustomerOverview.tsx
+  s_feb647f1338f47::t_7754cea6edcd04 40
+clients/apps/web/src/hooks/queries/benefits.ts
+  s_feb647f1338f47::t_7754cea6edcd04 265-301
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d65780051de0ff987a42ca7801a822de1b8df03c",
+  "prompts": {},
+  "sessions": {
+    "s_feb647f1338f47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c473-d69e-7e73-b567-f9f591836add",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

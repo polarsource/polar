@@ -21,6 +21,9 @@ from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
 
+NAME_MAX_LENGTH = 128
+CUSTOM_LABEL_MAX_LENGTH = 32
+
 NAME_DESCRIPTION = (
     "The name of the meter. Will be shown on customer's invoices and usage."
 )
@@ -33,7 +36,9 @@ _aggregation_description = (
 
 
 class MeterCreateBase(Schema, MetadataInputMixin):
-    name: str = Field(..., description=NAME_DESCRIPTION, min_length=3)
+    name: str = Field(
+        ..., description=NAME_DESCRIPTION, min_length=3, max_length=NAME_MAX_LENGTH
+    )
     unit: MeterUnit = Field(
         default=MeterUnit.scalar,
         description="The unit of the meter.",
@@ -44,6 +49,7 @@ class MeterCreateBase(Schema, MetadataInputMixin):
             "The label for the custom unit, e.g. 'request'. "
             "Required when unit is 'custom'."
         ),
+        max_length=CUSTOM_LABEL_MAX_LENGTH,
     )
     custom_multiplier: int | None = Field(
         None,
@@ -81,11 +87,14 @@ class MeterCreate(MeterCreateBase, ExternalIDInputMixin):
 
 
 class MeterUpdate(Schema, MetadataInputMixin, ExternalIDInputMixin):
-    name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
+    name: str | None = Field(
+        None, description=NAME_DESCRIPTION, min_length=3, max_length=NAME_MAX_LENGTH
+    )
     unit: MeterUnit | None = Field(None, description="The unit of the meter.")
     custom_label: str | None = Field(
         None,
         description=("The label for the custom unit. Required when unit is 'custom'."),
+        max_length=CUSTOM_LABEL_MAX_LENGTH,
     )
     custom_multiplier: int | None = Field(
         None,

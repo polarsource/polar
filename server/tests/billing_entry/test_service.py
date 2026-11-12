@@ -2004,7 +2004,10 @@ class TestCreateOrderItemsFromReducers:
             return_value=(
                 {
                     meter.id: MeterCharge(
-                        {price_id: Decimal(20)}, {price_id: Decimal(1)}, Decimal(0)
+                        Decimal(20),
+                        {price_id: Decimal(20)},
+                        {price_id: Decimal(1)},
+                        Decimal(0),
                     )
                 },
                 [uuid.uuid4(), uuid.uuid4()],

@@ -23,7 +23,7 @@ from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, Meter, OrderItem, Product, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.event import EventSource
-from polar.postgres import AsyncSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.guard import (
     MeteredPrice,
     StaticPrice,
@@ -287,11 +287,37 @@ class BillingEntryService:
     async def _get_reducer_order_items(
         self, session: AsyncSession, charge: MeterCharge
     ) -> list[OrderItem]:
-        """One item per price the meter's usage is charged at. Credits come off
-        a sum or count at the oldest price first. A max, min or average is charged
-        above the credits at every price, for its share of the period."""
+        return [
+            OrderItem(
+                label=f"{price.meter.name} — {amount_label}",
+                amount=amount,
+                net_amount=amount,
+                tax_amount=0,
+                proration=False,
+                product_price=price,
+            )
+            for price, amount, amount_label in await self._price_reducer_charge(
+                session, charge
+            )
+        ]
+
+    async def get_reducer_charge_amount(
+        self, session: AsyncReadSession, charge: MeterCharge
+    ) -> int:
+        """The amount an order would charge for the meter's usage."""
+        return sum(
+            amount for _, amount, _ in await self._price_reducer_charge(session, charge)
+        )
+
+    async def _price_reducer_charge(
+        self, session: AsyncReadSession, charge: MeterCharge
+    ) -> list[tuple[MeteredPrice, int, str]]:
+        """The amount and label of each price the meter's usage is charged at.
+        Credits come off a sum or count at the oldest price first. A max, min or
+        average is charged above the credits at every price, for its share of the
+        period."""
         repository = ProductPriceRepository.from_session(session)
-        items: list[OrderItem] = []
+        priced: list[tuple[MeteredPrice, int, str]] = []
         credited_units = charge.credited_units
         for price_id, units in charge.units_by_price.items():
             if units <= 0:
@@ -306,19 +332,10 @@ class BillingEntryService:
             if period_share < 1:
                 amount = polar_round(amount * period_share)
                 amount_label += f" — {period_share:.0%} of the period"
-            items.append(
-                OrderItem(
-                    label=f"{price.meter.name} — {amount_label}",
-                    amount=amount,
-                    net_amount=amount,
-                    tax_amount=0,
-                    proration=False,
-                    product_price=price,
-                )
-            )
+            priced.append((price, amount, amount_label))
             if price.meter.aggregation.is_summable():
                 credited_units = max(Decimal(0), credited_units - units)
-        return items
+        return priced
 
     def create_order_items_from_pending(
         self,

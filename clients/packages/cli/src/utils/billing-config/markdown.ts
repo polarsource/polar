@@ -10,12 +10,11 @@ import {
   fieldChanges,
   lineDiff,
   updatedIds,
-  usedMeters,
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
 import { catalogChange, errors, unchanged } from '@/utils/billing-config/review'
-import { shownDiff } from '@/utils/billing-config/sentences'
+import { shownDiff, usedMeters } from '@/utils/billing-config/sentences'
 import { documents } from '@/utils/billing-config/tree'
 
 const HEADINGS: Record<string, string> = {

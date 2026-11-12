@@ -1,11 +1,6 @@
 import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
 import { name, record } from '@/utils/billing-config/describe'
-import {
-  MARKS,
-  formatRows,
-  updatedIds,
-  usedMeters,
-} from '@/utils/billing-config/entries'
+import { MARKS, formatRows, updatedIds } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
@@ -14,6 +9,7 @@ import {
   productMeters,
   productSentence,
   shownDiff,
+  usedMeters,
   webhookSentence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'

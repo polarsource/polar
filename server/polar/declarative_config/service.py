@@ -445,8 +445,14 @@ class DeclarativeConfigService:
                 session, organization, changes, removed
             )
         )
+        removed += await removals.custom_fields(session, organization, config)
         issues.extend(
             await catalogs.cascade_benefit_changes(
+                session, organization, changes, removed
+            )
+        )
+        issues.extend(
+            await catalogs.cascade_custom_field_changes(
                 session, organization, changes, removed
             )
         )
@@ -620,9 +626,17 @@ class DeclarativeConfigService:
                 session, organization, changes, removed, catalog=archived_base
             )
         )
+        removed += await removals.custom_fields(
+            session, organization, config, catalog=archived_base
+        )
         issues.extend(
             await catalogs.cascade_benefit_changes(
                 session, organization, changes, removed
+            )
+        )
+        issues.extend(
+            await catalogs.cascade_custom_field_changes(
+                session, organization, changes, removed, catalog=archived_base
             )
         )
         catalog: ConfigCatalogPlan | None = None

@@ -543,10 +543,12 @@ class Config(Schema):
         max_length=MAXIMUM_CUSTOM_FIELDS,
         description=(
             "Custom fields to create or update, matched by `slug`. "
-            "A change creates a new version of the field. "
-            "Earlier versions keep the field as it was. "
+            "A change creates a new version of the field, and of every product "
+            "asking for it. Earlier versions keep the field as it was. "
             "Omitted `metadata` is left untouched. "
             "Changing a slug creates a new field. "
+            "Existing custom fields that aren't listed leave the catalog, and "
+            "their answers are kept. "
             "All custom fields are left untouched when `custom_fields` is omitted."
         ),
     )
@@ -661,7 +663,9 @@ class ConfigRemovalReason(StrEnum):
 
 class ConfigRemoval(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    external_id: str = Field(description="The resource's `external_id`.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
     reason: ConfigRemovalReason = Field(
         description=(
             "`missing` when the config doesn't list the resource, "

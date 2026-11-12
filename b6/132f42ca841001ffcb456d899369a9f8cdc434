@@ -1,0 +1,21 @@
+server/migrations/versions/2026-11-12-1202_drop_ix_events_timestamp.py
+  s_365b3308459c80::t_0965097b253997 1-42
+server/polar/models/event.py
+  s_365b3308459c80::t_cbd65248334871 192
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b6132f42ca841001ffcb456d899369a9f8cdc434",
+  "prompts": {},
+  "sessions": {
+    "s_365b3308459c80": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ef344f97-a8c1-4510-97af-ab0032f44419",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

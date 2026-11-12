@@ -1,0 +1,31 @@
+clients/packages/polar/src/index.test.ts
+  ai_agent 1-102
+clients/packages/polar/src/schema/config.ts
+  s_26e9f7497a6831::t_f23c889625f996 1,3-8
+clients/packages/polar/src/schema/meter.ts
+  s_26e9f7497a6831::t_23e66ea6447a94 1-36,38-54
+  s_26e9f7497a6831::t_b05a49f0ff7d7e 37
+clients/pnpm-lock.yaml
+  ai_agent 1446,1448,4794,7176-7310,8690-8698,8717,9620-9623,9905-9908,11692-11695,12604-12606,13089-13091,13127-13148,13902-13935,14019-14021,14354-14357,14906-14914,18625-18628,21388-21396,21619-21692,23106-23109,24222-24225,24583-24584,27337-27338,28294-28295,28949-28950,28982-28985,28987-28997,29887-29895,29898-29912,30027-30031,30337-30338,30646-30652,31006-31043
+clients/packages/polar/package.json
+  s_26e9f7497a6831::t_d15b02f245b9ce 24-25,28-32,43-44
+clients/packages/polar/src/index.ts
+  s_26e9f7497a6831::t_8bd4424bea661e 1,6,16,39-43
+  s_26e9f7497a6831::t_85a62fdb8cc08d 3,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "8939fdb0636ce53cd10f4eae806d8664c193c3b2",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

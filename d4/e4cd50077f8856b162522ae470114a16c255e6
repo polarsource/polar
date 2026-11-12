@@ -1,0 +1,43 @@
+server/polar/feedback/service.py
+  s_88624536cc8bb7::t_c7f3cec0257f96 30-31
+server/polar/auth/models.py
+  s_88624536cc8bb7::t_d8966248751edf 21-22
+  s_88624536cc8bb7::t_92486103b14b16 53-56,64,70-80
+server/tests/authz/test_service.py
+  s_88624536cc8bb7::t_a5b84dd90b4a09 335-394
+server/tests/organization/test_resolver.py
+  s_88624536cc8bb7::t_d9e36d53f3d122 114-158
+server/polar/authz/repository.py
+  s_88624536cc8bb7::t_7f1d26c1bc50ad 81-82
+  s_88624536cc8bb7::t_2e909ff59a747c 79-80,83
+  s_88624536cc8bb7::t_f8c21ca9101e06 64-67
+server/polar/app.py
+  s_88624536cc8bb7::t_7e6141d472b8fb 15,104
+server/polar/user/endpoints.py
+  s_88624536cc8bb7::t_c7f3cec0257f96 136,167
+server/tests/user/test_endpoints.py
+  s_88624536cc8bb7::t_18671b01a97ade 335-350
+server/polar/auth/exceptions.py
+  s_88624536cc8bb7::t_eaed6e8a894aa3 36-59
+server/polar/organization/resolver.py
+  s_88624536cc8bb7::t_b2dd28f5343de1 52-55
+server/tests/auth/test_middlewares.py
+  s_88624536cc8bb7::t_6487c1ef6f323f 1,8,14,33,394-430
+  s_88624536cc8bb7::t_daa2ae761cb6d5 3-4,10-13,15,19-27,37-49,51,54-56,58-62,192-393
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "d4e4cd50077f8856b162522ae470114a16c255e6",
+  "prompts": {},
+  "sessions": {
+    "s_88624536cc8bb7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d2da821e-dc6a-4b05-8743-90c4d23a5449",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

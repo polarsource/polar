@@ -1,0 +1,29 @@
+clients/apps/web/src/app/(main)/auth/totp/page.tsx
+  s_2c213c50e532b9::t_2713397b9e5a45 6
+  s_2c213c50e532b9::t_843f9a16de02be 15-16
+clients/apps/web/src/app/(main)/auth/backup-codes/page.tsx
+  s_2c213c50e532b9::t_46a62ef0d4b88b 15-16
+  s_2c213c50e532b9::t_8b241919c27a1d 6
+clients/apps/web/src/app/(main)/auth/sso/[slug]/page.tsx
+  s_2c213c50e532b9::t_18157aca971b60 23-24
+  s_2c213c50e532b9::t_c5b008d86f8051 11
+clients/apps/web/src/app/(main)/auth/email-otp/page.tsx
+  s_2c213c50e532b9::t_ec4e7b03842223 6
+  s_2c213c50e532b9::t_0ee00b261e819d 17-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d6f49fed8f3d6f9fde470b7d35ff7fe9358fa87f",
+  "prompts": {},
+  "sessions": {
+    "s_2c213c50e532b9": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "afaab0d2-e0ef-48c5-9dc4-4a5526525da6",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

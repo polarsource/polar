@@ -1,0 +1,21 @@
+clients/apps/web/src/components/Settings/Webhook/WebhookContextView.tsx
+  s_8328894b8c4ada::t_778166ba907cc9 34-37
+clients/packages/client/src/v1.ts
+  s_8328894b8c4ada::t_a4b0d144e7fc9b 20290-20334,38383,38410
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "7ce1789bbdb75d976a472b6d8a0083e36a3c484f",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

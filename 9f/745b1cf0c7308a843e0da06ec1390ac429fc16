@@ -1,0 +1,26 @@
+server/tests/scripts/test_backfill_missing_buckets_splits_from_resets.py
+  s_d8ff38491769f9::t_0b0a8990fb9146 4,20,30-31,45-51,60,77,85,87-90,92,96-114
+server/scripts/backfill_missing_buckets_splits_from_resets.py
+  s_d8ff38491769f9::t_f8719a29efb909 13-15
+  s_d8ff38491769f9::t_e45a9bb1ba29f4 149
+  s_d8ff38491769f9::t_65982fd4d6f9de 174,182-187
+  s_d8ff38491769f9::t_78a45f6dd21733 190
+  s_d8ff38491769f9::t_848f77fb5b7ed1 96-128,132-133,138
+  s_d8ff38491769f9::t_fb4b66670c111b 25,30-31,34,38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f745b1cf0c7308a843e0da06ec1390ac429fc16",
+  "prompts": {},
+  "sessions": {
+    "s_d8ff38491769f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "812199ed-027e-4b80-b538-e0a4f04ebcd6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

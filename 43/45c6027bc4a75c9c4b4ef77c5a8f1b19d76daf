@@ -1,0 +1,21 @@
+server/polar/billing_entry/repository.py
+  s_7245646c656b56::t_244a8a95adfe1d 222,227
+  s_7245646c656b56::t_b3c97600bcb461 226
+  s_7245646c656b56::t_630ec4c7ad1201 223-225
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "4345c6027bc4a75c9c4b4ef77c5a8f1b19d76daf",
+  "prompts": {},
+  "sessions": {
+    "s_7245646c656b56": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7cf9f0ba-d7de-4149-8d9c-a45d5c61101f",
+        "model": "claude-fable-5"
+      },
+      "human_author": null
+    }
+  }
+}

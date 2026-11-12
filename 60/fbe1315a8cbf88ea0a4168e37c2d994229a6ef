@@ -1,0 +1,20 @@
+clients/.changeset/cli-v2.md
+  s_9b19c6eed99c1f::t_0a1ca23a74f8aa 9,11
+  s_9b19c6eed99c1f::t_030a43e5e2edf0 1-8,10,12-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "60fbe1315a8cbf88ea0a4168e37c2d994229a6ef",
+  "prompts": {},
+  "sessions": {
+    "s_9b19c6eed99c1f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "71d62888-ac5e-46e6-91c0-76ff105e8a2d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

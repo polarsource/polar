@@ -1,0 +1,20 @@
+server/polar/kit/routing.py
+  s_7f8a341d1e843c::t_aadd134bae9090 192-194
+  s_7f8a341d1e843c::t_7d51548f1758da 108-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "de06d83b6bb29166b2387c1670ef6827004da82b",
+  "prompts": {},
+  "sessions": {
+    "s_7f8a341d1e843c": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a08a60-e172-709d-b095-1cea89cf389b",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

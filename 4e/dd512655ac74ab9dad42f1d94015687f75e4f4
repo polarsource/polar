@@ -1,0 +1,36 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7135f7ba91de29::t_e490053e902114 160
+  s_7135f7ba91de29::t_58e15f86111561 18-23
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_7135f7ba91de29::t_d902103df91d25 78-92,105-106
+server/polar/merchant_migration/pan_transfer.py
+  s_7135f7ba91de29::t_5038f732e2edef 363
+  s_7135f7ba91de29::t_18f3bcbc5b9dc1 464-467,474,478
+  s_7135f7ba91de29::t_664ba6c801004b 397,399
+server/polar/merchant_migration/service.py
+  s_7135f7ba91de29::t_ce97fe33686d1f 682
+  s_7135f7ba91de29::t_1d992ea341fba6 1030
+  s_7135f7ba91de29::t_65b1e2add97d21 1301-1310
+server/tests/merchant_migration/test_pan_transfer.py
+  s_7135f7ba91de29::t_f0b3c6599ba38e 148,152-195
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.ts
+  s_7135f7ba91de29::t_fdb384bc7ccffd 170
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.test.ts
+  s_7135f7ba91de29::t_2ff77c1428a746 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "4edd512655ac74ab9dad42f1d94015687f75e4f4",
+  "prompts": {},
+  "sessions": {
+    "s_7135f7ba91de29": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8ae9ab6b-edf6-40a9-a6bd-339767b9f031",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,37 @@
+clients/apps/web/src/components/Settings/Webhook/WebhookSettings.tsx
+  s_8328894b8c4ada::t_2d23a9597f7a54 30-31
+  s_8328894b8c4ada::t_f00b96dfde0b25 33,36-38
+  s_8328894b8c4ada::t_c8ff0c1daf01d2 72-73
+  s_8328894b8c4ada::t_b748d63b870d8e 4,6,15
+  s_8328894b8c4ada::t_9241343c405e63 32
+clients/apps/web/src/utils/webhook/signatureNotice.ts
+  s_8328894b8c4ada::t_a4f7c98b20e6be 1-5,7,9
+  s_8328894b8c4ada::t_bfb8034f7f416e 6
+  s_8328894b8c4ada::t_434528b7fce2df 8
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/webhooks/endpoints/[id]/EndpointsPage.tsx
+  s_8328894b8c4ada::t_991f735115e04a 164
+  s_8328894b8c4ada::t_b7d0229d06732a 165-166
+  s_8328894b8c4ada::t_251176c7a1a14c 10
+  s_8328894b8c4ada::t_cc725d828d92ec 21
+clients/apps/web/src/components/Settings/Webhook/WebhookSignatureNotice.tsx
+  s_8328894b8c4ada::t_8601e1dd48b69a 16-22
+  s_8328894b8c4ada::t_b7eaeea84735d1 1-10,12-13,15
+  s_8328894b8c4ada::t_376dd587fe8828 11
+  s_8328894b8c4ada::t_bbf402474a76f4 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "736f34ea02bd331598745e18067e68eb278c1687",
+  "prompts": {},
+  "sessions": {
+    "s_8328894b8c4ada": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "e0cae62e-b842-4b01-9cb5-822ebdc523e2",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+server/polar/worker/_cron.py
+  s_42f3e901fec945::t_dc9f9a2fee18ef 1-115
+server/polar/worker/repository.py
+  s_42f3e901fec945::t_340eb1ba8f7281 1-69
+server/tests/scheduler/test_cron.py
+  s_42f3e901fec945::t_90212b78b9049a 1-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d055f5d44102ab2d22c8634b739e6bcbdc4bec8",
+  "prompts": {},
+  "sessions": {
+    "s_42f3e901fec945": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d612be31-5ee4-48d0-a250-7141b42a9c98",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

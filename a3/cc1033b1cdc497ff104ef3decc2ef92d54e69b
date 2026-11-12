@@ -1,0 +1,23 @@
+clients/packages/cli/src/utils/billing-config/sentences.ts
+  s_fd3304141c7309::t_dbef613d8beb7c 13,133-140,146
+clients/packages/cli/src/utils/billing-config/tree.ts
+  s_fd3304141c7309::t_dbef613d8beb7c 2,12,114-143,146-150,212,219,223,229
+clients/packages/polar/src/internal/api/webhooks.ts
+  s_fd3304141c7309::t_a9f2da165db216 22,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a3cc1033b1cdc497ff104ef3decc2ef92d54e69b",
+  "prompts": {},
+  "sessions": {
+    "s_fd3304141c7309": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "40b69caa-2535-4fe1-8059-c07dba2adce6",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

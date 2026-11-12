@@ -1,0 +1,21 @@
+clients/apps/web/src/components/Benefit/SlackSharedChannelBenefitForm.tsx
+  s_eb87cbcf635926::t_db4d9cfcec361b 89-90,174-176,179-181
+clients/packages/client/src/v1.ts
+  s_eb87cbcf635926::t_41a44d72192bfb 34305
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2",
+  "base_commit_sha": "ca26827a9966118c415fdd95f6ad87e6d84d3461",
+  "prompts": {},
+  "sessions": {
+    "s_eb87cbcf635926": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "065c9e8d-64ad-4cdc-8713-9276a0ac8b9a",
+        "model": "grok-4.6"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

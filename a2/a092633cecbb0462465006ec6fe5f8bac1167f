@@ -1,0 +1,29 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/finance/account/AccountPageRouter.tsx
+  s_7b93f39d2fd53e::t_3a94c537407010 45-46,57,63
+  s_7b93f39d2fd53e::t_a8930ab4c0e5d5 47-52
+server/tests/organization/test_tasks.py
+  s_7b93f39d2fd53e::t_328325d84f838d 118,121-122
+server/polar/organization/tasks.py
+  s_7b93f39d2fd53e::t_329f826226933a 107
+  s_7b93f39d2fd53e::t_eea662e0627c29 105-106
+server/polar/organization/service.py
+  s_7b93f39d2fd53e::t_49771c44a589a0 1416-1421
+server/tests/organization/test_service.py
+  s_7b93f39d2fd53e::t_5cffcd6d3b055d 3983,3991,3997-3999
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "a2a092633cecbb0462465006ec6fe5f8bac1167f",
+  "prompts": {},
+  "sessions": {
+    "s_7b93f39d2fd53e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5d3c363c-d423-4267-a211-daba00db6857",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

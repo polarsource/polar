@@ -1,0 +1,27 @@
+server/polar/cli/schemas.py
+  s_931e0757aec2d9::t_ed21d1d4349bba 63-70,75
+clients/packages/cli/src/commands/search.ts
+  s_931e0757aec2d9::t_e55a0212e1cbd7 72
+  s_931e0757aec2d9::t_75cf76a782ee18 9,31-41,59-61
+server/polar/cli/service.py
+  s_931e0757aec2d9::t_ed21d1d4349bba 7-8,25,59-79,106,143,146-147
+  s_931e0757aec2d9::t_c2ab5b02a9e90e 144-145
+clients/packages/cli/src/services/search.ts
+  s_931e0757aec2d9::t_75cf76a782ee18 22-28,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5c182dbe21d36f14211ae5f10f58b8dac1a1f1f8",
+  "prompts": {},
+  "sessions": {
+    "s_931e0757aec2d9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5d5e3d5b-a191-49e1-a4d7-220f9871809e",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

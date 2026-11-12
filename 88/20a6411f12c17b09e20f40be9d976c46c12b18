@@ -1,0 +1,32 @@
+dev/cli/up_steps/01_check_prerequisites.py
+  s_3e0979df60fe40::t_6110e11e57f963 11
+dev/cli/shared.py
+  s_3e0979df60fe40::t_d7b7272de0f2a5 71-76
+dev/cli/commands/docker.py
+  s_3e0979df60fe40::t_83654d0dfe0877 568-574
+  s_3e0979df60fe40::t_0181ed3fb0cfdf 30
+  s_3e0979df60fe40::t_6271fe78084212 1045-1047
+  s_3e0979df60fe40::t_1d2d6cc560e101 749
+  s_3e0979df60fe40::t_4876e9ee759095 903
+  s_3e0979df60fe40::t_1d259cb7e25646 1073
+  s_3e0979df60fe40::t_e6772f22d9f359 91-94
+  s_3e0979df60fe40::t_25bbd25316d885 226
+  s_3e0979df60fe40::t_4d2021670ff40d 1029
+  s_3e0979df60fe40::t_8ae84c0abb93e0 122-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "8820a6411f12c17b09e20f40be9d976c46c12b18",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

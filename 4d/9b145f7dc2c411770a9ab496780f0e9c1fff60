@@ -1,0 +1,9 @@
+clients/apps/mcp/src/instructions.ts
+  ai_agent 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4d9b145f7dc2c411770a9ab496780f0e9c1fff60",
+  "prompts": {}
+}

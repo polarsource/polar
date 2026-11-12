@@ -1,0 +1,33 @@
+clients/packages/polar/package.json
+  s_26e9f7497a6831::t_d15b02f245b9ce 24-25,28-32,43-44
+clients/packages/polar/src/index.test.ts
+  ai_agent 1-51,53-102
+clients/packages/polar/src/index.ts
+  s_26e9f7497a6831::t_8bd4424bea661e 1,6,16,40-43
+  s_26e9f7497a6831::t_85a62fdb8cc08d 3,33
+clients/packages/polar/src/schema/config.ts
+  s_26e9f7497a6831::t_f23c889625f996 1,3-8
+clients/packages/polar/src/schema/runtime.ts
+  s_26e9f7497a6831::t_d2f453d7def6e9 2
+clients/pnpm-lock.yaml
+  ai_agent 1452,1454,6880-6883,6885-6889,6891-6895,6897-6901,6903-6908,6910-6915,6917-6922,6924-6929,6931-6936,6938-6943,6945-6949,6951-6955,6957-6961,6963-6967,6969-6973,6975-6979,6981-6986,6988-6993,6995-7000,7002-7007,7009-7014,7016-7021,7023-7027,7029-7033,7035-7038,8388-8396,9256-9259,9529-9532,11319-11322,12162-12164,12647-12649,12681-12702,13436-13469,13553-13555,13894-13897,14442-14450,17814-17817,20412-20420,20641-20714,22082-22085,23079-23082,23422-23423,26184-26185,27054-27055,27709-27710,27739-27742,27744-27754,28579-28587,28590-28604,28716-28720,29031,29034,29290-29296,29603-29640
+clients/packages/polar/src/schema/meter.ts
+  s_26e9f7497a6831::t_23e66ea6447a94 1-5,27-36,38-54
+  s_26e9f7497a6831::t_b05a49f0ff7d7e 37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "23c204ecf47adcb1451cf6a73fbfe6bb04363dfb",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

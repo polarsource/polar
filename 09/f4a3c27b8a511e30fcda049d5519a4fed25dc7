@@ -1,0 +1,29 @@
+sdk/typescript/src/2026-10/zod.ts
+  ai_agent 2657,2659,2691,2861,2981,3600,4613,10094
+sdk/generator/typescript/zod.py
+  s_1948f7c000ac71::t_c79be3a02ec69f 70-72
+sdk/typescript/src/2027-01/zod.ts
+  ai_agent 2691,2693,2725,2901,3021,3654,4731,10197
+sdk/generator/typescript/template/README.md
+  s_1948f7c000ac71::t_58f5c95f54f803 313-314
+sdk/typescript/src/2026-04/zod.ts
+  ai_agent 2657,2659,2691,2861,2981,3600,4613,10076
+sdk/generator/tests/typescript/test_zod.py
+  s_1948f7c000ac71::t_c79be3a02ec69f 8,69-71,74-80,103-105,126-127,138-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "09f4a3c27b8a511e30fcda049d5519a4fed25dc7",
+  "prompts": {},
+  "sessions": {
+    "s_1948f7c000ac71": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e0ab2e82-88cf-49cb-aa72-78a7db35759c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

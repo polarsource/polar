@@ -1,0 +1,19 @@
+server/tests/merchant_migration/test_service.py
+  s_f2e6e0e6887dbe::t_0ee9803b8888ae 1113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "0c6d718a96b559f413157c3bfc1360a4409a663b",
+  "prompts": {},
+  "sessions": {
+    "s_f2e6e0e6887dbe": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "ace9cdfa-e059-43a3-8d35-2b1456a9209a",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

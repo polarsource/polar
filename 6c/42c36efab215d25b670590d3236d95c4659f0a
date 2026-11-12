@@ -1,0 +1,33 @@
+server/tests/reducer/test_service.py
+  s_6534554e6c812d::t_2135626d9eb6ec 1964-1969,1971-2030
+  s_6534554e6c812d::t_82e584f6896c65 1970
+  s_6534554e6c812d::t_dd2e52a9570fe2 1963
+server/polar/reducer/bucket_repository.py
+  s_6534554e6c812d::t_c415ca1148e41f 315-318
+  s_6534554e6c812d::t_677a4b1acac742 379
+server/polar/reducer/service.py
+  s_6534554e6c812d::t_4bd5ff33bd6af3 60-62
+  s_6534554e6c812d::t_a1c38a93070527 675-679,684,690-692,699-709,712
+  s_6534554e6c812d::t_d29396771fa69f 656-658,661-672
+  s_6534554e6c812d::t_886686707a4116 609-610
+  s_6534554e6c812d::t_5ca76875396345 621-628
+  s_6534554e6c812d::t_5a9b4401bf7afc 687,693-695
+  s_6534554e6c812d::t_d8aa493069b565 619,636,654-655,659-660,685-686,688-689,696-698,710-711
+  s_6534554e6c812d::t_47910be79cc01a 713
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6c42c36efab215d25b670590d3236d95c4659f0a",
+  "prompts": {},
+  "sessions": {
+    "s_6534554e6c812d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f8acfbb7-11c9-4c08-9531-39cc5f27b6ba",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

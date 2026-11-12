@@ -1,0 +1,29 @@
+server/scripts/emit_pii_validation.py
+  s_ccb2229a5e4e1a::t_eb9911e1236fb5 40-43
+server/polar/sentry.py
+  s_ccb2229a5e4e1a::t_55d25299e673da 3,24,48,86
+server/scripts/validate_pii.py
+  s_ccb2229a5e4e1a::t_62265b63165ffe 35
+server/polar/pii_validation/verification.py
+  s_ccb2229a5e4e1a::t_22ecacf8eed22b 14-15,27
+server/tests/observability/observability/test_pii_validation.py
+  s_ccb2229a5e4e1a::t_3bd74508f9bdbb 106,112,139-140,263
+server/polar/pii_validation/README.md
+  s_ccb2229a5e4e1a::t_6610b0ee640ab6 12-13,15-16,18-20,32,55-57,63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "5f3617c8c9cdb0708145b0ea50ef86f99fbe7d20",
+  "prompts": {},
+  "sessions": {
+    "s_ccb2229a5e4e1a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a0a4da-4b4d-74e9-82f2-00e4aa8dceaa",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+server/tests/integrations/stripe/test_account_risk.py
+  s_a708218e2a68df::t_73cc0edc618a56 96-114
+server/polar/integrations/stripe/account_risk.py
+  s_a708218e2a68df::t_05e7112bfdfad6 89-90
+server/tests/organization/test_service.py
+  s_a708218e2a68df::t_a77e2fb6ea035b 1717,1729
+  s_a708218e2a68df::t_edfee43435a8df 1673,1685
+  s_a708218e2a68df::t_167899da4fb60d 1630,1642
+  s_a708218e2a68df::t_dfcab60c984981 1651,1664
+server/tests/integrations/stripe/test_endpoints.py
+  s_a708218e2a68df::t_61e131e9fdc12e 2,4,7
+  s_a708218e2a68df::t_dc5313552bdc5f 67
+  s_a708218e2a68df::t_2d6c786ac6d017 64-66,68-83
+server/polar/integrations/stripe/endpoints.py
+  s_a708218e2a68df::t_39720a351ce508 82-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b81c7a0936c4424e36c06425b81237715cac740b",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

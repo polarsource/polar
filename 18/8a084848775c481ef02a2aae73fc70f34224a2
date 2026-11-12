@@ -1,0 +1,27 @@
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_19497599cb040c 5870-5921
+  s_055272d137234c::t_2f21a84028f1bb 2089-2129
+server/emails/src/types/openapi.ts
+  s_055272d137234c::t_277cccb2dddb77 1322,1335
+server/polar/subscription/service.py
+  s_055272d137234c::t_905fd62e4fe324 937-942
+  s_055272d137234c::t_b520144df1c9e9 1138-1140
+server/tests/e2e/lifecycle/test_meter_cycle.py
+  s_055272d137234c::t_5ee3c29b7f639b 39,56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "188a084848775c481ef02a2aae73fc70f34224a2",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

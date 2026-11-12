@@ -1,0 +1,34 @@
+clients/packages/polar/src/schema/config.test.ts
+  s_26e9f7497a6831::t_92eb15cbf4e1eb 1-4,6,9-11,13,15-17,55-57,60-63,29,32-33,36-39,42,53
+  s_26e9f7497a6831::t_4c7ae69d4391dd 5
+  s_26e9f7497a6831::t_f199edf3043242 14
+  s_26e9f7497a6831::t_83c94680b998f1 18,23,25-26,28
+  s_26e9f7497a6831::t_edcb85931c9cec 19,24,30,40-41,43-52,54
+  s_26e9f7497a6831::t_b5b4394ca44a09 7-8,12,20,58,34
+  s_26e9f7497a6831::t_0dfca342cdf8d8 59
+  s_26e9f7497a6831::t_d2912cc1c00aa0 21-22
+  s_26e9f7497a6831::t_9ed899dc22cfef 31,35
+clients/packages/polar/src/schema/config.ts
+  s_26e9f7497a6831::t_f23c889625f996 1,6-11
+  s_26e9f7497a6831::t_6d7cbed418599d 5,12,17,34-37,48,52-53,58-64,72-73,94,42,45-46,33
+  s_26e9f7497a6831::t_e964fa0e64678a 13-16
+  s_26e9f7497a6831::t_d43aa617fedda4 2-3,38-41,43-44,47,49,51,54,56,74-79,81-84,86-89,91-93
+  s_26e9f7497a6831::t_a1886949cf9ade 4,55,57
+  s_26e9f7497a6831::t_d59f617650c3b1 18-32,65-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "12776e13a6363d071f55fd5c73a97bf56b1bd254",
+  "prompts": {},
+  "sessions": {
+    "s_26e9f7497a6831": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a110e6-f34c-748a-a1f4-2cc823c609bc",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

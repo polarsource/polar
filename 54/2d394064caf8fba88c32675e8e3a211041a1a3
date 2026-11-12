@@ -1,0 +1,20 @@
+handbook/engineering/introduction.mdx
+  s_528cf431c19c3a::t_54f5861c62643f 21
+  s_528cf431c19c3a::t_080a95d08c183c 27,29,31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "542d394064caf8fba88c32675e8e3a211041a1a3",
+  "prompts": {},
+  "sessions": {
+    "s_528cf431c19c3a": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "64875a8b-9de9-4f10-a6d3-40e2f4a60d57",
+        "model": "grok-4.7"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

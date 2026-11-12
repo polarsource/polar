@@ -1,0 +1,859 @@
+clients/packages/cli/src/services/billing-config/api.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 21
+server/tests/integrations/polar/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 43,102,178,264,353,403,417,493,549
+server/tests/oauth2/endpoints/list/test_list_oauth2_clients.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 10,30
+server/tests/payment/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,274
+clients/packages/polar/src/client/actor.test.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 8,26-33,35,42-44,46,51-58,60,70,72-73,75,80-87,93-106
+server/tests/payment_method/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33,151,231,589
+server/tests/e2e/post_purchase/test_benefit_grants.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 55,76,102,129,150,178
+server/tests/search/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 23,390
+server/polar/declarative_config/products.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-118
+server/tests/subscription/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 45,58,311,430,755,808,840,964,1095,1186,1247,1467,1554,1709,2004,2053,2124,2226,2330
+server/tests/transaction/service/test_blocked_org_access.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19
+terraform/global/production.tf
+  s_0b9fbfe84442f2::t_e730601cb8acca 706-717
+server/tests/benefit/grant/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 21
+server/polar/product/endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 117-177
+server/tests/integrations/slack/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 84,149,239,317,381,487,508,593
+server/tests/observability/invariants/rules/test_no_recent_orders.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,21,28,47
+server/polar/checkout/service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 105,107,1812,1816-1845,2239-2241
+server/tests/fixtures/worker.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20-24,27,55,57-69
+server/tests/member/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17,227,464,574,729,840,937,1265,1365,1485,1563,1760,2013,2121
+server/tests/e2e/lifecycle/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 6,79,100,112
+server/tests/authz/test_user_personal_dependencies.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25,86
+server/tests/benefit/grant/test_scope.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18
+server/tests/metrics/test_paused_verification.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29
+server/polar/product/repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 5,56-73
+server/tests/observability/invariants/rules/test_no_recent_subscriptions.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,19,28
+server/tests/subscription/test_service_charge_preview.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 78,411,493
+server/tests/invoice/test_render.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 59
+server/tests/organization_access_token/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33,105
+server/tests/meter/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 73,240,455,1412,1463,1481,1546,1558,1567,1924
+server/tests/product/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 82,289,349,1349,1512,1516,1591,1801,2555,2960,3100
+server/tests/customer_portal/endpoints/test_downloadables.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 23
+server/tests/transaction/service/test_payment.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29
+server/tests/auth/oauth2/test_state.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29
+server/tests/fixtures/redis.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 8-10
+server/tests/models/test_support_case.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28,40,72,126,177
+server/tests/order/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19,26,39,210,311,588,610,631,652,730,742,887
+server/tests/authz/test_policies.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 23,108,153
+server/tests/member_session/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,72,247
+server/tests/customer_portal/service/test_customer_session.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 43,60,467,519,568,892
+server/tests/payment_method/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 138,348
+server/tests/benefit/strategies/test_github_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 116,229,294
+server/tests/customer_portal/endpoints/test_customer_session.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 24,42,105
+server/tests/declarative_config/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,7
+server/tests/backoffice/merchant_migrations/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16
+clients/packages/polar/src/index.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 39-61
+server/tests/integrations/stripe/test_payment.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 49,315
+server/tests/compass/threads/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 104,169,220,265,335,494
+server/tests/integrations/slack/test_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 9
+server/tests/merchant_migration/test_cutover.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 221,228,240,313,1575,1579,1653,2017,2185,2412,2414
+server/tests/backoffice/organizations_v2/test_test_sales_query.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31
+server/tests/integrations/slack/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 116,264,291,374,693
+server/tests/feedback/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28
+server/tests/integrations/slack/test_schemas.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 50
+server/tests/kit/test_http.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 22,48,57,66,75,84,94,109,118,128,153,181,206,232
+server/tests/models/test_oauth_account.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 22,71,105,144
+server/tests/models/test_slack_app.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,69,118
+server/tests/metrics/test_tinybird_metrics.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1582,1621
+server/tests/observability/invariants/rules/test_payout_transactions_amount_invariant.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,33,38,46,104,139,194,237,292,332
+server/tests/integrations/tinybird/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13
+server/tests/scripts/test_backfill_customer_first_user_event_at.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 54,141
+server/tests/subscription/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 35,99,128,160,263,361
+server/tests/transaction/service/test_dispute.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 78,83,90
+server/tests/observability/invariants/rules/test_subscriptions_future_period_start.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17,22,45,68
+server/polar/declarative_config/benefits.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-63
+server/tests/webhooks/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,58,161,251,304
+server/tests/event/test_ancestors.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 38,58,78,100,139,270,355,400,462,799,1246
+server/tests/organization_review/test_appeal_case_decision.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 36,70,183
+server/tests/subscription/test_service_units.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 49,417
+server/tests/fixtures/locker.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,7
+server/tests/e2e/lifecycle/test_seat_lifecycle.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 37
+server/tests/user/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 34,75,140,216,412,564,676,784,861
+server/tests/e2e/purchase/one_time/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,3,10
+server/tests/metrics/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 2325,2364,2658,2666,2729,2738,4816,5431
+server/tests/worker/test_runner.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31,180,232
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 142,1755,2152
+server/tests/email/test_billing_migration.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,39
+server/tests/merchant_migration/test_cards.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 142,154,402
+server/tests/meter/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 21
+server/polar/benefit/repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 5,61-77
+server/tests/customer/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 40,54,97,128,151,167,184,233,254,275,293,308,324,340,353,433,481,560,594
+server/tests/event_type/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 4,20,25,45
+server/tests/observability/invariants/rules/test_subscriptions_locked_invariant.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17,22,45,68
+server/tests/organization/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 104,334,536,559,605,670,718,1011,1160,1286,1356,1406,1494,1702,1765,1857,1921,1965,2172,2276,3331,3451,3580,3659,4028,4139,4335,4402,4463,4547,4595,4711,4745,4828,4913,5117,5313,5572,5618,5649,5738,5833,5870,5924
+server/tests/organization_access_token/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,94
+server/tests/organization_review/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 110,523,552,692
+server/tests/customer_portal/endpoints/test_member.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19,116,291,531
+server/tests/payout/test_service_ledger.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 37
+server/tests/kit/test_time_queries.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11,33
+server/tests/customer/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33,151
+server/tests/payout_account/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 58,209,233,357,472,515
+server/tests/customer_email_update/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 55,139,181
+server/tests/account_credit/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,112,146
+server/tests/metrics/test_cache.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 226
+server/tests/observability/observability/test_http_middleware.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25,36,51,55,70,74,98,103-105,129,131-133,159,164,188,190,216,218,247
+server/tests/test_exception_handlers.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 45
+server/tests/email_update/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/feedback/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28
+server/tests/models/test_organization.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 40
+server/tests/integrations/github/service/test_secret_scanning.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29,66
+server/tests/integrations/stripe/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25,155,178
+server/tests/observability/invariants/rules/test_payments_missing_transactions.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19
+server/tests/organization_review/collectors/test_firecrawl_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,66,74,84,92
+server/tests/organization_review/collectors/test_identity.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29
+server/tests/subscription/test_service_prorations.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 144,1366,1670,1948,2090
+server/tests/support_case/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 22
+server/tests/webhooks/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25,57
+server/tests/subscription/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33,56,346,441
+server/tests/dispute/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,39,50,89,198
+server/tests/cli/test_trigger.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 190
+server/tests/e2e/purchase/one_time/test_fixed_price.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/scripts/test_backfill_slack_app_encrypted_secrets.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 41
+server/tests/subscription/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 273,953,1526,1604,2938,3273,3351,3439,3594,3721,3888,4098,4148,4345,4601,4632,4704,4784,4966,5005,5136,5701,7232,7405,7785,7804,7833,7862,7893,7974,8057,8133,8192,10177,10306,10408,10498,10739,10853,10939,11010
+server/tests/fixtures/file.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 308,319
+server/tests/worker/test_routing_broker.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 102
+server/tests/merchant_migration/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 185,610,633,670
+server/tests/webhooks/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 48,110,183,203,220,252,316,461,602
+server/tests/meter/test_aggregation.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 53
+server/polar/benefit/service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 45,72-73
+server/tests/billing_entry/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 55,67,113,122,131,140,386
+server/tests/payout/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19,119
+server/tests/startup_program/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 79,233,330,402
+server/tests/user_organization/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 45,172,329,405,573,668,696,892
+server/tests/checkout/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 98,105,137,174,239,607,760,852,937,1054,1093,1181
+server/tests/customer/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 37,241,405,894,967,1038,1141,1307,1465,1622
+server/tests/customer_meter/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,40,64,104
+server/tests/payout_account/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,29,73,116,125,215,236,261,284,312,400
+server/tests/event/test_resolve_pending_parents.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 51
+server/tests/transaction/service/test_refund.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 113,440
+server/tests/worker/test_dummy_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13
+server/tests/compass/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,114,164,201,280,336
+server/tests/subscription/test_service_change_preview.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 37
+server/tests/backoffice/email_logs/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13,33
+clients/packages/polar/src/internal/api/benefits.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 7,9-11,13-15,18-36
+clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/blog/(header)/_posts/building-the-next-evolution-of-polar/page.mdx
+  s_0b9fbfe84442f2::t_e730601cb8acca 2,5,9,11,18,20,22,24,28,32,34,36,38,42,44,46-47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79,81,83
+server/tests/license_key/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 37,646,748,772,780,801,823,844,868,1088,1155,1181
+server/tests/order/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 263,486,551,907,1091,2615,2832,2876,2946,3056,3291,3491,3577,3893,4790,4990,5216,5688,5762,6151,6226-6227,6364,6392,6416,6439,6465,6501,6538,6578,6613,6647,6665,6701,6737,6739,6789,6801,7367,7957
+server/tests/notifications/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 5
+server/tests/auth/test_authentication_session.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,41
+server/tests/support_case/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 24,90,165,205,229
+server/tests/wallet/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,19,29,64,117
+server/tests/backoffice/payouts/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,40,56,144,197
+server/tests/benefit/strategies/test_downloadables.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 36,528,659
+server/tests/e2e/lifecycle/test_meter_cycle.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 54
+server/tests/organization_review/test_policy.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 35
+server/tests/test_cache_control.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 5
+server/tests/product/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 12
+server/tests/event_type/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17,465
+server/tests/declarative_config/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 27,208,300
+server/tests/customer_portal/endpoints/test_customer_seat.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28,107,340,430,560,766,803,850
+server/tests/benefit/test_schemas.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13,61
+server/tests/oauth2/endpoints/userinfo/test_userinfo.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 10,30
+server/tests/external_event/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18
+server/tests/observability/invariants/rules/test_subscriptions_current_period_end.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,23,49,75,101,126,145
+server/tests/integrations/discord/test_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,73,85
+server/tests/customer_seat/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 35,103,362,466,549,650,794,808
+server/tests/observability/invariants/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 38,50,65,80
+server/tests/backoffice/test_versioned_static.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,23,55
+server/tests/observability/observability/test_instrumentation_smoke.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 9
+server/tests/integrations/polar/test_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 66,166
+server/tests/organization_review/collectors/test_website.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 234,247,263,288,301,317,334,353,372,403,420,436,456,475,494,523,540,565,590,630,655,673,692,710,726,739
+server/tests/integrations/stripe/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 12,38,72
+server/tests/customer_meter/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,53,71,151,184,861,1210,1263
+server/tests/customer_portal/service/test_customer_meter.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18
+server/tests/merchant_migration/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 104,295,353,390,463,555,665,716,807,992,1089,1156,1235,1340
+server/tests/email/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 12
+server/tests/merchant_migration/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 40,110
+server/tests/scripts/test_transfer_products_between_organizations.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31,1137
+server/tests/transaction/service/test_payout.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 73,161
+server/tests/scripts/test_reset_organizations_for_review.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15
+server/tests/worker/test_debounce.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 40,91,146
+server/AGENTS.md
+  s_0b9fbfe84442f2::t_e730601cb8acca 299,328
+server/tests/metrics/test_service_authz.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 10
+server/tests/customer_portal/endpoints/test_organization.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 10
+server/tests/support_case/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26,111,390,455
+server/polar/meter/endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 88-116
+server/polar/product/service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 101,140-141
+server/tests/benefit/strategies/test_slack_shared_channel_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 9
+server/tests/e2e/post_purchase/test_seat_claim.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 27,39,50
+server/tests/test_rate_limit.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 2,24-26,98,130
+server/tests/user_organization/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11
+server/tests/authz/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,72,134,232,303
+server/polar/declarative_config/validation.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 3-5,7-10,17-26,28,34,41,58,72-73,76,79-85,128-222,224-248,360-372,374-377,379-437,439-447,451-576,587-592,595-597,600-602
+server/tests/benefit/strategies/test_license_keys.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 46,137
+server/tests/customer_portal/service/test_benefit_grant.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31,262,410,495,599
+server/tests/integrations/resend/test_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 9
+server/tests/meter/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 6,15,27,47-95,97,116,203,250,307
+server/tests/payment/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,21,92
+clients/packages/polar/src/schema/price.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-472
+server/tests/customer_seat/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20
+server/tests/customer_session/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14
+server/polar/outpost/service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13-14,51,67-69,90,94-105,107-109,115
+server/tests/integrations/tinybird/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18
+server/tests/integrations/plain/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 127,191,238
+server/tests/integrations/polar/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 244
+server/tests/receipt/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33
+clients/apps/web/src/components/Blog/DesignPartnerSignup.tsx
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-30
+server/tests/observability/invariants/rules/test_expired_records_not_deleted.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 243
+server/tests/subscription/test_endpoints_change_preview.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25
+server/tests/transaction/service/test_transaction.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17,118
+server/tests/checkout_link/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 34,44,56,64,118,200,268,313
+server/tests/worker/test_health.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 56,221,320
+server/tests/models/test_subscription.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 99
+server/tests/tax/calculation/test_stripe.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25
+server/tests/merchant_migration/test_precheck.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 201
+server/tests/email/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26,278
+server/tests/customer_session/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19
+server/tests/e2e/purchase/one_time/test_payment_failure.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 32
+server/tests/meter/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 4,20,25,45
+server/tests/kit/repository/test_base.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18
+clients/packages/polar/src/schema/money.test.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-90
+clients/apps/web/src/app/api/design-partner/route.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-162
+server/tests/authz/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,105,134,170,214,270
+server/tests/organization_review/test_analyzer.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 234
+server/polar/benefit/endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 9,22,93-140
+server/tests/customer_portal/endpoints/test_benefit_grant.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13,283,356
+server/tests/refund/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 47
+server/tests/scripts/test_backfill_notification_settings.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11
+server/tests/member/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19,248
+server/tests/benefit/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31,39,87,227-257,259,301,452,569,741,781
+server/tests/transaction/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,42,98
+server/tests/user/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,28,52,71,97,117,148,180,187,263,286,336
+server/tests/worker/test_enqueue_gate.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 63,133,174
+server/tests/dispute/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 97,691,1071,1515,1629,1639,1848,1905
+clients/packages/polar/src/schema/config.ts
+  ai_agent 14-16,21,31-54,56-72,104-112,156-159,169-171,182-193,206-236,239-243
+server/tests/fixtures/random_objects.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11,185,190,226,231,271,294,299,334,351,975,989,1003,1017,1452,1461,1472,1484,1496,1508,1520,1553,1565,1577,1589,1601,1613,1626,1638,1650,1662,1673,1857,1864,1871,1878,1891,1906,1919,1934,1947,1961,1999,2015,2031,2047,2320,2445,2507,2534,2770
+server/tests/declarative_config/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-3,8-9,13,19,22,27-28,31-35,37,43,46,109,372,374,378,380-618,627-628,630-679,686-688,691,694-696,698-803,830-978,983-1082
+server/tests/outpost/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13,15,18,30,33,36,50,52-55,57-60,66,75-78,102-105
+server/tests/e2e/purchase/one_time/test_free_product.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19,32
+server/tests/webhooks/test_health.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16
+server/tests/customer/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31,210,540,571,1308,1604,1813,1853
+clients/packages/polar/src/schema/product.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-271
+server/tests/organization/test_resolver.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/transaction/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 4,87,100,112,129,169,176
+server/tests/worker/test_queue_metrics.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28,36,56,74,89,104,118,128,141,153
+terraform/production/variables.tf
+  s_0b9fbfe84442f2::t_e730601cb8acca 446-451
+clients/turbo.json
+  s_0b9fbfe84442f2::t_e730601cb8acca 53
+server/tests/customer_portal/service/test_customer.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 37,238,292
+server/polar/customer_meter/repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 77-97
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28,82,232,282,339,364,423,491,533,594,649,711
+server/polar/meter/service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 95,113-116
+server/tests/account/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,21,58,76
+server/tests/custom_field/test_data.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,69-70,86-87,94
+server/tests/event/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 45,126,238,391
+server/tests/eventstream/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 8-9,13-14,16
+server/tests/models/test_checkout.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,55,85,133,152,192,220,245,260
+server/tests/notifications/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 87
+server/tests/oauth2/service/test_oauth2_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18
+server/tests/auth/test_turnstile.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11
+server/tests/oauth2/service/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13
+server/tests/support_case/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 73,175
+server/tests/auth/test_middlewares.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 101,144,203,509,546,654
+server/tests/event/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 19,27,367,499,559,567,575,583,612,620
+clients/apps/web/src/mdx-components.tsx
+  s_0b9fbfe84442f2::t_e730601cb8acca 2,53-56
+server/tests/dispute/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 68,125,225
+clients/packages/polar/src/generate.test.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 153-234,324-426,436-467
+server/tests/checkout_link/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 30,48,70,81,91,113,260,360,460,763
+server/tests/e2e/purchase/one_time/test_with_tax.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 24,37
+server/tests/organization_review/test_appeal_case_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,31
+server/tests/scripts/test_backfill_reducer_buckets.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 54
+clients/packages/polar/src/client/actor.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 5-8,126,137,144,146-152
+server/tests/auth/sso/test_flow.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 46,221,250,431
+server/tests/email_update/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11
+server/tests/receipt/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 65,132,291,395
+server/tests/tax/calculation/test_numeral.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25
+server/tests/integrations/resend/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 61,161,210,486,885,1134,1384,1893,2066,2464
+server/tests/compass/test_assistant.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 102,193,217,344,364,390,430,608
+server/polar/declarative_config/service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 9,11,13-15,19,22-23,26,44,47-70,132,145-161,169,273,276,278-279,282,286,290-291,299-420
+server/tests/discount/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,34,106,391,410,454
+server/tests/feedback/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 34
+server/tests/file/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,151,225,322,344
+server/tests/integrations/stripe/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 72,228,441,506
+handbook/package.json
+  s_0b9fbfe84442f2::t_e730601cb8acca 22-23
+server/tests/cli/test_listener.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,45,61
+server/tests/cli/test_webhook_eventstream.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16
+server/tests/customer_portal/endpoints/test_oauth_accounts.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,137
+server/tests/member/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,123,276,517,783,1209,1474,1598,1718
+server/tests/models/test_event.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,77,154,189
+server/tests/e2e/lifecycle/test_trial_metered_cancel.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 78,167
+clients/packages/polar/src/schema/runtime.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 6
+server/tests/customer/test_schemas.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 21,48,75
+server/tests/e2e/purchase/subscription/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,3,11
+server/tests/integrations/github_repository_benefit/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15
+server/tests/integrations/polar/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 525,755,806,930,1197,1243,1426,1480,1527,1559,1758,2060,2330,2367,2465,2765,2846,2911
+server/tests/metrics/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 5,168,182,197
+server/tests/auth/sso/test_factor.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33
+server/tests/oauth2/service/test_oauth2_token.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 24,151,258,359
+server/tests/order/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,46,75
+server/tests/scripts/test_backfill_license_key_grant_state.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 71
+server/tests/organization/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26,44,109,141,158,205
+server/tests/notifications/test_email.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 43,58,74,95,105,120,138,156,167,232
+server/tests/e2e/purchase/one_time/test_with_discount.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 21,43
+server/tests/observability/invariants/rules/test_subscriptions_canceled_deleted_customer.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,21,50,81
+server/tests/observability/invariants/rules/test_external_events_unhandled.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/payout/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 22,45,66,89,119,141,162
+server/tests/receipt/test_render.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 64
+server/tests/organization_review/test_appeal_case.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 51,72,149,191,285
+server/tests/refund/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 82,294,568
+terraform/production/vercel.tf
+  s_0b9fbfe84442f2::t_e730601cb8acca 102
+server/tests/customer_seat/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,25,48,77,100,123
+server/tests/billing_entry/test_repository_benchmark.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 66,78,90,99,208,282,293,361,422
+server/tests/subscription/test_scheduler.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,72,93
+server/tests/scripts/test_seeds_load.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 72
+handbook/pnpm-lock.yaml
+  ai_agent 183,192-193,195-196,981-982,985-986,989-990,993-994,1001-1002,1005-1006,1009-1010,1178-1179,3946-3947,3949-3951,4531,4534,4536,4539,4541,4543-4544,4546,4548,4552,4559,4561,4563-4565,4567,4569,4571-4572,4575,4577,4582,4586,4588-4589,4591,4593,4595-4596,4598,4600,4603-4604,4606-4619,4621,4623,4625-4626,4629,4631,4633,4635,4638,4640,4643,4645,4648,4650,4652,4722,4724,4726,4728-4729,4737,4845,4849-4850,4917,4923,4928-4929,4948,4951,5139,5141,5143,5145,5148,5150-5151,5157,5159-5160,5162-5164,5169,5171,5174,5176-5178,5181,5183,5406,5414,5444,5446,5460,5464,6067,6449,6452,7014,7016-7019,7877,7879,8759,8763,8767,8798,9262,9264
+server/tests/models/test_order.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 82,175
+server/tests/benefit/strategies/test_discord.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 56
+server/tests/auth/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 10
+server/tests/sso/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 52,64,71,111,153,223,430,708,803
+server/tests/backoffice/test_layout.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13,31
+server/tests/metrics/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,129,248,330
+server/tests/test_redis.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26
+server/tests/customer_portal/endpoints/test_customer.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26,109,121,306,400,454,507,530
+server/tests/backoffice/customers/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25,45,100,204,253
+server/tests/customer/test_short_id.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 8,36
+server/tests/organization_review/test_agent.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 132,144,161
+server/tests/backoffice/support_cases/test_queries.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 38,223,306
+server/tests/license_key/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 76
+server/tests/notification_recipient/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 12,120,164
+server/tests/order/test_schemas.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 35
+server/tests/webhooks/test_webhooks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 294,324,365,390,444,498,549,585,621,658,766
+server/tests/benefit/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28,111,220,290,317,387
+server/tests/invoice/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 11,24,46
+server/tests/reducer_bucket/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 89,129
+server/tests/kit/test_jwt.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29,38,47,53
+server/tests/backoffice/subscriptions/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 24,44,70
+server/tests/organization/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 50,85,127,171,241,622,773,870,1002,1019,1033,1060,1144,1259,1459,1526,1567,1605
+server/tests/customer_portal/service/test_subscription.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 55,237,359,436,511,576
+server/tests/transaction/service/test_processor_fee.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 39,44,51,135,204,277
+server/tests/scripts/test_backfill_reducers.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13
+clients/packages/polar/src/internal/api/benefits.test.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-67
+clients/packages/polar/src/schema/money.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-321
+server/tests/auth/sso/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 48,108
+server/tests/e2e/lifecycle/test_renewal.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29
+server/tests/license_key/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 83,169,259,407
+server/tests/tax/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 47,111,167
+server/tests/customer_portal/test_schemas.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16
+server/tests/backoffice/webhooks/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,36
+server/tests/payout/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 88,548,575,654,712,792,1060,1184,1282,1401,1588,1670,1847,1952
+server/tests/meter/test_filter.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 90
+server/tests/feedback/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 25
+server/tests/transaction/service/test_balance.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16,53,149
+clients/packages/polar/src/schema/config.test.ts
+  ai_agent 7,364-479
+server/uv.lock
+  ai_agent 1015,1019,1025,1027,2819
+server/tests/auth/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 4,11
+server/tests/event/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 105,292,393,632,1608,1717,2076,2138,2411,2489
+server/tests/scripts/test_backfill_meter_events.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/merchant_migration/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 221,716,846,924,1246,1586,3620,3809,4019,4368,4396,4422,4551,4700,4796,5202,5319
+server/tests/customer_seat/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 55,69,78,92,107,114,131,144,168,180,206,251,276,303,328,356,386,435,467,499,543,599,642,687,720,752,801,847,880,926,984,1035,1082,1128,1171,1205,1249,1298,1346,1358,1363,1378,1393,1412,1445,1450,1467,1484,1512,1545,1595,1664,1676,1685,1703,1719,1777,1793,1810,1822,1862,1872,1920,1930,1954,1980,2005,2063,2101,2123,2143,2184,2259,2310,2326,2383,2429,2513,2776
+server/pyproject.toml
+  s_0b9fbfe84442f2::t_e730601cb8acca 8,142
+server/polar/models/customer_meter.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 70-73
+server/tests/merchant_migration/test_importer.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 16
+server/tests/order/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 54,89,188,490,522,550,809
+server/tests/oauth2/service/test_oauth2_grant.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 12
+server/tests/benefit/grant/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 49,220,407,685,780,903,942,1032,1069,1109,1164,1303,1520,1666
+server/tests/test_openapi.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 12,26
+server/tests/auth/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 59,93,119
+server/tests/customer_portal/service/test_order.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 20,195
+server/tests/transaction/service/test_platform_fee.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 130,135,147,432,488
+server/tests/webhooks/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,15,29,46,60,77
+lambda/image-resizer/uv.lock
+  ai_agent 755-775
+server/tests/custom_field/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,27,44,98
+server/tests/kit/test_encryption.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,23,31,37,44,73,84,107
+server/tests/refund/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 206,641,773,867,981,1085
+server/tests/cli/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 62
+server/tests/scripts/test_reingest_missing_events.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 65,92,279
+server/tests/test_sdk.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 21,34
+server/tests/event/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 4,20,25,45
+clients/packages/client/src/v1.ts
+  ai_agent 47131-47132,47855-47856,61495-61496
+server/tests/integrations/stripe/test_identity_verification_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29
+clients/apps/web/src/components/Landing/design-partner/DesignPartnerForm.tsx
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-384
+server/tests/auth/test_factors.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 62,161
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 43,128,313,379,494,662
+server/tests/models/test_base.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 6
+server/tests/personal_access_token/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26
+server/tests/e2e/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 99,130
+server/tests/checkout/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 18,63,101
+server/tests/organization/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 22,61,105
+server/tests/checkout_link/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 31,96
+server/tests/cli/conftest.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 8-9,13-14,16
+server/tests/fixtures/database.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 4,56-57,64,67,74
+server/tests/oauth2/endpoints/test_well_known.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 5,18
+server/tests/organization_review/collectors/test_setup.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 360,365,392,414,443,473,505,523,555,584,608,630,651,663
+server/tests/auth/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 24,55,111,139,160,180,224
+clients/packages/polar/src/generate.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 5-8,79-348,388-391,399
+server/tests/customer_meter/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 15,33
+server/tests/event_type/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 10,38
+server/tests/organization_review/test_feedback.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 629,777
+server/tests/organization_review/test_repository.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 93,173,207,273,460,569,617,684,763,877,992,1098,1158,1208
+server/tests/e2e/purchase/subscription/test_fixed_price.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17
+server/tests/backoffice/impersonation/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 27
+server/tests/customer_portal/endpoints/test_subscription.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 34,72,114,295,308,389,539,606,715,811,896
+server/tests/auth/oauth2/test_router.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 81
+server/tests/backoffice/payout_accounts/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 21,41,105,129
+server/tests/checkout/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 40
+server/tests/file/test_tasks.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 72
+server/tests/fixtures/base.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 45,61,76-77,88,102
+server/tests/payment/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14,300
+clients/packages/polar/examples/example-configs.ts
+  ai_agent 1-15,201-250
+server/tests/backoffice/organizations_v2/test_analytics.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28,95,148,306
+server/tests/scripts/test_backfill_generated_sepa.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 23,162
+clients/apps/demo-app/polar.config.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1,17-34
+server/tests/benefit/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 86,195,260,633,859
+server/tests/oauth2/service/test_oauth2_authorization_code.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 14
+server/tests/product/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29,88-159,161,309,696,852,904
+server/tests/eventstream/test_subscribe.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28
+clients/packages/polar/src/schema/price.test.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-347
+server/tests/backoffice/users/test_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 17,35
+server/tests/discount/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 57,197,688,718,817,872,940,1478
+clients/packages/polar/src/schema/product.test.ts
+  s_0b9fbfe84442f2::t_e730601cb8acca 1-127
+server/polar/outpost/schemas.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 26,30-47,83
+server/tests/benefit/strategies/test_meter_credit.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 33,90,307
+server/tests/integrations/tinybird/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 316,580,664,775,854,959
+server/tests/meter/test_archive.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 32,44,53
+server/tests/checkout/test_service.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 197,204,211,218,225,232,241,250,268,280,294,318,325,337,344,356,368,380,392,399,412,422,440,457,475,493,515,596-657,2619,3166,3224,3253-3271,4874,7138,7489,7564,7705,7733,7826,7895,7919
+server/tests/customer_portal/endpoints/test_wallet.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 13,18,62
+server/tests/e2e/lifecycle/test_full_lifecycle.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 28
+server/tests/customer_portal/endpoints/test_order.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 35,72,186,485
+server/tests/metrics/test_dashboard_endpoints.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 29,123,226,279,376
+server/tests/models/test_oauth2_client.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 70,125,155,176
+server/tests/models/test_product_price.py
+  s_0b9fbfe84442f2::t_e730601cb8acca 32,354,498
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "13304fe47603f60c553f2caa3275d6a7a3ce8fb4",
+  "prompts": {},
+  "sessions": {
+    "s_0b9fbfe84442f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f40c5f05-dc29-4096-b206-7662d6cf88cd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

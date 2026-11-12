@@ -1,0 +1,30 @@
+server/polar/billing_entry/service.py
+  h_6aa6f5c50f181e 15,18,23-31,74-90,224-316,327-337,362-370,439,506-529
+server/polar/billing_interval/service.py
+  h_6aa6f5c50f181e 1,4,19,21,25,44-53,117-126,143-145,151,164-276
+server/polar/billing_interval/types.py
+  h_6aa6f5c50f181e 3,18-25
+server/polar/reducer/bucket_repository.py
+  h_6aa6f5c50f181e 534-553,568,585-603
+server/polar/reducer/service.py
+  h_6aa6f5c50f181e 49,241-312,353-358,370,372-374,420-421,1148,1153,1167-1168,1181-1205
+server/polar/reducer/types.py
+  h_6aa6f5c50f181e 6-7,30-36
+server/tests/billing_entry/test_service.py
+  h_6aa6f5c50f181e 11,13-14,26,35,39,41,52-53,62,1674-1947
+server/tests/billing_interval/test_service_usage_windows.py
+  h_6aa6f5c50f181e 3,10-14,16-17,22,205-259
+server/tests/reducer/test_service.py
+  h_6aa6f5c50f181e 1689-1735
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e443231c515d3f993a785b6f88f029c320e028a",
+  "prompts": {},
+  "humans": {
+    "h_6aa6f5c50f181e": {
+      "author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+clients/packages/cli/src/services/agent-setup/cursor.test.ts
+  s_9c51bbadd7554a::t_e2112a64b33aec 43-60
+clients/packages/cli/src/services/agent-setup/cursor.ts
+  s_9c51bbadd7554a::t_0c466480b18447 3,20-24,27,37-43,70-77,96-97,102
+clients/packages/cli/src/services/agent-setup/skills.ts
+  s_9c51bbadd7554a::t_0c466480b18447 40-41,124-126,133-154,156-165,169-171
+  s_9c51bbadd7554a::t_e2112a64b33aec 166-168
+  s_9c51bbadd7554a::t_f382e0c675d2e6 155
+clients/packages/cli/src/commands/agent/setup.ts
+  s_9c51bbadd7554a::t_0c466480b18447 116-120,122-127,129,132-137,220-228
+  s_9c51bbadd7554a::t_5c3e3b5e521eb8 1
+clients/packages/cli/src/commands/agent/setup.test.ts
+  s_9c51bbadd7554a::t_e2112a64b33aec 173-197
+clients/packages/cli/src/services/agent-setup/skills.test.ts
+  s_9c51bbadd7554a::t_e2112a64b33aec 1-9,72,81-82,91-94,116-136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4ec517fa81fb139343f9e8d60618b978e273b725",
+  "prompts": {},
+  "sessions": {
+    "s_9c51bbadd7554a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "07eb2da0-2c79-49fa-92e5-1e4e4a3c8a52",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

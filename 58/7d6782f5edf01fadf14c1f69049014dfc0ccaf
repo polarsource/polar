@@ -1,0 +1,35 @@
+server/polar/subscription/schemas.py
+  s_055272d137234c::t_07c1cdaf9b27da 89-103
+server/tests/fixtures/random_objects.py
+  s_055272d137234c::t_07c1cdaf9b27da 434-435,448-450,457-458
+server/polar/subscription/service.py
+  s_055272d137234c::t_07c1cdaf9b27da 563-564,574,676-680,878-886,946-971
+server/tests/subscription/test_service.py
+  s_055272d137234c::t_07c1cdaf9b27da 399-460,1870-1903
+server/polar/product/schemas.py
+  s_055272d137234c::t_07c1cdaf9b27da 4,15,26-31,486-524,864-873
+server/polar/models/subscription.py
+  s_055272d137234c::t_07c1cdaf9b27da 33,127-139,176-189
+server/migrations/versions/2026-06-17-1034_add_usage_interval_to_product_and_.py
+  s_055272d137234c::t_07c1cdaf9b27da 1-72
+server/polar/models/product.py
+  s_055272d137234c::t_07c1cdaf9b27da 25,82-95
+server/tests/product/test_schemas.py
+  s_055272d137234c::t_07c1cdaf9b27da 7-10,501-610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.8",
+  "base_commit_sha": "587d6782f5edf01fadf14c1f69049014dfc0ccaf",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

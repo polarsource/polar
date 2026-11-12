@@ -1,0 +1,22 @@
+handbook/engineering/design-documents/index.mdx
+  s_c6b4778affae67::t_cc879da572ee39 17
+  s_c6b4778affae67::t_1a23f8b7ecc612 26-28
+AGENTS.md
+  s_c6b4778affae67::t_6dc2140170d9d4 169-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "78b7de9b7eb98b314e9f8e8d27c8fced5b031dde",
+  "prompts": {},
+  "sessions": {
+    "s_c6b4778affae67": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8e3a75b5-9b18-4d22-9495-caa3f3bf967b",
+        "model": "grok-4.6"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

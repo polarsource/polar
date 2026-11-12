@@ -1,0 +1,19 @@
+server/tests/worker/test_health.py
+  s_55425a4ea3c9b4::t_30a05788d6453b 257-261,265-269
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "48e1cfeffdcac992fedc7a9c3d230050130d2a03",
+  "prompts": {},
+  "sessions": {
+    "s_55425a4ea3c9b4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "142d8293-14bc-46bf-a97c-7bc7f8358d23",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

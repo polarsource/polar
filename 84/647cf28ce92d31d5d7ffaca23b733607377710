@@ -1,0 +1,19 @@
+terraform/modules/application_access/main.tf
+  s_5b881bade6edbb::t_e1cda784e3ec34 195-201,206,208-232,236-241,246,250-258,261-263
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "84647cf28ce92d31d5d7ffaca23b733607377710",
+  "prompts": {},
+  "sessions": {
+    "s_5b881bade6edbb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a11f7bb0-49de-45e4-8617-e4cbaad4b68d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+handbook/engineering/design-documents/agent-sign-up.mdx
+  ai_agent 107-148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "df31878c12940a3fd27fbd0382ce88e7e059e2b9",
+  "prompts": {}
+}

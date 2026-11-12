@@ -1,0 +1,36 @@
+server/tests/member/test_endpoints.py
+  s_92e571d8ebe6ac::t_b87146761fb49a 1657,1712,1814,1857,1934,2039
+server/polar/member/endpoints.py
+  s_92e571d8ebe6ac::t_24644790fdb784 535-536
+  s_92e571d8ebe6ac::t_d2aa470df59aaa 93
+  s_92e571d8ebe6ac::t_59db349cca090c 293
+  s_92e571d8ebe6ac::t_b365f6907b6953 30
+  s_92e571d8ebe6ac::t_992f7b2ecfd29a 355
+  s_92e571d8ebe6ac::t_c800d57a3fdd6d 495-496
+  s_92e571d8ebe6ac::t_9e5124a6f7e4ae 611-612
+  s_92e571d8ebe6ac::t_450ec4cd21a9d2 582-583
+  s_92e571d8ebe6ac::t_8b22a35f8ae17f 458-459
+  s_92e571d8ebe6ac::t_35759f84ed8424 383-385,393-394
+  s_92e571d8ebe6ac::t_7d28f391d2e32f 227
+  s_92e571d8ebe6ac::t_8b0111aa9eabd4 429-430
+server/polar/member/service.py
+  s_92e571d8ebe6ac::t_ea8e5c82a3ed34 42-44
+clients/packages/client/src/v1.ts
+  s_92e571d8ebe6ac::t_5b78c50d9acc01 3531,3555,3567,3579,3599,3609,3619,3710
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "743efe82fee79bd60edc528241ba59d4732d4805",
+  "prompts": {},
+  "sessions": {
+    "s_92e571d8ebe6ac": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e321c43-66b5-4140-8c71-c5d20484975d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

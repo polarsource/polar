@@ -1,0 +1,80 @@
+server/tests/subscription/test_tasks.py
+  s_4e3eefc968081e::t_976d4e5c8059d0 6-7
+  s_4e3eefc968081e::t_f85dff1a13a397 8
+  s_4e3eefc968081e::t_90d9e41d7a9ca5 46-48
+  s_4e3eefc968081e::t_e2a6e92b557905 14
+  s_4e3eefc968081e::t_3a3d8fce0dd184 20-23
+  s_4e3eefc968081e::t_6e2a58119df780 27-31,33-35,38-45
+  s_4e3eefc968081e::t_12fa19a37a7625 32,36-37
+  s_4e3eefc968081e::t_424075c5851709 24-26
+server/polar/subscription/service.py
+  s_4e3eefc968081e::t_2ac06a6cdc17e4 1837-1843,1850-1859
+  s_4e3eefc968081e::t_20fd37463586f5 2101
+  s_4e3eefc968081e::t_113e480488b226 2134-2137,2142-2145
+  s_4e3eefc968081e::t_d6f1d75876aa4e 1832
+  s_4e3eefc968081e::t_a723a9d2389bb0 1844-1848,1865-1873
+  s_4e3eefc968081e::t_7ba51b62f69759 2253
+  s_4e3eefc968081e::t_2d36c44b78855f 93-96
+  s_4e3eefc968081e::t_6acde8c413d9aa 2293,2301
+  s_4e3eefc968081e::t_8ef612ed7fa0fe 2325
+  s_4e3eefc968081e::t_c717e67f2b75ea 246-247,255
+  s_4e3eefc968081e::t_29de3a776cdf53 300
+  s_4e3eefc968081e::t_15daa38295e8ed 1826-1831,1833-1836,1849,1860-1864,1874
+server/tests/subscription/test_service.py
+  s_4e3eefc968081e::t_94dfd71daac430 7008
+  s_4e3eefc968081e::t_37b4f42a554010 61
+  s_4e3eefc968081e::t_6ed4a4cee0fb40 6902-6908,6910-6912,6915-6942,6944-6946,6949-6964,6990-6993,6996-6999,7006-7007,7009-7027,7055
+  s_4e3eefc968081e::t_d662035675bfc6 6909,6913-6914,6943,6947-6948,6965-6989,6994-6995,7000-7005
+  s_4e3eefc968081e::t_8d9cfd1ff3f0f1 7028-7054
+  s_4e3eefc968081e::t_da4790147d7190 6901
+server/polar/organization/tasks.py
+  s_4e3eefc968081e::t_f8059bb5dd3d95 100-106,108-112
+  s_4e3eefc968081e::t_79dc6e4d14da10 107
+server/polar/config.py
+  s_4e3eefc968081e::t_2b64d4c68e84c8 252-255
+  s_4e3eefc968081e::t_2ab01d3ff7a58a 251
+server/polar/organization/repository.py
+  s_4e3eefc968081e::t_bd29f8b09efe84 56-59,63
+  s_4e3eefc968081e::t_bf13f665877d51 276
+  s_4e3eefc968081e::t_e22b7864308679 273-275,277-307
+  s_4e3eefc968081e::t_5b25582c89f413 52-55,60-62,64-65
+server/tests/organization/test_service.py
+  s_4e3eefc968081e::t_6b3b8b82c1c841 69
+  s_4e3eefc968081e::t_181e558182fc50 4923-4976
+server/tests/organization/test_tasks.py
+  s_4e3eefc968081e::t_7381dadcc37d68 124-132,136-140
+  s_4e3eefc968081e::t_f0d3c39d7665df 133-135
+  s_4e3eefc968081e::t_cacb4283cf5168 11
+server/polar/subscription/repository.py
+  s_4e3eefc968081e::t_de40aecd2b0038 109-116
+  s_4e3eefc968081e::t_f31572f472507b 106-108
+  s_4e3eefc968081e::t_7bd35f0a34e38b 103-105
+server/polar/subscription/tasks.py
+  s_4e3eefc968081e::t_26193bcfb987a5 79-82,84-91
+  s_4e3eefc968081e::t_d10fb183b9e358 83
+  s_4e3eefc968081e::t_33d7cc5f8f34ab 78
+server/polar/organization/service.py
+  s_4e3eefc968081e::t_78a616970fdff6 1463
+  s_4e3eefc968081e::t_b3f32726429877 1457-1462,1464-1479
+server/tests/organization/test_repository.py
+  s_4e3eefc968081e::t_a98dbcafc7cbab 181-189,197,202
+  s_4e3eefc968081e::t_e80e1740d369d8 57-101,103-180,190-196,198-201,203-214
+  s_4e3eefc968081e::t_60e62553da85d8 1-2,5-6,14-17
+  s_4e3eefc968081e::t_158506b2088f95 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "3047ca2bd2e6f7945d1b1150aeb4ac6b3a33d385",
+  "prompts": {},
+  "sessions": {
+    "s_4e3eefc968081e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba832dda-9900-46a4-8610-d40fd5813e32",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

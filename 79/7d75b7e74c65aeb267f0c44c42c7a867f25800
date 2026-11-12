@@ -1,0 +1,30 @@
+clients/packages/cli/install.sh
+  s_ad8ff7da1a0178::t_639468acf04e6f 71
+  s_ad8ff7da1a0178::t_e45bef3c4b1265 108,115-116,121-122
+  s_ad8ff7da1a0178::t_7e09338b396441 41-70,72-91,93,95
+  s_ad8ff7da1a0178::t_1926a8e9373951 4-5
+clients/apps/web/next.config.mjs
+  s_ad8ff7da1a0178::t_f91fd93247e2b2 384
+clients/packages/cli/README.md
+  s_ad8ff7da1a0178::t_caf08c6aef7612 138-139
+  s_ad8ff7da1a0178::t_21fdf70008192c 235
+  s_ad8ff7da1a0178::t_2b20650f0ab051 217-218
+  s_ad8ff7da1a0178::t_83c65312f9b722 236-237
+  s_ad8ff7da1a0178::t_37149476901a02 140-141
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "797d75b7e74c65aeb267f0c44c42c7a867f25800",
+  "prompts": {},
+  "sessions": {
+    "s_ad8ff7da1a0178": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "54c68126-e0c9-4c77-9c4a-8c0267d8b401",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

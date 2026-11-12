@@ -1,0 +1,28 @@
+server/tests/event/test_service.py
+  s_fb19aa989d9ac0::t_8967eab43464e5 1785-1814
+server/polar/meter/repository.py
+  s_fb19aa989d9ac0::t_4e32fbed4a7562 17,54-66
+server/tests/meter/test_tasks.py
+  s_fb19aa989d9ac0::t_b3f47636a8aa33 29-48
+server/polar/event/service.py
+  s_fb19aa989d9ac0::t_9d573c4e251d0c 1324-1325
+  s_fb19aa989d9ac0::t_1f7dc4049891a5 1320
+server/polar/meter/tasks.py
+  s_fb19aa989d9ac0::t_574edeb098a07a 16,89-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "082a97548daa681e2c269a33a6d14a746dad9322",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

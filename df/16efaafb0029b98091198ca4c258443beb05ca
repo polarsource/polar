@@ -1,0 +1,19 @@
+clients/packages/client/src/v1.ts
+  s_fd528823e8d35d::t_5dcb8dd9d7b0bd 5550
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "df16efaafb0029b98091198ca4c258443beb05ca",
+  "prompts": {},
+  "sessions": {
+    "s_fd528823e8d35d": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

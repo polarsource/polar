@@ -1,0 +1,21 @@
+server/polar/operational_errors.py
+  s_aef5cda48e9c2d::t_20f5386e30753d 22-27
+server/tests/test_operational_errors.py
+  s_aef5cda48e9c2d::t_20f5386e30753d 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1eefc76b7a632b55e205db46ccba1c3a440e7f4b",
+  "prompts": {},
+  "sessions": {
+    "s_aef5cda48e9c2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf3d-200f-77a1-b27b-9ba87534b40e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

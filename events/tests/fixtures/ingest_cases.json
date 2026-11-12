@@ -1,0 +1,7413 @@
+[
+  {
+    "name": "minimal",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "empty batch",
+    "body": {
+      "events": []
+    },
+    "events": []
+  },
+  {
+    "name": "body is a list",
+    "body": [],
+    "errors": [
+      {
+        "loc": [
+          "body"
+        ],
+        "type": "model_attributes_type"
+      }
+    ]
+  },
+  {
+    "name": "events missing",
+    "body": {},
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "events not a list",
+    "body": {
+      "events": {}
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events"
+        ],
+        "type": "list_type"
+      }
+    ]
+  },
+  {
+    "name": "event not an object",
+    "body": {
+      "events": [
+        5
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer"
+        ],
+        "type": "model_attributes_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer"
+        ],
+        "type": "model_attributes_type"
+      }
+    ]
+  },
+  {
+    "name": "body is a number",
+    "body": 5,
+    "errors": [
+      {
+        "loc": [
+          "body"
+        ],
+        "type": "model_attributes_type"
+      }
+    ]
+  },
+  {
+    "name": "body is null",
+    "body": null,
+    "errors": [
+      {
+        "loc": [
+          "body"
+        ],
+        "type": "model_attributes_type"
+      }
+    ]
+  },
+  {
+    "name": "event is null",
+    "body": {
+      "events": [
+        null
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer"
+        ],
+        "type": "model_attributes_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer"
+        ],
+        "type": "model_attributes_type"
+      }
+    ]
+  },
+  {
+    "name": "event is a list",
+    "body": {
+      "events": [
+        []
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer"
+        ],
+        "type": "model_attributes_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer"
+        ],
+        "type": "model_attributes_type"
+      }
+    ]
+  },
+  {
+    "name": "nul in name",
+    "body": {
+      "events": [
+        {
+          "name": "a\u0000b",
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "name"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "name"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in external id",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "external_id": "a\u0000"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "external_id"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_id"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in parent id",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "parent_id": "\u0000"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "parent_id"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "parent_id"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in external customer",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c\u0000"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in external member",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "external_member_id": "\u0000m"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_member_id"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in metadata key",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "a\u0000": 1
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in metadata value",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "k": "\u0000"
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in llm prompt",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3,
+              "prompt": "\u0000"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "nul in cost currency",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 1,
+              "currency": "usd\u0000"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "customer uuid non-rfc variant",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "0b1e7a52-9f0d-4c1b-0d5e-2f7a3c4b5d6e"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "uuid_version"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "customer uuid braced",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "{0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e}"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "customer uuid urn",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "urn:uuid:0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "second event invalid",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c"
+        },
+        {
+          "name": "n"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          1,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          1,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "polar customer",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "polar customer and member",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "member_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+      }
+    ]
+  },
+  {
+    "name": "polar customer with null member",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "member_id": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "external member",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "external_member_id": "m"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": "m"
+      }
+    ]
+  },
+  {
+    "name": "both customers",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers and members",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "member_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+          "external_member_id": "m"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": "m"
+      }
+    ]
+  },
+  {
+    "name": "both customers, external member only",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "external_member_id": "m"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": "m"
+      }
+    ]
+  },
+  {
+    "name": "invalid member falls back to external",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "member_id": "x"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers, polar member only",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "member_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+      }
+    ]
+  },
+  {
+    "name": "both customers, null polar member",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "member_id": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers, null external member",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "external_member_id": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with timestamp string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "timestamp": "2025-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with unix timestamp",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "timestamp": 1735689600
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with organization",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "organization_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with metadata",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "a": 1,
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          },
+          "a": 1
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with coerced tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "1",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with cost",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_cost": {
+              "amount": 1.5,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.5,
+            "currency": "usd"
+          }
+        },
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with integer cost",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_cost": {
+              "amount": 1,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.0,
+            "currency": "usd"
+          }
+        },
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with string cost",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_cost": {
+              "amount": "1",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.0,
+            "currency": "usd"
+          }
+        },
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with null organization",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "organization_id": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with float metadata",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "f": 1.5,
+            "b": true,
+            "s": "x"
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "f": 1.5,
+          "b": true,
+          "s": "x"
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with whole float tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1.0,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with bool tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": true,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with cached tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3,
+              "cached_input_tokens": 1
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "cached_input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with null ids",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "external_id": null,
+          "parent_id": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "both customers with empty metadata",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+          "metadata": {}
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "no customer",
+    "body": {
+      "events": [
+        {
+          "name": "n"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "customer not a uuid",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "nope"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "uuid_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "customer uuid v1",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "c232ab00-9414-11ec-b3c8-9f6bdeced846"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "uuid_version"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "customer uuid not a string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": 5
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "uuid_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "customer uuid without hyphens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "customer_id": "0B1E7A529F0D4C1B8D5E2F7A3C4B5D6E"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "customer_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "member_id": null
+      }
+    ]
+  },
+  {
+    "name": "external customer not a string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": 5
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_customer_id"
+        ],
+        "type": "string_type"
+      }
+    ]
+  },
+  {
+    "name": "external customer empty",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": ""
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "unknown field",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "foo": 1
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "name missing",
+    "body": {
+      "events": [
+        {
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "name"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "name"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "name empty",
+    "body": {
+      "events": [
+        {
+          "name": "",
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "name at limit",
+    "body": {
+      "events": [
+        {
+          "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "name too long",
+    "body": {
+      "events": [
+        {
+          "name": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "name"
+        ],
+        "type": "string_too_long"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "name"
+        ],
+        "type": "string_too_long"
+      }
+    ]
+  },
+  {
+    "name": "name multibyte at limit",
+    "body": {
+      "events": [
+        {
+          "name": "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9",
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "name not a string",
+    "body": {
+      "events": [
+        {
+          "name": 1,
+          "external_customer_id": "c"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "name"
+        ],
+        "type": "string_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "name"
+        ],
+        "type": "string_type"
+      }
+    ]
+  },
+  {
+    "name": "organization id",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "organization_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": "0b1e7a52-9f0d-4c1b-8d5e-2f7a3c4b5d6e",
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "organization id invalid",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "organization_id": "nope"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "organization_id"
+        ],
+        "type": "uuid_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "organization_id"
+        ],
+        "type": "uuid_parsing"
+      }
+    ]
+  },
+  {
+    "name": "external and parent ids",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "external_id": "e",
+          "parent_id": "p"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": "e",
+        "parent_id": "p",
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "null ids",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "external_id": null,
+          "parent_id": null,
+          "external_member_id": null,
+          "organization_id": null
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "external id not a string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "external_id": 5
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "external_id"
+        ],
+        "type": "string_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "external_id"
+        ],
+        "type": "string_type"
+      }
+    ]
+  },
+  {
+    "name": "timestamp utc",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp offset",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T02:00:00+02:00"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp fraction",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00.123456Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00.123456+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp space separator",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01 00:00:00+00:00"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp compact offset",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00+0200"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2024-12-31T22:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp without seconds",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00+00:00"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp naive",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "timezone_aware"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "timezone_aware"
+      }
+    ]
+  },
+  {
+    "name": "timestamp date only",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "timezone_aware"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "timezone_aware"
+      }
+    ]
+  },
+  {
+    "name": "timestamp future",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2999-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "value_error"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "value_error"
+      }
+    ]
+  },
+  {
+    "name": "timestamp unix seconds",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": 1735689600
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp unix milliseconds",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": 1735689600000
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp unix float",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": 1735689600.5
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00.500000+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp numeric string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "1735689600"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp null",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": null
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_type"
+      }
+    ]
+  },
+  {
+    "name": "timestamp garbage",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "yesterday"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp bool",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": true
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_type"
+      }
+    ]
+  },
+  {
+    "name": "timestamp before year one",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": -1000000000000000.0
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp year zero",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "0000-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp year 9999",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": 253402300799
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "1978-01-11T21:31:40.799000+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp surrounding whitespace",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": " 2025-01-01T00:00:00Z "
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp numeric string with whitespace",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": " 1735689600 "
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp exponent string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "1e9"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp float string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "1735689600.5"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00.500000+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp negative numeric string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "-1"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "1969-12-31T23:59:59+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp negative unix",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": -1
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "1969-12-31T23:59:59+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp hour-only offset",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00+02"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp leap second",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2024-12-31T23:59:60Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp nanoseconds",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00.123456789Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00.123456+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp comma fraction",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00,5Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00.500000+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp lowercase designators",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01t00:00:00z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp without seconds utc",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp underscore separator",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01_00:00:00Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp ten fraction digits",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00.1234567890Z"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00.123456+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp invalid day",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-02-30T00:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp hour 24",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T24:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp negative offset",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00-05:30"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T05:30:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp plus sign numeric string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "+1735689600"
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp trailing dot numeric string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "1735689600."
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "2025-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp date and time only hour",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp empty string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": ""
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp unix zero",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": 0
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "timestamp": "1970-01-01T00:00:00+00:00",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {},
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "timestamp huge unix",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": 1e+300
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp single digit fields",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-1-1T1:2:3Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp two digit year",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "25-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp signed year",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "+2025-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp negative year",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "-0001-01-01T00:00:00Z"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp space before offset",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:00 +02:00"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp trailing space date",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01 "
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp naive with second 60",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "2025-01-01T00:00:60"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp inf string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": "inf"
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_from_date_parsing"
+      }
+    ]
+  },
+  {
+    "name": "timestamp negative millis before year one",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "timestamp": -100000000000000.0
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "timestamp"
+        ],
+        "type": "datetime_parsing"
+      }
+    ]
+  },
+  {
+    "name": "metadata scalars",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": "a",
+            "i": 1,
+            "f": 1.5,
+            "b": true,
+            "whole": 1.0,
+            "exponent": 1000.0,
+            "negative": -1
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "s": "a",
+          "i": 1,
+          "f": 1.5,
+          "b": true,
+          "whole": 1.0,
+          "exponent": 1000.0,
+          "negative": -1
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "metadata numeric limits",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "high": 9007199254740991,
+            "low": -9007199254740991
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "high": 9007199254740991,
+          "low": -9007199254740991
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "metadata integer too large",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "big": 9007199254740992
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "big"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "big"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata integer too small",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "small": -9007199254740992
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "small"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "small"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata float too large",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "big": 1e+300
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "big"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "big"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata string empty",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": ""
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata string at limit",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "metadata string too long",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata null value",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": null
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata nested object",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": {
+              "a": 1
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata list",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "s": [
+              1
+            ]
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "s"
+        ],
+        "type": null
+      }
+    ]
+  },
+  {
+    "name": "metadata long and empty keys",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk": 1,
+            "": 2
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk": 1,
+          "": 2
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "metadata many keys",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "k0": 0,
+            "k1": 1,
+            "k2": 2,
+            "k3": 3,
+            "k4": 4,
+            "k5": 5,
+            "k6": 6,
+            "k7": 7,
+            "k8": 8,
+            "k9": 9,
+            "k10": 10,
+            "k11": 11,
+            "k12": 12,
+            "k13": 13,
+            "k14": 14,
+            "k15": 15,
+            "k16": 16,
+            "k17": 17,
+            "k18": 18,
+            "k19": 19,
+            "k20": 20,
+            "k21": 21,
+            "k22": 22,
+            "k23": 23,
+            "k24": 24,
+            "k25": 25,
+            "k26": 26,
+            "k27": 27,
+            "k28": 28,
+            "k29": 29,
+            "k30": 30,
+            "k31": 31,
+            "k32": 32,
+            "k33": 33,
+            "k34": 34,
+            "k35": 35,
+            "k36": 36,
+            "k37": 37,
+            "k38": 38,
+            "k39": 39,
+            "k40": 40,
+            "k41": 41,
+            "k42": 42,
+            "k43": 43,
+            "k44": 44,
+            "k45": 45,
+            "k46": 46,
+            "k47": 47,
+            "k48": 48,
+            "k49": 49,
+            "k50": 50,
+            "k51": 51,
+            "k52": 52,
+            "k53": 53,
+            "k54": 54,
+            "k55": 55,
+            "k56": 56,
+            "k57": 57,
+            "k58": 58,
+            "k59": 59
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "k0": 0,
+          "k1": 1,
+          "k2": 2,
+          "k3": 3,
+          "k4": 4,
+          "k5": 5,
+          "k6": 6,
+          "k7": 7,
+          "k8": 8,
+          "k9": 9,
+          "k10": 10,
+          "k11": 11,
+          "k12": 12,
+          "k13": 13,
+          "k14": 14,
+          "k15": 15,
+          "k16": 16,
+          "k17": 17,
+          "k18": 18,
+          "k19": 19,
+          "k20": 20,
+          "k21": 21,
+          "k22": 22,
+          "k23": 23,
+          "k24": 24,
+          "k25": 25,
+          "k26": 26,
+          "k27": 27,
+          "k28": 28,
+          "k29": 29,
+          "k30": 30,
+          "k31": 31,
+          "k32": 32,
+          "k33": 33,
+          "k34": 34,
+          "k35": 35,
+          "k36": 36,
+          "k37": 37,
+          "k38": 38,
+          "k39": 39,
+          "k40": 40,
+          "k41": 41,
+          "k42": 42,
+          "k43": 43,
+          "k44": 44,
+          "k45": 45,
+          "k46": 46,
+          "k47": 47,
+          "k48": 48,
+          "k49": 49,
+          "k50": 50,
+          "k51": 51,
+          "k52": 52,
+          "k53": 53,
+          "k54": 54,
+          "k55": 55,
+          "k56": 56,
+          "k57": 57,
+          "k58": 58,
+          "k59": 59
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "metadata null",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": null
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata"
+        ],
+        "type": "dict_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata"
+        ],
+        "type": "dict_type"
+      }
+    ]
+  },
+  {
+    "name": "metadata not an object",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": [
+            1
+          ]
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata"
+        ],
+        "type": "dict_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata"
+        ],
+        "type": "dict_type"
+      }
+    ]
+  },
+  {
+    "name": "cost",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 1.5,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost integer amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 2,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 2.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost string amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "0.000000000001",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1e-12,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost exponent amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1e-5",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1e-05,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost extra key",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 1,
+              "currency": "usd",
+              "x": 1
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost currency contains usd",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 1,
+              "currency": "xusdx"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.0,
+            "currency": "xusdx"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost wrong currency",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 1,
+              "currency": "eur"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "currency"
+        ],
+        "type": "string_pattern_mismatch"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "currency"
+        ],
+        "type": "string_pattern_mismatch"
+      }
+    ]
+  },
+  {
+    "name": "cost too many decimal places",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "0.0000000000001",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_max_places"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_max_places"
+      }
+    ]
+  },
+  {
+    "name": "cost too many digits",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "123456789012345678",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_max_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_max_digits"
+      }
+    ]
+  },
+  {
+    "name": "cost amount not a number",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "abc",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      }
+    ]
+  },
+  {
+    "name": "cost missing fields",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {}
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "currency"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "currency"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "cost not an object",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": 5
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost"
+        ],
+        "type": "dict_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost"
+        ],
+        "type": "dict_type"
+      }
+    ]
+  },
+  {
+    "name": "cost whole digits at limit",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 99999,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 99999.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost too many whole digits",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 123456,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      }
+    ]
+  },
+  {
+    "name": "cost too many whole digits with fraction",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 100000.5,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      }
+    ]
+  },
+  {
+    "name": "cost too many whole digits exponent",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1e5",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      }
+    ]
+  },
+  {
+    "name": "cost huge float",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 1e+16,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      }
+    ]
+  },
+  {
+    "name": "cost underscore amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1_000",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1000.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost negative amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": -1.5,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": -1.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost bool amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": true,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_type"
+      }
+    ]
+  },
+  {
+    "name": "cost leading zeros",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "000001.50",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost trailing zeros",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1.5000000000000",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost padded amount",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": " 1.5 ",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost zero",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 0,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 0.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost zero with many places",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "0.00000000000000",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 0.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost nan",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "NaN",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "finite_number"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "finite_number"
+      }
+    ]
+  },
+  {
+    "name": "cost infinity",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "Infinity",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "finite_number"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "finite_number"
+      }
+    ]
+  },
+  {
+    "name": "cost plus sign",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "+1.5",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 1.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost leading dot",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": ".5",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 0.5,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost trailing dot",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "5.",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 5.0,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost max digits with places",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "12345.123456789012",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_cost": {
+            "amount": 12345.123456789011,
+            "currency": "usd"
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "cost empty string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      }
+    ]
+  },
+  {
+    "name": "cost huge negative exponent",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1e-9223372036854775808",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      }
+    ]
+  },
+  {
+    "name": "cost huge positive exponent",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1e9223372036854775807",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_parsing"
+      }
+    ]
+  },
+  {
+    "name": "cost large negative exponent",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": "1e-400",
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_max_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_max_digits"
+      }
+    ]
+  },
+  {
+    "name": "cost rounds up to six whole digits",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_cost": {
+              "amount": 100000.0,
+              "currency": "usd"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_cost",
+          "amount"
+        ],
+        "type": "decimal_whole_digits"
+      }
+    ]
+  },
+  {
+    "name": "llm",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm all fields",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3,
+              "prompt": null,
+              "response": "r",
+              "cached_input_tokens": 1,
+              "extra": 1
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": "r",
+            "input_tokens": 1,
+            "cached_input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm coerced tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1.0,
+              "output_tokens": "2",
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm fractional tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3.5
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "total_tokens"
+        ],
+        "type": "int_from_float"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "total_tokens"
+        ],
+        "type": "int_from_float"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens too large",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 9007199254740992
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "total_tokens"
+        ],
+        "type": "less_than_equal"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "total_tokens"
+        ],
+        "type": "less_than_equal"
+      }
+    ]
+  },
+  {
+    "name": "llm null cached tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1,
+              "output_tokens": 2,
+              "total_tokens": 3,
+              "cached_input_tokens": null
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "cached_input_tokens"
+        ],
+        "type": "int_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "cached_input_tokens"
+        ],
+        "type": "int_type"
+      }
+    ]
+  },
+  {
+    "name": "llm missing fields",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v"
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "model"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "output_tokens"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "total_tokens"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "model"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "output_tokens"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "total_tokens"
+        ],
+        "type": "missing"
+      }
+    ]
+  },
+  {
+    "name": "llm not an object",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": "x"
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm"
+        ],
+        "type": "dict_type"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm"
+        ],
+        "type": "dict_type"
+      }
+    ]
+  },
+  {
+    "name": "llm float string tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "2.0",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 2,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm bool tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": true,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm underscore tokens",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "1_000",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 1000,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm tokens too small",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": -1e+30,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing_size"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing_size"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens padded string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": " 2 ",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 2,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm tokens fractional string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "2.5",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens float above safe range",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1e+17,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "less_than_equal"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "less_than_equal"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens huge float",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 1e+30,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing_size"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing_size"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens above i64",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": 9223372036854775813,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "less_than_equal"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "less_than_equal"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens huge string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "99999999999999999999",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "less_than_equal"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "less_than_equal"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens plus sign string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "+2",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": 2,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  },
+  {
+    "name": "llm tokens bad underscores",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "1__000",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens trailing dot",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "2.",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens empty string",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": "",
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "errors": [
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateCustomer",
+          "customer_id"
+        ],
+        "type": "missing"
+      },
+      {
+        "loc": [
+          "body",
+          "events",
+          0,
+          "EventCreateExternalCustomer",
+          "metadata",
+          "_llm",
+          "input_tokens"
+        ],
+        "type": "int_parsing"
+      }
+    ]
+  },
+  {
+    "name": "llm tokens negative",
+    "body": {
+      "events": [
+        {
+          "name": "n",
+          "external_customer_id": "c",
+          "metadata": {
+            "_llm": {
+              "vendor": "v",
+              "model": "m",
+              "input_tokens": -5,
+              "output_tokens": 2,
+              "total_tokens": 3
+            }
+          }
+        }
+      ]
+    },
+    "events": [
+      {
+        "variant": "EventCreateExternalCustomer",
+        "name": "n",
+        "organization_id": null,
+        "external_id": null,
+        "parent_id": null,
+        "user_metadata": {
+          "_llm": {
+            "vendor": "v",
+            "model": "m",
+            "prompt": null,
+            "response": null,
+            "input_tokens": -5,
+            "output_tokens": 2,
+            "total_tokens": 3
+          }
+        },
+        "external_customer_id": "c",
+        "external_member_id": null
+      }
+    ]
+  }
+]

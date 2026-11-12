@@ -424,15 +424,21 @@ class DeclarativeConfigService:
         if limit_issues:
             raise ConfigInvalid(limit_issues)
         live = await catalog_service.get_or_create_live(session, organization)
+        settings_update = (
+            {}
+            if changes.settings is None
+            else changes.settings.organization_update_dict
+        )
         _, version_hash = await catalog_service.get_next_version_hash(
             session,
             organization,
             live,
             catalogs.definitions(changes),
             removed_external_ids,
+            settings_update,
         )
         settings_result = await self._apply_settings(
-            session, organization, changes.settings
+            session, organization, changes.settings, draft=not publish
         )
         webhook_results = await self._apply_webhooks(
             session, auth_subject, organization, changes.webhooks
@@ -466,20 +472,33 @@ class DeclarativeConfigService:
             draft=not publish,
         )
         catalog: ConfigCatalogChange | None = None
-        if new_products or new_benefits or new_meters or removed:
+        if new_products or new_benefits or new_meters or removed or settings_update:
             assert version_hash is not None
             before = None if live is None else ConfigCatalog.model_validate(live)
-            save = catalog_service.publish if publish else catalog_service.save_draft
-            after = await save(
-                session,
-                organization,
-                live,
-                CatalogMembers(
-                    products=new_products, benefits=new_benefits, meters=new_meters
-                ),
-                version_hash,
-                removed_external_ids,
-                name=config.catalog_name,
+            members = CatalogMembers(
+                products=new_products, benefits=new_benefits, meters=new_meters
+            )
+            after = (
+                await catalog_service.publish(
+                    session,
+                    organization,
+                    live,
+                    members,
+                    version_hash,
+                    removed_external_ids,
+                    name=config.catalog_name,
+                )
+                if publish
+                else await catalog_service.save_draft(
+                    session,
+                    organization,
+                    live,
+                    members,
+                    version_hash,
+                    removed_external_ids,
+                    settings_update,
+                    name=config.catalog_name,
+                )
             )
             catalog = ConfigCatalogChange(
                 before=before, after=ConfigCatalog.model_validate(after)
@@ -487,13 +506,14 @@ class DeclarativeConfigService:
         elif (
             draft is not None
             and not publish
-            and {"products", "benefits", "meters"} & config.model_fields_set
+            and {"products", "benefits", "meters", "settings"} & config.model_fields_set
         ):
             # The config describes the catalog and matches live: no draft left.
             await catalog_service.discard_draft(session, draft)
 
         if (
-            changes.settings is not None
+            publish
+            and changes.settings is not None
             and changes.settings.action == ConfigAction.updated
         ):
             if "payments.currency" in changes.settings.update_dict:
@@ -582,6 +602,9 @@ class DeclarativeConfigService:
                 base,
                 catalogs.definitions(changes),
                 _removed_external_ids(removed),
+                {}
+                if changes.settings is None
+                else changes.settings.organization_update_dict,
             )
         )
         if catalog_after is not None and catalog_after != catalog_before:
@@ -837,16 +860,14 @@ class DeclarativeConfigService:
         session: AsyncSession,
         organization: Organization,
         change: SettingsChange | None,
+        *,
+        draft: bool,
     ) -> ConfigSettingsResult | None:
         if change is None:
             return None
-        if change.update_dict:
+        if change.update_dict and not draft:
             await OrganizationRepository.from_session(session).update(
-                organization,
-                update_dict={
-                    validation.SETTINGS_FIELDS[field]: value
-                    for field, value in change.update_dict.items()
-                },
+                organization, update_dict=change.organization_update_dict
             )
         return ConfigSettingsResult(action=change.action)
 

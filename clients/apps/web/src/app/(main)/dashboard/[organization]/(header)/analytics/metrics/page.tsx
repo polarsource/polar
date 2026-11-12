@@ -8,7 +8,7 @@ import {
 } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import { endOfDay, max, subMonths } from 'date-fns'
+import { endOfDay, isValid, max, subMonths } from 'date-fns'
 import { redirect, RedirectType } from 'next/navigation'
 
 const RECURRING_ONLY_GROUPS = new Set(['subscriptions', 'cancellations'])
@@ -52,15 +52,24 @@ export default async function Page(props: {
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
-  const startDateISOString = searchParams.start_date ?? undefined
-  const endDateISOString = searchParams.end_date ?? undefined
+  const parsedStartDate = searchParams.start_date
+    ? fromISODate(searchParams.start_date)
+    : undefined
+  const parsedEndDate = searchParams.end_date
+    ? fromISODate(searchParams.end_date)
+    : undefined
+  const hasInvalidDate =
+    (parsedStartDate !== undefined && !isValid(parsedStartDate)) ||
+    (parsedEndDate !== undefined && !isValid(parsedEndDate))
 
-  const startDate = startDateISOString
-    ? fromISODate(startDateISOString)
-    : defaultStartDate
-  const endDate = endDateISOString
-    ? endOfDay(fromISODate(endDateISOString))
-    : defaultEndDate
+  const startDate =
+    parsedStartDate && isValid(parsedStartDate)
+      ? parsedStartDate
+      : defaultStartDate
+  const endDate =
+    parsedEndDate && isValid(parsedEndDate)
+      ? endOfDay(parsedEndDate)
+      : defaultEndDate
 
   const [limits, recurringProducts] = await Promise.all([
     unwrap(api.GET('/v1/metrics/limits')),
@@ -117,7 +126,7 @@ export default async function Page(props: {
 
   const validInterval = findValidInterval(startDate, endDate, interval)
 
-  if (startDate < minDate || validInterval !== interval) {
+  if (hasInvalidDate || startDate < minDate || validInterval !== interval) {
     urlSearchParams.set('start_date', toISODate(max([minDate, startDate])))
     urlSearchParams.set('end_date', toISODate(endDate))
     urlSearchParams.set('interval', validInterval)

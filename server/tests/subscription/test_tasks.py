@@ -467,6 +467,7 @@ class TestSubscriptionCycle:
             ),
             scheduler_locked_at=utc_now(),
         )
+        trial_start = subscription.current_period_start
         previous_period_end = subscription.current_period_end
         assert previous_period_end is not None
         session.expunge_all()
@@ -484,6 +485,7 @@ class TestSubscriptionCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=previous_period_end.isoformat(),
+            period_start=trial_start.isoformat(),
         )
 
     async def test_multi_period_lag_raises_and_halts(

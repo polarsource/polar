@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { stripAnsi } from '@/utils/test-utils/cli'
 import pc from 'picocolors'
 import * as ui from '@/utils/ui'
@@ -98,6 +98,58 @@ describe('ui', () => {
     expect(stripAnsi(ui.timestamp(date))).toBe('13:05:09')
     expect(stripAnsi(ui.timestamp())).toMatch(/^\d{2}:\d{2}:\d{2}$/)
     expect(stripAnsi(ui.duration(12.6))).toBe('13ms')
+  })
+
+  describe('for humans', () => {
+    beforeEach(() => ui.setHuman(true))
+    afterEach(() => ui.setHuman(false))
+
+    test('numbers sections and indents their rows instead of boxing them', () => {
+      expect(ui.section('Changes', '  + free').map(stripAnsi)).toEqual([
+        '',
+        '  01  Changes',
+        '      + free',
+      ])
+      expect(stripAnsi(ui.sectionOpen('Next')[1] ?? '')).toBe('  02  Next')
+      expect(ui.sectionClose()).toEqual([])
+    })
+
+    test('marks success, failure and warnings with plain shapes', () => {
+      expect(stripAnsi(ui.success('Saved'))).toBe('  ● Saved')
+      expect(stripAnsi(ui.failure('Not saved', 'Try again'))).toBe(
+        '  ✕ Not saved\n    Try again',
+      )
+      expect(stripAnsi(ui.warning('Out of date'))).toBe('  ▲ Out of date')
+    })
+
+    test('moves a solid segment along the leader while a step runs', () => {
+      expect(stripAnsi(ui.leader('Reading'))).toBe(`Reading ${'·'.repeat(19)} `)
+      const colors = pc.createColors(true)
+      const lit = ui.leader('Reading', 6).split(' ')[1] ?? ''
+      expect(stripAnsi(lit)).toBe('·'.repeat(19))
+      expect(lit.split(colors.bold('·'))).toHaveLength(
+        pc.isColorSupported ? 5 : 1,
+      )
+      expect(stripAnsi(ui.track(8, 4))).toBe('────────')
+      expect(stripAnsi(ui.track(8))).toBe('────────')
+      expect(ui.trackFull(8)).toBe('────────')
+    })
+
+    test('lays cards out side by side at the same width', () => {
+      const rows = stripAnsi(
+        ui.cardGrid([
+          ['01', 'Claude Code'],
+          ['02', 'a'.repeat(60)],
+        ]),
+      ).split('\n')
+      const inner = ui.cardInner(2)
+      expect(rows).toHaveLength(4)
+      expect(new Set(rows.map((row) => Bun.stringWidth(row)))).toEqual(
+        new Set([2 + 2 * (inner + 4) + 2]),
+      )
+      expect(rows[0]).toMatch(/^ {2}┌─ +─┐ {2}┌─ +─┐$/)
+      expect(rows[2]).toMatch(/^ {4}Claude Code +a+… +$/)
+    })
   })
 
   describe('box', () => {

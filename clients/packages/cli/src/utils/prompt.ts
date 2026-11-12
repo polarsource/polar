@@ -24,7 +24,7 @@ export const confirm = (message: string, initial = true) =>
 
 const answered = (message: string, value: string) =>
   Console.log(
-    `${ui.clearLines(2)}${ui.INDENT}${ui.green('✔')} ${message}\n${ui.INDENT}${ui.INDENT}${ui.dim(value)}`,
+    `${ui.clearLines(2)}${ui.INDENT}${ui.check()} ${message}\n${ui.INDENT}${ui.INDENT}${ui.dim(value)}`,
   )
 
 export const interactive = Effect.gen(function* () {

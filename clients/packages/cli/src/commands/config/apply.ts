@@ -93,10 +93,10 @@ const approve = (
     return yield* Prompt.run(
       keypress(
         [
-          ...ui.boxRows(
+          ...ui.sectionRows(
             `${ui.INDENT}${ui.green('y')} to apply  ${ui.red('n')} to cancel`,
           ),
-          ui.boxBottom(),
+          ...ui.sectionClose(),
         ].join('\n'),
       ),
     ).pipe(Effect.catch(() => say([ui.blank]).pipe(Effect.as(false))))

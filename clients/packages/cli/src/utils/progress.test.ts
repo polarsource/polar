@@ -3,6 +3,7 @@ import { Console, Effect, Stdio } from 'effect'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
 import { captureConsole, stripAnsi } from '@/utils/test-utils/cli'
+import * as ui from '@/utils/ui'
 
 const run = async (step: Effect.Effect<void, string>) => {
   const { lines, console } = captureConsole()
@@ -31,6 +32,12 @@ const run = async (step: Effect.Effect<void, string>) => {
 }
 
 describe('withProgress', () => {
+  test('lists steps under a numbered heading, without a box, for humans', async () => {
+    ui.setHuman(true)
+    const output = await run(Effect.void).finally(() => ui.setHuman(false))
+    expect(output).toMatch(/\n {2}01 {2}Preflight\n {6}Comparing ·+ done$/)
+  })
+
   test('closes the box after the last step', async () => {
     expect(await run(Effect.void)).toMatch(
       /│ {2}Comparing {2}done *│\n {2}╰─+╯$/,

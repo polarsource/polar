@@ -1,5 +1,5 @@
 import { Effect } from 'effect'
-import { describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { setup } from '@/commands/agent/setup'
 import {
   AgentSetupError,
@@ -11,6 +11,7 @@ import {
 import type { CallingAgent } from '@/services/agent-setup/agents'
 import { AgentSetup } from '@/services/agent-setup/service'
 import { type RunCliOptions, keys, runCli } from '@/utils/test-utils/cli'
+import * as ui from '@/utils/ui'
 
 const names: Record<Client, string> = {
   'claude-code': 'Claude Code',
@@ -213,6 +214,48 @@ describe('agent setup', () => {
       'plugin install exited with code 1: network down',
     )
     expect(cli.output()).toContain('1 set up, 0 already set up, 2 failed')
+  })
+
+  describe('for humans', () => {
+    beforeEach(() => ui.setHuman(true))
+    afterEach(() => ui.setHuman(false))
+
+    test('shows one card per agent and reports failures under them', async () => {
+      const cli = run(['--confirm'], {
+        statuses: [
+          client('claude-code', { installed: true }),
+          client('codex'),
+          client('cursor'),
+        ],
+        failing: ['codex'],
+      })
+
+      await expect(cli.promise).rejects.toThrow('Could not set up Codex')
+      expect(cli.installed).toEqual(['cursor'])
+      const output = cli.output()
+      expect(output).toMatch(
+        /01 {2}Agents\n {6}Detecting ·+ Claude Code, Codex, Cursor/,
+      )
+      expect(output).toContain('02  Set up')
+      expect(output).toMatch(/● already set up +✕ failed +● installed/)
+      expect(output).toMatch(/Claude Code +Codex +Cursor/)
+      expect(output).toContain(
+        'plugin install exited with code 1: network down',
+      )
+      expect(output).toContain('03  Issues')
+      expect(output).toMatch(
+        /04 {2}Sign in to Polar\n {6}Cursor ·+ open Settings → MCP/,
+      )
+    })
+
+    test('keeps --json free of cards', async () => {
+      const cli = run(['--confirm', '--json'], { statuses: [client('codex')] })
+      await cli.promise
+
+      expect(JSON.parse(cli.output()).steps).toEqual([
+        { target: 'codex', name: 'Codex', outcome: 'installed' },
+      ])
+    })
   })
 
   test('asks what to set up, preselecting the clients that are missing', async () => {

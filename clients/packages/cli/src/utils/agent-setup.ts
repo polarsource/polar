@@ -11,8 +11,11 @@ const MCP_DOCS = 'https://polar.sh/docs/integrate/mcp'
 
 export const skillsName = (scope: SkillScope) => `Polar skills (${scope})`
 
+export const errorHint = (error: AgentSetupError) =>
+  [error.message, error.hint].filter(Boolean).join(': ')
+
 export const errorDetail = (error: AgentSetupError) =>
-  ui.step(`  ${[error.message, error.hint].filter(Boolean).join(': ')}`)
+  ui.step(`  ${errorHint(error)}`)
 
 export const describeClient = (status: ClientStatus) => {
   if (status.problem) return status.problem
@@ -66,6 +69,7 @@ const count = (
 
 export const summary = ({ steps, clients }: AgentSetupResult) => {
   if (steps.length > 0) {
+    if (ui.isHuman()) return []
     return [
       ui.blank,
       `${ui.INDENT}${count(steps, 'installed', 'updated')} set up, ${count(steps, 'unchanged')} already set up, ${count(steps, 'failed')} failed`,
@@ -75,6 +79,7 @@ export const summary = ({ steps, clients }: AgentSetupResult) => {
     return [ui.step('Nothing selected, no changes made'), ui.blank]
   }
   return [
+    ...(ui.isHuman() ? [ui.blank] : []),
     ui.warning('No Claude Code, Codex or Cursor installation found'),
     ui.step(
       `Install the Polar skills for another agent with ${ui.command('polar agent setup --skills project')}`,
@@ -85,22 +90,36 @@ export const summary = ({ steps, clients }: AgentSetupResult) => {
 }
 
 const signIn: Partial<Record<SetupStep['target'], string>> = {
-  'claude-code': `Claude Code: restart it, run ${ui.command('/mcp')} and sign in to polar or polar-sandbox`,
-  codex: `Codex: run ${ui.command('codex mcp login polar')} or ${ui.command('codex mcp login polar-sandbox')}`,
-  cursor: 'Cursor: open Settings → MCP and connect polar or polar-sandbox',
+  'claude-code': `restart it, run ${ui.command('/mcp')} and sign in to polar or polar-sandbox`,
+  codex: `run ${ui.command('codex mcp login polar')} or ${ui.command('codex mcp login polar-sandbox')}`,
+  cursor: 'open Settings → MCP and connect polar or polar-sandbox',
 }
 
 export const nextSteps = ({ steps }: AgentSetupResult) => {
-  const lines = steps
+  const pending = steps
     .filter(
       (step) => step.outcome === 'installed' || step.outcome === 'updated',
     )
-    .flatMap((step) => signIn[step.target] ?? [])
-  if (lines.length === 0) return [ui.blank]
+    .flatMap((step) => {
+      const action = signIn[step.target]
+      return action ? [[step.name, action] as const] : []
+    })
+  if (pending.length === 0) return [ui.blank]
+  if (ui.isHuman()) {
+    return [
+      ...ui.section(
+        'Sign in to Polar',
+        pending
+          .map(([name, action]) => `${ui.INDENT}${ui.leader(name)}${action}`)
+          .join('\n'),
+      ),
+      ui.blank,
+    ]
+  }
   return [
     ui.blank,
     `${ui.INDENT}${ui.bold('Next, sign in to Polar')}`,
-    ...lines.map((line) => ui.step(line)),
+    ...pending.map(([name, action]) => ui.step(`${name}: ${action}`)),
     ui.blank,
   ]
 }

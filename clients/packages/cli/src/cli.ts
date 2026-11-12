@@ -26,6 +26,12 @@ import * as Updater from '@/services/updater'
 import * as ui from '@/utils/ui'
 import { VERSION } from '@/version'
 
+ui.setHuman(
+  Boolean(process.stdout.isTTY) &&
+    process.env['TERM'] !== 'dumb' &&
+    AgentSetup.detectCallingAgent(process.env) === undefined,
+)
+
 const polar = program({ preview: process.env['POLAR_PREVIEW'] === '1' })
 
 const cli = Command.run(polar, {

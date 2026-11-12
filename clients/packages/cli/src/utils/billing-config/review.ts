@@ -77,11 +77,7 @@ const ENVIRONMENT_COLORS: Record<PolarEnvironment, (text: string) => string> = {
   local: ui.dim,
 }
 
-export const section = (title: string, text: string) => [
-  ui.blank,
-  ui.heading(title),
-  ui.box(text),
-]
+export const section = ui.section
 
 export const sections = (config: LoadedConfig, result: PlanResult) => [
   ...(result.entries.length > 0
@@ -116,4 +112,4 @@ export const overview = (
 
 export const next = (text: string) => section('Next', text)
 
-export const nextOpen = () => [ui.blank, ui.heading('Next'), ui.boxTop()]
+export const nextOpen = () => ui.sectionOpen('Next')

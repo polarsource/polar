@@ -16,13 +16,14 @@ import { confirm } from '@/utils/flags'
 import {
   describeClient,
   errorDetail,
+  errorHint,
   nextSteps,
   skillsName,
   statusReport,
   summary,
 } from '@/utils/agent-setup'
 import { Output } from '@/utils/output'
-import { note, withProgress } from '@/utils/progress'
+import { atLeast, note, withCards, withProgress } from '@/utils/progress'
 import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
@@ -154,61 +155,118 @@ const attempt = <R>(
     ),
   )
 
+const clientStep = (target: ClientStatus, force: boolean) =>
+  Effect.gen(function* () {
+    if (target.installed && !force) {
+      return step(target.client, target.name, 'unchanged')
+    }
+    if (target.problem) {
+      return yield* new AgentSetupError({ message: target.problem })
+    }
+    yield* (yield* AgentSetup).setUp(target)
+    return step(
+      target.client,
+      target.name,
+      target.installed ? 'updated' : 'installed',
+    )
+  })
+
+const skillsStep = (scope: SkillScope, force: boolean) =>
+  Effect.gen(function* () {
+    const setup = yield* AgentSetup
+    const name = skillsName(scope)
+    const before = yield* setup.skills(scope)
+    if (before.state === 'current' && !force) {
+      return step('skills', name, 'unchanged', before.directory)
+    }
+    const after = yield* setup.installSkills(scope)
+    return step(
+      'skills',
+      name,
+      before.state === 'missing' ? 'installed' : 'updated',
+      after.directory,
+    )
+  })
+
 const setUpClient = (target: ClientStatus, force: boolean) =>
   attempt(
     target.client,
     target.name,
-    Effect.gen(function* () {
-      if (target.installed && !force) {
-        yield* note(ui.success(`${target.name} ${ui.dim('already set up')}`))
-        return step(target.client, target.name, 'unchanged')
-      }
-      const setup = yield* AgentSetup
-      yield* withProgress((progress) =>
-        progress
-          .start(target.name)
-          .pipe(
-            Effect.andThen(
-              target.problem
-                ? Effect.fail(new AgentSetupError({ message: target.problem }))
-                : setup.setUp(target),
-            ),
-          ),
-      )
-      return step(
-        target.client,
-        target.name,
-        target.installed ? 'updated' : 'installed',
-      )
-    }),
+    target.installed && !force
+      ? note(ui.success(`${target.name} ${ui.dim('already set up')}`)).pipe(
+          Effect.andThen(clientStep(target, force)),
+        )
+      : withProgress((progress) =>
+          progress
+            .start(target.name)
+            .pipe(Effect.andThen(clientStep(target, force))),
+        ),
   )
 
-const setUpSkills = (scope: SkillScope, force: boolean) => {
-  const name = skillsName(scope)
-  return attempt(
+const setUpSkills = (scope: SkillScope, force: boolean) =>
+  attempt(
     'skills',
-    name,
+    skillsName(scope),
     withProgress((progress) =>
       Effect.gen(function* () {
-        const setup = yield* AgentSetup
-        yield* progress.start(name)
-        const before = yield* setup.skills(scope)
-        if (before.state === 'current' && !force) {
-          yield* progress.finish('already up to date')
-          return step('skills', name, 'unchanged', before.directory)
-        }
-        const after = yield* setup.installSkills(scope)
-        yield* progress.finish(after.directory)
-        return step(
-          'skills',
-          name,
-          before.state === 'missing' ? 'installed' : 'updated',
-          after.directory,
+        yield* progress.start(skillsName(scope))
+        const result = yield* skillsStep(scope, force)
+        yield* progress.finish(
+          result.outcome === 'unchanged' ? 'already up to date' : result.detail,
         )
+        return result
       }),
     ),
   )
+
+const OUTCOMES: Record<SetupStep['outcome'], string> = {
+  installed: 'installed',
+  updated: 'updated',
+  unchanged: 'already set up',
+  failed: 'failed',
 }
+
+const setUpInCards = (selection: Selection, force: boolean) =>
+  Effect.gen(function* () {
+    const failures: string[] = []
+    const card = <R>(
+      target: SetupStep['target'],
+      title: string,
+      work: Effect.Effect<SetupStep, AgentSetupError, R>,
+    ) => ({
+      title,
+      run: work.pipe(
+        Effect.catch((error) =>
+          Effect.sync(() => {
+            failures.push(ui.failure(title, errorHint(error)))
+            return step(target, title, 'failed', error.message)
+          }),
+        ),
+      ),
+    })
+    const steps = yield* withCards(
+      'Set up',
+      'setting up',
+      [
+        ...selection.targets.map((target) =>
+          card(target.client, target.name, clientStep(target, force)),
+        ),
+        ...selection.scopes.map((scope) =>
+          card('skills', skillsName(scope), skillsStep(scope, force)),
+        ),
+      ],
+      ({ outcome, detail }) => ({
+        label: OUTCOMES[outcome],
+        failed: outcome === 'failed',
+        instant: outcome === 'unchanged',
+        ...(detail ? { detail } : {}),
+      }),
+    )
+    if (failures.length > 0) {
+      yield* note(ui.section('Issues', failures.join('\n')).join('\n'))
+    }
+    return steps
+  })
 
 const installedSkills = Effect.gen(function* () {
   const setup = yield* AgentSetup
@@ -230,21 +288,30 @@ interface Input {
   readonly skills: Option.Option<SkillScope>
 }
 
+const DETECT_MINIMUM = 3000
+
 const runSetup = (input: Input) =>
   Effect.gen(function* () {
     const setup = yield* AgentSetup
     const only = Option.getOrUndefined(input.client)
-    yield* note(ui.blank)
-    const statuses = yield* withProgress((progress) =>
-      Effect.gen(function* () {
-        yield* progress.start('Detecting coding agents')
-        const statuses = yield* setup.detect(only ? [only] : clients)
-        const found = statuses.filter((status) => status.detected)
-        yield* progress.finish(
-          found.map((status) => status.name).join(', ') || 'none found',
-        )
-        return statuses
-      }),
+    const human = ui.isHuman()
+    if (!human) yield* note(ui.blank)
+    const statuses = yield* withProgress(
+      (progress) =>
+        Effect.gen(function* () {
+          yield* progress.open('Agents')
+          yield* progress.start(human ? 'Detecting' : 'Detecting coding agents')
+          const detecting = setup.detect(only ? [only] : clients)
+          const statuses = yield* input.status
+            ? detecting
+            : atLeast(detecting, DETECT_MINIMUM)
+          const found = statuses.filter((status) => status.detected)
+          yield* progress.finish(
+            found.map((status) => status.name).join(', ') || 'none found',
+          )
+          return statuses
+        }),
+      human ? 'columns' : 'checks',
     )
     const detected = statuses.filter((status) => status.detected)
     if (input.status) {
@@ -263,14 +330,17 @@ const runSetup = (input: Input) =>
       Option.getOrUndefined(input.skills),
       input.confirm,
     )
-    const steps = [
-      ...(yield* Effect.forEach(selection.targets, (target) =>
-        setUpClient(target, input.force),
-      )),
-      ...(yield* Effect.forEach(selection.scopes, (scope) =>
-        setUpSkills(scope, input.force),
-      )),
-    ]
+    const steps =
+      ui.isHuman() && !(yield* Output).json
+        ? yield* setUpInCards(selection, input.force)
+        : [
+            ...(yield* Effect.forEach(selection.targets, (target) =>
+              setUpClient(target, input.force),
+            )),
+            ...(yield* Effect.forEach(selection.scopes, (scope) =>
+              setUpSkills(scope, input.force),
+            )),
+          ]
     return { clients: statuses, skills: [], steps }
   })
 

@@ -34,6 +34,8 @@ import {
 import { Environment } from '@/services/telemetry'
 import { exec } from '@/services/updater'
 
+export { detectCallingAgent } from '@/services/agent-setup/agents'
+
 export class AgentSetup extends Context.Service<
   AgentSetup,
   {

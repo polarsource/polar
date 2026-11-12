@@ -99,8 +99,8 @@ const approve = (
                 ]),
             '',
             `${ui.INDENT}${ui.green('y')} to publish  ${ui.red('n')} to cancel`,
-          ].flatMap((line) => ui.boxRows(line)),
-          ui.boxBottom(),
+          ].flatMap((line) => ui.sectionRows(line)),
+          ...ui.sectionClose(),
         ].join('\n'),
       ),
     ).pipe(Effect.catch(() => say([ui.blank]).pipe(Effect.as(false))))

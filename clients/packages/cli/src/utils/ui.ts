@@ -3,6 +3,16 @@ import type { SourceLocation } from '@/schemas/BillingConfig'
 
 export const INDENT = '  '
 
+let human = false
+let sections = 0
+
+export const setHuman = (value: boolean) => {
+  human = value
+  sections = 0
+}
+
+export const isHuman = () => human
+
 export const dim = pc.dim
 export const bold = pc.bold
 export const cyan = pc.cyan
@@ -12,11 +22,14 @@ export const red = pc.red
 
 export const command = (text: string) => pc.cyan(text)
 
-export const success = (message: string) =>
-  `${INDENT}${pc.green('✔')} ${message}`
+export const check = () => pc.green(human ? '●' : '✔')
+
+export const cross = () => pc.red(human ? '✕' : '✖')
+
+export const success = (message: string) => `${INDENT}${check()} ${message}`
 
 export const failure = (title: string, hint?: string) => {
-  const lines = [`${INDENT}${pc.red('✖')} ${pc.bold(pc.red(title))}`]
+  const lines = [`${INDENT}${cross()} ${pc.bold(pc.red(title))}`]
   if (hint) {
     lines.push(`${INDENT}  ${pc.dim(hint)}`)
   }
@@ -117,12 +130,12 @@ const wrap = (line: string, width: number) => {
   return rows
 }
 
-export const boxTop = () => `${INDENT}${pc.dim(`╭${'─'.repeat(boxInner())}╮`)}`
+const boxTop = () => `${INDENT}${pc.dim(`╭${'─'.repeat(boxInner())}╮`)}`
 
 export const boxBottom = () =>
   `${INDENT}${pc.dim(`╰${'─'.repeat(boxInner())}╯`)}`
 
-export const boxRows = (line: string) => {
+const boxRows = (line: string) => {
   const inner = boxInner()
   return wrap(line, inner).map(
     (row) =>
@@ -132,6 +145,51 @@ export const boxRows = (line: string) => {
 
 export const box = (text: string) =>
   [boxTop(), ...text.split('\n').flatMap(boxRows), boxBottom()].join('\n')
+
+const sectionTitle = (title: string) => {
+  if (!human) return heading(title)
+  sections += 1
+  return `${INDENT}${pc.dim(String(sections).padStart(2, '0'))}${INDENT}${pc.bold(title)}`
+}
+
+export const sectionOpen = (title: string) => [
+  blank,
+  sectionTitle(title),
+  ...(human ? [] : [boxTop()]),
+]
+
+export const sectionRows = (line: string) =>
+  human
+    ? wrap(line, boxInner()).map((row) => `${INDENT}${INDENT}${row}`.trimEnd())
+    : boxRows(line)
+
+export const sectionClose = () => (human ? [] : [boxBottom()])
+
+export const section = (title: string, text: string) =>
+  human
+    ? [...sectionOpen(title), ...text.split('\n').flatMap(sectionRows)]
+    : [blank, heading(title), box(text)]
+
+const LEADER = 26
+const SEGMENT = 4
+
+export const LEADER_PERIOD = LEADER + SEGMENT
+
+const trail = (width: number, guide: string, period: number, tick?: number) => {
+  if (tick === undefined) return pc.dim(guide.repeat(width))
+  const start = (tick % period) - SEGMENT
+  return Array.from({ length: width }, (_, index) =>
+    index >= start && index < start + SEGMENT ? pc.bold(guide) : pc.dim(guide),
+  ).join('')
+}
+
+export const leader = (label: string, tick?: number) =>
+  `${label} ${trail(Math.max(LEADER - Bun.stringWidth(label), 3), '·', LEADER_PERIOD, tick)} `
+
+export const track = (width: number, tick?: number) =>
+  trail(width, '─', width + SEGMENT, tick)
+
+export const trackFull = (width: number) => '─'.repeat(width)
 
 export const truncate = (text: string, width: number) => {
   if (width <= 0) return ''
@@ -158,7 +216,54 @@ export const truncate = (text: string, width: number) => {
 export const pad = (text: string, width: number) =>
   text + ' '.repeat(Math.max(width - Bun.stringWidth(text), 0))
 
+const CARD_GAP = 2
+const CARD_MINIMUM = 24
+const CARD_MAXIMUM = 34
+
+const cardSpace = () =>
+  (process.stdout.columns || 80) - INDENT.length + CARD_GAP
+
+const cardsPerRow = (count: number) =>
+  Math.max(
+    Math.min(count, Math.floor(cardSpace() / (CARD_MINIMUM + CARD_GAP))),
+    1,
+  )
+
+export const cardInner = (count: number) =>
+  Math.max(
+    Math.min(
+      Math.floor(cardSpace() / cardsPerRow(count)) - CARD_GAP,
+      CARD_MAXIMUM,
+    ),
+    CARD_MINIMUM,
+  ) - 4
+
+const card = (rows: ReadonlyArray<string>, inner: number) => [
+  pc.dim(`┌─${' '.repeat(inner)}─┐`),
+  ...rows.map((row) => `${INDENT}${pad(truncate(row, inner), inner)}${INDENT}`),
+  pc.dim(`└─${' '.repeat(inner)}─┘`),
+]
+
+export const cardGrid = (cards: ReadonlyArray<ReadonlyArray<string>>) => {
+  const perRow = cardsPerRow(cards.length)
+  const framed = cards.map((rows) => card(rows, cardInner(cards.length)))
+  return Array.from({ length: Math.ceil(framed.length / perRow) }, (_, row) =>
+    framed.slice(row * perRow, (row + 1) * perRow),
+  )
+    .flatMap((group) =>
+      (group[0] ?? []).map(
+        (_, line) =>
+          `${INDENT}${group.map((rows) => rows[line]).join(' '.repeat(CARD_GAP))}`,
+      ),
+    )
+    .join('\n')
+}
+
 export const hideCursor = '\x1b[?25l'
+export const showCursor = '\x1b[?25h'
+
+export const repaint = (lines: ReadonlyArray<string>, previous: number) =>
+  `${previous > 0 ? `\x1b[${previous}A` : ''}${lines.map((line) => `\r${line}\x1b[K\n`).join('')}`
 
 export const inverse = pc.inverse
 

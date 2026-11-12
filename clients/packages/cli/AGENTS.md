@@ -65,6 +65,11 @@ Rules of thumb:
 
 - `run` never prints. In-flight status goes through `withProgress`/`note` from
   `@/utils/progress`, which stay silent under `--json`.
+- Sections, step rows and cards come in two styles. People at a terminal get
+  numbered sections, dotted leaders and cards; agents, pipes and tests get the
+  boxed one (`ui.setHuman` in `src/cli.ts` decides). Build output from
+  `ui.section*`, `withProgress` and `withCards` and both come for free. Call
+  `ui.setHuman(true)` in a test to assert on the first.
 - Commands that never return (`listen`) use `streaming()` instead and emit
   through its `Emit`: human text, or one JSON object per line under `--json`.
 - Commands where JSON makes no sense (e.g. one that opens a browser) use

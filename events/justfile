@@ -1,0 +1,21 @@
+set dotenv-path := "../server/.env"
+
+run:
+    cargo run
+
+test:
+    cargo test --locked
+
+lint:
+    cargo fmt
+    cargo clippy --all-targets --fix --allow-dirty --allow-staged -- -D warnings
+
+lint-check:
+    cargo fmt --check
+    cargo clippy --all-targets --locked -- -D warnings
+
+build:
+    cargo build --release --locked
+
+docker-build:
+    docker build -t polar-events .

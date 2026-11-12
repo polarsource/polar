@@ -321,9 +321,4 @@ export default {
       unknown: 'Valami hiba történt.',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: 'Elavult · még használatban',
-    },
-  },
 } as const

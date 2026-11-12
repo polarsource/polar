@@ -320,9 +320,4 @@ export default {
       unknown: 'Bir sorun oluştu.',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: 'Kullanımdan kaldırıldı · Hâlâ kullanımda',
-    },
-  },
 } as const

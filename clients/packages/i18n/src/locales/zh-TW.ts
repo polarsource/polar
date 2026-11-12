@@ -314,9 +314,4 @@ export default {
       unknown: '發生錯誤。',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: '已棄用 · 仍在使用中',
-    },
-  },
 } as const

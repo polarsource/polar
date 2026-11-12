@@ -320,9 +320,4 @@ export default {
       unknown: 'Något gick fel.',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: 'Föråldrad · används fortfarande',
-    },
-  },
 } as const

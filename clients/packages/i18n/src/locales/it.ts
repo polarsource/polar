@@ -324,9 +324,4 @@ export default {
       unknown: 'Si è verificato un problema.',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: 'Deprecato · ancora in uso',
-    },
-  },
 } as const

@@ -332,9 +332,4 @@ export default {
       unknown: 'Coś poszło nie tak.',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: 'Przestarzałe · nadal w użyciu',
-    },
-  },
 } as const

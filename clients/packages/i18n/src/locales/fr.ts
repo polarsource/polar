@@ -333,9 +333,4 @@ export default {
       unknown: 'Une erreur s’est produite.',
     },
   },
-  catalogVersions: {
-    removed: {
-      deprecatedTitle: 'Obsolète · encore utilisé',
-    },
-  },
 } as const

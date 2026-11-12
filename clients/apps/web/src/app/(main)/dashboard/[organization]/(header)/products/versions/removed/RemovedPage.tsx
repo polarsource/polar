@@ -2,7 +2,6 @@
 
 import { useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { DEFAULT_LOCALE, useTranslations } from '@polar-sh/i18n'
 import { SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
@@ -21,7 +20,6 @@ export default function RemovedPage({
 }: {
   organization: schemas['Organization']
 }) {
-  const t = useTranslations(DEFAULT_LOCALE)
   const [resource, setResource] = useState<Resource>('product')
   const { data: items } = useRemovedCatalogItems(organization.id)
 
@@ -56,7 +54,7 @@ export default function RemovedPage({
         </Text>
       ) : null}
       <RemovedGroup
-        title={t('catalogVersions.removed.deprecatedTitle')}
+        title="Deprecated · still in use"
         hint="Becomes removed once no customer uses it"
         items={shown.filter((item) => item.status === 'deprecated')}
         href={href}

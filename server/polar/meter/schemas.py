@@ -140,12 +140,7 @@ class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin, ExternalIDOutputMi
     is_current: Annotated[
         bool,
         Version(starting_from=V2027_01),
-        Field(
-            description=(
-                "Whether this is the meter's current version. Previous versions "
-                "keep billing the subscriptions that use them."
-            )
-        ),
+        Field(description="Whether this is the current version of the meter."),
     ]
 
 

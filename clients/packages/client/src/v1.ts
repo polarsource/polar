@@ -27563,7 +27563,7 @@ export interface components {
       catalog_id: string | null
       /**
        * Is Current
-       * @description Whether this is the meter's current version. Previous versions keep billing the subscriptions that use them.
+       * @description Whether this is the current version of the meter.
        */
       is_current: boolean
     }

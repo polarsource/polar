@@ -6,6 +6,9 @@ run:
 test:
     cargo test --locked
 
+test-db:
+    cargo test --locked -- --ignored
+
 lint:
     cargo fmt
     cargo clippy --all-targets --fix --allow-dirty --allow-staged -- -D warnings

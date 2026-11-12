@@ -93,6 +93,8 @@ async fn ingest(
 
     let mut transaction = state.db.begin().await?;
     ingest::validate_references(&mut transaction, auth.organization_id, &events).await?;
+    let _event_types =
+        ingest::resolve_event_types(&mut transaction, auth.organization_id, &events).await?;
     transaction.commit().await?;
 
     Ok(StatusCode::NOT_IMPLEMENTED.into_response())

@@ -189,7 +189,7 @@ class Event(Model, MetadataMixin):
         TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
     )
     timestamp: Mapped[datetime.datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, default=utc_now, index=True
+        TIMESTAMP(timezone=True), nullable=False, default=utc_now
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     source: Mapped[EventSource] = mapped_column(

@@ -14,10 +14,6 @@ const MAX_COST_WHOLE_DIGITS: usize = MAX_COST_DIGITS - MAX_COST_DECIMAL_PLACES;
 const UNIX_MILLISECONDS_THRESHOLD: f64 = 2e10;
 
 #[derive(Debug)]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "read once the ingest handler stores events")
-)]
 pub struct EventCreate {
     pub timestamp: DateTime<Utc>,
     pub name: String,
@@ -29,10 +25,6 @@ pub struct EventCreate {
 }
 
 #[derive(Debug)]
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "read once the ingest handler stores events")
-)]
 pub enum CustomerReference {
     Polar {
         customer_id: Uuid,

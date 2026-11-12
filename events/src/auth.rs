@@ -18,6 +18,7 @@ use crate::{
     app::{AppState, error_response},
     jobs,
     jobs::Job,
+    telemetry,
 };
 
 const TOKEN_PREFIX: &str = "polar_oat_";
@@ -71,6 +72,7 @@ fn digest(token: &str, secret: &str) -> String {
 
 pub struct OrganizationAuth {
     pub organization_id: Uuid,
+    pub staged_events_ingest_enabled: bool,
 }
 
 #[derive(Debug)]
@@ -102,8 +104,10 @@ async fn authenticate(
         return Err(AuthError::InvalidToken);
     }
 
-    let (token_id, scope, organization_id): (Uuid, String, Uuid) = sqlx::query_as(
-        "SELECT organization_access_tokens.id, organization_access_tokens.scope, organizations.id \
+    let (token_id, scope, organization_id, staged_events_ingest_enabled): (Uuid, String, Uuid, bool) =
+        sqlx::query_as(
+        "SELECT organization_access_tokens.id, organization_access_tokens.scope, organizations.id, \
+         COALESCE(organizations.feature_settings -> 'staged_events_ingest_enabled' = 'true', false) \
          FROM organization_access_tokens \
          JOIN organizations ON organizations.id = organization_access_tokens.organization_id \
          WHERE organization_access_tokens.deleted_at IS NULL \
@@ -146,7 +150,10 @@ async fn authenticate(
     span.record("subject_type", "Organization");
     span.record("subject_id", organization_id.to_string());
 
-    Ok(OrganizationAuth { organization_id })
+    Ok(OrganizationAuth {
+        organization_id,
+        staged_events_ingest_enabled,
+    })
 }
 
 fn bearer_token(headers: &HeaderMap) -> Option<&str> {
@@ -194,7 +201,7 @@ impl AuthError {
                  is not accessible with this credential.",
             ),
             Self::Database(error) => {
-                tracing::error!(%error, "failed to look up organization access token");
+                telemetry::log_database_error(&error, "organization access token lookup");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         }

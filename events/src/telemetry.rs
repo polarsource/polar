@@ -64,3 +64,15 @@ pub fn record_response<B>(response: &Response<B>, _latency: Duration, span: &Spa
         span.record("otel.status_code", "ERROR");
     }
 }
+
+pub fn log_database_error(error: &sqlx::Error, operation: &'static str) {
+    match error.as_database_error() {
+        Some(database_error) => tracing::error!(
+            operation,
+            sqlstate = database_error.code().as_deref(),
+            constraint = database_error.constraint(),
+            "database error"
+        ),
+        None => tracing::error!(operation, %error, "database error"),
+    }
+}

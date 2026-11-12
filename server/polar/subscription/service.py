@@ -547,22 +547,14 @@ class SubscriptionUpdateContext:
             )
 
         match self._billing_effect:
-            # Explicitly ending a trial converts it, even without a payment
-            # method: only the scheduled trial end expires it.
             case "cycle":
-                await self.service.cycle(
-                    self.session,
-                    self,
-                    self.subscription,
-                    expire_trial_without_payment_method=False,
-                )
+                await self.service.cycle(self.session, self, self.subscription)
             case "cycle_sync":
                 await self.service.cycle(
                     self.session,
                     self,
                     self.subscription,
                     payment_mode=PaymentMode.sync,
-                    expire_trial_without_payment_method=False,
                 )
             case "invoice":
                 await self.service._create_subscription_update_order(
@@ -1298,7 +1290,6 @@ class SubscriptionService:
         update_cycle_dates: bool = True,
         *,
         payment_mode: PaymentMode = PaymentMode.background,
-        expire_trial_without_payment_method: bool = True,
     ) -> Subscription:
         if not subscription.billable:
             raise NotBillableSubscription(subscription)
@@ -1319,11 +1310,7 @@ class SubscriptionService:
         usage_period_start = (
             subscription.current_meter_period_start or subscription.current_period_start
         )
-        trial_expired = (
-            expire_trial_without_payment_method
-            and self._is_trial_expiring_without_payment_method(subscription)
-        )
-        revoke = subscription.cancel_at_period_end or trial_expired
+        revoke = subscription.cancel_at_period_end
 
         # Subscription is due to pause: it enters the paused state at the end of
         # its current period instead of renewing. Benefits are revoked and no
@@ -1350,15 +1337,7 @@ class SubscriptionService:
 
         # Subscription is due to cancel, revoke it
         if revoke:
-            ended_at = utc_now()
-            # A trial without a payment method can't convert: end it instead of
-            # billing a first order that could only go into dunning.
-            if trial_expired:
-                subscription.canceled_at = ended_at
-                subscription.ends_at = ended_at
-                subscription.pause_at_period_end = False
-                subscription.resumes_at = None
-            subscription.ended_at = ended_at
+            subscription.ended_at = utc_now()
             subscription.status = SubscriptionStatus.canceled
             await self.enqueue_benefits_grants(session, subscription)
         # Normal cycle
@@ -1461,11 +1440,6 @@ class SubscriptionService:
             session, subscription, reset_at=reset_at, include_meter_credits=not revoke
         )
 
-        # A trial that never converted has nothing to bill: usage isn't billed
-        # during the trial, and the customer has no payment method to charge.
-        if trial_expired:
-            return subscription
-
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
         elif previous_status == SubscriptionStatus.trialing:
@@ -1497,9 +1471,7 @@ class SubscriptionService:
 
         return subscription
 
-    def _is_trial_expiring_without_payment_method(
-        self, subscription: Subscription
-    ) -> bool:
+    def should_expire_trial(self, subscription: Subscription) -> bool:
         if not subscription.trialing or subscription.cancel_at_period_end:
             return False
         if (

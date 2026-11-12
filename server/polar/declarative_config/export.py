@@ -195,12 +195,15 @@ def _product_entry(
     )
 
 
-def _settings(organization: Organization) -> ConfigSettingsRead:
+def _settings(
+    organization: Organization, catalog: Catalog | None
+) -> ConfigSettingsRead:
+    current = catalog_service.get_settings(organization, catalog)
     settings = ConfigSettings.model_validate(
         {
             "payments": {
-                "currency": organization.default_presentment_currency,
-                "tax": organization.default_tax_behavior,
+                "currency": current["default_presentment_currency"],
+                "tax": current["default_tax_behavior"],
             }
         }
     )
@@ -352,7 +355,7 @@ async def export_config(
     return ConfigExport(
         enabled=organization.is_config_as_code_enabled,
         config=ConfigExportDocument(
-            settings=_settings(organization),
+            settings=_settings(organization, catalog),
             meters=meters,
             benefits=benefits,
             products=products,

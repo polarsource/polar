@@ -543,6 +543,20 @@ class CatalogService:
             catalog.published_at is None or catalog.published_at >= first
         )
 
+    def get_settings(
+        self, organization: Organization, catalog: Catalog | None
+    ) -> dict[str, Any]:
+        """Settings of a catalog, by `Organization` attribute name: a draft's
+        changes or an archived catalog's snapshot over the organization's."""
+        settings = _settings(organization)
+        if (
+            catalog is not None
+            and catalog.status != CatalogStatus.live
+            and catalog.settings is not None
+        ):
+            settings.update(catalog.settings)
+        return settings
+
     async def get_catalog_meters(
         self,
         session: AsyncReadSession,

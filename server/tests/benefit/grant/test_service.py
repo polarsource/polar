@@ -290,6 +290,47 @@ class TestRevokeBenefit:
         assert revoked.manually_revoked_at == manually_revoked_at
         benefit_strategy_mock.revoke.assert_awaited_once()
 
+    async def test_revoking_pending_suppressed_purchase_preserves_other_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        benefit_organization: Benefit,
+        subscription: Subscription,
+        product: Product,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        pending = BenefitGrant(
+            customer=customer,
+            benefit=benefit_organization,
+            subscription=subscription,
+            manually_revoked_at=utc_now(),
+            properties={"granted_account_id": "123"},
+        )
+        pending.set_grant_failed(BenefitActionRequiredError("Reconnect account"))
+        await save_fixture(pending)
+
+        other_subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        active = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=other_subscription,
+        )
+
+        revoked = await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit_organization, subscription=subscription
+        )
+
+        assert revoked.id == pending.id
+        assert revoked.is_revoked
+        assert active.is_granted
+        benefit_strategy_mock.revoke.assert_not_awaited()
+
     async def test_not_existing_grant(
         self,
         session: AsyncSession,

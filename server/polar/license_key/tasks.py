@@ -35,7 +35,9 @@ async def sync_benefit_grant(
 ) -> None:
     async with AsyncSessionMaker() as session:
         license_key_repository = LicenseKeyRepository.from_session(session)
-        license_key = await license_key_repository.get_by_id(license_key_id)
+        license_key = await license_key_repository.get_by_id(
+            license_key_id, for_update=True
+        )
         if license_key is None:
             raise LicenseKeyDoesNotExist(license_key_id)
 

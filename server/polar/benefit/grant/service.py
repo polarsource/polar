@@ -262,15 +262,14 @@ class BenefitGrantService:
         previous_properties = grant.properties
 
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
-        # Call the revoke logic in two cases:
-        # * If the service requires grants to be revoked individually
-        # * If there is only one grant remaining for this benefit,
-        #   so the benefit remains if other grants exist via other purchases
+        # Revoke provider access if the strategy revokes grants individually
+        # or if no other active grant still provides access.
         repository = BenefitGrantRepository.from_session(session)
-        other_grants = await repository.list_granted_by_benefit_and_customer(
+        granted = await repository.list_granted_by_benefit_and_customer(
             benefit, customer, member=member
         )
-        if benefit_strategy.should_revoke_individually or len(other_grants) < 2:
+        has_other_grants = any(other.id != grant.id for other in granted)
+        if benefit_strategy.should_revoke_individually or not has_other_grants:
             try:
                 properties = await benefit_strategy.revoke(
                     benefit,
@@ -391,7 +390,9 @@ class BenefitGrantService:
         )
 
         # Include outdated grants (from subscription upgrades/downgrades)
-        outdated_grants = await repository.list_outdated_grants(product, **scope)
+        outdated_grants = await repository.list_outdated_grants(
+            product, member_id=member_id, **scope
+        )
         revoke_benefit_ids.extend(g.benefit_id for g in outdated_grants)
 
         if not revoke_benefit_ids and not grant_benefit_ids:

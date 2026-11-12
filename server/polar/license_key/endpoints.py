@@ -8,7 +8,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import LicenseKey, LicenseKeyActivation
@@ -117,6 +117,10 @@ async def get(
     tags=[APITag.mcp, APITag.cli],
     responses={
         401: UnauthorizedResponse,
+        403: {
+            "description": "Cannot reactivate a license key for a manually revoked benefit grant.",
+            "model": NotPermitted.schema(),
+        },
         404: NotFoundResponse,
     },
 )

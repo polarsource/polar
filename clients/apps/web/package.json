@@ -22,7 +22,6 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.0",
     "@ai-sdk/google": "^4.0.0",
-    "@ai-sdk/mcp": "^2.0.0",
     "@ai-sdk/openai": "catalog:",
     "@ai-sdk/otel": "^1.0.0",
     "@ai-sdk/react": "^4.0.0",

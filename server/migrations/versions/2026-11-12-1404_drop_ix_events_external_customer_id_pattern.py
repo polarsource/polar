@@ -1,8 +1,8 @@
 """drop ix_events_external_customer_id_pattern
 
 Revision ID: d62a0b8e4c75
-Revises: 367fe9fac05f
-Create Date: 2026-11-12 12:03:00.000000
+Revises: 5c1e8a3f9d27
+Create Date: 2026-11-12 14:04:00.000000
 
 """
 
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d62a0b8e4c75"
-down_revision = "367fe9fac05f"
+down_revision = "5c1e8a3f9d27"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

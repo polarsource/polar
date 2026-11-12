@@ -7,6 +7,7 @@ import logfire
 from fastapi import FastAPI, Request, WebSocket
 from logfire.sampling import SpanLevel
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.sampling import (
@@ -31,6 +32,7 @@ from polar.config import settings
 from polar.kit.aws import get_credentials
 from polar.kit.db.postgres import Engine
 from polar.observability.otel_prometheus import PrometheusMeterProvider
+from polar.redis import Redis
 
 Matcher = Callable[[str, "Attributes | None"], bool]
 
@@ -287,8 +289,13 @@ def instrument_sqlalchemy(engines: Sequence[Engine]) -> None:
     logfire.instrument_sqlalchemy(engines=engines, meter_provider=_meter_provider)
 
 
+def instrument_redis(client: Redis) -> None:
+    RedisInstrumentor.instrument_client(client)
+
+
 __all__ = [
     "configure_logfire",
     "instrument_fastapi",
+    "instrument_redis",
     "instrument_sqlalchemy",
 ]

@@ -4,7 +4,7 @@ import CheckoutStatus from '@/components/CheckoutStatus/CheckoutStatus'
 import CheckoutStatusSelect from '@/components/CheckoutStatusSelect/CheckoutStatusSelect'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { useCheckouts } from '@/hooks/queries/checkouts'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDebouncedCallback } from '@/hooks/utils'
@@ -181,9 +181,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                   columnGap="s"
                 >
                   {product.name}
-                  <ProductVersionLabel
+                  <CatalogVersionLabel
                     organization={organization}
-                    product={product}
+                    version={product}
                   />
                 </Box>
               </React.Fragment>

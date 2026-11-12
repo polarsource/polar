@@ -1,6 +1,6 @@
 'use client'
 
-import { MeterVersionLabel } from '@/components/Meter/MeterVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { MeterPeriodDetails } from '@/components/Customer/CustomerMeter/MeterPeriodDetails'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
@@ -150,7 +150,10 @@ const CustomerMeterPage = ({
                     {meter.name}
                   </Text>
                 </Link>
-                <MeterVersionLabel organization={organization} meter={meter} />
+                <CatalogVersionLabel
+                  organization={organization}
+                  version={meter}
+                />
               </Box>
               <Text color="muted">
                 {customer.name || customer.email || 'Customer'}

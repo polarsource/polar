@@ -1,6 +1,6 @@
 'use client'
 
-import { MeterVersionLabel } from '@/components/Meter/MeterVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreditCustomerMeter } from '@/hooks/queries/customerMeters'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
@@ -148,9 +148,9 @@ export const AddCreditsModal = ({
                         <Box alignItems="center" columnGap="s">
                           {meter.name}
                           {productName && ` · ${productName}`}
-                          <MeterVersionLabel
+                          <CatalogVersionLabel
                             organization={organization}
-                            meter={meter}
+                            version={meter}
                           />
                         </Box>
                       </SelectItem>

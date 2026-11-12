@@ -1,6 +1,6 @@
 'use client'
 
-import { MeterVersionLabel } from '@/components/Meter/MeterVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { AddCreditsModal } from '@/components/Customer/AddCredits/AddCreditsModal'
 import { useModal } from '@/components/Modal/useModal'
 import { estimateMeteredCost } from '@/components/Products/ProductForm/Pricing/utils'
@@ -199,9 +199,9 @@ export const CustomerUsageView = ({
                   style={{ backgroundColor: row.original.color }}
                 />
                 <span>{row.original.meter.name}</span>
-                <MeterVersionLabel
+                <CatalogVersionLabel
                   organization={organization}
-                  meter={row.original.meter}
+                  version={row.original.meter}
                 />
                 {row.original.subscription && (
                   <span className="dark:text-polar-500 text-gray-500">

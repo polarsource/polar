@@ -4,6 +4,7 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
   type LoadedConfig,
+  type ManualRemoval,
   type PruneEntry,
   PruneOutput,
 } from '@/schemas/BillingConfig'
@@ -108,29 +109,51 @@ const confirm =
       }
     })
 
+const byHand = (config: LoadedConfig, manual: ReadonlyArray<ManualRemoval>) => [
+  ...section(
+    'Next',
+    [
+      `${ui.INDENT}Delete ${manual.length === 1 ? 'this entry' : 'these entries'} from ${config.file}. Nothing on Polar changes.`,
+      ...manual.map(({ external_id, line }) =>
+        [
+          `${ui.INDENT}${ui.INDENT}${ui.printable(external_id)}`,
+          ...(line === undefined ? [] : [ui.dim(`${config.file}:${line}`)]),
+        ].join('  '),
+      ),
+    ].join('\n'),
+  ),
+  ui.blank,
+  ui.warning(
+    `${config.file} is unchanged: polar config prune does not edit this kind of file`,
+  ),
+]
+
 // The report was already shown before confirming when entries were removed
 const render = (
   config: LoadedConfig,
   organization: ActiveOrganization,
   entries: ReadonlyArray<PruneEntry>,
   removed: boolean,
+  manual: ReadonlyArray<ManualRemoval> | undefined,
 ) =>
-  removed
-    ? [
-        ui.blank,
-        ui.success(
-          `${config.file}: ${plural(entries.filter(removable).length, 'entry', 'entries')} removed, nothing changed on Polar`,
-        ),
-      ]
-    : [
-        ...report(organization, entries),
-        ui.blank,
-        ui.success(
-          entries.length === 0
-            ? `No deprecated entries in ${config.file}`
-            : 'Nothing to remove',
-        ),
-      ]
+  manual !== undefined
+    ? [...report(organization, entries), ...byHand(config, manual)]
+    : removed
+      ? [
+          ui.blank,
+          ui.success(
+            `${config.file}: ${plural(entries.filter(removable).length, 'entry', 'entries')} removed, nothing changed on Polar`,
+          ),
+        ]
+      : [
+          ...report(organization, entries),
+          ui.blank,
+          ui.success(
+            entries.length === 0
+              ? `No deprecated entries in ${config.file}`
+              : 'Nothing to remove',
+          ),
+        ]
 
 export const prune = Command.make('prune', { file, org, confirmed }).pipe(
   Command.withDescription(
@@ -188,7 +211,12 @@ export const prune = Command.make('prune', { file, org, confirmed }).pipe(
               )
               yield* progress.close
               const unused = entries.filter(removable)
-              if (unused.length > 0) {
+              const manual =
+                unused.length > 0
+                  ? billing.manualRemovals(config, unused)
+                  : undefined
+              const removed = unused.length > 0 && manual === undefined
+              if (removed) {
                 yield* confirm(
                   config,
                   organization,
@@ -198,22 +226,18 @@ export const prune = Command.make('prune', { file, org, confirmed }).pipe(
                 )(entries)
                 yield* billing.prune(config, unused)
               }
-              return {
-                config,
-                organization,
-                entries,
-                removed: unused.length > 0,
-              }
+              return { config, organization, entries, removed, manual }
             }),
           'columns',
         )
       }),
-    render: ({ config, organization, entries, removed }) =>
-      render(config, organization, entries, removed),
-    json: ({ config, entries, removed }) => ({
+    render: ({ config, organization, entries, removed, manual }) =>
+      render(config, organization, entries, removed, manual),
+    json: ({ config, entries, removed, manual }) => ({
       file: config.file,
       entries,
       removed,
+      ...(manual === undefined ? {} : { remove_by_hand: manual }),
     }),
   }),
 )

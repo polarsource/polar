@@ -6,6 +6,7 @@ import type {
   Catalog,
   Catalogs,
   LoadedConfig,
+  ManualRemoval,
   PlanResult,
   PruneEntry,
 } from '@/schemas/BillingConfig'
@@ -20,7 +21,11 @@ import {
 } from '@/services/billing-config/init'
 import { loader } from '@/services/billing-config/load'
 import { plan } from '@/services/billing-config/plan'
-import { deprecations, prune } from '@/services/billing-config/prune'
+import {
+  deprecations,
+  manualRemovals,
+  prune,
+} from '@/services/billing-config/prune'
 import { catalogs, publish } from '@/services/billing-config/publish'
 import { authenticatedClient } from '@/services/client'
 import { type Ran, run } from '@/utils/run'
@@ -69,6 +74,10 @@ export class BillingConfig extends Context.Service<
       ReadonlyArray<PruneEntry>,
       AuthError | BillingConfigError
     >
+    manualRemovals: (
+      config: LoadedConfig,
+      entries: ReadonlyArray<PruneEntry>,
+    ) => ReadonlyArray<ManualRemoval> | undefined
     prune: (
       config: LoadedConfig,
       entries: ReadonlyArray<PruneEntry>,
@@ -101,6 +110,7 @@ const make = Effect.gen(function* () {
     init: init(fs, clients),
     install: run,
     deprecations: deprecations(clients),
+    manualRemovals,
     prune: prune(fs, load),
     catalogs: catalogs(clients),
     publish: publish(clients),

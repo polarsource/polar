@@ -39,6 +39,7 @@ const helpOnlyServices = Layer.mergeAll(
       init: unused,
       install: unused,
       deprecations: unused,
+      manualRemovals: () => undefined,
       prune: unused,
       catalogs: unused,
       publish: unused,

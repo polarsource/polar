@@ -30,6 +30,7 @@ const run = async (
           plan: () => Effect.die('unused'),
           apply: () => Effect.die('unused'),
           deprecations: () => Effect.die('unused'),
+          manualRemovals: () => undefined,
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),

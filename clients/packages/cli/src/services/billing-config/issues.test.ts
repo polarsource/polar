@@ -114,6 +114,24 @@ describe('issues', () => {
       source: 'class Meters(MeterSet):\n    calls = Meter("", on="call")\n',
       input: { meters: [{ external_id: 'calls', name: '' }] },
       generated: true,
+      positions: {
+        sections: {},
+        entries: {
+          meters: [
+            {
+              name: { line: 2, column: 5, length: 5 },
+              fields: {
+                name: {
+                  key: { line: 2, column: 19, length: 2 },
+                  values: [
+                    { value: '', span: { line: 2, column: 19, length: 2 } },
+                  ],
+                },
+              },
+            },
+          ],
+        },
+      },
     }
 
     const [issue] = issues(python, [

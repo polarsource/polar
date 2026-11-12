@@ -6,6 +6,7 @@ import {
   type Format,
   type LoadedConfig,
   type SourceLocation,
+  type SourcePositions,
 } from '@/schemas/BillingConfig'
 import type { Run } from '@/utils/run'
 
@@ -18,6 +19,12 @@ export interface Installer {
     fs: FileSystem.FileSystem,
     root: string,
   ) => Effect.Effect<boolean>
+}
+
+export interface RenderContext {
+  readonly fs: FileSystem.FileSystem
+  readonly run: Run
+  readonly path: string
 }
 
 export interface Language {
@@ -35,6 +42,7 @@ export interface Language {
   ) => Effect.Effect<LoadedConfig, BillingConfigError>
   readonly render: (
     document: ConfigDocument,
+    context: RenderContext,
   ) => Effect.Effect<string, BillingConfigError>
   readonly locate: (
     config: LoadedConfig,
@@ -42,10 +50,9 @@ export interface Language {
     got: unknown,
     target: 'key' | 'value',
   ) => SourceLocation | undefined
-  readonly remove: (
-    config: LoadedConfig,
-    removals: ReadonlyArray<Removal>,
-  ) => Removed
+  readonly remove:
+    | ((config: LoadedConfig, removals: ReadonlyArray<Removal>) => Removed)
+    | undefined
 }
 
 export type SourcePath = ReadonlyArray<string | number>
@@ -86,6 +93,25 @@ export const findIn = (
   return match === null
     ? undefined
     : { offset: from + match.index, length: match[0].length }
+}
+
+export const locateByPositions = (
+  positions: SourcePositions | undefined,
+  path: SourcePath,
+  got: unknown,
+  target: 'key' | 'value',
+): SourceLocation | undefined => {
+  const [section, index, field] = path
+  if (positions === undefined || typeof section !== 'string') return undefined
+  if (typeof index !== 'number') return positions.sections[section]
+  const entry = positions.entries[section]?.[index]
+  if (!entry) return undefined
+  const argument = typeof field === 'string' ? entry.fields[field] : undefined
+  const value =
+    target === 'value'
+      ? argument?.values.find(({ value }) => value === got)
+      : undefined
+  return value?.span ?? argument?.key ?? entry.name
 }
 
 export const readSource = (fs: FileSystem.FileSystem, file: string) =>

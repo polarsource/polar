@@ -70,6 +70,7 @@ const run = async (
           plan: planned,
           apply: () => Effect.die('unused'),
           deprecations: () => Effect.die('unused'),
+          manualRemovals: () => undefined,
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.succeed(catalogs),
           publish: published,

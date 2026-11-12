@@ -19,6 +19,9 @@ const source = [
   '}',
 ].join('\n')
 
+const LOADED =
+  '{"config":{"meters":[]},"positions":{"sections":{},"entries":{}}}\n'
+
 const load = (file?: string, run?: Run) =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -126,7 +129,7 @@ describe('load', () => {
     const commands: Array<ReadonlyArray<string>> = []
     const config = await load(file, (command) => {
       commands.push(command)
-      return Effect.succeed({ ok: true, stdout: '{"meters":[]}\n', stderr: '' })
+      return Effect.succeed({ ok: true, stdout: LOADED, stderr: '' })
     })
     expect(commands).toEqual([
       [expect.stringMatching(/^python3?$/), '-m', 'polar.config', 'load', file],
@@ -136,7 +139,18 @@ describe('load', () => {
       source: 'config = Config()',
       input: { meters: [] },
       generated: true,
+      positions: { sections: {}, entries: {} },
     })
+  })
+
+  test('refuses Python output that is not a config with its positions', async () => {
+    const file = await write('config = Config()', 'polar_config.py')
+    const error = await failure(
+      load(file, () =>
+        Effect.succeed({ ok: true, stdout: '{"meters":[]}', stderr: '' }),
+      ),
+    )
+    expect(error.message).toBe(`${file} did not produce a billing config`)
   })
 
   test('runs Python through uv when the project has a uv.lock', async () => {
@@ -146,7 +160,7 @@ describe('load', () => {
       await write('config = Config()', 'polar_config.py'),
       (command) => {
         commands.push(command)
-        return Effect.succeed({ ok: true, stdout: '{}', stderr: '' })
+        return Effect.succeed({ ok: true, stdout: LOADED, stderr: '' })
       },
     )
     expect(commands[0]?.slice(0, 5)).toEqual([
@@ -251,7 +265,7 @@ describe('load without a file', () => {
   test('finds polar_config.py', async () => {
     await write('config = Config()', 'polar_config.py')
     const config = await load(undefined, () =>
-      Effect.succeed({ ok: true, stdout: '{}', stderr: '' }),
+      Effect.succeed({ ok: true, stdout: LOADED, stderr: '' }),
     )
     expect(config.file).toBe('polar_config.py')
   })

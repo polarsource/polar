@@ -152,7 +152,9 @@ def test_where_joins_the_event_filter(where: Condition, clauses: list[object]) -
     assert meter.filter == {"conjunction": "and", "clauses": clauses}
 
 
-def test_load_prints_only_the_config_as_json(tmp_path: pathlib.Path) -> None:
+def test_load_prints_the_config_and_its_positions_as_json(
+    tmp_path: pathlib.Path,
+) -> None:
     (tmp_path / "meters.py").write_text(
         "from polar.config import Meter, MeterSet\n\n\n"
         "class Meters(MeterSet):\n"
@@ -173,7 +175,13 @@ def test_load_prints_only_the_config_as_json(tmp_path: pathlib.Path) -> None:
         check=True,
     )
 
-    assert json.loads(result.stdout) == {"meters": [TOOL_CALL]}
+    assert json.loads(result.stdout) == {
+        "config": {"meters": [TOOL_CALL]},
+        "positions": {
+            "sections": {"meters": {"line": 6, "column": 17, "length": 6}},
+            "entries": {"meters": [None]},
+        },
+    }
 
 
 def test_load_requires_a_config_variable(tmp_path: pathlib.Path) -> None:

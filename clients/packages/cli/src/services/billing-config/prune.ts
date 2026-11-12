@@ -6,6 +6,7 @@ import type { ActiveOrganization } from '@/schemas/Auth'
 import {
   BillingConfigError,
   type LoadedConfig,
+  type ManualRemoval,
   type PruneEntry,
   PruneResponse,
 } from '@/schemas/BillingConfig'
@@ -20,6 +21,7 @@ import {
 import { languageOf } from '@/services/billing-config/languages'
 import type { Removal } from '@/services/billing-config/languages/language'
 import type { loader } from '@/services/billing-config/load'
+import { record } from '@/utils/billing-config/describe'
 
 /** Lists the deprecated entries in the config and what still uses each. */
 export const deprecations =
@@ -49,6 +51,31 @@ export const deprecations =
         requiredScopes(config, 'read'),
       )
     }).pipe(Effect.scoped, Effect.catchTags(transportErrors))
+
+/** Where to delete `entries` by hand, or undefined when prune edits this kind of file itself. */
+export const manualRemovals = (
+  config: LoadedConfig,
+  entries: ReadonlyArray<PruneEntry>,
+): ReadonlyArray<ManualRemoval> | undefined => {
+  const language = languageOf(config.file)
+  if (language === undefined || language.remove !== undefined) return undefined
+  return entries.map(({ resource, external_id }) => {
+    const section = SECTIONS[resource]
+    const declared = record(config.input)?.[section]
+    const index = Array.isArray(declared)
+      ? declared.findIndex(
+          (item) => record(item)?.['external_id'] === external_id,
+        )
+      : -1
+    const line = language.locate(
+      config,
+      [section, index],
+      undefined,
+      'key',
+    )?.line
+    return { resource, external_id, ...(line === undefined ? {} : { line }) }
+  })
+}
 
 const writeConfig = (
   fs: FileSystem.FileSystem,
@@ -117,7 +144,7 @@ export const prune =
         section: SECTIONS[entry.resource],
         id: entry.external_id,
       }))
-      const { source, missing } = languageOf(config.file)?.remove(
+      const { source, missing } = languageOf(config.file)?.remove?.(
         config,
         removals,
       ) ?? { source: config.source, missing: removals }

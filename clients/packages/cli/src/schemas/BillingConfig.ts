@@ -140,10 +140,18 @@ export const PruneResponse = Schema.Struct({
   entries: Schema.Array(PruneEntry),
 })
 
+export const ManualRemoval = Schema.Struct({
+  resource: ConfigResource,
+  external_id: Schema.String,
+  line: Schema.optional(Schema.Finite),
+})
+export type ManualRemoval = typeof ManualRemoval.Type
+
 export const PruneOutput = Schema.Struct({
   file: Schema.String,
   entries: Schema.Array(PruneEntry),
   removed: Schema.Boolean,
+  remove_by_hand: Schema.optional(Schema.Array(ManualRemoval)),
 })
 
 export const SourceLocation = Schema.Struct({
@@ -152,6 +160,32 @@ export const SourceLocation = Schema.Struct({
   length: Schema.Finite,
 })
 export type SourceLocation = typeof SourceLocation.Type
+
+const SourceField = Schema.Struct({
+  key: SourceLocation,
+  values: Schema.Array(
+    Schema.Struct({
+      value: Schema.Union([Schema.String, Schema.Finite, Schema.Boolean]),
+      span: SourceLocation,
+    }),
+  ),
+})
+
+export const SourcePositions = Schema.Struct({
+  sections: Schema.Record(Schema.String, SourceLocation),
+  entries: Schema.Record(
+    Schema.String,
+    Schema.Array(
+      Schema.NullOr(
+        Schema.Struct({
+          name: SourceLocation,
+          fields: Schema.Record(Schema.String, SourceField),
+        }),
+      ),
+    ),
+  ),
+})
+export type SourcePositions = typeof SourcePositions.Type
 
 export const ConfigIssue = Schema.Struct({
   severity: IssueSeverity,
@@ -297,6 +331,7 @@ export interface LoadedConfig {
   readonly source: string
   readonly input: unknown
   readonly generated: boolean
+  readonly positions?: SourcePositions
 }
 
 export class BillingConfigError extends Data.TaggedError('BillingConfigError')<{

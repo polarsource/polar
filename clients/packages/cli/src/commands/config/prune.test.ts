@@ -4,6 +4,7 @@ import { prune } from '@/commands/config/prune'
 import {
   BillingConfigError,
   type LoadedConfig,
+  type ManualRemoval,
   type PruneEntry,
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
@@ -53,6 +54,7 @@ const run = async (
   entries: ReadonlyArray<PruneEntry>,
   args: ReadonlyArray<string> = [],
   options: Parameters<typeof runCli>[2] = {},
+  manual?: ReadonlyArray<ManualRemoval>,
 ) => {
   const removed = vi.fn()
   const cli = runCli(prune, ['polar.json', ...args], options)
@@ -68,6 +70,7 @@ const run = async (
           install: () => Effect.die('unused'),
           disable: () => Effect.die('unused'),
           deprecations: () => Effect.succeed(entries),
+          manualRemovals: () => manual,
           prune: (_config, unused) => Effect.sync(() => removed(unused)),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),
@@ -145,6 +148,29 @@ describe('polar config prune', () => {
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(0)
     expect(output).toContain('Nothing to remove')
+  })
+
+  test('lists what to delete by hand when it does not edit the file', async () => {
+    const { output, removed, exit } = await run([apples], [], {}, [
+      { resource: 'meter', external_id: 'apples', line: 5 },
+    ])
+
+    expect(Exit.isSuccess(exit)).toBe(true)
+    expect(removed).toBe(0)
+    expect(output).toContain('Delete this entry from polar.json.')
+    expect(output).toContain('apples  polar.json:5')
+    expect(output).toContain('polar.json is unchanged')
+  })
+
+  test('includes the entries to delete by hand in the JSON result', async () => {
+    const { output } = await run([apples], ['--json'], {}, [
+      { resource: 'meter', external_id: 'apples', line: 5 },
+    ])
+
+    expect(JSON.parse(output)).toMatchObject({
+      removed: false,
+      remove_by_hand: [{ resource: 'meter', external_id: 'apples', line: 5 }],
+    })
   })
 
   test('reports when nothing is deprecated', async () => {

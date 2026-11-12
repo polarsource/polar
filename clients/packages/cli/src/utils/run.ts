@@ -9,6 +9,7 @@ export interface Ran {
 export type Run = (
   command: ReadonlyArray<string>,
   cwd: string,
+  input?: string,
 ) => Effect.Effect<Ran>
 
 export const output = ({ stdout, stderr }: Ran) => `${stdout}${stderr}`.trim()
@@ -18,11 +19,11 @@ const text = (stream: unknown) =>
     ? new Response(stream).text()
     : Promise.resolve('')
 
-export const run: Run = (command, cwd) =>
+export const run: Run = (command, cwd, input) =>
   Effect.tryPromise(async () => {
     const child = Bun.spawn([...command], {
       cwd,
-      stdin: 'ignore',
+      stdin: input === undefined ? 'ignore' : new TextEncoder().encode(input),
       stdout: 'pipe',
       stderr: 'pipe',
     })

@@ -19,6 +19,7 @@ import {
   unexpected,
 } from '@/services/billing-config/api'
 import { type Unkeyed, unkeyed } from '@/utils/billing-config/keys'
+import { type Run, run as spawn } from '@/utils/run'
 import {
   exists,
   type Language,
@@ -257,7 +258,7 @@ export type NameResources<E, R> = (
 ) => Effect.Effect<ReadonlyArray<ExternalIdAssignment>, E, R>
 
 export const init =
-  (fs: FileSystem.FileSystem, clients: Clients) =>
+  (fs: FileSystem.FileSystem, clients: Clients, run: Run = spawn) =>
   <E, R>(
     organization: ActiveOrganization,
     target: InitTarget,
@@ -270,6 +271,9 @@ export const init =
       }
       let exported = yield* exportConfig(clients, organization)
       const alreadyEnabled = exported.enabled
+      const render = (config: ConfigDocument) =>
+        language.render(config, { fs, run, path })
+      const writable = yield* render(exported.config)
       const keyed = yield* name(
         unkeyed(exported.config, exported.skipped),
         exported,
@@ -280,7 +284,11 @@ export const init =
       if (keyed.length > 0) {
         exported = yield* exportConfig(clients, organization)
       }
-      yield* write(fs, path, yield* language.render(exported.config))
+      yield* write(
+        fs,
+        path,
+        keyed.length > 0 ? yield* render(exported.config) : writable,
+      )
       return {
         file: display(path),
         format: language.format,

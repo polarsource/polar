@@ -12,7 +12,11 @@ import type {
 } from '@/schemas/BillingConfig'
 import { Auth } from '@/services/auth'
 import { loader } from '@/services/billing-config/load'
-import { deprecations, prune } from '@/services/billing-config/prune'
+import {
+  deprecations,
+  manualRemovals,
+  prune,
+} from '@/services/billing-config/prune'
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import type { Run } from '@/utils/run'
@@ -180,7 +184,7 @@ describe('prune with a script config', () => {
   })
 })
 
-describe('prune with a Python config', () => {
+describe('a Python config', () => {
   const python = [
     'class Meters(MeterSet):',
     '    apples = Meter("Apples", on="apple", deprecated=True)',
@@ -191,26 +195,61 @@ describe('prune with a Python config', () => {
     '',
   ].join('\n')
 
-  const interpret: Run = (command) =>
-    Effect.promise(async () => {
-      const declared = await readFile(command.at(-1)!, 'utf8')
-      const meters = [
-        ...declared.matchAll(/^ {4}(\w+) = Meter\((.*)\)$/gm),
-      ].map(([, external_id, options]) => ({
-        external_id,
-        ...(options!.includes('deprecated=True') ? { deprecated: true } : {}),
-      }))
-      return { ok: true, stdout: JSON.stringify({ meters }), stderr: '' }
+  const interpret: Run = () =>
+    Effect.succeed({
+      ok: true,
+      stdout: JSON.stringify({
+        config: {
+          meters: [
+            { external_id: 'apples', deprecated: true },
+            { external_id: 'pears' },
+          ],
+        },
+        positions: {
+          sections: {},
+          entries: {
+            meters: [
+              { name: { line: 2, column: 5, length: 6 }, fields: {} },
+              { name: { line: 3, column: 5, length: 5 }, fields: {} },
+            ],
+          },
+        },
+      }),
+      stderr: '',
     })
 
-  test('removes the unused entries', async () => {
+  test('is left alone, with the lines to delete by hand', async () => {
     file = join(file, '..', 'polar_config.py')
     await writeFile(file, python)
 
-    await run((service, config) => service.prune(config, [apples]), interpret)
-
-    expect(await readFile(file, 'utf8')).toBe(
-      python.replace(/^ {4}apples.*\n/m, ''),
+    const manual = await run(
+      (_service, config) => Effect.succeed(manualRemovals(config, [apples])),
+      interpret,
     )
+
+    expect(manual).toEqual([
+      { resource: 'meter', external_id: 'apples', line: 2 },
+    ])
+    expect(await readFile(file, 'utf8')).toBe(python)
+  })
+
+  test('is not edited even when prune is asked to', async () => {
+    file = join(file, '..', 'polar_config.py')
+    await writeFile(file, python)
+
+    await expect(
+      run((service, config) => service.prune(config, [apples]), interpret),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining('nothing removed'),
+    })
+    expect(await readFile(file, 'utf8')).toBe(python)
+  })
+
+  test('is the only kind of file prune leaves to you', async () => {
+    const manual = await run((_service, config) =>
+      Effect.succeed(manualRemovals(config, [apples])),
+    )
+
+    expect(manual).toBeUndefined()
   })
 })

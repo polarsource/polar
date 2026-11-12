@@ -21,6 +21,7 @@ import {
 import { authenticatedClient } from '@/services/client'
 import { fakeHttp } from '@/utils/test-utils/http'
 import { fakeAuth } from '@/utils/test-utils/services'
+import type { Run } from '@/utils/run'
 
 const exportUrl = 'https://sandbox-api.polar.sh/v1/config/'
 const initUrl = 'https://sandbox-api.polar.sh/v1/config/init'
@@ -76,6 +77,7 @@ afterEach(async () => {
 const run = (
   target: Partial<InitTarget> = {},
   name: NameResources<never, never> = acceptSuggestions,
+  spawn?: Run,
 ) =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -85,7 +87,7 @@ const run = (
         local: yield* authenticatedClient('local'),
       }
       const fs = yield* FileSystem.FileSystem
-      return yield* init(fs, clients)(
+      return yield* init(fs, clients, spawn)(
         acme,
         {
           directory,
@@ -279,7 +281,9 @@ describe('init', () => {
 
   test('picks Python in a project with a pyproject.toml, TypeScript when it also has a package.json', async () => {
     await writeFile(join(directory, 'pyproject.toml'), '')
-    const python = await run()
+    const python = await run({}, acceptSuggestions, () =>
+      Effect.succeed({ ok: true, stdout: 'config = Config()\n', stderr: '' }),
+    )
     await rm(join(directory, 'polar_config.py'))
     await project()
     const both = await run()
@@ -288,34 +292,98 @@ describe('init', () => {
     expect(both.file).toBe('polar.config.ts')
   })
 
-  test('writes a Python config with --format py', async () => {
-    api.routes[`GET ${exportUrl}`] = exported(
-      {
-        ...EMPTY,
-        meters: [
-          {
-            external_id: 'tool_call',
-            name: 'Tool calls',
-            filter: {
-              conjunction: 'and',
-              clauses: [
-                { property: 'name', operator: 'eq', value: 'tool_call' },
-              ],
-            },
-            aggregation: { func: 'count' },
-          },
-        ],
+  describe('with --format py', () => {
+    const meter = {
+      external_id: 'tool_call',
+      name: 'Tool calls',
+      filter: {
+        conjunction: 'and',
+        clauses: [{ property: 'name', operator: 'eq', value: 'tool_call' }],
       },
-      [],
-      true,
-    )
+      aggregation: { func: 'count' },
+    }
 
-    const result = await run({ format: 'py' })
+    beforeEach(() => {
+      api.routes[`GET ${exportUrl}`] = exported(
+        { ...EMPTY, meters: [meter] },
+        [],
+        true,
+      )
+    })
 
-    expect(result.file).toBe('polar_config.py')
-    expect(await read('polar_config.py')).toContain(
-      'tool_call = Meter("Tool calls", on="tool_call")',
-    )
+    test('writes what polar.config makes of the exported config', async () => {
+      const calls: Array<{
+        command: ReadonlyArray<string>
+        input: string | undefined
+      }> = []
+
+      const result = await run(
+        { format: 'py' },
+        acceptSuggestions,
+        (command, _cwd, input) => {
+          calls.push({ command, input })
+          return Effect.succeed({
+            ok: true,
+            stdout: 'config = Config()\n',
+            stderr: '',
+          })
+        },
+      )
+
+      expect(result.file).toBe('polar_config.py')
+      expect(await read('polar_config.py')).toBe('config = Config()\n')
+      expect(calls[0]?.command).toEqual([
+        expect.stringMatching(/^python3?$/),
+        '-m',
+        'polar.config',
+        'render',
+      ])
+      expect(JSON.parse(calls[0]!.input!)).toMatchObject({ meters: [meter] })
+    })
+
+    test('passes on what polar.config cannot write', async () => {
+      const stderr =
+        'The meter tool-call has an external ID, a filter or a field that Python cannot express yet.'
+
+      const error = await failure(
+        run({ format: 'py' }, acceptSuggestions, () =>
+          Effect.succeed({ ok: false, stdout: '', stderr }),
+        ),
+      )
+
+      expect(error.message).toBe('This config cannot be written as Python yet')
+      expect(error.hint).toBe(`Pass --format json instead. ${stderr}`)
+    })
+
+    test('changes nothing on Polar when the config cannot be written', async () => {
+      api.routes[`GET ${exportUrl}`] = exported(
+        { ...EMPTY, meters: [meter] },
+        [],
+        false,
+      )
+
+      await failure(
+        run({ format: 'py' }, acceptSuggestions, () =>
+          Effect.succeed({ ok: false, stdout: '', stderr: 'unsupported' }),
+        ),
+      )
+
+      expect(api.urls()).not.toContain(initUrl)
+    })
+
+    test('says when polar.config is not installed', async () => {
+      const error = await failure(
+        run({ format: 'py' }, acceptSuggestions, () =>
+          Effect.succeed({
+            ok: false,
+            stdout: '',
+            stderr: 'python3: No module named polar',
+          }),
+        ),
+      )
+
+      expect(error.hint).toContain('Install or upgrade polar-sdk')
+    })
   })
 
   test('refuses when the directory already has a config file', async () => {

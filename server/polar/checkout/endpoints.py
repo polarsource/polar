@@ -49,12 +49,12 @@ from .schemas import (
 )
 from .service import (
     AlreadyActiveSubscriptionError,
+    BillingCountryMismatch,
     CheckoutLocked,
     DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
     NotOpenCheckout,
     PaymentError,
-    PaymentMethodCountryMismatch,
     SharedPaymentTokenError,
     TrialAlreadyRedeemed,
 )
@@ -104,7 +104,7 @@ CheckoutForbiddenError = {
         | NotPermitted.schema()
         | PaymentNotReady.schema()
         | TrialAlreadyRedeemed.schema()
-        | PaymentMethodCountryMismatch.schema()
+        | BillingCountryMismatch.schema()
         | DiscountRedemptionLimitReached.schema(),
         SetSchemaReference("CheckoutForbiddenError"),
     ],

@@ -235,7 +235,7 @@ export const CheckoutFormProvider = ({
           case 'AlreadyActiveSubscriptionError':
           case 'NotOpenCheckout':
           case 'PaymentNotReady':
-          case 'PaymentMethodCountryMismatch':
+          case 'BillingCountryMismatch':
             setError('root', { message: error.detail })
             break
           case 'DiscountRedemptionLimitReached':

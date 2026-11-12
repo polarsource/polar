@@ -232,12 +232,12 @@ class TrialAlreadyRedeemed(CheckoutError):
         super().__init__(message, 403)
 
 
-class PaymentMethodCountryMismatch(CheckoutError):
+class BillingCountryMismatch(CheckoutError):
     def __init__(self, checkout: Checkout) -> None:
         self.checkout = checkout
         message = (
-            "We couldn't verify your payment details. "
-            "Please make sure your billing address matches your payment method."
+            "We couldn't verify your billing country. "
+            "Please make sure it matches your payment method or your location."
         )
         super().__init__(message, 403)
 
@@ -1272,15 +1272,15 @@ class CheckoutService:
         ):
             self._validate_shared_payment_token(checkout)
 
-        if confirmation_token is not None and not self._has_matching_countries(
+        if confirmation_token is not None and not self._is_billing_country_corroborated(
             checkout, confirmation_token, ip_geolocation_client
         ):
             log.info(
-                "Checkout confirmation blocked by country mismatch",
+                "Checkout confirmation blocked by billing country mismatch",
                 checkout_id=str(checkout.id),
                 organization_id=str(checkout.organization_id),
             )
-            raise PaymentMethodCountryMismatch(checkout)
+            raise BillingCountryMismatch(checkout)
 
         if checkout.payment_processor == PaymentProcessor.stripe:
             async with self._create_or_update_customer(
@@ -2822,28 +2822,30 @@ class CheckoutService:
 
         return checkout
 
-    def _has_matching_countries(
+    def _is_billing_country_corroborated(
         self,
         checkout: Checkout,
         confirmation_token: stripe_lib.ConfirmationToken,
         ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
     ) -> bool:
+        if checkout.customer_billing_address is None:
+            return True
+
         card = getattr(confirmation_token.payment_method_preview, "card", None)
         payment_method_country: str | None = getattr(card, "country", None)
-        billing_country = (
-            checkout.customer_billing_address.country
-            if checkout.customer_billing_address is not None
-            else None
-        )
         ip_country = self._get_ip_country(
             ip_geolocation_client, checkout.customer_ip_address
         )
 
-        countries = [payment_method_country, billing_country, ip_country]
-        if any(country is None for country in countries):
+        evidence = {
+            country
+            for country in (payment_method_country, ip_country)
+            if country is not None
+        }
+        if not evidence:
             return True
 
-        return len(set(countries)) < len(countries)
+        return checkout.customer_billing_address.country in evidence
 
     def _get_ip_country(
         self,

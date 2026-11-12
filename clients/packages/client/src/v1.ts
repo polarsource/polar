@@ -13759,6 +13759,17 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /** BillingCountryMismatch */
+    BillingCountryMismatch: {
+      /**
+       * Error
+       * @example BillingCountryMismatch
+       * @constant
+       */
+      error: 'BillingCountryMismatch'
+      /** Detail */
+      detail: string
+    }
     /**
      * BlockingOrganization
      * @description Organization that is blocking user deletion.
@@ -14852,7 +14863,7 @@ export interface components {
       | components['schemas']['NotPermitted']
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
-      | components['schemas']['PaymentMethodCountryMismatch']
+      | components['schemas']['BillingCountryMismatch']
       | components['schemas']['DiscountRedemptionLimitReached']
     /**
      * CheckoutLink
@@ -33507,17 +33518,6 @@ export interface components {
       exp_year: number
       /** Wallet */
       wallet?: string | null
-    }
-    /** PaymentMethodCountryMismatch */
-    PaymentMethodCountryMismatch: {
-      /**
-       * Error
-       * @example PaymentMethodCountryMismatch
-       * @constant
-       */
-      error: 'PaymentMethodCountryMismatch'
-      /** Detail */
-      detail: string
     }
     /** PaymentMethodGeneric */
     PaymentMethodGeneric: {

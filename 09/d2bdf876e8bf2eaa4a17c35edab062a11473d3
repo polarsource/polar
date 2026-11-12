@@ -15,6 +15,10 @@ server/tests/test_event_ingestion_api_app.py
   s_4978af30dbf5bf::t_7dabcf516e97c0 1-17
 server/polar/event_ingestion_api_app.py
   s_4978af30dbf5bf::t_93be363d593707 1-11
+terraform/modules/render_service/variables.tf
+  s_4978af30dbf5bf::t_7316311aabbcd7 46
+terraform/test/render.tf
+  s_4978af30dbf5bf::t_fd32c31fa0ea0d 91
 ---
 {
   "schema_version": "authorship/3.0.0",

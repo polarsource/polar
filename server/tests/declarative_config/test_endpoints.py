@@ -109,7 +109,8 @@ class TestApply:
         ]
         assert json["removed"] == []
         assert json["catalog"]["before"] is None
-        assert json["catalog"]["after"]["name"] == "v1"
+        # Apply saves a draft by default, and a draft is named when published.
+        assert json["catalog"]["after"]["name"] is None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization"),

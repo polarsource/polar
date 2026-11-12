@@ -130,6 +130,10 @@ DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
     "customer_meters:reverse_credit": V2027_01,
 }
 
+NON_DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
+    "benefit-grants:create": V2027_01,
+}
+
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("version", VERSIONS)
@@ -169,7 +173,11 @@ async def test_tool_write_operations_are_classified(
         for operation_id, since in DESTRUCTIVE_TOOL_OPERATIONS_SINCE.items()
         if version >= since
     }, CLASSIFICATION_MESSAGE
-    assert non_destructive == NON_DESTRUCTIVE_TOOL_OPERATIONS, CLASSIFICATION_MESSAGE
+    assert non_destructive == NON_DESTRUCTIVE_TOOL_OPERATIONS | {
+        operation_id
+        for operation_id, since in NON_DESTRUCTIVE_TOOL_OPERATIONS_SINCE.items()
+        if version >= since
+    }, CLASSIFICATION_MESSAGE
 
 
 class WidgetUpdate(Schema):

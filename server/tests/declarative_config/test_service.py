@@ -85,6 +85,7 @@ from polar.models import (
 )
 from polar.models.benefit import BenefitType
 from polar.models.catalog import CatalogStatus
+from polar.models.custom_field import CustomFieldType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceAmountType
 from polar.models.subscription import SubscriptionStatus
@@ -107,6 +108,7 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
     create_checkout_link,
+    create_custom_field,
     create_discount,
     create_event,
     create_meter,
@@ -272,6 +274,13 @@ ORDERS_WEBHOOK = {
     "format": "raw",
     "events": ["order.created", "order.paid"],
     "api_version": str(CURRENT_API_VERSION),
+}
+
+COMPANY_FIELD = {
+    "type": "text",
+    "slug": "company",
+    "name": "Company",
+    "properties": {"form_label": "Company name"},
 }
 
 
@@ -2254,6 +2263,20 @@ class TestPlan:
             ),
         ]
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.meters_read}),
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_fields_require_custom_fields_scope(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        with pytest.raises(InsufficientScopeError):
+            await declarative_config_service.plan(
+                session,
+                auth_subject,
+                Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+            )
+
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_webhook_events_order_ignored(
         self,
@@ -3267,6 +3290,7 @@ class TestPlan:
             Config.model_validate(
                 {
                     "webhooks": [ORDERS_WEBHOOK, ORDERS_WEBHOOK],
+                    "custom_fields": [COMPANY_FIELD, COMPANY_FIELD],
                     "benefits": [BETA_BENEFIT, BETA_BENEFIT],
                     "products": [
                         {
@@ -3285,6 +3309,7 @@ class TestPlan:
             if issue.type == ConfigIssueType.duplicate_external_id
         ] == [
             ["body", "webhooks", 1, "external_id"],
+            ["body", "custom_fields", 1, "slug"],
             ["body", "benefits", 1, "external_id"],
         ]
 
@@ -4776,6 +4801,7 @@ class TestCatalogSelector:
 ROUND_TRIP_CONFIG: dict[str, Any] = {
     "settings": {"payments": {"currency": "usd", "tax": "inclusive"}},
     "meters": [{**TOOL_CALLS_METER, "metadata": {"team": "billing"}}],
+    "custom_fields": [],
     "benefits": [
         {
             **CREDITS_BENEFIT,
@@ -4830,6 +4856,36 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
 @pytest.mark.anyio
 @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
 class TestExport:
+    @pytest.mark.auth(
+        AuthSubjectFixture(
+            subject="organization",
+            scopes={
+                Scope.organizations_read,
+                Scope.meters_read,
+                Scope.benefits_read,
+                Scope.products_read,
+            },
+        ),
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_custom_fields_without_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+
+        assert exported.config.custom_fields is None
+
     @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
     async def test_round_trips_through_apply(
         self,

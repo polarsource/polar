@@ -16,6 +16,7 @@ from polar.catalog.repository import (
     CatalogProductRepository,
 )
 from polar.catalog.service import catalog as catalog_service
+from polar.custom_field.repository import CustomFieldRepository
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
 from polar.kit.currency import PresentmentCurrency
@@ -25,6 +26,7 @@ from polar.meter.schemas import MeterCreateBase
 from polar.models import (
     Benefit,
     Catalog,
+    CustomField,
     Meter,
     Organization,
     Product,
@@ -49,6 +51,7 @@ from .schemas import (
     ConfigAction,
     ConfigBenefit,
     ConfigBenefitMeterCredit,
+    ConfigCustomField,
     ConfigFieldChange,
     ConfigIssue,
     ConfigIssueSeverity,
@@ -165,6 +168,7 @@ MeterChange = ResourceChange[ConfigMeter, Meter]
 BenefitChange = ResourceChange[ConfigBenefit, Benefit]
 ProductChange = ResourceChange[ConfigProduct, Product]
 WebhookChange = ResourceChange[ConfigWebhookEndpoint, WebhookEndpoint]
+CustomFieldChange = ResourceChange[ConfigCustomField, CustomField]
 
 
 @dataclass
@@ -174,6 +178,7 @@ class ConfigChanges:
     meters: list[MeterChange]
     benefits: list[BenefitChange]
     products: list[ProductChange]
+    custom_fields: list[CustomFieldChange]
 
 
 def _loc(resource: ConfigResource, index: int, *path: str | int) -> Loc:
@@ -185,7 +190,7 @@ def _meter_loc(index: int, *path: str | int) -> Loc:
 
 
 def unique_external_ids(
-    resource: ConfigResource, external_ids: Sequence[str]
+    resource: ConfigResource, external_ids: Sequence[str], key: str = "external_id"
 ) -> list[ConfigIssue]:
     seen: set[str] = set()
     issues: list[ConfigIssue] = []
@@ -195,8 +200,8 @@ def unique_external_ids(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
                     type=ConfigIssueType.duplicate_external_id,
-                    loc=_loc(resource, index, "external_id"),
-                    msg=f"Another {resource} in this config has the same external_id.",
+                    loc=_loc(resource, index, key),
+                    msg=f"Another {resource} in this config has the same {key}.",
                     input=external_id,
                 )
             )
@@ -205,13 +210,13 @@ def unique_external_ids(
 
 
 def _unknown_reference(
-    resource: ConfigResource, external_id: str, loc: Loc
+    resource: ConfigResource, external_id: str, loc: Loc, key: str = "external_id"
 ) -> ConfigIssue:
     return ConfigIssue(
         severity=ConfigIssueSeverity.error,
         type=ConfigIssueType.unknown_reference,
         loc=loc,
-        msg=f"No {resource} in this config has this external_id.",
+        msg=f"No {resource} in this config has this {key}.",
         input=external_id,
     )
 
@@ -251,6 +256,8 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
         meter.external_id for meter in config.meters if meter.deprecated
     }
     benefits = {benefit.external_id for benefit in config.benefits}
+    custom_fields = {custom_field.slug for custom_field in config.custom_fields}
+    manage_custom_fields = "custom_fields" in config.model_fields_set
     deprecated_benefits = {
         benefit.external_id for benefit in config.benefits if benefit.deprecated
     }
@@ -314,6 +321,28 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                     )
                 )
             listed.add(benefit_external_id)
+        listed_fields: set[str] = set()
+        for field_index, attached in enumerate(product.custom_fields):
+            loc = _loc(
+                ConfigResource.product, index, "custom_fields", field_index, "field"
+            )
+            if attached.field in listed_fields:
+                issues.append(
+                    ConfigIssue(
+                        severity=ConfigIssueSeverity.error,
+                        type=ConfigIssueType.duplicate_external_id,
+                        loc=loc,
+                        msg="This custom field is already listed on the product.",
+                        input=attached.field,
+                    )
+                )
+            elif manage_custom_fields and attached.field not in custom_fields:
+                issues.append(
+                    _unknown_reference(
+                        ConfigResource.custom_field, attached.field, loc, key="slug"
+                    )
+                )
+            listed_fields.add(attached.field)
     return issues
 
 
@@ -874,6 +903,7 @@ def _get_product_update_dict(
     product_config: ConfigProduct,
     prices: list[dict[str, Any] | None],
     benefits: list[str],
+    custom_fields: list[dict[str, Any]] | None,
 ) -> dict[str, Any]:
     update_dict: dict[str, Any] = {}
     for name in (*_PRODUCT_FIELDS, *_TRIAL_FIELDS):
@@ -887,6 +917,11 @@ def _get_product_update_dict(
         update_dict["prices"] = config_prices
     if benefits != product_config.benefits:
         update_dict["benefits"] = product_config.benefits
+    config_custom_fields = [
+        field.model_dump() for field in product_config.custom_fields
+    ]
+    if custom_fields is not None and custom_fields != config_custom_fields:
+        update_dict["custom_fields"] = config_custom_fields
     if (
         "metadata" in product_config.model_fields_set
         and product.user_metadata != product_config.metadata
@@ -903,6 +938,7 @@ def product_update_dict(
         product_config,
         [price_config(price, external_ids) for price in product.prices],
         [external_ids.get(str(b.id), str(b.id)) for b in product.benefits],
+        None,
     )
 
 
@@ -915,6 +951,7 @@ async def diff_products(
     *,
     for_update: bool,
     catalog: Catalog | None,
+    manage_custom_fields: bool,
 ) -> list[ProductChange]:
     repository = ProductRepository.from_session(session)
     external_ids = [config.external_id for config in product_configs]
@@ -947,6 +984,10 @@ async def diff_products(
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]
+            if "custom_fields" in create_dict:
+                create_dict["custom_fields"] = [
+                    field.model_dump() for field in product_config.custom_fields
+                ]
             changes.append(
                 ProductChange(
                     index,
@@ -962,17 +1003,26 @@ async def diff_products(
             benefit_external_ids.get(str(benefit.id), str(benefit.id))
             for benefit in product.benefits
         ]
+        product_custom_fields = [
+            {"field": attached.custom_field.slug, "required": attached.required}
+            for attached in product.attached_custom_fields
+        ]
         changes.append(
             ProductChange(
                 index,
                 product_config,
                 product,
                 _get_product_update_dict(
-                    product, product_config, prices, product_benefits
+                    product,
+                    product_config,
+                    prices,
+                    product_benefits,
+                    product_custom_fields if manage_custom_fields else None,
                 ),
                 {
                     "prices": [price for price in prices if price is not None],
                     "benefits": product_benefits,
+                    "custom_fields": product_custom_fields,
                 },
             )
         )
@@ -1046,6 +1096,94 @@ async def diff_webhooks(
     return changes
 
 
+def custom_field_update_dict(
+    custom_field: CustomField | None, custom_field_config: ConfigCustomField
+) -> dict[str, Any]:
+    update_dict: dict[str, Any] = {}
+    if custom_field is None:
+        update_dict["type"] = custom_field_config.type
+    for name in ("name", "properties"):
+        value = getattr(custom_field_config, name)
+        if getattr(custom_field, name, None) != value:
+            update_dict[name] = value
+    if "metadata" in custom_field_config.model_fields_set and (
+        getattr(custom_field, "user_metadata", None) != custom_field_config.metadata
+    ):
+        update_dict["user_metadata"] = custom_field_config.metadata
+    return update_dict
+
+
+async def diff_custom_fields(
+    session: AsyncSession,
+    organization: Organization,
+    custom_field_configs: Sequence[ConfigCustomField],
+    *,
+    for_update: bool,
+) -> list[CustomFieldChange]:
+    slugs = [config.slug for config in custom_field_configs]
+    existing_fields = {
+        custom_field.slug: custom_field
+        for custom_field in await CustomFieldRepository.from_session(
+            session
+        ).get_current_by_slugs(organization.id, slugs, for_update=for_update)
+    }
+    return [
+        CustomFieldChange(
+            index,
+            config,
+            existing_fields.get(config.slug),
+            custom_field_update_dict(existing_fields.get(config.slug), config),
+        )
+        for index, config in enumerate(custom_field_configs)
+    ]
+
+
+def unsupported_custom_field_changes(
+    custom_fields: Sequence[CustomFieldChange], products: Sequence[ProductChange]
+) -> list[ConfigIssue]:
+    """Applying custom field changes isn't supported yet."""
+    issues = [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_loc(ConfigResource.custom_field, change.index),
+            msg="Creating or changing custom fields isn't supported yet.",
+            input=change.config.slug,
+        )
+        for change in custom_fields
+        if change.existing is None or change.update_dict
+    ]
+    issues.extend(
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.not_supported,
+            loc=_loc(ConfigResource.product, change.index, "custom_fields"),
+            msg="Changing the custom fields of a product isn't supported yet.",
+            input=change.config.external_id,
+        )
+        for change in products
+        if "custom_fields" in change.update_dict
+        and (change.existing is not None or change.update_dict["custom_fields"])
+    )
+    return issues
+
+
+def custom_field_type_changes(
+    changes: Sequence[CustomFieldChange],
+) -> list[ConfigIssue]:
+    return [
+        ConfigIssue(
+            severity=ConfigIssueSeverity.error,
+            type=ConfigIssueType.type_changed,
+            loc=_loc(ConfigResource.custom_field, change.index, "type"),
+            msg="The type of an existing custom field can't be changed.",
+            input=change.config.type,
+        )
+        for change in changes
+        if change.existing is not None and change.existing.type != change.config.type
+    ]
+
+
 def _external_ids_by_id(
     changes: Sequence[ResourceChange[Any, Any]],
 ) -> dict[str, str]:
@@ -1106,6 +1244,12 @@ async def check(
     webhooks = await diff_webhooks(
         session, organization, config.webhooks, for_update=for_update
     )
+    custom_fields = await diff_custom_fields(
+        session,
+        organization,
+        config.custom_fields,
+        for_update=for_update,
+    )
     meters = await diff_meters(
         session, organization, config.meters, for_update=for_update, catalog=catalog
     )
@@ -1125,6 +1269,7 @@ async def check(
         benefits,
         for_update=for_update,
         catalog=catalog,
+        manage_custom_fields="custom_fields" in config.model_fields_set,
     )
     issues = [
         *unique_external_ids(
@@ -1134,12 +1279,19 @@ async def check(
             ConfigResource.meter, [meter.external_id for meter in config.meters]
         ),
         *unique_external_ids(
+            ConfigResource.custom_field,
+            [custom_field.slug for custom_field in config.custom_fields],
+            key="slug",
+        ),
+        *unique_external_ids(
             ConfigResource.benefit, [benefit.external_id for benefit in config.benefits]
         ),
         *unique_external_ids(
             ConfigResource.product, [product.external_id for product in config.products]
         ),
         *invalid_references(config),
+        *custom_field_type_changes(custom_fields),
+        *unsupported_custom_field_changes(custom_fields, products),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),
@@ -1165,6 +1317,6 @@ async def check(
         )
         issues.append(changed_currency(new_currency))
     return (
-        ConfigChanges(settings, webhooks, meters, benefits, products),
+        ConfigChanges(settings, webhooks, meters, benefits, products, custom_fields),
         issues,
     )

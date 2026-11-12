@@ -506,6 +506,7 @@ jobs:
         run: uv run task db_migrate
 
       - name: ⚗️ alembic check
+        if: matrix.shard == 1
         working-directory: ./server
         run: uv run alembic check
 

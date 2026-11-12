@@ -33,6 +33,7 @@ from polar.models import (
 )
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
+from polar.organization.repository import OrganizationRepository
 from polar.outpost.stream import enqueue as enqueue_outpost_event
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -206,7 +207,9 @@ class ReducerService:
             )
 
     async def add_credit(self, session: AsyncSession, event: Event) -> None:
-        """Adds a `meter.credited` event to its meter's credit reducer."""
+        """Adds a `meter.credited` event to its meter's credit reducer. Failures
+        are logged, not raised, unless the organization bills from the reducers:
+        its orders charge above the credits found there."""
         meter_id = UUID(event.user_metadata["meter_id"])
         try:
             async with session.begin_nested():
@@ -219,6 +222,10 @@ class ReducerService:
                     session, _reduce_events_to_bucket_contributions([reducer], [event])
                 )
         except Exception:
+            if await OrganizationRepository.from_session(session).get_ids_with_feature(
+                {event.organization_id}, "reducer_billing_enabled"
+            ):
+                raise
             log.exception(
                 "Failed to add credit to reducer buckets",
                 event_id=event.id,

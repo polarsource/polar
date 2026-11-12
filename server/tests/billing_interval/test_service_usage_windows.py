@@ -18,7 +18,7 @@ from polar.billing_interval.service import (
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.billing_interval.types import MeterCharge
 from polar.meter.aggregation import AggregationFunction
-from polar.models import Customer, Meter, Product
+from polar.models import Customer, Meter, Organization, Product
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -366,3 +366,39 @@ class TestSplitWindows:
             dataclasses.replace(window, start=PERIOD_START),
             other,
         )
+
+
+@pytest.mark.anyio
+class TestRecordSubscription:
+    @pytest.mark.parametrize("reducer_billing", [False, True])
+    async def test_failure_raises_only_on_reducer_billing(
+        self,
+        reducer_billing: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": reducer_billing}
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        mocker.patch.object(
+            BillingIntervalRepository, "apply_changes", side_effect=RuntimeError
+        )
+
+        if reducer_billing:
+            with pytest.raises(RuntimeError):
+                await billing_interval_service.record_subscription(
+                    session, subscription, effective_at=CUTOFF
+                )
+        else:
+            await billing_interval_service.record_subscription(
+                session, subscription, effective_at=CUTOFF
+            )

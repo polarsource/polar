@@ -1531,6 +1531,33 @@ async def add_credit(
 
 
 @pytest.mark.anyio
+class TestAddCredit:
+    @pytest.mark.parametrize("reducer_billing", [False, True])
+    async def test_failure_raises_only_on_reducer_billing(
+        self,
+        reducer_billing: bool,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": reducer_billing}
+        await save_fixture(organization)
+        await reducer_service.sync_meter(session, meter)
+        mocker.patch.object(
+            reducer_service, "_add_to_closed_buckets", side_effect=RuntimeError
+        )
+
+        if reducer_billing:
+            with pytest.raises(RuntimeError):
+                await add_credit(save_fixture, session, customer, meter, 5, RESET)
+        else:
+            await add_credit(save_fixture, session, customer, meter, 5, RESET)
+
+
+@pytest.mark.anyio
 class TestBill:
     async def test_bills_the_windows_usage_and_the_credits(
         self,

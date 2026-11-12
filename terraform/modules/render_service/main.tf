@@ -233,7 +233,7 @@ resource "render_web_service" "api" {
   )
 }
 
-# Runs the API image without migrations or custom domains; plan and autoscaling are set per service.
+# Runs the API image without migrations; plan, autoscaling and custom domains are set per service.
 resource "render_web_service" "api_copy" {
   for_each = var.additional_api_services
 
@@ -270,6 +270,8 @@ resource "render_web_service" "api_copy" {
       }
     }
   }
+
+  custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
   env_vars = {
     SERVICE_NAME             = { value = each.key }

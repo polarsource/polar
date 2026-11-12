@@ -42,7 +42,8 @@ variable "api_service_config" {
 variable "additional_api_services" {
   description = "Extra services running the API, keyed by name, each scaled independently"
   type = map(object({
-    plan = optional(string)
+    plan           = optional(string)
+    custom_domains = optional(list(object({ name = string })), [])
     autoscaling = object({
       min               = number
       max               = number

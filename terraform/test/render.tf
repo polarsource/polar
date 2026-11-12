@@ -88,7 +88,8 @@ module "test" {
 
   additional_api_services = {
     api-events-test = {
-      autoscaling = { min = 3, max = 6 }
+      custom_domains = [{ name = "api-events-test.polar.sh" }]
+      autoscaling    = { min = 3, max = 6 }
     }
   }
 
@@ -120,6 +121,17 @@ resource "cloudflare_dns_record" "test_api" {
   name    = "test-api.polar.sh"
   type    = "CNAME"
   content = replace(module.test[0].api_service_url, "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "additional_api" {
+  for_each = merge(module.test[*].additional_api_service_urls...)
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
+  type    = "CNAME"
+  content = replace(each.value, "https://", "")
   proxied = true
   ttl     = 1
 }

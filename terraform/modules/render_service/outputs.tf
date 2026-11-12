@@ -8,6 +8,11 @@ output "api_service_id" {
   value       = render_web_service.api.id
 }
 
+output "additional_api_service_urls" {
+  description = "Map of additional API service names to their URLs"
+  value       = { for name, api in render_web_service.api_copy : name => api.url }
+}
+
 output "additional_api_service_ids" {
   description = "Map of additional API service names to their IDs"
   value       = { for name, api in render_web_service.api_copy : name => api.id }

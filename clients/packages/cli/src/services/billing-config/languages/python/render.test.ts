@@ -132,46 +132,128 @@ config = Config(meters=Meters)
 `)
   })
 
+  test('gives an external ID that is not a Python name an attribute of its own', async () => {
+    const source = await Effect.runPromise(
+      renderPython({
+        meters: [
+          'tool-call',
+          'class',
+          '__tool_call',
+          'tool_call',
+          '9lives',
+        ].map((external_id) => ({ ...toolCall, external_id })),
+      }),
+    )
+
+    expect(source).toContain(`class Meters(MeterSet):
+    tool_call_2 = Meter("Tool calls", on="tool_call", external_id="tool-call")
+    meter_class = Meter("Tool calls", on="tool_call", external_id="class")
+    tool_call_3 = Meter("Tool calls", on="tool_call", external_id="__tool_call")
+    tool_call = Meter("Tool calls", on="tool_call")
+    meter_9lives = Meter("Tool calls", on="tool_call", external_id="9lives")
+`)
+  })
+
+  test('keeps attributes from hiding the helpers the file calls or being renamed by Python', async () => {
+    const source = await Effect.runPromise(
+      renderPython({
+        meters: ['Meter', 'eq', 'Sum', '_Meters__calls', '_private'].map(
+          (external_id) => ({ ...toolCall, external_id }),
+        ),
+      }),
+    )
+
+    expect(source).toContain(`class Meters(MeterSet):
+    meter_Meter = Meter("Tool calls", on="tool_call", external_id="Meter")
+    meter_eq = Meter("Tool calls", on="tool_call", external_id="eq")
+    meter_Sum = Meter("Tool calls", on="tool_call", external_id="Sum")
+    Meters__calls = Meter("Tool calls", on="tool_call", external_id="_Meters__calls")
+    private = Meter("Tool calls", on="tool_call", external_id="_private")
+`)
+  })
+
+  const ok = { property: 'ok', operator: 'eq', value: true }
+  const either = {
+    conjunction: 'or',
+    clauses: [event('call'), event('chat')],
+  }
+
   test.each([
-    ['an external ID with a dash', { ...toolCall, external_id: 'tool-call' }],
-    ['a Python keyword as external ID', { ...toolCall, external_id: 'class' }],
+    ['several events', either, 'on=["call", "chat"]'],
     [
-      'an external ID Python would mangle inside a class',
-      { ...toolCall, external_id: '__tool_call' },
+      'several events with a condition',
+      { conjunction: 'and', clauses: [either, ok] },
+      'on=["call", "chat"], where=eq("ok", True)',
     ],
     [
-      'several events',
+      'several events alone in a group, which on= would unwrap',
+      { conjunction: 'and', clauses: [either] },
+      'where=and_(or_(eq("name", "call"), eq("name", "chat")))',
+    ],
+    [
+      'the filter the dashboard gives a meter',
       {
-        ...toolCall,
-        filter: {
-          conjunction: 'or',
-          clauses: [event('tool_call'), event('llm_call')],
-        },
+        conjunction: 'and',
+        clauses: [{ conjunction: 'or', clauses: [event('call')] }],
       },
+      'where=and_(or_(eq("name", "call")))',
     ],
     [
       'conditions Python would merge into the event filter',
       {
-        ...toolCall,
-        filter: {
-          conjunction: 'and',
-          clauses: [
-            event('tool_call'),
-            {
-              conjunction: 'and',
-              clauses: [{ property: 'ok', operator: 'eq', value: true }],
-            },
-          ],
-        },
+        conjunction: 'and',
+        clauses: [event('call'), { conjunction: 'and', clauses: [ok] }],
       },
+      'where=and_(eq("name", "call"), and_(eq("ok", True)))',
     ],
-  ])('refuses a meter with %s', async (_, meter) => {
-    const error = await Effect.runPromise(
-      Effect.flip(renderPython({ meters: [meter] })),
+    [
+      'one condition and no event',
+      { conjunction: 'and', clauses: [ok] },
+      'where=eq("ok", True)',
+    ],
+    [
+      'an empty event name',
+      { conjunction: 'and', clauses: [event('')] },
+      'on=""',
+    ],
+    ['no filter', { conjunction: 'and', clauses: [] }, 'where=and_()'],
+  ])('writes a meter with %s', async (_, filter, expected) => {
+    const source = await Effect.runPromise(
+      renderPython({ meters: [{ ...toolCall, name: 'Calls', filter }] }),
     )
 
-    expect(error.message).toBe(
-      `The meter ${meter.external_id} has an external ID or a filter that Python cannot express yet.`,
+    expect(source).toContain(`    tool_call = Meter("Calls", ${expected})\n`)
+  })
+
+  test('puts each event on a line of its own when they do not fit on one', async () => {
+    const source = await Effect.runPromise(
+      renderPython({
+        meters: [
+          {
+            ...toolCall,
+            filter: {
+              conjunction: 'or',
+              clauses: [
+                'checkout.completed',
+                'subscription.renewed',
+                'invoice.finalized',
+                'usage.reported',
+              ].map(event),
+            },
+          },
+        ],
+      }),
     )
+
+    expect(source).toContain(`    tool_call = Meter(
+        "Tool calls",
+        on=[
+            "checkout.completed",
+            "subscription.renewed",
+            "invoice.finalized",
+            "usage.reported",
+        ],
+    )
+`)
   })
 })

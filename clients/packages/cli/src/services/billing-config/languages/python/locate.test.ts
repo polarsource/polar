@@ -102,6 +102,97 @@ describe('locateInPython', () => {
     })
   })
 
+  test('finds an entry by its explicit external ID before an attribute of that name', () => {
+    const explicit = [
+      'class Meters(MeterSet):',
+      '    calls = Meter("Calls", on="call", external_id="tool-calls")',
+      '    tool_calls = Meter(',
+      '        "Tool calls",',
+      '        on="tool_call",',
+      '        external_id="calls",',
+      '    )',
+    ].join('\n')
+    const declared = {
+      meters: [{ external_id: 'tool-calls' }, { external_id: 'calls' }],
+    }
+
+    expect(
+      locateInPython(explicit, declared, ['meters', 0], undefined),
+    ).toEqual({ line: 2, column: 5, length: 5 })
+    expect(
+      locateInPython(explicit, declared, ['meters', 1], undefined),
+    ).toEqual({ line: 3, column: 5, length: 10 })
+  })
+
+  test('ignores an external ID written inside a string or a comment', () => {
+    const quoted = [
+      'class Meters(MeterSet):',
+      `    decoy = Meter('external_id="tool-calls"', on="a")`,
+      '    # external_id="tool-calls"',
+      '    real = Meter("Real", on="b", external_id="tool-calls")',
+    ].join('\n')
+    const declared = { meters: [{ external_id: 'tool-calls' }] }
+
+    expect(locateInPython(quoted, declared, ['meters', 0], undefined)).toEqual({
+      line: 4,
+      column: 5,
+      length: 4,
+    })
+  })
+
+  test('finds a meter named like a keyword argument, not the argument', () => {
+    const keyword = [
+      'class Meters(MeterSet):',
+      '    where = Meter("Where", on="a")',
+      '    calls = Meter(',
+      '        "Calls",',
+      '        where=eq("ok", True),',
+      '    )',
+    ].join('\n')
+    const declared = { meters: [{ external_id: 'where' }] }
+
+    expect(locateInPython(keyword, declared, ['meters', 0], undefined)).toEqual(
+      { line: 2, column: 5, length: 5 },
+    )
+  })
+
+  test('finds a meter declared inside a block', () => {
+    const conditional = [
+      'class Meters(MeterSet):',
+      '    calls = Meter("Calls", on="call")',
+      '    if BETA:',
+      '        beta = Meter("Beta", on="beta")',
+    ].join('\n')
+    const declared = {
+      meters: [{ external_id: 'calls' }, { external_id: 'beta' }],
+    }
+
+    expect(
+      locateInPython(conditional, declared, ['meters', 1], undefined),
+    ).toEqual({ line: 4, column: 9, length: 4 })
+  })
+
+  test('finds an inherited meter in a file that mixes indentation', () => {
+    const inherited = [
+      'class Base(MeterSet):',
+      '    meters = Meter("Meters", on="meter")',
+      '',
+      '',
+      'class Meters(Base):',
+      '    pass',
+      '',
+      '',
+      'config = Config(',
+      '  meters=Meters,',
+      ')',
+    ].join('\n')
+    const declared = { meters: [{ external_id: 'meters' }] }
+
+    expect(
+      locateInPython(inherited, declared, ['meters', 0], undefined),
+    ).toEqual({ line: 2, column: 5, length: 6 })
+  })
+
   test('finds nothing for an entry the file does not declare', () => {
     const undeclared = { meters: [{ external_id: 'requests' }] }
 

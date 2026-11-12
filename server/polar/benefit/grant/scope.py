@@ -86,6 +86,14 @@ def scope_to_args(scope: BenefitGrantScope) -> BenefitGrantScopeArgs:
     return args
 
 
+def is_seat_based_scope(scope: BenefitGrantScope) -> bool:
+    if subscription := scope.get("subscription"):
+        return subscription.product.has_seat_based_price
+    if order := scope.get("order"):
+        return order.seats is not None
+    return False
+
+
 async def _resolve_owner_member(
     session: AsyncSession,
     customer_id: UUID,

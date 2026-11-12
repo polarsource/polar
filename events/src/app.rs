@@ -21,7 +21,9 @@ use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 
 use crate::{
     auth::{AuthSettings, OrganizationAuth},
-    event, telemetry,
+    event,
+    ingest::{self, IngestError},
+    telemetry,
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
@@ -80,15 +82,20 @@ pub fn error_response(status: StatusCode, error: &'static str, detail: impl Seri
     (status, Json(json!({ "error": error, "detail": detail }))).into_response()
 }
 
-async fn ingest(_auth: OrganizationAuth, headers: HeaderMap, body: Bytes) -> Response {
-    match event::parse_ingest(&body, is_json(&headers), Utc::now()) {
-        Ok(_events) => StatusCode::NOT_IMPLEMENTED.into_response(),
-        Err(errors) => error_response(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            "RequestValidationError",
-            errors,
-        ),
-    }
+async fn ingest(
+    State(state): State<AppState>,
+    auth: OrganizationAuth,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Result<Response, IngestError> {
+    let events = event::parse_ingest(&body, is_json(&headers), Utc::now())
+        .map_err(IngestError::InvalidPayload)?;
+
+    let mut transaction = state.db.begin().await?;
+    ingest::validate_references(&mut transaction, auth.organization_id, &events).await?;
+    transaction.commit().await?;
+
+    Ok(StatusCode::NOT_IMPLEMENTED.into_response())
 }
 
 fn is_json(headers: &HeaderMap) -> bool {

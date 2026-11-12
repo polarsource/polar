@@ -70,7 +70,6 @@ fn digest(token: &str, secret: &str) -> String {
 }
 
 pub struct OrganizationAuth {
-    #[expect(dead_code, reason = "read once the ingest handler validates events")]
     pub organization_id: Uuid,
 }
 

@@ -164,6 +164,7 @@ class Scenario:
     configuration: ScenarioConfiguration
     snapshots: list[Snapshot]
     steps: list[Step]
+    initial_reads: tuple[ReadStep, ...] = ()
 
 
 class ClientError(Exception):
@@ -340,7 +341,8 @@ async def run(
     namespace = uuid.uuid4().hex
     customers = set()
     payloads = [*scenario.snapshots]
-    for step in scenario.steps:
+    steps = (*scenario.initial_reads, *scenario.steps)
+    for step in steps:
         if isinstance(step, IngestStep | ConfirmStep):
             payloads.extend(step.arguments["events"])
         elif not isinstance(step, RestartStep | RedisStep):
@@ -382,9 +384,7 @@ async def run(
         clients: dict[str, Process] = {}
         contexts: dict[str, typing.Any] = {}
         client_names = dict.fromkeys(
-            step.client
-            for step in scenario.steps
-            if step.client not in ("polar", "redis")
+            step.client for step in steps if step.client not in ("polar", "redis")
         )
         locks = {name: anyio.Lock() for name in [*client_names, "polar", "redis"]}
 
@@ -480,6 +480,9 @@ async def run(
                 await anyio.sleep(0.02)
 
         try:
+            for step in scenario.initial_reads:
+                await execute(step)
+            started = anyio.current_time()
             async with anyio.create_task_group() as tasks:
                 for step in scenario.steps:
                     tasks.start_soon(execute, step)

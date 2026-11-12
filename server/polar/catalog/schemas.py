@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import UUID4, AwareDatetime, Field
 
@@ -56,6 +57,56 @@ class CatalogVersion(Catalog):
             "published before benefits were versioned."
         ),
     )
+
+
+class RemovedCatalogItemResource(StrEnum):
+    product = "product"
+    benefit = "benefit"
+
+
+class RemovedCatalogItemStatus(StrEnum):
+    deprecated = "deprecated"
+    removed = "removed"
+
+
+class RemovedCatalogItemVersion(IDSchema):
+    name: str | None
+    published_at: datetime
+
+
+class RemovedCatalogItem(Schema):
+    """A key that was in a published catalog but isn't in the live one."""
+
+    resource: RemovedCatalogItemResource
+    external_id: str = Field(description="Key of the item in the catalogs.")
+    name: str = Field(description="Name of the item in its last version.")
+    status: RemovedCatalogItemStatus = Field(
+        description=(
+            "`deprecated` while customers still use it, `removed` once nobody does."
+        )
+    )
+    customers_count: int = Field(
+        description=(
+            "Customers with a billable subscription on, or a scheduled change to, "
+            "the product; customers granted the benefit."
+        )
+    )
+    last_item_id: UUID4 = Field(
+        description="ID of the product or benefit in the last catalog that listed it."
+    )
+    first_catalog: RemovedCatalogItemVersion = Field(
+        description="First catalog that listed it."
+    )
+    last_catalog: RemovedCatalogItemVersion = Field(
+        description="Last catalog that listed it."
+    )
+    removed_in_catalog: RemovedCatalogItemVersion = Field(
+        description="The catalog published after the last one that listed it."
+    )
+
+
+class RemovedCatalogItemsParams(QuerySchema):
+    organization_id: OrganizationID
 
 
 class CatalogListParams(QuerySchema):

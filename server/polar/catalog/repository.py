@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import NamedTuple
 from uuid import UUID
 
 from sqlalchemy import Select, delete, func, select, update
@@ -15,6 +16,13 @@ from polar.kit.repository import (
 )
 from polar.models import Benefit, Catalog, CatalogBenefit, CatalogProduct, Product
 from polar.models.catalog import CatalogStatus
+
+
+class CatalogMembership(NamedTuple):
+    external_id: str
+    catalog_id: UUID
+    item_id: UUID
+    name: str
 
 
 class CatalogRepository(
@@ -65,6 +73,18 @@ class CatalogRepository(
                 Catalog.status != CatalogStatus.draft,
             )
         )
+
+    async def get_published(self, organization_id: UUID) -> Sequence[Catalog]:
+        """The organization's published catalogs, oldest first."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Catalog.organization_id == organization_id,
+                Catalog.status != CatalogStatus.draft,
+            )
+            .order_by(Catalog.published_at, Catalog.created_at, Catalog.id)
+        )
+        return await self.get_all(statement)
 
     async def get_by_organization_and_id(
         self, organization_id: UUID, id: UUID
@@ -145,6 +165,25 @@ class CatalogProductRepository(
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
+    async def get_memberships(
+        self, catalog_ids: Sequence[UUID]
+    ) -> Sequence[CatalogMembership]:
+        statement = (
+            select(
+                CatalogProduct.external_id,
+                CatalogProduct.catalog_id,
+                Product.id,
+                Product.name,
+            )
+            .join(Product, Product.id == CatalogProduct.product_id)
+            .where(
+                CatalogProduct.catalog_id.in_(catalog_ids),
+                CatalogProduct.deleted_at.is_(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [CatalogMembership(*row) for row in result.tuples()]
+
     async def delete_by_catalog(self, catalog_id: UUID) -> None:
         """Delete a draft's memberships. They aren't history, and the next
         apply lists the same `external_id`s again."""
@@ -207,6 +246,25 @@ class CatalogBenefitRepository(
         )
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
+
+    async def get_memberships(
+        self, catalog_ids: Sequence[UUID]
+    ) -> Sequence[CatalogMembership]:
+        statement = (
+            select(
+                CatalogBenefit.external_id,
+                CatalogBenefit.catalog_id,
+                Benefit.id,
+                Benefit.description,
+            )
+            .join(Benefit, Benefit.id == CatalogBenefit.benefit_id)
+            .where(
+                CatalogBenefit.catalog_id.in_(catalog_ids),
+                CatalogBenefit.deleted_at.is_(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [CatalogMembership(*row) for row in result.tuples()]
 
     async def delete_by_catalog(self, catalog_id: UUID) -> None:
         """Delete a draft's memberships. They aren't history, and the next

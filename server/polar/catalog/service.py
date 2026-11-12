@@ -13,6 +13,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import PolarError
@@ -39,8 +40,15 @@ from polar.webhook.service import webhook as webhook_service
 
 from .repository import (
     CatalogBenefitRepository,
+    CatalogMembership,
     CatalogProductRepository,
     CatalogRepository,
+)
+from .schemas import (
+    RemovedCatalogItem,
+    RemovedCatalogItemResource,
+    RemovedCatalogItemStatus,
+    RemovedCatalogItemVersion,
 )
 
 
@@ -94,6 +102,66 @@ def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
 
 def _benefit_ids(benefits: Mapping[str, Benefit]) -> dict[str, uuid.UUID]:
     return {external_id: benefit.id for external_id, benefit in benefits.items()}
+
+
+@dataclass
+class _RemovedMembership:
+    first: int
+    last: int
+    membership: CatalogMembership
+
+
+def _removed_memberships(
+    catalogs: Sequence[Catalog], memberships: Sequence[CatalogMembership]
+) -> dict[str, _RemovedMembership]:
+    """Keys listed by a published catalog but not by the live one, the last of
+    `catalogs`, with the positions of the first and last catalogs that list them."""
+    positions = {catalog.id: position for position, catalog in enumerate(catalogs)}
+    live = len(catalogs) - 1
+    removed: dict[str, _RemovedMembership] = {}
+    for membership in memberships:
+        position = positions[membership.catalog_id]
+        entry = removed.setdefault(
+            membership.external_id, _RemovedMembership(position, position, membership)
+        )
+        entry.first = min(entry.first, position)
+        if position >= entry.last:
+            entry.last = position
+            entry.membership = membership
+    return {key: entry for key, entry in removed.items() if entry.last != live}
+
+
+def _removed_items(
+    resource: RemovedCatalogItemResource,
+    catalogs: Sequence[Catalog],
+    removed: Mapping[str, _RemovedMembership],
+    customers: Mapping[str, int],
+) -> list[RemovedCatalogItem]:
+    items: list[RemovedCatalogItem] = []
+    for external_id, entry in removed.items():
+        customers_count = customers.get(external_id, 0)
+        items.append(
+            RemovedCatalogItem(
+                resource=resource,
+                external_id=external_id,
+                name=entry.membership.name,
+                status=RemovedCatalogItemStatus.deprecated
+                if customers_count
+                else RemovedCatalogItemStatus.removed,
+                customers_count=customers_count,
+                last_item_id=entry.membership.item_id,
+                first_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.first]
+                ),
+                last_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.last]
+                ),
+                removed_in_catalog=RemovedCatalogItemVersion.model_validate(
+                    catalogs[entry.last + 1]
+                ),
+            )
+        )
+    return items
 
 
 class CatalogNotFound(PolarError):
@@ -153,6 +221,65 @@ class CatalogService:
             )
         )
         return await repository.get_one_or_none(statement)
+
+    async def list_removed(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        organization_id: uuid.UUID,
+    ) -> builtins.list[RemovedCatalogItem]:
+        if organization_id not in await self._get_readable_org_ids(
+            session, auth_subject
+        ):
+            return []
+        catalogs = await CatalogRepository.from_session(session).get_published(
+            organization_id
+        )
+        if not catalogs or catalogs[-1].status != CatalogStatus.live:
+            return []
+        catalog_ids = [catalog.id for catalog in catalogs]
+
+        products = _removed_memberships(
+            catalogs,
+            await CatalogProductRepository.from_session(session).get_memberships(
+                catalog_ids
+            ),
+        )
+        product_customers = await ProductRepository.from_session(
+            session
+        ).count_customers_by_external_ids(organization_id, builtins.list(products))
+        benefits = _removed_memberships(
+            catalogs,
+            await CatalogBenefitRepository.from_session(session).get_memberships(
+                catalog_ids
+            ),
+        )
+        benefit_customers = await BenefitGrantRepository.from_session(
+            session
+        ).count_granted_customers_by_benefit_external_ids(
+            organization_id, builtins.list(benefits)
+        )
+
+        return sorted(
+            [
+                *_removed_items(
+                    RemovedCatalogItemResource.product,
+                    catalogs,
+                    products,
+                    product_customers,
+                ),
+                *_removed_items(
+                    RemovedCatalogItemResource.benefit,
+                    catalogs,
+                    benefits,
+                    benefit_customers,
+                ),
+            ],
+            key=lambda item: (
+                -item.removed_in_catalog.published_at.timestamp(),
+                item.external_id,
+            ),
+        )
 
     async def get_draft_for_write(
         self,

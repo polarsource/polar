@@ -1,3 +1,4 @@
+import builtins
 from typing import Annotated
 
 from fastapi import Depends, Query
@@ -17,7 +18,12 @@ from polar.routing import APIRouter
 
 from . import auth
 from .schemas import Catalog as CatalogSchema
-from .schemas import CatalogListParams, CatalogVersion
+from .schemas import (
+    CatalogListParams,
+    CatalogVersion,
+    RemovedCatalogItem,
+    RemovedCatalogItemsParams,
+)
 from .service import CatalogNotDraft, CatalogNotFound
 from .service import catalog as catalog_service
 
@@ -49,6 +55,24 @@ async def list(
         [CatalogSchema.model_validate(result) for result in results],
         count,
         pagination,
+    )
+
+
+@router.get(
+    "/removed",
+    summary="List Removed Catalog Items",
+    response_model=builtins.list[RemovedCatalogItem],
+)
+async def list_removed(
+    filters: Annotated[RemovedCatalogItemsParams, Query()],
+    auth_subject: auth.CatalogRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> builtins.list[RemovedCatalogItem]:
+    """List the products and benefits a published catalog listed but the live
+    one doesn't, newest removal first. They're deprecated while customers still
+    use them, and removed once nobody does."""
+    return await catalog_service.list_removed(
+        session, auth_subject, filters.organization_id
     )
 
 

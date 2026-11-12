@@ -277,47 +277,6 @@ describe('init', () => {
     expect((await run({ format: 'json' })).file).toBe('polar.config.json')
   })
 
-  test('picks Python in a project with a pyproject.toml, TypeScript when it also has a package.json', async () => {
-    await writeFile(join(directory, 'pyproject.toml'), '')
-    const python = await run()
-    await rm(join(directory, 'polar_config.py'))
-    await project()
-    const both = await run()
-
-    expect(python.file).toBe('polar_config.py')
-    expect(both.file).toBe('polar.config.ts')
-  })
-
-  test('writes a Python config with --format py', async () => {
-    api.routes[`GET ${exportUrl}`] = exported(
-      {
-        ...EMPTY,
-        meters: [
-          {
-            external_id: 'tool_call',
-            name: 'Tool calls',
-            filter: {
-              conjunction: 'and',
-              clauses: [
-                { property: 'name', operator: 'eq', value: 'tool_call' },
-              ],
-            },
-            aggregation: { func: 'count' },
-          },
-        ],
-      },
-      [],
-      true,
-    )
-
-    const result = await run({ format: 'py' })
-
-    expect(result.file).toBe('polar_config.py')
-    expect(await read('polar_config.py')).toContain(
-      'tool_call = Meter("Tool calls", on="tool_call")',
-    )
-  })
-
   test('refuses when the directory already has a config file', async () => {
     await writeFile(join(directory, 'polar.json'), '{}')
 

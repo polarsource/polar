@@ -36,7 +36,7 @@ import * as ui from '@/utils/ui'
 
 const file = Argument.String('file').pipe(
   Argument.withDescription(
-    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar_config.py at the root of a Python project, polar.config.json otherwise',
+    'Where to write the config. Defaults to polar.config.ts at the root of a JavaScript or TypeScript project, polar.config.json otherwise',
   ),
   Argument.optional,
 )
@@ -44,7 +44,7 @@ const file = Argument.String('file').pipe(
 const format = Flag.Literals('format', FORMATS).pipe(
   Flag.optional,
   Flag.withDescription(
-    'Write TypeScript (ts), Python (py) or JSON (json). Detected from your project when omitted: ts with a package.json, py with a pyproject.toml. In a terminal you confirm it, or choose when both or neither exist. Outside a terminal it writes ts when both exist and json when neither does',
+    'Write TypeScript (ts) or JSON (json). Detected from your project when omitted: ts with a package.json. In a terminal you confirm it, or choose when there is none. Outside a terminal it writes json when there is none',
   ),
 )
 

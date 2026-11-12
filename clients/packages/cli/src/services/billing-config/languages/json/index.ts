@@ -16,7 +16,7 @@ export const json: Language = {
   defaultFiles: CONFIG_FILES.json,
   manifest: undefined,
   installer: undefined,
-  load: (fs, _run, file) =>
+  load: (fs, file) =>
     Effect.gen(function* () {
       const source = yield* readSource(fs, file)
       const input = yield* Effect.try({

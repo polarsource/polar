@@ -5,6 +5,10 @@ import { OnboardingStepper, type OnboardingStep } from './OnboardingStepper'
 
 const EMPTY_STEPS: readonly OnboardingStep<never>[] = []
 
+// Keeps the actions bar above the fold: viewport minus the page padding (2 × 2xl),
+// the card padding (2 × s) and the card border (2 × 1px).
+const DESKTOP_MAIN_MAX_HEIGHT = 'calc(100dvh - 82px)'
+
 interface OnboardingLayoutProps<StepId extends string> {
   branding: ReactNode
   introduction?: ReactNode
@@ -99,6 +103,7 @@ export function OnboardingLayout<StepId extends string>({
           borderStyle="solid"
           borderColor="border-secondary"
           height={{ base: undefined, lg: '50rem' }}
+          maxHeight={{ base: undefined, lg: DESKTOP_MAIN_MAX_HEIGHT }}
           overflow={{ base: 'visible', lg: 'hidden' }}
         >
           <Box

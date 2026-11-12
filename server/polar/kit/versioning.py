@@ -1,6 +1,7 @@
 import contextlib
 import contextvars
 import dataclasses
+import datetime
 import functools
 import json
 import re
@@ -13,6 +14,7 @@ from collections.abc import (
     Iterable,
     Sequence,
 )
+from email.utils import format_datetime
 
 from fastapi import APIRouter, FastAPI
 from fastapi._compat import ModelField
@@ -62,6 +64,10 @@ class APIVersion:
             raise ValueError(f"Invalid version string: {version_str}")
         year_str, month_str = match.groups()
         return cls(year=int(year_str), month=int(month_str))
+
+    @property
+    def start(self) -> datetime.datetime:
+        return datetime.datetime(self.year, self.month, 1, tzinfo=datetime.UTC)
 
     @typing.overload
     @classmethod
@@ -377,6 +383,19 @@ def version[**P, R](
 
 
 VERSION_HEADER = "Polar-Version"
+VERSIONING_POLICY_URL = "https://polar.sh/docs/api-reference/versioning"
+
+
+def _deprecation_headers(
+    default_version: APIVersion, next_version: APIVersion | None
+) -> list[tuple[str, str]]:
+    headers = [
+        ("Deprecation", f"@{int(default_version.start.timestamp())}"),
+        ("Link", f'<{VERSIONING_POLICY_URL}>; rel="deprecation"; type="text/html"'),
+    ]
+    if next_version is not None:
+        headers.append(("Sunset", format_datetime(next_version.start, usegmt=True)))
+    return headers
 
 
 class APIVersionMiddleware:
@@ -385,12 +404,26 @@ class APIVersionMiddleware:
         app: ASGIApp,
         versions: Iterable[APIVersion],
         default_version: APIVersion,
+        next_version: APIVersion | None = None,
     ) -> None:
         self.app = app
         self.versions = frozenset(versions)
         self.default_version = default_version
         if default_version not in self.versions:
             raise ValueError(f"Default API version {default_version} is not supported")
+        if next_version is not None and (
+            next_version not in self.versions or next_version <= default_version
+        ):
+            raise ValueError(
+                f"Next API version {next_version} must be a supported version "
+                f"after {default_version}"
+            )
+        deprecation_headers = _deprecation_headers(default_version, next_version)
+        self.deprecation_headers = {
+            version: deprecation_headers
+            for version in self.versions
+            if version < default_version
+        }
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] not in ("http", "websocket"):
@@ -414,11 +447,14 @@ class APIVersionMiddleware:
 
         scope.setdefault("state", {})["api_version"] = api_version
         scope["state"]["api_version_set"] = api_version_set
+        deprecation_headers = self.deprecation_headers.get(api_version, [])
 
         async def send_wrapper(message: Message) -> None:
             if message["type"] == "http.response.start":
                 headers = MutableHeaders(scope=message)
                 headers[VERSION_HEADER] = str(api_version)
+                for name, value in deprecation_headers:
+                    headers.append(name, value)
             await send(message)
 
         with api_version_context(api_version):
@@ -563,6 +599,7 @@ def add_versioned_routers(
     webhooks: Sequence[BaseRoute],
     versions: Iterable[APIVersion],
     default_version: APIVersion,
+    next_version: APIVersion | None = None,
 ) -> None:
     supported_versions = tuple(sorted(set(versions)))
     if default_version not in supported_versions:
@@ -571,6 +608,7 @@ def add_versioned_routers(
         APIVersionMiddleware,
         versions=supported_versions,
         default_version=default_version,
+        next_version=next_version,
     )
 
     first_route_index = len(app.router.routes)

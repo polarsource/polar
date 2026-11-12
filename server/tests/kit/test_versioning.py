@@ -2,7 +2,7 @@ import dataclasses
 from typing import Annotated, Any, Literal
 
 import pytest
-from fastapi import Depends, FastAPI, Query, Request
+from fastapi import Depends, FastAPI, Query, Request, Response
 from fastapi.openapi.utils import get_openapi
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
@@ -402,6 +402,66 @@ def test_versioned_routes() -> None:
         operation = schema["paths"]["/items"]["get"]
         assert operation["operationId"] == "items:get_items"
         assert operation["x-speakeasy-name-override"] == "get_items"
+
+
+class TestDeprecationHeaders:
+    deprecated_version = APIVersion(2026, 4)
+    current_version = APIVersion(2026, 10)
+    next_version = APIVersion(2027, 1)
+
+    @pytest.fixture
+    def client(self) -> TestClient:
+        router = APIRouter()
+
+        @router.get("/items")
+        async def get_items(response: Response) -> str:
+            response.headers["Link"] = '</items?page=2>; rel="next"'
+            return "items"
+
+        app = FastAPI(openapi_url=None)
+        add_versioned_routers(
+            app,
+            router,
+            [],
+            [self.deprecated_version, self.current_version, self.next_version],
+            self.current_version,
+            self.next_version,
+        )
+        return TestClient(app)
+
+    def test_deprecated_version(self, client: TestClient) -> None:
+        response = client.get(
+            "/items", headers={"Polar-Version": str(self.deprecated_version)}
+        )
+
+        assert response.status_code == 200
+        assert response.headers["Deprecation"] == "@1790812800"
+        assert response.headers["Sunset"] == "Fri, 01 Jan 2027 00:00:00 GMT"
+        assert response.headers.get_list("Link") == [
+            '</items?page=2>; rel="next"',
+            (
+                "<https://polar.sh/docs/api-reference/versioning>; "
+                'rel="deprecation"; type="text/html"'
+            ),
+        ]
+
+    @pytest.mark.parametrize(
+        "headers",
+        [
+            {},
+            {"Polar-Version": str(current_version)},
+            {"Polar-Version": str(next_version)},
+        ],
+    )
+    def test_supported_versions(
+        self, client: TestClient, headers: dict[str, str]
+    ) -> None:
+        response = client.get("/items", headers=headers)
+
+        assert response.status_code == 200
+        assert "Deprecation" not in response.headers
+        assert "Sunset" not in response.headers
+        assert response.headers.get_list("Link") == ['</items?page=2>; rel="next"']
 
 
 def test_rejects_overlapping_versioned_routes() -> None:

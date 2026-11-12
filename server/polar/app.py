@@ -72,7 +72,7 @@ from polar.postgres import (
 from polar.posthog import configure_posthog
 from polar.redis import Redis, create_redis
 from polar.sentry import configure_sentry
-from polar.version import CURRENT_API_VERSION, VERSIONS
+from polar.version import CURRENT_API_VERSION, NEXT_API_VERSION, VERSIONS
 from polar.webhook.webhooks import get_webhook_routes
 
 from . import rate_limit
@@ -106,7 +106,7 @@ def configure_cors(app: FastAPI) -> None:
         allow_credentials=False,  # No cookies allowed
         allow_methods=["*"],
         allow_headers=["Authorization", VERSION_HEADER, ORGANIZATION_HEADER],
-        expose_headers=[VERSION_HEADER],
+        expose_headers=[VERSION_HEADER, "Deprecation", "Sunset", "Link"],
     )
     configs.append(api_config)
 
@@ -268,6 +268,7 @@ def create_app() -> FastAPI:
         get_webhook_routes(),
         VERSIONS,
         CURRENT_API_VERSION,
+        NEXT_API_VERSION,
     )
 
     return app

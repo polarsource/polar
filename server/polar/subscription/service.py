@@ -1355,16 +1355,16 @@ class SubscriptionService:
                     )
                 )
 
-            self._clear_expired_discount(subscription)
-
-            await self._create_cycle_billing_entries(session, subscription)
-
             # Trial conversion is part of the normal renewal path: a trialing
             # subscription becomes active on its first billed cycle. This must
             # NOT run on the revoke path, where the status has just been set to
             # ``canceled`` above and must be preserved.
             if previous_status == SubscriptionStatus.trialing:
                 subscription.status = SubscriptionStatus.active
+
+            self._clear_expired_discount(subscription)
+
+            await self._create_cycle_billing_entries(session, subscription)
 
         # Meter period coincides with billing here, so we don't settle it
         # separately: the renewal order below sweeps its pending entries too.
@@ -1417,7 +1417,9 @@ class SubscriptionService:
         subscription: Subscription,
         period_start: datetime | None = None,
     ) -> None:
-        if subscription.discount is None:
+        # The trial doesn't use up a once or repeating discount: its duration
+        # starts counting at the first paid cycle.
+        if subscription.discount is None or subscription.trialing:
             return
 
         if subscription.discount_applied_at is None:

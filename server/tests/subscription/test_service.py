@@ -2439,7 +2439,9 @@ class TestCycle:
 
         # Verify discount is applied
         assert subscription.discount == discount
+        assert subscription.discount_applied_at is None
         assert subscription.status == SubscriptionStatus.trialing
+        trial_end = subscription.trial_end
 
         # Cycle the subscription (trial ends, first billing cycle)
         async with SubscriptionUpdateContext(
@@ -2452,6 +2454,7 @@ class TestCycle:
         # Verify discount is STILL applied after trial ends
         # This is the first actual billing cycle, so "once" discount should apply
         assert updated_subscription.discount == discount
+        assert updated_subscription.discount_applied_at == trial_end
         assert updated_subscription.status == SubscriptionStatus.active
 
         # Verify billing entry was created with discount
@@ -2985,6 +2988,41 @@ class TestCycle:
 
 @pytest.mark.anyio
 class TestCycleMeters:
+    async def test_trialing_does_not_start_discount(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked_at=utc_now(),
+        )
+        now = utc_now()
+        subscription.meter_interval = SubscriptionRecurringInterval.month
+        subscription.meter_interval_count = 1
+        subscription.current_meter_period_start = now - timedelta(days=31)
+        subscription.current_meter_period_end = now - timedelta(seconds=1)
+        await save_fixture(subscription)
+
+        updated = await subscription_service.cycle_meters(session, subscription)
+
+        assert updated.discount == discount
+        assert updated.discount_applied_at is None
+
     async def test_advances_clock_resets_and_regrants_without_overage(
         self,
         session: AsyncSession,
@@ -8754,36 +8792,6 @@ class TestSendTrialConversionReminderEmail:
         )
 
         enqueue_email_mock.assert_not_called()
-
-    async def test_discount_expired_after_trial(
-        self,
-        enqueue_email_mock: MagicMock,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=10_000,
-            duration=DiscountDuration.once,
-            organization=organization,
-        )
-        subscription = await create_trialing_subscription(
-            save_fixture, product=product, customer=customer, discount=discount
-        )
-        subscription.discount_applied_at = subscription.trial_start
-        await save_fixture(subscription)
-
-        await subscription_service.send_trial_conversion_reminder_email(
-            session, subscription
-        )
-
-        enqueue_email_mock.assert_called_once()
-        email = enqueue_email_mock.call_args[0][0]
-        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
 
     async def test_disabled_by_conversion_reminder_setting(
         self,

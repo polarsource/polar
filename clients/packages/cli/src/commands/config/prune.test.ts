@@ -67,16 +67,8 @@ const run = async (
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
           disable: () => Effect.die('unused'),
-          prune: (_config, _organization, confirm) =>
-            entries.some(
-              (entry) =>
-                entry.customers_count === 0 && entry.referenced_by.length === 0,
-            )
-              ? confirm(entries).pipe(
-                  Effect.tap(() => Effect.sync(() => removed())),
-                  Effect.as({ entries, removed: true }),
-                )
-              : Effect.succeed({ entries, removed: false }),
+          deprecations: () => Effect.succeed(entries),
+          prune: (_config, unused) => Effect.sync(() => removed(unused)),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),
         }),
@@ -95,6 +87,7 @@ const run = async (
     output: stripAnsi(cli.output()),
     terminal: stripAnsi(cli.terminal()),
     removed: removed.mock.calls.length,
+    pruned: removed.mock.calls[0]?.[0] as ReadonlyArray<PruneEntry> | undefined,
     exit,
   }
 }
@@ -106,12 +99,13 @@ const message = (exit: Exit.Exit<unknown, unknown>) =>
 
 describe('polar config prune', () => {
   test('removes only the unused entries with --confirm', async () => {
-    const { output, removed, exit } = await run(
+    const { output, removed, pruned, exit } = await run(
       [apples, beta, legacy],
       ['--confirm'],
     )
     expect(Exit.isSuccess(exit)).toBe(true)
     expect(removed).toBe(1)
+    expect(pruned).toEqual([apples])
     expect(output).toMatch(/ {2}Deprecated Acme \(sandbox\)\n {2}╭─+╮\n/)
     expect(output).toMatch(/│ {2}Remove *│\n {2}│ {2}- meter {4}apples *│\n/)
     expect(output).toMatch(

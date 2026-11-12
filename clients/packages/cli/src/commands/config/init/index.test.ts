@@ -4,8 +4,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Cause, Effect, Exit } from 'effect'
 import { init } from '@/commands/config/init'
+import type { ClientStatus } from '@/schemas/AgentSetup'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import type { ConfigExport } from '@/schemas/BillingConfig'
+import { AgentSetup } from '@/services/agent-setup/service'
 import { Auth } from '@/services/auth'
 import {
   BillingConfig,
@@ -38,7 +40,22 @@ const live: ActiveOrganization = {
 
 const INSTALL = ['pnpm', 'add', '@polar-sh/polar']
 
+const claude: ClientStatus = {
+  client: 'claude-code',
+  name: 'Claude Code',
+  detected: true,
+  installed: true,
+}
+const codex: ClientStatus = {
+  client: 'codex',
+  name: 'Codex',
+  detected: true,
+  installed: true,
+}
+
 interface Setup {
+  caller?: { id: string; name: string }
+  agents?: ClientStatus[]
   organizations?: ActiveOrganization[]
   selected?: boolean
   sessions?: ActiveOrganization['environment'][]
@@ -82,6 +99,7 @@ const run = async (
           load: () => Effect.die('unused'),
           plan: () => Effect.die('unused'),
           apply: () => Effect.die('unused'),
+          deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),
@@ -114,6 +132,16 @@ const run = async (
             })
           },
           disable: () => Effect.die('unused'),
+        }),
+      ),
+      Effect.provideService(
+        AgentSetup,
+        AgentSetup.of({
+          callingAgent: setup.caller,
+          detect: () => Effect.succeed(setup.agents ?? []),
+          setUp: () => Effect.die('unused'),
+          skills: () => Effect.die('unused'),
+          installSkills: () => Effect.die('unused'),
         }),
       ),
       Effect.provideService(
@@ -171,16 +199,38 @@ describe('polar config init', () => {
     ])
     expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
     expect(output).toContain('✔ Resolving organization\n    Acme (sandbox)')
+    expect(output).toContain(
+      '✔ Detecting language\n    No package.json or pyproject.toml found',
+    )
+    expect(output).toContain('✔ Reading your catalog\n    nothing in it yet')
     expect(output).toContain('✔ Writing config\n    polar.config.ts')
     expect(output).toMatch(/Imported {6}0 meters, 0 benefits, 0 products/)
-    expect(output).toContain('✔ Your billing config is ready')
+    expect(output).toContain(
+      '✔ Your billing config is ready\n    Nice work, your billing now lives in code',
+    )
     expect(output).toMatch(/Package {7}@polar-sh\/polar installed/)
     expect(output).not.toContain('Install the config package')
-    expect(output).toContain(
-      'Describe your meters, benefits and products in polar.config.ts',
+    expect(output).toMatch(
+      /2 {2}Add your meters, benefits and products +polar\.config\.ts/,
     )
     expect(output).toContain('polar config plan')
     expect(output).toContain('polar config apply')
+  })
+
+  test('says what it read from the catalog', async () => {
+    const { output } = await run(
+      [],
+      {},
+      {
+        catalog: {
+          enabled: false,
+          config: { meters: [{}], benefits: [], products: [{}, {}] },
+          skipped: [],
+        },
+      },
+    )
+
+    expect(output).toContain('✔ Reading your catalog\n    1 meter, 2 products')
   })
 
   test('keeps the install command in the next steps when it fails or is skipped', async () => {
@@ -200,12 +250,15 @@ describe('polar config init', () => {
     )
   })
 
-  test('targets the project root from a subdirectory without asking', async () => {
+  test('targets the project root from a subdirectory without asking where', async () => {
     await writeFile(join(directory, 'package.json'), '{}')
     await mkdir(join(directory, 'src'))
     process.chdir(join(directory, 'src'))
 
-    const { calls, terminal } = await run([], { interactive: true })
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [keys.enter],
+    })
 
     expect(terminal).not.toContain('Where should the config live?')
     expect(calls[0]!.target.directory).toBe(directory)
@@ -221,14 +274,69 @@ describe('polar config init', () => {
     })
   })
 
-  test('only asks before installing in a terminal', async () => {
+  test('uses the language it detected without asking outside a terminal', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    const python = await run([])
+    await writeFile(join(directory, 'package.json'), '{}')
+    const both = await run([])
+
+    expect(python.output).toContain(
+      '✔ Detecting language\n    Python detected, found a pyproject.toml',
+    )
+    expect(python.calls[0]!.target.format).toBe('py')
+    expect(both.output).toContain(
+      '✔ Detecting language\n    TypeScript detected, found a package.json and a pyproject.toml',
+    )
+    expect(both.calls[0]!.target.format).toBe('ts')
+  })
+
+  test('asks to confirm the language it detected', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [keys.enter],
+    })
+
+    expect(terminal).toContain('Write a Python config (polar_config.py)?')
+    expect(calls[0]!.target.format).toBe('py')
+  })
+
+  test('asks which format when the guess is declined', async () => {
+    await writeFile(join(directory, 'package.json'), '{}')
+
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [...keys.type('n'), keys.down, keys.enter],
+    })
+
+    expect(terminal).toContain('Which format should the config be in?')
+    expect(calls[0]!.target.format).toBe('py')
+  })
+
+  test('asks which format when it cannot tell', async () => {
+    const neither = await run([], { interactive: true, input: [keys.enter] })
+    await writeFile(join(directory, 'package.json'), '{}')
+    await writeFile(join(directory, 'pyproject.toml'), '')
+    const both = await run([], {
+      interactive: true,
+      input: [keys.down, keys.down, keys.enter],
+    })
+
+    expect(neither.calls[0]!.target.format).toBe('ts')
+    expect(both.terminal).not.toContain('Write a')
+    expect(both.calls[0]!.target.format).toBe('json')
+  })
+
+  test('only asks before installing when the format is given', async () => {
     const { installed, output, terminal } = await run(
-      [],
+      ['--format', 'ts'],
       { interactive: true, input: [keys.enter] },
       { install: INSTALL },
     )
 
-    expect(terminal).not.toContain('Which format do you want?')
+    expect(terminal).not.toContain('Which format should the config be in?')
     expect(terminal).not.toContain('Where do you want to start?')
     expect(terminal).toContain('Install @polar-sh/polar with')
     expect(output.replace(/\r/g, '')).toContain('now?\n    Yes\n')
@@ -249,7 +357,7 @@ describe('polar config init', () => {
 
   test('asks which organization when the environment has several', async () => {
     const { calls, terminal } = await run(
-      ['--sandbox'],
+      ['--sandbox', '--format', 'ts'],
       { interactive: true, input: [keys.down, keys.enter] },
       { organizations: [acme, beta], selected: false },
     )
@@ -340,6 +448,77 @@ describe('polar config init', () => {
     })
   })
 
+  test('gives a person two ways to continue', async () => {
+    const { output } = await run([], {}, { agents: [claude] })
+
+    expect(output).toContain('✔ Detecting who is running this\n    A human')
+    expect(output).not.toContain('Instructions for')
+    expect(output).toContain(
+      'Your config is empty. Pick one way to fill it in.',
+    )
+    expect(output).toContain('Option 1  Hand it to Claude Code')
+    expect(output).toMatch(
+      /1 {2}Ask it +"Help me set up billing with my Polar config"/,
+    )
+    expect(output).not.toContain('Review its plan')
+    expect(output).toMatch(
+      /1 {2}Read the docs +https:\/\/polar\.sh\/docs\/integrate\/cli\/config/,
+    )
+    expect(output).toContain('Option 2  Do it yourself')
+  })
+
+  test('starts with agent setup when no agent is set up for Polar', async () => {
+    const { output } = await run(
+      [],
+      {},
+      {
+        agents: [
+          { ...claude, installed: false },
+          { ...codex, installed: false },
+        ],
+      },
+    )
+
+    expect(output).toContain('Option 1  Hand it to your coding agent')
+    expect(output).toMatch(/1 {2}Set up the agent +polar agent setup/)
+    expect(output).toMatch(/2 {2}Ask it/)
+  })
+
+  test('tells an agent that runs it what to do next', async () => {
+    const caller = { id: 'claude-code', name: 'Claude Code' }
+    const { output } = await run(['--json'], {}, { caller, agents: [claude] })
+
+    expect((await run([], {}, { caller })).output).toContain(
+      '✔ Detecting who is running this\n    An agent, Claude Code',
+    )
+
+    const result = JSON.parse(output)
+    expect(result.caller).toBe('Claude Code')
+    expect(result.agents).toBeUndefined()
+    expect(result.next).toEqual([
+      "If you don't have the polar-config skill, run polar agent setup --skills project and read .agents/skills/polar-config/SKILL.md. It sets up Polar for this agent and adds the Polar skills to this project, so tell the user before you run it.",
+      "Write the meters, benefits and products into polar.config.ts from this app's pricing. Ask the user for any price you cannot find, never invent one.",
+      'Run polar config plan --json and fix every error it reports in the file.',
+      'Tell the user what would change and wait for their go-ahead.',
+      'Run polar config apply --confirm. If it saves a draft, ask before running polar config publish --confirm.',
+    ])
+  })
+
+  test('names the organization in the next commands when it is not the active one', async () => {
+    const { output } = await run(
+      ['--org', 'org-2', '--json'],
+      {},
+      { organizations: [acme, beta] },
+    )
+
+    const result = JSON.parse(output)
+    expect(result.org).toBe('org-2')
+    expect(result.next.slice(-2)).toEqual([
+      'polar config plan --org org-2',
+      'polar config apply --org org-2',
+    ])
+  })
+
   describe('an organization with products without an external ID', () => {
     const unkeyed: Unkeyed[] = [
       {
@@ -373,7 +552,7 @@ describe('polar config init', () => {
 
     test('previews the whole catalog and uses the suggestions', async () => {
       const { keyed, output, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         { interactive: true, input: [accept] },
         { unkeyed, catalog },
       )
@@ -389,7 +568,7 @@ describe('polar config init', () => {
 
     test('flags suggestions suffixed because of a duplicate name', async () => {
       const { output } = await run(
-        [],
+        ['--format', 'ts'],
         { interactive: true, input: [accept] },
         {
           unkeyed: [
@@ -414,7 +593,7 @@ describe('polar config init', () => {
 
     test('edits external IDs in a table, then asks again', async () => {
       const { keyed, output, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         {
           interactive: true,
           input: [
@@ -437,7 +616,7 @@ describe('polar config init', () => {
 
     test('blocks saving on a duplicate until the row is reset', async () => {
       const { keyed, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         {
           interactive: true,
           input: [
@@ -466,7 +645,7 @@ describe('polar config init', () => {
 
     test('filters the table by name', async () => {
       const { keyed, terminal } = await run(
-        [],
+        ['--format', 'ts'],
         {
           interactive: true,
           input: [
@@ -491,7 +670,7 @@ describe('polar config init', () => {
 
     test('writes nothing when cancelled', async () => {
       const { keyed, exit } = await run(
-        [],
+        ['--format', 'ts'],
         { interactive: true, input: [keys.down, keys.down, keys.enter] },
         { unkeyed, catalog },
       )
@@ -524,6 +703,36 @@ describe('polar config init', () => {
       })
     })
 
+    test('says an imported config matches Polar and how to change it', async () => {
+      const { output } = await run(
+        ['--confirm'],
+        {},
+        { unkeyed, agents: [claude] },
+      )
+
+      expect(output).toContain(
+        'Your config matches what is on Polar. Pick one way to continue.',
+      )
+      expect(output).toMatch(
+        /1 {2}Ask it +"Help me set up billing with my Polar config"/,
+      )
+      expect(output).toMatch(/2 {2}Edit the config +polar\.config\.ts/)
+      expect(output).not.toContain('Preview what would be created')
+    })
+
+    test('lets an agent stop after an import when no change was asked for', async () => {
+      const { output } = await run(
+        ['--json', '--confirm'],
+        {},
+        { unkeyed, caller: { id: 'codex', name: 'Codex' } },
+      )
+
+      expect(JSON.parse(output).next.slice(1, 3)).toEqual([
+        'polar.config.ts matches the catalog on Polar, so the config is set up. If the user asked for no change, run polar config plan to confirm nothing would change, tell them it is ready and stop.',
+        'Otherwise make their change in polar.config.ts. Ask the user for any price you cannot find, never invent one.',
+      ])
+    })
+
     test('uses the suggestions with --confirm, except the ones overridden', async () => {
       const { keyed, exit } = await run(
         ['--json', '--confirm', '--external-id', 'p-2=team-yearly'],
@@ -549,7 +758,7 @@ describe('polar config init', () => {
 
     test('only edits the resources not given an external ID', async () => {
       const { keyed, terminal } = await run(
-        ['--external-id', 'p-1=pro'],
+        ['--external-id', 'p-1=pro', '--format', 'ts'],
         {
           interactive: true,
           input: [...openEditor, ...keys.type('s'), keys.enter, accept],
@@ -581,6 +790,12 @@ describe('polar config init', () => {
           (await run(['--json', '--external-id', 'p-1'], {}, { unkeyed })).exit,
         ),
       ).toBe('--external-id p-1 is not <id>=<external ID>')
+      expect(
+        message(
+          (await run(['--json', '--external-id', 'p-1=_pro'], {}, { unkeyed }))
+            .exit,
+        ),
+      ).toBe('--external-id p-1=_pro is not a valid external ID')
       expect(
         message(
           (

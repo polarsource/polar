@@ -2,13 +2,17 @@ from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
+from polar.enums import SubscriptionRecurringInterval
 from polar.kit.utils import utc_now
 from polar.models import (
     Catalog,
     CatalogBenefit,
+    CatalogMeter,
     CatalogProduct,
+    Customer,
     Organization,
     Product,
     UserOrganization,
@@ -16,7 +20,13 @@ from polar.models import (
 from polar.models.catalog import CatalogStatus
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit, create_product
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_benefit,
+    create_benefit_grant,
+    create_meter,
+    create_product,
+)
 
 
 @pytest.fixture
@@ -265,6 +275,25 @@ async def benefits_draft(
     return products_only_draft
 
 
+@pytest.fixture
+async def meters_draft(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    products_only_draft: Catalog,
+) -> Catalog:
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        external_id="tool-calls",
+        is_current=False,
+        catalog=products_only_draft,
+    )
+    await save_fixture(
+        CatalogMeter(catalog=products_only_draft, meter=meter, external_id="tool-calls")
+    )
+    return products_only_draft
+
+
 PUBLISHERS = (
     AuthSubjectFixture(subject="user"),
     AuthSubjectFixture(subject="organization"),
@@ -336,6 +365,26 @@ class TestPublish:
         assert response.json()["error"] == "insufficient_scope"
 
     @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
+    async def test_meter_changes_without_meters_write(
+        self, client: AsyncClient, meters_draft: Catalog
+    ) -> None:
+        response = await client.post(f"/v1/catalogs/{meters_draft.id}/publish")
+
+        assert response.status_code == 403
+        assert response.json()["error"] == "insufficient_scope"
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.meters_write))
+    async def test_meter_changes(
+        self, mocker: MockerFixture, client: AsyncClient, meters_draft: Catalog
+    ) -> None:
+        mocker.patch("polar.meter.service.enqueue_job")
+
+        response = await client.post(f"/v1/catalogs/{meters_draft.id}/publish")
+
+        assert response.status_code == 200
+        assert response.json()["status"] == CatalogStatus.live
+
+    @pytest.mark.auth(*_with_scopes(Scope.products_write, Scope.benefits_write))
     async def test_benefit_changes(
         self, client: AsyncClient, benefits_draft: Catalog
     ) -> None:
@@ -354,3 +403,118 @@ class TestPublish:
 
         assert response.status_code == 409
         assert response.json()["error"] == "CatalogNotDraft"
+
+
+@pytest.mark.anyio
+class TestListRemoved:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/v1/catalogs/removed", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+        AuthSubjectFixture(subject="agent"),
+    )
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        now = utc_now()
+        v1, v2, v3 = (
+            Catalog(
+                organization=organization,
+                name=f"v{n}",
+                version_hash=str(n) * 64,
+                status=CatalogStatus.live if n == 3 else CatalogStatus.archived,
+                published_at=now - timedelta(days=4 - n),
+            )
+            for n in (1, 2, 3)
+        )
+        for catalog in (v1, v2, v3):
+            await save_fixture(catalog)
+
+        products = {
+            external_id: await create_product(
+                save_fixture,
+                organization=organization,
+                name=external_id.title(),
+                external_id=external_id,
+                recurring_interval=SubscriptionRecurringInterval.month,
+            )
+            for external_id in ("free", "team", "lifetime", "pro")
+        }
+        for catalog, external_id in (
+            (v1, "free"),
+            (v3, "free"),
+            (v2, "team"),
+            (v1, "lifetime"),
+            (v1, "pro"),
+            (v3, "pro"),
+        ):
+            await save_fixture(
+                CatalogProduct(
+                    catalog=catalog,
+                    product=products[external_id],
+                    external_id=external_id,
+                )
+            )
+        await create_active_subscription(
+            save_fixture, product=products["team"], customer=customer
+        )
+
+        perk = await create_benefit(
+            save_fixture, organization=organization, external_id="perk"
+        )
+        await save_fixture(CatalogBenefit(catalog=v2, benefit=perk, external_id="perk"))
+        await create_benefit_grant(save_fixture, customer, perk, granted=True)
+
+        response = await client.get(
+            "/v1/catalogs/removed", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        assert [
+            (
+                item["resource"],
+                item["external_id"],
+                item["status"],
+                item["customers_count"],
+                item["first_catalog"]["id"],
+                item["last_catalog"]["id"],
+                item["last_item_id"],
+                item["removed_in_catalog"]["id"],
+            )
+            for item in response.json()
+        ] == [
+            (
+                "benefit",
+                "perk",
+                "deprecated",
+                1,
+                *map(str, (v2.id, v2.id, perk.id, v3.id)),
+            ),
+            (
+                "product",
+                "team",
+                "deprecated",
+                1,
+                *map(str, (v2.id, v2.id, products["team"].id, v3.id)),
+            ),
+            (
+                "product",
+                "lifetime",
+                "removed",
+                0,
+                *map(str, (v1.id, v1.id, products["lifetime"].id, v2.id)),
+            ),
+        ]

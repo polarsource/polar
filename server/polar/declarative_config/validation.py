@@ -22,7 +22,6 @@ from polar.kit.currency import PresentmentCurrency
 from polar.meter.filter import Filter, FilterOperator
 from polar.meter.repository import MeterRepository
 from polar.meter.schemas import MeterCreateBase
-from polar.meter.service import METER_LOCKED_FIELD_MESSAGE, METER_LOCKED_FIELDS
 from polar.models import (
     Benefit,
     Catalog,
@@ -506,23 +505,6 @@ def new_meter_cycles(
     return issues
 
 
-def locked_meter_fields(changes: list[MeterChange]) -> list[ConfigIssue]:
-    return [
-        ConfigIssue(
-            severity=ConfigIssueSeverity.error,
-            type=ConfigIssueType.meter_locked,
-            loc=_meter_loc(change.index, field),
-            msg=METER_LOCKED_FIELD_MESSAGE,
-            input=None,
-        )
-        for change in changes
-        if change.existing is not None
-        and change.existing.last_billed_event_id is not None
-        for field in METER_LOCKED_FIELDS
-        if field in change.update_dict
-    ]
-
-
 def _event_name_references(filter: Filter, loc: Loc) -> list[tuple[str, Loc]]:
     references: list[tuple[str, Loc]] = []
     for index, clause in enumerate(filter.clauses):
@@ -581,27 +563,53 @@ def _get_meter_update_dict(
     return update_dict
 
 
+def meter_update_dict(meter: Meter, meter_config: ConfigMeter) -> dict[str, Any]:
+    return _get_meter_update_dict(meter, meter_config)
+
+
 async def diff_meters(
     session: AsyncSession,
     organization: Organization,
     meter_configs: Sequence[ConfigMeter],
     *,
     for_update: bool,
+    catalog: Catalog | None = None,
 ) -> list[MeterChange]:
-    repository = MeterRepository.from_session(session)
-    existing_meters = {
-        meter.external_id: meter
-        for meter in await repository.get_all_by_external_ids(
-            organization.id,
-            [config.external_id for config in meter_configs],
-            for_update=for_update,
-        )
-    }
+    external_ids = {config.external_id for config in meter_configs}
+    existing_meters: dict[str | None, Meter]
+    if catalog is not None and await catalog_service.lists_meters(session, catalog):
+        existing_meters = {
+            external_id: meter
+            for external_id, meter in (
+                await catalog_service.get_catalog_meters(session, organization, catalog)
+            ).items()
+            if external_id in external_ids
+        }
+    else:
+        existing_meters = {
+            meter.external_id: meter
+            for meter in await MeterRepository.from_session(
+                session
+            ).get_all_by_external_ids(
+                organization.id, list(external_ids), for_update=for_update
+            )
+        }
     changes: list[MeterChange] = []
     for index, meter_config in enumerate(meter_configs):
         meter = existing_meters.get(meter_config.external_id)
-        update_dict = _get_meter_update_dict(meter, meter_config)
-        changes.append(MeterChange(index, meter_config, meter, update_dict))
+        if meter is None and meter_config.deprecated:
+            continue
+        changes.append(
+            MeterChange(
+                index,
+                meter_config,
+                meter,
+                # A deprecated meter leaves the catalog instead of getting a new row.
+                {}
+                if meter_config.deprecated
+                else _get_meter_update_dict(meter, meter_config),
+            )
+        )
     return changes
 
 
@@ -1099,7 +1107,7 @@ async def check(
         session, organization, config.webhooks, for_update=for_update
     )
     meters = await diff_meters(
-        session, organization, config.meters, for_update=for_update
+        session, organization, config.meters, for_update=for_update, catalog=catalog
     )
     benefits = await diff_benefits(
         session,
@@ -1132,7 +1140,6 @@ async def check(
             ConfigResource.product, [product.external_id for product in config.products]
         ),
         *invalid_references(config),
-        *locked_meter_fields(meters),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),

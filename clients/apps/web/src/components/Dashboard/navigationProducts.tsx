@@ -76,12 +76,18 @@ const catalogRoutesList = (org?: schemas['Organization']): Route[] => {
       'Checkout Links',
       <LinkOutlined fontSize="inherit" />,
     ),
-    productSectionRoute(
-      org,
-      'versions',
-      'Versions',
-      <HistoryRounded fontSize="inherit" />,
-    ),
+    {
+      ...productSectionRoute(
+        org,
+        'versions',
+        'Versions',
+        <HistoryRounded fontSize="inherit" />,
+      ),
+      subs: [
+        { title: 'All versions', link: `${products}/versions` },
+        { title: 'Removed keys', link: `${products}/versions/removed` },
+      ],
+    },
   ]
 }
 

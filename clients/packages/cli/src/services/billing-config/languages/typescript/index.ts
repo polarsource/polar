@@ -2,7 +2,7 @@ import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { generateConfig } from '@polar-sh/polar'
 import { Effect, type FileSystem } from 'effect'
-import { BillingConfigError } from '@/schemas/BillingConfig'
+import { BillingConfigError, CONFIG_FILES } from '@/schemas/BillingConfig'
 import {
   ancestors,
   dropOptionalNulls,
@@ -11,7 +11,9 @@ import {
   type Language,
   readSource,
   unwritable,
-} from '@/utils/billing-config/languages/language'
+} from '@/services/billing-config/languages/language'
+import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
+import { removeFromScript } from '@/services/billing-config/languages/typescript/remove'
 
 const PACKAGE = '@polar-sh/polar'
 const MANIFEST = 'package.json'
@@ -124,17 +126,11 @@ const installer: Installer = {
 }
 
 export const typescript: Language = {
+  title: 'TypeScript',
   format: 'ts',
   extension: '.ts',
   extensions: ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'],
-  defaultFiles: [
-    'polar.config.ts',
-    'polar.config.mts',
-    'polar.config.cts',
-    'polar.config.js',
-    'polar.config.mjs',
-    'polar.config.cjs',
-  ],
+  defaultFiles: CONFIG_FILES.ts,
   manifest: MANIFEST,
   installer,
   load: (fs, _run, file) =>
@@ -169,4 +165,7 @@ export const typescript: Language = {
     generateConfig(dropOptionalNulls(document)).pipe(
       Effect.mapError(unwritable('TypeScript')),
     ),
+  locate: ({ source, input }, path, got) =>
+    locateInScript(source, input, path, got),
+  remove: ({ source }, removals) => removeFromScript(source, removals),
 }

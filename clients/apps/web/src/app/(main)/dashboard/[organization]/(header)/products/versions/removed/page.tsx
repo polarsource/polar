@@ -1,20 +1,13 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import AIProductPage from './AIProductPage'
+import RemovedPage from './RemovedPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: 'Create Product with AI',
+    title: 'Removed keys', // " | Polar is added by the template"
   }
 }
-
-const isAssistantEnabled = Boolean(
-  process.env.MCP_OAUTH2_CLIENT_ID &&
-  process.env.MCP_OAUTH2_CLIENT_SECRET &&
-  process.env.GRAM_API_KEY &&
-  process.env.PYDANTIC_AI_GATEWAY_API_KEY,
-)
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
@@ -26,10 +19,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  if (!isAssistantEnabled) {
-    const { redirect } = await import('next/navigation')
-    redirect(`/dashboard/${params.organization}/products/new`)
-  }
-
-  return <AIProductPage organization={organization} />
+  return <RemovedPage organization={organization} />
 }

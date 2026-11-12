@@ -10,12 +10,18 @@ from polar.catalog.service import (
 )
 from polar.catalog.service import catalog as catalog_service
 from polar.kit.utils import utc_now
-from polar.models import Catalog, CatalogBenefit, CatalogProduct, Organization
+from polar.models import (
+    Catalog,
+    CatalogBenefit,
+    CatalogMeter,
+    CatalogProduct,
+    Organization,
+)
 from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit, create_product
+from tests.fixtures.random_objects import create_benefit, create_meter, create_product
 
 
 @pytest.fixture
@@ -135,6 +141,41 @@ class TestGetCatalogBenefits:
             await catalog_service.get_catalog_benefits(session, organization, catalog)
             for catalog in (archived, emptied)
         ] == [{"beta": current}, {}]
+
+
+@pytest.mark.anyio
+class TestGetCatalogMeters:
+    async def test_draft_saved_before_meters_were_versioned(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, live, legacy_draft, _ = catalogs
+        assert live.published_at is not None
+        legacy_draft.created_at = live.published_at - timedelta(minutes=1)
+        legacy_draft.modified_at = legacy_draft.created_at
+        await save_fixture(legacy_draft)
+        current = await create_meter(
+            save_fixture, organization=organization, external_id="tool-calls"
+        )
+        emptied = Catalog(
+            organization=organization,
+            status=CatalogStatus.archived,
+            published_at=live.published_at,
+        )
+        emptied_draft = Catalog(organization=organization, status=CatalogStatus.draft)
+        await save_fixture(emptied)
+        await save_fixture(emptied_draft)
+        await save_fixture(
+            CatalogMeter(catalog=live, meter=current, external_id="tool-calls")
+        )
+
+        assert [
+            await catalog_service.get_catalog_meters(session, organization, catalog)
+            for catalog in (legacy_draft, emptied, emptied_draft)
+        ] == [{"tool-calls": current}, {}, {}]
 
 
 @pytest.mark.anyio

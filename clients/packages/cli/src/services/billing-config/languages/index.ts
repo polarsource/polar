@@ -1,28 +1,25 @@
 import { extname, join } from 'node:path'
 import { Effect, type FileSystem } from 'effect'
-import { type Format, FORMATS } from '@/schemas/BillingConfig'
-import { json } from '@/utils/billing-config/languages/json'
+import type { Format } from '@/schemas/BillingConfig'
+import { json } from '@/services/billing-config/languages/json'
 import {
   exists,
   findUp,
   type Language,
-} from '@/utils/billing-config/languages/language'
-import { typescript } from '@/utils/billing-config/languages/typescript'
+} from '@/services/billing-config/languages/language'
+import { python } from '@/services/billing-config/languages/python'
+import { typescript } from '@/services/billing-config/languages/typescript'
 
-export type { Language } from '@/utils/billing-config/languages/language'
-export { exists } from '@/utils/billing-config/languages/language'
+export type { Language } from '@/services/billing-config/languages/language'
+export { exists } from '@/services/billing-config/languages/language'
 
-export const LANGUAGES: ReadonlyArray<Language> = [typescript, json]
+export const LANGUAGES: ReadonlyArray<Language> = [typescript, python, json]
 
 const byFormat = Object.fromEntries(
   LANGUAGES.map((language) => [language.format, language]),
 ) as Record<Format, Language>
 
 export const languageFor = (format: Format): Language => byFormat[format]
-
-export const DEFAULT_CONFIG_FILES: ReadonlyArray<string> = LANGUAGES.flatMap(
-  (language) => language.defaultFiles,
-)
 
 export const languageOf = (file: string): Language | undefined =>
   extname(file) === ''
@@ -35,22 +32,23 @@ export const writableLanguageOf = (file: string): Language | undefined =>
   LANGUAGES.find((language) => file.endsWith(language.extension))
 
 export const supportedFiles = () =>
-  `Use a ${FORMATS.map((format) => `.${format}`).join(', ')} or .js file.`
+  `Use a ${LANGUAGES.map(({ extension }) => extension).join(', ')} or .js file.`
 
-export const languageAt = (fs: FileSystem.FileSystem, directory: string) =>
+export const languagesAt = (fs: FileSystem.FileSystem, directory: string) =>
   Effect.gen(function* () {
+    const found: Array<Language> = []
     for (const language of LANGUAGES) {
       if (
         language.manifest !== undefined &&
         (yield* exists(fs, join(directory, language.manifest)))
       ) {
-        return language
+        found.push(language)
       }
     }
-    return undefined
+    return found
   })
 
-const MANIFESTS = LANGUAGES.flatMap((language) =>
+export const MANIFESTS = LANGUAGES.flatMap((language) =>
   language.manifest === undefined ? [] : [language.manifest],
 )
 

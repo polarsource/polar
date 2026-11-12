@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
 
@@ -9,6 +10,7 @@ from sqlalchemy import select
 
 from polar.customer_portal.endpoints.oauth_accounts import OAUTH_CLIENTS
 from polar.kit import jwt
+from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     CustomerSession,
@@ -400,3 +402,30 @@ class TestCallback:
             .all()
         )
         assert existing == []
+
+    async def test_expired_state_is_rejected(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="expired-state@example.com"
+        )
+        expired_state = await jwt.encode(
+            data={
+                "platform": CustomerOAuthPlatform.discord.value,
+                "return_to": "/",
+                "customer_id": str(customer.id),
+            },
+            type="customer_oauth",
+            expires_at=utc_now() - timedelta(minutes=1),
+        )
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": expired_state, "code": "some-code"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 403

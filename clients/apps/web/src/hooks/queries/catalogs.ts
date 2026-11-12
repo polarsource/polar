@@ -76,6 +76,19 @@ export const useInfiniteCatalogs = (organizationId: string) =>
       lastPageParam >= lastPage.pagination.max_page ? null : lastPageParam + 1,
   })
 
+export const useRemovedCatalogItems = (organizationId: string) =>
+  useQuery({
+    queryKey: ['catalogs', 'removed', { organizationId }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/catalogs/removed', {
+          params: { query: { organization_id: organizationId } },
+        }),
+      ),
+    retry: defaultRetry,
+    staleTime: 0,
+  })
+
 export const useCatalog = (id: string | null | undefined) =>
   useQuery({
     queryKey: ['catalogs', { id }],

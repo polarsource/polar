@@ -6,6 +6,7 @@ import {
   BillingConfigError,
   type ConfigDocument,
   ConfigExport,
+  DEFAULT_CONFIG_FILES,
   type ExternalIdAssignment,
   type Format,
   ValidationErrors,
@@ -19,15 +20,14 @@ import {
 } from '@/services/billing-config/api'
 import { type Unkeyed, unkeyed } from '@/utils/billing-config/keys'
 import {
-  DEFAULT_CONFIG_FILES,
   exists,
   type Language,
-  languageAt,
   languageFor,
   LANGUAGES,
+  languagesAt,
   projectRootFor,
   writableLanguageOf,
-} from '@/utils/billing-config/languages'
+} from '@/services/billing-config/languages'
 
 export interface InitTarget {
   readonly directory: string
@@ -212,7 +212,7 @@ const resolveTarget = (
     const language =
       target.format !== undefined
         ? languageFor(target.format)
-        : ((yield* languageAt(fs, target.directory)) ?? languageFor('json'))
+        : ((yield* languagesAt(fs, target.directory))[0] ?? languageFor('json'))
     return {
       path: join(target.directory, language.defaultFiles[0]!),
       language,

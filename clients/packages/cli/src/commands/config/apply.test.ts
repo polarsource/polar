@@ -156,6 +156,7 @@ const run = async (
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
           disable: () => Effect.die('unused'),
+          deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),

@@ -88,6 +88,26 @@ class TestBuildPostgresDsn:
         assert connect_args["port"] == [6432, 6432]
 
 
+class TestGetPostgresMigrationDsn:
+    def test_defaults_to_app_role(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "POSTGRES_MIGRATION_USER", None)
+
+        assert settings.get_postgres_migration_dsn(
+            "asyncpg"
+        ) == settings.get_postgres_dsn("asyncpg")
+
+    def test_migration_role(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "POSTGRES_MIGRATION_USER", "migrator")
+        monkeypatch.setattr(settings, "POSTGRES_MIGRATION_PWD", "m1grat0r")
+
+        url = make_url(settings.get_postgres_migration_dsn("asyncpg"))
+
+        assert url.username == "migrator"
+        assert url.password == "m1grat0r"
+        assert url.host == settings.POSTGRES_HOST
+        assert url.database == settings.POSTGRES_DATABASE
+
+
 class TestGetCustomerPortalUrlOverride:
     def test_no_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setattr(settings, "CUSTOMER_PORTAL_URL_OVERRIDES", {})

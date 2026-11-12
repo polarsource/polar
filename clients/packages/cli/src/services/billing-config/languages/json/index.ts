@@ -1,16 +1,19 @@
 import { Effect } from 'effect'
-import { BillingConfigError } from '@/schemas/BillingConfig'
+import { BillingConfigError, CONFIG_FILES } from '@/schemas/BillingConfig'
 import {
   dropOptionalNulls,
   type Language,
   readSource,
-} from '@/utils/billing-config/languages/language'
+} from '@/services/billing-config/languages/language'
+import { locateInJson } from '@/services/billing-config/languages/json/locate'
+import { removeFromJson } from '@/services/billing-config/languages/json/remove'
 
 export const json: Language = {
+  title: 'JSON',
   format: 'json',
   extension: '.json',
   extensions: ['.json'],
-  defaultFiles: ['polar.config.json', 'polar.json'],
+  defaultFiles: CONFIG_FILES.json,
   manifest: undefined,
   installer: undefined,
   load: (fs, _run, file) =>
@@ -28,4 +31,8 @@ export const json: Language = {
     }),
   render: (document) =>
     Effect.succeed(`${JSON.stringify(dropOptionalNulls(document), null, 2)}\n`),
+  locate: ({ source }, path, _got, target) =>
+    locateInJson(source, path, target),
+  remove: ({ source, input }, removals) =>
+    removeFromJson(source, input, removals),
 }

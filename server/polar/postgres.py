@@ -33,7 +33,6 @@ def create_async_engine(
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         pool_pre_ping=pool_pre_ping,
-        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         statement_cache_size=settings.DATABASE_STATEMENT_CACHE_SIZE,
         prepared_statement_cache_size=settings.DATABASE_PREPARED_STATEMENT_CACHE_SIZE,
@@ -52,7 +51,6 @@ def create_async_read_engine(
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         pool_pre_ping=pool_pre_ping,
-        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         statement_cache_size=settings.DATABASE_STATEMENT_CACHE_SIZE,
         prepared_statement_cache_size=settings.DATABASE_PREPARED_STATEMENT_CACHE_SIZE,
@@ -68,7 +66,6 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
         debug=settings.SQLALCHEMY_DEBUG,
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
-        command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
         connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
         sslmode="require" if settings.POSTGRES_SSL else None,
     )

@@ -19,6 +19,7 @@ from polar.benefit.strategies.base.schemas import (
 )
 from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.external_id import ExternalID
 from polar.kit.metadata import MetadataInputMixin, MetadataOutputType
 from polar.kit.schemas import IDSchema, Int32, Schema, SetSchemaReference
 from polar.kit.trial import TrialConfigurationInputMixin, TrialInterval
@@ -73,9 +74,8 @@ class ConfigDeprecationMixin(BaseModel):
 class ConfigMeter(ConfigDeprecationMixin, MeterCreateBase):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description=(
             "Your identifier for the meter. "
             "Used to match the config entry with an existing meter."
@@ -111,9 +111,8 @@ BenefitReference = Annotated[
 class ConfigBenefitBase(ConfigDeprecationMixin, MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the benefit, used to match it.",
     )
     description: str = Field(
@@ -249,9 +248,8 @@ class ConfigProduct(
 ):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the product, used to match it.",
     )
     name: ProductName
@@ -356,9 +354,8 @@ class ConfigProduct(
 class ConfigWebhookEndpoint(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    external_id: str = Field(
+    external_id: ExternalID = Field(
         ...,
-        min_length=1,
         description="Your identifier for the webhook endpoint, used to match it.",
     )
     url: EndpointURL
@@ -869,8 +866,8 @@ class ConfigExternalIDAssignment(Schema):
         ConfigResource.meter, ConfigResource.benefit, ConfigResource.product
     ] = Field(description="The type of resource.")
     id: UUID4 = Field(description="The ID of a resource without an `external_id`.")
-    external_id: str = Field(
-        min_length=1, description="The `external_id` to give the resource."
+    external_id: ExternalID = Field(
+        description="The `external_id` to give the resource."
     )
 
 

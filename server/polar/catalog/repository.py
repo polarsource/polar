@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from datetime import datetime
+from typing import NamedTuple
 from uuid import UUID
 
 from sqlalchemy import Select, delete, func, select, update
@@ -13,8 +14,23 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Benefit, Catalog, CatalogBenefit, CatalogProduct, Product
+from polar.models import (
+    Benefit,
+    Catalog,
+    CatalogBenefit,
+    CatalogMeter,
+    CatalogProduct,
+    Meter,
+    Product,
+)
 from polar.models.catalog import CatalogStatus
+
+
+class CatalogMembership(NamedTuple):
+    external_id: str
+    catalog_id: UUID
+    item_id: UUID
+    name: str
 
 
 class CatalogRepository(
@@ -48,7 +64,7 @@ class CatalogRepository(
     async def delete(self, catalog: Catalog) -> None:
         """Delete the catalog and its memberships. The rows created in it stay,
         no longer tied to a catalog."""
-        for model in (Product, Benefit):
+        for model in (Product, Benefit, Meter):
             await self.session.execute(
                 update(model)
                 .where(model.catalog_id == catalog.id)
@@ -65,6 +81,18 @@ class CatalogRepository(
                 Catalog.status != CatalogStatus.draft,
             )
         )
+
+    async def get_published(self, organization_id: UUID) -> Sequence[Catalog]:
+        """The organization's published catalogs, oldest first."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Catalog.organization_id == organization_id,
+                Catalog.status != CatalogStatus.draft,
+            )
+            .order_by(Catalog.published_at, Catalog.created_at, Catalog.id)
+        )
+        return await self.get_all(statement)
 
     async def get_by_organization_and_id(
         self, organization_id: UUID, id: UUID
@@ -145,6 +173,25 @@ class CatalogProductRepository(
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
+    async def get_memberships(
+        self, catalog_ids: Sequence[UUID]
+    ) -> Sequence[CatalogMembership]:
+        statement = (
+            select(
+                CatalogProduct.external_id,
+                CatalogProduct.catalog_id,
+                Product.id,
+                Product.name,
+            )
+            .join(Product, Product.id == CatalogProduct.product_id)
+            .where(
+                CatalogProduct.catalog_id.in_(catalog_ids),
+                CatalogProduct.deleted_at.is_(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [CatalogMembership(*row) for row in result.tuples()]
+
     async def delete_by_catalog(self, catalog_id: UUID) -> None:
         """Delete a draft's memberships. They aren't history, and the next
         apply lists the same `external_id`s again."""
@@ -208,6 +255,25 @@ class CatalogBenefitRepository(
         result = await self.session.execute(statement)
         return result.scalars().unique().all()
 
+    async def get_memberships(
+        self, catalog_ids: Sequence[UUID]
+    ) -> Sequence[CatalogMembership]:
+        statement = (
+            select(
+                CatalogBenefit.external_id,
+                CatalogBenefit.catalog_id,
+                Benefit.id,
+                Benefit.description,
+            )
+            .join(Benefit, Benefit.id == CatalogBenefit.benefit_id)
+            .where(
+                CatalogBenefit.catalog_id.in_(catalog_ids),
+                CatalogBenefit.deleted_at.is_(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [CatalogMembership(*row) for row in result.tuples()]
+
     async def delete_by_catalog(self, catalog_id: UUID) -> None:
         """Delete a draft's memberships. They aren't history, and the next
         apply lists the same `external_id`s again."""
@@ -220,5 +286,62 @@ class CatalogBenefitRepository(
             self.get_base_statement()
             .where(CatalogBenefit.catalog_id == catalog_id)
             .options(joinedload(CatalogBenefit.benefit))
+        )
+        return await self.get_all(statement)
+
+
+class CatalogMeterRepository(
+    RepositorySoftDeletionIDMixin[CatalogMeter, UUID],
+    RepositorySoftDeletionMixin[CatalogMeter],
+    RepositoryBase[CatalogMeter],
+):
+    model = CatalogMeter
+
+    async def get_first_published_at(self, organization_id: UUID) -> datetime | None:
+        """When the organization's first catalog listing meters was published.
+
+        Soft-deleted rows count too, so the boundary never moves.
+        """
+        statement = (
+            select(func.min(Catalog.published_at))
+            .join(CatalogMeter, CatalogMeter.catalog_id == Catalog.id)
+            .where(Catalog.organization_id == organization_id)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def has_members(self, catalog_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(CatalogMeter.catalog_id == catalog_id)
+            .exists()
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    def get_meters_statement(self, catalog_id: UUID) -> Select[Meter]:
+        return (
+            select(Meter)
+            .join(CatalogMeter, CatalogMeter.meter_id == Meter.id)
+            .where(
+                CatalogMeter.catalog_id == catalog_id,
+                CatalogMeter.deleted_at.is_(None),
+                Meter.deleted_at.is_(None),
+            )
+            .order_by(Meter.created_at, Meter.id)
+        )
+
+    async def delete_by_catalog(self, catalog_id: UUID) -> None:
+        """Delete a draft's memberships. They aren't history, and the next
+        apply lists the same `external_id`s again."""
+        await self.session.execute(
+            delete(CatalogMeter).where(CatalogMeter.catalog_id == catalog_id)
+        )
+
+    async def get_all_by_catalog(self, catalog_id: UUID) -> Sequence[CatalogMeter]:
+        statement = (
+            self.get_base_statement()
+            .where(CatalogMeter.catalog_id == catalog_id)
+            .options(joinedload(CatalogMeter.meter))
         )
         return await self.get_all(statement)

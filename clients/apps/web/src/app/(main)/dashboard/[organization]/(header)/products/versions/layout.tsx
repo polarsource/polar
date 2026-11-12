@@ -1,9 +1,9 @@
-import { MasterDetailLayout } from '@/components/Layout/MasterDetailLayout'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { notFound } from 'next/navigation'
 import { PropsWithChildren } from 'react'
 import { VersionListSidebar } from './VersionList'
+import { VersionsLayout } from './VersionsLayout'
 
 export default async function Layout(
   props: PropsWithChildren<{
@@ -21,10 +21,10 @@ export default async function Layout(
   }
 
   return (
-    <MasterDetailLayout
+    <VersionsLayout
       listView={<VersionListSidebar organization={organization} />}
     >
       {props.children}
-    </MasterDetailLayout>
+    </VersionsLayout>
   )
 }

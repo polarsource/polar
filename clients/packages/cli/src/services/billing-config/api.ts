@@ -176,6 +176,45 @@ const organizationCurrency = (
     return body.default_presentment_currency
   }).pipe(Effect.orElseSucceed(() => undefined))
 
+const EventNames = Schema.Struct({
+  items: Schema.Array(Schema.Struct({ name: Schema.String })),
+  pagination: Schema.Struct({ max_page: Schema.Finite }),
+})
+
+const MAXIMUM_EVENT_NAME_PAGES = 10
+
+const eventNamesPage = (
+  clients: Clients,
+  organization: ActiveOrganization,
+  page: number,
+) =>
+  Effect.gen(function* () {
+    const response = yield* clients[organization.environment].get(
+      yield* apiUrl(
+        organization.environment,
+        `/events/names?organization_id=${organization.id}&source=user&limit=100&page=${page}`,
+      ),
+    )
+    return yield* HttpClientResponse.schemaBodyJson(EventNames)(response)
+  })
+
+export const eventNames = (
+  clients: Clients,
+  organization: ActiveOrganization,
+) =>
+  Effect.gen(function* () {
+    const first = yield* eventNamesPage(clients, organization, 1)
+    const pages = Math.min(first.pagination.max_page, MAXIMUM_EVENT_NAME_PAGES)
+    const rest = yield* Effect.forEach(
+      Array.from({ length: Math.max(pages - 1, 0) }, (_, index) => index + 2),
+      (page) => eventNamesPage(clients, organization, page),
+      { concurrency: 4 },
+    )
+    return [first, ...rest].flatMap(({ items }) =>
+      items.map(({ name }) => name),
+    )
+  }).pipe(Effect.orElseSucceed((): ReadonlyArray<string> => []))
+
 // A planned price without a currency is shown in the organization's default one
 export const withDefaultCurrency = (
   clients: Clients,

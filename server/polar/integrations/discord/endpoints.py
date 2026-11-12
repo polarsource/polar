@@ -39,7 +39,7 @@ router = APIRouter(
 async def get_decoded_token_state(state: str) -> dict[str, Any]:
     try:
         state_data = await jwt.decode(token=state, type="discord_oauth")
-    except jwt.DecodeError as e:
+    except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
         raise Unauthorized("Invalid state") from e
 
     return state_data

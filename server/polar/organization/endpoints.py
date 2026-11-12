@@ -916,26 +916,6 @@ async def request_human_review(
     )
 
 
-@router.post(
-    "/{id}/ai-onboarding-complete",
-    response_model=OrganizationSchema,
-    summary="Mark AI Onboarding Complete",
-    responses={
-        200: {"description": "AI onboarding marked as complete."},
-        404: OrganizationNotFound,
-    },
-    tags=[APITag.private],
-)
-async def mark_ai_onboarding_complete(
-    authz: AuthorizeOrgManage,
-    session: AsyncSession = Depends(get_db_session),
-) -> Organization:
-    """Mark the AI onboarding as completed for this organization."""
-    return await organization_service.mark_ai_onboarding_complete(
-        session, authz.organization
-    )
-
-
 @router.get(
     "/{id}/review-status",
     response_model=OrganizationReviewStatus,

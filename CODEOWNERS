@@ -5,7 +5,6 @@ server/polar/organization_review/** @psincraian
 server/tests/organization_review/** @psincraian
 server/polar/customer_seat/** @psincraian
 server/tests/customer_seat/** @psincraian
-server/tests/e2e/** @psincraian
 
 # Billing
 server/polar/billing_entry/** @frankie567

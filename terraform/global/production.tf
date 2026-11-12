@@ -996,6 +996,14 @@ resource "tfe_variable" "planetscale_app_password_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "planetscale_migrator_password_production" {
+  key             = "planetscale_migrator_password"
+  category        = "terraform"
+  description     = "PlanetScale migrator role password for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "backoffice_google_client_id_production" {
   key             = "backoffice_google_client_id"
   category        = "terraform"

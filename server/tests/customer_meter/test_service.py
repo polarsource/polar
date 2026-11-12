@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from redis import RedisError
 
 from polar.config import settings
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
@@ -1707,3 +1708,49 @@ class TestUpdateCustomerMeterFromReducer:
         assert updated is True
         assert customer_meter is not None
         assert customer_meter.consumed_units == Decimal(4)
+
+
+@pytest.mark.anyio
+class TestUpdateCustomerOnReducerBilling:
+    async def test_reads_usage_from_the_reducer_without_comparing(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        compare = mocker.patch.object(reducer_service, "log_customer_meter_comparison")
+
+        await customer_meter_service.update_customer(session, redis, customer)
+
+        customer_meter = await CustomerMeterRepository.from_session(
+            session
+        ).get_by_customer_and_meter(customer.id, meter.id)
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(3)
+        compare.assert_not_called()
+
+    async def test_direct_meter_update_reads_usage_from_the_reducer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(3)

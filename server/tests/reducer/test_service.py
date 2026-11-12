@@ -13,6 +13,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 
 from polar.event.system import SystemEvent
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import (
     Aggregation,
     AggregationFunction,
@@ -1741,6 +1742,55 @@ class TestBill:
         )
 
         assert billed == len(bucket_ids)
+        assert [
+            (bucket.generation, bucket.count, bucket.order_id)
+            for bucket in await get_buckets(session)
+            if bucket.bucket_start == CUTOFF
+            and (bucket.customer_id, bucket.external_customer_id) == (None, "external")
+        ] == [(1, 1, order.id), (2, 1, None)]
+
+    async def test_usage_synced_after_seal_usage_is_left_to_the_next_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        external_customer: Customer,
+        organization: Organization,
+        order: Order,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        await create_tokens_event(
+            save_fixture, organization, 3, timestamp=CUTOFF, ingested_at=INGESTED_AT
+        )
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+        windows = [usage_window(meter, CUTOFF, NEXT_BUCKET_START)]
+        _, bucket_ids = await reducer_service.seal_usage(
+            session,
+            external_customer,
+            [meter.id],
+            windows=windows,
+            cutoff=NEXT_BUCKET_START,
+        )
+
+        await create_tokens_event(
+            save_fixture, organization, 4, timestamp=CUTOFF, ingested_at=utc_now()
+        )
+        await reducer_service.sync_bucket(
+            session, reducer.id, BUCKET_START, None, "external"
+        )
+        await reducer_service.seal_usage(
+            session,
+            external_customer,
+            [meter.id],
+            windows=windows,
+            cutoff=NEXT_BUCKET_START,
+        )
+        await reducer_service.mark_as_billed(session, bucket_ids, order_id=order.id)
+
         assert [
             (bucket.generation, bucket.count, bucket.order_id)
             for bucket in await get_buckets(session)

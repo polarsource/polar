@@ -42,10 +42,7 @@ class Catalog(IDSchema, TimestampedSchema):
         description="When the catalog was published. Null for drafts."
     )
     changes: CatalogChanges | None = Field(
-        description=(
-            "What changed since the parent catalog. Null for the first one. "
-            "Benefits count from the first catalog that versions them."
-        )
+        description="What changed since the parent catalog. Null for the first one."
     )
 
 
@@ -68,10 +65,7 @@ class CatalogVersion(Catalog):
     )
     benefits: list[CatalogBenefit] = Field(
         validation_alias="benefit_members",
-        description=(
-            "The benefits in this version, ordered by key. Empty for versions "
-            "published before benefits were versioned."
-        ),
+        description="The benefits in this version, ordered by key.",
     )
 
 

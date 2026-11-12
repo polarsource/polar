@@ -203,7 +203,6 @@ CatalogKeys = Mapping[tuple[RemovedCatalogItemResource, str], uuid.UUID]
 def _catalog_changes(
     catalog: Catalog,
     members: Mapping[uuid.UUID, CatalogKeys],
-    benefits_versioned_at: datetime | None,
 ) -> CatalogChanges | None:
     """Compare a catalog's keys with its parent's: a key listing another item
     is a new version of it."""
@@ -211,16 +210,6 @@ def _catalog_changes(
         return None
     before = members.get(catalog.parent_id, {})
     after = members.get(catalog.id, {})
-    # Its parent was published before benefits were versioned, so it lists none
-    if benefits_versioned_at is None or catalog.published_at == benefits_versioned_at:
-        before, after = (
-            {
-                key: item_id
-                for key, item_id in keys.items()
-                if key[0] == RemovedCatalogItemResource.product
-            }
-            for keys in (before, after)
-        )
     return CatalogChanges(
         added_count=len(after.keys() - before.keys()),
         changed_count=sum(
@@ -316,20 +305,7 @@ class CatalogService:
                 members[membership.catalog_id][(resource, membership.external_id)] = (
                     membership.item_id
                 )
-
-        benefit_repository = CatalogBenefitRepository.from_session(session)
-        benefits_versioned_at = {
-            organization_id: await benefit_repository.get_first_published_at(
-                organization_id
-            )
-            for organization_id in {catalog.organization_id for catalog in catalogs}
-        }
-        return {
-            catalog.id: _catalog_changes(
-                catalog, members, benefits_versioned_at[catalog.organization_id]
-            )
-            for catalog in catalogs
-        }
+        return {catalog.id: _catalog_changes(catalog, members) for catalog in catalogs}
 
     async def list_removed(
         self,

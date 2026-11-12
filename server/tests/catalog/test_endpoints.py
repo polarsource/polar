@@ -201,8 +201,7 @@ class TestList:
         assert response.status_code == 200
         assert [item["changes"] for item in response.json()["items"]] == [
             {"added_count": 1, "changed_count": 1, "removed_count": 0},
-            # archived predates benefit versioning, so live's benefits aren't new
-            {"added_count": 1, "changed_count": 1, "removed_count": 1},
+            {"added_count": 2, "changed_count": 1, "removed_count": 1},
             None,
         ]
 

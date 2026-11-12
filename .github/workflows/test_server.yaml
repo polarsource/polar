@@ -382,13 +382,13 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
-    name: "Server: Tests 🐍 (${{ matrix.shard }}/2)"
+    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/2', matrix.shard) }})"
     needs: changes
     if: needs.changes.outputs.server == 'true'
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: ["1", "2", "tinybird"]
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
@@ -423,7 +423,7 @@ jobs:
           - 6379:6379
 
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local:latest' || '' }}
         ports:
           - 7181:7181
           - 7182:7182
@@ -492,9 +492,11 @@ jobs:
           uv sync --dev --frozen
 
       - name: 🐦 Install Tinybird CLI
+        if: matrix.shard == 'tinybird'
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: 🐦 Prepare Tinybird workspace
+        if: matrix.shard == 'tinybird'
         working-directory: ./server
         run: |
           token=$(uv run python -m scripts.tinybird_test_workspace)
@@ -506,11 +508,12 @@ jobs:
         run: uv run task db_migrate
 
       - name: ⚗️ alembic check
-        if: matrix.shard == 1
+        if: matrix.shard == '1'
         working-directory: ./server
         run: uv run alembic check
 
       - name: 📊 Restore test durations
+        if: matrix.shard != 'tinybird'
         uses: actions/cache/restore@v6.1.0
         with:
           path: server/.test_durations
@@ -518,11 +521,17 @@ jobs:
           restore-keys: test-durations-
 
       - name: 🐍 Run tests (pytest)
+        if: matrix.shard != 'tinybird'
         working-directory: ./server
-        run: uv run pytest --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: uv run pytest -m "not tinybird and not benchmark" --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+
+      - name: 🐦 Run Tinybird tests (pytest)
+        if: matrix.shard == 'tinybird'
+        working-directory: ./server
+        run: uv run pytest -m "tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0
 
       - name: 💾 Save test durations
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.shard != 'tinybird'
         uses: actions/cache/save@v6.1.0
         with:
           path: server/.test_durations

@@ -4,22 +4,18 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { History } from './history'
-import { counts, kinds } from './VersionsTab'
+import { kinds } from './VersionsTab'
 
 export const Overview = ({
   organization,
-  history,
+  catalogs,
 }: {
   organization: schemas['Organization']
-  history: History
+  catalogs: schemas['Catalog'][]
 }) => {
   const router = useRouter()
-  const draftIndex = history.versions.findIndex(
-    ({ catalog }) => catalog.status === 'draft',
-  )
-  if (draftIndex === -1) return null
-  const count = counts(history, draftIndex)
+  const draft = catalogs.find(({ status }) => status === 'draft')
+  if (!draft) return null
 
   return (
     <Box
@@ -39,13 +35,13 @@ export const Overview = ({
         <span className="text-base">Unpublished changes</span>
         <Box columnGap="m">
           {kinds
-            .filter(({ change }) => count[change])
+            .filter(({ change }) => draft.changes?.[`${change}_count`])
             .map(({ change, glyph, color }) => (
               <Box key={change} as="span" color={color}>
                 <Text as="span" color="inherit" tabularNums>
                   <span className="font-mono">
                     {glyph}
-                    {count[change]}
+                    {draft.changes?.[`${change}_count`]}
                   </span>{' '}
                   {change}
                 </Text>
@@ -57,7 +53,7 @@ export const Overview = ({
         variant="secondary"
         onClick={() =>
           router.push(
-            `/dashboard/${organization.slug}/products/versions/${history.versions[draftIndex].catalog.id}`,
+            `/dashboard/${organization.slug}/products/versions/${draft.id}`,
           )
         }
       >

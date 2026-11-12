@@ -1,5 +1,6 @@
 'use client'
 
+import { useCatalogs } from '@/hooks/queries/catalogs'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
@@ -9,12 +10,12 @@ import { Box } from '@polar-sh/orbit/Box'
 import { HistoryRounded } from '@polar-sh/orbit/icons'
 import { useSearchParams } from 'next/navigation'
 import { parseAsInteger, parseAsStringLiteral, useQueryState } from 'nuqs'
-import { PAGE_SIZE, useVersionHistory } from './history'
 import { RemovedTab } from './RemovedTab'
 import { Overview } from './Overview'
 import { VersionsTab } from './VersionsTab'
 
 const tabs = ['versions', 'removed'] as const
+const PAGE_SIZE = 20
 
 const HistoryTab = ({
   organization,
@@ -23,9 +24,9 @@ const HistoryTab = ({
 }) => {
   const searchParams = useSearchParams()
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const { history, isError } = useVersionHistory(organization, page)
+  const { data, isError } = useCatalogs(organization.id, page, PAGE_SIZE)
 
-  if (!history) {
+  if (!data) {
     return (
       <Text color="muted">
         {isError ? 'Couldn’t load versions.' : 'Loading versions…'}
@@ -33,7 +34,7 @@ const HistoryTab = ({
     )
   }
 
-  if (!history.totalCount) {
+  if (!data.pagination.total_count) {
     return (
       <EmptyState
         icon={<HistoryRounded />}
@@ -45,15 +46,15 @@ const HistoryTab = ({
 
   return (
     <Box flexDirection="column" rowGap="2xl">
-      <Overview organization={organization} history={history} />
+      <Overview organization={organization} catalogs={data.items} />
       <Pagination
         currentPage={page}
         pageSize={PAGE_SIZE}
-        totalCount={history.totalCount}
+        totalCount={data.pagination.total_count}
         onPageChange={setPage}
         currentURL={searchParams}
       >
-        <VersionsTab organization={organization} history={history} />
+        <VersionsTab organization={organization} catalogs={data.items} />
       </Pagination>
     </Box>
   )

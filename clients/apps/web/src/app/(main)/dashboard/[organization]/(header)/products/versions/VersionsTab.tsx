@@ -6,7 +6,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { PublishedAt } from './PublishedAt'
-import { History } from './history'
 
 const columns = 'minmax(0, 1fr) 128px repeat(3, 32px) 16px'
 
@@ -16,56 +15,41 @@ export const kinds = [
   { change: 'removed', glyph: '-', color: 'text-danger' },
 ] as const
 
-export const counts = (history: History, index: number) => {
-  const count = { added: 0, changed: 0, removed: 0 }
-  for (const { steps } of history.entities) {
-    const step = steps[index]
-    if (step === 'added') count.added++
-    if (step === 'changed') count.changed++
-    if (index && steps[index - 1] && !step) count.removed++
-  }
-  return count
-}
-
-const Counts = ({ history, index }: { history: History; index: number }) => {
-  const count = counts(history, index)
-  return kinds.map(({ change, glyph, color }) => (
-    <Box
-      key={change}
-      as="span"
-      color={color}
-      justifyContent="end"
-      title={index && count[change] ? `${count[change]} ${change}` : undefined}
-    >
-      <Text as="span" color="inherit" tabularNums>
-        {index && count[change] ? (
-          <span className="font-mono">
-            {glyph}
-            {count[change]}
-          </span>
-        ) : null}
-      </Text>
-    </Box>
-  ))
-}
+const Counts = ({ catalog }: { catalog: schemas['Catalog'] }) =>
+  kinds.map(({ change, glyph, color }) => {
+    const count = catalog.changes?.[`${change}_count`]
+    return (
+      <Box
+        key={change}
+        as="span"
+        color={color}
+        justifyContent="end"
+        title={count ? `${count} ${change}` : undefined}
+      >
+        <Text as="span" color="inherit" tabularNums>
+          {count ? (
+            <span className="font-mono">
+              {glyph}
+              {count}
+            </span>
+          ) : null}
+        </Text>
+      </Box>
+    )
+  })
 
 export const VersionsTab = ({
   organization,
-  history,
+  catalogs,
 }: {
   organization: schemas['Organization']
-  history: History
+  catalogs: schemas['Catalog'][]
 }) => (
   <List size="small">
-    {history.versions
-      .map(({ catalog }, index) => ({ catalog, index }))
+    {catalogs
       // The draft is shown above the list
-      .filter(
-        ({ catalog, index }) =>
-          catalog.status !== 'draft' && (index || !history.hasBase),
-      )
-      .reverse()
-      .map(({ catalog, index }) => (
+      .filter(({ status }) => status !== 'draft')
+      .map((catalog) => (
         <Link
           key={catalog.id}
           href={`/dashboard/${organization.slug}/products/versions/${catalog.id}`}
@@ -89,7 +73,7 @@ export const VersionsTab = ({
               <Text color="muted" tabularNums>
                 <PublishedAt catalog={catalog} />
               </Text>
-              <Counts history={history} index={index} />
+              <Counts catalog={catalog} />
               <Text color="muted">
                 <ChevronRight size={16} aria-hidden="true" />
               </Text>

@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
@@ -71,7 +71,6 @@ export const useCatalogs = (
   organizationId: string,
   page: number,
   limit: number,
-  enabled = true,
 ) =>
   useQuery({
     queryKey: ['catalogs', 'list', { organizationId, page, limit }],
@@ -91,7 +90,6 @@ export const useCatalogs = (
     retry: defaultRetry,
     // Catalogs are published from the CLI, so refetch on every refocus
     staleTime: 0,
-    enabled,
   })
 
 const catalogConfigQuery = (
@@ -117,18 +115,6 @@ export const useCatalogConfig = (
   useQuery({
     ...catalogConfigQuery(organizationId, catalogId),
     enabled: !!catalogId,
-  })
-
-export const useCatalogConfigs = (
-  organizationId: string,
-  catalogIds: string[],
-) =>
-  useQueries({
-    queries: catalogIds.map((id) => catalogConfigQuery(organizationId, id)),
-    combine: (results) => ({
-      configs: results.map(({ data }) => data?.config),
-      isError: results.some(({ isError }) => isError),
-    }),
   })
 
 export const useRemovedCatalogItems = (organizationId: string) =>

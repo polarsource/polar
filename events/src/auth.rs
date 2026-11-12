@@ -14,7 +14,11 @@ use ring::hmac;
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::{app::AppState, jobs, jobs::Job};
+use crate::{
+    app::{AppState, error_response},
+    jobs,
+    jobs::Job,
+};
 
 const TOKEN_PREFIX: &str = "polar_oat_";
 const REQUIRED_SCOPE: &str = "events:write";
@@ -179,12 +183,12 @@ impl AuthError {
                 INSUFFICIENT_SCOPE_DESCRIPTION,
                 format!(r#"realm="{REALM}", scope="{REQUIRED_SCOPE}""#),
             ),
-            Self::InvalidRequestedOrganization => polar_error(
+            Self::InvalidRequestedOrganization => error_response(
                 StatusCode::BAD_REQUEST,
                 "InvalidRequestedOrganization",
                 "The Polar-Organization header must be an organization ID.",
             ),
-            Self::RequestedOrganizationNotAccessible => polar_error(
+            Self::RequestedOrganizationNotAccessible => error_response(
                 StatusCode::FORBIDDEN,
                 "RequestedOrganizationNotAccessible",
                 "The organization in the Polar-Organization header \
@@ -224,10 +228,6 @@ fn oauth2_error(
         Json(json!({ "error": error, "error_description": description })),
     )
         .into_response()
-}
-
-fn polar_error(status: StatusCode, error: &'static str, detail: &'static str) -> Response {
-    (status, Json(json!({ "error": error, "detail": detail }))).into_response()
 }
 
 #[cfg(test)]

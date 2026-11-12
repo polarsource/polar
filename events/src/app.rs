@@ -2,21 +2,30 @@ use std::{sync::Arc, time::Duration};
 
 use axum::{
     Json, Router,
-    extract::State,
-    http::StatusCode,
+    body::Bytes,
+    extract::{DefaultBodyLimit, Request, State},
+    http::{
+        HeaderMap, StatusCode,
+        header::{CONTENT_LENGTH, CONTENT_TYPE},
+    },
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
     routing::{get, post},
 };
+use chrono::Utc;
 use redis::aio::ConnectionManager;
+use serde::Serialize;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 
 use crate::{
     auth::{AuthSettings, OrganizationAuth},
-    telemetry,
+    event, telemetry,
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+const MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -28,6 +37,8 @@ pub struct AppState {
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/v1/events/ingest", post(ingest))
+        .layer(DefaultBodyLimit::max(MAX_REQUEST_BODY_SIZE))
+        .layer(middleware::from_fn(check_content_length))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(telemetry::request_span)
@@ -41,8 +52,58 @@ pub fn router(state: AppState) -> Router {
         .with_state(state)
 }
 
-async fn ingest(_auth: OrganizationAuth) -> StatusCode {
-    StatusCode::NOT_IMPLEMENTED
+async fn check_content_length(request: Request, next: Next) -> Response {
+    let content_length = request.headers().get(CONTENT_LENGTH).map(|value| {
+        value
+            .to_str()
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+    });
+    match content_length {
+        None => error_response(
+            StatusCode::LENGTH_REQUIRED,
+            "LengthRequired",
+            "A Content-Length header is required.",
+        ),
+        Some(Some(length)) if length > MAX_REQUEST_BODY_SIZE => error_response(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "RequestBodyTooLarge",
+            format!(
+                "Request body exceeded the maximum allowed size of {MAX_REQUEST_BODY_SIZE} bytes."
+            ),
+        ),
+        _ => next.run(request).await,
+    }
+}
+
+pub fn error_response(status: StatusCode, error: &'static str, detail: impl Serialize) -> Response {
+    (status, Json(json!({ "error": error, "detail": detail }))).into_response()
+}
+
+async fn ingest(_auth: OrganizationAuth, headers: HeaderMap, body: Bytes) -> Response {
+    match event::parse_ingest(&body, is_json(&headers), Utc::now()) {
+        Ok(_events) => StatusCode::NOT_IMPLEMENTED.into_response(),
+        Err(errors) => error_response(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "RequestValidationError",
+            errors,
+        ),
+    }
+}
+
+fn is_json(headers: &HeaderMap) -> bool {
+    headers
+        .get(CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.split(';').next())
+        .and_then(|media_type| {
+            media_type
+                .trim()
+                .to_ascii_lowercase()
+                .strip_prefix("application/")
+                .map(str::to_owned)
+        })
+        .is_some_and(|subtype| subtype == "json" || subtype.ends_with("+json"))
 }
 
 async fn healthz(

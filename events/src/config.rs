@@ -1,8 +1,10 @@
-use std::env;
+use std::{collections::HashMap, env};
 
 use anyhow::{Context, Result};
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use tracing::level_filters::LevelFilter;
+
+use crate::auth::AuthSettings;
 
 pub struct Config {
     pub port: u16,
@@ -14,6 +16,7 @@ pub struct Config {
     pub postgres: PgConnectOptions,
     pub postgres_pool_size: u32,
     pub redis_url: String,
+    pub auth: AuthSettings,
 }
 
 impl Config {
@@ -54,6 +57,14 @@ impl Config {
             )
         });
 
+        let hash_secrets: HashMap<String, String> =
+            serde_json::from_str(&var("POLAR_HASH_SECRETS", "{}")).context("POLAR_HASH_SECRETS")?;
+        let auth = AuthSettings::new(
+            hash_secrets,
+            var("POLAR_SECRET", "super secret jwt secret"),
+            &var("POLAR_BASE_URL", "http://127.0.0.1:8000"),
+        );
+
         Ok(Self {
             port: var("PORT", "10000").parse().context("PORT")?,
             environment: var("POLAR_ENV", "development"),
@@ -68,6 +79,7 @@ impl Config {
                 .parse()
                 .context("POLAR_DATABASE_POOL_SIZE")?,
             redis_url,
+            auth,
         })
     }
 }
@@ -123,7 +135,8 @@ mod tests {
     }
 
     #[test]
-    fn rejects_invalid_numbers() {
+    fn rejects_invalid_values() {
         assert!(config(&[("POLAR_POSTGRES_PORT", "not-a-port")]).is_err());
+        assert!(config(&[("POLAR_HASH_SECRETS", "not-json")]).is_err());
     }
 }

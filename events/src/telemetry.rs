@@ -52,6 +52,8 @@ pub fn request_span<B>(request: &Request<B>) -> Span {
         http.route = route,
         url.path = request.uri().path(),
         http.response.status_code = Empty,
+        subject_type = Empty,
+        subject_id = Empty,
     )
 }
 

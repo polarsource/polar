@@ -1,5 +1,3 @@
-#![expect(dead_code, reason = "first caller lands with authentication")]
-
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use redis::{RedisResult, aio::ConnectionManager};

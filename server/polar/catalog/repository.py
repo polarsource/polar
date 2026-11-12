@@ -319,6 +319,25 @@ class CatalogMeterRepository(
         result = await self.session.execute(statement)
         return result.scalar_one()
 
+    async def get_memberships(
+        self, catalog_ids: Sequence[UUID]
+    ) -> Sequence[CatalogMembership]:
+        statement = (
+            select(
+                CatalogMeter.external_id,
+                CatalogMeter.catalog_id,
+                Meter.id,
+                Meter.name,
+            )
+            .join(Meter, Meter.id == CatalogMeter.meter_id)
+            .where(
+                CatalogMeter.catalog_id.in_(catalog_ids),
+                CatalogMeter.deleted_at.is_(None),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [CatalogMembership(*row) for row in result.tuples()]
+
     def get_meters_statement(self, catalog_id: UUID) -> Select[Meter]:
         return (
             select(Meter)

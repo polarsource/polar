@@ -300,11 +300,13 @@ export const VersionDiff = ({
   parentConfig,
   productHref,
   benefitHref,
+  meterHref,
 }: {
   config: Config
   parentConfig?: Config
   productHref: (externalId: string) => string | undefined
   benefitHref: (externalId: string) => string | undefined
+  meterHref: (externalId: string) => string | undefined
 }) => {
   const format = valueFormatter(
     parentConfig ? [parentConfig, config] : [config],
@@ -337,7 +339,7 @@ export const VersionDiff = ({
           before={parentConfig?.meters.map(meterFields) ?? []}
           after={config.meters.map(meterFields)}
           nameField="name"
-          href={() => undefined}
+          href={meterHref}
           format={format}
         />
       </Box>

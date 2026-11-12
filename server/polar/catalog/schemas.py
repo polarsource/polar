@@ -10,7 +10,7 @@ from polar.organization.schemas import OrganizationID
 
 
 class CatalogChanges(Schema):
-    """How a catalog differs from its parent, in products and benefits."""
+    """How a catalog differs from its parent, in products, benefits and meters."""
 
     added_count: int = Field(description="Keys the parent doesn't list.")
     changed_count: int = Field(description="Keys listed with a new version.")
@@ -56,8 +56,13 @@ class CatalogBenefit(Schema):
     benefit_id: UUID4 = Field(description="The benefit version in this catalog.")
 
 
+class CatalogMeter(Schema):
+    external_id: str = Field(description="Key of the meter in the catalog.")
+    meter_id: UUID4 = Field(description="The meter version in this catalog.")
+
+
 class CatalogVersion(Catalog):
-    """A catalog version with its products and benefits."""
+    """A catalog version with its products, benefits and meters."""
 
     products: list[CatalogProduct] = Field(
         validation_alias="product_members",
@@ -67,11 +72,16 @@ class CatalogVersion(Catalog):
         validation_alias="benefit_members",
         description="The benefits in this version, ordered by key.",
     )
+    meters: list[CatalogMeter] = Field(
+        validation_alias="meter_members",
+        description="The meters in this version, ordered by key.",
+    )
 
 
 class RemovedCatalogItemResource(StrEnum):
     product = "product"
     benefit = "benefit"
+    meter = "meter"
 
 
 class RemovedCatalogItemStatus(StrEnum):
@@ -98,11 +108,14 @@ class RemovedCatalogItem(Schema):
     customers_count: int = Field(
         description=(
             "Customers with a billable subscription on, or a scheduled change to, "
-            "the product; customers granted the benefit."
+            "the product; customers granted the benefit; customers with a "
+            "billable subscription billing the meter."
         )
     )
     last_item_id: UUID4 = Field(
-        description="ID of the product or benefit in the last catalog that listed it."
+        description=(
+            "ID of the product, benefit or meter in the last catalog that listed it."
+        )
     )
     first_catalog: RemovedCatalogItemVersion = Field(
         description="First catalog that listed it."

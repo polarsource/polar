@@ -273,6 +273,7 @@ class CatalogService:
             .options(
                 selectinload(Catalog.product_members),
                 selectinload(Catalog.benefit_members),
+                selectinload(Catalog.meter_members),
             )
         )
         return await repository.get_one_or_none(statement)
@@ -297,6 +298,12 @@ class CatalogService:
             (
                 RemovedCatalogItemResource.benefit,
                 await CatalogBenefitRepository.from_session(session).get_memberships(
+                    catalog_ids
+                ),
+            ),
+            (
+                RemovedCatalogItemResource.meter,
+                await CatalogMeterRepository.from_session(session).get_memberships(
                     catalog_ids
                 ),
             ),
@@ -344,6 +351,15 @@ class CatalogService:
         ).count_granted_customers_by_benefit_external_ids(
             organization_id, builtins.list(benefits)
         )
+        meters = _removed_memberships(
+            catalogs,
+            await CatalogMeterRepository.from_session(session).get_memberships(
+                catalog_ids
+            ),
+        )
+        meter_customers = await MeterRepository.from_session(
+            session
+        ).count_billed_customers_by_external_ids(organization_id, builtins.list(meters))
 
         return sorted(
             [
@@ -358,6 +374,12 @@ class CatalogService:
                     catalogs,
                     benefits,
                     benefit_customers,
+                ),
+                *_removed_items(
+                    RemovedCatalogItemResource.meter,
+                    catalogs,
+                    meters,
+                    meter_customers,
                 ),
             ],
             key=lambda item: (

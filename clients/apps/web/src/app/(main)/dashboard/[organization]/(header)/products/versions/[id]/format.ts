@@ -1,3 +1,8 @@
+import {
+  AGGREGATION_DISPLAY_NAMES,
+  formatProperty,
+  OPERATOR_DISPLAY_NAMES,
+} from '@/components/Meter/MeterFilterReadOnlyConfiguration'
 import { getUnitLabels } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -6,6 +11,8 @@ type Config = schemas['ConfigExportDocument']
 type Product = schemas['ConfigProductRead']
 type Price = schemas['ConfigProductPriceRead']
 type Tiers = schemas['ConfigTiersRead']
+type Meter = schemas['ConfigMeterRead']
+type Filter = schemas['Filter']
 
 export const plural = (count: number, noun: string) =>
   `${count} ${count === 1 ? noun : `${noun}s`}`
@@ -53,10 +60,35 @@ export const productFields = ({
   ...product,
 })
 
+const describeFilter = ({ conjunction, clauses }: Filter): string =>
+  clauses
+    .map((clause) =>
+      'property' in clause
+        ? `${formatProperty(clause.property)} ${OPERATOR_DISPLAY_NAMES[clause.operator]} ${clause.value}`
+        : `(${describeFilter(clause)})`,
+    )
+    .join(` ${conjunction} `)
+
+// The filter and aggregation each read as one field
+export const meterFields = ({
+  name,
+  filter,
+  aggregation,
+  ...meter
+}: Meter) => ({
+  name,
+  filter: describeFilter(filter) || 'All events',
+  aggregation:
+    aggregation.func === 'count'
+      ? AGGREGATION_DISPLAY_NAMES.count
+      : `${AGGREGATION_DISPLAY_NAMES[aggregation.func]} of ${formatProperty(aggregation.property)}`,
+  ...meter,
+})
+
 export const fieldLabel = (field: string) =>
   field === 'prices' ? 'Price' : humanize(field)
 
-const enumFields = new Set(['visibility', 'type'])
+const enumFields = new Set(['visibility', 'type', 'unit'])
 
 export const valueFormatter = (configs: Config[]) => {
   const benefits = new Map(

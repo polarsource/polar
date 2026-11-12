@@ -4,18 +4,19 @@ import { keyByContent } from '@/utils/keys'
 import { schemas } from '@polar-sh/client'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 
-const OPERATOR_DISPLAY_NAMES: Record<schemas['FilterOperator'], string> = {
-  eq: 'equals',
-  ne: 'does not equal',
-  gt: 'is greater than',
-  gte: 'is greater than or equal to',
-  lt: 'is less than',
-  lte: 'is less than or equal to',
-  like: 'contains',
-  not_like: 'does not contain',
-}
+export const OPERATOR_DISPLAY_NAMES: Record<schemas['FilterOperator'], string> =
+  {
+    eq: 'equals',
+    ne: 'does not equal',
+    gt: 'is greater than',
+    gte: 'is greater than or equal to',
+    lt: 'is less than',
+    lte: 'is less than or equal to',
+    like: 'contains',
+    not_like: 'does not contain',
+  }
 
-const AGGREGATION_DISPLAY_NAMES: Record<string, string> = {
+export const AGGREGATION_DISPLAY_NAMES: Record<string, string> = {
   count: 'Count',
   sum: 'Sum',
   avg: 'Average',
@@ -30,7 +31,7 @@ const isFilterClause = (
   return 'property' in filter
 }
 
-const formatProperty = (property: string): string => {
+export const formatProperty = (property: string): string => {
   if (property === 'name') return 'Name'
   if (property === 'timestamp') return 'Timestamp'
   if (property.startsWith('metadata.')) {

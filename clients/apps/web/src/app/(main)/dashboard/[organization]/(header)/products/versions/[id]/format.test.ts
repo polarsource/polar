@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { valueFormatter } from './format'
+import { meterFields, valueFormatter } from './format'
 
 it('lists every tier of a tiered price', () => {
   expect(
@@ -18,4 +18,36 @@ it('lists every tier of a tiered price', () => {
   ).toBe(
     'Graduated: $10.00 / seat up to 10, then $8.00 / seat, minimum 3 seats',
   )
+})
+
+it('reads a meter filter and aggregation as one line each', () => {
+  expect(
+    meterFields({
+      external_id: 'tokens',
+      name: 'Tokens',
+      unit: 'token',
+      custom_label: null,
+      custom_multiplier: null,
+      filter: {
+        conjunction: 'and',
+        clauses: [
+          { property: 'name', operator: 'eq', value: 'completion' },
+          {
+            conjunction: 'or',
+            clauses: [
+              { property: 'metadata.model', operator: 'like', value: 'gpt' },
+              { property: 'metadata.model', operator: 'like', value: 'claude' },
+            ],
+          },
+        ],
+      },
+      aggregation: { func: 'sum', property: 'metadata.tokens' },
+      metadata: {},
+    }),
+  ).toMatchObject({
+    name: 'Tokens',
+    filter:
+      'Name equals completion and (model contains gpt or model contains claude)',
+    aggregation: 'Sum of tokens',
+  })
 })

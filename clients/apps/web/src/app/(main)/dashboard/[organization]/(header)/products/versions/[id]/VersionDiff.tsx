@@ -5,7 +5,13 @@ import { Circle, KeyboardArrowDown } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import { Change, diffItems, Line } from './diff'
-import { fieldLabel, plural, productFields, valueFormatter } from './format'
+import {
+  fieldLabel,
+  meterFields,
+  plural,
+  productFields,
+  valueFormatter,
+} from './format'
 
 type Config = schemas['ConfigExportDocument']
 type Format = (field: string, value: unknown) => string
@@ -323,6 +329,15 @@ export const VersionDiff = ({
           after={config.benefits}
           nameField="description"
           href={benefitHref}
+          format={format}
+        />
+        <DiffSection
+          title="Meters"
+          noun="meter"
+          before={parentConfig?.meters.map(meterFields) ?? []}
+          after={config.meters.map(meterFields)}
+          nameField="name"
+          href={() => undefined}
           format={format}
         />
       </Box>

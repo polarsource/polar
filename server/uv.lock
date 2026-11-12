@@ -3049,7 +3049,7 @@ requires-dist = [
     { name = "sqlalchemy-utils", specifier = ">=0.41.2" },
     { name = "sse-starlette", specifier = ">=3.4.5" },
     { name = "standardwebhooks", specifier = ">=1.0.0" },
-    { name = "stripe", specifier = ">=14,<15" },
+    { name = "stripe", specifier = ">=14.4.2,<15" },
     { name = "structlog", specifier = ">=26.1.0" },
     { name = "tagflow", specifier = ">=0.7.0" },
     { name = "taskipy", specifier = ">=1.10.3" },

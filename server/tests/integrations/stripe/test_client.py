@@ -19,7 +19,7 @@ class TestStripeTLS:
             ),
         ],
     )
-    def test_clients_use_certifi_in_either_import_order(
+    def test_clients_use_stripe_ca_bundle_in_either_import_order(
         self, modules: tuple[str, str]
     ) -> None:
         result = subprocess.run(
@@ -32,20 +32,22 @@ class TestStripeTLS:
                     import ssl
                     import sys
 
-                    import certifi
+                    from pathlib import Path
+
                     import stripe
 
+                    bundle = Path(stripe.__file__).with_name("data") / "ca-certificates.crt"
                     importlib.import_module("polar.integrations.stripe")
                     assert "polar.integrations.stripe.service" not in sys.modules
-                    assert stripe.ca_bundle_path == certifi.where()
+                    assert Path(stripe.ca_bundle_path) == bundle
 
-                    expected_roots = ssl.create_default_context(
-                        cafile=certifi.where()
-                    ).get_ca_certs(binary_form=True)
+                    expected_roots = ssl.create_default_context(cafile=bundle).get_ca_certs(
+                        binary_form=True
+                    )
 
                     for name in sys.argv[1:]:
                         module = importlib.import_module(name)
-                        assert stripe.ca_bundle_path == certifi.where()
+                        assert Path(stripe.ca_bundle_path) == bundle
                         if hasattr(module, "StripeAdapter"):
                             client = module.StripeAdapter("rk_test")._client
                             transport = client._requestor._client

@@ -68,16 +68,29 @@ class MeterOptions(typing.TypedDict, total=False):
     deprecated: bool
 
 
+def _group(condition: Condition) -> inputs.Filter:
+    if "conjunction" in condition:
+        return typing.cast("inputs.Filter", condition)
+    return and_(condition)
+
+
+def _clauses(group: inputs.Filter) -> list[Condition]:
+    return group["clauses"] if group["conjunction"] == "and" else [group]
+
+
 class Meter:
-    """A meter over one event.
+    """A meter over your events.
 
     Declare it on a `MeterSet`: the attribute name becomes its external ID.
 
     Args:
         name: Shown on customers' invoices and usage.
-        on: Name of the event to meter.
+        on: Name of the event to meter, or several names to meter any of them.
+            Leave it out to select events with `where` alone.
         where: Extra conditions the event has to meet.
         aggregate: How matching events add up. Defaults to `Count()`.
+        external_id: Replaces the attribute name as the external ID. For an ID
+            that is not a Python name, like `tool-calls`.
         **options: Any other meter field, see `MeterOptions`.
     """
 
@@ -85,22 +98,29 @@ class Meter:
         self,
         name: str,
         *,
-        on: str,
+        on: str | typing.Sequence[str] | None = None,
         where: Condition | None = None,
         aggregate: Aggregation | None = None,
+        external_id: str | None = None,
         **options: typing.Unpack[MeterOptions],
     ) -> None:
-        conditions: list[Condition] = [] if where is None else [where]
-        if where is not None and where.get("conjunction") == "and":
-            conditions = typing.cast("inputs.Filter", where)["clauses"]
+        names = [on] if isinstance(on, str) else list(on or ())
+        events = [eq("name", event) for event in names]
+        selected = or_(*events) if len(events) > 1 else and_(*events)
+        if where is None:
+            self.filter = selected
+        elif not events:
+            self.filter = _group(where)
+        else:
+            self.filter = and_(*_clauses(selected), *_clauses(_group(where)))
         self.name = name
-        self.filter = and_(eq("name", on), *conditions)
         self.aggregation = aggregate or Count()
+        self.external_id = external_id
         self.options = options
 
-    def to_dict(self, external_id: str) -> dict[str, typing.Any]:
+    def to_dict(self, attribute: str) -> dict[str, typing.Any]:
         return {
-            "external_id": external_id,
+            "external_id": self.external_id or attribute,
             "name": self.name,
             "filter": self.filter,
             "aggregation": self.aggregation,
@@ -116,12 +136,19 @@ class MeterSet:
 
     @classmethod
     def _entries(cls) -> dict[str, Meter]:
-        return {
-            name: value
-            for owner in reversed(cls.__mro__)
-            for name, value in vars(owner).items()
-            if isinstance(value, Meter)
-        }
+        entries: dict[str, Meter] = {}
+        for owner in reversed(cls.__mro__):
+            mangled = f"_{owner.__name__.lstrip('_')}__"
+            for name, value in vars(owner).items():
+                if not isinstance(value, Meter):
+                    continue
+                if name.startswith(mangled):
+                    raise ValueError(
+                        f"{owner.__name__}.__{name.removeprefix(mangled)}: Python "
+                        'renames attributes that start with "__". Use another name.'
+                    )
+                entries[name] = value
+        return entries
 
 
 class Config:
@@ -136,7 +163,5 @@ class Config:
     def to_dict(self) -> dict[str, typing.Any]:
         meters = self.meters._entries() if self.meters else {}
         return {
-            "meters": [
-                meter.to_dict(external_id) for external_id, meter in meters.items()
-            ]
+            "meters": [meter.to_dict(attribute) for attribute, meter in meters.items()]
         }

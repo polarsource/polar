@@ -1,20 +1,16 @@
 import { Effect, Schema } from 'effect'
-import {
-  BillingConfigError,
-  type ConfigDocument,
-} from '@/schemas/BillingConfig'
+import type { ConfigDocument } from '@/schemas/BillingConfig'
 import { dropOptionalNulls } from '@/services/billing-config/languages/language'
 
 const WIDTH = 88
 const INDENT = '    '
 
-const IDENTIFIER = /^(?!__)[A-Za-z_][A-Za-z0-9_]*$/
+const IDENTIFIER = /^[A-Za-z][A-Za-z0-9_]*$/
 
-const RESERVED = new Set(
-  'False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield _entries'.split(
+const KEYWORDS =
+  'False None True and as assert async await break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield'.split(
     ' ',
-  ),
-)
+  )
 
 const AGGREGATES = {
   sum: 'Sum',
@@ -24,18 +20,30 @@ const AGGREGATES = {
   unique: 'Unique',
 }
 
+const OPERATORS = [
+  'eq',
+  'ne',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'like',
+  'not_like',
+] as const
+
+const HELPERS = [
+  'Meter',
+  'and_',
+  'or_',
+  ...OPERATORS,
+  ...Object.values(AGGREGATES),
+]
+
+const RESERVED = new Set([...KEYWORDS, ...HELPERS])
+
 const Clause = Schema.Struct({
   property: Schema.String,
-  operator: Schema.Literals([
-    'eq',
-    'ne',
-    'gt',
-    'gte',
-    'lt',
-    'lte',
-    'like',
-    'not_like',
-  ]),
+  operator: Schema.Literals(OPERATORS),
   value: Schema.Union([Schema.String, Schema.Int, Schema.Boolean]),
 })
 type Clause = typeof Clause.Type
@@ -130,25 +138,82 @@ const condition = (input: Clause | Group, imports: Set<string>): Node => {
   return `${input.operator}(${literal(input.property)}, ${literal(input.value)})`
 }
 
-const eventAndConditions = ({ conjunction, clauses }: Group) => {
-  const [first, ...rest] = clauses
+const eventName = (clause: Clause | Group) =>
+  !('conjunction' in clause) &&
+  clause.property === 'name' &&
+  clause.operator === 'eq' &&
+  typeof clause.value === 'string'
+    ? clause.value
+    : undefined
+
+const eventNames = (clause: Clause | Group) => {
+  const single = eventName(clause)
+  if (single !== undefined) return [single]
   if (
-    conjunction !== 'and' ||
-    first === undefined ||
-    'conjunction' in first ||
-    first.property !== 'name' ||
-    first.operator !== 'eq' ||
-    typeof first.value !== 'string'
+    !('conjunction' in clause) ||
+    clause.conjunction !== 'or' ||
+    clause.clauses.length < 2
   ) {
     return undefined
   }
+  const names = clause.clauses.map(eventName)
+  return names.every((name) => name !== undefined) ? names : undefined
+}
+
+const isGroup = (clause: Clause | Group | undefined): clause is Group =>
+  clause !== undefined && 'conjunction' in clause
+
+const isAnd = (clause: Clause | Group | undefined) =>
+  isGroup(clause) && clause.conjunction === 'and'
+
+const eventsAndWhere = (
+  filter: Group,
+): {
+  readonly events: ReadonlyArray<string>
+  readonly where: Clause | Group | undefined
+} => {
+  const every = eventNames(filter)
+  if (every !== undefined) return { events: every, where: undefined }
+  const [first, ...rest] = filter.clauses
   const [only] = rest
-  const flattened =
-    rest.length === 1 &&
-    only !== undefined &&
-    'conjunction' in only &&
-    only.conjunction === 'and'
-  return flattened ? undefined : { event: first.value, conditions: rest }
+  const events =
+    filter.conjunction === 'and' && first !== undefined
+      ? eventNames(first)
+      : undefined
+  if (
+    events !== undefined &&
+    (events.length === 1 || rest.length > 0) &&
+    !(rest.length === 1 && isAnd(only))
+  ) {
+    return {
+      events,
+      where: rest.length > 1 ? { conjunction: 'and', clauses: rest } : only,
+    }
+  }
+  const bare =
+    filter.conjunction === 'and' &&
+    filter.clauses.length <= 1 &&
+    !isGroup(first)
+  return { events: [], where: bare ? first : filter }
+}
+
+const usable = (externalId: string) =>
+  IDENTIFIER.test(externalId) && !RESERVED.has(externalId)
+
+const attributeNames = (externalIds: ReadonlyArray<string>) => {
+  const taken = new Set(externalIds.filter(usable))
+  return externalIds.map((externalId) => {
+    if (usable(externalId)) return externalId
+    const base = externalId.replaceAll(/\W/g, '_').replace(/^_+/, '')
+    const name =
+      /^[A-Za-z]/.test(base) && !RESERVED.has(base) ? base : `meter_${base}`
+    let attribute = name
+    for (let count = 2; taken.has(attribute); count++) {
+      attribute = `${name}_${count}`
+    }
+    taken.add(attribute)
+    return attribute
+  })
 }
 
 const aggregateOf = (
@@ -163,23 +228,30 @@ const aggregateOf = (
 
 const meterArguments = (
   meter: Meter,
-  event: string,
-  conditions: ReadonlyArray<Clause | Group>,
+  attribute: string,
   imports: Set<string>,
 ): ReadonlyArray<Node> => {
-  const [only] = conditions
-  const where =
-    conditions.length > 1
-      ? condition({ conjunction: 'and', clauses: conditions }, imports)
-      : only && condition(only, imports)
+  const { events, where } = eventsAndWhere(meter.filter)
+  const [event] = events
   const entries = Object.entries(meter.metadata ?? {}).map(
     ([key, value]) => `${literal(key)}: ${literal(value)}`,
   )
   return [
     literal(meter.name),
-    `on=${literal(event)}`,
-    ...(where === undefined ? [] : [keyword('where', where)]),
+    ...option(
+      'on',
+      events.length > 1
+        ? `[${events.map(literal).join(', ')}]`
+        : event && literal(event),
+    ),
+    ...(where === undefined
+      ? []
+      : [keyword('where', condition(where, imports))]),
     ...option('aggregate', aggregateOf(meter.aggregation, imports)),
+    ...option(
+      'external_id',
+      attribute === meter.external_id ? undefined : literal(meter.external_id),
+    ),
     ...option(
       'unit',
       meter.unit === undefined || meter.unit === 'scalar'
@@ -220,31 +292,20 @@ const importLine = (names: ReadonlySet<string>) => {
 export const renderPython = (document: ConfigDocument) =>
   Effect.gen(function* () {
     const imports = new Set(['Config', 'MeterSet'])
-    const meters: Array<string> = []
-    for (const meter of yield* decodeMeters(
+    const decoded = yield* decodeMeters(
       dropOptionalNulls(document)['meters'] ?? [],
-    )) {
-      const parts = eventAndConditions(meter.filter)
-      if (
-        parts === undefined ||
-        !IDENTIFIER.test(meter.external_id) ||
-        RESERVED.has(meter.external_id)
-      ) {
-        return yield* new BillingConfigError({
-          message: `The meter ${meter.external_id} has an external ID or a filter that Python cannot express yet.`,
-        })
-      }
-      imports.add('Meter')
-      meters.push(
-        render(
-          {
-            head: `${meter.external_id} = Meter`,
-            args: meterArguments(meter, parts.event, parts.conditions, imports),
-          },
-          INDENT,
-        ),
-      )
-    }
+    )
+    if (decoded.length > 0) imports.add('Meter')
+    const attributes = attributeNames(decoded.map((meter) => meter.external_id))
+    const meters = decoded.map((meter, index) =>
+      render(
+        {
+          head: `${attributes[index]} = Meter`,
+          args: meterArguments(meter, attributes[index]!, imports),
+        },
+        INDENT,
+      ),
+    )
     return [
       importLine(imports),
       '',

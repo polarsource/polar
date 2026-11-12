@@ -23,7 +23,10 @@ export const Sheet = ({
     <Box flexDirection="column" rowGap="l" padding="xl" height="100%">
       <Box justifyContent="between" alignItems="baseline" columnGap="l">
         <Box alignItems="baseline" columnGap="m" flexWrap="wrap">
-          <Text as="p" variant={large ? 'heading-xxs' : 'body'}>
+          <Text
+            as={large ? 'h3' : 'p'}
+            variant={large ? 'heading-xxs' : 'body'}
+          >
             {title}
           </Text>
           {subtitle ? (

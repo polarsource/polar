@@ -1,0 +1,50 @@
+clients/apps/web/src/components/Landing/Pricing.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 107
+clients/apps/web/src/components/Landing/Chapter.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 20,29
+clients/apps/web/src/components/Landing/story/MeasureFigure.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 98
+clients/apps/web/src/components/Landing/features/FeaturePageLayout.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 164
+clients/apps/web/src/components/Landing/story/SellFigure.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 85,129
+clients/apps/web/src/components/Landing/Testimonials.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 125-127
+clients/apps/web/src/components/Landing/NotFound.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 71,94-96
+clients/apps/web/src/components/Landing/story/Frame.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 26-28
+  s_319db2e3e5b5da::t_58b8f6982233d0 30
+clients/apps/web/src/components/Landing/story/UnderstandFigure.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 35,43
+clients/apps/web/src/components/Landing/chapters/UsageBillingCharge.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 49
+clients/apps/web/src/components/Landing/chapters/UsageBillingMock.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 27,148
+clients/apps/web/src/components/Landing/Pipeline.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 152,173
+clients/apps/web/src/components/Landing/story/ChargeFigure.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 105,135,200
+clients/apps/web/src/components/Landing/startup-program/StartupProgramHero.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 21,58-60,68-70
+clients/apps/web/src/components/Landing/chapters/PlatformVignettes.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 127,241
+clients/apps/web/src/components/Landing/story/GrantFigure.tsx
+  s_319db2e3e5b5da::t_cf37dbb291cc3e 178-181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cfc40eb29533a9fbbbb6bbdbd13c81bd7434b43b",
+  "prompts": {},
+  "sessions": {
+    "s_319db2e3e5b5da": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fee6f1d6-1950-4a23-a685-5d99ad1ac8ea",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

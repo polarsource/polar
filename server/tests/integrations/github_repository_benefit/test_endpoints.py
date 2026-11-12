@@ -4,11 +4,13 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.integrations.github_repository_benefit.service import github_oauth_client
 from polar.kit import jwt
 from polar.kit.utils import utc_now
-from polar.models import User
+from polar.models import OAuthAccount, User
+from polar.postgres import AsyncSession
 
 
 @pytest.mark.anyio
@@ -17,6 +19,7 @@ class TestUserCallback:
     async def test_access_token_missing_from_response_redirects_with_error(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         user: User,
         mocker: MockerFixture,
     ) -> None:
@@ -42,9 +45,12 @@ class TestUserCallback:
         )
 
         assert response.status_code == 303
-        location = response.headers["location"]
-        assert "error=Failed+to+get+access+token" in location.replace("%20", "+")
-        assert user.oauth_accounts == []
+        assert "error=Failed+to+get+access+token" in response.headers["location"]
+
+        result = await session.execute(
+            select(OAuthAccount).where(OAuthAccount.user_id == user.id)
+        )
+        assert result.scalars().all() == []
 
     @pytest.mark.auth
     async def test_expired_state_returns_401(

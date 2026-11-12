@@ -188,10 +188,12 @@ class CheckoutRepository(
     ) -> Select[Checkout]:
         return self.get_base_statement().where(Checkout.organization_id.in_(org_ids))
 
-    def get_eager_options(self) -> Options:
+    def get_eager_options(self, *, selectin_customer: bool = False) -> Options:
         return (
             joinedload(Checkout.organization).joinedload(Organization.account),
-            joinedload(Checkout.customer),
+            selectinload(Checkout.customer)
+            if selectin_customer
+            else joinedload(Checkout.customer),
             selectinload(Checkout.product).options(
                 selectinload(Product.product_medias),
                 selectinload(Product.attached_custom_fields),

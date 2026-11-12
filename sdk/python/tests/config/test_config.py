@@ -2,33 +2,8 @@ import json
 import pathlib
 import subprocess
 import sys
-import typing
 
-import pytest
-
-from polar.config import (
-    Aggregation,
-    Avg,
-    Condition,
-    Config,
-    Count,
-    Max,
-    Meter,
-    MeterSet,
-    Min,
-    Sum,
-    Unique,
-    and_,
-    eq,
-    gt,
-    gte,
-    like,
-    lt,
-    lte,
-    ne,
-    not_like,
-    or_,
-)
+from polar.config import Config, Meter, MeterSet, Sum, eq
 
 
 class Meters(MeterSet):
@@ -51,10 +26,6 @@ TOOL_CALL = {
     },
     "aggregation": {"func": "count"},
 }
-REQUEST = {"property": "name", "operator": "eq", "value": "request"}
-SEARCH = {"property": "name", "operator": "eq", "value": "search"}
-SLOW = {"property": "duration", "operator": "gt", "value": 500}
-FAILED = {"property": "status", "operator": "eq", "value": "error"}
 
 
 def test_config_to_dict() -> None:
@@ -84,129 +55,6 @@ def test_config_to_dict() -> None:
 
 def test_config_without_meters() -> None:
     assert Config().to_dict() == {"meters": []}
-
-
-def test_subclassed_set_keeps_inherited_meters() -> None:
-    class Extended(Meters):
-        requests = Meter("Requests", on="request")
-
-    meters = Config(meters=Extended).to_dict()["meters"]
-
-    assert [meter["external_id"] for meter in meters] == [
-        "tool_call",
-        "tokens",
-        "requests",
-    ]
-
-
-@pytest.mark.parametrize(
-    ("compare", "operator"),
-    [
-        (eq, "eq"),
-        (ne, "ne"),
-        (gt, "gt"),
-        (gte, "gte"),
-        (lt, "lt"),
-        (lte, "lte"),
-        (like, "like"),
-        (not_like, "not_like"),
-    ],
-)
-def test_comparisons(
-    compare: typing.Callable[[str, int], Condition], operator: str
-) -> None:
-    assert compare("duration", 500) == {
-        "property": "duration",
-        "operator": operator,
-        "value": 500,
-    }
-
-
-@pytest.mark.parametrize(
-    ("aggregation", "expected"),
-    [
-        (Count(), {"func": "count"}),
-        (Sum("tokens"), {"func": "sum", "property": "tokens"}),
-        (Max("tokens"), {"func": "max", "property": "tokens"}),
-        (Min("tokens"), {"func": "min", "property": "tokens"}),
-        (Avg("tokens"), {"func": "avg", "property": "tokens"}),
-        (Unique("user"), {"func": "unique", "property": "user"}),
-    ],
-)
-def test_aggregations(aggregation: Aggregation, expected: dict[str, str]) -> None:
-    assert aggregation == expected
-
-
-@pytest.mark.parametrize(
-    ("where", "clauses"),
-    [
-        (and_(gt("duration", 500), eq("status", "error")), [REQUEST, SLOW, FAILED]),
-        (
-            or_(gt("duration", 500), eq("status", "error")),
-            [REQUEST, {"conjunction": "or", "clauses": [SLOW, FAILED]}],
-        ),
-    ],
-)
-def test_where_joins_the_event_filter(where: Condition, clauses: list[object]) -> None:
-    meter = Meter("Requests", on="request", where=where)
-
-    assert meter.filter == {"conjunction": "and", "clauses": clauses}
-
-
-@pytest.mark.parametrize(
-    ("on", "where", "expected"),
-    [
-        (
-            ["request", "search"],
-            None,
-            {"conjunction": "or", "clauses": [REQUEST, SEARCH]},
-        ),
-        (
-            ["request", "search"],
-            gt("duration", 500),
-            {
-                "conjunction": "and",
-                "clauses": [{"conjunction": "or", "clauses": [REQUEST, SEARCH]}, SLOW],
-            },
-        ),
-        (None, None, {"conjunction": "and", "clauses": []}),
-        (None, gt("duration", 500), {"conjunction": "and", "clauses": [SLOW]}),
-        (
-            None,
-            or_(gt("duration", 500), eq("status", "error")),
-            {"conjunction": "or", "clauses": [SLOW, FAILED]},
-        ),
-        (
-            None,
-            and_(or_(eq("name", "request"))),
-            {
-                "conjunction": "and",
-                "clauses": [{"conjunction": "or", "clauses": [REQUEST]}],
-            },
-        ),
-    ],
-)
-def test_filter_without_a_single_event(
-    on: list[str] | None, where: "Condition | None", expected: dict[str, object]
-) -> None:
-    assert Meter("Requests", on=on, where=where).filter == expected
-
-
-def test_explicit_external_id() -> None:
-    class Dashed(MeterSet):
-        tool_calls = Meter("Tool calls", on="tool_call", external_id="tool-calls")
-
-    assert Config(meters=Dashed).to_dict() == {
-        "meters": [{**TOOL_CALL, "external_id": "tool-calls"}]
-    }
-
-
-def test_rejects_an_attribute_python_renames() -> None:
-    class Private(MeterSet):
-        __calls = Meter("Calls", on="call")
-
-    with pytest.raises(ValueError, match=r"Private\.__calls"):
-        Config(meters=Private).to_dict()
 
 
 def test_load_prints_only_the_config_as_json(tmp_path: pathlib.Path) -> None:

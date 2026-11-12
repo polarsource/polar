@@ -1,0 +1,20 @@
+server/tests/reducer/test_service.py
+  s_fb19aa989d9ac0::t_73f66243212850 16
+  s_fb19aa989d9ac0::t_f0edd1a9bdf555 1752-1797
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c60ed5f4963026f3a89aa5e062516ab8b929f6a0",
+  "prompts": {},
+  "sessions": {
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

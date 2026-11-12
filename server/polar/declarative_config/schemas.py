@@ -118,11 +118,8 @@ ProductReference = Annotated[
 ]
 
 CustomFieldReference = Annotated[
-    str,
-    Field(
-        min_length=1,
-        description="The `slug` of a custom field declared in the same config.",
-    ),
+    Slug,
+    Field(description="The `slug` of a custom field declared in the same config."),
 ]
 
 BenefitReference = Annotated[

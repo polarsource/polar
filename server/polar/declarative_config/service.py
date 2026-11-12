@@ -9,7 +9,10 @@ from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_organization_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
@@ -761,6 +764,12 @@ class DeclarativeConfigService:
             catalog,
             include_custom_fields=bool(
                 auth_subject.scopes & set(SECTION_SCOPES["custom_fields"])
+            )
+            and organization.id
+            in await get_accessible_org_ids(
+                session,
+                auth_subject,
+                permission=OrganizationPermission.custom_fields_read,
             ),
         )
 

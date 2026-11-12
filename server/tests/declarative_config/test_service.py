@@ -2263,6 +2263,29 @@ class TestPlan:
             ),
         ]
 
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_custom_fields_ignored_without_section(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            **PACK_PRODUCT,
+                            "custom_fields": [{"field": "vat"}, {"field": "vat"}],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert plan.issues == []
+        [change] = plan.changes
+        assert "custom_fields" not in {field.field for field in change.diff}
+
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization", scopes={Scope.meters_read}),
     )

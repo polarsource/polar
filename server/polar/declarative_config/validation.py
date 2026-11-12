@@ -321,6 +321,8 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                     )
                 )
             listed.add(benefit_external_id)
+        if not manage_custom_fields:
+            continue
         listed_fields: set[str] = set()
         for field_index, attached in enumerate(product.custom_fields):
             loc = _loc(
@@ -336,7 +338,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                         input=attached.field,
                     )
                 )
-            elif manage_custom_fields and attached.field not in custom_fields:
+            elif attached.field not in custom_fields:
                 issues.append(
                     _unknown_reference(
                         ConfigResource.custom_field, attached.field, loc, key="slug"
@@ -984,7 +986,9 @@ async def diff_products(
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]
-            if "custom_fields" in create_dict:
+            if not manage_custom_fields:
+                create_dict.pop("custom_fields", None)
+            elif "custom_fields" in create_dict:
                 create_dict["custom_fields"] = [
                     field.model_dump() for field in product_config.custom_fields
                 ]

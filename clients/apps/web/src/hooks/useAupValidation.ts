@@ -1,22 +1,15 @@
 'use client'
 
+import { api } from '@/utils/client'
+import { schemas } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
-import { nanoid } from 'nanoid'
 import { useCallback, useState } from 'react'
 
-export type AupVerdict = 'APPROVE' | 'DENY' | 'CLARIFY'
+const MAX_HISTORY_LENGTH = 5
 
-export interface AupHistoryEntry {
-  product_description: string
-  verdict: string
-  message?: string
-}
+export type AupVerdict = schemas['ProductDescriptionCheck']['verdict']
 
-interface ValidateParams {
-  product_description: string
-  selling_categories: string[]
-  pricing_models: string[]
-}
+type ValidateParams = Omit<schemas['ProductDescriptionCheckRequest'], 'history'>
 
 interface ValidateResult {
   ok: boolean
@@ -24,8 +17,9 @@ interface ValidateResult {
 }
 
 export const useAupValidation = () => {
-  const [conversationId] = useState(() => nanoid())
-  const [history, setHistory] = useState<AupHistoryEntry[]>([])
+  const [history, setHistory] = useState<
+    schemas['ProductDescriptionCheckRound'][]
+  >([])
   const [verdict, setVerdict] = useState<'DENY' | 'CLARIFY' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [isValidating, setIsValidating] = useState(false)
@@ -42,47 +36,27 @@ export const useAupValidation = () => {
       pricing_models,
     }: ValidateParams): Promise<ValidateResult> => {
       setIsValidating(true)
-      let res: Response
-      try {
-        res = await fetch('/onboarding/validate-description', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            conversation_id: conversationId,
+      const { data, error } = await api
+        .POST('/v1/organizations/description-check', {
+          body: {
             product_description,
             selling_categories,
             pricing_models,
-            history,
-          }),
+            history: history.slice(-MAX_HISTORY_LENGTH),
+          },
         })
-      } catch (error) {
+        .catch((error: unknown) => ({ data: undefined, error }))
+      setIsValidating(false)
+
+      if (!data) {
         Sentry.captureException(error)
-        setIsValidating(false)
         return { ok: false, verdict: null }
       }
-
-      if (!res.ok) {
-        Sentry.captureException(
-          new Error(`AUP validation failed with status ${res.status}`),
-        )
-        setIsValidating(false)
-        return { ok: false, verdict: null }
-      }
-
-      const data: {
-        verdict: AupVerdict
-        confidence: number
-        message?: string
-      } = await res.json()
 
       if (data.verdict === 'DENY' || data.verdict === 'CLARIFY') {
         setHistory((prev) => [
           ...prev,
-          {
-            product_description,
-            verdict: data.verdict,
-            message: data.message,
-          },
+          { product_description, verdict: data.verdict },
         ])
         setVerdict(data.verdict)
         setMessage(data.message ?? null)
@@ -91,10 +65,9 @@ export const useAupValidation = () => {
         setMessage(null)
       }
 
-      setIsValidating(false)
       return { ok: true, verdict: data.verdict }
     },
-    [conversationId, history],
+    [history],
   )
 
   return {

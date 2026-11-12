@@ -146,6 +146,28 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="product-name-check",
         ),
     ],
+    # Product description check in onboarding and account review
+    "^/v1/organizations/description-check": [
+        Rule(minute=20, hour=200, zone="organization-description-check"),
+        Rule(
+            group=RateLimitGroup.web,
+            minute=20,
+            hour=200,
+            zone="organization-description-check",
+        ),
+        Rule(
+            group=RateLimitGroup.elevated,
+            minute=20,
+            hour=200,
+            zone="organization-description-check",
+        ),
+        Rule(
+            group=RateLimitGroup.restricted,
+            minute=20,
+            hour=200,
+            zone="organization-description-check",
+        ),
+    ],
     # Each sign-up creates an OAuth client and an agent.
     "^/v1/agent/identity/?$": [
         Rule(minute=5, hour=20, block_time=3600, zone="agent-sign-up"),

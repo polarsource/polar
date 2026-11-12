@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 from httpx import AsyncClient
+from pydantic_ai.models.test import TestModel
 from pytest_mock import MockerFixture
 
 from polar.agent.repository import AgentRepository
@@ -33,6 +34,9 @@ from polar.models.organization_sso_connection import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.organization.description_check import (
+    jev_agent as description_check_jev_agent,
+)
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
 from polar.organization_review.schemas import ReviewContext
@@ -1712,6 +1716,34 @@ class TestCheckSlugAvailability:
 
         assert response.status_code == 200
         assert response.json() == {"available": available}
+
+
+@pytest.mark.anyio
+class TestDescriptionCheck:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            "/v1/organizations/description-check",
+            json={"product_description": "A SaaS to manage invoices."},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_valid(self, client: AsyncClient) -> None:
+        with description_check_jev_agent().override(
+            model=TestModel(custom_output_args={"concern": None})
+        ):
+            response = await client.post(
+                "/v1/organizations/description-check",
+                json={"product_description": "A SaaS to manage invoices."},
+            )
+
+        assert response.status_code == 200
+        assert response.json() == {
+            "verdict": "APPROVE",
+            "category": None,
+            "message": None,
+        }
 
 
 @pytest.mark.anyio

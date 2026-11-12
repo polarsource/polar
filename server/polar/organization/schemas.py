@@ -135,6 +135,41 @@ class OrganizationSlugAvailability(Schema):
     )
 
 
+ProductDescriptionVerdict = Literal["APPROVE", "CLARIFY", "DENY"]
+
+
+class ProductDescriptionCheckRound(Schema):
+    product_description: str = Field(max_length=3000)
+    verdict: ProductDescriptionVerdict
+
+
+class ProductDescriptionCheckRequest(Schema):
+    product_description: str = Field(min_length=1, max_length=3000)
+    selling_categories: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list, max_length=10
+    )
+    pricing_models: list[Annotated[str, Field(max_length=100)]] = Field(
+        default_factory=list, max_length=10
+    )
+    history: list[ProductDescriptionCheckRound] = Field(
+        default_factory=list,
+        max_length=5,
+        description="Earlier checks of this description in the same session.",
+    )
+
+
+class ProductDescriptionCheck(Schema):
+    verdict: ProductDescriptionVerdict = Field(
+        description="Whether the description complies with the Acceptable Use Policy."
+    )
+    category: str | None = Field(
+        description="Acceptable Use Policy concern the description raises, if any."
+    )
+    message: str | None = Field(
+        description="Explanation for DENY, or a clarifying question for CLARIFY."
+    )
+
+
 def _discard_logo_dev_url(url: HttpUrl) -> HttpUrl | None:
     if url.host and url.host.endswith("logo.dev"):
         return None

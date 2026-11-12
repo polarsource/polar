@@ -759,6 +759,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/description-check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Check Product Description
+     * @description Check a product description against the Acceptable Use Policy.
+     */
+    post: operations['organizations:description_check']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/{id}/enable-preview-access': {
     parameters: {
       query?: never
@@ -34634,6 +34654,49 @@ export interface components {
        */
       meter_interval_count?: number | null
     }
+    /** ProductDescriptionCheck */
+    ProductDescriptionCheck: {
+      /**
+       * Verdict
+       * @description Whether the description complies with the Acceptable Use Policy.
+       * @enum {string}
+       */
+      verdict: 'APPROVE' | 'CLARIFY' | 'DENY'
+      /**
+       * Category
+       * @description Acceptable Use Policy concern the description raises, if any.
+       */
+      category: string | null
+      /**
+       * Message
+       * @description Explanation for DENY, or a clarifying question for CLARIFY.
+       */
+      message: string | null
+    }
+    /** ProductDescriptionCheckRequest */
+    ProductDescriptionCheckRequest: {
+      /** Product Description */
+      product_description: string
+      /** Selling Categories */
+      selling_categories?: string[]
+      /** Pricing Models */
+      pricing_models?: string[]
+      /**
+       * History
+       * @description Earlier checks of this description in the same session.
+       */
+      history?: components['schemas']['ProductDescriptionCheckRound'][]
+    }
+    /** ProductDescriptionCheckRound */
+    ProductDescriptionCheckRound: {
+      /** Product Description */
+      product_description: string
+      /**
+       * Verdict
+       * @enum {string}
+       */
+      verdict: 'APPROVE' | 'CLARIFY' | 'DENY'
+    }
     /** ProductFlaggedNameAttempt */
     ProductFlaggedNameAttempt: {
       /**
@@ -44594,6 +44657,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationSlugAvailability']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:description_check': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProductDescriptionCheckRequest']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProductDescriptionCheck']
         }
       }
       /** @description Validation Error */
@@ -75231,6 +75327,12 @@ export const processorValues: ReadonlyArray<
 export const productBillingTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductBillingType']
 > = ['one_time', 'recurring']
+export const productDescriptionCheckVerdictValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductDescriptionCheck']['verdict']
+> = ['APPROVE', 'CLARIFY', 'DENY']
+export const productDescriptionCheckRoundVerdictValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ProductDescriptionCheckRound']['verdict']
+> = ['APPROVE', 'CLARIFY', 'DENY']
 export const productMediaFileCreateServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ProductMediaFileCreate']['service']
 > = ['product_media']

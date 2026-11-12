@@ -19,6 +19,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
     AuthorizeOrgManageUserRead,
+    AuthorizeWebUserRead,
 )
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
@@ -61,6 +62,7 @@ from polar.models.support_case import (
 )
 from polar.models.user_organization import OrganizationRole
 from polar.openapi import APITag
+from polar.organization.description_check import check_product_description
 from polar.organization.repository import (
     OrganizationReviewRepository,
 )
@@ -138,6 +140,8 @@ from .schemas import (
     OrganizationUpdate,
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
+    ProductDescriptionCheck,
+    ProductDescriptionCheckRequest,
 )
 from .service import (
     CannotCreateOrganizationError,
@@ -359,6 +363,20 @@ async def check_slug(
 ) -> OrganizationSlugAvailability:
     """Check whether a slug is valid and available for a new organization."""
     return await organization_service.check_slug_availability(session, body.slug)
+
+
+@router.post(
+    "/description-check",
+    response_model=ProductDescriptionCheck,
+    summary="Check Product Description",
+    tags=[APITag.private],
+)
+async def description_check(
+    auth_subject: AuthorizeWebUserRead,
+    body: ProductDescriptionCheckRequest,
+) -> ProductDescriptionCheck:
+    """Check a product description against the Acceptable Use Policy."""
+    return await check_product_description(body)
 
 
 @router.patch(

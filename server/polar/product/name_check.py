@@ -5,17 +5,13 @@ from typing import Annotated
 import structlog
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_ai import Agent, Choices
-from pydantic_ai.models.typesafe import TypeSafeModel
-from pydantic_ai.providers.typesafe import TypeSafeProvider
-from typesafe_sdk import AsyncTypeSafeClient, RetryPolicy
 
-from polar.config import settings
+from polar.kit.jev import jev_model
 
 from .schemas import ProductNameCheck
 
 log = structlog.get_logger()
 
-JEV_GATEWAY_URL = "https://gateway-us.pydantic.dev/proxy/jev"
 FLAGGED_CONFIDENCE_THRESHOLD = 0.7
 JEV_TIMEOUT_SECONDS = 3.0
 
@@ -76,19 +72,7 @@ class ProductNameJudgment(BaseModel):
 @functools.cache
 def jev_agent() -> Agent[None, ProductNameJudgment]:
     return Agent(
-        TypeSafeModel(
-            "jev-latest",
-            provider=TypeSafeProvider(
-                typesafe_client=AsyncTypeSafeClient(
-                    api_key=settings.PYDANTIC_AI_GATEWAY_API_KEY,
-                    base_url=JEV_GATEWAY_URL,
-                    compression=False,
-                    timeout=JEV_TIMEOUT_SECONDS,
-                    retry=RetryPolicy(max_retries=0),
-                )
-            ),
-        ),
-        output_type=ProductNameJudgment,
+        jev_model(timeout=JEV_TIMEOUT_SECONDS), output_type=ProductNameJudgment
     )
 
 

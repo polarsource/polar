@@ -40,12 +40,6 @@ const nextConfig = {
     typescript: { ignoreBuildErrors: true },
   }),
 
-  outputFileTracingIncludes: {
-    '/onboarding/validate-description': [
-      './src/app/(main)/onboarding/validate-description/acceptable-use-policy.mdx',
-    ],
-  },
-
   // This is required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
 

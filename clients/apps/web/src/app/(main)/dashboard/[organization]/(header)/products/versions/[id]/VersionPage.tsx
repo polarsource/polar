@@ -7,7 +7,7 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PublishedAt } from '../VersionList'
+import { PublishedAt } from '../PublishedAt'
 import { VersionDiff } from './VersionDiff'
 
 type Organization = schemas['Organization']

@@ -18,6 +18,5 @@ export default async function Layout(
     notFound()
   }
 
-  // PROTOTYPE: no list panel; the index page holds the versions and removed tabs
   return props.children
 }

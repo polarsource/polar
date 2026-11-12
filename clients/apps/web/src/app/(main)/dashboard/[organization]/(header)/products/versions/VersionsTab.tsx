@@ -1,12 +1,11 @@
 'use client'
 
-// PROTOTYPE: every version, newest first, with what changed in it. Throwaway.
 import { schemas } from '@polar-sh/client'
 import { Grid, List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { PublishedAt } from '../VersionList'
+import { PublishedAt } from './PublishedAt'
 import { History } from './history'
 
 const columns = 'minmax(0, 1fr) 128px repeat(3, 32px) 16px'
@@ -21,8 +20,8 @@ export const counts = (history: History, index: number) => {
   const count = { added: 0, changed: 0, removed: 0 }
   for (const { steps } of history.entities) {
     const step = steps[index]
-    if (step?.change === 'added') count.added++
-    if (step?.change === 'changed') count.changed++
+    if (step === 'added') count.added++
+    if (step === 'changed') count.changed++
     if (index && steps[index - 1] && !step) count.removed++
   }
   return count
@@ -61,7 +60,10 @@ export const VersionsTab = ({
     {history.versions
       .map(({ catalog }, index) => ({ catalog, index }))
       // The draft is shown above the list
-      .filter(({ catalog }) => catalog.status !== 'draft')
+      .filter(
+        ({ catalog, index }) =>
+          catalog.status !== 'draft' && (index || !history.hasBase),
+      )
       .reverse()
       .map(({ catalog, index }) => (
         <Link

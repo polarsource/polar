@@ -1,6 +1,5 @@
 'use client'
 
-// PROTOTYPE: the unpublished draft, above the version history. Throwaway.
 import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

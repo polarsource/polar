@@ -1,17 +1,16 @@
 'use client'
 
-// PROTOTYPE: full-width versions page with a Versions tab and a Removed tab,
-// replacing the list panel. Throwaway.
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import Pagination from '@/components/Pagination/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { schemas } from '@polar-sh/client'
-import { Subnav, SubnavItem } from '@polar-sh/orbit'
+import { Subnav, SubnavItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { HistoryRounded } from '@polar-sh/orbit/icons'
-import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import { useVersionHistory } from './history'
+import { useSearchParams } from 'next/navigation'
+import { parseAsInteger, parseAsStringLiteral, useQueryState } from 'nuqs'
+import { PAGE_SIZE, useVersionHistory } from './history'
 import { RemovedTab } from './RemovedTab'
-import { Loading } from './shared'
 import { Overview } from './Overview'
 import { VersionsTab } from './VersionsTab'
 
@@ -22,7 +21,9 @@ export const VersionsPage = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const history = useVersionHistory(organization)
+  const searchParams = useSearchParams()
+  const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
+  const history = useVersionHistory(organization, page)
   const [tab, setTab] = useQueryState(
     'tab',
     parseAsStringLiteral(tabs).withDefault('versions'),
@@ -31,12 +32,14 @@ export const VersionsPage = ({
   if (!history) {
     return (
       <DashboardBody title="Versions">
-        <Loading />
+        <Box flexGrow={1} alignItems="center" justifyContent="center">
+          <Text color="muted">Loading versions…</Text>
+        </Box>
       </DashboardBody>
     )
   }
 
-  if (!history.versions.length) {
+  if (!history.totalCount) {
     return (
       <DashboardBody title="Versions">
         <EmptyState
@@ -54,7 +57,7 @@ export const VersionsPage = ({
         <Subnav label="Version sections">
           {(
             [
-              ['versions', 'History'],
+              ['versions', 'Overview'],
               ['removed', 'Removed'],
             ] as const
           ).map(([value, label]) => (
@@ -72,10 +75,18 @@ export const VersionsPage = ({
         {tab === 'versions' ? (
           <Box flexDirection="column" rowGap="2xl">
             <Overview organization={organization} history={history} />
-            <VersionsTab organization={organization} history={history} />
+            <Pagination
+              currentPage={page}
+              pageSize={PAGE_SIZE}
+              totalCount={history.totalCount}
+              onPageChange={setPage}
+              currentURL={searchParams}
+            >
+              <VersionsTab organization={organization} history={history} />
+            </Pagination>
           </Box>
         ) : (
-          <RemovedTab organization={organization} history={history} />
+          <RemovedTab organization={organization} />
         )}
       </Box>
     </DashboardBody>

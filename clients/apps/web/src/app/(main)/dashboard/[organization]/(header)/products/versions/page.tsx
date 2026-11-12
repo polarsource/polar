@@ -1,7 +1,7 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
-import { VersionsPage } from './_prototype/VersionsPage'
+import { VersionsPage } from './VersionsPage'
 
 export async function generateMetadata(): Promise<Metadata> {
   return {

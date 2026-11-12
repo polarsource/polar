@@ -4,18 +4,26 @@ import { useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRight } from '@polar-sh/orbit/icons'
+import {
+  ChevronRight,
+  DiamondOutlined,
+  HiveOutlined,
+} from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { plural } from './[id]/format'
 
 type RemovedItem = schemas['RemovedCatalogItem']
 
-const kindLabel = { product: 'Product', benefit: 'Benefit' } as const
+// Same icons as the Products and Benefits sidebar items
+const kinds = {
+  product: { label: 'Product', Icon: HiveOutlined },
+  benefit: { label: 'Benefit', Icon: DiamondOutlined },
+} as const
 
 const columns = {
   base: 'minmax(0, 1fr) 112px 16px',
-  md: 'minmax(0, 1fr) 80px 200px 112px 16px',
+  md: 'minmax(0, 1fr) 104px 200px 112px 16px',
 }
 
 const RemovedRow = ({
@@ -32,6 +40,7 @@ const RemovedRow = ({
       ? `${base}/${item.last_item_id}`
       : `${base}/benefits/${item.last_item_id}`
   const removedIn = item.removed_in_catalog
+  const { label, Icon } = kinds[item.resource]
   const stop = (event: React.MouseEvent) => event.stopPropagation()
   return (
     <ListItem onSelect={() => router.push(href)}>
@@ -41,11 +50,25 @@ const RemovedRow = ({
         alignItems="center"
         width="100%"
       >
-        <Link href={href} onClick={stop} className="truncate text-base">
-          {item.name}
-        </Link>
-        <Box display={{ base: 'none', md: 'flex' }}>
-          <Text color="muted">{kindLabel[item.resource]}</Text>
+        <Box alignItems="baseline" columnGap="s" minWidth={0}>
+          <Link href={href} onClick={stop} className="truncate text-base">
+            {item.name}
+          </Link>
+          <Box display={{ base: 'none', md: 'flex' }} minWidth={0}>
+            <Text variant="caption" monospace color="muted" truncate>
+              {item.external_id}
+            </Text>
+          </Box>
+        </Box>
+        <Box
+          display={{ base: 'none', md: 'flex' }}
+          alignItems="center"
+          columnGap="s"
+        >
+          <Text as="span" color="muted">
+            <Icon fontSize="inherit" aria-hidden="true" />
+          </Text>
+          <Text color="muted">{label}</Text>
         </Box>
         <Box display={{ base: 'none', md: 'flex' }} minWidth={0}>
           <Text color="muted" truncate>
@@ -75,14 +98,14 @@ const RemovedRow = ({
 const groups = [
   {
     status: 'deprecated',
-    title: 'Still in use',
+    title: 'Deprecated',
     description:
-      'New customers can’t buy these. Existing customers keep them until they cancel or switch.',
+      'Still in use. New customers can’t buy these. Existing customers keep them until they cancel or switch.',
   },
   {
     status: 'removed',
-    title: 'No customers left',
-    description: null,
+    title: 'Removed',
+    description: 'No customers left.',
   },
 ] as const
 

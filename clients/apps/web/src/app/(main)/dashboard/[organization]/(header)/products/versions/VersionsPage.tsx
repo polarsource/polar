@@ -16,7 +16,7 @@ import { VersionsTab } from './VersionsTab'
 
 const tabs = ['versions', 'removed'] as const
 
-export const VersionsPage = ({
+const HistoryTab = ({
   organization,
 }: {
   organization: schemas['Organization']
@@ -24,32 +24,46 @@ export const VersionsPage = ({
   const searchParams = useSearchParams()
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
   const history = useVersionHistory(organization, page)
-  const [tab, setTab] = useQueryState(
-    'tab',
-    parseAsStringLiteral(tabs).withDefault('versions'),
-  )
 
   if (!history) {
-    return (
-      <DashboardBody title="Versions">
-        <Box flexGrow={1} alignItems="center" justifyContent="center">
-          <Text color="muted">Loading versions…</Text>
-        </Box>
-      </DashboardBody>
-    )
+    return <Text color="muted">Loading versions…</Text>
   }
 
   if (!history.totalCount) {
     return (
-      <DashboardBody title="Versions">
-        <EmptyState
-          icon={<HistoryRounded />}
-          title="No versions yet"
-          description="Apply your config to save a draft, then publish it to create a version."
-        />
-      </DashboardBody>
+      <EmptyState
+        icon={<HistoryRounded />}
+        title="No versions yet"
+        description="Apply your config to save a draft, then publish it to create a version."
+      />
     )
   }
+
+  return (
+    <Box flexDirection="column" rowGap="2xl">
+      <Overview organization={organization} history={history} />
+      <Pagination
+        currentPage={page}
+        pageSize={PAGE_SIZE}
+        totalCount={history.totalCount}
+        onPageChange={setPage}
+        currentURL={searchParams}
+      >
+        <VersionsTab organization={organization} history={history} />
+      </Pagination>
+    </Box>
+  )
+}
+
+export const VersionsPage = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
+  const [tab, setTab] = useQueryState(
+    'tab',
+    parseAsStringLiteral(tabs).withDefault('versions'),
+  )
 
   return (
     <DashboardBody title="Versions">
@@ -73,18 +87,7 @@ export const VersionsPage = ({
           ))}
         </Subnav>
         {tab === 'versions' ? (
-          <Box flexDirection="column" rowGap="2xl">
-            <Overview organization={organization} history={history} />
-            <Pagination
-              currentPage={page}
-              pageSize={PAGE_SIZE}
-              totalCount={history.totalCount}
-              onPageChange={setPage}
-              currentURL={searchParams}
-            >
-              <VersionsTab organization={organization} history={history} />
-            </Pagination>
-          </Box>
+          <HistoryTab organization={organization} />
         ) : (
           <RemovedTab organization={organization} />
         )}

@@ -382,13 +382,13 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
-    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/2', matrix.shard) }})"
+    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/3', matrix.shard) }})"
     needs: changes
     if: needs.changes.outputs.server == 'true'
     strategy:
       fail-fast: false
       matrix:
-        shard: ["1", "2", "tinybird"]
+        shard: ["1", "2", "3", "tinybird"]
     runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
@@ -535,7 +535,7 @@ jobs:
       - name: 🐍 Run tests (pytest)
         if: matrix.shard != 'tinybird'
         working-directory: ./server
-        run: uv run pytest -m "not tinybird and not benchmark" --splits 2 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: uv run pytest -m "not tinybird and not benchmark" --splits 3 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'

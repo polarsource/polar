@@ -19,12 +19,13 @@ type OperationalErrorMatcher = Callable[[BaseException], bool]
 
 
 def _sql_timeout_error_matcher(exc: BaseException) -> bool:
-    """Match TimeoutError from asyncpg database queries.
+    if isinstance(exc, DBAPIError):
+        cause = exc.__cause__
+        while cause is not None:
+            if isinstance(cause, asyncpg.exceptions.QueryCanceledError):
+                return str(cause) == "canceling statement due to statement timeout"
+            cause = cause.__cause__
 
-    These errors occur when database queries exceed the configured timeout.
-    They originate from asyncpg/protocol/protocol.pyx and propagate through
-    SQLAlchemy's exception handling chain.
-    """
     if not isinstance(exc, TimeoutError):
         return False
 

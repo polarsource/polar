@@ -395,6 +395,7 @@ jobs:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
+      UV_COMPILE_BYTECODE: 1
 
     services:
       postgres:

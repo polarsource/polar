@@ -12,6 +12,7 @@ from polar.benefit.strategies.meter_credit.properties import (
 )
 from polar.catalog.repository import (
     CatalogBenefitRepository,
+    CatalogCustomFieldRepository,
     CatalogMeterRepository,
     CatalogProductRepository,
 )
@@ -332,6 +333,14 @@ async def export_config(
         custom_fields_statement = custom_field_repository.get_current_statement(
             organization.id
         )
+        if (
+            catalog is not None
+            and catalog.status != CatalogStatus.live
+            and await catalog_service.lists_custom_fields(session, catalog)
+        ):
+            custom_fields_statement = CatalogCustomFieldRepository.from_session(
+                session
+            ).get_custom_fields_statement(catalog.id)
         custom_fields, exported_slugs = await _export_section(
             ConfigResource.custom_field,
             custom_field_repository.stream(custom_fields_statement),

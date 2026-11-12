@@ -2,6 +2,7 @@ from collections.abc import Collection
 from typing import Any
 from uuid import UUID
 
+from polar.custom_field.schemas import AttachedCustomFieldCreate
 from polar.exceptions import PolarRequestValidationError
 from polar.exceptions import ValidationError as RequestValidationError
 from polar.product.schemas import (
@@ -91,10 +92,23 @@ def price_create(
     return ProductPriceFixedCreate(**price.model_dump())
 
 
+def _attached_custom_fields(
+    config: ConfigProduct, custom_field_ids: dict[str, UUID]
+) -> list[AttachedCustomFieldCreate]:
+    return [
+        AttachedCustomFieldCreate(
+            custom_field_id=custom_field_ids[attached.field],
+            required=attached.required,
+        )
+        for attached in config.custom_fields
+    ]
+
+
 def product_create(
     config: ConfigProduct,
     organization_id: UUID | None,
     meter_ids: dict[str, UUID],
+    custom_field_ids: dict[str, UUID] | None,
 ) -> ProductCreateRecurring | ProductCreateOneTime:
     fields = config.model_dump(
         include={"name", "description", "visibility", "metadata"}
@@ -102,9 +116,17 @@ def product_create(
     prices: list[ProductPriceCreate] = [
         price_create(price, meter_ids) for price in config.prices
     ]
+    attached_custom_fields = (
+        []
+        if custom_field_ids is None
+        else _attached_custom_fields(config, custom_field_ids)
+    )
     if config.recurring_interval is None:
         return ProductCreateOneTime(
-            **fields, prices=prices, organization_id=organization_id
+            **fields,
+            prices=prices,
+            attached_custom_fields=attached_custom_fields,
+            organization_id=organization_id,
         )
     return ProductCreateRecurring(
         **fields,
@@ -115,12 +137,16 @@ def product_create(
         meter_interval=config.meter_interval,
         meter_interval_count=config.meter_interval_count,
         prices=prices,
+        attached_custom_fields=attached_custom_fields,
         organization_id=organization_id,
     )
 
 
 def product_update(
-    config: ConfigProduct, meter_ids: dict[str, UUID], fields: Collection[str]
+    config: ConfigProduct,
+    meter_ids: dict[str, UUID],
+    custom_field_ids: dict[str, UUID],
+    fields: Collection[str],
 ) -> ProductUpdate:
     values: dict[str, Any] = {
         name: getattr(config, name)
@@ -135,4 +161,8 @@ def product_update(
         values["metadata"] = config.metadata
     if "prices" in fields:
         values["prices"] = [price_create(price, meter_ids) for price in config.prices]
+    if "custom_fields" in fields:
+        values["attached_custom_fields"] = _attached_custom_fields(
+            config, custom_field_ids
+        )
     return ProductUpdate(**values)

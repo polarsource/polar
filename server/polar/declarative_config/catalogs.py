@@ -43,8 +43,8 @@ def _fingerprint(config: BaseModel) -> str:
 
 
 def definitions(changes: ConfigChanges) -> CatalogEntries:
-    """Fingerprint the products, benefits and meters this apply publishes as
-    new rows."""
+    """Fingerprint the products, benefits, meters and custom fields this apply
+    publishes as new rows."""
     return CatalogEntries(
         products={
             change.config.external_id: _fingerprint(change.config)
@@ -59,6 +59,11 @@ def definitions(changes: ConfigChanges) -> CatalogEntries:
         meters={
             change.config.external_id: _fingerprint(change.config)
             for change in changes.meters
+            if change.existing is None or change.update_dict
+        },
+        custom_fields={
+            change.config.slug: _fingerprint(change.config)
+            for change in changes.custom_fields
             if change.existing is None or change.update_dict
         },
     )

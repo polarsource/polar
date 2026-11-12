@@ -933,14 +933,27 @@ def _get_product_update_dict(
 
 
 def product_update_dict(
-    product: Product, product_config: ConfigProduct, external_ids: dict[str, str]
+    product: Product,
+    product_config: ConfigProduct,
+    external_ids: dict[str, str],
+    custom_field_slugs: dict[str, str] | None,
 ) -> dict[str, Any]:
     return _get_product_update_dict(
         product,
         product_config,
         [price_config(price, external_ids) for price in product.prices],
         [external_ids.get(str(b.id), str(b.id)) for b in product.benefits],
-        None,
+        None
+        if custom_field_slugs is None
+        else [
+            {
+                "field": custom_field_slugs.get(
+                    str(attached.custom_field_id), str(attached.custom_field_id)
+                ),
+                "required": attached.required,
+            }
+            for attached in product.attached_custom_fields
+        ],
     )
 
 
@@ -1123,14 +1136,29 @@ async def diff_custom_fields(
     custom_field_configs: Sequence[ConfigCustomField],
     *,
     for_update: bool,
+    catalog: Catalog | None,
 ) -> list[CustomFieldChange]:
     slugs = [config.slug for config in custom_field_configs]
-    existing_fields = {
-        custom_field.slug: custom_field
-        for custom_field in await CustomFieldRepository.from_session(
-            session
-        ).get_current_by_slugs(organization.id, slugs, for_update=for_update)
-    }
+    existing_fields: dict[str, CustomField]
+    if catalog is not None and await catalog_service.lists_custom_fields(
+        session, catalog
+    ):
+        existing_fields = {
+            slug: custom_field
+            for slug, custom_field in (
+                await catalog_service.get_catalog_custom_fields(
+                    session, organization, catalog
+                )
+            ).items()
+            if slug in slugs
+        }
+    else:
+        existing_fields = {
+            custom_field.slug: custom_field
+            for custom_field in await CustomFieldRepository.from_session(
+                session
+            ).get_current_by_slugs(organization.id, slugs, for_update=for_update)
+        }
     return [
         CustomFieldChange(
             index,
@@ -1140,36 +1168,6 @@ async def diff_custom_fields(
         )
         for index, config in enumerate(custom_field_configs)
     ]
-
-
-def unsupported_custom_field_changes(
-    custom_fields: Sequence[CustomFieldChange], products: Sequence[ProductChange]
-) -> list[ConfigIssue]:
-    """Applying custom field changes isn't supported yet."""
-    issues = [
-        ConfigIssue(
-            severity=ConfigIssueSeverity.error,
-            type=ConfigIssueType.not_supported,
-            loc=_loc(ConfigResource.custom_field, change.index),
-            msg="Creating or changing custom fields isn't supported yet.",
-            input=change.config.slug,
-        )
-        for change in custom_fields
-        if change.existing is None or change.update_dict
-    ]
-    issues.extend(
-        ConfigIssue(
-            severity=ConfigIssueSeverity.error,
-            type=ConfigIssueType.not_supported,
-            loc=_loc(ConfigResource.product, change.index, "custom_fields"),
-            msg="Changing the custom fields of a product isn't supported yet.",
-            input=change.config.external_id,
-        )
-        for change in products
-        if "custom_fields" in change.update_dict
-        and (change.existing is not None or change.update_dict["custom_fields"])
-    )
-    return issues
 
 
 def custom_field_type_changes(
@@ -1253,6 +1251,7 @@ async def check(
         organization,
         config.custom_fields,
         for_update=for_update,
+        catalog=catalog,
     )
     meters = await diff_meters(
         session, organization, config.meters, for_update=for_update, catalog=catalog
@@ -1295,7 +1294,6 @@ async def check(
         ),
         *invalid_references(config),
         *custom_field_type_changes(custom_fields),
-        *unsupported_custom_field_changes(custom_fields, products),
         *await unknown_events(session, organization, meters),
         *benefit_type_changes(benefits),
         *unsupported_prices(products),

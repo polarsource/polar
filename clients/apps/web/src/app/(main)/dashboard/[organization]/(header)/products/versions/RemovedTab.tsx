@@ -4,26 +4,21 @@ import { useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  ChevronRight,
-  DiamondOutlined,
-  HiveOutlined,
-} from '@polar-sh/orbit/icons'
+import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { plural } from './[id]/format'
 
 type RemovedItem = schemas['RemovedCatalogItem']
 
-// Same icons as the Products and Benefits sidebar items
-const kinds = {
-  product: { label: 'Product', Icon: HiveOutlined },
-  benefit: { label: 'Benefit', Icon: DiamondOutlined },
-} as const
+const kinds = [
+  { resource: 'product', title: 'Products' },
+  { resource: 'benefit', title: 'Benefits' },
+] as const
 
 const columns = {
   base: 'minmax(0, 1fr) 112px 16px',
-  md: 'minmax(0, 1fr) 104px 200px 112px 16px',
+  md: 'minmax(0, 1fr) 200px 112px 16px',
 }
 
 const RemovedRow = ({
@@ -40,7 +35,6 @@ const RemovedRow = ({
       ? `${base}/${item.last_item_id}`
       : `${base}/benefits/${item.last_item_id}`
   const removedIn = item.removed_in_catalog
-  const { label, Icon } = kinds[item.resource]
   const stop = (event: React.MouseEvent) => event.stopPropagation()
   return (
     <ListItem onSelect={() => router.push(href)}>
@@ -60,16 +54,6 @@ const RemovedRow = ({
             </Text>
           </Box>
         </Box>
-        <Box
-          display={{ base: 'none', md: 'flex' }}
-          alignItems="center"
-          columnGap="s"
-        >
-          <Text as="span" color="muted">
-            <Icon fontSize="inherit" aria-hidden="true" />
-          </Text>
-          <Text color="muted">{label}</Text>
-        </Box>
         <Box display={{ base: 'none', md: 'flex' }} minWidth={0}>
           <Text color="muted" truncate>
             Removed in{' '}
@@ -85,7 +69,9 @@ const RemovedRow = ({
         <Box justifyContent="end">
           {item.status === 'deprecated' ? (
             <Text tabularNums>{plural(item.customers_count, 'customer')}</Text>
-          ) : null}
+          ) : (
+            <Text color="muted">Removed</Text>
+          )}
         </Box>
         <Text color="muted">
           <ChevronRight size={16} aria-hidden="true" />
@@ -94,20 +80,6 @@ const RemovedRow = ({
     </ListItem>
   )
 }
-
-const groups = [
-  {
-    status: 'deprecated',
-    title: 'Deprecated',
-    description:
-      'Still in use. New customers can’t buy these. Existing customers keep them until they cancel or switch.',
-  },
-  {
-    status: 'removed',
-    title: 'Removed',
-    description: 'No customers left.',
-  },
-] as const
 
 export const RemovedTab = ({
   organization,
@@ -130,22 +102,24 @@ export const RemovedTab = ({
 
   return (
     <Box flexDirection="column" rowGap="2xl">
-      {groups.map(({ status, title, description }) => {
+      <Text variant="body" color="muted">
+        Existing customers keep deprecated items until they cancel or switch.
+        Once no customers are left, the item is removed and safe to delete from
+        your config.
+      </Text>
+      {kinds.map(({ resource, title }) => {
         const items = removed
-          .filter((item) => item.status === status)
+          .filter((item) => item.resource === resource)
           .sort((a, b) => b.customers_count - a.customers_count)
         if (!items.length) return null
         return (
-          <Box key={status} as="section" flexDirection="column" rowGap="m">
-            <Box flexDirection="column" rowGap="xs">
-              <h2 className="flex items-baseline gap-x-2 text-base">
-                {title}
-                <Text as="span" color="muted" tabularNums>
-                  {items.length}
-                </Text>
-              </h2>
-              {description ? <Text color="muted">{description}</Text> : null}
-            </Box>
+          <Box key={resource} as="section" flexDirection="column" rowGap="m">
+            <h2 className="flex items-baseline gap-x-2 text-base">
+              {title}
+              <Text as="span" color="muted" tabularNums>
+                {items.length}
+              </Text>
+            </h2>
             <List size="small">
               {items.map((item) => (
                 <RemovedRow

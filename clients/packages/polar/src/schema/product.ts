@@ -1,5 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
+import { ExternalId } from './external-id'
 import { deprecatedKey, withDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
 import type { Currency } from './money'
@@ -120,7 +121,7 @@ const meterCycleIssue = ({
 }
 
 export const ProductConfig = Schema.Struct({
-  external_id: Schema.String.check(Schema.isMinLength(1)),
+  external_id: ExternalId,
   name: Schema.String.check(Schema.isMinLength(3), Schema.isMaxLength(64)),
   recurring_interval: Schema.NullOr(IntervalUnit),
   recurring_interval_count: Schema.NullOr(

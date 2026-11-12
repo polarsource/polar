@@ -11,6 +11,8 @@ import {
 } from '@/utils/billing-config/catalog'
 import {
   displayName,
+  EXTERNAL_ID_RULE,
+  isExternalId,
   takenKeys,
   typedKey,
   type Unkeyed,
@@ -43,6 +45,12 @@ export const parseExternalIds = (values: ReadonlyArray<string>) =>
         return yield* new BillingConfigError({
           message: `--external-id ${value} is not <id>=<external ID>`,
           hint: 'Run polar config init --json to list the IDs that need one.',
+        })
+      }
+      if (!isExternalId(key)) {
+        return yield* new BillingConfigError({
+          message: `--external-id ${value} is not a valid external ID`,
+          hint: `External IDs ${EXTERNAL_ID_RULE}.`,
         })
       }
       given.set(id, key)
@@ -79,6 +87,7 @@ const problems =
     values.map((value, index) => {
       const key = value.trim()
       if (key === '') return 'enter an external ID'
+      if (!isExternalId(key)) return EXTERNAL_ID_RULE
       const { resource } = editable[index]!
       const others = [
         ...fixed,

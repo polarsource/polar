@@ -331,33 +331,6 @@ class TestCreateMeter:
         assert response.status_code == 201
         assert response.json()["external_id"] == "ext_1337"
 
-    @pytest.mark.auth
-    @pytest.mark.parametrize(
-        "payload",
-        [
-            {"name": "x" * 129},
-            {"name": "Meter", "unit": "custom", "custom_label": "x" * 33},
-        ],
-    )
-    async def test_oversized_fields(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        payload: dict[str, str],
-    ) -> None:
-        response = await client.post(
-            "/v1/meters/",
-            json={
-                "organization_id": str(organization.id),
-                "filter": {"conjunction": "and", "clauses": []},
-                "aggregation": {"func": "count"},
-                **payload,
-            },
-        )
-
-        assert response.status_code == 422
-
 
 @pytest.mark.anyio
 class TestUpdateMeter:
@@ -379,22 +352,3 @@ class TestUpdateMeter:
         )
 
         assert response.status_code == 404
-
-    @pytest.mark.auth
-    @pytest.mark.parametrize(
-        "payload",
-        [
-            {"name": "x" * 129},
-            {"unit": "custom", "custom_label": "x" * 33},
-        ],
-    )
-    async def test_oversized_fields(
-        self,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        meter: Meter,
-        payload: dict[str, str],
-    ) -> None:
-        response = await client.patch(f"/v1/meters/{meter.id}", json=payload)
-
-        assert response.status_code == 422

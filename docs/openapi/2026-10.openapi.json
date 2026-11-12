@@ -62658,6 +62658,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 128,
             "minLength": 3,
             "title": "Name",
             "description": "The name of the meter. Will be shown on customer's invoices and usage."
@@ -62670,7 +62671,8 @@
           "custom_label": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 32
               },
               {
                 "type": "null"
@@ -63175,6 +63177,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 128,
                 "minLength": 3
               },
               {
@@ -63198,7 +63201,8 @@
           "custom_label": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 32
               },
               {
                 "type": "null"

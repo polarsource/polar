@@ -4,13 +4,9 @@ from typing import Annotated
 import structlog
 
 from polar.benefit.grant.repository import BenefitGrantRepository
-from polar.benefit.grant.scope import resolve_scope
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
-from polar.benefit.repository import BenefitRepository
-from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.member.repository import MemberRepository
 from polar.models.license_key import LicenseKeyStatus
 from polar.observability.task_logging import LoggableField
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
@@ -50,6 +46,8 @@ async def sync_benefit_grant(
             str(license_key.id),
             benefit_id=license_key.benefit_id,
             customer_id=license_key.customer_id,
+            for_update=True,
+            options=grant_repository.get_eager_options(),
         )
         if grant is None:
             return
@@ -59,28 +57,9 @@ async def sync_benefit_grant(
         if already_applied:
             return
 
-        benefit_repository = BenefitRepository.from_session(session)
-        benefit = await benefit_repository.get_by_id(
-            grant.benefit_id,
-            options=benefit_repository.get_eager_options(),
-            include_deleted=revoke,
-        )
-        customer_repository = CustomerRepository.from_session(session)
-        customer = await customer_repository.get_by_id(
-            grant.customer_id, include_deleted=revoke
-        )
-        if benefit is None or customer is None:
+        if not revoke and (grant.benefit.is_deleted or grant.customer.is_deleted):
             return
 
-        member = None
-        if grant.member_id is not None:
-            member_repository = MemberRepository.from_session(session)
-            member = await member_repository.get_by_id(
-                grant.member_id, include_deleted=True
-            )
-            assert member is not None
-
-        scope = await resolve_scope(session, grant.scope)
         apply = (
             benefit_grant_service.revoke_benefit
             if revoke
@@ -89,8 +68,8 @@ async def sync_benefit_grant(
         await apply(
             session,
             RedisMiddleware.get(),
-            customer,
-            benefit,
-            member=member,
-            **scope,
+            grant.customer,
+            grant.benefit,
+            member=grant.member,
+            grant=grant,
         )

@@ -156,7 +156,7 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit_grant: BenefitGrant,
         benefit_grant_update: CustomerBenefitGrantUpdate,
     ) -> BenefitGrant:
-        if benefit_grant.is_revoked:
+        if benefit_grant.is_revoked or benefit_grant.manually_revoked_at is not None:
             raise NotPermitted("Cannot update a revoked benefit grant.")
 
         if benefit_grant_update.benefit_type != benefit_grant.benefit.type:

@@ -10,7 +10,7 @@ from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
 from polar.logging import Logger
-from polar.models.benefit_grant import BenefitGrantScopeArgs
+from polar.models.benefit_grant import BenefitGrantScopeArgs, BenefitGrantSelectorArgs
 from polar.observability.task_logging import LoggableField
 from polar.product.repository import ProductRepository
 from polar.worker import (
@@ -23,7 +23,7 @@ from polar.worker import (
     get_retries,
 )
 
-from .grant.scope import resolve_member, resolve_scope
+from .grant.scope import resolve_member, resolve_scope, resolve_selector
 from .grant.service import benefit_grant as benefit_grant_service
 from .strategies import BenefitRetriableError
 
@@ -131,7 +131,7 @@ async def benefit_grant(
     customer_id: Annotated[uuid.UUID, LoggableField],
     benefit_id: Annotated[uuid.UUID, LoggableField],
     member_id: Annotated[uuid.UUID | None, LoggableField] = None,
-    **scope: Unpack[BenefitGrantScopeArgs],
+    **scope: Unpack[BenefitGrantSelectorArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
@@ -146,21 +146,15 @@ async def benefit_grant(
         if benefit is None:
             raise BenefitDoesNotExist(benefit_id)
 
-        resolved_scope = await resolve_scope(session, scope)
-
-        product = None
-        if subscription := resolved_scope.get("subscription"):
-            product = subscription.product
-        elif order := resolved_scope.get("order"):
-            product = order.product
-        is_seat_based = product.has_seat_based_price if product else False
-
+        selector = await resolve_selector(
+            session, scope, customer_id=customer_id, benefit_id=benefit_id
+        )
         member = await resolve_member(
             session,
             customer_id=customer_id,
             organization=benefit.organization,
             member_id=member_id,
-            is_seat_based=is_seat_based,
+            selector=selector,
         )
 
         try:
@@ -171,7 +165,7 @@ async def benefit_grant(
                 benefit,
                 member=member,
                 attempt=get_retries(),
-                **resolved_scope,
+                **selector,
             )
         except BenefitRetriableError as e:
             log.warning(
@@ -192,7 +186,7 @@ async def benefit_revoke(
     customer_id: Annotated[uuid.UUID, LoggableField],
     benefit_id: Annotated[uuid.UUID, LoggableField],
     member_id: Annotated[uuid.UUID | None, LoggableField] = None,
-    **scope: Unpack[BenefitGrantScopeArgs],
+    **scope: Unpack[BenefitGrantSelectorArgs],
 ) -> None:
     async with AsyncSessionMaker() as session:
         customer_repository = CustomerRepository.from_session(session)
@@ -223,21 +217,15 @@ async def benefit_revoke(
                 return
             raise BenefitDoesNotExist(benefit_id)
 
-        resolved_scope = await resolve_scope(session, scope)
-
-        product = None
-        if subscription := resolved_scope.get("subscription"):
-            product = subscription.product
-        elif order := resolved_scope.get("order"):
-            product = order.product
-        is_seat_based = product.has_seat_based_price if product else False
-
+        selector = await resolve_selector(
+            session, scope, customer_id=customer_id, benefit_id=benefit_id
+        )
         member = await resolve_member(
             session,
             customer_id=customer_id,
             organization=benefit.organization,
             member_id=member_id,
-            is_seat_based=is_seat_based,
+            selector=selector,
             include_deleted=True,
         )
 
@@ -249,7 +237,7 @@ async def benefit_revoke(
                 benefit,
                 member=member,
                 attempt=get_retries(),
-                **resolved_scope,
+                **selector,
             )
         except BenefitRetriableError as e:
             log.warning(

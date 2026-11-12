@@ -5,12 +5,12 @@ import pytest
 import stripe as stripe_lib
 from freezegun import freeze_time
 from pytest_mock import MockerFixture
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import NotConfirmedCheckout
 from polar.checkout.tasks import checkout_success
-from polar.enums import PaymentProcessor
+from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.payment import (
     _resolve_trigger,
     handle_failure,
@@ -48,6 +48,7 @@ from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_
 from tests.fixtures.random_objects import (
     create_account,
     create_checkout,
+    create_customer,
     create_order,
     create_organization,
     create_product,
@@ -413,6 +414,88 @@ class TestHandleFailureTrigger:
 
 @pytest.mark.anyio
 class TestHandleSuccess:
+    async def test_charge_waits_for_new_checkout_customer(
+        self, worker_id: str, mocker: MockerFixture
+    ) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id), pool_size=2, pool_recycle=3600
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as setup:
+            save = save_fixture_factory(setup)
+            user = await create_user(save)
+            account = await create_account(save, user)
+            organization = await create_organization(save, account)
+            product = await create_product(
+                save,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+            )
+            checkout = await create_checkout(save, products=[product])
+            await setup.commit()
+
+        stripe_method = build_stripe_payment_method(details={"fingerprint": "checkout"})
+        charge = build_stripe_charge(
+            metadata={
+                "organization_id": str(organization.id),
+                "checkout_id": str(checkout.id),
+            },
+            billing_details={"email": "customer@example.com"},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        charge.payment_method = stripe_method.id
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.get_payment_method",
+            return_value=stripe_method,
+        )
+        enqueue = mocker.patch("polar.integrations.stripe.payment.enqueue_job")
+
+        try:
+            async with sessionmaker() as confirmation, sessionmaker() as webhook:
+                locked_checkout = await CheckoutRepository.from_session(
+                    confirmation
+                ).get_by_id(checkout.id, for_update=True)
+                assert locked_checkout is not None
+                customer = await create_customer(
+                    save_fixture_factory(confirmation), organization=organization
+                )
+                locked_checkout.customer = customer
+                locked_checkout.status = CheckoutStatus.confirmed
+                await confirmation.flush()
+
+                webhook_pid = await webhook.scalar(select(func.pg_backend_pid()))
+                async with asyncio.TaskGroup() as tasks:
+                    tasks.create_task(handle_success(webhook, charge))
+                    async with asyncio.timeout(5):
+                        while not await confirmation.scalar(
+                            select(func.pg_blocking_pids(webhook_pid))
+                        ):
+                            await asyncio.sleep(0.01)
+                    await confirmation.commit()
+
+                method = await PaymentMethodRepository.from_session(
+                    webhook
+                ).get_by_customer_and_processor_id(
+                    customer.id, PaymentProcessor.stripe, stripe_method.id
+                )
+                assert method is not None
+                enqueue.assert_called_once()
+                assert enqueue.call_args.args == ("checkout.success",)
+                assert enqueue.call_args.kwargs["payment_method_id"] == method.id
+        finally:
+            async with sessionmaker() as cleanup:
+                await cleanup.execute(
+                    delete(Checkout).where(Checkout.id == checkout.id)
+                )
+                await cleanup.execute(delete(Product).where(Product.id == product.id))
+                await cleanup.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup.execute(delete(Account).where(Account.id == account.id))
+                await cleanup.execute(delete(User).where(User.id == user.id))
+                await cleanup.commit()
+            await engine.dispose()
+
     async def test_unconfirmed_setup_intent_is_not_enqueued(
         self,
         mocker: MockerFixture,

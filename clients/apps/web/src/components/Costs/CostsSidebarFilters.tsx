@@ -6,7 +6,7 @@ import {
   getDefaultEndDate,
   getDefaultStartDate,
 } from '@/app/(main)/dashboard/[organization]/(header)/analytics/costs/utils'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, toISODate, parseAsISODateString } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { endOfDay, subMonths } from 'date-fns'
 import {
@@ -35,12 +35,12 @@ export default function CostsSidebarFilters({
 
   const [startDateISOString, setStartDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(getDefaultStartDate()),
+    parseAsISODateString.withDefault(getDefaultStartDate()),
   )
 
   const [endDateISOString, setEndDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(getDefaultEndDate()),
+    parseAsISODateString.withDefault(getDefaultEndDate()),
   )
 
   const [startDate, endDate] = useMemo(() => {

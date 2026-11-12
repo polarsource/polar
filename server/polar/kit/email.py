@@ -6,7 +6,7 @@ from email_validator import EmailNotValidError, caching_resolver
 from email_validator import validate_email as _validate_email
 from pydantic import AfterValidator, EmailStr
 from pydantic_core import PydanticCustomError
-from sqlalchemy import ColumnElement, case, func
+from sqlalchemy import ColumnElement, ColumnExpressionArgument, case, func
 
 from polar.config import settings
 
@@ -85,7 +85,9 @@ def normalize_email(email: str) -> str:
     return f"{local_part}@{domain}"
 
 
-def normalize_email_sql(email: ColumnElement[str | None]) -> ColumnElement[str]:
+def normalize_email_sql(
+    email: ColumnExpressionArgument[str | None],
+) -> ColumnElement[str]:
     """SQL counterpart of `normalize_email`, applying the same provider rules
     to an email column so stored addresses compare against a normalized one."""
     lowered = func.lower(email)

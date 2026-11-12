@@ -24,9 +24,6 @@ const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
     limit: 100,
     page: 1,
   })
-  const webhookEndpoints = endpoints.data?.items.filter(
-    (endpoint) => endpoint.format !== 'mcp',
-  )
 
   return (
     <Box flexDirection="column" rowGap="l">
@@ -37,7 +34,7 @@ const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
           title="We couldn't load your webhook endpoints"
           description="Refresh the page to try again."
         />
-      ) : webhookEndpoints?.length === 0 ? (
+      ) : endpoints.data?.items.length === 0 ? (
         <EmptyState
           icon={<Send />}
           title="No webhook endpoints"
@@ -45,12 +42,12 @@ const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
         />
       ) : (
         <SettingsGroup>
-          {!webhookEndpoints ? (
+          {!endpoints.data ? (
             <Box justifyContent="center" paddingVertical="3xl">
               <SpinnerNoMargin />
             </Box>
           ) : (
-            webhookEndpoints.map((endpoint) => (
+            endpoints.data.items.map((endpoint) => (
               <Endpoint
                 key={endpoint.id}
                 organization={org}

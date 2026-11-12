@@ -2,6 +2,7 @@ mod app;
 mod auth;
 mod config;
 mod event;
+mod ingest;
 mod jobs;
 mod telemetry;
 

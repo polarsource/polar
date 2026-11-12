@@ -2,11 +2,15 @@ use std::env;
 
 use anyhow::{Context, Result};
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
+use tracing::level_filters::LevelFilter;
 
 pub struct Config {
     pub port: u16,
-    pub log_level: String,
-    pub json_logs: bool,
+    pub environment: String,
+    pub service_name: String,
+    pub release_version: Option<String>,
+    pub log_level: LevelFilter,
+    pub logfire_token: Option<String>,
     pub postgres: PgConnectOptions,
     pub postgres_pool_size: u32,
     pub redis_url: String,
@@ -52,8 +56,13 @@ impl Config {
 
         Ok(Self {
             port: var("PORT", "10000").parse().context("PORT")?,
-            log_level: var("POLAR_LOG_LEVEL", "info"),
-            json_logs: var("POLAR_ENV", "development") != "development",
+            environment: var("POLAR_ENV", "development"),
+            service_name: var("RENDER_SERVICE_NAME", "events"),
+            release_version: lookup("RELEASE_VERSION"),
+            log_level: var("POLAR_LOG_LEVEL", "info")
+                .parse()
+                .unwrap_or(LevelFilter::INFO),
+            logfire_token: lookup("POLAR_LOGFIRE_TOKEN"),
             postgres,
             postgres_pool_size: var("POLAR_DATABASE_POOL_SIZE", "5")
                 .parse()
@@ -80,7 +89,10 @@ mod tests {
         let config = config(&[]).unwrap();
 
         assert_eq!(config.port, 10000);
-        assert!(!config.json_logs);
+        assert_eq!(config.environment, "development");
+        assert_eq!(config.service_name, "events");
+        assert_eq!(config.log_level, LevelFilter::INFO);
+        assert!(config.logfire_token.is_none());
         assert_eq!(config.postgres.get_host(), "127.0.0.1");
         assert_eq!(config.postgres.get_port(), 5432);
         assert_eq!(config.postgres.get_database(), Some("polar"));
@@ -92,6 +104,8 @@ mod tests {
         let config = config(&[
             ("PORT", "8080"),
             ("POLAR_ENV", "production"),
+            ("POLAR_LOG_LEVEL", "DEBUG"),
+            ("POLAR_LOGFIRE_TOKEN", "token"),
             ("POLAR_POSTGRES_HOST", "db.internal"),
             ("POLAR_POSTGRES_SSL", "True"),
             ("POLAR_REDIS_HOST", "ignored"),
@@ -100,7 +114,9 @@ mod tests {
         .unwrap();
 
         assert_eq!(config.port, 8080);
-        assert!(config.json_logs);
+        assert_eq!(config.environment, "production");
+        assert_eq!(config.log_level, LevelFilter::DEBUG);
+        assert_eq!(config.logfire_token.as_deref(), Some("token"));
         assert_eq!(config.postgres.get_host(), "db.internal");
         assert!(matches!(config.postgres.get_ssl_mode(), PgSslMode::Require));
         assert_eq!(config.redis_url, "rediss://cache.internal:6380/1");

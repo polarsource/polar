@@ -6,6 +6,8 @@ use serde_json::{Value, json};
 use sqlx::PgPool;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 
+use crate::telemetry;
+
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Clone)]
@@ -16,12 +18,16 @@ pub struct AppState {
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(telemetry::request_span)
+                .on_response(telemetry::record_response),
+        )
         .route("/healthz", get(healthz))
         .layer(TimeoutLayer::with_status_code(
             StatusCode::GATEWAY_TIMEOUT,
             REQUEST_TIMEOUT,
         ))
-        .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
 

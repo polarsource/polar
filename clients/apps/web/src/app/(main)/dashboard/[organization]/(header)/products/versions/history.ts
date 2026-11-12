@@ -59,10 +59,14 @@ export const useVersionHistory = (
   organization: schemas['Organization'],
   page: number,
 ) => {
-  const { data } = useCatalogs(organization.id, page, PAGE_SIZE)
+  const { data, isError: listError } = useCatalogs(
+    organization.id,
+    page,
+    PAGE_SIZE,
+  )
   const hasOlder = !!data && page < data.pagination.max_page
   // The next page's newest version is the base this page's oldest one diffs against
-  const { data: older } = useCatalogs(
+  const { data: older, isError: olderError } = useCatalogs(
     organization.id,
     page + 1,
     PAGE_SIZE,
@@ -70,24 +74,30 @@ export const useVersionHistory = (
   )
   const base = older?.items[0]
   const catalogs = [...(data?.items ?? []), ...(base ? [base] : [])]
-  const configs = useCatalogConfigs(
+  const { configs, isError: configsError } = useCatalogConfigs(
     organization.id,
     catalogs.map(({ id }) => id),
   )
 
+  const isError = listError || olderError || configsError
   if (!data || (hasOlder && !older) || configs.some((config) => !config)) {
-    return null
+    return { history: null, isError }
   }
 
   const versions = catalogs
     .map((catalog, index) => ({ catalog, config: configs[index]! }))
     .toReversed()
   return {
-    versions,
-    entities: buildHistory(versions),
-    hasBase: !!base,
-    totalCount: data.pagination.total_count,
+    history: {
+      versions,
+      entities: buildHistory(versions),
+      hasBase: !!base,
+      totalCount: data.pagination.total_count,
+    },
+    isError,
   }
 }
 
-export type History = NonNullable<ReturnType<typeof useVersionHistory>>
+export type History = NonNullable<
+  ReturnType<typeof useVersionHistory>['history']
+>

@@ -23,7 +23,11 @@ const HistoryTab = ({
 }) => {
   const searchParams = useSearchParams()
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const history = useVersionHistory(organization, page)
+  const { history, isError } = useVersionHistory(organization, page)
+
+  if (isError) {
+    return <Text color="muted">Couldn’t load versions.</Text>
+  }
 
   if (!history) {
     return <Text color="muted">Loading versions…</Text>

@@ -125,7 +125,10 @@ export const useCatalogConfigs = (
 ) =>
   useQueries({
     queries: catalogIds.map((id) => catalogConfigQuery(organizationId, id)),
-    combine: (results) => results.map(({ data }) => data?.config),
+    combine: (results) => ({
+      configs: results.map(({ data }) => data?.config),
+      isError: results.some(({ isError }) => isError),
+    }),
   })
 
 export const useRemovedCatalogItems = (organizationId: string) =>

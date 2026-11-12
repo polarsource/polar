@@ -251,7 +251,11 @@ describe('formatTree', () => {
           { field: 'name', before: 'tool_call', after: 'Tool calls' },
         ]),
         entry('benefits', 'tool_calls', 'updated', [
-          { field: 'properties', before: properties, after: properties },
+          {
+            field: 'properties',
+            before: properties,
+            after: { rollover: false, units: 1000, meter: 'tool_call' },
+          },
         ]),
         entry('products', 'pro', 'updated', [
           { field: 'prices', before: prices, after: prices },

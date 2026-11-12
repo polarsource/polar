@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   ALL_EVENTS,
@@ -247,7 +248,7 @@ const shownUrl = (url: unknown, format: unknown) =>
 
 // A changed meter re-sends the prices and properties that use it as they were
 const changed = ({ before, after }: AppliedEntry['diff'][number]) =>
-  JSON.stringify(before) !== JSON.stringify(after)
+  !isDeepStrictEqual(before, after)
 
 // Webhook URLs in a diff are redacted by the format on their own side.
 export const shownDiff = (

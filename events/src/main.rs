@@ -1,5 +1,6 @@
 mod app;
 mod config;
+mod telemetry;
 
 use std::{net::Ipv4Addr, time::Duration};
 
@@ -10,14 +11,13 @@ use tokio::{
     net::TcpListener,
     signal::unix::{SignalKind, signal},
 };
-use tracing_subscriber::EnvFilter;
 
 use crate::{app::AppState, config::Config};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let config = Config::from_env()?;
-    init_tracing(&config);
+    let _telemetry = telemetry::init(&config)?;
 
     let db = PgPoolOptions::new()
         .max_connections(config.postgres_pool_size)
@@ -44,16 +44,6 @@ async fn main() -> Result<()> {
 
     db.close().await;
     Ok(())
-}
-
-fn init_tracing(config: &Config) {
-    let filter = EnvFilter::try_new(&config.log_level).unwrap_or_else(|_| EnvFilter::new("info"));
-    let builder = tracing_subscriber::fmt().with_env_filter(filter);
-    if config.json_logs {
-        builder.json().init();
-    } else {
-        builder.init();
-    }
 }
 
 async fn shutdown_signal() {

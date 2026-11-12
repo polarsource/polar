@@ -6,13 +6,14 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.104"
 axum = "0.8.9"
+logfire = { version = "0.13.1", default-features = false, features = ["export-http-protobuf"] }
 redis = { version = "1.8.1", default-features = false, features = ["tokio-comp", "connection-manager", "tokio-rustls-comp"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde_json = "1.0.154"
 sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "postgres", "tls-rustls-ring-native-roots"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower-http = { version = "0.7.1", features = ["trace", "timeout"] }
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["json", "env-filter"] }
 
 [lints.rust]
 unsafe_code = "forbid"

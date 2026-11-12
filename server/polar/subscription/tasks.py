@@ -100,7 +100,20 @@ async def subscription_cycle(
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
-                await subscription_service.cycle(session, ctx, subscription)
+                if (
+                    subscription.organization.can_renew_subscriptions
+                    and subscription_service.should_expire_trial(subscription)
+                ):
+                    await subscription_service.revoke(session, ctx, subscription)
+                    await subscription_service.reset_meters(
+                        session,
+                        subscription,
+                        reset_at=min(subscription.current_period_end, now),
+                        include_meter_credits=False,
+                    )
+                    await repository.release_scheduler_lock(subscription)
+                else:
+                    await subscription_service.cycle(session, ctx, subscription)
         else:
             # cycle_meters raises SubscriptionMeterCycleLag on a multi-period lag; we
             # let it propagate — the subscription stays halted (lock set) for a human.

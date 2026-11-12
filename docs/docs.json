@@ -37,7 +37,7 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Docs",
+        "tab": "Documentation",
         "icon": "compass",
         "groups": [
           {
@@ -191,7 +191,7 @@
       },
       {
         "tab": "Developer Resources",
-        "icon": "code",
+        "icon": "rectangle-terminal",
         "groups": [
           {
             "group": "API",
@@ -300,7 +300,7 @@
       },
       {
         "tab": "API Reference",
-        "icon": "rectangle-terminal",
+        "icon": "code",
         "versions": [
           {
             "version": "2026-04",

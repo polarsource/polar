@@ -6,7 +6,7 @@ module "planetscale" {
   app_database_name  = "polar_test"
   app_role_name      = "polar_test"
   region             = "aws-us-east-2"
-  cluster_size       = "PS_640_AWS_ARM"
+  cluster_size       = "PS_10_AWS_ARM"
   deletion_protected = false
 
   storage = {
@@ -17,7 +17,7 @@ module "planetscale" {
 
   parameters = {
     pgconf = {
-      max_connections = "500"
+      max_connections = "50"
     }
     pgbouncer = {
       track_extra_parameters = "IntervalStyle,statement_timeout"
@@ -28,8 +28,7 @@ module "planetscale" {
     app = {
       parameters = {
         pgbouncer = {
-          default_pool_size      = "200"
-          max_client_conn        = "1000"
+          default_pool_size      = "12"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }
@@ -38,8 +37,7 @@ module "planetscale" {
       target = "replica"
       parameters = {
         pgbouncer = {
-          default_pool_size      = "50"
-          max_client_conn        = "200"
+          default_pool_size      = "12"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }

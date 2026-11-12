@@ -119,6 +119,7 @@ class PaymentService:
         trigger: PaymentTrigger | None = None,
     ) -> Payment:
         repository = PaymentRepository.from_session(session)
+        await repository.lock_stripe_charge(charge.id)
 
         payment = await repository.get_by_processor_id(
             PaymentProcessor.stripe, charge.id

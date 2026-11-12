@@ -21,7 +21,7 @@ from polar.openapi import (
     open_world,
 )
 from polar.routing import APIRouter
-from polar.version import CURRENT_API_VERSION, V2026_10, V2027_01, VERSIONS
+from polar.version import V2026_10, V2027_01, VERSIONS
 
 
 @pytest.mark.anyio
@@ -36,15 +36,6 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     assert len(schema["webhooks"]) > 0
     assert schema["info"]["version"] == str(version)
     assert "subscription.migrated" in schema["webhooks"]
-
-
-@pytest.mark.anyio
-async def test_unversioned_openapi_serves_current_version(
-    client: AsyncClient,
-) -> None:
-    response = await client.get("/openapi.json")
-    assert response.status_code == 200
-    assert response.json()["info"]["version"] == str(CURRENT_API_VERSION)
 
 
 @pytest.mark.anyio

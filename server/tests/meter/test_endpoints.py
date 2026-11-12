@@ -335,8 +335,8 @@ class TestCreateMeter:
     @pytest.mark.parametrize(
         "payload",
         [
-            {"name": "x" * 257},
-            {"name": "Meter", "unit": "custom", "custom_label": "x" * 65},
+            {"name": "x" * 129},
+            {"name": "Meter", "unit": "custom", "custom_label": "x" * 33},
         ],
     )
     async def test_oversized_fields(
@@ -384,8 +384,8 @@ class TestUpdateMeter:
     @pytest.mark.parametrize(
         "payload",
         [
-            {"name": "x" * 257},
-            {"unit": "custom", "custom_label": "x" * 65},
+            {"name": "x" * 129},
+            {"unit": "custom", "custom_label": "x" * 33},
         ],
     )
     async def test_oversized_fields(

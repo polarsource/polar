@@ -21,8 +21,8 @@ from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
 
-NAME_MAX_LENGTH = 256
-CUSTOM_LABEL_MAX_LENGTH = 64
+NAME_MAX_LENGTH = 128
+CUSTOM_LABEL_MAX_LENGTH = 32
 
 NAME_DESCRIPTION = (
     "The name of the meter. Will be shown on customer's invoices and usage."

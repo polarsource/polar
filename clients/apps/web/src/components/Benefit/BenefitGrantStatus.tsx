@@ -7,21 +7,23 @@ interface BenefitGrantStatusProps {
 }
 
 export const BenefitGrantStatus = ({ grant }: BenefitGrantStatusProps) => {
-  const isRevoked = grant.revoked_at !== null
-  const isGranted = grant.is_granted
-  const hasError = grant.error !== null
-
-  const status = hasError
-    ? 'Error'
-    : isRevoked
-      ? 'Revoked'
-      : isGranted
-        ? 'Granted'
-        : 'Pending'
+  const status = grant.manually_revoked_at
+    ? 'Manually revoked'
+    : grant.error
+      ? 'Error'
+      : grant.is_revoked
+        ? 'Revoked'
+        : grant.is_granted
+          ? grant.manually_granted_at
+            ? 'Manually granted'
+            : 'Granted'
+          : 'Pending'
 
   const statusDescription = {
     Revoked: 'The customer does not have access to this benefit',
     Granted: 'The customer has access to this benefit',
+    'Manually granted': 'This benefit was granted manually',
+    'Manually revoked': 'This grant was permanently revoked manually',
     Pending: 'The benefit grant is currently being processed',
     Error: grant.error?.message ?? 'An unknown error occurred',
   }
@@ -29,6 +31,8 @@ export const BenefitGrantStatus = ({ grant }: BenefitGrantStatusProps) => {
   const statusColors: Record<typeof status, StatusColor> = {
     Revoked: 'red',
     Granted: 'green',
+    'Manually granted': 'green',
+    'Manually revoked': 'red',
     Pending: 'yellow',
     Error: 'red',
   }

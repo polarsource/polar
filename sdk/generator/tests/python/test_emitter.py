@@ -60,7 +60,7 @@ def test_emit_input_model_with_fields_and_additional_properties(
     assert (tmp_path / "polar" / "outpost" / "client.py").is_file()
     for module in ("client", "event", "reducer"):
         assert (tmp_path / "tests" / "outpost" / f"test_{module}.py").is_file()
-    config = (tmp_path / "polar" / "config" / "__init__.py").read_text()
+    config = (tmp_path / "polar" / "config" / "meter.py").read_text()
     assert "from polar.v2026_04 import inputs, literals" in config
 
     inputs = (tmp_path / "polar" / "v2026_04" / "inputs.py").read_text()

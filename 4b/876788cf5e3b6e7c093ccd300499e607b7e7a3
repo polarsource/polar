@@ -1,0 +1,22 @@
+sdk/e2e/harness.py
+  s_abee0099a8bb41::t_cb05f7c4c404a3 167,344-345,483-485
+  s_abee0099a8bb41::t_beeee6bffc557b 387
+sdk/e2e/scenarios.py
+  s_abee0099a8bb41::t_cb05f7c4c404a3 352-367
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4b876788cf5e3b6e7c093ccd300499e607b7e7a3",
+  "prompts": {},
+  "sessions": {
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -353,6 +353,46 @@ class TestSubscriptionCycle:
             assert meter_reset is not None
             assert meter_reset.timestamp == previous_period_end
 
+    async def test_trial_end_with_discount_expiring_at_conversion(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.subscription.service.enqueue_job")
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.discount_applied_at = subscription.current_period_start
+        await save_fixture(subscription)
+        assert subscription.amount == 0
+        previous_period_end = subscription.current_period_end
+        session.expunge_all()
+
+        with freeze_time(previous_period_end):
+            await subscription_cycle(subscription.id)
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.current_period_end == previous_period_end
+        order_repository = OrderRepository.from_session(session)
+        assert await order_repository.get_all_by_subscription(subscription.id) == []
+
     async def test_trial_end_with_renewals_disabled(
         self,
         session: AsyncSession,

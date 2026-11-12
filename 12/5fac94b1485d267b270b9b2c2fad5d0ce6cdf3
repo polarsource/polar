@@ -1,0 +1,25 @@
+server/tests/integrations/stripe/test_client.py
+  s_0eda75199a85b8::t_865a01f6b3453e 22,35-36,39,42,44-46,50
+server/pyproject.toml
+  s_0eda75199a85b8::t_865a01f6b3453e 19
+AGENTS.md
+  s_0eda75199a85b8::t_865a01f6b3453e 222,224-225,229-231,234-236
+server/uv.lock
+  s_0eda75199a85b8::t_6108a1ed36fa93 3052
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "125fac94b1485d267b270b9b2c2fad5d0ce6cdf3",
+  "prompts": {},
+  "sessions": {
+    "s_0eda75199a85b8": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cec3-a1d7-7a23-8beb-0b073ea1b79e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

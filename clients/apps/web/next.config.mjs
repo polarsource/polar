@@ -103,7 +103,7 @@ const nextConfig = {
       afterFiles: [
         {
           source: '/openapi.json',
-          destination: `${process.env.NEXT_PUBLIC_API_URL}/openapi.json`,
+          destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'}/openapi.json`,
         },
         {
           source: '/ingest/static/:path*',

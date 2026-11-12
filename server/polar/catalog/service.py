@@ -2,6 +2,7 @@ import builtins
 import hashlib
 import json
 import uuid
+from collections import defaultdict
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -50,6 +51,7 @@ from .repository import (
     CatalogRepository,
 )
 from .schemas import (
+    CatalogChanges,
     RemovedCatalogItem,
     RemovedCatalogItemResource,
     RemovedCatalogItemStatus,
@@ -195,6 +197,39 @@ def _removed_items(
     return items
 
 
+CatalogKeys = Mapping[tuple[RemovedCatalogItemResource, str], uuid.UUID]
+
+
+def _catalog_changes(
+    catalog: Catalog,
+    members: Mapping[uuid.UUID, CatalogKeys],
+    benefits_versioned_at: datetime | None,
+) -> CatalogChanges | None:
+    """Compare a catalog's keys with its parent's: a key listing another item
+    is a new version of it."""
+    if catalog.parent_id is None:
+        return None
+    before = members.get(catalog.parent_id, {})
+    after = members.get(catalog.id, {})
+    # Its parent was published before benefits were versioned, so it lists none
+    if benefits_versioned_at is None or catalog.published_at == benefits_versioned_at:
+        before, after = (
+            {
+                key: item_id
+                for key, item_id in keys.items()
+                if key[0] == RemovedCatalogItemResource.product
+            }
+            for keys in (before, after)
+        )
+    return CatalogChanges(
+        added_count=len(after.keys() - before.keys()),
+        changed_count=sum(
+            before[key] != item_id for key, item_id in after.items() if key in before
+        ),
+        removed_count=len(before.keys() - after.keys()),
+    )
+
+
 class CatalogNotFound(PolarError):
     def __init__(self, id: uuid.UUID) -> None:
         super().__init__(f"No catalog with ID {id}.", 404)
@@ -252,6 +287,49 @@ class CatalogService:
             )
         )
         return await repository.get_one_or_none(statement)
+
+    async def get_changes(
+        self, session: AsyncReadSession, catalogs: Sequence[Catalog]
+    ) -> dict[uuid.UUID, CatalogChanges | None]:
+        catalog_ids = builtins.list(
+            {catalog.id for catalog in catalogs}
+            | {catalog.parent_id for catalog in catalogs if catalog.parent_id}
+        )
+        members: defaultdict[
+            uuid.UUID, dict[tuple[RemovedCatalogItemResource, str], uuid.UUID]
+        ] = defaultdict(dict)
+        for resource, memberships in (
+            (
+                RemovedCatalogItemResource.product,
+                await CatalogProductRepository.from_session(session).get_memberships(
+                    catalog_ids
+                ),
+            ),
+            (
+                RemovedCatalogItemResource.benefit,
+                await CatalogBenefitRepository.from_session(session).get_memberships(
+                    catalog_ids
+                ),
+            ),
+        ):
+            for membership in memberships:
+                members[membership.catalog_id][(resource, membership.external_id)] = (
+                    membership.item_id
+                )
+
+        benefit_repository = CatalogBenefitRepository.from_session(session)
+        benefits_versioned_at = {
+            organization_id: await benefit_repository.get_first_published_at(
+                organization_id
+            )
+            for organization_id in {catalog.organization_id for catalog in catalogs}
+        }
+        return {
+            catalog.id: _catalog_changes(
+                catalog, members, benefits_versioned_at[catalog.organization_id]
+            )
+            for catalog in catalogs
+        }
 
     async def list_removed(
         self,

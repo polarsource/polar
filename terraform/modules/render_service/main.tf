@@ -275,7 +275,7 @@ resource "render_web_service" "api_copy" {
 
   env_vars = {
     SERVICE_NAME             = { value = each.key }
-    WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
+    WEB_CONCURRENCY          = { value = coalesce(each.value.web_concurrency, var.api_service_config.web_concurrency) }
     FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
     POLAR_BACKOFFICE_ENABLED = { value = "false" }
     POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }

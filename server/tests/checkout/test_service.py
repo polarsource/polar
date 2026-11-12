@@ -15,6 +15,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import Anonymous, AuthSubject
 from polar.checkout import legacy_schemas
 from polar.checkout.guard import has_product_checkout
+from polar.checkout.ip_geolocation import ip_geolocation as ip_geolocation_service
 from polar.checkout.schemas import (
     CheckoutConfirm,
     CheckoutConfirmSharedPaymentToken,
@@ -848,7 +849,7 @@ class TestCreate:
         assert isinstance(price, ProductPriceFixed)
         assert price.is_free
         mocker.patch.object(
-            checkout_service, "_get_ip_country", return_value=ip_country
+            ip_geolocation_service, "get_country", return_value=ip_country
         )
 
         checkout = await checkout_service.create(
@@ -1483,7 +1484,7 @@ class TestCreate:
             prices=[(1000, currency) for currency in product_currencies],
         )
         mocker.patch.object(
-            checkout_service, "_get_ip_country", return_value=ip_country
+            ip_geolocation_service, "get_country", return_value=ip_country
         )
 
         checkout = await checkout_service.create(
@@ -3174,7 +3175,7 @@ class TestCheckoutLinkCreate:
             prices=[(1000, currency) for currency in product_currencies],
         )
         mocker.patch.object(
-            checkout_service, "_get_ip_country", return_value=ip_country
+            ip_geolocation_service, "get_country", return_value=ip_country
         )
 
         checkout_link = await create_checkout_link(
@@ -7125,7 +7126,7 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
     ) -> None:
         mocker.patch.object(
-            checkout_service, "_get_ip_country", return_value=ip_country
+            ip_geolocation_service, "get_country", return_value=ip_country
         )
         await save_fixture(checkout_one_time_fixed)
 

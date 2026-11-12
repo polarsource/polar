@@ -1,11 +1,9 @@
 import argparse
 import sys
-from typing import Annotated, cast
+from typing import cast
 
 import httpx
 import ipinfo_db
-import ipinfo_db.reader
-from fastapi import Depends, Request
 
 from polar.config import settings
 
@@ -14,16 +12,6 @@ DATABASE_PATH = (
     settings.IP_GEOLOCATION_DATABASE_DIRECTORY_PATH
     / settings.IP_GEOLOCATION_DATABASE_NAME
 )
-
-
-async def _get_client_dependency(request: Request) -> "IPGeolocationClient | None":
-    """
-    Retrieve the IPInfo database client from the FastAPI request state.
-    """
-    return request.state.ip_geolocation_client
-
-
-IPGeolocationClient = Annotated[ipinfo_db.Client, Depends(_get_client_dependency)]
 
 
 def _download_database(access_token: str) -> None:
@@ -45,40 +33,45 @@ def _download_database(access_token: str) -> None:
                 db_file.writelines(response.iter_bytes())
 
 
-def get_client() -> IPGeolocationClient:
-    """
-    Open the IP to Country ASN database.
+class IPGeolocation:
+    def __init__(self) -> None:
+        self._client: ipinfo_db.Client | None = None
 
-    Returns:
-        IPInfo database client.
-    """
-    if not DATABASE_PATH.exists():
-        raise FileNotFoundError(
-            f"Database not found at {DATABASE_PATH}. "
-            "Please run `python -m polar.checkout.ip_geolocation ACCESS_TOKEN`."
-        )
-    return ipinfo_db.Client(path=DATABASE_PATH)
+    def open(self) -> None:
+        """
+        Open the IP to Country ASN database.
+
+        Raises:
+            FileNotFoundError: The database hasn't been downloaded.
+        """
+        if not DATABASE_PATH.exists():
+            raise FileNotFoundError(
+                f"Database not found at {DATABASE_PATH}. "
+                "Please run `python -m polar.checkout.ip_geolocation ACCESS_TOKEN`."
+            )
+        self._client = ipinfo_db.Client(path=DATABASE_PATH)
+
+    def close(self) -> None:
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+
+    def get_country(self, ip: object | None) -> str | None:
+        """
+        Get the country alpha-2 code for the given IP address, if available.
+
+        Returns None if the database isn't open or the IP can't be geolocated.
+        """
+        if self._client is None or ip is None:
+            return None
+        try:
+            country = cast(str | None, self._client.getCountry(str(ip)))
+        except ValueError:
+            return None
+        return country or None
 
 
-def get_ip_country(client: IPGeolocationClient, ip: str) -> str | None:
-    """
-    Get the country alpha-2 code for the given IP address, if available.
-
-    Args:
-        client: IPInfo database client.
-        ip: IP address.
-
-    Returns:
-        Country alpha-2 code.
-    """
-    try:
-        ret = cast(str | None, client.getCountry(ip))
-    except ValueError:
-        return None
-    # Convert empty str into None response to ease empty case checking
-    if ret == "":
-        return None
-    return ret
+ip_geolocation = IPGeolocation()
 
 
 if __name__ == "__main__":
@@ -91,4 +84,4 @@ if __name__ == "__main__":
     _download_database(args.access_token)
     sys.stdout.write(f"Database downloaded to {DATABASE_PATH}\n")
 
-__all__ = ["IPGeolocationClient", "get_client", "get_ip_country"]
+__all__ = ["IPGeolocation", "ip_geolocation"]

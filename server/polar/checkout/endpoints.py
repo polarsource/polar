@@ -33,7 +33,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.version import V2027_01
 
-from . import auth, ip_geolocation, legacy_schemas, sorting
+from . import auth, legacy_schemas, sorting
 from .repository import CheckoutRepository
 from .schemas import Checkout as CheckoutSchema
 from .schemas import (
@@ -177,13 +177,10 @@ async def get(
 async def create(
     checkout_create: legacy_schemas.CheckoutCreate,
     auth_subject: auth.CheckoutWrite,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Create a checkout session."""
-    return await checkout_service.create(
-        session, checkout_create, auth_subject, ip_geolocation_client
-    )
+    return await checkout_service.create(session, checkout_create, auth_subject)
 
 
 @inner_router.post(
@@ -198,13 +195,10 @@ async def create(
 async def create_v2027_01(
     checkout_create: CheckoutCreate,
     auth_subject: auth.CheckoutWrite,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Create a checkout session."""
-    return await checkout_service.create(
-        session, checkout_create, auth_subject, ip_geolocation_client
-    )
+    return await checkout_service.create(session, checkout_create, auth_subject)
 
 
 @inner_router.patch(
@@ -221,7 +215,6 @@ async def update(
     id: CheckoutID,
     checkout_update: legacy_schemas.CheckoutUpdate,
     auth_subject: auth.CheckoutWrite,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Update a checkout session."""
@@ -236,9 +229,7 @@ async def update(
         session, auth_subject, checkout, OrganizationPermission.sales_manage
     )
 
-    return await checkout_service.update(
-        session, checkout, checkout_update, ip_geolocation_client
-    )
+    return await checkout_service.update(session, checkout, checkout_update)
 
 
 @inner_router.patch(
@@ -257,7 +248,6 @@ async def update_v2027_01(
     id: CheckoutID,
     checkout_update: CheckoutUpdate,
     auth_subject: auth.CheckoutWrite,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Update a checkout session."""
@@ -272,9 +262,7 @@ async def update_v2027_01(
         session, auth_subject, checkout, OrganizationPermission.sales_manage
     )
 
-    return await checkout_service.update(
-        session, checkout, checkout_update, ip_geolocation_client
-    )
+    return await checkout_service.update(session, checkout, checkout_update)
 
 
 @inner_router.get(
@@ -306,7 +294,6 @@ async def client_get(
 async def client_update(
     client_secret: CheckoutClientSecret,
     checkout_update: legacy_schemas.CheckoutUpdatePublic,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Update a checkout session by client secret."""
@@ -314,9 +301,7 @@ async def client_update(
         session, client_secret, for_update=True
     )
 
-    return await checkout_service.update(
-        session, checkout, checkout_update, ip_geolocation_client
-    )
+    return await checkout_service.update(session, checkout, checkout_update)
 
 
 @inner_router.patch(
@@ -336,7 +321,6 @@ async def client_update(
 async def client_update_v2027_01(
     client_secret: CheckoutClientSecret,
     checkout_update: CheckoutUpdatePublic,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Update a checkout session by client secret."""
@@ -344,9 +328,7 @@ async def client_update_v2027_01(
         session, client_secret, for_update=True
     )
 
-    return await checkout_service.update(
-        session, checkout, checkout_update, ip_geolocation_client
-    )
+    return await checkout_service.update(session, checkout, checkout_update)
 
 
 @inner_router.post(
@@ -366,7 +348,6 @@ async def client_confirm(
     client_secret: CheckoutClientSecret,
     checkout_confirm: legacy_schemas.CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -379,7 +360,7 @@ async def client_confirm(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm, ip_geolocation_client
+        session, auth_subject, checkout, checkout_confirm
     )
 
 
@@ -402,7 +383,6 @@ async def client_confirm_v2027_01(
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -415,7 +395,7 @@ async def client_confirm_v2027_01(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm, ip_geolocation_client
+        session, auth_subject, checkout, checkout_confirm
     )
 
 

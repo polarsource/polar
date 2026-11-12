@@ -17,7 +17,7 @@ from polar.auth.exception_handlers import (
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.models import ORGANIZATION_HEADER
 from polar.backoffice import app as backoffice_app
-from polar.checkout import ip_geolocation
+from polar.checkout.ip_geolocation import ip_geolocation as ip_geolocation_service
 from polar.checkout_link.app import app as checkout_link_redirect_app
 from polar.config import settings
 from polar.exception_handlers import add_exception_handlers
@@ -122,7 +122,6 @@ class State(TypedDict):
     sync_sessionmaker: SyncSessionMaker
 
     redis: Redis
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient | None
 
 
 @contextlib.asynccontextmanager
@@ -166,13 +165,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     redis = create_redis("app")
 
     try:
-        ip_geolocation_client = ip_geolocation.get_client()
+        ip_geolocation_service.open()
     except FileNotFoundError:
         log.info(
             "IP geolocation database not found. "
             "Checkout won't automatically geolocate IPs."
         )
-        ip_geolocation_client = None
 
     log.info("Polar API started")
 
@@ -184,7 +182,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         "sync_engine": sync_engine,
         "sync_sessionmaker": sync_sessionmaker,
         "redis": redis,
-        "ip_geolocation_client": ip_geolocation_client,
     }
 
     # Stop background threads
@@ -200,8 +197,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     if async_read_engine is not async_engine:
         await async_read_engine.dispose()
     sync_engine.dispose()
-    if ip_geolocation_client is not None:
-        ip_geolocation_client.close()
+    ip_geolocation_service.close()
 
     log.info("Polar API stopped")
 

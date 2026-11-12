@@ -6,7 +6,6 @@ from fastapi.datastructures import URL
 from fastapi.responses import RedirectResponse
 from pydantic import UUID4, BeforeValidator
 
-from polar.checkout import ip_geolocation
 from polar.checkout.service import checkout as checkout_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
@@ -206,7 +205,6 @@ async def delete(
 async def redirect(
     request: Request,
     client_secret: CheckoutLinkClientSecret,
-    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     embed_origin: Annotated[EmptyStrToNone, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
     # Product pre-selection & query parameter prefill
@@ -261,7 +259,6 @@ async def redirect(
         session,
         checkout_link,
         embed_origin,
-        ip_geolocation_client,
         ip_address,
         query_prefill=query_prefill,
         reference_id=reference_id,

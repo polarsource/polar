@@ -29,7 +29,6 @@ from polar.checkout.schemas import (
     CheckoutProductsExternalCreate,
     CheckoutUpdate,
     CheckoutUpdatePublic,
-    CustomerIPAddress,
 )
 from polar.config import settings
 from polar.custom_field.data import validate_custom_field_data
@@ -133,8 +132,8 @@ from polar.trial_redemption.service import trial_redemption as trial_redemption_
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job
 
-from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .ip_geolocation import ip_geolocation as ip_geolocation_service
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
@@ -404,10 +403,9 @@ class CheckoutService:
         session: AsyncSession,
         checkout_create: CheckoutCreate | CheckoutProductCreate | CheckoutPriceCreate,
         auth_subject: AuthSubject[User | Organization | Agent],
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        ip_country = self._get_ip_country(
-            ip_geolocation_client, checkout_create.customer_ip_address
+        ip_country = ip_geolocation_service.get_country(
+            checkout_create.customer_ip_address
         )
 
         ad_hoc_prices: dict[Product, Sequence[ProductPrice]] = {}
@@ -779,7 +777,6 @@ class CheckoutService:
         session: AsyncSession,
         checkout_link: CheckoutLink,
         embed_origin: str | None = None,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
         ip_address: str | None = None,
         query_prefill: dict[str, str | UUID4 | dict[str, str] | None] | None = None,
         **query_metadata: str | None,
@@ -836,7 +833,7 @@ class CheckoutService:
                     product = p
                     break
 
-        ip_country = self._get_ip_country(ip_geolocation_client, ip_address)
+        ip_country = ip_geolocation_service.get_country(ip_address)
         currencies = self._get_currencies(
             None, product, product.organization, ip_country
         )
@@ -1086,11 +1083,8 @@ class CheckoutService:
         session: AsyncSession,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
-        checkout = await self._update_checkout(
-            session, checkout, checkout_update, ip_geolocation_client
-        )
+        checkout = await self._update_checkout(session, checkout, checkout_update)
         checkout = await self._disable_redeemed_trial(session, checkout)
         try:
             checkout = await self._update_checkout_tax(session, checkout)
@@ -1109,7 +1103,6 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         checkout = await self._update_checkout(session, checkout, checkout_confirm)
         # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
@@ -1124,7 +1117,6 @@ class CheckoutService:
                         auth_subject,
                         checkout,
                         checkout_confirm,
-                        ip_geolocation_client,
                     )
             except DiscountNotRedeemableError as e:
                 raise PolarRequestValidationError(
@@ -1139,7 +1131,7 @@ class CheckoutService:
                 ) from e
 
         return await self._confirm_inner(
-            session, auth_subject, checkout, checkout_confirm, ip_geolocation_client
+            session, auth_subject, checkout, checkout_confirm
         )
 
     async def _confirm_inner(
@@ -1148,7 +1140,6 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
     ) -> Checkout:
         errors: list[ValidationError] = []
         try:
@@ -1273,7 +1264,7 @@ class CheckoutService:
             self._validate_shared_payment_token(checkout)
 
         if confirmation_token is not None and not self._is_billing_country_corroborated(
-            checkout, confirmation_token, ip_geolocation_client
+            checkout, confirmation_token
         ):
             log.info(
                 "Checkout confirmation blocked by billing country mismatch",
@@ -2309,7 +2300,6 @@ class CheckoutService:
         session: AsyncSession,
         checkout: Checkout,
         checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirm,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
     ) -> Checkout:
         if checkout.status != CheckoutStatus.open:
             raise NotOpenCheckout(checkout)
@@ -2631,9 +2621,7 @@ class CheckoutService:
                     **custom_field_data,
                 }
 
-        ip_country = self._get_ip_country(
-            ip_geolocation_client, checkout.customer_ip_address
-        )
+        ip_country = ip_geolocation_service.get_country(checkout.customer_ip_address)
         checkout = await self._update_ip_country(session, checkout, ip_country)
 
         exclude = {
@@ -2826,16 +2814,13 @@ class CheckoutService:
         self,
         checkout: Checkout,
         confirmation_token: stripe_lib.ConfirmationToken,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
     ) -> bool:
         if checkout.customer_billing_address is None:
             return True
 
         card = getattr(confirmation_token.payment_method_preview, "card", None)
         payment_method_country: str | None = getattr(card, "country", None)
-        ip_country = self._get_ip_country(
-            ip_geolocation_client, checkout.customer_ip_address
-        )
+        ip_country = ip_geolocation_service.get_country(checkout.customer_ip_address)
 
         evidence = {
             country
@@ -2846,19 +2831,6 @@ class CheckoutService:
             return True
 
         return checkout.customer_billing_address.country in evidence
-
-    def _get_ip_country(
-        self,
-        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None,
-        ip_address: CustomerIPAddress | str | None,
-    ) -> str | None:
-        if ip_geolocation_client is None:
-            return None
-
-        if ip_address is None:
-            return None
-
-        return ip_geolocation.get_ip_country(ip_geolocation_client, str(ip_address))
 
     def _get_currencies(
         self,

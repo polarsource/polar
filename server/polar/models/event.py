@@ -193,7 +193,7 @@ class Event(Model, MetadataMixin):
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     source: Mapped[EventSource] = mapped_column(
-        String, nullable=False, default=EventSource.system, index=True
+        String, nullable=False, default=EventSource.system
     )
 
     customer_id: Mapped[UUID | None] = mapped_column(

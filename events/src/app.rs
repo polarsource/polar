@@ -1,12 +1,20 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
+use axum::{
+    Json, Router,
+    extract::State,
+    http::StatusCode,
+    routing::{get, post},
+};
 use redis::aio::ConnectionManager;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 
-use crate::telemetry;
+use crate::{
+    auth::{AuthSettings, OrganizationAuth},
+    telemetry,
+};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -14,10 +22,12 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 pub struct AppState {
     pub db: PgPool,
     pub redis: ConnectionManager,
+    pub auth: Arc<AuthSettings>,
 }
 
 pub fn router(state: AppState) -> Router {
     Router::new()
+        .route("/v1/events/ingest", post(ingest))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(telemetry::request_span)
@@ -29,6 +39,10 @@ pub fn router(state: AppState) -> Router {
             REQUEST_TIMEOUT,
         ))
         .with_state(state)
+}
+
+async fn ingest(_auth: OrganizationAuth) -> StatusCode {
+    StatusCode::NOT_IMPLEMENTED
 }
 
 async fn healthz(

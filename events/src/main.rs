@@ -1,9 +1,10 @@
 mod app;
+mod auth;
 mod config;
 mod jobs;
 mod telemetry;
 
-use std::{net::Ipv4Addr, time::Duration};
+use std::{net::Ipv4Addr, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use redis::aio::ConnectionManager;
@@ -38,6 +39,7 @@ async fn main() -> Result<()> {
         app::router(AppState {
             db: db.clone(),
             redis,
+            auth: Arc::new(config.auth),
         }),
     )
     .with_graceful_shutdown(shutdown_signal())

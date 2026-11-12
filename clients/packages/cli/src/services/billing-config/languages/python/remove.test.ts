@@ -53,6 +53,46 @@ describe('removeFromPython', () => {
     })
   })
 
+  test('removes an entry by its explicit external ID', () => {
+    const explicit = source.replace(
+      'on="plum", deprecated=True',
+      'on="plum", external_id="ripe-plums"',
+    )
+
+    const { source: edited, missing } = removeFromPython(explicit, [
+      { section: 'meters', id: 'ripe-plums' },
+    ])
+
+    expect(missing).toEqual([])
+    expect(edited).not.toContain('plum')
+    expect(edited).toContain('pears = Meter(')
+  })
+
+  test('removes a meter named like a keyword argument, not the argument', () => {
+    const keyword = [
+      'class Meters(MeterSet):',
+      '    on = Meter("On", on="switch")',
+      '    pears = Meter(',
+      '        "Pears",',
+      '        on="pear",',
+      '    )',
+      '',
+    ].join('\n')
+
+    expect(
+      removeFromPython(keyword, [{ section: 'meters', id: 'on' }]).source,
+    ).toBe(
+      [
+        'class Meters(MeterSet):',
+        '    pears = Meter(',
+        '        "Pears",',
+        '        on="pear",',
+        '    )',
+        '',
+      ].join('\n'),
+    )
+  })
+
   test('leaves a pass in a class that loses its last entry', () => {
     const { source: edited } = removeFromPython(source, [
       { section: 'benefits', id: 'beta' },

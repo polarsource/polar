@@ -40,27 +40,75 @@ export const classBody = (source: string, section: string) => {
   return { start, end: next === null ? source.length : start + next.index }
 }
 
+const DECLARATION = /^([ \t]+)([A-Za-z_]\w*)[ \t]*(?::[^=\n]+)?=(?!=)/gm
+
+const STRING_OR_COMMENT =
+  /("""|''')[\s\S]*?\1|(["'])(?:\\.|(?!\2)[^\\\n])*\2|#[^\n]*/g
+const EXPLICIT_ID = /\bexternal_id\s*=\s*(?=["'])/g
+
+const blankStringsAndComments = (source: string) =>
+  source.replace(STRING_OR_COMMENT, (text: string, tripleQuote?: string) => {
+    const quote = text.startsWith('#') ? 0 : (tripleQuote?.length ?? 1)
+    const inside = text.slice(quote, text.length - quote)
+    return `${text.slice(0, quote)}${inside.replace(/[^\n]/g, ' ')}${text.slice(text.length - quote)}`
+  })
+
+interface Declaration {
+  readonly name: string
+  readonly start: number
+  readonly end: number
+}
+
+const classLevelDeclarations = (
+  source: string,
+  code: string,
+  from: number,
+  to: number,
+): ReadonlyArray<Declaration> => {
+  const found = [...code.slice(from, to).matchAll(DECLARATION)].map((match) => {
+    const indent = match[1]!.length
+    const start = from + match.index + indent
+    const next = new RegExp(`\\n[ \\t]{0,${indent}}[^\\s)\\]}]`).exec(
+      source.slice(start),
+    )
+    return {
+      name: match[2]!,
+      indent,
+      start,
+      end: next === null ? source.length : start + next.index,
+    }
+  })
+  const classLevel = Math.min(...found.map(({ indent }) => indent))
+  return found.filter(({ indent }) => indent === classLevel)
+}
+
+const hasExplicitId = (
+  source: string,
+  code: string,
+  { start, end }: Declaration,
+  externalId: string,
+) => {
+  const literal = new RegExp(`^(['"])${escapePattern(externalId)}\\1`)
+  return [...code.slice(start, end).matchAll(EXPLICIT_ID)].some((keyword) =>
+    literal.test(source.slice(start + keyword.index + keyword[0].length)),
+  )
+}
+
 export const entryOf = (
   source: string,
   section: string,
   externalId: string,
 ) => {
-  const declaration = new RegExp(
-    `^([ \\t]+)${escapePattern(externalId)}[ \\t]*(?::[^=\\n]+)?=(?!=)`,
-    'gm',
-  )
+  const code = blankStringsAndComments(source)
+  const within = (from: number, to: number) => {
+    const entries = classLevelDeclarations(source, code, from, to)
+    return (
+      entries.find((entry) => hasExplicitId(source, code, entry, externalId)) ??
+      entries.findLast(({ name }) => name === externalId)
+    )
+  }
   const body = classBody(source, section)
-  const inClass = [
-    ...source.slice(body.start, body.end).matchAll(declaration),
-  ].at(-1)
-  const match = inClass ?? [...source.matchAll(declaration)].at(-1)
-  if (match === undefined) return undefined
-  const indent = match[1]!.length
-  const start = (inClass ? body.start : 0) + match.index + indent
-  const next = new RegExp(`\\n[ \\t]{0,${indent}}[^\\s)\\]}]`).exec(
-    source.slice(start),
-  )
-  return { start, end: next === null ? source.length : start + next.index }
+  return within(body.start, body.end) ?? within(0, source.length)
 }
 
 export const locateInPython = (
@@ -92,7 +140,7 @@ export const locateInPython = (
   const found = value ??
     (keyword && { offset: keyword.offset, length: keyword.length - 1 }) ?? {
       offset: entry.start,
-      length: externalId.length,
+      length: entry.name.length,
     }
   return span(source, found.offset, found.length)
 }

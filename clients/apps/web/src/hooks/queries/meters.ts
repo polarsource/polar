@@ -24,6 +24,7 @@ export const useMetersInfinite = (
         api.GET('/v1/meters/', {
           params: {
             query: {
+              catalog_status: 'live',
               organization_id: organizationId,
               ...(parameters || {}),
               page: pageParam,
@@ -58,7 +59,11 @@ export const useMeters = (
       unwrap(
         api.GET('/v1/meters/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: {
+              catalog_status: 'live',
+              organization_id: organizationId,
+              ...(parameters || {}),
+            },
           },
         }),
       ),

@@ -33,10 +33,19 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
-        op.create_index(
-            "ix_events_member_id",
-            "events",
-            ["member_id"],
-            if_not_exists=True,
-            postgresql_concurrently=True,
-        )
+        op.execute("SET lock_timeout = '5min'")
+        try:
+            op.drop_index(
+                "ix_events_member_id",
+                table_name="events",
+                if_exists=True,
+                postgresql_concurrently=True,
+            )
+            op.create_index(
+                "ix_events_member_id",
+                "events",
+                ["member_id"],
+                postgresql_concurrently=True,
+            )
+        finally:
+            op.execute("RESET lock_timeout")

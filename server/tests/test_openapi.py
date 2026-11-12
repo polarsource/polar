@@ -13,6 +13,7 @@ from pydantic import Field
 from polar.kit.schemas import Schema
 from polar.kit.versioning import APIVersion
 from polar.openapi import (
+    VERSIONING_POLICY_URL,
     APITag,
     add_destructive_tool_annotations,
     destructive,
@@ -36,6 +37,19 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     assert len(schema["webhooks"]) > 0
     assert schema["info"]["version"] == str(version)
     assert "subscription.migrated" in schema["webhooks"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("version", VERSIONS)
+async def test_openapi_links_versioning_policy(
+    version: APIVersion, client: AsyncClient
+) -> None:
+    response = await client.get(f"{version}/openapi.json")
+    assert response.status_code == 200
+
+    schema = response.json()
+    assert schema["externalDocs"]["url"] == VERSIONING_POLICY_URL
+    assert VERSIONING_POLICY_URL in schema["info"]["description"]
 
 
 @pytest.mark.anyio

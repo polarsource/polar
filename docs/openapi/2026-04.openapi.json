@@ -3,7 +3,7 @@
   "info": {
     "title": "Polar API",
     "summary": "Polar HTTP and Webhooks API",
-    "description": "Read the docs at https://polar.sh/docs/api-reference",
+    "description": "Read the docs at https://polar.sh/docs/api-reference. See https://polar.sh/docs/api-reference/versioning for the API versioning and deprecation policy.",
     "version": "2026-04"
   },
   "servers": [
@@ -83917,5 +83917,9 @@
       "name": "cli",
       "description": "Endpoints exposed as commands by Polar's CLI."
     }
-  ]
+  ],
+  "externalDocs": {
+    "description": "API versioning and deprecation policy",
+    "url": "https://polar.sh/docs/api-reference/versioning"
+  }
 }

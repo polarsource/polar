@@ -4,19 +4,34 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
+use chrono::Utc;
+use serde::Serialize;
 use serde_json::json;
-use sqlx::PgConnection;
+use sqlx::{PgConnection, types::Json};
 use uuid::Uuid;
 
 use crate::{
     app::error_response,
     event::{CustomerReference, EventCreate, LocItem, ValidationError},
+    telemetry,
 };
 
+#[derive(Serialize)]
+pub struct IngestResponse {
+    pub inserted: usize,
+    pub duplicates: usize,
+}
+
+pub struct StagedEvents<'a> {
+    pub inserted: Vec<&'a EventCreate>,
+    pub duplicates: usize,
+}
+
 pub enum IngestError {
+    StagedIngestDisabled,
     InvalidPayload(Vec<ValidationError>),
     InvalidReferences(Vec<ValidationError>),
-    EventTypeUnavailable(String),
+    EventTypeUnavailable,
     Database(sqlx::Error),
 }
 
@@ -39,12 +54,17 @@ impl IntoResponse for IngestError {
                 "PolarRequestValidationError",
                 errors,
             ),
-            Self::EventTypeUnavailable(name) => {
-                tracing::error!(name, "event type could not be created");
+            Self::StagedIngestDisabled => error_response(
+                StatusCode::NOT_IMPLEMENTED,
+                "StagedEventsIngestDisabled",
+                "This service only ingests events for organizations with staged ingestion enabled.",
+            ),
+            Self::EventTypeUnavailable => {
+                tracing::error!("event type could not be created");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
             Self::Database(error) => {
-                tracing::error!(%error, "event ingestion failed");
+                telemetry::log_database_error(&error, "event ingestion");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         }
@@ -123,16 +143,143 @@ pub async fn resolve_event_types(
     .bind(&missing)
     .fetch_all(&mut *connection)
     .await?;
-    let raced = created.len() < missing.len();
-    event_types.extend(created);
+    if created.len() == missing.len() {
+        event_types.extend(created);
+        return Ok(event_types);
+    }
 
-    if raced {
-        event_types = select_event_types(connection, organization_id, &names).await?;
-        if let Some(name) = names.iter().find(|name| !event_types.contains_key(**name)) {
-            return Err(IngestError::EventTypeUnavailable((*name).to_owned()));
-        }
+    let event_types = select_event_types(connection, organization_id, &names).await?;
+    if names.iter().any(|name| !event_types.contains_key(*name)) {
+        return Err(IngestError::EventTypeUnavailable);
     }
     Ok(event_types)
+}
+
+pub async fn insert_staged_events<'a>(
+    connection: &mut PgConnection,
+    organization_id: Uuid,
+    events: &'a [EventCreate],
+    event_types: &HashMap<String, Uuid>,
+) -> Result<StagedEvents<'a>, IngestError> {
+    if events.is_empty() {
+        return Ok(StagedEvents {
+            inserted: Vec::new(),
+            duplicates: 0,
+        });
+    }
+
+    let ids = Vec::from_iter(events.iter().map(|_| Uuid::new_v4()));
+    let mut event_type_ids = Vec::with_capacity(events.len());
+    let mut customer_ids = Vec::with_capacity(events.len());
+    let mut external_customer_ids = Vec::with_capacity(events.len());
+    let mut member_ids = Vec::with_capacity(events.len());
+    let mut external_member_ids = Vec::with_capacity(events.len());
+    for event in events {
+        let event_type_id = event_types
+            .get(&event.name)
+            .ok_or(IngestError::EventTypeUnavailable)?;
+        event_type_ids.push(*event_type_id);
+        let (customer_id, external_customer_id, member_id, external_member_id) =
+            match &event.customer {
+                CustomerReference::Polar {
+                    customer_id,
+                    member_id,
+                } => (Some(*customer_id), None, *member_id, None),
+                CustomerReference::External {
+                    external_customer_id,
+                    external_member_id,
+                } => (
+                    None,
+                    Some(external_customer_id.as_str()),
+                    None,
+                    external_member_id.as_deref(),
+                ),
+            };
+        customer_ids.push(customer_id);
+        external_customer_ids.push(external_customer_id);
+        member_ids.push(member_id);
+        external_member_ids.push(external_member_id);
+    }
+
+    let staged: Vec<(Uuid, Option<String>)> = sqlx::query_as(
+        "INSERT INTO staged_events (\
+             id, ingested_at, timestamp, name, source, organization_id, customer_id, \
+             external_customer_id, member_id, external_member_id, external_id, \
+             pending_parent_external_id, event_type_id, user_metadata\
+         ) \
+         SELECT new.id, new.ingested_at, new.timestamp, new.name, 'user', $1, new.customer_id, \
+             new.external_customer_id, new.member_id, new.external_member_id, new.external_id, \
+             new.pending_parent_external_id, new.event_type_id, new.user_metadata \
+         FROM UNNEST(\
+             $2::uuid[], $3::timestamptz[], $4::text[], $5::uuid[], $6::text[], $7::uuid[], \
+             $8::text[], $9::text[], $10::text[], $11::uuid[], $12::jsonb[], \
+             $13::timestamptz[]\
+         ) AS new (\
+             id, timestamp, name, customer_id, external_customer_id, member_id, \
+             external_member_id, external_id, pending_parent_external_id, event_type_id, \
+             user_metadata, ingested_at\
+         ) \
+         ON CONFLICT (organization_id, external_id) WHERE external_id IS NOT NULL DO NOTHING \
+         RETURNING id, external_id",
+    )
+    .bind(organization_id)
+    .bind(&ids)
+    .bind(Vec::from_iter(events.iter().map(|event| event.timestamp)))
+    .bind(Vec::from_iter(
+        events.iter().map(|event| event.name.as_str()),
+    ))
+    .bind(customer_ids)
+    .bind(external_customer_ids)
+    .bind(member_ids)
+    .bind(external_member_ids)
+    .bind(Vec::from_iter(
+        events.iter().map(|event| event.external_id.as_deref()),
+    ))
+    .bind(Vec::from_iter(
+        events.iter().map(|event| event.parent_id.as_deref()),
+    ))
+    .bind(event_type_ids)
+    .bind(Vec::from_iter(
+        events.iter().map(|event| Json(&event.metadata)),
+    ))
+    .bind(Vec::from_iter(events.iter().map(|_| Utc::now())))
+    .fetch_all(&mut *connection)
+    .await?;
+
+    let mut inserted_ids: HashSet<Uuid> = staged.iter().map(|(id, _)| *id).collect();
+    let external_ids = Vec::from_iter(
+        staged
+            .into_iter()
+            .filter_map(|(_, external_id)| external_id),
+    );
+    if !external_ids.is_empty() {
+        let already_moved: Vec<Uuid> = sqlx::query_scalar(
+            "DELETE FROM staged_events \
+             WHERE organization_id = $1 AND external_id IN (\
+                 SELECT external_id FROM events \
+                 WHERE organization_id = $1 AND external_id = ANY($2)\
+             ) \
+             RETURNING id",
+        )
+        .bind(organization_id)
+        .bind(external_ids)
+        .fetch_all(&mut *connection)
+        .await?;
+        for id in already_moved {
+            inserted_ids.remove(&id);
+        }
+    }
+
+    let inserted = Vec::from_iter(
+        ids.iter()
+            .zip(events)
+            .filter(|(id, _)| inserted_ids.contains(*id))
+            .map(|(_, event)| event),
+    );
+    Ok(StagedEvents {
+        duplicates: events.len() - inserted.len(),
+        inserted,
+    })
 }
 
 async fn select_event_types(
@@ -221,8 +368,7 @@ fn reference_errors(
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
-    use serde_json::Map;
+    use serde_json::{Map, Value};
     use sqlx::Connection;
 
     use super::*;
@@ -306,6 +452,90 @@ mod tests {
         assert_eq!(created.len(), 1);
         assert_eq!(created, reused);
         assert_eq!((label, count), (name, 1));
+        transaction.rollback().await.unwrap();
+    }
+
+    #[tokio::test]
+    #[ignore = "needs the local development database"]
+    async fn stages_events_and_skips_duplicates() {
+        let (mut connection, organization_id) = local_database().await;
+        let mut transaction = connection.begin().await.unwrap();
+        let external_id = format!("events-test-{}", Uuid::new_v4());
+        let moved_external_id = format!("events-test-moved-{}", Uuid::new_v4());
+        let name = format!("events-test-{}", Uuid::new_v4());
+        let external = |external_id: Option<&str>, parent_id: Option<&str>| {
+            let mut event = event(
+                None,
+                CustomerReference::External {
+                    external_customer_id: "customer".to_owned(),
+                    external_member_id: Some("member".to_owned()),
+                },
+            );
+            event.name = name.clone();
+            event.external_id = external_id.map(str::to_owned);
+            event.parent_id = parent_id.map(str::to_owned);
+            event.metadata.insert("tokens".to_owned(), json!(12.5));
+            event
+        };
+        let events = [
+            external(Some(&external_id), Some("parent")),
+            external(Some(&external_id), None),
+            external(None, None),
+            external(Some(&moved_external_id), None),
+        ];
+        let event_types = resolve_event_types(&mut transaction, organization_id, &events)
+            .await
+            .ok()
+            .unwrap();
+        sqlx::query(
+            "INSERT INTO events (id, ingested_at, timestamp, name, source, organization_id, \
+                 external_id, user_metadata) \
+             VALUES ($1, now(), now(), 'name', 'user', $2, $3, '{}')",
+        )
+        .bind(Uuid::new_v4())
+        .bind(organization_id)
+        .bind(&moved_external_id)
+        .execute(&mut *transaction)
+        .await
+        .unwrap();
+
+        let staged = insert_staged_events(&mut transaction, organization_id, &events, &event_types)
+            .await
+            .ok()
+            .unwrap();
+        let again = insert_staged_events(
+            &mut transaction,
+            organization_id,
+            &events[..1],
+            &event_types,
+        )
+        .await
+        .ok()
+        .unwrap();
+        let row: (String, Option<String>, Option<String>, Uuid, Value, String) = sqlx::query_as(
+            "SELECT source, pending_parent_external_id, external_member_id, event_type_id, \
+                 user_metadata, external_customer_id \
+             FROM staged_events WHERE organization_id = $1 AND external_id = $2",
+        )
+        .bind(organization_id)
+        .bind(&external_id)
+        .fetch_one(&mut *transaction)
+        .await
+        .unwrap();
+
+        assert_eq!((staged.inserted.len(), staged.duplicates), (2, 2));
+        assert_eq!((again.inserted.len(), again.duplicates), (0, 1));
+        assert_eq!(
+            row,
+            (
+                "user".to_owned(),
+                Some("parent".to_owned()),
+                Some("member".to_owned()),
+                event_types[&name],
+                json!({ "tokens": 12.5 }),
+                "customer".to_owned(),
+            )
+        );
         transaction.rollback().await.unwrap();
     }
 

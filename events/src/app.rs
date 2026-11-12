@@ -22,7 +22,7 @@ use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use crate::{
     auth::{AuthSettings, OrganizationAuth},
     event,
-    ingest::{self, IngestError},
+    ingest::{self, IngestError, IngestResponse},
     telemetry,
 };
 
@@ -87,17 +87,30 @@ async fn ingest(
     auth: OrganizationAuth,
     headers: HeaderMap,
     body: Bytes,
-) -> Result<Response, IngestError> {
+) -> Result<Json<IngestResponse>, IngestError> {
     let events = event::parse_ingest(&body, is_json(&headers), Utc::now())
         .map_err(IngestError::InvalidPayload)?;
+    if !auth.staged_events_ingest_enabled {
+        return Err(IngestError::StagedIngestDisabled);
+    }
 
     let mut transaction = state.db.begin().await?;
     ingest::validate_references(&mut transaction, auth.organization_id, &events).await?;
-    let _event_types =
+    let event_types =
         ingest::resolve_event_types(&mut transaction, auth.organization_id, &events).await?;
+    let staged = ingest::insert_staged_events(
+        &mut transaction,
+        auth.organization_id,
+        &events,
+        &event_types,
+    )
+    .await?;
     transaction.commit().await?;
 
-    Ok(StatusCode::NOT_IMPLEMENTED.into_response())
+    Ok(Json(IngestResponse {
+        inserted: staged.inserted.len(),
+        duplicates: staged.duplicates,
+    }))
 }
 
 fn is_json(headers: &HeaderMap) -> bool {
@@ -122,7 +135,7 @@ async fn healthz(
         .execute(&state.db)
         .await
         .map_err(|error| {
-            tracing::error!(%error, "database health check failed");
+            telemetry::log_database_error(&error, "health check");
             (StatusCode::SERVICE_UNAVAILABLE, "Database is not available")
         })?;
 

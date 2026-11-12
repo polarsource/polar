@@ -13,7 +13,7 @@ ring = "0.17"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12", "logging"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["float_roundtrip"] }
-sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "postgres", "tls-rustls-ring-native-roots", "uuid"] }
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "postgres", "tls-rustls-ring-native-roots", "uuid", "json", "chrono"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal", "net"] }
 tower-http = { version = "0.7.1", features = ["trace", "timeout"] }
 tracing = "0.1.44"

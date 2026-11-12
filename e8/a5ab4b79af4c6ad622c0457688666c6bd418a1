@@ -1,0 +1,19 @@
+.github/workflows/deploy_server.sh
+  s_bf3932b8f28712::t_71ead0baa4cac3 32,148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8a5ab4b79af4c6ad622c0457688666c6bd418a1",
+  "prompts": {},
+  "sessions": {
+    "s_bf3932b8f28712": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e3133d08-3b5d-4756-8200-2829f8e02b2c",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

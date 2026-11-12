@@ -49,8 +49,8 @@ interface Drift {
   readonly entries: ReadonlyArray<AppliedEntry>
 }
 
-// Settings and webhooks apply right away, only products, benefits and meters wait in the draft
-const DRAFTED = new Set(['products', 'benefits', 'meters'])
+// Webhooks apply right away, everything else waits in the draft
+const DRAFTED = new Set(['products', 'benefits', 'meters', 'settings'])
 
 const drifted = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.filter(

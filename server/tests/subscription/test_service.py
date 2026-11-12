@@ -8804,7 +8804,7 @@ class TestSendTrialConversionReminderEmail:
 
         enqueue_email_mock.assert_called_once()
         email = enqueue_email_mock.call_args[0][0]
-        assert isinstance(email, SubscriptionTrialConversionReminderEmail)
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
 
     async def test_disabled_by_conversion_reminder_setting(
         self,

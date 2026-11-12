@@ -35,9 +35,7 @@ async def sync_benefit_grant(
 ) -> None:
     async with AsyncSessionMaker() as session:
         license_key_repository = LicenseKeyRepository.from_session(session)
-        license_key = await license_key_repository.get_by_id(
-            license_key_id, for_update=True
-        )
+        license_key = await license_key_repository.get_by_id(license_key_id)
         if license_key is None:
             raise LicenseKeyDoesNotExist(license_key_id)
 
@@ -54,6 +52,10 @@ async def sync_benefit_grant(
         if grant is None:
             return
 
+        # Match fulfillment's grant-then-key lock order and re-read the status.
+        await session.refresh(
+            license_key, attribute_names=["status"], with_for_update=True
+        )
         revoke = license_key.status == LicenseKeyStatus.revoked
         already_applied = grant.is_revoked if revoke else grant.is_granted
         if already_applied:

@@ -6,13 +6,14 @@ from collections import defaultdict
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy.orm import selectinload
 
 from polar.auth.models import Agent, AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import Scope
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import assert_organization_permission, get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
@@ -126,6 +127,13 @@ def hash_entries(parent_hash: str | None, entries: CatalogEntries) -> str:
     )
 
 
+CATALOG_SETTINGS = ("default_presentment_currency", "default_tax_behavior")
+
+
+def _settings(organization: Organization) -> dict[str, Any]:
+    return {name: getattr(organization, name) for name in CATALOG_SETTINGS}
+
+
 def _ids(rows: Mapping[str, Benefit | Meter]) -> dict[str, uuid.UUID]:
     return {external_id: row.id for external_id, row in rows.items()}
 
@@ -227,6 +235,15 @@ class CatalogNotFound(PolarError):
 class CatalogNotDraft(PolarError):
     def __init__(self, id: uuid.UUID) -> None:
         super().__init__(f"The catalog {id} isn't a draft.", 409)
+
+
+class CatalogMissingCurrency(PolarError):
+    def __init__(self, currency: str, products: Sequence[Product]) -> None:
+        super().__init__(
+            f"Every active product must have a price in {currency.upper()}. "
+            f"Missing on: {', '.join(product.name for product in products)}.",
+            409,
+        )
 
 
 class CatalogService:
@@ -572,11 +589,13 @@ class CatalogService:
         live: Catalog | None,
         definitions: CatalogEntries,
         removed: CatalogRemovals,
+        settings: Mapping[str, Any],
     ) -> tuple[str | None, str | None]:
         """Return the live version hash, and the version hash of the catalog these
-        new definitions, without the removed entries, would publish."""
+        new definitions, without the removed entries and with these settings
+        changes, would publish."""
         before, entries = await self.get_live_entries(session, organization, live)
-        if not definitions and not removed:
+        if not definitions and not removed and not settings:
             return before, before
         return before, hash_entries(before, entries.updated(definitions, removed))
 
@@ -623,6 +642,7 @@ class CatalogService:
                 version_hash=version_hash,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
+                settings=_settings(organization),
             ),
             flush=True,
         )
@@ -705,6 +725,7 @@ class CatalogService:
                 parent=live,
                 status=CatalogStatus.live,
                 published_at=utc_now(),
+                settings=_settings(organization),
             ),
             flush=True,
         )
@@ -719,12 +740,14 @@ class CatalogService:
         new: CatalogMembers,
         version_hash: str,
         removed: CatalogRemovals,
+        settings: Mapping[str, Any],
         name: str | None = None,
     ) -> Catalog:
         """Make the organization's draft the next catalog these changes publish.
 
-        The new rows aren't current, so live keeps selling until the draft is
-        published. An existing draft is replaced, and keeps its ID: drafts are
+        The new rows aren't current and the draft keeps the settings changes
+        without applying them, so live keeps selling as it does until the draft
+        is published. An existing draft is replaced, and keeps its ID: drafts are
         only created here, under the catalog lock, so an organization has at most
         one.
         """
@@ -753,6 +776,7 @@ class CatalogService:
                 "name": name,
                 "version_hash": version_hash,
                 "parent": live,
+                "settings": dict(settings),
             },
             flush=True,
         )
@@ -776,10 +800,12 @@ class CatalogService:
     ) -> Catalog:
         """Make the draft live: its new rows become current, the live rows it
         replaces or leaves out stop being current, and checkout links follow
-        the new product rows. Its new meters start matching events.
+        the new product rows. Its new meters start matching events, and the
+        organization takes the settings it changes.
 
         A draft that changes benefits or meters also needs `benefits:write` or
-        `meters:write`, as applying them does."""
+        `meters:write`, and one that changes settings needs `organizations:write`
+        and permission to manage the organization, as applying them does."""
         repository = CatalogRepository.from_session(session)
         await repository.lock(organization.id)
         await self._assert_still_draft(session, draft)
@@ -793,6 +819,20 @@ class CatalogService:
         ):
             if _ids(rows) != _ids(live_rows) and scope not in auth_subject.scopes:
                 raise InsufficientScopeError({str(scope)})
+        settings = {
+            name: value
+            for name, value in (draft.settings or {}).items()
+            if getattr(organization, name) != value
+        }
+        if settings:
+            if Scope.organizations_write not in auth_subject.scopes:
+                raise InsufficientScopeError({str(Scope.organizations_write)})
+            await assert_organization_permission(
+                session,
+                auth_subject,
+                organization.id,
+                OrganizationPermission.organization_manage,
+            )
         await self._replace_live(session, organization, live, members)
         product_repository = ProductRepository.from_session(session)
         for product in members.products.values():
@@ -813,11 +853,29 @@ class CatalogService:
                     meter, update_dict={"is_current": True}, flush=True
                 )
                 await meter_service.activate(session, meter)
+        if settings:
+            await OrganizationRepository.from_session(session).update(
+                organization, update_dict=settings
+            )
+            await webhook_service.send(
+                session,
+                organization,
+                WebhookEventType.organization_updated,
+                organization,
+            )
+        missing_currency = await product_repository.get_products_without_currency(
+            organization.id, organization.default_presentment_currency
+        )
+        if missing_currency:
+            raise CatalogMissingCurrency(
+                organization.default_presentment_currency, missing_currency
+            )
         return await repository.update(
             draft,
             update_dict={
                 "status": CatalogStatus.live,
                 "published_at": utc_now(),
+                "settings": _settings(organization),
                 "name": draft.name
                 or await self.get_default_name(session, organization),
             },

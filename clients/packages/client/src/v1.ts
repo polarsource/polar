@@ -6675,8 +6675,9 @@ export interface paths {
      * @description Publish the draft catalog. Its new products and benefits replace the live
      *     ones for new sales. Existing customers stay on their versions until moved.
      *
-     *     Requires `products:write`, and `benefits:write` when the draft changes
-     *     benefits.
+     *     Requires `products:write`, `benefits:write` when the draft changes
+     *     benefits, `meters:write` when it changes meters, and `organizations:write`
+     *     when it changes settings.
      *
      *     **Scopes**: `products:write`
      */
@@ -6808,7 +6809,7 @@ export interface paths {
      *     isn't listed but has a billable subscription or a pending subscription
      *     update must be marked deprecated instead, or nothing is applied.
      *     Other resources that aren't listed are left untouched.
-     *     `settings` are applied first, so products can be priced in a new
+     *     `settings` go live with the catalog, so products can be priced in a new
      *     `payments.currency` in the same config. Every active product must have a price in
      *     the resulting currency, or nothing is applied.
      *     Everything is applied in one transaction.
@@ -14343,6 +14344,17 @@ export interface components {
        * @description The meter version in this catalog.
        */
       meter_id: string
+    }
+    /** CatalogMissingCurrency */
+    CatalogMissingCurrency: {
+      /**
+       * Error
+       * @example CatalogMissingCurrency
+       * @constant
+       */
+      error: 'CatalogMissingCurrency'
+      /** Detail */
+      detail: string
     }
     /** CatalogNotDraft */
     CatalogNotDraft: {
@@ -65124,13 +65136,15 @@ export interface operations {
           'application/json': components['schemas']['CatalogNotFound']
         }
       }
-      /** @description The catalog isn't a draft. */
+      /** @description The catalog isn't a draft, or publishing it would leave an active product without a price in the default currency. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CatalogNotDraft']
+          'application/json':
+            | components['schemas']['CatalogNotDraft']
+            | components['schemas']['CatalogMissingCurrency']
         }
       }
       /** @description Validation Error */
@@ -65321,7 +65335,7 @@ export interface operations {
   'config:apply': {
     parameters: {
       query?: {
-        /** @description Publish the product and benefit changes. By default, they're saved in the organization's draft catalog, to publish later. With `true`, they go live and a pending draft is discarded. Meters, settings and webhooks aren't versioned, so they apply right away. */
+        /** @description Publish the catalog changes. By default, product, benefit, meter and settings changes are saved in the organization's draft catalog, to publish later. With `true`, they go live and a pending draft is discarded. Webhooks aren't versioned, so they apply right away. */
         publish?: boolean
       }
       header?: never

@@ -2,13 +2,19 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.auth.scope import Scope
 from polar.catalog.service import (
+    CatalogMissingCurrency,
     CatalogNotDraft,
     CatalogNotFound,
 )
 from polar.catalog.service import catalog as catalog_service
+from polar.enums import TaxBehaviorOption
+from polar.exceptions import NotPermitted
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.models import (
     Catalog,
@@ -16,8 +22,13 @@ from polar.models import (
     CatalogMeter,
     CatalogProduct,
     Organization,
+    User,
+    UserOrganization,
 )
 from polar.models.catalog import CatalogStatus
+from polar.models.user_organization import OrganizationRole
+from polar.models.webhook_endpoint import WebhookEventType
+from polar.oauth2.exceptions import InsufficientScopeError
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -192,6 +203,116 @@ class TestPublishDraft:
         await catalog_service.discard_draft(session, draft)
 
         with pytest.raises(CatalogNotDraft):
+            await catalog_service.publish_draft(
+                session, auth_subject, organization, draft
+            )
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_settings(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        send_mock = mocker.patch("polar.catalog.service.webhook_service.send")
+        _, _, draft, _ = catalogs
+        draft.settings = {"default_tax_behavior": "exclusive"}
+        organization.default_presentment_currency = PresentmentCurrency.eur
+        for model in (draft, organization):
+            await save_fixture(model)
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert draft.settings == {
+            "default_presentment_currency": "eur",
+            "default_tax_behavior": TaxBehaviorOption.exclusive,
+        }
+        send_mock.assert_called_once_with(
+            session, organization, WebhookEventType.organization_updated, organization
+        )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
+    )
+    async def test_unchanged_settings(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        send_mock = mocker.patch("polar.catalog.service.webhook_service.send")
+        _, _, draft, _ = catalogs
+        draft.settings = {"default_tax_behavior": "location"}
+        await save_fixture(draft)
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        send_mock.assert_not_called()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_currency_missing_on_product(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        _, _, draft, _ = catalogs
+        draft.settings = {"default_presentment_currency": "eur"}
+        await save_fixture(draft)
+
+        with pytest.raises(CatalogMissingCurrency):
+            await catalog_service.publish_draft(
+                session, auth_subject, organization, draft
+            )
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.products_write})
+    )
+    async def test_settings_require_organizations_scope(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, _, draft, _ = catalogs
+        draft.settings = {"default_tax_behavior": "exclusive"}
+        await save_fixture(draft)
+
+        with pytest.raises(InsufficientScopeError):
+            await catalog_service.publish_draft(
+                session, auth_subject, organization, draft
+            )
+
+    @pytest.mark.auth
+    async def test_settings_require_organization_manage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+        _, _, draft, _ = catalogs
+        draft.settings = {"default_tax_behavior": "exclusive"}
+        await save_fixture(draft)
+
+        with pytest.raises(NotPermitted):
             await catalog_service.publish_draft(
                 session, auth_subject, organization, draft
             )

@@ -144,6 +144,12 @@ class SettingsChange:
             for field, after in self.update_dict.items()
         ]
 
+    @property
+    def organization_update_dict(self) -> dict[str, Any]:
+        return {
+            SETTINGS_FIELDS[field]: value for field, value in self.update_dict.items()
+        }
+
 
 def diff_settings(
     organization: Organization, settings: ConfigSettings | None

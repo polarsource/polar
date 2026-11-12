@@ -47,7 +47,7 @@ export const useMetersInfinite = (
   })
 
 export const useMeters = (
-  organizationId: string,
+  organizationId: string | undefined,
   parameters?: Omit<
     NonNullable<operations['meters:list']['parameters']['query']>,
     'organization_id'
@@ -68,6 +68,7 @@ export const useMeters = (
         }),
       ),
     retry: defaultRetry,
+    enabled: !!organizationId,
   })
 
 export const useMeter = (

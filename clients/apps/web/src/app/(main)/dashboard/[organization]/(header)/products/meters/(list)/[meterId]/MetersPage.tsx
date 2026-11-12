@@ -1,5 +1,6 @@
 'use client'
 
+import { MeterVersionSelect } from '@/components/Meter/MeterVersionSelect'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { useModal } from '@/components/Modal/useModal'
@@ -121,6 +122,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
           </div>
 
           <div className="flex flex-row items-center gap-4">
+            <MeterVersionSelect organization={organization} meter={meter} />
             {!managedAsCode && (
               <Button onClick={showEditMeterModal}>Edit Meter</Button>
             )}

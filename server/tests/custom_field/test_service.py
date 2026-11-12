@@ -105,23 +105,44 @@ class TestUpdate:
         session: AsyncSession,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
-        organization: Organization,
         text_field: CustomFieldText,
     ) -> None:
         text_field.is_current = False
         await save_fixture(text_field)
-        await create_custom_field(
-            save_fixture,
-            type=CustomFieldType.text,
-            slug=text_field.slug,
-            organization=organization,
-        )
 
         with pytest.raises(CustomFieldVersionLocked):
             await custom_field_service.update(
                 session,
                 text_field,
                 CustomFieldUpdateText(type=text_field.type, name="Renamed"),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_slug_of_versioned_field(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        text_field: CustomFieldText,
+    ) -> None:
+        await save_fixture(
+            CustomFieldText(
+                slug=text_field.slug,
+                name=text_field.name,
+                properties={},
+                organization=organization,
+                is_current=False,
+            )
+        )
+
+        with pytest.raises(CustomFieldVersionLocked):
+            await custom_field_service.update(
+                session,
+                text_field,
+                CustomFieldUpdateText(type=text_field.type, slug="renamed"),
                 auth_subject,
             )
 

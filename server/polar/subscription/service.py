@@ -1417,6 +1417,21 @@ class SubscriptionService:
             return False
         return self._requires_payment_method(subscription)
 
+    async def expire_trial(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        subscription = await self.revoke(session, ctx, subscription)
+        await self.reset_meters(
+            session,
+            subscription,
+            reset_at=min(subscription.current_period_end, utc_now()),
+            include_meter_credits=False,
+        )
+        return subscription
+
     def _requires_payment_method(self, subscription: Subscription) -> bool:
         if (
             subscription.payment_method_id is not None

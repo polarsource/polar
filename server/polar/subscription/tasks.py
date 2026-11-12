@@ -104,13 +104,7 @@ async def subscription_cycle(
                     subscription.organization.can_renew_subscriptions
                     and subscription_service.should_expire_trial(subscription)
                 ):
-                    await subscription_service.revoke(session, ctx, subscription)
-                    await subscription_service.reset_meters(
-                        session,
-                        subscription,
-                        reset_at=min(subscription.current_period_end, now),
-                        include_meter_credits=False,
-                    )
+                    await subscription_service.expire_trial(session, ctx, subscription)
                     await repository.release_scheduler_lock(subscription)
                 else:
                     await subscription_service.cycle(session, ctx, subscription)

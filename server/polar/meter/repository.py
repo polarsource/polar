@@ -94,6 +94,33 @@ class MeterRepository(
             statement = statement.with_for_update()
         return await self.get_all(statement)
 
+    async def get_external_ids_by_id(self, organization_id: UUID) -> dict[str, str]:
+        """Map every meter version's ID to its `external_id`."""
+        statement = select(Meter.id, Meter.external_id).where(
+            Meter.organization_id == organization_id,
+            Meter.external_id.is_not(None),
+            Meter.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {
+            str(id): external_id
+            for id, external_id in result.tuples()
+            if external_id is not None
+        }
+
+    async def get_catalog_baseline(self, organization_id: UUID) -> Sequence[Meter]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.external_id.is_not(None),
+                Meter.deleted_at.is_(None),
+                Meter.is_current,
+            )
+            .options(undefer(Meter.external_id))
+        )
+        return await self.get_all(statement)
+
     def get_organization_statement(self, organization_id: UUID) -> Select[Meter]:
         return (
             self.get_base_statement()

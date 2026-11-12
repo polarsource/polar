@@ -99,18 +99,18 @@ class TestApply:
         )
 
         assert response.status_code == 200
-        assert response.json() == {
-            "changes": [
-                {
-                    "resource": "meter",
-                    "external_id": "sdk-tool-calls",
-                    "action": "created",
-                }
-            ],
-            "removed": [],
-            "catalog": None,
-            "settings": None,
-        }
+        json = response.json()
+        assert json["changes"] == [
+            {
+                "resource": "meter",
+                "external_id": "sdk-tool-calls",
+                "action": "created",
+            }
+        ]
+        assert json["removed"] == []
+        assert json["catalog"]["before"] is None
+        # Apply saves a draft by default, and a draft is named when published.
+        assert json["catalog"]["after"]["name"] is None
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="organization"),
@@ -343,44 +343,6 @@ class TestApply:
         assert error["type"] == "duplicate_external_id"
         assert error["loc"] == ["body", "meters", 1, "external_id"]
 
-    @pytest.mark.auth
-    @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_aggregating_meter_locked_fields(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        event = await create_event(save_fixture, organization=organization)
-        await create_meter(
-            save_fixture,
-            organization=organization,
-            external_id="sdk-tool-calls",
-            last_billed_event=event,
-        )
-
-        response = await client.post(
-            "/v1/config/apply",
-            json={"meters": [METER], "organization_id": str(organization.id)},
-        )
-
-        assert response.status_code == 409
-        json = response.json()
-        assert json["error"] == "ConfigInvalid"
-        assert json["detail"] == [
-            {
-                "severity": "error",
-                "type": "meter_locked",
-                "loc": ["body", "meters", 0, "filter"],
-                "msg": (
-                    "This field can't be updated because the meter "
-                    "is already aggregating events."
-                ),
-                "input": None,
-            }
-        ]
-
 
 @pytest.mark.anyio
 class TestPlan:
@@ -407,7 +369,7 @@ class TestPlan:
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
-    async def test_locked_meter_reports_issues(
+    async def test_billed_meter_change_gets_a_new_version(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -431,9 +393,9 @@ class TestPlan:
         json = response.json()
         assert [change["action"] for change in json["changes"]] == ["updated"]
         assert [(issue["severity"], issue["type"]) for issue in json["issues"]] == [
-            ("error", "meter_locked"),
             ("warning", "unknown_event"),
         ]
+        assert json["catalog"] is not None
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")

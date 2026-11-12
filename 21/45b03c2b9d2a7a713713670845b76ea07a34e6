@@ -1,0 +1,51 @@
+server/tests/billing_interval/test_service_usage_windows.py
+  s_707b72e9bc5329::t_cfde2d24a75e8c 229
+server/tests/reducer/test_service.py
+  s_707b72e9bc5329::t_cfde2d24a75e8c 1694,1698,1715,1726-1731,1739-1741,1743-1745,1749
+  s_707b72e9bc5329::t_029703edcdd895 1748
+  s_707b72e9bc5329::t_6fed71bed817d2 1190,1234,1273-1282,1350,1558-1561,1565
+  s_707b72e9bc5329::t_5cb92b8e395572 1732
+server/polar/billing_entry/service.py
+  s_707b72e9bc5329::t_3b5e68c9d30109 236
+  s_707b72e9bc5329::t_5c20ad1d56ab12 254,263,274-275,277
+  s_707b72e9bc5329::t_60070887268b36 34
+  s_707b72e9bc5329::t_cd15d4ee76d7bb 67,71-72
+  s_707b72e9bc5329::t_ba8aeb2063ff81 237-240,279,281-282
+server/tests/billing_entry/test_service.py
+  s_707b72e9bc5329::t_cfde2d24a75e8c 11,2002-2005,2007,2010-2016
+  s_707b72e9bc5329::t_ba8aeb2063ff81 1983,2029
+server/polar/reducer/bucket_repository.py
+  s_707b72e9bc5329::t_ec2b56ce714c8b 592
+  s_707b72e9bc5329::t_47bb3206f5a6cb 542-543,547,556-567
+  s_707b72e9bc5329::t_b7c11be14829d5 578,580
+  s_707b72e9bc5329::t_6aadfaf317bc59 568
+server/polar/billing_interval/service.py
+  s_707b72e9bc5329::t_abbf2e74eb45f3 193-199,206,215
+  s_707b72e9bc5329::t_d2ed49efba4b75 176-180
+server/polar/reducer/service.py
+  s_707b72e9bc5329::t_c2c6c0bed89c14 349-351,357
+  s_707b72e9bc5329::t_995063e557ae76 367,369-370
+  s_707b72e9bc5329::t_2a2965395e131d 1175-1177,1181-1182
+  s_707b72e9bc5329::t_3c20816a9f832e 399
+  s_707b72e9bc5329::t_96dbdb5c4f37b8 1193-1194
+  s_707b72e9bc5329::t_7950b82eec2d9a 268-272,282-290,300,302-303,320-321,335,344-345
+  s_707b72e9bc5329::t_04c9e4835405a7 425,432-433
+  s_707b72e9bc5329::t_d810229036ad2e 241
+  s_707b72e9bc5329::t_29930448dcca18 1149,1151-1152,1156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2145b03c2b9d2a7a713713670845b76ea07a34e6",
+  "prompts": {},
+  "sessions": {
+    "s_707b72e9bc5329": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce2322e5-0435-4d4c-992a-d1ce2a830ec3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}

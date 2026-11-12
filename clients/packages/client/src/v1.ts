@@ -14009,6 +14009,8 @@ export interface components {
        * @description When the catalog was published. Null for drafts.
        */
       published_at: string | null
+      /** @description What changed since the parent catalog. Null for the first one. */
+      changes: components['schemas']['CatalogChanges'] | null
     }
     /** CatalogBenefit */
     CatalogBenefit: {
@@ -14023,6 +14025,27 @@ export interface components {
        * @description The benefit version in this catalog.
        */
       benefit_id: string
+    }
+    /**
+     * CatalogChanges
+     * @description How a catalog differs from its parent, in products and benefits.
+     */
+    CatalogChanges: {
+      /**
+       * Added Count
+       * @description Keys the parent doesn't list.
+       */
+      added_count: number
+      /**
+       * Changed Count
+       * @description Keys listed with a new version.
+       */
+      changed_count: number
+      /**
+       * Removed Count
+       * @description Keys the parent lists but this catalog doesn't.
+       */
+      removed_count: number
     }
     /** CatalogImportBlocked */
     CatalogImportBlocked: {
@@ -14134,6 +14157,8 @@ export interface components {
        * @description When the catalog was published. Null for drafts.
        */
       published_at: string | null
+      /** @description What changed since the parent catalog. Null for the first one. */
+      changes: components['schemas']['CatalogChanges'] | null
       /**
        * Products
        * @description The products in this version, ordered by key.
@@ -14141,7 +14166,7 @@ export interface components {
       products: components['schemas']['CatalogProduct'][]
       /**
        * Benefits
-       * @description The benefits in this version, ordered by key. Empty for versions published before benefits were versioned.
+       * @description The benefits in this version, ordered by key.
        */
       benefits: components['schemas']['CatalogBenefit'][]
     }

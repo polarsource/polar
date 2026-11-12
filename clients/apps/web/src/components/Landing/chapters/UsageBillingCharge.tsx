@@ -46,7 +46,7 @@ export const UsageBillingCharge = ({
         borderColor="border-primary"
       >
         <Text variant="body">Card charge</Text>
-        <Text variant="heading-xxs" tabularNums>
+        <Text variant="heading-xxs" as="p" tabularNums>
           {dollars(total, 2)}
         </Text>
       </Box>

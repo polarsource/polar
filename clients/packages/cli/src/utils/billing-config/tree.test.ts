@@ -239,6 +239,62 @@ describe('formatTree', () => {
     )
   })
 
+  test('shows the benefits and products that use an updated meter', () => {
+    const properties = { meter: 'tool_call', units: 1000, rollover: false }
+    const prices = [
+      ...(input.products[1]?.prices ?? []),
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'usd',
+        meter: 'storage',
+        unit_amount: '0.5',
+      },
+    ]
+    const output = stripAnsi(
+      formatTree(input, [
+        entry('meters', 'tool_call', 'updated', [
+          { field: 'name', before: 'tool_call', after: 'Tool calls' },
+        ]),
+        entry('benefits', 'tool_calls', 'updated', [
+          {
+            field: 'properties',
+            before: properties,
+            after: { rollover: false, units: 1000, meter: 'tool_call' },
+          },
+        ]),
+        entry('meters', 'storage', 'created'),
+        entry('products', 'pro', 'updated', [
+          { field: 'prices', before: input.products[1]?.prices, after: prices },
+          {
+            field: 'benefits',
+            before: ['custom_servers', 'tool_calls'],
+            after: ['custom_servers', 'tool_calls'],
+          },
+        ]),
+      ]),
+    )
+    expect(output).toBe(
+      [
+        '  meters',
+        '  ~ tool_call',
+        '      name  "tool_call" → "Tool calls"',
+        '  + storage',
+        '',
+        '  benefits',
+        '  ~ tool_calls',
+        '      └ ~ meter tool_call',
+        '',
+        '  products',
+        '  ~ pro',
+        '      prices (USD per storage)  unset → $5 per 1,000',
+        '      ├ ~ meter tool_call',
+        '      ├ + meter storage',
+        '      ├ = benefit custom_servers',
+        '      └ ~ benefit tool_calls',
+      ].join('\n'),
+    )
+  })
+
   test('shows a created benefit as private only when it is', () => {
     const output = stripAnsi(
       formatTree(

@@ -86,6 +86,7 @@ class TestCreateSubscriptionOrder:
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=cutoff,
             reducer_cutoff=cutoff,
+            period_start=None,
         )
 
     async def test_cancel_settles_without_cutoff_except_reducer(
@@ -119,6 +120,7 @@ class TestCreateSubscriptionOrder:
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=None,
             reducer_cutoff=cutoff,
+            period_start=None,
         )
 
     @pytest.mark.parametrize(
@@ -160,6 +162,7 @@ class TestCreateSubscriptionOrder:
             subscription.id,
             order_reason,
             cutoff=cutoff.isoformat(),
+            period_start=None,
             delay=ANY,
         )
         delay = enqueue_job_mock.call_args.kwargs["delay"]
@@ -192,6 +195,7 @@ class TestCreateMeterCycleOrder:
             cutoff.isoformat(),
             price_ids,
             product_id,
+            period_start=None,
             delay=ANY,
         )
 
@@ -220,7 +224,7 @@ class TestCreateMeterCycleOrder:
         )
 
         settle_mock.assert_awaited_once_with(
-            ANY, ANY, cutoff=cutoff, price_ids=price_ids, product=ANY
+            ANY, ANY, cutoff=cutoff, price_ids=price_ids, product=ANY, period_start=None
         )
         assert settle_mock.call_args.kwargs["product"].id == product.id
 

@@ -8,7 +8,10 @@ from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import Select
 
+from polar.billing_entry.service import ReducerUsageAlreadyBilled
 from polar.billing_entry.service import billing_entry as billing_entry_service
+from polar.billing_interval.repository import BillingIntervalRepository
+from polar.billing_interval.types import MeterCharge
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
@@ -20,6 +23,7 @@ from polar.meter.aggregation import (
 from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     BillingEntry,
+    BillingInterval,
     Customer,
     Meter,
     Order,
@@ -28,10 +32,13 @@ from polar.models import (
     Product,
     ProductPrice,
     ProductPriceSeatUnit,
+    ReducerBucket,
     Subscription,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.billing_interval import UsagePolicy
 from polar.models.event import EventSource
+from polar.models.reducer import ReducerKind
 from polar.models.subscription_product_price import SubscriptionProductPrice
 from polar.postgres import AsyncSession
 from polar.product.guard import (
@@ -42,6 +49,8 @@ from polar.product.guard import (
     is_seat_price,
 )
 from polar.product.tiers import Tiers, TierType
+from polar.reducer.repository import ReducerRepository
+from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageWindow
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -50,6 +59,7 @@ from tests.fixtures.random_objects import (
     create_meter,
     create_order,
     create_product,
+    create_product_price_fixed,
     create_product_price_metered_tiers,
     create_product_price_metered_unit,
     create_subscription_with_seats,
@@ -1661,3 +1671,360 @@ class TestCreateOrderItemsFromPending:
         }
         assert span.attributes["raw_match"] is False
         assert span.attributes["match"] is True
+
+
+REDUCER_CUTOFF = datetime(2026, 10, 7, 12, tzinfo=UTC)
+
+
+async def enable_reducer_billing(
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    subscription: Subscription,
+    price: ProductPrice,
+    meter: Meter,
+    *,
+    tokens: int | Decimal,
+) -> ReducerBucket:
+    """Puts the organization on reducer billing, with `tokens` of usage the
+    subscription owns in a bucket before REDUCER_CUTOFF."""
+    organization = subscription.customer.organization
+    organization.feature_settings = {"reducer_billing_enabled": True}
+    await save_fixture(organization)
+    reducer = await reducer_service.sync_meter(session, meter)
+    start = REDUCER_CUTOFF - timedelta(hours=1)
+    await save_fixture(
+        BillingInterval(
+            organization=organization,
+            subscription=subscription,
+            customer=subscription.customer,
+            meter=meter,
+            product_price=price,
+            period_start=start,
+            usage_policy=UsagePolicy.charge,
+        )
+    )
+    bucket = ReducerBucket(
+        organization=organization,
+        reducer=reducer,
+        customer=subscription.customer,
+        bucket_start=start,
+        bucket_end=start + timedelta(minutes=5),
+        count=1,
+        sum=Decimal(tokens),
+        min=Decimal(tokens),
+        max=Decimal(tokens),
+    )
+    await save_fixture(bucket)
+    return bucket
+
+
+@pytest.mark.anyio
+class TestCreateOrderItemsFromReducers:
+    async def test_bills_reducer_usage_and_static_entries(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        bucket = await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, meter, tokens=20
+        )
+        pending_metered_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=99,
+        )
+        static_price = await create_product_price_fixed(
+            save_fixture, product=product_metered_unit, amount=10_00
+        )
+        static_entry = await create_static_price_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=static_price,
+            subscription=metered_subscription,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, reducer_cutoff=REDUCER_CUTOFF
+        ) as order_items:
+            static_item, metered_item = order_items
+            assert static_item.amount == 10_00
+            assert meter.name in metered_item.label
+            assert metered_item.amount == 20_00
+            assert metered_item.product_price == price
+
+            order = await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        await session.refresh(bucket)
+        assert bucket.order_id == order.id
+        assert bucket.billed_at is not None
+        await session.refresh(static_entry)
+        assert static_entry.order_item_id == static_item.id
+        await session.refresh(pending_metered_entry)
+        assert pending_metered_entry.order_item_id is None
+
+    async def test_charges_usage_at_the_price_of_its_interval(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        old_price = product_metered_unit.prices[0]
+        first_bucket = await enable_reducer_billing(
+            save_fixture,
+            session,
+            metered_subscription,
+            old_price,
+            meter,
+            tokens=Decimal("19.5"),
+        )
+        changed_at = REDUCER_CUTOFF - timedelta(minutes=30)
+        (old_interval,) = await BillingIntervalRepository.from_session(
+            session
+        ).get_by_subscription(metered_subscription.id)
+        old_interval.period_end = changed_at
+        await save_fixture(old_interval)
+        new_price = await create_product_price_metered_unit(
+            save_fixture,
+            product=product_metered_unit,
+            meter=meter,
+            unit_amount=Decimal(300),
+        )
+        await save_fixture(
+            BillingInterval(
+                organization=customer.organization,
+                subscription=metered_subscription,
+                customer=customer,
+                meter=meter,
+                product_price=new_price,
+                period_start=changed_at,
+                usage_policy=UsagePolicy.charge,
+            )
+        )
+        credit_reducer = await ReducerRepository.from_session(
+            session
+        ).get_by_meter_and_kind(meter.id, ReducerKind.credit)
+        for reducer, bucket_start, units in (
+            (first_bucket.reducer, changed_at, 5),
+            (credit_reducer, first_bucket.bucket_start, 22),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=customer.organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=1,
+                    sum=Decimal(units),
+                    min=Decimal(units),
+                    max=Decimal(units),
+                )
+            )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, reducer_cutoff=REDUCER_CUTOFF
+        ) as order_items:
+            assert [(item.product_price, item.amount) for item in order_items] == [
+                (old_price, 0),
+                (new_price, 7_50),
+            ]
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_bills_a_meter_the_subscription_no_longer_has_a_price_for(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, meter, tokens=20
+        )
+        metered_subscription.subscription_product_prices = []
+        await save_fixture(metered_subscription)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, reducer_cutoff=REDUCER_CUTOFF
+        ) as order_items:
+            assert [(item.product_price, item.amount) for item in order_items] == [
+                (price, 20_00)
+            ]
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    async def test_metered_settles_every_meter_with_intervals(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        bucket = await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, meter, tokens=20
+        )
+        other_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            filter=meter.filter,
+            aggregation=meter.aggregation,
+            organization=customer.organization,
+        )
+        other_price = await create_product_price_metered_unit(
+            save_fixture, product=product_metered_unit, meter=other_meter
+        )
+        other_bucket = await enable_reducer_billing(
+            save_fixture,
+            session,
+            metered_subscription,
+            other_price,
+            other_meter,
+            tokens=7,
+        )
+
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session, metered_subscription, cutoff=REDUCER_CUTOFF, price_ids=[price.id]
+        ) as order_items:
+            assert {(item.product_price, item.amount) for item in order_items} == {
+                (price, 20_00),
+                (other_price, 7_00),
+            }
+            order = await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        await session.refresh(bucket)
+        assert bucket.order_id == order.id
+        await session.refresh(other_bucket)
+        assert other_bucket.order_id == order.id
+
+    async def test_no_usage_creates_no_item(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        await enable_reducer_billing(
+            save_fixture,
+            session,
+            metered_subscription,
+            product_metered_unit.prices[0],
+            meter,
+            tokens=0,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, reducer_cutoff=REDUCER_CUTOFF
+        ) as order_items:
+            assert order_items == []
+
+    async def test_bills_a_peak_from_before_a_period_start_that_was_never_settled(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        metered_subscription: Subscription,
+        product_metered_unit: Product,
+    ) -> None:
+        peak_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.max, property="tokens"
+            ),
+            organization=organization,
+        )
+        price = await create_product_price_metered_unit(
+            save_fixture, product=product_metered_unit, meter=peak_meter
+        )
+        await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, peak_meter, tokens=20
+        )
+
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session,
+            metered_subscription,
+            cutoff=REDUCER_CUTOFF,
+            price_ids=[price.id],
+            period_start=REDUCER_CUTOFF - timedelta(minutes=10),
+        ) as order_items:
+            assert [(item.product_price, item.amount) for item in order_items] == [
+                (price, 20_00)
+            ]
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+    @pytest.mark.parametrize("paid_on_creation", [False, True])
+    async def test_usage_billed_by_another_order_raises_unless_paid(
+        self,
+        paid_on_creation: bool,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        price_id = product_metered_unit.prices[0].id
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.get_meter_ids",
+            return_value={meter.id},
+        )
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.seal_usage",
+            return_value=(
+                {
+                    meter.id: MeterCharge(
+                        {price_id: Decimal(20)}, {price_id: Decimal(1)}, Decimal(0)
+                    )
+                },
+                [uuid.uuid4(), uuid.uuid4()],
+            ),
+        )
+        mocker.patch(
+            "polar.billing_entry.service.reducer_service.mark_as_billed",
+            return_value=1,
+        )
+
+        async def create() -> None:
+            async with billing_entry_service.create_order_items_from_pending(
+                session, metered_subscription, paid_on_creation=paid_on_creation
+            ) as order_items:
+                await create_order(
+                    save_fixture, customer=customer, order_items=list(order_items)
+                )
+
+        if paid_on_creation:
+            await create()
+        else:
+            with pytest.raises(ReducerUsageAlreadyBilled):
+                await create()

@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
@@ -58,22 +58,63 @@ export const useCatalogVersionLabels = (
     enabled: !!organization.feature_settings?.config_as_code_enabled,
   })
 
-export const useInfiniteCatalogs = (organizationId: string) =>
-  useInfiniteQuery({
-    queryKey: ['infinite', 'catalogs', { organizationId }],
-    queryFn: ({ pageParam }) =>
+export const useCatalog = (id: string | null | undefined) =>
+  useQuery({
+    queryKey: ['catalogs', { id }],
+    queryFn: () =>
+      unwrap(api.GET('/v1/catalogs/{id}', { params: { path: { id: id! } } })),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+export const useCatalogs = (
+  organizationId: string,
+  page: number,
+  limit: number,
+) =>
+  useQuery({
+    queryKey: ['catalogs', 'list', { organizationId, page, limit }],
+    queryFn: () =>
       unwrap(
         api.GET('/v1/catalogs/', {
           params: {
-            query: { organization_id: organizationId, page: pageParam },
+            query: {
+              organization_id: organizationId,
+              status: ['live', 'archived', 'draft'],
+              page,
+              limit,
+            },
           },
         }),
       ),
     retry: defaultRetry,
+    // Catalogs are published from the CLI, so refetch on every refocus
     staleTime: 0,
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPageParam >= lastPage.pagination.max_page ? null : lastPageParam + 1,
+  })
+
+const catalogConfigQuery = (
+  organizationId: string,
+  catalogId: string | null | undefined,
+) => ({
+  queryKey: ['catalogs', 'config', { id: catalogId }],
+  queryFn: () =>
+    unwrap(
+      api.GET('/v1/config/', {
+        params: {
+          query: { organization_id: organizationId, catalog_id: catalogId },
+        },
+      }),
+    ),
+  retry: defaultRetry,
+})
+
+export const useCatalogConfig = (
+  organizationId: string,
+  catalogId: string | null | undefined,
+) =>
+  useQuery({
+    ...catalogConfigQuery(organizationId, catalogId),
+    enabled: !!catalogId,
   })
 
 export const useRemovedCatalogItems = (organizationId: string) =>
@@ -87,31 +128,4 @@ export const useRemovedCatalogItems = (organizationId: string) =>
       ),
     retry: defaultRetry,
     staleTime: 0,
-  })
-
-export const useCatalog = (id: string | null | undefined) =>
-  useQuery({
-    queryKey: ['catalogs', { id }],
-    queryFn: () =>
-      unwrap(api.GET('/v1/catalogs/{id}', { params: { path: { id: id! } } })),
-    retry: defaultRetry,
-    enabled: !!id,
-  })
-
-export const useCatalogConfig = (
-  organizationId: string,
-  catalogId: string | null | undefined,
-) =>
-  useQuery({
-    queryKey: ['catalogs', 'config', { id: catalogId }],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/config/', {
-          params: {
-            query: { organization_id: organizationId, catalog_id: catalogId },
-          },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled: !!catalogId,
   })

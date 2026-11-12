@@ -102,7 +102,7 @@ export const ChargeFigure = () => {
             }
           >
             <Box flexDirection="column" rowGap="xs">
-              <Text variant="heading-xs" tabularNums>
+              <Text variant="heading-xs" as="p" tabularNums>
                 {left.toLocaleString('en-US')}
                 <Text as="span" variant="heading-xs" color="muted">
                   {' '}
@@ -132,6 +132,7 @@ export const ChargeFigure = () => {
               </Text>
               <Text
                 variant="heading-xs"
+                as="p"
                 tabularNums
                 color={overage > 0 ? 'default' : 'muted'}
               >
@@ -196,7 +197,7 @@ export const ChargeFigure = () => {
                 <CreditCard size={14} />
                 <Text variant="body">Visa •••• 4242</Text>
               </Box>
-              <Text variant="heading-xxs" tabularNums>
+              <Text variant="heading-xxs" as="p" tabularNums>
                 {money(total)}
               </Text>
             </Box>

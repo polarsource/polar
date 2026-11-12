@@ -1,0 +1,24 @@
+server/tests/payment/test_service.py
+  s_aef5cda48e9c2d::t_822039d6342982 1-2,4,7-8,13-21,27-73
+server/polar/payment/repository.py
+  s_aef5cda48e9c2d::t_822039d6342982 9,94-95
+  s_aef5cda48e9c2d::t_fcbd54f4117330 96
+server/polar/payment/service.py
+  s_aef5cda48e9c2d::t_822039d6342982 122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fce7d938928e8f19268b6fd2e498306fd13bb741",
+  "prompts": {},
+  "sessions": {
+    "s_aef5cda48e9c2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf3d-200f-77a1-b27b-9ba87534b40e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

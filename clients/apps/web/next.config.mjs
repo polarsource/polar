@@ -102,6 +102,10 @@ const nextConfig = {
       ],
       afterFiles: [
         {
+          source: '/openapi.json',
+          destination: `${process.env.NEXT_PUBLIC_API_URL}/openapi.json`,
+        },
+        {
           source: '/ingest/static/:path*',
           destination: 'https://us-assets.i.posthog.com/static/:path*',
         },

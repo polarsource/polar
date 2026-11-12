@@ -1,0 +1,19 @@
+server/polar/license_key/tasks.py
+  s_feb647f1338f47::t_79755667970194 38,55-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "024b67a9b17687c308b67533026f0937f3d33403",
+  "prompts": {},
+  "sessions": {
+    "s_feb647f1338f47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c473-d69e-7e73-b567-f9f591836add",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

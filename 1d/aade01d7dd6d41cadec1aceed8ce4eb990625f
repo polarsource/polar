@@ -1,0 +1,25 @@
+server/tests/benefit/test_tasks.py
+  s_aef5cda48e9c2d::t_133f179646b873 65,69-71
+  s_aef5cda48e9c2d::t_1216b93da9a9f2 6,34-38,43-64,66-68,72
+  s_aef5cda48e9c2d::t_fc39ea0a26c329 22-29
+server/polar/benefit/grant/scope.py
+  s_aef5cda48e9c2d::t_e42ed538fac5f9 89-96
+server/polar/benefit/tasks.py
+  s_aef5cda48e9c2d::t_e42ed538fac5f9 26,156,226
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1daade01d7dd6d41cadec1aceed8ce4eb990625f",
+  "prompts": {},
+  "sessions": {
+    "s_aef5cda48e9c2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf3d-200f-77a1-b27b-9ba87534b40e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

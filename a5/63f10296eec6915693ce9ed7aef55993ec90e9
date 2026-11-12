@@ -1,0 +1,19 @@
+clients/apps/web/src/components/Landing/story/Frame.tsx
+  s_8d250777e28bc3::t_558bef58d4c602 26-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "a563f10296eec6915693ce9ed7aef55993ec90e9",
+  "prompts": {},
+  "sessions": {
+    "s_8d250777e28bc3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8c5768cc-46b2-491a-b300-e9dc915fe3e9",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

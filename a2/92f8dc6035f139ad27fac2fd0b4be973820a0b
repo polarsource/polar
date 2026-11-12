@@ -1,0 +1,29 @@
+server/tests/reducer/test_service.py
+  s_fb19aa989d9ac0::t_f0edd1a9bdf555 1753-1770,1772-1784,1786-1791,1793,1800
+  s_707b72e9bc5329::t_3051b08661900b 1752,1771,1785,1792,1794-1799
+  s_fb19aa989d9ac0::t_73f66243212850 16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a292f8dc6035f139ad27fac2fd0b4be973820a0b",
+  "prompts": {},
+  "sessions": {
+    "s_707b72e9bc5329": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce2322e5-0435-4d4c-992a-d1ce2a830ec3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    },
+    "s_fb19aa989d9ac0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3b79567-d626-4540-ab23-4b699a16f78b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

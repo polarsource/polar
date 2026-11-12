@@ -22,6 +22,7 @@ from polar.declarative_config.endpoints import router as declarative_config_rout
 from polar.discount.endpoints import router as discount_router
 from polar.dispute.endpoints import router as dispute_router
 from polar.email_update.endpoints import router as email_update_router
+from polar.event.endpoints import ingest_router as event_ingest_router
 from polar.event.endpoints import router as event_router
 from polar.event_type.endpoints import router as event_type_router
 from polar.eventstream.endpoints import router as stream_router
@@ -76,6 +77,7 @@ router = APIRouter(prefix="/v1")
 
 # /events
 router.include_router(event_router)
+router.include_router(event_ingest_router)
 # /customer-portal
 router.include_router(customer_portal_router)
 # /customers

@@ -242,6 +242,7 @@ resource "render_web_service" "api_copy" {
   plan              = coalesce(each.value.plan, var.api_service_config.plan)
   region            = "ohio"
   health_check_path = "/healthz"
+  start_command     = each.value.start_command
 
   runtime_source = {
     image = {

@@ -33,18 +33,6 @@ and October. At each release:
 Each version is supported for approximately nine months: three months as Next,
 three months as Current, and three months as Deprecated.
 
-Responses for a Deprecated version include headers that tell you when it was
-deprecated and when it will be removed:
-
-```http
-Deprecation: @<unix timestamp>
-Sunset: <HTTP date>
-Link: <https://polar.sh/docs/api-reference/versioning>; rel="deprecation"; type="text/html"
-```
-
-`Sunset` is the first day of the month of the next release. Removal happens during
-that release's first week, so treat `Sunset` as the deadline to migrate.
-
 ```mermaid
 flowchart LR
     next["Next<br/>Development"] --> current["Current<br/>Stable and default"]

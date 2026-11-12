@@ -530,6 +530,7 @@ describe('portal plugin', () => {
         page: 1,
         limit: 10,
         active: undefined,
+        external_customer_id: 'user-123',
         metadata: { referenceId: 'ref-123' },
       })
 

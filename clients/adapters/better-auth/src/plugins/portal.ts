@@ -5,7 +5,9 @@ import { listOrders as listOrdersCustomerPortal } from '@polar-sh/sdk/2026-10/se
 import { createCustomerSessions } from '@polar-sh/sdk/2026-10/services/customer_sessions'
 import { listSubscriptions } from '@polar-sh/sdk/2026-10/services/subscriptions'
 import type { models, PolarCore } from '@polar-sh/sdk/2026-10'
+import type { AuthContext } from 'better-auth'
 import { APIError } from 'better-auth/api'
+import type { Member } from 'better-auth/plugins/organization'
 import { createAuthEndpoint, sessionMiddleware } from 'better-auth/api'
 import * as z from 'zod/v4'
 import { resolveBillingPrincipal } from '../principal'
@@ -14,6 +16,26 @@ import type { PolarOptions } from '../types'
 const OrganizationQuery = z.object({
   organizationId: z.string().min(1).optional(),
 })
+
+const isMemberOfOrganization = async (
+  context: { adapter: Pick<AuthContext['adapter'], 'findOne'> },
+  userId: string,
+  organizationId: string,
+): Promise<boolean> => {
+  try {
+    const membership = await context.adapter.findOne<Member>({
+      model: 'member',
+      where: [
+        { field: 'userId', value: userId },
+        { field: 'organizationId', value: organizationId },
+      ],
+    })
+    return membership !== null
+  } catch {
+    // The organization plugin is not installed, so no member model exists.
+    return false
+  }
+}
 
 export interface PortalConfig {
   returnUrl?: string
@@ -115,6 +137,12 @@ export const portal =
             })
           }
 
+          if (ctx.context.session.user['isAnonymous']) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Anonymous users cannot access customer billing',
+            })
+          }
+
           const principal = ctx.query?.organizationId
             ? await resolveBillingPrincipal({
                 context: ctx.context,
@@ -162,6 +190,12 @@ export const portal =
           if (!ctx.context.session.user.id) {
             throw new APIError('BAD_REQUEST', {
               message: 'User not found',
+            })
+          }
+
+          if (ctx.context.session.user['isAnonymous']) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Anonymous users cannot access customer billing',
             })
           }
 
@@ -230,6 +264,12 @@ export const portal =
             })
           }
 
+          if (ctx.context.session.user['isAnonymous']) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Anonymous users cannot access customer billing',
+            })
+          }
+
           const principal = ctx.query?.organizationId
             ? await resolveBillingPrincipal({
                 context: ctx.context,
@@ -248,15 +288,23 @@ export const portal =
           }
 
           if (ctx.query?.reference_id) {
+            const referenceId = ctx.query.reference_id
+            const isOrganizationMember = await isMemberOfOrganization(
+              ctx.context,
+              ctx.context.session.user.id,
+              referenceId,
+            )
+
             try {
               const subscriptions: models.ListResourceSubscription =
                 await listSubscriptions(polar)({
                   page: ctx.query?.page,
                   limit: ctx.query?.limit,
                   active: ctx.query?.active,
-                  metadata: {
-                    referenceId: ctx.query?.reference_id,
-                  },
+                  ...(isOrganizationMember
+                    ? {}
+                    : { external_customer_id: ctx.context.session.user.id }),
+                  metadata: { referenceId },
                 })
 
               return ctx.json(subscriptions)
@@ -325,6 +373,12 @@ export const portal =
           if (!ctx.context.session.user.id) {
             throw new APIError('BAD_REQUEST', {
               message: 'User not found',
+            })
+          }
+
+          if (ctx.context.session.user['isAnonymous']) {
+            throw new APIError('UNAUTHORIZED', {
+              message: 'Anonymous users cannot access customer billing',
             })
           }
 

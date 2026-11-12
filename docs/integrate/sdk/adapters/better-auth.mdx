@@ -225,12 +225,12 @@ const userShouldHaveAccess = subscriptions?.items.some(
 );
 ```
 
-<Warning>
-  The plugin doesn't check that the user belongs to the organization passed as
-  `reference_id`, and the list includes every subscription in your Polar
-  organization with that `metadata.referenceId`. Verify membership in your
-  application before using the result to grant access.
-</Warning>
+<Note>
+  When the user is a member of the Better Auth organization passed as
+  `reference_id`, the list includes every subscription in your Polar
+  organization with that `metadata.referenceId`. Otherwise, it only includes
+  the user's own subscriptions with that `metadata.referenceId`.
+</Note>
 
 ### Team customers with `experimental_organizationSync`
 

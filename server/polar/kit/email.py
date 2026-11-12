@@ -6,6 +6,7 @@ from email_validator import EmailNotValidError, caching_resolver
 from email_validator import validate_email as _validate_email
 from pydantic import AfterValidator, EmailStr
 from pydantic_core import PydanticCustomError
+from sqlalchemy import ColumnElement, case, func
 
 from polar.config import settings
 
@@ -84,6 +85,29 @@ def normalize_email(email: str) -> str:
     return f"{local_part}@{domain}"
 
 
+def normalize_email_sql(email: ColumnElement[str | None]) -> ColumnElement[str]:
+    """SQL counterpart of `normalize_email`, applying the same provider rules
+    to an email column so stored addresses compare against a normalized one."""
+    lowered = func.lower(email)
+    local_part = func.regexp_replace(
+        func.regexp_replace(lowered, r"@[^@]*$", ""), r"\+.*$", ""
+    )
+    domain = func.substring(lowered, r"@([^@]*)$")
+
+    canonical_domain = case(
+        *((domain == alias, canonical) for alias, canonical in _DOMAIN_ALIASES.items()),
+        else_=domain,
+    )
+    canonical_local_part = case(
+        *(
+            (canonical_domain == provider, func.translate(local_part, chars, ""))
+            for provider, chars in _TRANSPARENT_LOCAL_PART_CHARS.items()
+        ),
+        else_=local_part,
+    )
+    return canonical_local_part + "@" + canonical_domain
+
+
 def mask_email(email: str) -> str:
     """Hide an email address but its local part's first character and its domain.
 
@@ -98,6 +122,7 @@ __all__ = [
     "EmailStrDNS",
     "mask_email",
     "normalize_email",
+    "normalize_email_sql",
     "unalias_email",
     "validate_email",
     "validate_email_syntax",

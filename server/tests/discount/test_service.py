@@ -1133,8 +1133,20 @@ class TestCheckPerCustomerLimitReached:
             is True
         )
 
+    @pytest.mark.parametrize(
+        ("prior_email", "current_email"),
+        [
+            ("customer@example.com", "customer+alias@example.com"),
+            ("customer@gmail.com", "c.ustomer@gmail.com"),
+            ("c.ustomer@gmail.com", "customer@googlemail.com"),
+            ("Customer+old@GoogleMail.com", "cus.tomer+new@gmail.com"),
+            ("first.last@proton.me", "first-last_@proton.me"),
+        ],
+    )
     async def test_limit_reached_by_email_alias(
         self,
+        prior_email: str,
+        current_email: str,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -1155,17 +1167,15 @@ class TestCheckPerCustomerLimitReached:
         prior_checkout = await create_checkout(
             save_fixture, products=[product], customer=prior_customer
         )
-        prior_checkout.customer_email = "customer@example.com"
+        prior_checkout.customer_email = prior_email
         await save_fixture(prior_checkout)
         await create_discount_redemption(
             save_fixture, discount=discount, checkout=prior_checkout
         )
 
-        # Current customer uses a `+alias` variant of the same email.
+        # Current customer uses a provider-equivalent variant of the same mailbox.
         current_customer = await create_customer(
-            save_fixture,
-            organization=organization,
-            email="customer+alias@example.com",
+            save_fixture, organization=organization, email=current_email
         )
         current_checkout = await create_checkout(
             save_fixture, products=[product], customer=current_customer
@@ -1179,6 +1189,57 @@ class TestCheckPerCustomerLimitReached:
                 customer=current_customer,
             )
             is True
+        )
+
+    @pytest.mark.parametrize(
+        ("prior_email", "current_email"),
+        [
+            ("first.last@example.com", "firstlast@example.com"),
+            ("firstlast@proton.me", "firstlast@pm.me"),
+        ],
+    )
+    async def test_limit_not_reached_by_distinct_mailbox(
+        self,
+        prior_email: str,
+        current_email: str,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email=prior_email
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=prior_customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        current_customer = await create_customer(
+            save_fixture, organization=organization, email=current_email
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=current_customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session,
+                discount,
+                checkout=current_checkout,
+                customer=current_customer,
+            )
+            is False
         )
 
     async def test_limit_reached_by_fingerprint(

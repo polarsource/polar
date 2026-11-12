@@ -21,7 +21,7 @@ from polar.discount.repository import (
 )
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
-from polar.kit.email import EmailNotValidError, unalias_email
+from polar.kit.email import EmailNotValidError, normalize_email
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -534,7 +534,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         Check whether a customer has reached the discount's per-customer redemption limit.
 
         The customer is identified using the same signals as the trial-abuse feature:
-        customer ID, unaliased email, and payment method fingerprint (OR logic), scoped
+        customer ID, normalized email, and payment method fingerprint (OR logic), scoped
         to this specific discount. Returns ``False`` when no per-customer limit is set.
 
         Before confirmation there is no customer yet, so the checkout's own fields are
@@ -551,7 +551,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         )
 
         try:
-            customer_email = unalias_email(email).lower() if email else None
+            customer_email = normalize_email(email) if email else None
         except EmailNotValidError:
             customer_email = None
 

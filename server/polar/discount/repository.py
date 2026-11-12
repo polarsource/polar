@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from sqlalchemy import (
-    ColumnElement,
     ColumnExpressionArgument,
     distinct,
     func,
@@ -9,8 +8,9 @@ from sqlalchemy import (
     select,
     update,
 )
-from sqlalchemy.orm import InstrumentedAttribute, raiseload
+from sqlalchemy.orm import raiseload
 
+from polar.kit.email import normalize_email_sql
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.models import (
     Checkout,
@@ -89,7 +89,7 @@ class DiscountRedemptionRepository(
         Count past redemptions of a discount attributable to a given customer.
 
         The customer is identified by any of the provided hints (OR logic), mirroring
-        the trial-abuse feature: customer ID, unaliased email, or payment method
+        the trial-abuse feature: customer ID, normalized email, or payment method
         fingerprint. Identity is derived by joining the redemption's linked checkout
         (customer ID + email), its subscription (customer ID + email, for discounts
         applied to an existing subscription) and payment (card fingerprint, only
@@ -102,12 +102,6 @@ class DiscountRedemptionRepository(
         The current, in-progress redemption is excluded via ``exclude_checkout_id``.
         """
 
-        def unalias(column: InstrumentedAttribute[str | None]) -> ColumnElement[str]:
-            # Strip the `+alias` suffix from the local part in SQL, mirroring
-            # `polar.kit.email.unalias_email`. The provided `customer_email` is
-            # expected to be already unaliased and lowercased.
-            return func.regexp_replace(func.lower(column), r"\+[^@]*", "")
-
         clauses: list[ColumnExpressionArgument[bool]] = []
 
         if customer_id is not None:
@@ -115,8 +109,10 @@ class DiscountRedemptionRepository(
             clauses.append(Subscription.customer_id == customer_id)
 
         if customer_email is not None:
-            clauses.append(unalias(Checkout.customer_email) == customer_email)
-            clauses.append(unalias(Customer.email) == customer_email)
+            clauses.append(
+                normalize_email_sql(Checkout.customer_email) == customer_email
+            )
+            clauses.append(normalize_email_sql(Customer.email) == customer_email)
 
         if payment_method_fingerprint is not None:
             clauses.append(

@@ -199,9 +199,7 @@ describe('polar config init', () => {
     ])
     expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
     expect(output).toContain('✔ Resolving organization\n    Acme (sandbox)')
-    expect(output).toContain(
-      '✔ Detecting language\n    No package.json or pyproject.toml found',
-    )
+    expect(output).toContain('✔ Detecting language\n    No package.json found')
     expect(output).toContain('✔ Reading your catalog\n    nothing in it yet')
     expect(output).toContain('✔ Writing config\n    polar.config.ts')
     expect(output).toMatch(/Imported {6}0 meters, 0 benefits, 0 products/)
@@ -275,32 +273,26 @@ describe('polar config init', () => {
   })
 
   test('uses the language it detected without asking outside a terminal', async () => {
-    await writeFile(join(directory, 'pyproject.toml'), '')
-
-    const python = await run([])
     await writeFile(join(directory, 'package.json'), '{}')
-    const both = await run([])
 
-    expect(python.output).toContain(
-      '✔ Detecting language\n    Python detected, found a pyproject.toml',
+    const { calls, output } = await run([])
+
+    expect(output).toContain(
+      '✔ Detecting language\n    TypeScript detected, found a package.json',
     )
-    expect(python.calls[0]!.target.format).toBe('py')
-    expect(both.output).toContain(
-      '✔ Detecting language\n    TypeScript detected, found a package.json and a pyproject.toml',
-    )
-    expect(both.calls[0]!.target.format).toBe('ts')
+    expect(calls[0]!.target.format).toBe('ts')
   })
 
   test('asks to confirm the language it detected', async () => {
-    await writeFile(join(directory, 'pyproject.toml'), '')
+    await writeFile(join(directory, 'package.json'), '{}')
 
     const { calls, terminal } = await run([], {
       interactive: true,
       input: [keys.enter],
     })
 
-    expect(terminal).toContain('Write a Python config (polar_config.py)?')
-    expect(calls[0]!.target.format).toBe('py')
+    expect(terminal).toContain('Write a TypeScript config (polar.config.ts)?')
+    expect(calls[0]!.target.format).toBe('ts')
   })
 
   test('asks which format when the guess is declined', async () => {
@@ -312,21 +304,17 @@ describe('polar config init', () => {
     })
 
     expect(terminal).toContain('Which format should the config be in?')
-    expect(calls[0]!.target.format).toBe('py')
+    expect(calls[0]!.target.format).toBe('json')
   })
 
   test('asks which format when it cannot tell', async () => {
-    const neither = await run([], { interactive: true, input: [keys.enter] })
-    await writeFile(join(directory, 'package.json'), '{}')
-    await writeFile(join(directory, 'pyproject.toml'), '')
-    const both = await run([], {
+    const { calls, terminal } = await run([], {
       interactive: true,
-      input: [keys.down, keys.down, keys.enter],
+      input: [keys.down, keys.enter],
     })
 
-    expect(neither.calls[0]!.target.format).toBe('ts')
-    expect(both.terminal).not.toContain('Write a')
-    expect(both.calls[0]!.target.format).toBe('json')
+    expect(terminal).not.toContain('Write a')
+    expect(calls[0]!.target.format).toBe('json')
   })
 
   test('only asks before installing when the format is given', async () => {

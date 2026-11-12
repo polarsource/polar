@@ -233,6 +233,57 @@ resource "render_web_service" "api" {
   )
 }
 
+# Runs the API image without migrations; plan, autoscaling and custom domains are set per service.
+resource "render_web_service" "api_copy" {
+  for_each = var.additional_api_services
+
+  environment_id    = var.render_environment_id
+  name              = each.key
+  plan              = coalesce(each.value.plan, var.api_service_config.plan)
+  region            = "ohio"
+  health_check_path = "/healthz"
+
+  runtime_source = {
+    image = {
+      image_url              = split("@", var.api_service_config.image_url)[0]
+      registry_credential_id = var.registry_credential_id
+      tag                    = "latest"
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [runtime_source.image]
+  }
+
+  autoscaling = {
+    enabled = true
+    min     = each.value.autoscaling.min
+    max     = each.value.autoscaling.max
+    criteria = {
+      cpu = {
+        enabled    = true
+        percentage = each.value.autoscaling.cpu_percentage
+      }
+      memory = {
+        enabled    = true
+        percentage = each.value.autoscaling.memory_percentage
+      }
+    }
+  }
+
+  custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
+
+  env_vars = {
+    SERVICE_NAME             = { value = each.key }
+    WEB_CONCURRENCY          = { value = var.api_service_config.web_concurrency }
+    FORWARDED_ALLOW_IPS      = { value = var.api_service_config.forwarded_allow_ips }
+    POLAR_BACKOFFICE_ENABLED = { value = "false" }
+    POLAR_ALLOWED_HOSTS      = { value = var.api_service_config.allowed_hosts }
+    POLAR_CORS_ORIGINS       = { value = var.api_service_config.cors_origins }
+    POLAR_DATABASE_POOL_SIZE = { value = var.api_service_config.database_pool_size }
+  }
+}
+
 resource "render_web_service" "worker" {
   for_each = var.workers
 
@@ -301,9 +352,10 @@ resource "render_cron_job" "cron" {
 
 locals {
   env_suffix      = var.environment == "production" ? "" : "-${var.environment}"
+  api_ids         = concat([render_web_service.api.id], [for a in render_web_service.api_copy : a.id])
   worker_ids      = [for w in render_web_service.worker : w.id]
   cron_job_ids    = [for c in render_cron_job.cron : c.id]
-  all_service_ids = concat([render_web_service.api.id], local.worker_ids, local.cron_job_ids, render_private_service.backoffice[*].id)
+  all_service_ids = concat(local.api_ids, local.worker_ids, local.cron_job_ids, render_private_service.backoffice[*].id)
 }
 
 # Env group links
@@ -372,7 +424,7 @@ resource "render_env_group_link" "pydantic_ai_gateway" {
 
 resource "render_env_group_link" "apple" {
   env_group_id = render_env_group.apple.id
-  service_ids  = concat([render_web_service.api.id], render_private_service.backoffice[*].id)
+  service_ids  = concat(local.api_ids, render_private_service.backoffice[*].id)
 }
 
 resource "render_env_group_link" "prometheus" {
@@ -402,7 +454,7 @@ resource "render_env_group_link" "polar_self" {
 resource "render_env_group_link" "memory_profile" {
   count        = var.memory_profile_config != null ? 1 : 0
   env_group_id = render_env_group.memory_profile[0].id
-  service_ids  = concat([render_web_service.api.id], local.worker_ids, render_private_service.backoffice[*].id)
+  service_ids  = concat(local.api_ids, local.worker_ids, render_private_service.backoffice[*].id)
 }
 
 resource "cloudflare_dns_record" "resend_dkim" {

@@ -86,6 +86,13 @@ module "test" {
     plan                   = "pro_plus"
   }
 
+  additional_api_services = {
+    api-events-test = {
+      custom_domains = [{ name = "api-events-test.polar.sh" }]
+      autoscaling    = { min = 3, max = 6 }
+    }
+  }
+
   workers = {
     worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
@@ -118,6 +125,17 @@ resource "cloudflare_dns_record" "test_api" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "additional_api" {
+  for_each = merge(module.test[*].additional_api_service_urls...)
+
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "${each.key}.polar.sh"
+  type    = "CNAME"
+  content = replace(each.value, "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "worker" {
   for_each = merge(module.test[*].worker_urls...)
 
@@ -138,6 +156,10 @@ resource "cloudflare_dns_record" "private_backoffice" {
   content = var.private_backoffice_tailscale_ip
   proxied = false
   ttl     = 300
+}
+
+output "additional_api_service_ids" {
+  value = one(module.test[*].additional_api_service_ids)
 }
 
 output "private_backoffice_service_id" {

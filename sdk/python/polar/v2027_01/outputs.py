@@ -1466,6 +1466,12 @@ class BenefitGitHubRepositorySubscriberProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrant:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1528,6 +1534,12 @@ class BenefitGrantCustomProperties: ...
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantCustomWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1591,6 +1603,12 @@ class BenefitGrantDiscordProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantDiscordWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1648,6 +1666,12 @@ class BenefitGrantDownloadablesProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantDownloadablesWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1713,6 +1737,12 @@ class BenefitGrantFeatureFlagProperties: ...
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantFeatureFlagWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1778,6 +1808,12 @@ class BenefitGrantGitHubRepositoryProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantGitHubRepositoryWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1839,6 +1875,12 @@ class BenefitGrantLicenseKeysProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantLicenseKeysWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1911,6 +1953,12 @@ class BenefitGrantMeterCreditProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantMeterCreditWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -1978,6 +2026,12 @@ class BenefitGrantSlackSharedChannelProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantSlackSharedChannelWebhook:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3874,6 +3928,12 @@ class CustomFieldTextProperties:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantCustom:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3912,6 +3972,12 @@ class CustomerBenefitGrantCustom:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantDiscord:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3952,6 +4018,12 @@ class CustomerBenefitGrantDiscord:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantDownloadables:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -3990,6 +4062,12 @@ class CustomerBenefitGrantDownloadables:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantFeatureFlag:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4028,6 +4106,12 @@ class CustomerBenefitGrantFeatureFlag:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantGitHubRepository:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4068,6 +4152,12 @@ class CustomerBenefitGrantGitHubRepository:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantLicenseKeys:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4114,6 +4204,12 @@ class CustomerBenefitGrantMember:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantMeterCredit:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 
@@ -4152,6 +4248,12 @@ class CustomerBenefitGrantMeterCredit:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerBenefitGrantSlackSharedChannel:
+    manually_granted_at: str | None
+    """When the manual grant was requested, if applicable."""
+
+    manually_revoked_at: str | None
+    """When this grant was permanently revoked manually, if applicable."""
+
     created_at: str
     """Creation timestamp of the object."""
 

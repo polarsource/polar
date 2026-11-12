@@ -4462,6 +4462,14 @@ You can store up to **50 key-value pairs**.
  */
 export interface BenefitGrant {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -4547,6 +4555,14 @@ export interface BenefitGrantCustomProperties extends Record<string, never> {}
  * BenefitGrantCustomWebhook
  */
 export interface BenefitGrantCustomWebhook {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -4648,6 +4664,14 @@ export interface BenefitGrantDiscordProperties {
  */
 export interface BenefitGrantDiscordWebhook {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -4735,6 +4759,14 @@ export interface BenefitGrantDownloadablesProperties {
  * BenefitGrantDownloadablesWebhook
  */
 export interface BenefitGrantDownloadablesWebhook {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -4836,6 +4868,14 @@ export interface BenefitGrantFeatureFlagProperties extends Record<string, never>
  * BenefitGrantFeatureFlagWebhook
  */
 export interface BenefitGrantFeatureFlagWebhook {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -4941,6 +4981,14 @@ export interface BenefitGrantGitHubRepositoryProperties {
  */
 export interface BenefitGrantGitHubRepositoryWebhook {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -5036,6 +5084,14 @@ export interface BenefitGrantLicenseKeysProperties {
  * BenefitGrantLicenseKeysWebhook
  */
 export interface BenefitGrantLicenseKeysWebhook {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -5155,6 +5211,14 @@ export interface BenefitGrantMeterCreditProperties {
  */
 export interface BenefitGrantMeterCreditWebhook {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -5262,6 +5326,14 @@ export interface BenefitGrantSlackSharedChannelProperties {
  * BenefitGrantSlackSharedChannelWebhook
  */
 export interface BenefitGrantSlackSharedChannelWebhook {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -9575,6 +9647,14 @@ You can store up to **50 key-value pairs**.
  */
 export interface CustomerBenefitGrantCustom {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -9654,6 +9734,14 @@ export interface CustomerBenefitGrantCustomUpdate {
  * CustomerBenefitGrantDiscord
  */
 export interface CustomerBenefitGrantDiscord {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -9753,6 +9841,14 @@ export interface CustomerBenefitGrantDiscordUpdate {
  */
 export interface CustomerBenefitGrantDownloadables {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -9833,6 +9929,14 @@ export interface CustomerBenefitGrantDownloadablesUpdate {
  */
 export interface CustomerBenefitGrantFeatureFlag {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -9912,6 +10016,14 @@ export interface CustomerBenefitGrantFeatureFlagUpdate {
  * CustomerBenefitGrantGitHubRepository
  */
 export interface CustomerBenefitGrantGitHubRepository {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */
@@ -10011,6 +10123,14 @@ export interface CustomerBenefitGrantGitHubRepositoryUpdate {
  */
 export interface CustomerBenefitGrantLicenseKeys {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -10105,6 +10225,14 @@ export interface CustomerBenefitGrantMember {
  */
 export interface CustomerBenefitGrantMeterCredit {
   /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
+  /**
    * Creation timestamp of the object.
    */
   created_at: string;
@@ -10184,6 +10312,14 @@ export interface CustomerBenefitGrantMeterCreditUpdate {
  * CustomerBenefitGrantSlackSharedChannel
  */
 export interface CustomerBenefitGrantSlackSharedChannel {
+  /**
+   * When the manual grant was requested, if applicable.
+   */
+  manually_granted_at: string | null;
+  /**
+   * When this grant was permanently revoked manually, if applicable.
+   */
+  manually_revoked_at: string | null;
   /**
    * Creation timestamp of the object.
    */

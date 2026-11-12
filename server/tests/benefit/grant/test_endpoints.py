@@ -1,14 +1,17 @@
 import pytest
 from httpx import AsyncClient
 
+from polar.kit.utils import utc_now
+from polar.kit.versioning import APIVersion
 from polar.models import (
     Benefit,
+    BenefitGrant,
     Customer,
     Organization,
     Subscription,
     UserOrganization,
 )
-from polar.version import V2027_01
+from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -23,6 +26,44 @@ class TestListBenefitGrants:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/benefit-grants/")
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("version", [V2026_10, V2027_01])
+    async def test_manual_timestamps_are_versioned(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        benefit_organization: Benefit,
+        customer: Customer,
+        user_organization: UserOrganization,
+        version: APIVersion,
+    ) -> None:
+        now = utc_now()
+        await save_fixture(
+            BenefitGrant(
+                benefit=benefit_organization,
+                customer=customer,
+                manually_granted_at=now,
+                manually_revoked_at=now,
+            )
+        )
+
+        response = await client.get(
+            "/v1/benefit-grants/", headers={"Polar-Version": str(version)}
+        )
+
+        assert response.status_code == 200
+        (grant,) = response.json()["items"]
+        assert grant["granted_at"] is None
+        assert grant["revoked_at"] is None
+        if version == V2027_01:
+            assert grant["manually_granted_at"] == now.isoformat().replace(
+                "+00:00", "Z"
+            )
+            assert grant["manually_revoked_at"] == grant["manually_granted_at"]
+        else:
+            assert "manually_granted_at" not in grant
+            assert "manually_revoked_at" not in grant
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_cannot_list_benefit_grants(self, client: AsyncClient) -> None:

@@ -25,12 +25,12 @@ const HistoryTab = ({
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
   const { history, isError } = useVersionHistory(organization, page)
 
-  if (isError) {
-    return <Text color="muted">Couldn’t load versions.</Text>
-  }
-
   if (!history) {
-    return <Text color="muted">Loading versions…</Text>
+    return (
+      <Text color="muted">
+        {isError ? 'Couldn’t load versions.' : 'Loading versions…'}
+      </Text>
+    )
   }
 
   if (!history.totalCount) {

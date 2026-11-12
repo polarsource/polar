@@ -116,12 +116,12 @@ export const RemovedTab = ({
 }) => {
   const { data: removed, isError } = useRemovedCatalogItems(organization.id)
 
-  if (isError) {
-    return <Text color="muted">Couldn’t load removed items.</Text>
-  }
-
   if (!removed) {
-    return <Text color="muted">Loading removed items…</Text>
+    return (
+      <Text color="muted">
+        {isError ? 'Couldn’t load removed items.' : 'Loading removed items…'}
+      </Text>
+    )
   }
 
   if (!removed.length) {

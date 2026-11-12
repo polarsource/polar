@@ -117,6 +117,8 @@ from polar.product.repository import ProductPriceRepository, ProductRepository
 from polar.product.schemas import ProductPriceCreateList
 from polar.product.service import product as product_service
 from polar.product.unit_price import validate_unit_limits
+from polar.rate_limit import get_checkout_confirm_email_retry_after
+from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import TaxCode
@@ -240,6 +242,13 @@ class DiscountRedemptionLimitReached(CheckoutError):
             "times allowed per customer."
         )
         super().__init__(message, 403)
+
+
+class CheckoutConfirmRateLimited(CheckoutError):
+    def __init__(self, retry_after: int) -> None:
+        self.retry_after = retry_after
+        message = "Too many payment attempts. Please try again later."
+        super().__init__(message, 429, {"Retry-After": str(retry_after)})
 
 
 class CheckoutLocked(CheckoutError):
@@ -1092,6 +1101,16 @@ class CheckoutService:
 
         await self._after_checkout_updated(session, checkout)
         return checkout
+
+    async def check_confirm_rate_limit(
+        self, redis: Redis, checkout: Checkout, checkout_confirm: CheckoutConfirm
+    ) -> None:
+        email = checkout_confirm.customer_email or checkout.customer_email
+        if email is None:
+            return
+        retry_after = await get_checkout_confirm_email_retry_after(redis, email)
+        if retry_after:
+            raise CheckoutConfirmRateLimited(retry_after)
 
     async def confirm(
         self,

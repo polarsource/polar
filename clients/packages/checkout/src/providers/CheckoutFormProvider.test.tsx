@@ -476,6 +476,7 @@ describe('CheckoutFormProvider', () => {
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
+      'CheckoutConfirmRateLimited',
     ] as const)('sets root error for %s', async (errorCode) => {
       const getCtx = renderWithCheckout({
         checkout: freeCheckout,

@@ -9181,6 +9181,16 @@
               }
             }
           },
+          "429": {
+            "description": "Too many payment attempts for this customer email.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutConfirmRateLimited"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -40727,6 +40737,28 @@
             "$ref": "#/components/schemas/CheckoutConfirmSharedPaymentToken"
           }
         ]
+      },
+      "CheckoutConfirmRateLimited": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "CheckoutConfirmRateLimited",
+            "title": "Error",
+            "examples": [
+              "CheckoutConfirmRateLimited"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "CheckoutConfirmRateLimited"
       },
       "CheckoutConfirmSharedPaymentToken": {
         "properties": {

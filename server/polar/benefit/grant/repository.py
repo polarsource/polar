@@ -67,10 +67,16 @@ class BenefitGrantRepository(
             )
         return await self.get_one_or_none(statement)
 
-    async def get_for_fulfillment(self, grant_id: UUID) -> BenefitGrant | None:
+    async def get_for_fulfillment(
+        self, grant_id: UUID, *, customer_id: UUID, benefit_id: UUID
+    ) -> BenefitGrant | None:
         statement = (
             self.get_base_statement()
-            .where(BenefitGrant.id == grant_id)
+            .where(
+                BenefitGrant.id == grant_id,
+                BenefitGrant.customer_id == customer_id,
+                BenefitGrant.benefit_id == benefit_id,
+            )
             .options(*self.get_eager_options())
             .with_for_update(of=BenefitGrant)
             .execution_options(populate_existing=True)

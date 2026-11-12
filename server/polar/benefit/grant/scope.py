@@ -97,12 +97,10 @@ async def resolve_selector(
         if len(selector) != 1:
             raise InvalidScopeError(selector)
         repository = BenefitGrantRepository.from_session(session)
-        grant = await repository.get_for_fulfillment(selector["benefit_grant_id"])
-        if (
-            grant is None
-            or grant.customer_id != customer_id
-            or grant.benefit_id != benefit_id
-        ):
+        grant = await repository.get_for_fulfillment(
+            selector["benefit_grant_id"], customer_id=customer_id, benefit_id=benefit_id
+        )
+        if grant is None:
             raise InvalidScopeError(selector)
         return {"grant": grant}
     scope = await resolve_scope(session, selector)

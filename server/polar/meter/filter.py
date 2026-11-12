@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
 from polar.kit.schemas import Int32
-from polar.meter.property import STORED_CONTEXT, PropertyPath
+from polar.meter.property import PropertyPath
 
 if TYPE_CHECKING:
     from polar.models import Event
@@ -207,5 +207,5 @@ class FilterType(TypeDecorator[Any]):
 
     def process_result_value(self, value: str | None, dialect: Dialect) -> Any:
         if value is not None:
-            return Filter.model_validate(value, context=STORED_CONTEXT)
+            return Filter.model_validate(value)
         return value

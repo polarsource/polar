@@ -14,7 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
-from polar.meter.property import STORED_CONTEXT, PropertyPath
+from polar.meter.property import PropertyPath
 
 if TYPE_CHECKING:
     from polar.models import Event
@@ -155,5 +155,5 @@ class AggregationType(TypeDecorator[Any]):
 
     def process_result_value(self, value: str | None, dialect: Dialect) -> Any:
         if value is not None:
-            return AggregationTypeAdapter.validate_python(value, context=STORED_CONTEXT)
+            return AggregationTypeAdapter.validate_python(value)
         return value

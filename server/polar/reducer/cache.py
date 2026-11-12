@@ -9,7 +9,6 @@ from polar.kit.schemas import Schema
 from polar.logging import Logger
 from polar.meter.aggregation import Aggregation
 from polar.meter.filter import Filter
-from polar.meter.property import STORED_CONTEXT
 from polar.models import Reducer
 from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
@@ -59,9 +58,7 @@ async def get_active_reducers(
                     filter=reducer.filter,
                     aggregation=reducer.aggregation,
                 )
-                for reducer in cached_reducers_adapter.validate_json(
-                    cached, context=STORED_CONTEXT
-                )
+                for reducer in cached_reducers_adapter.validate_json(cached)
             ]
         async with redis.pipeline() as pipeline:
             await pipeline.watch(key)

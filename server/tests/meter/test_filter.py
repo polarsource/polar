@@ -10,7 +10,6 @@ from polar.meter.filter import (
     FilterClause,
     FilterConjunction,
     FilterOperator,
-    FilterType,
 )
 from polar.models import Event, Organization
 from polar.models.event import EventSource
@@ -116,21 +115,6 @@ class TestFilterClausePropertyValidation:
     def test_invalid(self, property: str) -> None:
         with pytest.raises(ValidationError):
             FilterClause(property=property, operator=FilterOperator.eq, value="x")
-
-    def test_stored_value_is_not_rejected(self) -> None:
-        property = "a.b.c.d.e.f"
-        filter = FilterType().process_result_value(
-            {  # type: ignore[arg-type]
-                "conjunction": "and",
-                "clauses": [{"property": property, "operator": "eq", "value": "x"}],
-            },
-            None,  # type: ignore[arg-type]
-        )
-
-        assert isinstance(filter, Filter)
-        clause = filter.clauses[0]
-        assert isinstance(clause, FilterClause)
-        assert clause.property == property
 
 
 @pytest.mark.anyio

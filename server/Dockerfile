@@ -121,6 +121,7 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", \
 
 FROM public.ecr.aws/lambda/python:3.14 AS lambda-base
 
+ARG DNF_REFRESH_DATE
 RUN dnf upgrade -y --releasever=latest \
   && dnf clean all \
   && rm /usr/local/bin/aws-lambda-rie

@@ -6,6 +6,9 @@ export const plural = (count: number, noun: string, nouns = `${noun}s`) =>
 
 const quote = (value: string) => `"${value}"`
 
+export const referencedResource = (message: string) =>
+  /^No (\w+) in this config/.exec(message)?.[1]
+
 type SourceLocation = NonNullable<ConfigIssue['location']>
 
 interface Problem {
@@ -26,6 +29,8 @@ const sanitize = (issue: ConfigIssue): ConfigIssue => ({
   path: ui.printable(issue.path),
   message: ui.printable(issue.message),
   got: issue.got === undefined ? undefined : ui.printable(issue.got),
+  suggestion:
+    issue.suggestion === undefined ? undefined : ui.printable(issue.suggestion),
 })
 
 const describe = (issue: ConfigIssue): Problem => {
@@ -47,9 +52,11 @@ const describe = (issue: ConfigIssue): Problem => {
       location: issue.location,
       path: issue.path,
       help:
-        issue.code === 'unknown_event'
-          ? `The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with ${ui.command('polar events list_names')}.`
-          : undefined,
+        issue.code !== 'unknown_event'
+          ? undefined
+          : issue.suggestion
+            ? `Did you mean ${ui.green(quote(issue.suggestion))}? The meter stays at zero until your app sends an event with this exact name.`
+            : `The meter counts events with this name, so it stays at zero until your app sends one. Fine for a new event; if the name looks wrong, compare it with ${ui.command('polar events list_names')}.`,
     }
   }
   const base = {
@@ -57,7 +64,11 @@ const describe = (issue: ConfigIssue): Problem => {
     color: ui.red,
     location: issue.location,
     path: issue.path,
-    help: issue.location ? undefined : issue.got && `Got ${issue.got}.`,
+    help: issue.suggestion
+      ? `Did you mean ${ui.green(quote(issue.suggestion))}?`
+      : issue.location
+        ? undefined
+        : issue.got && `Got ${issue.got}.`,
   }
   const message = issue.message.replace(/^Value error, /, '')
   const label = lowercaseFirst(message).replace(
@@ -93,9 +104,16 @@ const describe = (issue: ConfigIssue): Problem => {
         title: `Duplicate external_id ${issue.got ?? quote(key)}`,
         label: 'already used by another entry',
       }
+    case 'unknown_reference': {
+      const resource = referencedResource(message) ?? 'entry'
+      return {
+        ...base,
+        title: `Unknown ${resource} ${issue.got ?? quote(key)}`,
+        label: `not a ${resource} in this config`,
+      }
+    }
     case 'missing_currency':
     case 'not_supported':
-    case 'unknown_reference':
     case 'deprecated_reference':
     case 'type_changed':
     case 'interval_changed':
@@ -116,7 +134,7 @@ const describe = (issue: ConfigIssue): Problem => {
 
 const render = (config: LoadedConfig, problem: Problem) =>
   [
-    `${ui.INDENT}${problem.mark} ${problem.title}`,
+    `${ui.INDENT}${problem.mark} ${problem.color(problem.title)}`,
     ...(problem.location
       ? [
           ui.codeFrame(config.source, {
@@ -131,7 +149,9 @@ const render = (config: LoadedConfig, problem: Problem) =>
             `${ui.INDENT}${ui.INDENT}${ui.dim('at')} ${config.file} ${ui.dim('›')} ${problem.path}`,
           ]
         : []),
-    ...(problem.help ? [`${ui.INDENT}${ui.dim('help:')} ${problem.help}`] : []),
+    ...(problem.help
+      ? [`${ui.INDENT}${ui.bold(ui.cyan('help:'))} ${problem.help}`]
+      : []),
   ].join('\n')
 
 export const formatProblems = (

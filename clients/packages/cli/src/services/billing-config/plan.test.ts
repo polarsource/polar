@@ -128,6 +128,52 @@ describe('plan', () => {
     ])
   })
 
+  test('suggests the name a misspelled event or reference was meant to be', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      issues: [
+        {
+          severity: 'warning',
+          type: 'unknown_event',
+          loc: ['body', 'meters', 0, 'filter', 'clauses', 0, 'value'],
+          msg: 'No events with this name have been received yet.',
+          input: 'tool_cal',
+        },
+        {
+          severity: 'error',
+          type: 'unknown_reference',
+          loc: ['body', 'benefits', 0, 'meter_id'],
+          msg: 'No meter in this config has this external_id.',
+          input: 'tool-call',
+        },
+        {
+          severity: 'error',
+          type: 'unknown_reference',
+          loc: ['body', 'products', 0, 'benefits', 0],
+          msg: 'No benefit in this config has this external_id.',
+          input: 'tool-call',
+        },
+      ],
+    })
+    const names = `GET https://sandbox-api.polar.sh/v1/events/names?organization_id=org-1&source=user&limit=100`
+    api.routes[`${names}&page=1`] = Response.json({
+      items: [{ name: 'storage' }],
+      pagination: { max_page: 2 },
+    })
+    api.routes[`${names}&page=2`] = Response.json({
+      items: [{ name: 'tool_call' }],
+      pagination: { max_page: 2 },
+    })
+
+    const result = await run(await write(source))
+
+    expect(result.issues.map(({ suggestion }) => suggestion)).toEqual([
+      'tool_call',
+      'tool-calls',
+      undefined,
+    ])
+  })
+
   test('lists removals, in place of the deprecated entry', async () => {
     api.routes[`POST ${planUrl}`] = Response.json({
       changes: [

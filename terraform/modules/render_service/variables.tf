@@ -70,6 +70,8 @@ variable "postgres_config" {
     read_password      = string
     read_host_fallback = optional(string)
     read_port_fallback = optional(string)
+    migration_user     = optional(string)
+    migration_password = optional(string)
     sslmode            = optional(string)
     sslrootcert        = optional(string)
   })

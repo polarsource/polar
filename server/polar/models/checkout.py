@@ -2,7 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from enum import StrEnum
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict
 from uuid import UUID
 
 from sqlalchemy import (
@@ -93,9 +93,13 @@ class CheckoutBillingAddressFields(TypedDict):
     line2: BillingAddressFieldMode
 
 
+CheckoutAgentChannel = Literal["shared_payment_token"]
+
+
 class CheckoutAnalyticsMetadata(TypedDict, total=False):
     opened_at: str
     distinct_id: str | None
+    agent_channel: CheckoutAgentChannel
 
 
 # Payment methods for which the processor requires a full billing address

@@ -1,11 +1,12 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
+import { ExternalId } from './external-id'
 import { withDeprecation, type HasDeprecation } from './deprecation'
 import { Metadata, withMetadata, type HasMetadata } from './metadata'
 import { Visibility, withVisibility, type HasVisibility } from './visibility'
 
 const benefitFields = {
-  external_id: Schema.String.check(Schema.isMinLength(1)),
+  external_id: ExternalId,
   description: Schema.String.check(
     Schema.isMinLength(3),
     Schema.isMaxLength(42),

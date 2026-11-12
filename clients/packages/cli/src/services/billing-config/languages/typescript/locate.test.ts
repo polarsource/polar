@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'vitest'
-import { locateInScript } from '@/services/billing-config/script-locations'
+import { locateInScript } from '@/services/billing-config/languages/typescript/locate'
 
 const builder = [
   "import { defineConfig, eq } from '@polar-sh/polar'",
   '',
   'export default defineConfig({',
   '  meters: ({ meter }) => ({',
-  "    tool_calls: meter({ displayName: 'Tool Calls' })",
+  "    tool_calls: meter('Tool Calls')",
   "      .where(eq('name', 'tool_call'))",
   '      .count(),',
-  "    'tokens': meter({ displayName: 'Tokens' })",
+  "    'tokens': meter('Tokens')",
   "      .where(eq('name', 'tool_call'))",
   "      .sum('tokens'),",
   '  }),',

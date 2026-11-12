@@ -11,6 +11,7 @@ from polar.benefit.strategies.meter_credit.properties import (
 )
 from polar.catalog.repository import (
     CatalogBenefitRepository,
+    CatalogMeterRepository,
     CatalogProductRepository,
 )
 from polar.catalog.service import catalog as catalog_service
@@ -238,17 +239,36 @@ async def export_config(
     skipped: list[ConfigSkippedResource] = []
 
     meter_repository = MeterRepository.from_session(session)
+    meters_statement = meter_repository.get_organization_statement(organization.id)
+    if (
+        catalog is not None
+        and catalog.status != CatalogStatus.live
+        and await catalog_service.lists_meters(session, catalog)
+    ):
+        meters_statement = CatalogMeterRepository.from_session(
+            session
+        ).get_meters_statement(catalog.id)
     meters, meter_external_ids = await _export_section(
         ConfigResource.meter,
-        meter_repository.stream(
-            meter_repository.get_organization_statement(organization.id)
-        ),
+        meter_repository.stream(meters_statement),
         MAXIMUM_METERS,
         skipped,
         name=lambda meter: meter.name,
         archived=lambda meter: meter.archived_at is not None,
         entry=_meter_entry,
     )
+    # Products still in use may bill previous versions of the exported meters.
+    exported_meters = set(meter_external_ids.values())
+    meter_external_ids = {
+        **{
+            id: external_id
+            for id, external_id in (
+                await meter_repository.get_external_ids_by_id(organization.id)
+            ).items()
+            if external_id in exported_meters
+        },
+        **meter_external_ids,
+    }
 
     benefit_repository = BenefitRepository.from_session(session)
     benefits_statement = benefit_repository.get_organization_statement(organization.id)

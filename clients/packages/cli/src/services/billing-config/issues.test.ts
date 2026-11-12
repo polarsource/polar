@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { issues, locate } from '@/services/billing-config/issues'
+import { issues } from '@/services/billing-config/issues'
 
 const source = [
   '{',
@@ -11,38 +11,6 @@ const source = [
   '  ]',
   '}',
 ].join('\n')
-
-describe('locate', () => {
-  test('finds the line and column of a value', () => {
-    expect(locate(source, ['meters', 0, 'filter', 'conjunction'])).toEqual({
-      line: 5,
-      column: 34,
-      length: 5,
-    })
-  })
-
-  test('falls back to the closest parent for a missing key, underlining only its first line', () => {
-    expect(locate(source, ['meters', 0, 'name'])).toEqual({
-      line: 3,
-      column: 5,
-      length: 1,
-    })
-  })
-
-  test('can point at the key instead of the value', () => {
-    expect(locate(source, ['meters', 0, 'external_id'], 'key')).toEqual({
-      line: 4,
-      column: 7,
-      length: 13,
-    })
-  })
-
-  test('skips union tags that are not keys in the file', () => {
-    expect(
-      locate(source, ['meters', 0, 'filter', 'and', 'conjunction']),
-    ).toEqual({ line: 5, column: 34, length: 5 })
-  })
-})
 
 describe('issues', () => {
   const config = {
@@ -138,5 +106,25 @@ describe('issues', () => {
         location: { line: 5, column: 34, length: 5 },
       },
     ])
+  })
+
+  test('locates an issue in the language the config is written in', () => {
+    const python = {
+      file: 'polar_config.py',
+      source: 'class Meters(MeterSet):\n    calls = Meter("", on="call")\n',
+      input: { meters: [{ external_id: 'calls', name: '' }] },
+      generated: true,
+    }
+
+    const [issue] = issues(python, [
+      {
+        type: 'string_too_short',
+        loc: ['body', 'meters', 0, 'name'],
+        msg: 'String should have at least 3 characters',
+        input: '',
+      },
+    ])
+
+    expect(issue?.location).toEqual({ line: 2, column: 19, length: 2 })
   })
 })

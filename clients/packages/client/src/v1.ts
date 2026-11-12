@@ -1021,28 +1021,6 @@ export interface paths {
     patch?: never
     trace?: never
   }
-  '/v1/organizations/{id}/ai-onboarding-complete': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Mark AI Onboarding Complete
-     * @description Mark the AI onboarding as completed for this organization.
-     *
-     *     **Scopes**: `organizations:write`
-     */
-    post: operations['organizations:mark_ai_onboarding_complete']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   '/v1/organizations/{id}/review-status': {
     parameters: {
       query?: never
@@ -3752,6 +3730,30 @@ export interface paths {
      *     **Scopes**: `products:read` `products:write`
      */
     get: operations['catalogs:list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/catalogs/removed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Removed Catalog Items
+     * @description List the products and benefits a published catalog listed but the live
+     *     one doesn't, newest removal first. They're deprecated while customers still
+     *     use them, and removed once nobody does.
+     *
+     *     **Scopes**: `products:read` `products:write`
+     */
+    get: operations['catalogs:list_removed']
     put?: never
     post?: never
     delete?: never
@@ -36161,6 +36163,69 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * RemovedCatalogItem
+     * @description A key that was in a published catalog but isn't in the live one.
+     */
+    RemovedCatalogItem: {
+      resource: components['schemas']['RemovedCatalogItemResource']
+      /**
+       * External Id
+       * @description Key of the item in the catalogs.
+       */
+      external_id: string
+      /**
+       * Name
+       * @description Name of the item in its last version.
+       */
+      name: string
+      /** @description `deprecated` while customers still use it, `removed` once nobody does. */
+      status: components['schemas']['RemovedCatalogItemStatus']
+      /**
+       * Customers Count
+       * @description Customers with a billable subscription on, or a scheduled change to, the product; customers granted the benefit.
+       */
+      customers_count: number
+      /**
+       * Last Item Id
+       * Format: uuid4
+       * @description ID of the product or benefit in the last catalog that listed it.
+       */
+      last_item_id: string
+      /** @description First catalog that listed it. */
+      first_catalog: components['schemas']['RemovedCatalogItemVersion']
+      /** @description Last catalog that listed it. */
+      last_catalog: components['schemas']['RemovedCatalogItemVersion']
+      /** @description The catalog published after the last one that listed it. */
+      removed_in_catalog: components['schemas']['RemovedCatalogItemVersion']
+    }
+    /**
+     * RemovedCatalogItemResource
+     * @enum {string}
+     */
+    RemovedCatalogItemResource: 'product' | 'benefit'
+    /**
+     * RemovedCatalogItemStatus
+     * @enum {string}
+     */
+    RemovedCatalogItemStatus: 'deprecated' | 'removed'
+    /** RemovedCatalogItemVersion */
+    RemovedCatalogItemVersion: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Name */
+      name: string | null
+      /**
+       * Published At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      published_at: string
+    }
     /** ResourceNotFound */
     ResourceNotFound: {
       /**
@@ -45065,46 +45130,6 @@ export interface operations {
       }
     }
   }
-  'organizations:mark_ai_onboarding_complete': {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        id: string
-      }
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description AI onboarding marked as complete. */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['Organization']
-        }
-      }
-      /** @description Organization not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
   'organizations:get_review_status': {
     parameters: {
       query?: never
@@ -53779,6 +53804,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_Catalog_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:list_removed': {
+    parameters: {
+      query: {
+        organization_id: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RemovedCatalogItem'][]
         }
       }
       /** @description Validation Error */
@@ -75248,6 +75304,12 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const removedCatalogItemResourceValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RemovedCatalogItemResource']
+> = ['product', 'benefit']
+export const removedCatalogItemStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['RemovedCatalogItemStatus']
+> = ['deprecated', 'removed']
 export const reviewAppealSupportCaseListItemTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseListItem']['type']
 > = ['review_appeal']

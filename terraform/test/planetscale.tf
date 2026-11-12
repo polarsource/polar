@@ -6,7 +6,7 @@ module "planetscale" {
   app_database_name  = "polar_test"
   app_role_name      = "polar_test"
   region             = "aws-us-east-2"
-  cluster_size       = "PS_10_AWS_ARM"
+  cluster_size       = "PS_640_AWS_ARM"
   deletion_protected = false
 
   storage = {
@@ -17,7 +17,7 @@ module "planetscale" {
 
   parameters = {
     pgconf = {
-      max_connections = "50"
+      max_connections = "500"
     }
     pgbouncer = {
       track_extra_parameters = "IntervalStyle,statement_timeout"
@@ -28,7 +28,8 @@ module "planetscale" {
     app = {
       parameters = {
         pgbouncer = {
-          default_pool_size      = "12"
+          default_pool_size      = "200"
+          max_client_conn        = "1000"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }
@@ -37,7 +38,8 @@ module "planetscale" {
       target = "replica"
       parameters = {
         pgbouncer = {
-          default_pool_size      = "12"
+          default_pool_size      = "50"
+          max_client_conn        = "200"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }
@@ -47,16 +49,18 @@ module "planetscale" {
 
 locals {
   planetscale_postgres_config = {
-    host          = module.planetscale.host
-    port          = "6432"
-    user          = module.planetscale.bouncer_usernames["app"]
-    password      = var.planetscale_app_password
-    read_host     = module.planetscale.host
-    read_port     = "6432"
-    read_user     = module.planetscale.bouncer_usernames["read"]
-    read_password = var.planetscale_app_password
-    sslmode       = "verify-full"
-    sslrootcert   = "/etc/ssl/certs/ca-certificates.crt"
+    host               = module.planetscale.host
+    port               = "6432"
+    user               = module.planetscale.bouncer_usernames["app"]
+    password           = var.planetscale_app_password
+    read_host          = module.planetscale.host
+    read_port          = "6432"
+    read_user          = module.planetscale.bouncer_usernames["read"]
+    read_password      = var.planetscale_app_password
+    migration_user     = module.planetscale.migrator_role_username
+    migration_password = var.planetscale_migrator_password
+    sslmode            = "verify-full"
+    sslrootcert        = "/etc/ssl/certs/ca-certificates.crt"
   }
 }
 

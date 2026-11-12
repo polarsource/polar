@@ -1,4 +1,4 @@
-import { Clock, Effect, Option, Stdio } from 'effect'
+import { Duration, Effect, Option } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import {
@@ -16,6 +16,7 @@ import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, configFile as file, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
 import { withProgress } from '@/utils/progress'
+import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const reason = (entry: PruneEntry) =>
@@ -75,11 +76,6 @@ const report = (
     groups.join('\n\n'),
   )
 }
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const confirm =
   (
@@ -175,34 +171,39 @@ export const prune = Command.make('prune', { file, org, confirmed }).pipe(
               yield* progress.start('Found')
               yield* progress.finish(found(config))
               yield* progress.start('Checking')
-              const startedAt = yield* Clock.currentTimeMillis
-              const checked = Clock.currentTimeMillis.pipe(
-                Effect.flatMap((now) =>
-                  progress.finish(`${now - startedAt}ms`),
-                ),
-                Effect.andThen(progress.close),
+              const [elapsed, { organization, entries }] = yield* Effect.timed(
+                Effect.gen(function* () {
+                  const organization = yield* (yield* Organizations).resolve(
+                    Option.getOrUndefined(org),
+                  )
+                  const entries = yield* billing.deprecations(
+                    config,
+                    organization,
+                  )
+                  return { organization, entries }
+                }),
               )
-              const organization = yield* (yield* Organizations).resolve(
-                Option.getOrUndefined(org),
+              yield* progress.finish(
+                `${Math.round(Duration.toMillis(elapsed))}ms`,
               )
-              const result = yield* billing.prune(
+              yield* progress.close
+              const unused = entries.filter(removable)
+              if (unused.length > 0) {
+                yield* confirm(
+                  config,
+                  organization,
+                  json,
+                  confirmed,
+                  say,
+                )(entries)
+                yield* billing.prune(config, unused)
+              }
+              return {
                 config,
                 organization,
-                (entries) =>
-                  checked.pipe(
-                    Effect.andThen(
-                      confirm(
-                        config,
-                        organization,
-                        json,
-                        confirmed,
-                        say,
-                      )(entries),
-                    ),
-                  ),
-              )
-              yield* checked
-              return { config, organization, ...result }
+                entries,
+                removed: unused.length > 0,
+              }
             }),
           'columns',
         )

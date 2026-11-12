@@ -1,8 +1,13 @@
 from uuid import UUID
 
 from polar.benefit.repository import BenefitRepository
-from polar.catalog.repository import CatalogBenefitRepository, CatalogProductRepository
-from polar.models import Benefit, Catalog, Product
+from polar.catalog.repository import (
+    CatalogBenefitRepository,
+    CatalogMeterRepository,
+    CatalogProductRepository,
+)
+from polar.catalog.service import CatalogMembers
+from polar.models import Catalog, Product
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 
@@ -18,9 +23,7 @@ _INTERVAL_FIELDS = (
 )
 
 
-async def rows(
-    session: AsyncSession, draft: Catalog, config: Config
-) -> tuple[dict[str, Benefit], dict[str, Product]]:
+async def rows(session: AsyncSession, draft: Catalog, config: Config) -> CatalogMembers:
     """The rows the draft created, by `external_id`. Applying to the draft
     again updates them in place."""
     benefits = await CatalogBenefitRepository.from_session(
@@ -37,16 +40,25 @@ async def rows(
         [product.external_id for product in config.products],
         options=ProductRepository.from_session(session).get_eager_options(),
     )
-    return (
-        {
+    meter_external_ids = {meter.external_id for meter in config.meters}
+    return CatalogMembers(
+        products={
+            product.external_id: product
+            for product in draft_products
+            if product.external_id is not None and product.catalog_id == draft.id
+        },
+        benefits={
             benefit.external_id: benefit
             for benefit in benefits
             if benefit.external_id is not None and benefit.catalog_id == draft.id
         },
-        {
-            product.external_id: product
-            for product in draft_products
-            if product.external_id is not None and product.catalog_id == draft.id
+        meters={
+            member.external_id: member.meter
+            for member in await CatalogMeterRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+            if member.external_id in meter_external_ids
+            and member.meter.catalog_id == draft.id
         },
     )
 

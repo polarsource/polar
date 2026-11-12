@@ -10,6 +10,7 @@ import {
   type SharedEventOutput,
 } from './event'
 import { Builder } from './builder'
+import { ExternalId } from './external-id'
 import { deprecatedKey, withDeprecation } from './deprecation'
 import {
   Metadata as MeterMetadata,
@@ -67,7 +68,7 @@ export const MeterAggregation = Schema.Union([
 export type MeterAggregation = typeof MeterAggregation.Type
 
 const meterFields = {
-  external_id: Schema.String.check(Schema.isMinLength(1)),
+  external_id: ExternalId,
   name: Schema.String.check(Schema.isMinLength(3)),
   filter: MeterFilter,
   aggregation: MeterAggregation,

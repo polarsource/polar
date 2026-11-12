@@ -123,7 +123,7 @@ async def callback(
 ) -> RedirectResponse:
     try:
         state_data = await jwt.decode(token=state, type="customer_oauth")
-    except jwt.DecodeError as e:
+    except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
         raise NotPermitted("Invalid state") from e
 
     customer_repository = CustomerRepository.from_session(session)

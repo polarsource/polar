@@ -1,8 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  removeFromJson,
-  removeFromScript,
-} from '@/services/billing-config/remove'
+import { removeFromScript } from '@/services/billing-config/languages/typescript/remove'
 
 const script = [
   "import { defineConfig, usd } from '@polar-sh/polar'",
@@ -184,35 +181,6 @@ describe('removeFromScript', () => {
     expect(removeFromScript(script, removals)).toEqual({
       source: script,
       missing: [{ section: 'meters', id: 'name' }],
-    })
-  })
-})
-
-describe('removeFromJson', () => {
-  const input = {
-    meters: [{ external_id: 'apples' }, { external_id: 'pears' }],
-    benefits: [{ external_id: 'beta' }],
-  }
-  const json = `${JSON.stringify(input, null, 2)}\n`
-
-  test('removes entries by external ID', () => {
-    const { source, missing } = removeFromJson(json, input, [
-      { section: 'meters', id: 'apples' },
-      { section: 'benefits', id: 'beta' },
-    ])
-    expect(missing).toEqual([])
-    expect(JSON.parse(source)).toEqual({
-      meters: [{ external_id: 'pears' }],
-      benefits: [],
-    })
-  })
-
-  test('changes nothing when an entry cannot be found', () => {
-    expect(
-      removeFromJson(json, input, [{ section: 'products', id: 'legacy' }]),
-    ).toEqual({
-      source: json,
-      missing: [{ section: 'products', id: 'legacy' }],
     })
   })
 })

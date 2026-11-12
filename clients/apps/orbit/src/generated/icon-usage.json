@@ -17,10 +17,7 @@
   "ArrowLeft": {
     "source": "lucide",
     "original": "ArrowLeft",
-    "files": [
-      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/AIProductPage.tsx",
-      "apps/web/src/components/Checkout/Checkout.tsx"
-    ]
+    "files": ["apps/web/src/components/Checkout/Checkout.tsx"]
   },
   "ArrowRight": {
     "source": "lucide",
@@ -50,6 +47,7 @@
       "apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx",
       "apps/web/src/components/Customer/CustomerPage/CustomerTrendStatBox.tsx",
       "apps/web/src/components/Orders/OrderDetails.tsx",
+      "apps/web/src/components/Products/ManageWithAgent.tsx",
       "apps/web/src/components/Settings/Webhook/WebhookSettings.tsx",
       "apps/web/src/components/Subscriptions/ScheduledUpdateSection.tsx",
       "apps/web/src/components/Subscriptions/SubscriptionDetailsGrid.tsx"
@@ -116,6 +114,7 @@
       "apps/web/src/components/Landing/story/SellFigure.tsx",
       "apps/web/src/components/Layout/OnboardingStepper.tsx",
       "apps/web/src/components/Organization/HumanReviewCase/DecisionMessage.tsx",
+      "apps/web/src/components/Products/ManageWithAgent.tsx",
       "apps/web/src/components/Products/ProductCombobox.tsx",
       "apps/web/src/components/Products/ProductSelect.tsx",
       "apps/web/src/components/Shared/FilterPopover.tsx",
@@ -280,7 +279,10 @@
   "Copy": {
     "source": "lucide",
     "original": "Copy",
-    "files": ["apps/orbit/src/components/docs/CodeBlock.tsx"]
+    "files": [
+      "apps/orbit/src/components/docs/CodeBlock.tsx",
+      "apps/web/src/components/Products/ManageWithAgent.tsx"
+    ]
   },
   "CreditCard": {
     "source": "lucide",
@@ -586,7 +588,8 @@
     "source": "lucide",
     "original": "Sparkles",
     "files": [
-      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OnboardingChecklistCard/OnboardingChecklistCard.tsx"
+      "apps/web/src/app/(main)/dashboard/[organization]/(header)/(home)/OnboardingChecklistCard/OnboardingChecklistCard.tsx",
+      "apps/web/src/components/Products/ManageWithAgent.tsx"
     ]
   },
   "TicketPercent": {
@@ -649,11 +652,6 @@
     "source": "lucide",
     "original": "WalletCards",
     "files": ["apps/web/src/components/CustomerPortal/OrderPaymentRetry.tsx"]
-  },
-  "WandSparkles": {
-    "source": "lucide",
-    "original": "WandSparkles",
-    "files": ["apps/web/src/components/Products/CreateProductPage.tsx"]
   },
   "X": {
     "source": "lucide",
@@ -792,7 +790,6 @@
     "source": "material",
     "original": "ArrowForwardOutlined",
     "files": [
-      "apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/AIProductChat.tsx",
       "apps/web/src/components/Events/EventCard/SubscriptionEventCard.tsx"
     ]
   },

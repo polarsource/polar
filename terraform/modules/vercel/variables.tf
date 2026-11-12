@@ -141,7 +141,6 @@ variable "secrets" {
   type = object({
     pydantic_ai_gateway_api_key = string
     mintlify_assistant_api_key  = string
-    gram_api_key                = string
     sentry_auth_token           = string
   })
   sensitive = true

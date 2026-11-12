@@ -80,7 +80,6 @@ module "vercel" {
   secrets = {
     pydantic_ai_gateway_api_key = var.pydantic_ai_gateway_api_key
     mintlify_assistant_api_key  = var.mintlify_assistant_api_key
-    gram_api_key                = var.gram_api_key
     sentry_auth_token           = var.sentry_auth_token
   }
 
@@ -94,8 +93,6 @@ module "vercel" {
     { key = "NEXT_PUBLIC_GOOGLE_ANALYTICS_ID", value = "G-MBYW1QZFHE", target = ["production"] },
     { key = "NEXT_PUBLIC_GITHUB_INSTALLATION_URL", value = "https://github.com/apps/polar-sh/installations/new" },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key },
-    { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, target = ["production", "preview"] },
-    { key = "MCP_OAUTH2_CLIENT_SECRET", value = var.mcp_oauth2_client_secret, target = ["production", "preview"] },
     { key = "ATTIO_API_KEY", value = var.attio_api_key, target = ["production", "preview"], sensitive = true },
     { key = "ATTIO_STARTUP_LIST_ID", value = var.attio_startup_list_id, target = ["production", "preview"], sensitive = true },
     { key = "ATTIO_DESIGN_PARTNER_LIST_ID", value = var.attio_design_partner_list_id, target = ["production", "preview"], sensitive = true },

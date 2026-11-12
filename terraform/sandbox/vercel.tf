@@ -44,7 +44,6 @@ module "vercel" {
   secrets = {
     pydantic_ai_gateway_api_key = var.pydantic_ai_gateway_api_key
     mintlify_assistant_api_key  = var.mintlify_assistant_api_key
-    gram_api_key                = var.gram_api_key
     sentry_auth_token           = var.sentry_auth_token
   }
 
@@ -56,8 +55,6 @@ module "vercel" {
     { key = "NEXT_PUBLIC_PRODUCT_LINK_BASE_URL", value = "https://sandbox.polar.sh/api/checkout?price=" },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key, target = ["production", "development"] },
     { key = "NEXT_PUBLIC_STRIPE_KEY", value = var.stripe_publishable_key_preview, target = ["preview"], sensitive = true },
-    { key = "MCP_OAUTH2_CLIENT_ID", value = var.mcp_oauth2_client_id, target = ["production", "preview", "development"] },
-    { key = "MCP_OAUTH2_CLIENT_SECRET", value = var.mcp_oauth2_client_secret, target = ["production", "preview", "development"] },
   ]
 }
 

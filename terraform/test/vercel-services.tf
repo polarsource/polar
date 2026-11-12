@@ -92,17 +92,8 @@ locals {
     MINTLIFY_ASSISTANT_API_KEY = {
       value = var.mintlify_assistant_api_key
     }
-    GRAM_API_KEY = {
-      value = var.gram_api_key
-    }
     SENTRY_AUTH_TOKEN = {
       value = var.sentry_auth_token
-    }
-    MCP_OAUTH2_CLIENT_ID = {
-      value = var.mcp_oauth2_client_id
-    }
-    MCP_OAUTH2_CLIENT_SECRET = {
-      value = var.mcp_oauth2_client_secret
     }
     POLAR_ENV = {
       value     = "test"

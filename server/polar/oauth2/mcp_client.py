@@ -1,8 +1,6 @@
 """Script to generate an OAuth2 client for our MCP server."""
 
-import argparse
 import asyncio
-from pathlib import Path
 
 from rich import print
 
@@ -19,15 +17,7 @@ from .constants import (
 )
 
 
-def append_credentials_to_env_file(
-    env_file_path: Path, client_id: str, client_secret: str | None
-) -> None:
-    with env_file_path.open("a") as env_file:
-        env_file.write(f"\nMCP_OAUTH2_CLIENT_ID={client_id}\n")
-        env_file.write(f"MCP_OAUTH2_CLIENT_SECRET={client_secret}\n")
-
-
-async def create_client(add_to_env_file: bool) -> None:
+async def create_client() -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
     async with sessionmaker() as session:
@@ -55,35 +45,9 @@ async def create_client(add_to_env_file: bool) -> None:
 
     print("[bold green]OAuth2 Client created successfully![/bold green]")
 
-    if add_to_env_file:
-        env_file_path = (
-            Path(__file__).parent.parent.parent.parent
-            / "clients"
-            / "apps"
-            / "web"
-            / ".env.local"
-        )
-        await asyncio.to_thread(
-            append_credentials_to_env_file,
-            env_file_path,
-            oauth2_client.client_id,
-            client_secret,
-        )
-        print(f"[bold blue]Credentials added to {env_file_path}[/bold blue]")
-    else:
-        print(f"Client ID: [bold]{oauth2_client.client_id}[/bold]")
-        print(f"Client Secret: [bold]{client_secret}[/bold]")
+    print(f"Client ID: [bold]{oauth2_client.client_id}[/bold]")
+    print(f"Client Secret: [bold]{client_secret}[/bold]")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Generate an OAuth2 client for MCP server"
-    )
-    parser.add_argument(
-        "--add-to-env-file",
-        action="store_true",
-        help="Add credentials to .env.local file instead of printing them",
-    )
-
-    args = parser.parse_args()
-    asyncio.run(create_client(args.add_to_env_file))
+    asyncio.run(create_client())

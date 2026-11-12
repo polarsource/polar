@@ -586,18 +586,6 @@ resource "tfe_variable" "vercel_mintlify_assistant_api_key_test" {
   }
 }
 
-resource "tfe_variable" "vercel_gram_api_key_test" {
-  key             = "gram_api_key"
-  category        = "terraform"
-  description     = "Gram API key for the Vercel test frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "vercel_sentry_auth_token_test" {
   key             = "sentry_auth_token"
   category        = "terraform"
@@ -613,19 +601,7 @@ resource "tfe_variable" "vercel_sentry_auth_token_test" {
 resource "tfe_variable" "vercel_mcp_oauth2_client_id_test" {
   key             = "mcp_oauth2_client_id"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel test frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.test.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "vercel_mcp_oauth2_client_secret_test" {
-  key             = "mcp_oauth2_client_secret"
-  category        = "terraform"
-  description     = "MCP OAuth2 client secret for the Vercel test frontend"
+  description     = "OAuth2 client ID of the Polar MCP server (test)"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 

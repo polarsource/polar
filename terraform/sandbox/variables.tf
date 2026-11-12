@@ -378,12 +378,6 @@ variable "pydantic_ai_gateway_api_key" {
 
 
 
-variable "gram_api_key" {
-  description = "Gram API key for the Vercel frontend"
-  type        = string
-  sensitive   = true
-}
-
 variable "mintlify_assistant_api_key" {
   description = "Mintlify assistant API key for the Vercel frontend"
   type        = string
@@ -391,13 +385,7 @@ variable "mintlify_assistant_api_key" {
 }
 
 variable "mcp_oauth2_client_id" {
-  description = "MCP OAuth2 client ID for the Vercel frontend"
-  type        = string
-  sensitive   = true
-}
-
-variable "mcp_oauth2_client_secret" {
-  description = "MCP OAuth2 client secret for the Vercel frontend"
+  description = "OAuth2 client ID of the Polar MCP server, excluded from stale client cleanup"
   type        = string
   sensitive   = true
 }

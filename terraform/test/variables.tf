@@ -385,12 +385,6 @@ variable "mintlify_assistant_api_key" {
   sensitive   = true
 }
 
-variable "gram_api_key" {
-  description = "Gram API key for the Vercel frontend"
-  type        = string
-  sensitive   = true
-}
-
 variable "sentry_auth_token" {
   description = "Sentry auth token for the Vercel frontend build"
   type        = string
@@ -398,13 +392,7 @@ variable "sentry_auth_token" {
 }
 
 variable "mcp_oauth2_client_id" {
-  description = "MCP OAuth2 client ID for the Vercel frontend"
-  type        = string
-  sensitive   = true
-}
-
-variable "mcp_oauth2_client_secret" {
-  description = "MCP OAuth2 client secret for the Vercel frontend"
+  description = "OAuth2 client ID of the Polar MCP server, excluded from stale client cleanup"
   type        = string
   sensitive   = true
 }

@@ -544,18 +544,6 @@ resource "tfe_variable" "vercel_pydantic_ai_gateway_api_key_sandbox" {
   }
 }
 
-resource "tfe_variable" "vercel_gram_api_key_sandbox" {
-  key             = "gram_api_key"
-  category        = "terraform"
-  description     = "Gram API key for the Vercel sandbox frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 resource "tfe_variable" "vercel_mintlify_assistant_api_key_sandbox" {
   key             = "mintlify_assistant_api_key"
   category        = "terraform"
@@ -571,19 +559,7 @@ resource "tfe_variable" "vercel_mintlify_assistant_api_key_sandbox" {
 resource "tfe_variable" "vercel_mcp_oauth2_client_id_sandbox" {
   key             = "mcp_oauth2_client_id"
   category        = "terraform"
-  description     = "MCP OAuth2 client ID for the Vercel sandbox frontend"
-  sensitive       = true
-  variable_set_id = tfe_variable_set.sandbox.id
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "tfe_variable" "vercel_mcp_oauth2_client_secret_sandbox" {
-  key             = "mcp_oauth2_client_secret"
-  category        = "terraform"
-  description     = "MCP OAuth2 client secret for the Vercel sandbox frontend"
+  description     = "OAuth2 client ID of the Polar MCP server (sandbox)"
   sensitive       = true
   variable_set_id = tfe_variable_set.sandbox.id
 

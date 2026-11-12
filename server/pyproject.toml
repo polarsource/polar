@@ -13,7 +13,7 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.1.6",
   "greenlet>=3.5.5",
   "structlog>=26.1.0",
-  "githubkit==0.16.1",
+  "githubkit==0.17.0",
   "redis>=5.0.4",
   "sse-starlette>=3.4.5",
   "stripe>=14.4.2,<15",
@@ -63,8 +63,8 @@ dependencies = [
   "clickhouse-connect[async]>=1.7.1",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
-  "polar-sdk==1.0.3a5",
-  "anyio==4.15.1", # Potential culprit for Sep 23-24 memory leak
+  "polar-sdk==1.0.3a7",
+  "anyio==4.16.0", # Potential culprit for Sep 23-24 memory leak
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
   "reauth==0.5.0",

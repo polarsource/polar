@@ -169,7 +169,7 @@ def test_where_joins_the_event_filter(where: Condition, clauses: list[object]) -
                 "clauses": [{"conjunction": "or", "clauses": [REQUEST, SEARCH]}, SLOW],
             },
         ),
-        (None, None, {"conjunction": "and", "clauses": []}),
+        (None, and_(), {"conjunction": "and", "clauses": []}),
         (None, gt("duration", 500), {"conjunction": "and", "clauses": [SLOW]}),
         (
             None,
@@ -192,6 +192,12 @@ def test_filter_without_a_single_event(
     assert Meter("Requests", on=on, where=where).filter == expected
 
 
+@pytest.mark.parametrize("on", [None, []])
+def test_rejects_a_meter_that_selects_no_events(on: list[str] | None) -> None:
+    with pytest.raises(ValueError, match=r"'Requests' needs `on` or `where`"):
+        Meter("Requests", on=on)
+
+
 def test_explicit_external_id() -> None:
     class Dashed(MeterSet):
         tool_calls = Meter("Tool calls", on="tool_call", external_id="tool-calls")
@@ -199,6 +205,13 @@ def test_explicit_external_id() -> None:
     assert Config(meters=Dashed).to_dict() == {
         "meters": [{**TOOL_CALL, "external_id": "tool-calls"}]
     }
+
+
+def test_empty_explicit_external_id_is_sent_as_written() -> None:
+    class Blank(MeterSet):
+        tool_calls = Meter("Tool calls", on="tool_call", external_id="")
+
+    assert Config(meters=Blank).to_dict()["meters"][0]["external_id"] == ""
 
 
 def test_rejects_an_attribute_python_renames() -> None:

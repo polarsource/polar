@@ -211,14 +211,49 @@ config = Config(meters=Meters)
       { conjunction: 'and', clauses: [ok] },
       'where=eq("ok", True)',
     ],
-    ['no filter', { conjunction: 'and', clauses: [] }, undefined],
+    [
+      'an empty event name',
+      { conjunction: 'and', clauses: [event('')] },
+      'on=""',
+    ],
+    ['no filter', { conjunction: 'and', clauses: [] }, 'where=and_()'],
   ])('writes a meter with %s', async (_, filter, expected) => {
     const source = await Effect.runPromise(
       renderPython({ meters: [{ ...toolCall, name: 'Calls', filter }] }),
     )
 
-    expect(source).toContain(
-      `    tool_call = Meter(${['"Calls"', expected].filter(Boolean).join(', ')})\n`,
+    expect(source).toContain(`    tool_call = Meter("Calls", ${expected})\n`)
+  })
+
+  test('puts each event on a line of its own when they do not fit on one', async () => {
+    const source = await Effect.runPromise(
+      renderPython({
+        meters: [
+          {
+            ...toolCall,
+            filter: {
+              conjunction: 'or',
+              clauses: [
+                'checkout.completed',
+                'subscription.renewed',
+                'invoice.finalized',
+                'usage.reported',
+              ].map(event),
+            },
+          },
+        ],
+      }),
     )
+
+    expect(source).toContain(`    tool_call = Meter(
+        "Tool calls",
+        on=[
+            "checkout.completed",
+            "subscription.renewed",
+            "invoice.finalized",
+            "usage.reported",
+        ],
+    )
+`)
   })
 })

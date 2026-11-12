@@ -40,7 +40,8 @@ export const classBody = (source: string, section: string) => {
   return { start, end: next === null ? source.length : start + next.index }
 }
 
-const DECLARATION = /^([ \t]+)([A-Za-z_]\w*)[ \t]*(?::[^=\n]+)?=(?!=)/gm
+const BRACKET_OR_ASSIGNMENT =
+  /([([{])|([)\]}])|^([ \t]+)([A-Za-z_]\w*)[ \t]*(?::[^=\n]+)?=(?!=)/gm
 
 const STRING_OR_COMMENT =
   /("""|''')[\s\S]*?\1|(["'])(?:\\.|(?!\2)[^\\\n])*\2|#[^\n]*/g
@@ -59,27 +60,31 @@ interface Declaration {
   readonly end: number
 }
 
-const classLevelDeclarations = (
+const declarations = (
   source: string,
   code: string,
-  from: number,
-  to: number,
 ): ReadonlyArray<Declaration> => {
-  const found = [...code.slice(from, to).matchAll(DECLARATION)].map((match) => {
-    const indent = match[1]!.length
-    const start = from + match.index + indent
-    const next = new RegExp(`\\n[ \\t]{0,${indent}}[^\\s)\\]}]`).exec(
-      source.slice(start),
-    )
-    return {
-      name: match[2]!,
-      indent,
-      start,
-      end: next === null ? source.length : start + next.index,
+  const found: Array<Declaration> = []
+  let openBrackets = 0
+  for (const match of code.matchAll(BRACKET_OR_ASSIGNMENT)) {
+    const [, opening, closing, indent, name] = match
+    if (opening !== undefined) {
+      openBrackets += 1
+    } else if (closing !== undefined) {
+      openBrackets = Math.max(openBrackets - 1, 0)
+    } else if (openBrackets === 0 && indent !== undefined && name) {
+      const start = match.index + indent.length
+      const next = new RegExp(`\\n[ \\t]{0,${indent.length}}[^\\s)\\]}]`).exec(
+        source.slice(start),
+      )
+      found.push({
+        name,
+        start,
+        end: next === null ? source.length : start + next.index,
+      })
     }
-  })
-  const classLevel = Math.min(...found.map(({ indent }) => indent))
-  return found.filter(({ indent }) => indent === classLevel)
+  }
+  return found
 }
 
 const hasExplicitId = (
@@ -100,8 +105,9 @@ export const entryOf = (
   externalId: string,
 ) => {
   const code = blankStringsAndComments(source)
+  const declared = declarations(source, code)
   const within = (from: number, to: number) => {
-    const entries = classLevelDeclarations(source, code, from, to)
+    const entries = declared.filter(({ start }) => start >= from && start < to)
     return (
       entries.find((entry) => hasExplicitId(source, code, entry, externalId)) ??
       entries.findLast(({ name }) => name === externalId)

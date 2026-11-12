@@ -88,22 +88,30 @@ const decodeMeters = Schema.decodeUnknownEffect(Schema.Array(Meter), {
   onExcessProperty: 'error',
 })
 
-type Node =
-  | string
-  | { readonly head: string; readonly args: ReadonlyArray<Node> }
+interface Call {
+  readonly head: string
+  readonly args: ReadonlyArray<Node>
+  readonly list?: true
+}
 
-const flat = (node: Node): string =>
-  typeof node === 'string'
-    ? node
-    : `${node.head}(${node.args.map(flat).join(', ')})`
+type Node = string | Call
+
+const brackets = ({ list }: Call) => (list ? ['[', ']'] : ['(', ')'])
+
+const flat = (node: Node): string => {
+  if (typeof node === 'string') return node
+  const [open, close] = brackets(node)
+  return `${node.head}${open}${node.args.map(flat).join(', ')}${close}`
+}
 
 const render = (node: Node, indent: string, suffix = ''): string => {
   const line = `${indent}${flat(node)}${suffix}`
   if (typeof node === 'string' || line.length <= WIDTH) return line
+  const [open, close] = brackets(node)
   return [
-    `${indent}${node.head}(`,
+    `${indent}${node.head}${open}`,
     ...node.args.map((arg) => render(arg, `${indent}${INDENT}`, ',')),
-    `${indent})${suffix}`,
+    `${indent}${close}${suffix}`,
   ].join('\n')
 }
 
@@ -192,7 +200,7 @@ const eventsAndWhere = (
   }
   const bare =
     filter.conjunction === 'and' &&
-    filter.clauses.length <= 1 &&
+    filter.clauses.length === 1 &&
     !isGroup(first)
   return { events: [], where: bare ? first : filter }
 }
@@ -226,24 +234,26 @@ const aggregateOf = (
   return `${helper}(${literal(aggregation.property)})`
 }
 
+const onArgument = (events: ReadonlyArray<string>): ReadonlyArray<Node> => {
+  const [event] = events
+  if (event === undefined) return []
+  return events.length === 1
+    ? [`on=${literal(event)}`]
+    : [{ head: 'on=', args: events.map(literal), list: true }]
+}
+
 const meterArguments = (
   meter: Meter,
   attribute: string,
   imports: Set<string>,
 ): ReadonlyArray<Node> => {
   const { events, where } = eventsAndWhere(meter.filter)
-  const [event] = events
   const entries = Object.entries(meter.metadata ?? {}).map(
     ([key, value]) => `${literal(key)}: ${literal(value)}`,
   )
   return [
     literal(meter.name),
-    ...option(
-      'on',
-      events.length > 1
-        ? `[${events.map(literal).join(', ')}]`
-        : event && literal(event),
-    ),
+    ...onArgument(events),
     ...(where === undefined
       ? []
       : [keyword('where', condition(where, imports))]),

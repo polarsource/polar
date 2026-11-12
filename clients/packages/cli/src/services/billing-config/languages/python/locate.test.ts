@@ -156,6 +156,43 @@ describe('locateInPython', () => {
     )
   })
 
+  test('finds a meter declared inside a block', () => {
+    const conditional = [
+      'class Meters(MeterSet):',
+      '    calls = Meter("Calls", on="call")',
+      '    if BETA:',
+      '        beta = Meter("Beta", on="beta")',
+    ].join('\n')
+    const declared = {
+      meters: [{ external_id: 'calls' }, { external_id: 'beta' }],
+    }
+
+    expect(
+      locateInPython(conditional, declared, ['meters', 1], undefined),
+    ).toEqual({ line: 4, column: 9, length: 4 })
+  })
+
+  test('finds an inherited meter in a file that mixes indentation', () => {
+    const inherited = [
+      'class Base(MeterSet):',
+      '    meters = Meter("Meters", on="meter")',
+      '',
+      '',
+      'class Meters(Base):',
+      '    pass',
+      '',
+      '',
+      'config = Config(',
+      '  meters=Meters,',
+      ')',
+    ].join('\n')
+    const declared = { meters: [{ external_id: 'meters' }] }
+
+    expect(
+      locateInPython(inherited, declared, ['meters', 0], undefined),
+    ).toEqual({ line: 2, column: 5, length: 6 })
+  })
+
   test('finds nothing for an entry the file does not declare', () => {
     const undeclared = { meters: [{ external_id: 'requests' }] }
 

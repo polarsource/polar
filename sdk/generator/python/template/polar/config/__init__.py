@@ -107,6 +107,11 @@ class Meter:
         names = [on] if isinstance(on, str) else list(on or ())
         events = [eq("name", event) for event in names]
         selected = or_(*events) if len(events) > 1 else and_(*events)
+        if not events and where is None:
+            raise ValueError(
+                f"Meter {name!r} needs `on` or `where`. "
+                "Pass `where=and_()` to meter every event."
+            )
         if where is None:
             self.filter = selected
         elif not events:
@@ -120,7 +125,7 @@ class Meter:
 
     def to_dict(self, attribute: str) -> dict[str, typing.Any]:
         return {
-            "external_id": self.external_id or attribute,
+            "external_id": attribute if self.external_id is None else self.external_id,
             "name": self.name,
             "filter": self.filter,
             "aggregation": self.aggregation,

@@ -226,7 +226,7 @@ class TestSealUsage:
             customer=customer,
             status=SubscriptionStatus.active,
         )
-        mocker.patch.object(reducer_service, "seal_usage", return_value={})
+        mocker.patch.object(reducer_service, "seal_usage", return_value=({}, []))
 
         with pytest.raises(ReducerUsageUnavailable):
             await billing_interval_service.seal_usage(

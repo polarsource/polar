@@ -238,7 +238,7 @@ class ReducerService:
         """Marks the customer's usage in `windows` and its credits since the latest
         reset as billed by the order, and returns their quantities per meter.
         Raises on failure: the caller rolls it back."""
-        usage = await self.bill_by_window(
+        usage, _ = await self._settle(
             session,
             customer,
             meter_ids,
@@ -257,26 +257,6 @@ class ReducerService:
             for meter_id, meter in usage.items()
         }
 
-    async def bill_by_window(
-        self,
-        session: AsyncSession,
-        customer: Customer,
-        meter_ids: Iterable[UUID],
-        *,
-        order_id: UUID,
-        windows: Sequence[UsageWindow],
-        cutoff: datetime,
-    ) -> dict[UUID, MeterUsage]:
-        """Like `bill`, with each meter's usage kept per window."""
-        return await self._settle(
-            session,
-            customer,
-            meter_ids,
-            order_id=order_id,
-            windows=windows,
-            cutoff=cutoff,
-        )
-
     async def seal_usage(
         self,
         session: AsyncSession,
@@ -285,10 +265,11 @@ class ReducerService:
         *,
         windows: Sequence[UsageWindow],
         cutoff: datetime,
-    ) -> dict[UUID, MeterUsage]:
-        """Seals what `bill_by_window` would bill and returns it, without marking
-        it as billed: for an order that doesn't exist yet. Billing it with the
-        order afterwards returns the same."""
+    ) -> tuple[dict[UUID, MeterUsage], list[UUID]]:
+        """Seals what `bill` would bill and returns it with the ids of its buckets,
+        without marking them as billed: for an order that doesn't exist yet.
+        `mark_as_billed` then bills exactly those buckets, so usage arriving in
+        between is left to the next order."""
         return await self._settle(
             session,
             customer,
@@ -296,6 +277,15 @@ class ReducerService:
             order_id=None,
             windows=windows,
             cutoff=cutoff,
+        )
+
+    async def mark_as_billed(
+        self, session: AsyncSession, bucket_ids: Sequence[UUID], *, order_id: UUID
+    ) -> int:
+        """Marks the buckets `seal_usage` returned as billed by the order, and
+        returns how many weren't billed yet."""
+        return await ReducerBucketRepository.from_session(session).mark_ids_as_billed(
+            bucket_ids, order_id, billed_at=utc_now()
         )
 
     async def _settle(
@@ -307,9 +297,10 @@ class ReducerService:
         order_id: UUID | None,
         windows: Sequence[UsageWindow],
         cutoff: datetime,
-    ) -> dict[UUID, MeterUsage]:
+    ) -> tuple[dict[UUID, MeterUsage], list[UUID]]:
         """Seals the customer's usage in `windows` and its credits since the latest
-        reset, and marks them as billed by the order if there is one."""
+        reset, and marks them as billed by the order if there is one. Returns the
+        usage per meter and the ids of its buckets."""
         meter_ids = sorted(meter_ids)
         reducers = await self._get_reducers(session, meter_ids, ReducerKind.usage)
         observed = await self._bill_windows(
@@ -326,7 +317,8 @@ class ReducerService:
                 order_id=order_id,
                 reason="boundary_unavailable",
             )
-            return {}
+            return {}, []
+        observed_usage, bucket_ids = observed
         credit_reducers = await self._get_reducers(
             session, meter_ids, ReducerKind.credit
         )
@@ -340,7 +332,7 @@ class ReducerService:
             await self._seal_buckets(
                 session, [credit_reducer], customer, since=since, until=cutoff
             )
-            billed = await self._bill_buckets(
+            billed, credit_bucket_ids = await self._bill_buckets(
                 session,
                 [credit_reducer],
                 customer,
@@ -349,16 +341,20 @@ class ReducerService:
                 until=cutoff,
             )
             credits[meter_id] = billed[credit_reducer.id]
-        return {
+            bucket_ids.extend(credit_bucket_ids)
+        usage = {
             meter_id: MeterUsage(
                 function=reducer.aggregation.func,
                 windows=tuple(
-                    usage for usage in observed if usage.window.meter_id == meter_id
+                    usage
+                    for usage in observed_usage
+                    if usage.window.meter_id == meter_id
                 ),
                 credits=max(credits.get(meter_id, Decimal(0)), Decimal(0)),
             )
             for meter_id, reducer in reducers.items()
         }
+        return usage, bucket_ids
 
     async def _bill_windows(
         self,
@@ -368,10 +364,10 @@ class ReducerService:
         windows: Sequence[UsageWindow],
         *,
         order_id: UUID | None,
-    ) -> list[WindowUsage] | None:
+    ) -> tuple[list[WindowUsage], list[UUID]] | None:
         """Marks the customer's usage in each window as billed by the order, if
-        any, and returns it, or None if a window's start or end is inside a sealed
-        bucket.
+        any, and returns it with the ids of its buckets, or None if a window's
+        start or end is inside a sealed bucket.
         The windows' starts and ends become bucket boundaries first.
         `reducers` are the usage reducers by meter id, one for each window's meter."""
         repository = ReducerBucketRepository.from_session(session)
@@ -400,6 +396,7 @@ class ReducerService:
                     return None
 
         usage: list[WindowUsage] = []
+        bucket_ids: list[UUID] = []
         for window in windows:
             reducer = reducers[window.meter_id]
             with logfire.span(
@@ -425,14 +422,15 @@ class ReducerService:
                     since=window.start,
                     until=window.end,
                 )
-                summary = merge_summaries([UsageSummary(*row) for row in billed])
+                summary = merge_summaries([UsageSummary(*row[1:]) for row in billed])
                 span.set_attribute("billed_buckets", len(billed))
                 span.set_attribute(
                     "quantity",
                     str(finalize_quantity(summary, reducer.aggregation.func)),
                 )
             usage.append(WindowUsage(window, summary))
-        return usage
+            bucket_ids.extend(row[0] for row in billed)
+        return usage, bucket_ids
 
     async def sync_meter(self, session: AsyncSession, meter: Meter) -> Reducer:
         """Creates the meter's reducer of each kind and updates its usage reducer,
@@ -1148,12 +1146,14 @@ class ReducerService:
         order_id: UUID | None,
         since: datetime | None,
         until: datetime,
-    ) -> dict[UUID, Decimal]:
+    ) -> tuple[dict[UUID, Decimal], list[UUID]]:
         """Marks the customer's sealed, unbilled usage within [since, until) as
-        billed by the order, if any, and returns its quantity per reducer."""
+        billed by the order, if any, and returns its quantity per reducer and the
+        ids of its buckets."""
         repository = ReducerBucketRepository.from_session(session)
         identities = get_customer_identities(customer)
         quantities: dict[UUID, Decimal] = {}
+        bucket_ids: list[UUID] = []
         for reducer in sorted(reducers, key=lambda reducer: str(reducer.id)):
             with logfire.span(
                 "Bill reducer buckets",
@@ -1172,11 +1172,14 @@ class ReducerService:
                     since=since,
                     until=until,
                 )
-                quantity = _get_quantity(reducer.aggregation.func, billed)
+                quantity = _get_quantity(
+                    reducer.aggregation.func, [row[1:] for row in billed]
+                )
                 span.set_attribute("billed_buckets", len(billed))
                 span.set_attribute("quantity", str(quantity))
             quantities[reducer.id] = quantity
-        return quantities
+            bucket_ids.extend(row[0] for row in billed)
+        return quantities, bucket_ids
 
     async def _get_unbilled(
         self,
@@ -1187,8 +1190,8 @@ class ReducerService:
         *,
         since: datetime | None,
         until: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
-        """count, sum, min and max of the identities' sealed, unbilled buckets
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
+        """id, count, sum, min and max of the identities' sealed, unbilled buckets
         within [since, until), marked as billed by the order if there is one."""
         if order_id is None:
             return await repository.get_unbilled_totals(

@@ -173,50 +173,11 @@ class BillingIntervalService:
         *,
         period_start: datetime | None,
         cutoff: datetime,
-    ) -> dict[UUID, MeterCharge]:
-        """Seals the usage `charge_usage` will charge and returns it, for an order
-        that doesn't exist yet. Raises like `charge_usage`."""
-        return await self._settle_usage(
-            session,
-            subscription,
-            meter_ids,
-            order_id=None,
-            period_start=period_start,
-            cutoff=cutoff,
-        )
-
-    async def charge_usage(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        meter_ids: Iterable[UUID],
-        *,
-        order_id: UUID,
-        period_start: datetime | None,
-        cutoff: datetime,
-    ) -> dict[UUID, MeterCharge]:
-        """Like `bill_usage`, for an order charging the usage, at the price of the
-        interval it falls in: failures raise, and so does a meter without usage.
-        The order bills the period from `period_start` to `cutoff`."""
-        return await self._settle_usage(
-            session,
-            subscription,
-            meter_ids,
-            order_id=order_id,
-            period_start=period_start,
-            cutoff=cutoff,
-        )
-
-    async def _settle_usage(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-        meter_ids: Iterable[UUID],
-        *,
-        order_id: UUID | None,
-        period_start: datetime | None,
-        cutoff: datetime,
-    ) -> dict[UUID, MeterCharge]:
+    ) -> tuple[dict[UUID, MeterCharge], list[UUID]]:
+        """Seals the usage an order billing the period from `period_start` to
+        `cutoff` charges, at the price of the interval it falls in, and returns it
+        with the ids of its buckets, for `reducer.mark_as_billed` once the order
+        exists. Failures raise, and so does a meter without usage."""
         meter_ids = sorted(meter_ids)
         async with self._settlement_windows(
             session, subscription, meter_ids, cutoff=cutoff
@@ -229,31 +190,20 @@ class BillingIntervalService:
                 period_start=period_start,
                 cutoff=cutoff,
             )
-            windows = split_windows(windows, at=period_starts)
-            if order_id is None:
-                usage = await reducer_service.seal_usage(
-                    session,
-                    subscription.customer,
-                    meter_ids,
-                    windows=windows,
-                    cutoff=cutoff,
-                )
-            else:
-                usage = await reducer_service.bill_by_window(
-                    session,
-                    subscription.customer,
-                    meter_ids,
-                    order_id=order_id,
-                    windows=windows,
-                    cutoff=cutoff,
-                )
+            usage, bucket_ids = await reducer_service.seal_usage(
+                session,
+                subscription.customer,
+                meter_ids,
+                windows=split_windows(windows, at=period_starts),
+                cutoff=cutoff,
+            )
         if usage.keys() != set(meter_ids):
             raise ReducerUsageUnavailable(subscription, set(meter_ids) - usage.keys())
         intervals = await BillingIntervalRepository.from_session(
             session
         ).get_by_subscription(subscription.id)
         price_ids = {interval.id: interval.product_price_id for interval in intervals}
-        return {
+        charges = {
             meter_id: get_meter_charge(
                 meter_usage,
                 price_ids,
@@ -262,6 +212,7 @@ class BillingIntervalService:
             )
             for meter_id, meter_usage in usage.items()
         }
+        return charges, bucket_ids
 
     async def _get_usage_period_starts(
         self,

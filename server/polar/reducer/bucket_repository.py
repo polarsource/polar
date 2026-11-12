@@ -539,11 +539,12 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         *,
         since: datetime | None,
         until: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
-        """count, sum, min and max of the identities' sealed, unbilled buckets
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
+        """id, count, sum, min and max of the identities' sealed, unbilled buckets
         within [since, until): those `mark_as_billed` marks."""
         result = await self.session.execute(
             select(
+                ReducerBucket.id,
                 ReducerBucket.count,
                 ReducerBucket.sum,
                 ReducerBucket.min,
@@ -551,6 +552,19 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             ).where(*self._get_unbilled_clauses(reducer, identities, since, until))
         )
         return result.tuples().all()
+
+    async def mark_ids_as_billed(
+        self, bucket_ids: Sequence[UUID], order_id: UUID, *, billed_at: datetime
+    ) -> int:
+        """Marks the buckets not billed yet as billed by the order, and returns
+        how many it marked."""
+        result = await self.session.execute(
+            update(ReducerBucket)
+            .where(ReducerBucket.id.in_(bucket_ids), ReducerBucket.billed_at.is_(None))
+            .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
+            .returning(ReducerBucket.id)
+        )
+        return len(result.all())
 
     async def mark_as_billed(
         self,
@@ -561,9 +575,9 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         since: datetime | None,
         until: datetime,
         billed_at: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
         """Marks the identities' sealed, unbilled buckets within [since, until) as
-        billed by the order, and returns their count, sum, min and max."""
+        billed by the order, and returns their id, count, sum, min and max."""
         unbilled_ids = (
             select(ReducerBucket.id)
             .where(*self._get_unbilled_clauses(reducer, identities, since, until))
@@ -575,6 +589,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .where(ReducerBucket.id.in_(unbilled_ids))
             .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
             .returning(
+                ReducerBucket.id,
                 ReducerBucket.count,
                 ReducerBucket.sum,
                 ReducerBucket.min,

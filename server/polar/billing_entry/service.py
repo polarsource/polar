@@ -31,6 +31,7 @@ from polar.product.guard import (
     is_unit_price,
 )
 from polar.product.repository import ProductPriceRepository, ProductRepository
+from polar.reducer.service import reducer as reducer_service
 
 from .comparison import Comparison, Quantities, compare
 from .repository import BillingEntryRepository
@@ -63,12 +64,12 @@ class MeteredLineItem:
     proration: Literal[False] = False
 
 
-class ReducerUsageChanged(PolarError):
+class ReducerUsageAlreadyBilled(PolarError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         super().__init__(
-            f"Reducer usage of subscription {subscription.id} changed "
-            "while its order was created.",
+            f"Reducer usage of subscription {subscription.id} was billed by "
+            "another order while its order was created.",
             409,
         )
 
@@ -232,9 +233,11 @@ class BillingEntryService:
         reducers instead of the pending billing entries. The order bills the
         period from `period_start` to `reducer_cutoff`.
 
-        Usage changing while the order is created rolls the order back to be
-        retried, unless it is `paid_on_creation`: the payment can't be rolled back,
-        so the change is logged and the usage stays billed by the order."""
+        The order bills exactly the buckets it read: usage arriving while it is
+        created is left to the next order. Buckets another order billed in the
+        meantime roll the order back to be retried, unless it is
+        `paid_on_creation`: it is charged before they are marked and the payment
+        can't be rolled back, so it is logged instead."""
         meter_ids = (
             await billing_interval_service.get_meter_ids(session, subscription)
             if include_metered
@@ -248,7 +251,7 @@ class BillingEntryService:
             cutoff=cutoff,
             reducer_cutoff=reducer_cutoff,
         ) as static_items:
-            usage = (
+            usage, bucket_ids = (
                 await billing_interval_service.seal_usage(
                     session,
                     subscription,
@@ -257,7 +260,7 @@ class BillingEntryService:
                     cutoff=reducer_cutoff,
                 )
                 if meter_ids
-                else {}
+                else ({}, [])
             )
             metered_items = [
                 item
@@ -268,19 +271,15 @@ class BillingEntryService:
             yield [*static_items, *metered_items]
 
             if metered_items:
-                billed = await billing_interval_service.charge_usage(
-                    session,
-                    subscription,
-                    meter_ids,
-                    order_id=metered_items[0].order_id,
-                    period_start=period_start,
-                    cutoff=reducer_cutoff,
+                billed = await reducer_service.mark_as_billed(
+                    session, bucket_ids, order_id=metered_items[0].order_id
                 )
-                if billed != usage:
+                if billed != len(bucket_ids):
                     if not paid_on_creation:
-                        raise ReducerUsageChanged(subscription)
+                        raise ReducerUsageAlreadyBilled(subscription)
                     log.error(
-                        "Reducer usage changed after the order was paid",
+                        "Reducer usage was billed by another order after the order "
+                        "was paid",
                         subscription_id=subscription.id,
                         order_id=metered_items[0].order_id,
                     )

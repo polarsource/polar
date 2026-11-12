@@ -8,7 +8,7 @@ from logfire.testing import CaptureLogfire
 from pytest_mock import MockerFixture
 from sqlalchemy import Select
 
-from polar.billing_entry.service import ReducerUsageChanged
+from polar.billing_entry.service import ReducerUsageAlreadyBilled
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.billing_interval.repository import BillingIntervalRepository
 from polar.billing_interval.types import MeterCharge
@@ -1980,7 +1980,7 @@ class TestCreateOrderItemsFromReducers:
             )
 
     @pytest.mark.parametrize("paid_on_creation", [False, True])
-    async def test_usage_changing_raises_unless_the_order_is_already_paid(
+    async def test_usage_billed_by_another_order_raises_unless_paid(
         self,
         paid_on_creation: bool,
         mocker: MockerFixture,
@@ -1999,15 +1999,21 @@ class TestCreateOrderItemsFromReducers:
             "polar.billing_entry.service.billing_interval_service.get_meter_ids",
             return_value={meter.id},
         )
-        for method, units in (("seal_usage", 20), ("charge_usage", 21)):
-            mocker.patch(
-                f"polar.billing_entry.service.billing_interval_service.{method}",
-                return_value={
+        mocker.patch(
+            "polar.billing_entry.service.billing_interval_service.seal_usage",
+            return_value=(
+                {
                     meter.id: MeterCharge(
-                        {price_id: Decimal(units)}, {price_id: Decimal(1)}, Decimal(0)
+                        {price_id: Decimal(20)}, {price_id: Decimal(1)}, Decimal(0)
                     )
                 },
-            )
+                [uuid.uuid4(), uuid.uuid4()],
+            ),
+        )
+        mocker.patch(
+            "polar.billing_entry.service.reducer_service.mark_as_billed",
+            return_value=1,
+        )
 
         async def create() -> None:
             async with billing_entry_service.create_order_items_from_pending(
@@ -2020,5 +2026,5 @@ class TestCreateOrderItemsFromReducers:
         if paid_on_creation:
             await create()
         else:
-            with pytest.raises(ReducerUsageChanged):
+            with pytest.raises(ReducerUsageAlreadyBilled):
                 await create()

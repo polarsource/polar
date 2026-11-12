@@ -178,6 +178,22 @@
             ]
           },
           {
+            "group": "Merchant of Record (MoR)",
+            "pages": [
+              "merchant-of-record/introduction",
+              "merchant-of-record/fees",
+              "merchant-of-record/supported-countries",
+              "merchant-of-record/acceptable-use/introduction",
+              "merchant-of-record/account-reviews"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Developer Resources",
+        "icon": "code",
+        "groups": [
+          {
             "group": "API",
             "pages": [
               "integrate/authentication",
@@ -278,16 +294,6 @@
               "integrate/oauth2/introduction",
               "integrate/oauth2/setup",
               "integrate/oauth2/connect"
-            ]
-          },
-          {
-            "group": "Merchant of Record (MoR)",
-            "pages": [
-              "merchant-of-record/introduction",
-              "merchant-of-record/fees",
-              "merchant-of-record/supported-countries",
-              "merchant-of-record/acceptable-use/introduction",
-              "merchant-of-record/account-reviews"
             ]
           }
         ]

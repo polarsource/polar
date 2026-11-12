@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -12,6 +12,7 @@ from sqlalchemy import (
     Uuid,
     text,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -58,6 +59,10 @@ class Catalog(RecordModel):
     )
     published_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    # Organization settings by attribute name. Drafts hold only changed ones.
+    settings: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
     )
 
     @declared_attr

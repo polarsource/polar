@@ -4,6 +4,7 @@ import {
   describeValue,
   name,
   priceGroups,
+  record,
 } from '@/utils/billing-config/describe'
 import { meterCycle, recurrence } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
@@ -257,14 +258,33 @@ export const planTally = (entries: ReadonlyArray<AppliedEntry>) =>
     counted(entries, 'unchanged', 'unchanged'),
   ].join(', ')
 
-export const updatedBenefits = (entries: ReadonlyArray<AppliedEntry>) =>
+export const updatedIds = (
+  entries: ReadonlyArray<AppliedEntry>,
+  section: string,
+) =>
   new Set(
     entries
       .filter(
-        ({ section, action }) => section === 'benefits' && action === 'updated',
+        (entry) => entry.section === section && entry.action === 'updated',
       )
       .map(({ id }) => name(id)),
   )
+
+const usedMeter = ({ field, after }: Change) =>
+  field === 'prices' && Array.isArray(after)
+    ? after.map((price) => record(price)?.['meter'])
+    : field === 'properties'
+      ? [record(after)?.['meter']]
+      : []
+
+export const usedMeters = ({ action, diff }: AppliedEntry) => [
+  ...new Set(
+    (action === 'updated' ? diff : [])
+      .flatMap(usedMeter)
+      .filter((id) => typeof id === 'string')
+      .map((id) => name(id)),
+  ),
+]
 
 export const planSummary = (entries: ReadonlyArray<AppliedEntry>) =>
   `${ui.INDENT}${ui.dim('Plan:')} ${planTally(entries)}`

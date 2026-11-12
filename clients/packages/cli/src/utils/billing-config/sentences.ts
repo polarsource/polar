@@ -232,12 +232,17 @@ const shownUrl = (url: unknown, format: unknown) =>
     ? url
     : new Rendered(webhookUrl(url, format))
 
+// A changed meter re-sends the prices and properties that use it as they were
+const changed = ({ before, after }: AppliedEntry['diff'][number]) =>
+  JSON.stringify(before) !== JSON.stringify(after)
+
 // Webhook URLs in a diff are redacted by the format on their own side.
 export const shownDiff = (
   section: string,
-  diff: AppliedEntry['diff'],
+  raw: AppliedEntry['diff'],
   document: unknown,
 ): AppliedEntry['diff'] => {
+  const diff = raw.filter(changed)
   if (section !== 'webhooks') return diff
   const format = diff.find((change) => change.field === 'format')
   const before =

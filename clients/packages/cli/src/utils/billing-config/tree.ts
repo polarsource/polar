@@ -3,7 +3,8 @@ import { name, record } from '@/utils/billing-config/describe'
 import {
   MARKS,
   formatRows,
-  updatedBenefits,
+  updatedIds,
+  usedMeters,
 } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
@@ -168,10 +169,12 @@ const GRANT_MARKS: Record<Grant['status'], string> = {
   updated: ui.yellow('~'),
 }
 
-const reference = ({ id, status }: Grant): Block => ({
-  head: `${GRANT_MARKS[status]} ${ui.dim('benefit')} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}`,
-  body: [],
-})
+const reference =
+  (kind: string) =>
+  ({ id, status }: Grant): Block => ({
+    head: `${GRANT_MARKS[status]} ${ui.dim(kind)} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}`,
+    body: [],
+  })
 
 export const formatTree = (
   input: unknown,
@@ -187,7 +190,19 @@ export const formatTree = (
     webhooks: documents(input, 'webhooks'),
   }
 
-  const updated = updatedBenefits(entries)
+  const updated = updatedIds(entries, 'benefits')
+  const meters = updatedIds(entries, 'meters')
+  const meterUses = (entry: AppliedEntry) => {
+    const used = usedMeters(entry)
+    return used.some((id) => meters.has(id))
+      ? used.map((id) =>
+          reference('meter')({
+            id,
+            status: meters.has(id) ? 'updated' : 'kept',
+          }),
+        )
+      : []
+  }
 
   const width = Math.max(
     0,
@@ -220,7 +235,8 @@ export const formatTree = (
             meterUse,
           )
         : []),
-      ...(fresh || regranted ? granted.map(reference) : []),
+      ...meterUses(entry),
+      ...(fresh || regranted ? granted.map(reference('benefit')) : []),
     ]
     return [
       `${TOP}${own.head}`,
@@ -246,6 +262,7 @@ export const formatTree = (
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
       ...rows(NESTED, entry, section, document),
+      ...branches(meterUses(entry)),
     ]
   }
 

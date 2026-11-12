@@ -243,7 +243,12 @@ describe('formatTree', () => {
     const properties = { meter: 'tool_call', units: 1000, rollover: false }
     const prices = [
       ...(input.products[1]?.prices ?? []),
-      { amount_type: 'metered_unit', meter: 'storage', unit_amount: '0.5' },
+      {
+        amount_type: 'metered_unit',
+        price_currency: 'usd',
+        meter: 'storage',
+        unit_amount: '0.5',
+      },
     ]
     const output = stripAnsi(
       formatTree(input, [
@@ -257,8 +262,9 @@ describe('formatTree', () => {
             after: { rollover: false, units: 1000, meter: 'tool_call' },
           },
         ]),
+        entry('meters', 'storage', 'created'),
         entry('products', 'pro', 'updated', [
-          { field: 'prices', before: prices, after: prices },
+          { field: 'prices', before: input.products[1]?.prices, after: prices },
           {
             field: 'benefits',
             before: ['custom_servers', 'tool_calls'],
@@ -272,6 +278,7 @@ describe('formatTree', () => {
         '  meters',
         '  ~ tool_call',
         '      name  "tool_call" → "Tool calls"',
+        '  + storage',
         '',
         '  benefits',
         '  ~ tool_calls',
@@ -279,8 +286,9 @@ describe('formatTree', () => {
         '',
         '  products',
         '  ~ pro',
+        '      prices (USD per storage)  unset → $5 per 1,000',
         '      ├ ~ meter tool_call',
-        '      ├ = meter storage',
+        '      ├ + meter storage',
         '      ├ = benefit custom_servers',
         '      └ ~ benefit tool_calls',
       ].join('\n'),

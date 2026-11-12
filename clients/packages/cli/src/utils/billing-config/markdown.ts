@@ -111,7 +111,7 @@ const entryLines = (
             ),
           ],
     ),
-    ...usedMeters(entry)
+    ...usedMeters(entry, 'after')
       .filter((id) => updated.meters.has(id))
       .map((id) => `    meter  ${id} (updated)`),
     ...regranted.map((id) => `    benefits  ${id} (updated)`),

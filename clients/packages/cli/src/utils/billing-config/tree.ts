@@ -189,15 +189,24 @@ export const formatTree = (
   const updatedBenefits = updatedIds(entries, 'benefits')
   const updatedMeters = updatedIds(entries, 'meters')
   const meterUses = (entry: AppliedEntry) => {
-    const used = usedMeters(entry)
-    return used.some((id) => updatedMeters.has(id))
-      ? used.map((id) =>
-          reference('meter')({
-            id,
-            status: updatedMeters.has(id) ? 'updated' : 'kept',
-          }),
-        )
-      : []
+    const before = usedMeters(entry, 'before')
+    const after = usedMeters(entry, 'after')
+    if (!after.some((id) => updatedMeters.has(id))) return []
+    return [
+      ...after.map(
+        (id): Grant => ({
+          id,
+          status: !before.includes(id)
+            ? 'added'
+            : updatedMeters.has(id)
+              ? 'updated'
+              : 'kept',
+        }),
+      ),
+      ...before
+        .filter((id) => !after.includes(id))
+        .map((id): Grant => ({ id, status: 'removed' })),
+    ].map(reference('meter'))
   }
 
   const width = Math.max(

@@ -144,16 +144,22 @@ const meteredPrices = (product: Record<string, unknown>) => [
   ...prices(product, 'metered_tiers'),
 ]
 
-const diffMeters = ({ field, after }: AppliedEntry['diff'][number]) => {
-  if (field === 'prices') {
-    return meteredPrices({ prices: after }).map((price) => name(price['meter']))
+type Side = 'before' | 'after'
+
+const diffMeters = (change: AppliedEntry['diff'][number], side: Side) => {
+  const value = change[side]
+  if (change.field === 'prices') {
+    return meteredPrices({ prices: value }).map((price) => name(price['meter']))
   }
-  const meter = field === 'properties' ? record(after)?.['meter'] : undefined
+  const meter =
+    change.field === 'properties' ? record(value)?.['meter'] : undefined
   return meter === undefined ? [] : [name(meter)]
 }
 
-export const usedMeters = ({ action, diff }: AppliedEntry) =>
-  action === 'updated' ? [...new Set(diff.flatMap(diffMeters))] : []
+export const usedMeters = ({ action, diff }: AppliedEntry, side: Side) =>
+  action === 'updated'
+    ? [...new Set(diff.flatMap((change) => diffMeters(change, side)))]
+    : []
 
 export const productMeters = (
   input: unknown,

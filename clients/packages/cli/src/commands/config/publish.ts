@@ -49,12 +49,12 @@ interface Drift {
   readonly entries: ReadonlyArray<AppliedEntry>
 }
 
-// Meters, settings and webhooks apply right away, only products and benefits wait in the draft
+// Settings and webhooks apply right away, only products, benefits and meters wait in the draft
+const DRAFTED = new Set(['products', 'benefits', 'meters'])
+
 const drifted = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.filter(
-    (entry) =>
-      (entry.section === 'products' || entry.section === 'benefits') &&
-      entry.action !== 'unchanged',
+    (entry) => DRAFTED.has(entry.section) && entry.action !== 'unchanged',
   )
 
 const report = (drift: Drift | null) =>
@@ -128,14 +128,14 @@ const render = (
         ui.blank,
         ui.success(`No draft to publish for ${target(organization)}`),
         ...next(
-          `${ui.INDENT}Run ${ui.command('polar config apply')} to save product and benefit changes to a draft.`,
+          `${ui.INDENT}Run ${ui.command('polar config apply')} to save product, benefit and meter changes to a draft.`,
         ),
         ui.blank,
       ]
 
 export const publish = Command.make('publish', { file, org, confirmed }).pipe(
   Command.withDescription(
-    "Make your organization's draft catalog live, so new checkouts sell its products and benefits",
+    "Make your organization's draft catalog live, so new checkouts sell its products, benefits and meters",
   ),
   Command.withExamples([
     {

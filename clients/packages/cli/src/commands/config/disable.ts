@@ -32,7 +32,7 @@ const approve = (
     }
     yield* say([
       ui.blank,
-      `${ui.INDENT}Your products and benefits stay as they are, and can be edited in the dashboard again.`,
+      `${ui.INDENT}Your products, benefits and meters stay as they are, and can be edited in the dashboard again.`,
       `${ui.INDENT}Changes in the draft that were not published are discarded.`,
       ui.blank,
     ])
@@ -54,7 +54,7 @@ const render = (organization: ActiveOrganization) => [
   ui.success(`Config is disabled for ${target(organization)}`),
   ...next(
     [
-      `${ui.INDENT}Edit products and benefits in the dashboard.`,
+      `${ui.INDENT}Edit products, benefits and meters in the dashboard.`,
       `${ui.INDENT}Your config file was left untouched. Remove it if you no longer use config,`,
       `${ui.INDENT}or before running ${ui.command('polar config init')} to start again.`,
     ].join('\n'),

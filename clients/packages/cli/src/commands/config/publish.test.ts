@@ -124,10 +124,11 @@ describe('polar config publish', () => {
       { section: 'benefits', id: 'support', action: 'unchanged', diff: [] },
     ])
     expect(published).toEqual(['cat-draft'])
-    expect(output).toContain('polar.json has 1 change not in the draft')
+    expect(output).toContain('polar.json has 2 changes not in the draft')
     expect(output).toContain('Not in the draft polar.json')
     expect(output).toMatch(/~ pro/)
-    expect(output).not.toContain('tokens')
+    expect(output).toMatch(/~ tokens/)
+    expect(output).not.toContain('support')
   })
 
   test('warns in the confirmation when the draft is missing changes', async () => {

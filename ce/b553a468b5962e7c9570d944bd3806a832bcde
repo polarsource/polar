@@ -1,0 +1,21 @@
+server/polar/worker/_broker.py
+  s_42f3e901fec945::t_1929edd491dbec 74,84
+server/polar/worker/scheduler.py
+  s_42f3e901fec945::t_48b6d609650f4f 22,79-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ceb553a468b5962e7c9570d944bd3806a832bcde",
+  "prompts": {},
+  "sessions": {
+    "s_42f3e901fec945": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d612be31-5ee4-48d0-a250-7141b42a9c98",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

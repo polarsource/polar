@@ -1,3 +1,4 @@
+import ssl
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
@@ -24,9 +25,16 @@ def set_job_queue_manager_context() -> Iterator[JobQueueManager]:
     _job_queue_manager.reset(token)
 
 
+@pytest.fixture(scope="session")
+def httpx_ssl_context() -> ssl.SSLContext:
+    return httpx.create_ssl_context()
+
+
 @pytest.fixture
-async def httpx_client() -> AsyncIterator[httpx.AsyncClient]:
-    client = httpx.AsyncClient()
+async def httpx_client(
+    httpx_ssl_context: ssl.SSLContext,
+) -> AsyncIterator[httpx.AsyncClient]:
+    client = httpx.AsyncClient(verify=httpx_ssl_context)
     yield client
     await client.aclose()
 

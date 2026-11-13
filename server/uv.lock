@@ -11,12 +11,11 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
-pypdf = false
 certifi = false
-soupsieve = false
 reauth = false
 brotli = false
 polar-sdk = false
+pypdf = false
 
 [manifest]
 overrides = [
@@ -4080,11 +4079,11 @@ wheels = [
 
 [[package]]
 name = "soupsieve"
-version = "4.1"
+version = "4.0.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/95/48/21a393ff731b8f928fa4f8176f9a7ceba2252ee60a5149f25b45c292aa5c/soupsieve-4.1.tar.gz", hash = "sha256:ca9abf7126667010d8f6e9b39bfc1bc3b23c8aed9bcb0f54a754dde969bb8aab", size = 161955, upload-time = "2026-11-10T01:59:50.399Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/01/7c/a64eedae0b7776cb9602d2da9cb8f8caae8e1b4c1da5e8e87bf1e68121ec/soupsieve-4.0.1.tar.gz", hash = "sha256:7621e3c5f6b371ed2c5eabaac5de300ac3d66d05e6d7f34783e31b63c4f90c75", size = 153302, upload-time = "2026-11-04T16:36:27.749Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/73/6a2087c72975cfc07394623bca8d17654342ea4055ae368deafe5a81a542/soupsieve-4.1-py3-none-any.whl", hash = "sha256:e4d667b3974ce6e038e7390486b8093369854a1d345ffdd4c121dfc4a782e809", size = 52302, upload-time = "2026-11-10T01:59:48.571Z" },
+    { url = "https://files.pythonhosted.org/packages/2c/5c/4f68370847b561a389dd9a2d7eb3d19fd8cbb8acbae543a0c6b8d0d9700b/soupsieve-4.0.1-py3-none-any.whl", hash = "sha256:2e68cf7dd5a0f29d81f9d485275ccf294e6475f615e211895d91cb81f8614f04", size = 50688, upload-time = "2026-11-04T16:36:26.158Z" },
 ]
 
 [[package]]

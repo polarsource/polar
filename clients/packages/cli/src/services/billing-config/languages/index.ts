@@ -6,6 +6,7 @@ import {
   exists,
   findUp,
   type Language,
+  type Manifest,
 } from '@/services/billing-config/languages/language'
 import { typescript } from '@/services/billing-config/languages/typescript'
 
@@ -33,23 +34,26 @@ export const writableLanguageOf = (file: string): Language | undefined =>
 export const supportedFiles = () =>
   `Use a ${LANGUAGES.map(({ extension }) => extension).join(', ')} or .js file.`
 
-export const languagesAt = (fs: FileSystem.FileSystem, directory: string) =>
+export interface Project extends Manifest {
+  readonly language: Language
+}
+
+export const projectsAt = (fs: FileSystem.FileSystem, directory: string) =>
   Effect.gen(function* () {
-    const found: Array<Language> = []
+    const found: Array<Project> = []
     for (const language of LANGUAGES) {
-      if (
-        language.manifest !== undefined &&
-        (yield* exists(fs, join(directory, language.manifest)))
-      ) {
-        found.push(language)
+      for (const manifest of language.manifests) {
+        if (yield* exists(fs, join(directory, manifest.file))) {
+          found.push({ ...manifest, language })
+        }
       }
     }
     return found
   })
 
-export const MANIFESTS = LANGUAGES.flatMap((language) =>
-  language.manifest === undefined ? [] : [language.manifest],
-)
+const filesOf = ({ manifests }: Language) => manifests.map(({ file }) => file)
+
+export const MANIFESTS = LANGUAGES.flatMap(filesOf)
 
 export const projectRoot = (fs: FileSystem.FileSystem, from: string) =>
   findUp(fs, from, MANIFESTS)
@@ -58,7 +62,4 @@ export const projectRootFor = (
   fs: FileSystem.FileSystem,
   from: string,
   language: Language,
-) =>
-  language.manifest === undefined
-    ? Effect.succeed(undefined)
-    : findUp(fs, from, [language.manifest])
+) => findUp(fs, from, filesOf(language))

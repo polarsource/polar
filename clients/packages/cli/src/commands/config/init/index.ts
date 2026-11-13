@@ -135,7 +135,9 @@ export const init = Command.make('init', {
         const billing = yield* BillingConfig
         const fs = yield* FileSystem.FileSystem
         const { json } = yield* Output
-        const prompt = !json && (yield* interactive)
+        const setup = yield* AgentSetup
+        const caller = setup.callingAgent?.name
+        const prompt = !json && caller === undefined && (yield* interactive)
         const given = yield* parseExternalIds(externalIds)
         yield* say([
           ui.blank,
@@ -204,8 +206,6 @@ export const init = Command.make('init', {
             const active =
               selected?.id === organization.id &&
               selected.environment === organization.environment
-            const setup = yield* AgentSetup
-            const caller = setup.callingAgent?.name
             yield* progress.start('Detecting who is running this')
             const agents =
               caller === undefined ? yield* detectAgents(setup) : undefined

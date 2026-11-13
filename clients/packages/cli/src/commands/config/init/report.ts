@@ -130,7 +130,7 @@ const installStep = (result: Pick<InitWritten, 'install'>) =>
   )
 
 const agentName = (agents: InitWritten['agents']) =>
-  agents?.names.length === 1 ? agents.names[0]! : 'your coding agent'
+  agents?.names.length === 1 ? agents.names[0]! : 'your agent'
 
 const CONFIG_DOCS = 'https://polar.sh/docs/integrate/cli/config'
 

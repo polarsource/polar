@@ -19,13 +19,18 @@ export interface Installer {
   ) => Effect.Effect<boolean>
 }
 
+export interface Manifest {
+  readonly file: string
+  readonly project: string
+}
+
 export interface Language {
   readonly title: string
   readonly format: Format
   readonly extension: string
   readonly extensions: ReadonlyArray<string>
   readonly defaultFiles: ReadonlyArray<string>
-  readonly manifest: string | undefined
+  readonly manifests: ReadonlyArray<Manifest>
   readonly installer: Installer | undefined
   readonly load: (
     fs: FileSystem.FileSystem,

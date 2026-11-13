@@ -24,8 +24,8 @@ import {
   type Language,
   languageFor,
   LANGUAGES,
-  languagesAt,
   projectRootFor,
+  projectsAt,
   writableLanguageOf,
 } from '@/services/billing-config/languages'
 
@@ -212,7 +212,8 @@ const resolveTarget = (
     const language =
       target.format !== undefined
         ? languageFor(target.format)
-        : ((yield* languagesAt(fs, target.directory))[0] ?? languageFor('json'))
+        : ((yield* projectsAt(fs, target.directory))[0]?.language ??
+          languageFor('json'))
     return {
       path: join(target.directory, language.defaultFiles[0]!),
       language,

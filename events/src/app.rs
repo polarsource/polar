@@ -32,7 +32,7 @@ use crate::{
     auth::{self, AuthSettings, OrganizationAuth},
     aws,
     client_ip::{self, TrustedProxies},
-    config::Config,
+    config::{self, Config},
     event::{self, EventCreate},
     hash_secrets::{self, HashSecrets},
     ingest::{self, EventTypeCache, IngestError, IngestResponse},
@@ -81,7 +81,7 @@ impl AppState {
             .connect_with(config.postgres)
             .await
             .context("connecting to Postgres")?;
-        let redis_client = redis::Client::open(config.redis_url)?;
+        let redis_client = config::redis_client(&config.redis_url)?;
         let redis = ConnectionManager::new(redis_client.clone())
             .await
             .context("connecting to Redis")?;

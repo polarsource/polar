@@ -4,7 +4,8 @@ use std::{
     time::Duration,
 };
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, ensure};
+use redis::IntoConnectionInfo;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use tracing::level_filters::LevelFilter;
 
@@ -61,7 +62,11 @@ impl Config {
             .ssl_mode(if postgres_ssl {
                 PgSslMode::Require
             } else {
-                PgSslMode::Prefer
+                lookup("PGSSLMODE")
+                    .map(|mode| mode.parse())
+                    .transpose()
+                    .context("PGSSLMODE")?
+                    .unwrap_or(PgSslMode::Prefer)
             });
 
         let redis_url = lookup("POLAR_REDIS_URL").unwrap_or_else(|| {
@@ -132,6 +137,25 @@ impl Config {
     }
 }
 
+pub fn redis_client(url: &str) -> Result<redis::Client> {
+    let parsed = redis::parse_redis_url(url).context("the Redis URL is invalid")?;
+    ensure!(
+        parsed.fragment().is_none(),
+        "the Redis URL must not have a fragment"
+    );
+    let skip_hostname_check = parsed.query_pairs().any(|(key, value)| {
+        key == "ssl_check_hostname"
+            && matches!(
+                value.to_lowercase().as_str(),
+                "false" | "0" | "f" | "n" | "no"
+            )
+    });
+    let info = url.into_connection_info()?;
+    let mut addr = info.addr().clone();
+    addr.set_danger_accept_invalid_hostnames(skip_hostname_check);
+    Ok(redis::Client::open(info.set_addr(addr))?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -158,6 +182,39 @@ mod tests {
         assert_eq!(config.postgres.get_port(), 5432);
         assert_eq!(config.postgres.get_database(), Some("polar"));
         assert_eq!(config.redis_url, "redis://127.0.0.1:6379/0");
+    }
+
+    #[test]
+    fn skips_the_redis_hostname_check_only_when_the_url_asks() {
+        let checked = redis_client("rediss://cache.internal:6379/1").unwrap();
+        let unchecked =
+            redis_client("rediss://cache.internal:6379/1?ssl_check_hostname=False").unwrap();
+        let insecure = redis_client("rediss://cache.internal:6379/1#insecure");
+
+        let skips_hostname_check = |client: &redis::Client| {
+            format!("{:?}", client.get_connection_info().addr())
+                .contains("danger_accept_invalid_hostnames: true")
+        };
+        assert!(!skips_hostname_check(&checked));
+        assert!(skips_hostname_check(&unchecked));
+        assert_eq!(unchecked.get_connection_info().redis_settings().db(), 1);
+        assert!(insecure.is_err());
+    }
+
+    #[test]
+    fn takes_the_postgres_tls_mode_from_pgsslmode_unless_tls_is_forced() {
+        let ssl_mode = |vars: &[(&str, &str)]| config(vars).map(|c| c.postgres.get_ssl_mode());
+
+        assert!(matches!(ssl_mode(&[]), Ok(PgSslMode::Prefer)));
+        assert!(matches!(
+            ssl_mode(&[("PGSSLMODE", "verify-full")]),
+            Ok(PgSslMode::VerifyFull)
+        ));
+        assert!(matches!(
+            ssl_mode(&[("POLAR_POSTGRES_SSL", "true"), ("PGSSLMODE", "disable")]),
+            Ok(PgSslMode::Require)
+        ));
+        assert!(ssl_mode(&[("PGSSLMODE", "verify_full")]).is_err());
     }
 
     #[test]

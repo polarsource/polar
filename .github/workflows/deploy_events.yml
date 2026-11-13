@@ -1,0 +1,108 @@
+name: Build and Deploy Events
+
+# Temporary: deploys the feature branch to Test until the service joins deploy.yml.
+on:
+  push:
+    branches: ["yopi/event-ingestion-rust-service-1"]
+    paths:
+      - "events/**"
+      - ".github/workflows/deploy_events.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: build-deploy-events
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/polarsource/polar-events
+
+jobs:
+  build:
+    name: "Build Docker Image 🐳"
+    if: github.ref == 'refs/heads/yopi/event-ingestion-rust-service-1'
+    timeout-minutes: 20
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: useblacksmith/setup-docker-builder@v2.2.0
+        with:
+          cache-key: polar/events-production
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: useblacksmith/build-push-action@v2
+        id: push
+        with:
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          context: ./events
+          target: production
+          platforms: linux/amd64
+          build-args: |
+            RELEASE_VERSION=${{ github.sha }}
+
+  deploy-test:
+    name: "Deploy to Test 🧰"
+    needs: build
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - name: Deploy to Render
+        env:
+          RENDER_API_TOKEN: ${{ secrets.RENDER_API_TOKEN }}
+          SERVICE_NAME: events-test
+          IMAGE_URL: ${{ env.IMAGE }}@${{ needs.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          render() {
+            curl --silent --show-error --fail --connect-timeout 5 --max-time 30 \
+              -H "Accept: application/json" \
+              -H "Authorization: Bearer ${RENDER_API_TOKEN}" "$@"
+          }
+
+          service_id="$(render --retry 3 --get --data-urlencode "name=${SERVICE_NAME}" \
+            "https://api.render.com/v1/services" \
+            | jq -r --arg name "$SERVICE_NAME" '[.[].service | select(.name == $name)][0].id // empty')"
+          if [ -z "$service_id" ]; then
+            echo "::warning::No Render service named ${SERVICE_NAME}; the image is pushed, apply Terraform and re-run."
+            exit 0
+          fi
+
+          deploy_id="$(render -X POST -H "Content-Type: application/json" \
+            -d "$(jq -n --arg image "$IMAGE_URL" '{imageUrl: $image}')" \
+            "https://api.render.com/v1/services/${service_id}/deploys" | jq -er '.id')"
+          echo "Deploy ${deploy_id} started for ${service_id}"
+
+          for _ in $(seq 1 120); do
+            status="$(render --retry 3 "https://api.render.com/v1/services/${service_id}/deploys/${deploy_id}" | jq -er '.status')"
+            case "$status" in
+              live)
+                echo "Deploy is live"
+                exit 0
+                ;;
+              deactivated | build_failed | update_failed | pre_deploy_failed | canceled)
+                echo "::error::Deploy ended with status ${status}"
+                exit 1
+                ;;
+            esac
+            sleep 5
+          done
+          echo "::error::Timed out waiting for the deploy"
+          exit 1

@@ -536,7 +536,7 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml"
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 0 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml"
 
       - name: Upload test results
         if: always()

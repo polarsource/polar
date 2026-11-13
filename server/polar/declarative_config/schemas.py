@@ -37,7 +37,6 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
-    TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION,
     PriceAmount,
     ProductDescription,
     ProductName,
@@ -292,7 +291,13 @@ class ConfigProduct(
     # Export sends null for the default.
     trial_payment_setup_required: Annotated[
         bool, BeforeValidator(lambda v: True if v is None else v)
-    ] = Field(default=True, description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION)
+    ] = Field(
+        default=True,
+        description=(
+            "Whether customers need a payment method to start the trial. "
+            "Defaults to `true`."
+        ),
+    )
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
     )

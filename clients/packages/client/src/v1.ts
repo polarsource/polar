@@ -17451,7 +17451,7 @@ export interface components {
       meter_interval_count?: number | null
       /**
        * Trial Payment Setup Required
-       * @description Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+       * @description Whether customers need a payment method to start the trial. Defaults to `true`.
        * @default true
        */
       trial_payment_setup_required: boolean

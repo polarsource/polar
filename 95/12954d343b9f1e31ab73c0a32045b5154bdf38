@@ -1,0 +1,22 @@
+server/tests/declarative_config/test_schemas.py
+  s_ef0ee0cf80beae::t_69536ab1f09f2e 1-2,5-9
+  s_ef0ee0cf80beae::t_882a68a187a4f5 10,24-26,28-36
+server/polar/declarative_config/schemas.py
+  s_ef0ee0cf80beae::t_69536ab1f09f2e 51,362
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9512954d343b9f1e31ab73c0a32045b5154bdf38",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

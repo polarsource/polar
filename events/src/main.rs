@@ -1,62 +1,42 @@
-mod app;
-mod auth;
-mod config;
-mod event;
-mod ingest;
-mod jobs;
-mod outpost;
-mod reducer;
-mod telemetry;
+use std::{net::Ipv4Addr, time::Duration};
 
-use std::{net::Ipv4Addr, sync::Arc, time::Duration};
-
-use anyhow::{Context, Result};
-use redis::aio::ConnectionManager;
-use sqlx::postgres::PgPoolOptions;
+use anyhow::Result;
 use tokio::{
     net::TcpListener,
     signal::unix::{SignalKind, signal},
 };
-use tokio_util::task::TaskTracker;
 
-use crate::{app::AppState, config::Config};
+use events::{
+    app::{self, AppState},
+    config::Config,
+    telemetry,
+};
+
+const SHUTDOWN_GRACE: Duration = Duration::from_secs(25);
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let config = Config::from_env()?;
     let _telemetry = telemetry::init(&config)?;
 
-    let db = PgPoolOptions::new()
-        .max_connections(config.postgres_pool_size)
-        .acquire_timeout(Duration::from_secs(5))
-        .connect_with(config.postgres)
+    let port = config.port;
+    let state = AppState::connect(config).await?;
+
+    let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
+    tracing::info!(port, "listening");
+
+    axum::serve(listener, app::router(state.clone()))
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+
+    state.tasks.close();
+    if tokio::time::timeout(SHUTDOWN_GRACE, state.tasks.wait())
         .await
-        .context("connecting to Postgres")?;
-    let redis_client = redis::Client::open(config.redis_url)?;
-    let redis = ConnectionManager::new(redis_client.clone())
-        .await
-        .context("connecting to Redis")?;
-
-    let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, config.port)).await?;
-    tracing::info!(port = config.port, "listening");
-
-    let tasks = TaskTracker::new();
-    axum::serve(
-        listener,
-        app::router(AppState {
-            db: db.clone(),
-            redis,
-            redis_client,
-            auth: Arc::new(config.auth),
-            tasks: tasks.clone(),
-        }),
-    )
-    .with_graceful_shutdown(shutdown_signal())
-    .await?;
-
-    tasks.close();
-    tasks.wait().await;
-    db.close().await;
+        .is_err()
+    {
+        tracing::error!("in-flight event writes did not finish before shutdown");
+    }
+    state.db.close().await;
     Ok(())
 }
 

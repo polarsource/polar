@@ -22,3 +22,11 @@ uuid = { version = "1.29.2", features = ["v4", "serde"] }
 
 [lints.rust]
 unsafe_code = "forbid"
+
+[dev-dependencies]
+criterion = { package = "codspeed-criterion-compat", version = "6.0.0" }
+tower = { version = "0.5.3", features = ["util"] }
+
+[[bench]]
+name = "ingest"
+harness = false

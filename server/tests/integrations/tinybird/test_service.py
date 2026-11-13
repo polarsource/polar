@@ -38,8 +38,6 @@ from polar.models.event import EventSource
 from polar.worker import MAX_JOB_PAYLOAD_BYTES
 from tests.fixtures.tinybird import tinybird_available
 
-pytestmark = pytest.mark.xdist_group(name="tinybird")
-
 
 def create_test_event(
     *,
@@ -344,6 +342,27 @@ class TestQueryBindsValuesInsteadOfInlining:
         sql, _ = _compile(statement)
         assert "{organization_id_1_1:String}" in sql
         assert "{cost_amount_1_1:Float64}" in sql
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.anyio
+class TestTinybirdIngest:
+    async def test_wait_makes_events_queryable(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        event = create_test_event()
+
+        await TinybirdClient.ingest(
+            tinybird_client, DATASOURCE_EVENTS, [_event_to_tinybird(event)], wait=True
+        )
+
+        stats = await TinybirdEventTypesQuery(
+            event.organization_id
+        ).get_event_type_stats()
+
+        assert len(stats) == 1
+        assert stats[0].name == event.name
+        assert stats[0].occurrences == 1
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")

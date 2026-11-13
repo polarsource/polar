@@ -24,9 +24,18 @@ from polar.openapi import (
 from polar.routing import APIRouter
 from polar.version import V2026_10, V2027_01, VERSIONS
 
+OPENAPI_VERSION_PARAMS = {
+    version: pytest.param(
+        version,
+        id=str(version),
+        marks=pytest.mark.xdist_group(name=f"openapi_{version}"),
+    )
+    for version in VERSIONS
+}
+
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("version", VERSIONS)
+@pytest.mark.parametrize("version", OPENAPI_VERSION_PARAMS.values())
 async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     response = await client.get(f"{version}/openapi.json")
     assert response.status_code == 200
@@ -40,7 +49,7 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("version", VERSIONS)
+@pytest.mark.parametrize("version", OPENAPI_VERSION_PARAMS.values())
 async def test_openapi_links_versioning_policy(
     version: APIVersion, client: AsyncClient
 ) -> None:
@@ -54,7 +63,8 @@ async def test_openapi_links_versioning_policy(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
-    "version", [pytest.param(v, id=str(v)) for v in VERSIONS if v != V2027_01]
+    "version",
+    [param for version, param in OPENAPI_VERSION_PARAMS.items() if version != V2027_01],
 )
 async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) -> None:
     OPENAPI_FROZEN_MESSAGE = """
@@ -136,7 +146,7 @@ NON_DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("version", VERSIONS)
+@pytest.mark.parametrize("version", OPENAPI_VERSION_PARAMS.values())
 async def test_tool_write_operations_are_classified(
     version: APIVersion, client: AsyncClient
 ) -> None:
@@ -336,7 +346,17 @@ class TestDestructiveToolAnnotations:
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize(("version", "included"), [(V2026_10, True), (V2027_01, False)])
+@pytest.mark.parametrize(
+    ("version", "included"),
+    [
+        pytest.param(
+            version,
+            included,
+            marks=pytest.mark.xdist_group(name=f"openapi_{version}"),
+        )
+        for version, included in [(V2026_10, True), (V2027_01, False)]
+    ],
+)
 async def test_legacy_recurring_product_price_schema(
     version: APIVersion, included: bool, client: AsyncClient
 ) -> None:

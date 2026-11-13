@@ -571,6 +571,7 @@ class TestRedirect:
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
 
+        session.expunge_all()
         checkout_repository = CheckoutRepository.from_session(session)
         checkouts = await checkout_repository.get_all(
             checkout_repository.get_base_statement().order_by(
@@ -579,4 +580,4 @@ class TestRedirect:
         )
         checkout = checkouts[0]
         assert checkout.allow_discount_codes is False
-        assert checkout.discount is None
+        assert checkout.discount_id is None

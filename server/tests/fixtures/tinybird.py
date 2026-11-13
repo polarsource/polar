@@ -1,6 +1,9 @@
+import json
 import os
+import time
 import uuid
 from collections.abc import Generator
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -9,6 +12,7 @@ import pytest
 from polar.config import settings
 from polar.integrations.tinybird import service as tinybird_service
 from polar.integrations.tinybird.client import TinybirdClient
+from polar.integrations.tinybird.schemas import TinybirdEvent
 from polar.metrics import queries_tinybird
 from scripts.tinybird_test_workspace import (
     create_workspace,
@@ -19,10 +23,32 @@ from scripts.tinybird_test_workspace import (
 )
 
 TOKEN_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN"
+REQUIRED_ENV_VAR = "POLAR_TEST_TINYBIRD_REQUIRED"
+TOKEN_FILE_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN_FILE"
+
+
+class SynchronousIngestTinybirdClient(TinybirdClient):
+    """The Events API holds each write for about 4s to batch rows; an append doesn't."""
+
+    async def ingest(
+        self, datasource: str, events: list[TinybirdEvent], *, wait: bool = True
+    ) -> None:
+        if not events:
+            return
+        response = await self._write_client.post(
+            "/v0/datasources",
+            params={"name": datasource, "mode": "append", "format": "ndjson"},
+            files={"ndjson": "\n".join(json.dumps(event) for event in events)},
+        )
+        response.raise_for_status()
 
 
 def tinybird_available() -> bool:
-    return bool(os.environ.get(TOKEN_ENV_VAR)) or get_tokens() is not None
+    return (
+        bool(os.environ.get(TOKEN_ENV_VAR))
+        or os.environ.get(REQUIRED_ENV_VAR) == "true"
+        or get_tokens() is not None
+    )
 
 
 @pytest.fixture(scope="session")
@@ -33,9 +59,26 @@ def tinybird_workspace() -> Generator[str]:
         yield shared_token
         return
 
+    token_file_path = os.environ.get(TOKEN_FILE_ENV_VAR)
+    if token_file_path:
+        token_file = Path(token_file_path)
+        error_file = token_file.with_suffix(".error")
+        for _ in range(1200):
+            if token_file.exists():
+                yield token_file.read_text().strip()
+                return
+            if error_file.exists():
+                raise RuntimeError(
+                    f"Tinybird workspace preparation failed: {error_file.read_text()}"
+                )
+            time.sleep(0.1)
+        raise RuntimeError("Timed out waiting for Tinybird workspace preparation")
+
     host = settings.TINYBIRD_API_URL
     tokens = get_tokens(host)
     if not tokens:
+        if os.environ.get(REQUIRED_ENV_VAR) == "true":
+            raise RuntimeError("Tinybird is required but is not running")
         pytest.skip("Tinybird not running")
 
     workspace_id, workspace_token = create_workspace(host, tokens)
@@ -66,7 +109,7 @@ def tinybird_client(
     tinybird_workspace: str,
     tinybird_clickhouse_token: str,
 ) -> Generator[TinybirdClient]:
-    client = TinybirdClient(
+    client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,

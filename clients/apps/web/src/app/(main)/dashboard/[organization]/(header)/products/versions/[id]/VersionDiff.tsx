@@ -14,7 +14,11 @@ import {
 } from './format'
 
 type Config = schemas['ConfigExportDocument']
-type Format = (field: string, value: unknown) => string
+// Each side reads ids against its own config, so a meter whose unit changed keeps its old scale on the before side
+type Format = Record<
+  'before' | 'after',
+  (field: string, value: unknown) => string
+>
 
 const signs = {
   added: { glyph: '+', color: 'text-emerald-500' },
@@ -66,20 +70,19 @@ const DiffLine = ({
       {line.change === 'changed' ? (
         <Box alignItems="baseline" columnGap="s" minWidth={0} flexWrap="wrap">
           <Text color="muted" lineThrough>
-            {format(line.field, line.before)}
+            {format.before(line.field, line.before)}
           </Text>
           <Text color="muted">→</Text>
-          <Text>{format(line.field, line.after)}</Text>
+          <Text>{format.after(line.field, line.after)}</Text>
         </Box>
       ) : (
         <Text
           color={line.change === 'removed' ? 'muted' : 'default'}
           lineThrough={line.change === 'removed' && showSign}
         >
-          {format(
-            line.field,
-            line.change === 'removed' ? line.before : line.after,
-          )}
+          {line.change === 'removed'
+            ? format.before(line.field, line.before)
+            : format.after(line.field, line.after)}
         </Text>
       )}
     </Grid>
@@ -308,9 +311,10 @@ export const VersionDiff = ({
   benefitHref: (externalId: string) => string | undefined
   meterHref: (externalId: string) => string | undefined
 }) => {
-  const format = valueFormatter(
-    parentConfig ? [parentConfig, config] : [config],
-  )
+  const format = {
+    before: valueFormatter(parentConfig ? [config, parentConfig] : [config]),
+    after: valueFormatter(parentConfig ? [parentConfig, config] : [config]),
+  }
 
   return (
     <div className="animate-in fade-in duration-200 ease-out">

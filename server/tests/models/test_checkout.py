@@ -97,6 +97,16 @@ async def test_billing_address_fields(
             },
         ),
         (
+            "CA",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.optional,
+                "postal_code": BillingAddressFieldMode.optional,
+            },
+        ),
+        (
             "ES",
             {
                 "state": BillingAddressFieldMode.optional,

@@ -23,7 +23,7 @@ from .schemas import (
     RemovedCatalogItem,
     RemovedCatalogItemsParams,
 )
-from .service import CatalogNotDraft, CatalogNotFound
+from .service import CatalogMissingCurrency, CatalogNotDraft, CatalogNotFound
 from .service import catalog as catalog_service
 
 router = APIRouter(prefix="/catalogs", tags=["catalogs", APITag.private])
@@ -114,8 +114,11 @@ async def get(
             "model": CatalogNotFound.schema(),
         },
         409: {
-            "description": "The catalog isn't a draft.",
-            "model": CatalogNotDraft.schema(),
+            "description": (
+                "The catalog isn't a draft, or publishing it would leave an "
+                "active product without a price in the default currency."
+            ),
+            "model": CatalogNotDraft.schema() | CatalogMissingCurrency.schema(),
         },
     },
 )
@@ -127,8 +130,9 @@ async def publish(
     """Publish the draft catalog. Its new products and benefits replace the live
     ones for new sales. Existing customers stay on their versions until moved.
 
-    Requires `products:write`, and `benefits:write` when the draft changes
-    benefits."""
+    Requires `products:write`, `benefits:write` when the draft changes
+    benefits, `meters:write` when it changes meters, and `organizations:write`
+    when it changes settings."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
     catalog = await catalog_service.publish_draft(
         session, auth_subject, draft.organization, draft

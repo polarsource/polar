@@ -1808,6 +1808,13 @@ class TestApply:
         assert result.settings is not None
         assert result.settings.action == ConfigAction.updated
         assert organization.default_tax_behavior == TaxBehaviorOption.exclusive
+        assert result.catalog is not None
+        live = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert live is not None
+        assert live.settings == {
+            "default_presentment_currency": "usd",
+            "default_tax_behavior": TaxBehaviorOption.exclusive,
+        }
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_currency_switch(
@@ -2100,6 +2107,7 @@ class TestPlan:
             {"field": "payments.tax", "before": "location", "after": "inclusive"}
         ]
         assert plan.issues == []
+        assert plan.catalog is not None
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_unchanged(
@@ -5662,6 +5670,121 @@ class TestCatalogDrafts:
             await CatalogRepository.from_session(session).get_draft(organization.id)
             is not None
         )
+
+    async def test_draft_holds_settings_until_publish(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [PACK_PRODUCT]}),
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "settings": {"payments": {"currency": "eur"}},
+                    "products": [{**PACK_PRODUCT, "prices": [EUR_PACK_PRICE]}],
+                }
+            ),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert result.catalog is not None
+        assert result.catalog.after.id == draft.id
+        assert organization.default_presentment_currency == "usd"
+
+        await catalog_service.publish_draft(session, auth_subject, organization, draft)
+
+        assert organization.default_presentment_currency == "eur"
+
+    async def test_settings_change_alone_saves_a_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"tax": "exclusive"}}}),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert result.catalog is not None
+        assert draft.settings == {"default_tax_behavior": TaxBehaviorOption.exclusive}
+        assert organization.default_tax_behavior == TaxBehaviorOption.location
+
+    async def test_reverting_settings_drops_the_draft(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"tax": "exclusive"}}}),
+            publish=False,
+        )
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"tax": "location"}}}),
+            publish=False,
+        )
+
+        assert (
+            await CatalogRepository.from_session(session).get_draft(organization.id)
+            is None
+        )
+
+    async def test_draft_keeps_settings_changed_outside_config(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        organization.default_tax_behavior = TaxBehaviorOption.inclusive
+        await save_fixture(organization)
+
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            publish=False,
+        )
+
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+        assert draft.settings == {}
 
     async def test_publish_discards_the_draft(
         self,

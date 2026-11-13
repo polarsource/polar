@@ -1,0 +1,21 @@
+events/src/event.rs
+  s_9e29c5984633d1::t_99b3125665fdd5 86-94,117,136-143,287,337-339,341-343
+  s_9e29c5984633d1::t_174ca7227ddab8 135,283,288
+  s_9e29c5984633d1::t_454c5b0adfb60f 144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "305bd90829bf3db5b2e1e0a29d5c114c2e9963b2",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

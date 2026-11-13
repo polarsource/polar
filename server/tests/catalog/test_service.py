@@ -4,6 +4,7 @@ from datetime import timedelta
 import pytest
 
 from polar.auth.models import AuthSubject
+from polar.catalog.schemas import CatalogUpdate
 from polar.catalog.service import (
     CatalogMembers,
     CatalogNotDraft,
@@ -247,3 +248,19 @@ class TestDiscardDraft:
             True,
             True,
         )
+
+
+@pytest.mark.anyio
+class TestUpdate:
+    async def test_discarded_concurrently(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, _, draft, _ = catalogs
+        draft.deleted_at = utc_now()
+        await save_fixture(draft)
+
+        with pytest.raises(CatalogNotFound):
+            await catalog_service.update(session, draft, CatalogUpdate(name="Renamed"))

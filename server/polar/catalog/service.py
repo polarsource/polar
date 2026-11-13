@@ -423,6 +423,8 @@ class CatalogService:
         # A concurrent publish could turn the draft live after it was loaded.
         await repository.lock(catalog.organization_id)
         await repository.refresh(catalog)
+        if catalog.deleted_at is not None:
+            raise CatalogNotFound(catalog.id)
         if catalog_update.name is None and catalog.status != CatalogStatus.draft:
             raise PolarRequestValidationError(
                 [

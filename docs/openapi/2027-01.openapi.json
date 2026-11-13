@@ -1073,6 +1073,24 @@
                 }
               }
             }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AlreadyActiveSubscription"
+                    },
+                    {
+                      "$ref": "#/components/schemas/TrialAlreadyRedeemed"
+                    }
+                  ],
+                  "title": "Response 409 Subscriptions:Create"
+                }
+              }
+            },
+            "description": "Conflict"
           }
         },
         "x-polar-allowed-subjects": [
@@ -86066,6 +86084,28 @@
         ],
         "title": "IntrospectTokenRequest",
         "type": "object"
+      },
+      "AlreadyActiveSubscription": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "AlreadyActiveSubscription",
+            "title": "Error",
+            "examples": [
+              "AlreadyActiveSubscription"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "AlreadyActiveSubscription"
       }
     },
     "securitySchemes": {

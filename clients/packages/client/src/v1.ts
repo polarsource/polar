@@ -8971,6 +8971,17 @@ export interface components {
      * @enum {string}
      */
     AggregationFunction: 'count' | 'sum' | 'max' | 'min' | 'avg' | 'unique'
+    /** AlreadyActiveSubscription */
+    AlreadyActiveSubscription: {
+      /**
+       * Error
+       * @example AlreadyActiveSubscription
+       * @constant
+       */
+      error: 'AlreadyActiveSubscription'
+      /** Detail */
+      detail: string
+    }
     /** AlreadyActiveSubscriptionError */
     AlreadyActiveSubscriptionError: {
       /**
@@ -50103,6 +50114,17 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Subscription']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['AlreadyActiveSubscription']
+            | components['schemas']['TrialAlreadyRedeemed']
         }
       }
       /** @description Validation Error */

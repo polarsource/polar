@@ -139,6 +139,7 @@ from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
+from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -177,6 +178,16 @@ merchant winds down across several short jobs that each stay under the worker's
 
 
 class SubscriptionError(PolarError): ...
+
+
+class TrialAlreadyRedeemed(SubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("This customer has already redeemed a trial.", 409)
+
+
+class AlreadyActiveSubscription(SubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("The customer already has an active subscription.", 409)
 
 
 class NotARecurringProduct(SubscriptionError):
@@ -735,6 +746,7 @@ class SubscriptionService:
         auth_subject: AuthSubject[User | Organization],
         *,
         created_at: datetime | None = None,
+        allow_trial: bool = True,
     ) -> Subscription:
         errors: list[ValidationError] = []
         is_trial = False
@@ -778,7 +790,8 @@ class SubscriptionService:
                 )
             else:
                 is_trial = (
-                    any(not price.is_free for price in currency_prices)
+                    allow_trial
+                    and any(not price.is_free for price in currency_prices)
                     and product.trial_interval is not None
                     and product.trial_interval_count is not None
                     and not product.trial_payment_setup_required
@@ -837,6 +850,20 @@ class SubscriptionService:
                     }
                 ]
             )
+
+        if (
+            is_trial
+            and product.organization.prevent_trial_abuse
+            and await trial_redemption_service.check_trial_already_redeemed(
+                session, product.organization, customer_email=customer.email
+            )
+        ):
+            raise TrialAlreadyRedeemed()
+
+        if is_trial and not product.organization.allow_multiple_subscriptions:
+            repository = SubscriptionRepository.from_session(session)
+            if await repository.list_billable_by_customer(customer.id):
+                raise AlreadyActiveSubscription()
 
         assert is_recurring_product(product)
         recurring_interval = product.recurring_interval
@@ -912,6 +939,10 @@ class SubscriptionService:
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
+        if is_trial:
+            await trial_redemption_service.create_trial_redemption(
+                session, customer=customer, product=product
+            )
         await billing_interval_service.record_subscription(
             session, subscription, effective_at=current_period_start
         )

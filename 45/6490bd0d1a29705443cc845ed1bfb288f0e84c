@@ -1,0 +1,22 @@
+clients/apps/mcp/test/events.test.ts
+  s_ef0ee0cf80beae::t_51930edc24905b 75-118
+clients/apps/mcp/src/events.ts
+  s_ef0ee0cf80beae::t_51930edc24905b 52-55
+  s_ef0ee0cf80beae::t_2d6eb3fb447503 49-51,56-80,163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "456490bd0d1a29705443cc845ed1bfb288f0e84c",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

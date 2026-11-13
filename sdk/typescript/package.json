@@ -56,6 +56,16 @@
         "default": "./dist/outpost/index.cjs"
       }
     },
+    "./outpost/vercel": {
+      "import": {
+        "types": "./dist/outpost/vercel.d.mts",
+        "default": "./dist/outpost/vercel.mjs"
+      },
+      "require": {
+        "types": "./dist/outpost/vercel.d.cts",
+        "default": "./dist/outpost/vercel.cjs"
+      }
+    },
     "./2026-04": {
       "import": {
         "types": "./dist/2026-04/index.d.mts",
@@ -226,6 +236,7 @@
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
     "@types/node": "^24.13.6",
+    "@vercel/oidc": "^4.0.5",
     "ioredis": "^5.11.0",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
@@ -240,6 +251,7 @@
     "@opentelemetry/resources": "^2.12.0",
     "@opentelemetry/sdk-metrics": "^2.12.0",
     "@opentelemetry/sdk-trace": "^2.12.0",
+    "@vercel/oidc": "^4.0.5",
     "ioredis": "^5.11.0"
   },
   "peerDependenciesMeta": {
@@ -256,6 +268,9 @@
       "optional": true
     },
     "@opentelemetry/sdk-trace": {
+      "optional": true
+    },
+    "@vercel/oidc": {
       "optional": true
     },
     "ioredis": {

@@ -5,6 +5,7 @@ export default defineConfig({
     "src/index.ts",
     "src/metering/index.ts",
     "src/outpost/index.ts",
+    "src/outpost/vercel.ts",
 {% for version in ir.versions %}
     "src/{{ version.version }}/index.ts",
     "src/{{ version.version }}/services/**/*.ts",

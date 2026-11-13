@@ -2,7 +2,7 @@ name: Server
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "yopi/speed-up-ci-measurements"]
   pull_request:
     types: [opened, synchronize, edited]
   merge_group:
@@ -519,7 +519,7 @@ jobs:
         uses: actions/cache/restore@v6.1.0
         with:
           path: server/.test_durations
-          key: test-durations-${{ github.sha }}
+          key: test-durations-71b51c6ac8112d76a09528bb4807715321820f29
           restore-keys: test-durations-
 
       - name: 🐍 Run tests (pytest)
@@ -527,7 +527,7 @@ jobs:
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations --junitxml="$RUNNER_TEMP/junit.xml"
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
@@ -536,7 +536,17 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: ${{ runner.temp }}/junit.xml
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 3
 
       - name: 📊 Upload shard test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'

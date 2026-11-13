@@ -1,11 +1,10 @@
 use std::{collections::HashSet, fmt::Write, time::Duration};
 
 use anyhow::{Context, anyhow, bail};
-use aws_config::{BehaviorVersion, Region, retry::RetryConfig, timeout::TimeoutConfig};
+use aws_config::{SdkConfig, retry::RetryConfig, timeout::TimeoutConfig};
 use aws_sdk_sqs::{
-    Client, config::Credentials, error::DisplayErrorContext, types::SendMessageBatchRequestEntry,
+    Client, config::Builder, error::DisplayErrorContext, types::SendMessageBatchRequestEntry,
 };
-use aws_smithy_http_client::tls::{Provider, rustls_provider::CryptoMode};
 use redis::aio::ConnectionManager;
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -23,9 +22,7 @@ const MAX_ATTEMPTS: u32 = 2;
 pub struct SqsSettings {
     pub queue_prefix: String,
     pub actors: Option<HashSet<String>>,
-    pub region: String,
     pub endpoint_url: Option<String>,
-    pub static_credentials: Option<(String, String)>,
 }
 
 pub struct SqsQueue {
@@ -66,13 +63,8 @@ impl Envelope {
 }
 
 impl SqsQueue {
-    pub async fn connect(settings: SqsSettings) -> anyhow::Result<Self> {
-        let http_client = aws_smithy_http_client::Builder::new()
-            .tls_provider(Provider::Rustls(CryptoMode::Ring))
-            .build_https();
-        let mut loader = aws_config::defaults(BehaviorVersion::latest())
-            .region(Region::new(settings.region))
-            .http_client(http_client)
+    pub async fn connect(sdk_config: &SdkConfig, settings: SqsSettings) -> anyhow::Result<Self> {
+        let mut builder = Builder::from(sdk_config)
             .timeout_config(
                 TimeoutConfig::builder()
                     .connect_timeout(CONNECT_TIMEOUT)
@@ -81,18 +73,9 @@ impl SqsQueue {
             )
             .retry_config(RetryConfig::standard().with_max_attempts(MAX_ATTEMPTS));
         if let Some(endpoint_url) = settings.endpoint_url {
-            loader = loader.endpoint_url(endpoint_url);
+            builder = builder.endpoint_url(endpoint_url);
         }
-        if let Some((access_key_id, secret_access_key)) = settings.static_credentials {
-            loader = loader.credentials_provider(Credentials::new(
-                access_key_id,
-                secret_access_key,
-                None,
-                None,
-                "polar",
-            ));
-        }
-        let client = Client::new(&loader.load().await);
+        let client = Client::from_conf(builder.build());
         let queue_name = format!("{}-{}", settings.queue_prefix, QUEUE.replace('_', "-"));
         let queue_url = client
             .get_queue_url()
@@ -241,6 +224,7 @@ mod tests {
     use tokio::net::TcpListener;
 
     use super::*;
+    use crate::aws::{AwsSettings, sdk_config};
 
     type Requests = Arc<Mutex<Vec<(String, Value)>>>;
 
@@ -298,15 +282,21 @@ mod tests {
         let redis = ConnectionManager::new(redis::Client::open(config.redis_url).unwrap())
             .await
             .unwrap();
-        let queue = SqsQueue::connect(SqsSettings {
-            queue_prefix: "polar-tasks".to_owned(),
-            actors: Some(HashSet::from_iter(
-                actors.iter().map(|actor| (*actor).to_owned()),
-            )),
+        let sdk_config = sdk_config(&AwsSettings {
             region: "us-east-2".to_owned(),
-            endpoint_url: Some(endpoint_url),
             static_credentials: Some(("key".to_owned(), "secret".to_owned())),
         })
+        .await;
+        let queue = SqsQueue::connect(
+            &sdk_config,
+            SqsSettings {
+                queue_prefix: "polar-tasks".to_owned(),
+                actors: Some(HashSet::from_iter(
+                    actors.iter().map(|actor| (*actor).to_owned()),
+                )),
+                endpoint_url: Some(endpoint_url),
+            },
+        )
         .await
         .unwrap();
         (queue, requests, redis)

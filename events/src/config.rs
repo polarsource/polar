@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use tracing::level_filters::LevelFilter;
 
-use crate::{auth::AuthSettings, jobs::SqsSettings};
+use crate::{aws::AwsSettings, jobs::SqsSettings};
 
 pub struct Config {
     pub port: u16,
@@ -19,7 +19,11 @@ pub struct Config {
     pub postgres: PgConnectOptions,
     pub postgres_pool_size: u32,
     pub redis_url: String,
-    pub auth: AuthSettings,
+    pub secret: String,
+    pub hash_secrets: HashMap<String, String>,
+    pub hash_secret_arn: Option<String>,
+    pub base_url: String,
+    pub aws: AwsSettings,
     pub worker_sqs: Option<SqsSettings>,
 }
 
@@ -66,11 +70,6 @@ impl Config {
 
         let hash_secrets: HashMap<String, String> =
             serde_json::from_str(&var("POLAR_HASH_SECRETS", "{}")).context("POLAR_HASH_SECRETS")?;
-        let auth = AuthSettings::new(
-            hash_secrets,
-            var("POLAR_SECRET", "super secret jwt secret"),
-            &var("POLAR_BASE_URL", "http://127.0.0.1:8000"),
-        );
 
         let environment = var("POLAR_ENV", "development");
         let sqs_actors: HashSet<String> = serde_json::from_str(&var(
@@ -81,8 +80,10 @@ impl Config {
         let worker_sqs = flag("POLAR_WORKER_SQS_ENABLED").then(|| SqsSettings {
             queue_prefix: var("POLAR_WORKER_SQS_QUEUE_PREFIX", "polar-tasks"),
             actors: (sqs_actors != HashSet::from(["*".to_owned()])).then_some(sqs_actors),
-            region: var("POLAR_AWS_REGION", "us-east-2"),
             endpoint_url: lookup("POLAR_SQS_ENDPOINT_URL"),
+        });
+        let aws = AwsSettings {
+            region: var("POLAR_AWS_REGION", "us-east-2"),
             static_credentials: matches!(environment.as_str(), "development" | "testing").then(
                 || {
                     (
@@ -91,7 +92,7 @@ impl Config {
                     )
                 },
             ),
-        });
+        };
 
         Ok(Self {
             port: var("PORT", "10000").parse().context("PORT")?,
@@ -107,7 +108,11 @@ impl Config {
                 .parse()
                 .context("POLAR_DATABASE_POOL_SIZE")?,
             redis_url,
-            auth,
+            secret: var("POLAR_SECRET", "super secret jwt secret"),
+            hash_secrets,
+            hash_secret_arn: lookup("POLAR_AWS_HASH_SECRET_ARN"),
+            base_url: var("POLAR_BASE_URL", "http://127.0.0.1:8000"),
+            aws,
             worker_sqs,
         })
     }
@@ -168,8 +173,8 @@ mod tests {
             worker_sqs.actors,
             Some(HashSet::from(["reducer_bucket.sync".to_owned()]))
         );
-        assert_eq!(worker_sqs.region, "us-east-2");
-        assert!(worker_sqs.static_credentials.is_none());
+        assert_eq!(config.aws.region, "us-east-2");
+        assert!(config.aws.static_credentials.is_none());
         assert_eq!(config.postgres.get_host(), "db.internal");
         assert!(matches!(config.postgres.get_ssl_mode(), PgSslMode::Require));
         assert_eq!(config.redis_url, "rediss://cache.internal:6380/1");

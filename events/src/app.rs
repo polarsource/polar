@@ -26,8 +26,10 @@ use uuid::Uuid;
 
 use crate::{
     auth::{AuthSettings, OrganizationAuth},
+    aws,
     config::Config,
     event::{self, EventCreate},
+    hash_secrets,
     ingest::{self, IngestError, IngestResponse},
     jobs::{self, Job, SqsQueue, SqsSettings},
     outpost::{self, ReducerBucketChange},
@@ -76,13 +78,29 @@ impl AppState {
                     .is_none_or(|actors| actors.contains(*actor))
             })
         };
-        let sqs = match config.worker_sqs {
-            Some(settings) if routes_to_sqs(&settings) => Some(Arc::new(
-                SqsQueue::connect(settings)
+        let uses_aws = config.hash_secret_arn.is_some()
+            || config.worker_sqs.as_ref().is_some_and(routes_to_sqs);
+        let sdk_config = if uses_aws {
+            Some(aws::sdk_config(&config.aws).await)
+        } else {
+            None
+        };
+        let sqs = match (config.worker_sqs, &sdk_config) {
+            (Some(settings), Some(sdk_config)) if routes_to_sqs(&settings) => Some(Arc::new(
+                SqsQueue::connect(sdk_config, settings)
                     .await
                     .context("connecting to SQS")?,
             )),
             _ => None,
+        };
+        let (hash_secrets, legacy_secret) = match (&config.hash_secret_arn, &sdk_config) {
+            (Some(arn), Some(sdk_config)) => {
+                let fetched = hash_secrets::fetch(sdk_config, arn, config.secret, None)
+                    .await
+                    .context("fetching the token hash secrets")?;
+                (fetched.secrets, fetched.legacy)
+            }
+            _ => (config.hash_secrets, config.secret),
         };
         Ok(Self {
             sqs,
@@ -90,7 +108,11 @@ impl AppState {
             db,
             redis,
             redis_client,
-            auth: Arc::new(config.auth),
+            auth: Arc::new(AuthSettings::new(
+                hash_secrets,
+                legacy_secret,
+                &config.base_url,
+            )),
             tasks: TaskTracker::new(),
         })
     }

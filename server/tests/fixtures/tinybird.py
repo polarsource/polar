@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from collections.abc import Generator
@@ -9,6 +10,7 @@ import pytest
 from polar.config import settings
 from polar.integrations.tinybird import service as tinybird_service
 from polar.integrations.tinybird.client import TinybirdClient
+from polar.integrations.tinybird.schemas import TinybirdEvent
 from polar.metrics import queries_tinybird
 from scripts.tinybird_test_workspace import (
     create_workspace,
@@ -19,6 +21,22 @@ from scripts.tinybird_test_workspace import (
 )
 
 TOKEN_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN"
+
+
+class SynchronousIngestTinybirdClient(TinybirdClient):
+    """The Events API holds each write for about 4s to batch rows; an append doesn't."""
+
+    async def ingest(
+        self, datasource: str, events: list[TinybirdEvent], *, wait: bool = True
+    ) -> None:
+        if not events:
+            return
+        response = await self._write_client.post(
+            "/v0/datasources",
+            params={"name": datasource, "mode": "append", "format": "ndjson"},
+            files={"ndjson": "\n".join(json.dumps(event) for event in events)},
+        )
+        response.raise_for_status()
 
 
 def tinybird_available() -> bool:
@@ -66,7 +84,7 @@ def tinybird_client(
     tinybird_workspace: str,
     tinybird_clickhouse_token: str,
 ) -> Generator[TinybirdClient]:
-    client = TinybirdClient(
+    client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,

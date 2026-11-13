@@ -1,0 +1,31 @@
+server/tests/conftest.py
+  s_89a0c4db59f066::t_2999ac527c3dbc 30-45,52-57
+  s_89a0c4db59f066::t_1beb6802313357 58-59
+.github/workflows/test_server.yaml
+  s_89a0c4db59f066::t_6a4ce781b45f94 530,541,543,547-548,550,570-587,589-600
+  s_89a0c4db59f066::t_f460c2dc10e597 545,549,588
+server/scripts/merge_test_durations.py
+  s_89a0c4db59f066::t_cb98486f11d5a9 1-30
+  s_89a0c4db59f066::t_937f12c9325c4b 31-32
+server/tests/scripts/test_pytest_fixture_loading.py
+  s_89a0c4db59f066::t_007f1eafa6b9ba 1-62
+  s_89a0c4db59f066::t_3405ae90a7582a 63-66
+server/tests/scripts/test_merge_test_durations.py
+  s_89a0c4db59f066::t_cb98486f11d5a9 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bc73ab1ff94fc5177f6a2135265a9e5301a359e6",
+  "prompts": {},
+  "sessions": {
+    "s_89a0c4db59f066": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d3d8-01aa-7c10-99c7-42253810de26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

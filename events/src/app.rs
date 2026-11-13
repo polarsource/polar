@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc, time::Duration};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::Context;
 use aws_config::SdkConfig;
@@ -35,7 +35,7 @@ use crate::{
     config::Config,
     event::{self, EventCreate},
     hash_secrets::{self, HashSecrets},
-    ingest::{self, IngestError, IngestResponse},
+    ingest::{self, EventTypeCache, IngestError, IngestResponse},
     jobs::{self, Job, SqsQueue, SqsSettings},
     outpost::{self, ReducerBucketChange},
     rate_limit::{self, RateLimiter},
@@ -45,7 +45,7 @@ use crate::{
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const WRITE_TIMEOUT: Duration = Duration::from_secs(25);
-const STATEMENT_TIMEOUT: Duration = Duration::from_secs(10);
+const BEGIN_WITH_STATEMENT_TIMEOUT: &str = "BEGIN; SET LOCAL statement_timeout = 10000";
 const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_BACKGROUND_TASKS: usize = 256;
 const TRUE_CLIENT_IP: &str = "true-client-ip";
@@ -70,6 +70,7 @@ pub struct AppState {
     pub background: Arc<Semaphore>,
     pub rate_limiter: Arc<RateLimiter>,
     pub trusted_proxies: Arc<TrustedProxies>,
+    pub event_types: Arc<EventTypeCache>,
 }
 
 impl AppState {
@@ -124,6 +125,7 @@ impl AppState {
             background: Arc::new(Semaphore::new(MAX_BACKGROUND_TASKS)),
             rate_limiter: Arc::new(RateLimiter::new(&config.environment)),
             trusted_proxies: Arc::new(config.trusted_proxies),
+            event_types: Arc::default(),
             db,
             redis,
             redis_client,
@@ -301,6 +303,9 @@ async fn store_events(
         .await
         .map_err(|_| IngestError::TimedOut)??;
     written.transaction.commit().await?;
+    if let Some(event_types) = written.resolved_event_types {
+        state.event_types.store(organization_id, event_types);
+    }
     auth::record_token_usage(&state, token_id);
 
     let mut redis = state.redis.clone();
@@ -337,6 +342,7 @@ async fn store_events(
 struct WrittenEvents {
     transaction: Transaction<'static, Postgres>,
     response: IngestResponse,
+    resolved_event_types: Option<HashMap<String, Uuid>>,
     active_buckets: Option<ActiveBuckets>,
     sync_jobs: Vec<Job>,
     outpost_changes: Vec<ReducerBucketChange>,
@@ -347,16 +353,19 @@ async fn write_events(
     organization_id: Uuid,
     events: &[EventCreate],
 ) -> Result<WrittenEvents, IngestError> {
-    let mut transaction = state.db.begin().await?;
     // A statement stuck behind a bucket lock must not pin a pooled connection for long after
     // the write is abandoned.
-    sqlx::query("SELECT set_config('statement_timeout', $1, true)")
-        .bind(STATEMENT_TIMEOUT.as_millis().to_string())
-        .execute(&mut *transaction)
-        .await?;
+    let mut transaction = state.db.begin_with(BEGIN_WITH_STATEMENT_TIMEOUT).await?;
     ingest::validate_references(&mut transaction, organization_id, events).await?;
-    let event_types =
-        ingest::resolve_event_types(&mut transaction, organization_id, events).await?;
+    let (event_types, resolved_event_types) =
+        match state.event_types.lookup(organization_id, events) {
+            Some(event_types) => (event_types, None),
+            None => {
+                let event_types =
+                    ingest::resolve_event_types(&mut transaction, organization_id, events).await?;
+                (event_types.clone(), Some(event_types))
+            }
+        };
     let staged =
         ingest::insert_staged_events(&mut transaction, organization_id, events, &event_types)
             .await?;
@@ -396,6 +405,7 @@ async fn write_events(
             duplicates: staged.duplicates,
         },
         transaction,
+        resolved_event_types,
         active_buckets,
         sync_jobs,
         outpost_changes,

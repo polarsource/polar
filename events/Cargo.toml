@@ -24,7 +24,7 @@ tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "signal",
 tokio-util = { version = "0.7.20", features = ["rt"] }
 tower-http = { version = "0.7.1", features = ["trace", "timeout"] }
 tracing = "0.1.44"
-uuid = { version = "1.29.2", features = ["v4", "serde"] }
+uuid = { version = "1.29.2", features = ["v4", "serde", "fast-rng"] }
 
 [lints.rust]
 unsafe_code = "forbid"
@@ -35,4 +35,8 @@ tower = { version = "0.5.3", features = ["util"] }
 
 [[bench]]
 name = "ingest"
+harness = false
+
+[[bench]]
+name = "load"
 harness = false

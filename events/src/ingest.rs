@@ -1,4 +1,7 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::{
+    collections::{BTreeSet, HashMap, HashSet},
+    sync::{PoisonError, RwLock},
+};
 
 use axum::{
     http::StatusCode,
@@ -15,6 +18,9 @@ use crate::{
     event::{CustomerReference, EventCreate, LocItem, ValidationError},
     telemetry,
 };
+
+const MAX_CACHED_EVENT_TYPES_PER_ORGANIZATION: usize = 10_000;
+const MAX_CACHED_ORGANIZATIONS: usize = 10_000;
 
 #[derive(Serialize)]
 pub struct IngestResponse {
@@ -125,6 +131,39 @@ pub async fn validate_references(
         Ok(())
     } else {
         Err(IngestError::InvalidReferences(errors))
+    }
+}
+
+#[derive(Default)]
+pub struct EventTypeCache(RwLock<HashMap<Uuid, HashMap<String, Uuid>>>);
+
+impl EventTypeCache {
+    pub fn lookup(
+        &self,
+        organization_id: Uuid,
+        events: &[EventCreate],
+    ) -> Option<HashMap<String, Uuid>> {
+        let cache = self.0.read().unwrap_or_else(PoisonError::into_inner);
+        let known = cache.get(&organization_id)?;
+        let mut event_types = HashMap::new();
+        for event in events {
+            if !event_types.contains_key(&event.name) {
+                event_types.insert(event.name.clone(), *known.get(&event.name)?);
+            }
+        }
+        Some(event_types)
+    }
+
+    pub fn store(&self, organization_id: Uuid, event_types: HashMap<String, Uuid>) {
+        let mut cache = self.0.write().unwrap_or_else(PoisonError::into_inner);
+        if cache.len() >= MAX_CACHED_ORGANIZATIONS && !cache.contains_key(&organization_id) {
+            cache.clear();
+        }
+        let known = cache.entry(organization_id).or_default();
+        if known.len() >= MAX_CACHED_EVENT_TYPES_PER_ORGANIZATION {
+            known.clear();
+        }
+        known.extend(event_types);
     }
 }
 
@@ -564,6 +603,36 @@ mod tests {
         assert!(
             matches!(result, Err(IngestError::InvalidReferences(errors)) if errors[0].kind == "customer_id")
         );
+    }
+
+    #[test]
+    fn caches_event_types_once_every_name_is_known() {
+        let cache = EventTypeCache::default();
+        let organization_id = Uuid::from_u128(9);
+        let mut other = event(None, polar(CUSTOMER, None));
+        other.name = "other".to_owned();
+        let events = [event(None, polar(CUSTOMER, None)), other];
+
+        cache.store(
+            organization_id,
+            HashMap::from([("name".to_owned(), Uuid::from_u128(1))]),
+        );
+        let partly_known = cache.lookup(organization_id, &events);
+        cache.store(
+            organization_id,
+            HashMap::from([("other".to_owned(), Uuid::from_u128(2))]),
+        );
+        let known = cache.lookup(organization_id, &events);
+
+        assert_eq!(partly_known, None);
+        assert_eq!(
+            known,
+            Some(HashMap::from([
+                ("name".to_owned(), Uuid::from_u128(1)),
+                ("other".to_owned(), Uuid::from_u128(2)),
+            ]))
+        );
+        assert_eq!(cache.lookup(Uuid::from_u128(8), &events), None);
     }
 
     #[test]

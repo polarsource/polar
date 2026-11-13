@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, select
@@ -34,6 +35,20 @@ class CustomFieldRepository(
             )
             .order_by(CustomField.created_at, CustomField.id)
         )
+
+    async def get_current_by_slugs(
+        self,
+        organization_id: UUID,
+        slugs: Sequence[str],
+        *,
+        for_update: bool = False,
+    ) -> Sequence[CustomField]:
+        statement = self.get_current_statement(organization_id).where(
+            CustomField.slug.in_(slugs)
+        )
+        if for_update:
+            statement = statement.with_for_update(of=CustomField, key_share=True)
+        return await self.get_all(statement)
 
     async def has_versions(self, custom_field: CustomField) -> bool:
         statement = select(

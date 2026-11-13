@@ -9,7 +9,10 @@ from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import assert_organization_permission
+from polar.authz.service import (
+    assert_organization_permission,
+    get_accessible_org_ids,
+)
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.service import benefit as benefit_service
@@ -130,6 +133,19 @@ async def _assert_webhooks_permission(
             auth_subject,
             organization.id,
             OrganizationPermission.organization_manage,
+        )
+
+
+async def _assert_custom_fields_permission(
+    session: AsyncReadSession,
+    auth_subject: AuthSubject[User | Organization | Agent],
+    config: Config,
+    organization: Organization,
+    permission: OrganizationPermission,
+) -> None:
+    if "custom_fields" in config.model_fields_set:
+        await assert_organization_permission(
+            session, auth_subject, organization.id, permission
         )
 
 
@@ -384,6 +400,13 @@ class DeclarativeConfigService:
                 OrganizationPermission.organization_manage,
             )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_manage,
+        )
         catalog_repository = CatalogRepository.from_session(session)
         await catalog_repository.lock(organization.id)
         draft = await catalog_repository.get_draft(organization.id)
@@ -523,6 +546,13 @@ class DeclarativeConfigService:
             session, auth_subject, config, OrganizationPermission.products_read
         )
         await _assert_webhooks_permission(session, auth_subject, config, organization)
+        await _assert_custom_fields_permission(
+            session,
+            auth_subject,
+            config,
+            organization,
+            OrganizationPermission.custom_fields_read,
+        )
         base = await catalog_service.resolve(session, organization, catalog_id)
         archived_base = (
             base if base is not None and base.status != CatalogStatus.live else None
@@ -583,6 +613,7 @@ class DeclarativeConfigService:
             changes=[
                 *self._plan_changes(ConfigResource.webhook, changes.webhooks),
                 *self._plan_changes(ConfigResource.meter, changes.meters),
+                *self._plan_changes(ConfigResource.custom_field, changes.custom_fields),
                 *self._plan_changes(ConfigResource.benefit, changes.benefits),
                 *self._plan_changes(ConfigResource.product, changes.products),
             ],
@@ -727,7 +758,20 @@ class DeclarativeConfigService:
         if not organization.is_config_as_code_enabled:
             await self._assert_expressible(session, organization)
         catalog = await catalog_service.resolve(session, organization, catalog_id)
-        return await export_config(session, organization, catalog)
+        return await export_config(
+            session,
+            organization,
+            catalog,
+            include_custom_fields=bool(
+                auth_subject.scopes & set(SECTION_SCOPES["custom_fields"])
+            )
+            and organization.id
+            in await get_accessible_org_ids(
+                session,
+                auth_subject,
+                permission=OrganizationPermission.custom_fields_read,
+            ),
+        )
 
     def _plan_changes(
         self, resource: ConfigResource, changes: Sequence[ResourceChange[Any, Any]]

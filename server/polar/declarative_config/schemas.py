@@ -17,6 +17,15 @@ from polar.benefit.strategies.base.schemas import (
     BENEFIT_DESCRIPTION_MAX_LENGTH,
     BENEFIT_DESCRIPTION_MIN_LENGTH,
 )
+from polar.custom_field.schemas import (
+    CheckboxPropertiesInput,
+    DatePropertiesInput,
+    Name,
+    NumberPropertiesInput,
+    SelectPropertiesInput,
+    Slug,
+    TextPropertiesInput,
+)
 from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehaviorOption
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.external_id import ExternalID
@@ -31,6 +40,14 @@ from polar.meter.schemas import MeterCreateBase
 from polar.meter.unit import MeterUnit
 from polar.models.benefit import BenefitType, BenefitVisibility
 from polar.models.catalog import CatalogStatus
+from polar.models.custom_field import (
+    CustomFieldCheckboxProperties,
+    CustomFieldDateProperties,
+    CustomFieldNumberProperties,
+    CustomFieldSelectProperties,
+    CustomFieldTextProperties,
+    CustomFieldType,
+)
 from polar.models.product import ProductVisibility
 from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
@@ -57,6 +74,7 @@ MAXIMUM_METERS = 100
 MAXIMUM_BENEFITS = 100
 MAXIMUM_PRODUCTS = 100
 MAXIMUM_WEBHOOK_ENDPOINTS = 25
+MAXIMUM_CUSTOM_FIELDS = 100
 
 
 class ConfigDeprecationMixin(BaseModel):
@@ -97,6 +115,11 @@ ProductReference = Annotated[
         min_length=1,
         description="The `external_id` of a product declared in the same config.",
     ),
+]
+
+CustomFieldReference = Annotated[
+    Slug,
+    Field(description="The `slug` of a custom field declared in the same config."),
 ]
 
 BenefitReference = Annotated[
@@ -243,6 +266,16 @@ ConfigProductPrice = Annotated[
 ]
 
 
+class ConfigProductCustomField(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    field: CustomFieldReference
+    required: bool = Field(
+        default=False,
+        description="Whether customers must fill in the field at checkout.",
+    )
+
+
 class ConfigProduct(
     ConfigDeprecationMixin, MetadataInputMixin, TrialConfigurationInputMixin, Schema
 ):
@@ -293,6 +326,15 @@ class ConfigProduct(
     benefits: list[BenefitReference] = Field(
         default_factory=list,
         description="The benefits granted by the product.",
+    )
+    custom_fields: list[ConfigProductCustomField] = Field(
+        default_factory=list,
+        description=(
+            "Custom fields asked at checkout, in this order. "
+            "Leaving it empty removes them from the product. "
+            "Ignored when the config omits `custom_fields`: the product keeps "
+            "its custom fields."
+        ),
     )
 
     @model_validator(mode="after")
@@ -364,6 +406,54 @@ class ConfigWebhookEndpoint(Schema):
     api_version: AvailableAPIVersion = Field(
         description="The API version that'll be used in event payloads."
     )
+
+
+class ConfigCustomFieldBase(MetadataInputMixin, Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    slug: Slug
+    name: Name
+
+    # Custom fields are matched by slug, other resources by external_id.
+    @property
+    def external_id(self) -> str:
+        return self.slug
+
+
+class ConfigCustomFieldText(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.text]
+    properties: TextPropertiesInput
+
+
+class ConfigCustomFieldNumber(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.number]
+    properties: NumberPropertiesInput
+
+
+class ConfigCustomFieldDate(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.date]
+    properties: DatePropertiesInput
+
+
+class ConfigCustomFieldCheckbox(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CheckboxPropertiesInput
+
+
+class ConfigCustomFieldSelect(ConfigCustomFieldBase):
+    type: Literal[CustomFieldType.select]
+    properties: SelectPropertiesInput
+
+
+ConfigCustomField = Annotated[
+    ConfigCustomFieldText
+    | ConfigCustomFieldNumber
+    | ConfigCustomFieldDate
+    | ConfigCustomFieldCheckbox
+    | ConfigCustomFieldSelect,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomField"),
+]
 
 
 class ConfigSettingsPayments(Schema):
@@ -448,6 +538,18 @@ class Config(Schema):
             "omitted, are left untouched."
         ),
     )
+    custom_fields: list[ConfigCustomField] = Field(
+        default_factory=list,
+        max_length=MAXIMUM_CUSTOM_FIELDS,
+        description=(
+            "Custom fields to create or update, matched by `slug`. "
+            "A change creates a new version of the field. "
+            "Earlier versions keep the field as it was. "
+            "Omitted `metadata` is left untouched. "
+            "Changing a slug creates a new field. "
+            "All custom fields are left untouched when `custom_fields` is omitted."
+        ),
+    )
     webhooks: list[ConfigWebhookEndpoint] = Field(
         default_factory=list,
         max_length=MAXIMUM_WEBHOOK_ENDPOINTS,
@@ -505,6 +607,7 @@ class ConfigAction(StrEnum):
 
 
 class ConfigResource(StrEnum):
+    custom_field = "custom_field"
     meter = "meter"
     benefit = "benefit"
     product = "product"
@@ -513,7 +616,9 @@ class ConfigResource(StrEnum):
 
 class ConfigResult(Schema):
     resource: ConfigResource = Field(description="The type of resource.")
-    external_id: str = Field(description="The resource's `external_id`.")
+    external_id: str = Field(
+        description="The resource's `external_id`, or `slug` for a custom field."
+    )
     action: ConfigAction = Field(description="What applying the config does.")
 
 
@@ -756,6 +861,53 @@ ConfigProductPriceRead = Annotated[
 ]
 
 
+class _ConfigCustomFieldReadBase(_ConfigRead):
+    slug: str
+    name: str
+    metadata: MetadataOutputType
+
+
+class ConfigCustomFieldTextRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.text]
+    properties: CustomFieldTextProperties
+
+
+class ConfigCustomFieldNumberRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.number]
+    properties: CustomFieldNumberProperties
+
+
+class ConfigCustomFieldDateRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.date]
+    properties: CustomFieldDateProperties
+
+
+class ConfigCustomFieldCheckboxRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.checkbox]
+    properties: CustomFieldCheckboxProperties
+
+
+class ConfigCustomFieldSelectRead(_ConfigCustomFieldReadBase):
+    type: Literal[CustomFieldType.select]
+    properties: CustomFieldSelectProperties
+
+
+ConfigCustomFieldRead = Annotated[
+    ConfigCustomFieldTextRead
+    | ConfigCustomFieldNumberRead
+    | ConfigCustomFieldDateRead
+    | ConfigCustomFieldCheckboxRead
+    | ConfigCustomFieldSelectRead,
+    Discriminator("type"),
+    SetSchemaReference("ConfigCustomFieldRead"),
+]
+
+
+class ConfigProductCustomFieldRead(_ConfigRead):
+    field: str
+    required: bool
+
+
 class ConfigProductRead(_ConfigRead):
     external_id: str
     name: str
@@ -769,6 +921,7 @@ class ConfigProductRead(_ConfigRead):
     meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
+    custom_fields: list[ConfigProductCustomFieldRead]
     metadata: MetadataOutputType
     deprecated: Literal[True] | None = Field(
         description=(
@@ -790,6 +943,9 @@ class ConfigSettingsRead(_ConfigRead):
 class ConfigExportDocument(_ConfigRead):
     settings: ConfigSettingsRead
     meters: list[ConfigMeterRead]
+    custom_fields: list[ConfigCustomFieldRead] | None = Field(
+        description="None when the token can't read custom fields."
+    )
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]
 

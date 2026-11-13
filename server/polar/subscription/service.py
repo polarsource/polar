@@ -139,6 +139,7 @@ from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.redis import Redis
+from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -177,6 +178,16 @@ merchant winds down across several short jobs that each stay under the worker's
 
 
 class SubscriptionError(PolarError): ...
+
+
+class TrialAlreadyRedeemed(SubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("This customer has already redeemed a trial.", 409)
+
+
+class AlreadyActiveSubscription(SubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("The customer already has an active subscription.", 409)
 
 
 class NotARecurringProduct(SubscriptionError):
@@ -735,8 +746,10 @@ class SubscriptionService:
         auth_subject: AuthSubject[User | Organization],
         *,
         created_at: datetime | None = None,
+        allow_trial: bool = True,
     ) -> Subscription:
         errors: list[ValidationError] = []
+        is_trial = False
 
         product = await product_service.get(
             session, auth_subject, subscription_create.product_id
@@ -776,7 +789,14 @@ class SubscriptionService:
                     }
                 )
             else:
-                if any(not price.is_free for price in currency_prices):
+                is_trial = (
+                    allow_trial
+                    and any(not price.is_free for price in currency_prices)
+                    and product.trial_interval is not None
+                    and product.trial_interval_count is not None
+                    and not product.trial_payment_setup_required
+                )
+                if any(not price.is_free for price in currency_prices) and not is_trial:
                     errors.append(
                         {
                             "type": "value_error",
@@ -831,6 +851,20 @@ class SubscriptionService:
                 ]
             )
 
+        if (
+            is_trial
+            and product.organization.prevent_trial_abuse
+            and await trial_redemption_service.check_trial_already_redeemed(
+                session, product.organization, customer_email=customer.email
+            )
+        ):
+            raise TrialAlreadyRedeemed()
+
+        if is_trial and not product.organization.allow_multiple_subscriptions:
+            repository = SubscriptionRepository.from_session(session)
+            if await repository.list_billable_by_customer(customer.id):
+                raise AlreadyActiveSubscription()
+
         assert is_recurring_product(product)
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count
@@ -862,14 +896,25 @@ class SubscriptionService:
             )
 
         current_period_start = utc_now()
-        current_period_end = recurring_interval.get_next_period(
+        trial_end: datetime | None = None
+        if is_trial:
+            assert product.trial_interval is not None
+            assert product.trial_interval_count is not None
+            trial_end = product.trial_interval.get_end(
+                current_period_start, product.trial_interval_count
+            )
+        current_period_end = trial_end or recurring_interval.get_next_period(
             current_period_start, current_period_start.day, recurring_interval_count
         )
         anchor_day = current_period_start.day
 
         subscription = Subscription(
-            status=SubscriptionStatus.active,
+            status=SubscriptionStatus.trialing
+            if is_trial
+            else SubscriptionStatus.active,
             started_at=current_period_start,
+            trial_start=current_period_start if is_trial else None,
+            trial_end=trial_end,
             anchor_day=anchor_day,
             current_period_start=current_period_start,
             current_period_end=current_period_end,
@@ -888,12 +933,16 @@ class SubscriptionService:
             user_metadata=subscription_create.metadata,
             pending_update=None,
         )
-        subscription.initialize_meter_period(current_period_start)
+        subscription.initialize_meter_period(None if is_trial else current_period_start)
         if created_at is not None:
             subscription.created_at = created_at
 
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.create(subscription, flush=True)
+        if is_trial:
+            await trial_redemption_service.create_trial_redemption(
+                session, customer=customer, product=product
+            )
         await billing_interval_service.record_subscription(
             session, subscription, effective_at=current_period_start
         )

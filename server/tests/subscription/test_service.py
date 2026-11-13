@@ -103,6 +103,7 @@ from polar.subscription.schemas import (
 )
 from polar.subscription.service import (
     AboveMaximumSeats,
+    AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
     CannotPauseSubscription,
@@ -117,9 +118,12 @@ from polar.subscription.service import (
     SubscriptionMeterCycleLag,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
+    TrialAlreadyRedeemed,
 )
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
+from polar.trial_redemption.repository import TrialRedemptionRepository
+from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
@@ -330,6 +334,10 @@ class TestCreate:
         assert errors[0]["msg"] == "Product is not a recurring product."
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("trial_interval", "trial_interval_count", "trial_payment_setup_required"),
+        [(None, None, True), (None, None, False), (TrialInterval.day, 14, True)],
+    )
     async def test_product_not_free(
         self,
         save_fixture: SaveFixture,
@@ -338,7 +346,14 @@ class TestCreate:
         product: Product,
         customer: Customer,
         user_organization: UserOrganization,
+        trial_interval: TrialInterval | None,
+        trial_interval_count: int | None,
+        trial_payment_setup_required: bool,
     ) -> None:
+        product.trial_interval = trial_interval
+        product.trial_interval_count = trial_interval_count
+        product.trial_payment_setup_required = trial_payment_setup_required
+        await save_fixture(product)
         subscription_create = SubscriptionCreateCustomer(
             product_id=product.id,
             customer_id=customer.id,
@@ -356,6 +371,165 @@ class TestCreate:
             errors[0]["msg"]
             == "Product is not free. The customer should go through a checkout to create a paid subscription."
         )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("external_customer", [False, True])
+    async def test_valid_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        frozen_time: datetime,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        external_customer: bool,
+    ) -> None:
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        product.meter_interval = SubscriptionRecurringInterval.month
+        product.meter_interval_count = 1
+        await save_fixture(product)
+        customer.external_id = "trial-customer"
+        await save_fixture(customer)
+        subscription_create = (
+            SubscriptionCreateExternalCustomer(
+                product_id=product.id, external_customer_id=customer.external_id
+            )
+            if external_customer
+            else SubscriptionCreateCustomer(
+                product_id=product.id, customer_id=customer.id
+            )
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.product_id == product.id
+        assert subscription.customer_id == customer.id
+        assert subscription.prices == product.prices
+        assert subscription.amount == 1000
+        assert subscription.started_at == frozen_time
+        assert subscription.current_period_start == frozen_time
+        assert subscription.trial_start == frozen_time
+        assert subscription.trial_end == frozen_time + timedelta(days=14)
+        assert subscription.current_period_end == subscription.trial_end
+        assert subscription.current_meter_period_start is None
+        assert subscription.current_meter_period_end is None
+        assert subscription.payment_method_id is None
+        redemption = await TrialRedemptionRepository.from_session(
+            session
+        ).get_first_by_organization_and_hints(
+            product.organization_id, customer_email=customer.email, product=product.id
+        )
+        assert redemption is not None
+        assert redemption.customer_id == customer.id
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("prevent_trial_abuse", [False, True])
+    async def test_trial_already_redeemed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        prevent_trial_abuse: bool,
+    ) -> None:
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        product.organization.subscription_settings = {
+            **product.organization.subscription_settings,
+            "prevent_trial_abuse": prevent_trial_abuse,
+        }
+        await save_fixture(product)
+        await save_fixture(product.organization)
+        await trial_redemption_service.create_trial_redemption(
+            session, customer=customer
+        )
+        await session.flush()
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id, customer_id=customer.id
+        )
+
+        if prevent_trial_abuse:
+            with pytest.raises(TrialAlreadyRedeemed):
+                await subscription_service.create(
+                    session, subscription_create, auth_subject
+                )
+            enqueue_benefits_grants_mock.assert_not_called()
+        else:
+            subscription = await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+            assert subscription.status == SubscriptionStatus.trialing
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("existing_status", "allow_multiple_subscriptions"),
+        [
+            (SubscriptionStatus.active, False),
+            (SubscriptionStatus.trialing, False),
+            (SubscriptionStatus.canceled, False),
+            (SubscriptionStatus.active, True),
+        ],
+    )
+    async def test_trial_subscription_uniqueness(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        existing_status: SubscriptionStatus,
+        allow_multiple_subscriptions: bool,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": allow_multiple_subscriptions,
+        }
+        await save_fixture(organization)
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        await save_fixture(product)
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=existing_status,
+        )
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id, customer_id=customer.id
+        )
+
+        if not allow_multiple_subscriptions and SubscriptionStatus.is_billable(
+            existing_status
+        ):
+            with pytest.raises(AlreadyActiveSubscription):
+                await subscription_service.create(
+                    session, subscription_create, auth_subject
+                )
+        else:
+            subscription = await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+            assert subscription.status == SubscriptionStatus.trialing
 
     @pytest.mark.auth
     async def test_product_no_price_in_default_currency(

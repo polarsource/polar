@@ -47,11 +47,13 @@ from .schemas import (
     SubscriptionUpdate,
 )
 from .service import (
+    AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     InactiveSubscription,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
+    TrialAlreadyRedeemed,
 )
 from .service import subscription as subscription_service
 
@@ -347,6 +349,39 @@ async def create(
 
     This endpoint only allows to create subscription on free products.
     For paid products, use the checkout flow.
+
+    No initial order will be created and no confirmation email will be sent.
+    """
+    return await subscription_service.create(
+        session, subscription_create, auth_subject, allow_trial=False
+    )
+
+
+@router.post(
+    "/",
+    name="create",
+    response_model=SubscriptionSchema,
+    status_code=201,
+    summary="Create Subscription",
+    responses={
+        201: {"description": "Subscription created."},
+        409: {
+            "model": AlreadyActiveSubscription.schema() | TrialAlreadyRedeemed.schema()
+        },
+    },
+)
+@version(starting_from=V2027_01)
+async def create_v2027_01(
+    subscription_create: SubscriptionCreate,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """
+    Create a subscription programmatically.
+
+    Supports free products and paid products with a trial that does not require
+    upfront payment setup. Paid subscriptions start with the product's configured
+    trial period. For other paid products, use the checkout flow.
 
     No initial order will be created and no confirmation email will be sent.
     """

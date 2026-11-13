@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PublishedAt } from '../PublishedAt'
 import { VersionDiff } from './VersionDiff'
+import { VersionTitle } from './VersionTitle'
 
 type Organization = schemas['Organization']
 
@@ -87,9 +88,7 @@ export default function VersionPage({
               </Box>
             </Link>
             <Box alignItems="center" columnGap="l" minWidth={0}>
-              <Text variant="heading-xs" as="h1" truncate>
-                {catalog.name ?? 'Untitled'}
-              </Text>
+              <VersionTitle catalog={catalog} />
             </Box>
             <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
               <Text color="muted">{statusLabel[catalog.status]}</Text>

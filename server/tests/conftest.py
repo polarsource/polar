@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 os.environ["POLAR_ENV"] = "testing"
 
@@ -24,7 +25,19 @@ def pytest_configure(config: pytest.Config) -> None:
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    tinybird_files = set(
+        (Path(__file__).parent / "tinybird-files.txt").read_text().splitlines()
+    )
     for item in items:
         if "tinybird_workspace" in getattr(item, "fixturenames", ()):
             item.add_marker(pytest.mark.tinybird)
             item.add_marker(pytest.mark.xdist_group(name="tinybird"))
+        if (
+            os.environ.get("POLAR_TEST_XDIST") == "true"
+            and item.get_closest_marker("tinybird")
+            and item.nodeid.split("::", 1)[0] not in tinybird_files
+        ):
+            raise pytest.UsageError(
+                f"Add {item.nodeid.split('::', 1)[0]} to tests/tinybird-files.txt "
+                "so the Tinybird CI job runs it."
+            )

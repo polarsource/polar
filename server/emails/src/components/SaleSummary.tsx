@@ -69,12 +69,12 @@ export function SaleSummary({
         <Text variant="detail" weight="semibold" noMargin>
           Customer
         </Text>
-        {customer_name && (
-          <Text variant="caption" noMargin>
-            {customer_name}
-          </Text>
-        )}
-        {customer_email && customer_email !== customer_name && (
+        <Text variant="caption" noMargin>
+          {customer_name && customer_name !== customer_email
+            ? customer_name
+            : '—'}
+        </Text>
+        {customer_email && (
           <Text variant="caption" noMargin>
             {customer_email}
           </Text>

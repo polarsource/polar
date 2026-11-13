@@ -28,6 +28,7 @@ from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor, TaxBehavior, TaxProcessor
 from polar.kit.address import (
+    CITY_REQUIRED_COUNTRIES,
     POSTAL_CODE_REQUIRED_COUNTRIES,
     STATE_REQUIRED_COUNTRIES,
     Address,
@@ -110,7 +111,7 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
 # Payment methods for which the processor requires a full billing address
 # to process the payment, regardless of the customer's country.
 FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
-BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"ES", "PT"})
+BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"ES", "PT", "BR"})
 
 
 def _get_billing_address_field_mode(
@@ -504,7 +505,7 @@ class Checkout(
             "state": country in STATE_REQUIRED_COUNTRIES,
             "line1": require_billing_address,
             "line2": False,
-            "city": require_billing_address,
+            "city": require_billing_address or country in CITY_REQUIRED_COUNTRIES,
             "postal_code": require_billing_address
             or country in POSTAL_CODE_REQUIRED_COUNTRIES,
         }

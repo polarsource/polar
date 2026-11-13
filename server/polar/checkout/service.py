@@ -56,7 +56,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
-from polar.kit.address import AddressInput
+from polar.kit.address import STATE_REQUIRED_COUNTRIES, AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.currency import (
     get_presentment_currency,
@@ -633,7 +633,7 @@ class CheckoutService:
             (
                 customer_billing_address.has_address(),
                 customer_billing_address.has_state()
-                and customer_billing_address.country not in {"US", "CA"},
+                and customer_billing_address.country not in STATE_REQUIRED_COUNTRIES,
             )
         ):
             require_billing_address = True

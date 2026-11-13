@@ -6,6 +6,7 @@ import structlog
 from polar.config import settings
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
 from polar.kit.address import (
+    CITY_REQUIRED_COUNTRIES,
     POSTAL_CODE_REQUIRED_COUNTRIES,
     STATE_REQUIRED_COUNTRIES,
     Address,
@@ -125,6 +126,8 @@ class TaxCalculationService:
             and address.postal_code is None
         ):
             raise InvalidAddressError("Postal code is required.")
+        if address.country in CITY_REQUIRED_COUNTRIES and address.city is None:
+            raise InvalidAddressError("City is required.")
 
         for processor in settings.TAX_PROCESSORS:
             log.debug("Attempting tax calculation with processor", processor=processor)

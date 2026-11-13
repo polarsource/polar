@@ -587,9 +587,9 @@ const BaseCheckoutForm = ({
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 placeholder={
-                                  country === 'US'
-                                    ? t('checkout.form.billingAddress.state')
-                                    : t('checkout.form.billingAddress.province')
+                                  country === 'CA'
+                                    ? t('checkout.form.billingAddress.province')
+                                    : t('checkout.form.billingAddress.state')
                                 }
                                 fallbackPlaceholder={t(
                                   'checkout.form.billingAddress.stateProvince',

@@ -110,7 +110,7 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
 # Payment methods for which the processor requires a full billing address
 # to process the payment, regardless of the customer's country.
 FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
-BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"ES"})
+BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"ES", "PT"})
 
 
 def _get_billing_address_field_mode(

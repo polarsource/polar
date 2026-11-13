@@ -106,6 +106,16 @@ async def test_billing_address_fields(
                 "postal_code": BillingAddressFieldMode.required,
             },
         ),
+        (
+            "PT",
+            {
+                "state": BillingAddressFieldMode.optional,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.optional,
+                "postal_code": BillingAddressFieldMode.required,
+            },
+        ),
     ],
 )
 async def test_billing_address_fields_country_requirements(

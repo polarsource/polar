@@ -54,6 +54,7 @@ class TestCalculate:
             {"country": "US", "postal_code": "10001"},
             {"country": "CA"},
             {"country": "ES"},
+            {"country": "PT"},
         ],
     )
     async def test_incomplete_address(

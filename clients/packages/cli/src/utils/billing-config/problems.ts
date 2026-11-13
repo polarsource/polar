@@ -118,6 +118,7 @@ const describe = (issue: ConfigIssue): Problem => {
     case 'type_changed':
     case 'interval_changed':
     case 'invalid_prices':
+    case 'limit_exceeded':
     case 'meter_cycle_unused':
       return { ...base, title: message, label }
     default:

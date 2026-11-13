@@ -15,6 +15,7 @@ from polar.catalog.repository import (
     CatalogBenefitRepository,
     CatalogProductRepository,
 )
+from polar.catalog.service import CatalogMembers
 from polar.catalog.service import catalog as catalog_service
 from polar.event.system import SystemEvent
 from polar.event_type.repository import EventTypeRepository
@@ -456,6 +457,62 @@ def changed_intervals(changes: Sequence[ProductChange]) -> list[ConfigIssue]:
             issue = _changed_interval(change, product, label, names)
             if issue is not None:
                 issues.append(issue)
+    return issues
+
+
+async def exceeded_limits(
+    session: AsyncSession,
+    organization: Organization,
+    changes: ConfigChanges,
+    draft_rows: CatalogMembers,
+) -> list[ConfigIssue]:
+    """Every row applying creates counts toward the organization's limit: a new
+    product or benefit, and a changed one's new version, unless it updates its
+    draft row in place."""
+    benefits = [
+        change.index
+        for change in changes.benefits
+        if (change.existing is None or change.update_dict)
+        and change.config.external_id not in draft_rows.benefits
+    ]
+    products = [
+        change.index
+        for change in changes.products
+        if (change.existing is None or change.update_dict)
+        and change.config.external_id not in draft_rows.products
+    ]
+    issues: list[ConfigIssue] = []
+    for resource, created, count, limit in (
+        (
+            ConfigResource.benefit,
+            benefits,
+            await BenefitRepository.from_session(session).count_by_organization_id(
+                organization.id
+            ),
+            organization.benefits_limit,
+        ),
+        (
+            ConfigResource.product,
+            products,
+            await ProductRepository.from_session(session).count_by_organization_id(
+                organization.id
+            ),
+            organization.products_limit,
+        ),
+    ):
+        available = max(limit - count, 0)
+        if len(created) > available:
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.limit_exceeded,
+                    loc=_loc(resource, created[available]),
+                    msg=f"This {resource} goes over the organization's limit of "
+                    f"{limit} {resource}s. Past versions of changed {resource}s "
+                    "count toward the limit.",
+                    input=None,
+                )
+            )
     return issues
 
 

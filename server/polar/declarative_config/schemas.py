@@ -476,6 +476,7 @@ class ConfigIssueType(StrEnum):
     duplicate_external_id = "duplicate_external_id"
     interval_changed = "interval_changed"
     invalid_prices = "invalid_prices"
+    limit_exceeded = "limit_exceeded"
     meter_cycle_unused = "meter_cycle_unused"
     meter_locked = "meter_locked"
     missing_currency = "missing_currency"

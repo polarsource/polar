@@ -17095,6 +17095,7 @@ export interface components {
       | 'duplicate_external_id'
       | 'interval_changed'
       | 'invalid_prices'
+      | 'limit_exceeded'
       | 'meter_cycle_unused'
       | 'meter_locked'
       | 'missing_currency'
@@ -72728,6 +72729,7 @@ export const configIssueTypeValues: ReadonlyArray<
   'duplicate_external_id',
   'interval_changed',
   'invalid_prices',
+  'limit_exceeded',
   'meter_cycle_unused',
   'meter_locked',
   'missing_currency',

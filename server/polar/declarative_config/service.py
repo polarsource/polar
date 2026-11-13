@@ -414,10 +414,15 @@ class DeclarativeConfigService:
         if draft is not None and publish:
             await catalog_service.discard_draft(session, draft)
         draft_rows = (
-            await drafts.rows(session, draft, config)
+            await drafts.rows(session, draft, changes)
             if draft is not None and not publish
             else CatalogMembers()
         )
+        limit_issues = await validation.exceeded_limits(
+            session, organization, changes, draft_rows
+        )
+        if limit_issues:
+            raise ConfigInvalid(limit_issues)
         live = await catalog_service.get_or_create_live(session, organization)
         _, version_hash = await catalog_service.get_next_version_hash(
             session,
@@ -552,6 +557,17 @@ class DeclarativeConfigService:
         issues.extend(
             await catalogs.cascade_benefit_changes(
                 session, organization, changes, removed
+            )
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        issues.extend(
+            await validation.exceeded_limits(
+                session,
+                organization,
+                changes,
+                CatalogMembers()
+                if draft is None
+                else await drafts.rows(session, draft, changes),
             )
         )
         catalog: ConfigCatalogPlan | None = None
@@ -1055,9 +1071,7 @@ class DeclarativeConfigService:
             draft_product = draft_products.get(config.external_id)
             in_place = (
                 draft_product
-                if draft_product is not None
-                and (product is None or copy_on_write)
-                and drafts.keeps_intervals(change, draft_product, meter_ids)
+                if draft_product is not None and (product is None or copy_on_write)
                 else None
             )
             try:

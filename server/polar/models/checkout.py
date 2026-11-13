@@ -27,7 +27,12 @@ from polar.checkout.payment_methods import get_payment_method_types, get_payment
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import PaymentProcessor, TaxBehavior, TaxProcessor
-from polar.kit.address import Address, AddressType
+from polar.kit.address import (
+    POSTAL_CODE_REQUIRED_COUNTRIES,
+    STATE_REQUIRED_COUNTRIES,
+    Address,
+    AddressType,
+)
 from polar.kit.db.models import OrganizationCreatedAtIndexMixin, RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataColumn, MetadataMixin
@@ -105,6 +110,17 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
 # Payment methods for which the processor requires a full billing address
 # to process the payment, regardless of the customer's country.
 FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
+BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"ES"})
+
+
+def _get_billing_address_field_mode(
+    *, required: bool, displayed: bool
+) -> BillingAddressFieldMode:
+    if required:
+        return BillingAddressFieldMode.required
+    if displayed:
+        return BillingAddressFieldMode.optional
+    return BillingAddressFieldMode.disabled
 
 
 class Checkout(
@@ -471,47 +487,53 @@ class Checkout(
         )
 
     @property
-    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
+    def _billing_address_country(self) -> str | None:
         address = self.customer_billing_address
-        country = address.country if address else None
-        is_us = country == "US"
-        require_billing_address = self.is_billing_address_required or is_us
+        return address.country if address else None
+
+    @property
+    def _is_full_billing_address_required(self) -> bool:
+        return self.is_billing_address_required or self._billing_address_country == "US"
+
+    @property
+    def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
+        country = self._billing_address_country
+        require_billing_address = self._is_full_billing_address_required
         return {
             "country": True,
-            "state": country in {"US", "CA"},
+            "state": country in STATE_REQUIRED_COUNTRIES,
             "line1": require_billing_address,
             "line2": False,
             "city": require_billing_address,
-            "postal_code": require_billing_address,
+            "postal_code": require_billing_address
+            or country in POSTAL_CODE_REQUIRED_COUNTRIES,
         }
 
     @property
     def billing_address_fields(self) -> CheckoutBillingAddressFields:
-        address = self.customer_billing_address
-        country = address.country if address else None
-        is_us = country == "US"
-        require_billing_address = self.is_billing_address_required or is_us
+        country = self._billing_address_country
+        required_fields = self.customer_billing_address_fields
+        displayed = (
+            self._is_full_billing_address_required
+            or country in BILLING_ADDRESS_FORM_COUNTRIES
+        )
         return {
             "country": BillingAddressFieldMode.required,
-            "state": BillingAddressFieldMode.required
-            if country in {"US", "CA"}
-            else (
-                BillingAddressFieldMode.optional
-                if require_billing_address
-                else BillingAddressFieldMode.disabled
+            "state": _get_billing_address_field_mode(
+                required=required_fields["state"], displayed=displayed
             ),
-            "line1": BillingAddressFieldMode.required
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
-            "line2": BillingAddressFieldMode.optional
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
-            "city": BillingAddressFieldMode.required
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
-            "postal_code": BillingAddressFieldMode.required
-            if require_billing_address
-            else BillingAddressFieldMode.disabled,
+            "line1": _get_billing_address_field_mode(
+                required=required_fields["line1"], displayed=displayed
+            ),
+            "line2": _get_billing_address_field_mode(
+                required=False, displayed=displayed
+            ),
+            "city": _get_billing_address_field_mode(
+                required=required_fields["city"], displayed=displayed
+            ),
+            "postal_code": _get_billing_address_field_mode(
+                required=required_fields["postal_code"], displayed=displayed
+            ),
         }
 
     @property

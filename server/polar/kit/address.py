@@ -140,6 +140,10 @@ class CASubdivision(StrEnum):
     CA_YT = "CA-YT"
 
 
+STATE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "CA"})
+POSTAL_CODE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "ES"})
+
+
 class AddressDict(TypedDict):
     line1: NotRequired[str]
     line2: NotRequired[str]

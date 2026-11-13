@@ -69,7 +69,7 @@ export function SaleSummary({
         <Text variant="detail" weight="semibold" noMargin>
           Customer
         </Text>
-        {customer_name && (
+        {customer_name && customer_name !== customer_email && (
           <Text variant="caption" noMargin>
             {customer_name}
           </Text>

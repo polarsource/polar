@@ -155,3 +155,15 @@ export const usePublishCatalog = () =>
       }
     },
   })
+
+export const useUpdateCatalog = (id: string) =>
+  useMutation({
+    mutationFn: (body: schemas['CatalogUpdate']) =>
+      api.PATCH('/v1/catalogs/{id}', { params: { path: { id } }, body }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      getQueryClient().invalidateQueries({ queryKey: ['catalogs'] })
+    },
+  })

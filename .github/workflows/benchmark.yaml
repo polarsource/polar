@@ -71,8 +71,8 @@ env:
 
 # Instruction counts, on the runners the rest of CI uses, for the pure CPU benchmarks: wall time
 # would add noise, not information. Real time, on CodSpeed's dedicated ARM64 machines, for the
-# Redis benchmarks, whose cost is in another process, and the warm reads, which a few simulated
-# calls would measure cold.
+# Redis benchmarks, whose cost is in another process, the warm reads, which a few simulated
+# calls would measure cold, and the flush, whose cost is the wait for Polar.
 jobs:
   changes:
     name: Detect changes
@@ -165,7 +165,7 @@ jobs:
         with:
           mode: simulation
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts
+          run: pnpm vitest bench --run --exclude src/metering/flush.bench.ts --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts
 
   python-simulation:
     name: Python SDK (simulation)
@@ -250,7 +250,7 @@ jobs:
         with:
           mode: walltime
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts
+          run: pnpm vitest bench --run src/metering/flush.bench.ts src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts
 
       - name: Run Python benchmarks
         uses: CodSpeedHQ/action@v5

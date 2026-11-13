@@ -10,8 +10,8 @@ from anyio import from_thread, to_thread
 from pytest_codspeed import BenchmarkFixture
 
 from polar.base import parse_response_json
-from polar.v2027_01 import PolarAsync
-from polar.v2027_01.outputs import CustomerIndividual, ListResourceCustomer
+from polar.{{ version }} import PolarAsync
+from polar.{{ version }}.outputs import CustomerIndividual, ListResourceCustomer
 
 pytestmark = pytest.mark.benchmark
 

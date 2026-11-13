@@ -181,20 +181,20 @@ class PythonEmitter(EmitterBase):
             BENCHMARK_DATA_DIRECTORY / "outpost.json",
             root_directory / "tests" / "benchmarks" / "benchmark.json",
         )
-        if any(api.version == "2027-01" for api in self.ir.versions):
-            benchmarks_dir = root_directory / "tests" / "benchmarks"
-            self.copy_file(
-                BENCHMARK_DATA_DIRECTORY / "customers.json",
-                benchmarks_dir / "customers.json",
-            )
-            self.copy_file(
-                BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
-                benchmarks_dir / "customer-server.mjs",
-            )
-            self.copy_file(
-                self.templates_dir / "tests" / "benchmarks" / "test_requests.py",
-                benchmarks_dir / "test_requests.py",
-            )
+        benchmarks_dir = root_directory / "tests" / "benchmarks"
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customers.json",
+            benchmarks_dir / "customers.json",
+        )
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
+            benchmarks_dir / "customer-server.mjs",
+        )
+        self.render_file(
+            "tests/benchmarks/test_requests.py",
+            benchmarks_dir / "test_requests.py",
+            self.get_version_context(self.ir.versions[-1]),
+        )
 
         for api in self.ir.versions:
             version_dir = root_directory / "polar" / self.get_version_string(api)

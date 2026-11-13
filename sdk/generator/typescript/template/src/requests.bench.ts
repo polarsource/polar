@@ -5,9 +5,9 @@ import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { bench, describe } from "vitest";
 
-import type { ListResourceCustomer } from "./2027-01/models";
+import type { ListResourceCustomer } from "./{{ version }}/models";
 
-import { createPolar, createPolarCore } from "./2027-01";
+import { createPolar, createPolarCore } from "./{{ version }}";
 import data from "./customers.benchmark.json";
 
 const accessToken = "benchmark";

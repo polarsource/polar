@@ -132,19 +132,19 @@ class TypeScriptEmitter(EmitterBase):
             BENCHMARK_DATA_DIRECTORY / "outpost.json",
             src_dir / "outpost" / "benchmark.json",
         )
-        if any(api.version == "2027-01" for api in self.ir.versions):
-            self.copy_file(
-                BENCHMARK_DATA_DIRECTORY / "customers.json",
-                src_dir / "customers.benchmark.json",
-            )
-            self.copy_file(
-                BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
-                src_dir / "customer-server.mjs",
-            )
-            self.copy_file(
-                self.templates_dir / "src" / "requests.bench.ts",
-                src_dir / "requests.bench.ts",
-            )
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customers.json",
+            src_dir / "customers.benchmark.json",
+        )
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
+            src_dir / "customer-server.mjs",
+        )
+        self.render_file(
+            "src/requests.bench.ts",
+            src_dir / "requests.bench.ts",
+            self.get_version_context(self.ir.versions[-1]),
+        )
 
         for api in self.ir.versions:
             version_dir = src_dir / self.get_version_string(api)

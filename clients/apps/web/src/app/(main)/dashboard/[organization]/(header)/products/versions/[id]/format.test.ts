@@ -1,3 +1,4 @@
+import { schemas } from '@polar-sh/client'
 import { expect, it } from 'vitest'
 import { meterFields, valueFormatter } from './format'
 
@@ -18,6 +19,24 @@ it('lists every tier of a tiered price', () => {
   ).toBe(
     'Graduated: $10.00 / seat up to 10, then $8.00 / seat, minimum 3 seats',
   )
+})
+
+it('prices a token meter per million tokens', () => {
+  const format = valueFormatter([
+    {
+      benefits: [],
+      meters: [{ external_id: 'tokens', name: 'LLM usage', unit: 'token' }],
+    } as unknown as schemas['ConfigExportDocument'],
+  ])
+  expect(
+    format('prices', {
+      amount_type: 'metered_unit',
+      price_currency: 'usd',
+      meter: 'tokens',
+      unit_amount: '0.000015',
+      cap_amount: null,
+    }),
+  ).toBe('$0.15 / 1M tokens (LLM usage)')
 })
 
 it('reads a meter filter and aggregation as one line each', () => {

@@ -2962,7 +2962,9 @@ class CheckoutService:
         await subscription_service.validate_meter_versions(
             session,
             checkout.organization.id,
-            checkout.product.prices,
+            PriceSet.from_prices(
+                checkout.prices[checkout.product.id], checkout.currency
+            ).prices,
             customer_id=checkout.customer_id,
             customer_email=checkout.customer_email,
             exclude_subscription_id=checkout.subscription_id,

@@ -5,7 +5,16 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select
+from sqlalchemy import (
+    ColumnElement,
+    CompoundSelect,
+    Select,
+    and_,
+    case,
+    func,
+    or_,
+    select,
+)
 from sqlalchemy.orm import aliased, contains_eager, undefer
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
@@ -418,7 +427,8 @@ class SubscriptionRepository(
     ) -> Sequence[str]:
         """`external_id`s of the meters among `meter_ids` that another billable
         subscription of the customer, or one they hold a claimed seat on, bills
-        in a different version."""
+        in a different version. The claimed seat holders of
+        `exclude_subscription_id` count as the customer too."""
         if not meter_ids:
             return []
         new_meter = aliased(Meter)
@@ -453,6 +463,7 @@ class SubscriptionRepository(
             )
             .distinct()
         )
+        customers: Select[UUID] | CompoundSelect[UUID]
         if customer_id is not None:
             customers = select(Customer.id).where(Customer.id == customer_id)
         elif customer_email is not None:
@@ -463,6 +474,13 @@ class SubscriptionRepository(
             )
         else:
             return []
+        if exclude_subscription_id is not None:
+            customers = customers.union(
+                select(CustomerSeat.customer_id).where(
+                    CustomerSeat.subscription_id == exclude_subscription_id,
+                    CustomerSeat.status == SeatStatus.claimed,
+                )
+            )
         claimed_seat_subscriptions = select(CustomerSeat.subscription_id).where(
             CustomerSeat.customer_id.in_(customers),
             CustomerSeat.status == SeatStatus.claimed,

@@ -6408,6 +6408,56 @@ class TestUpdateProduct:
                     session, ctx, subscription, product_id=current_product.id
                 )
 
+    async def test_seat_holder_bills_another_meter_version(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="tool-calls",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        previous_product, current_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        await create_active_subscription(
+            save_fixture, product=previous_product, customer=customer
+        )
+        team = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=team,
+            status=SeatStatus.claimed,
+            customer=customer,
+            claimed_at=utc_now(),
+        )
+
+        with pytest.raises(MeterVersionConflict):
+            async with SubscriptionUpdateContext(
+                session, team, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, team, product_id=current_product.id
+                )
+
     async def test_other_subscription_bills_another_meter_version(
         self,
         session: AsyncSession,

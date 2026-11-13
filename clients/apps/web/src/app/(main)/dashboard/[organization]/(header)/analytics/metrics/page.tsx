@@ -54,18 +54,20 @@ export default async function Page(props: {
   )
 
   const parsedSearchParams = loadMetricsSearchParams(searchParams)
-  const hasInvalidParam = (
-    ['start_date', 'end_date', 'interval'] as const
-  ).some(
-    (key) =>
-      searchParams[key] !== undefined && parsedSearchParams[key] === null,
-  )
 
   const interval = parsedSearchParams.interval ?? 'day'
-  const startDate = parsedSearchParams.start_date ?? defaultStartDate
-  const endDate = parsedSearchParams.end_date
+  const requestedStartDate = parsedSearchParams.start_date ?? defaultStartDate
+  const requestedEndDate = parsedSearchParams.end_date
     ? endOfDay(parsedSearchParams.end_date)
     : defaultEndDate
+  const hasInvalidDateRange =
+    (searchParams.start_date !== undefined &&
+      parsedSearchParams.start_date === null) ||
+    (searchParams.end_date !== undefined &&
+      parsedSearchParams.end_date === null) ||
+    requestedStartDate > requestedEndDate
+  const startDate = hasInvalidDateRange ? defaultStartDate : requestedStartDate
+  const endDate = hasInvalidDateRange ? defaultEndDate : requestedEndDate
 
   const [limits, recurringProducts] = await Promise.all([
     unwrap(api.GET('/v1/metrics/limits')),
@@ -122,7 +124,15 @@ export default async function Page(props: {
 
   const validInterval = findValidInterval(startDate, endDate, interval)
 
-  if (hasInvalidParam || startDate < minDate || validInterval !== interval) {
+  const hasInvalidInterval =
+    searchParams.interval !== undefined && parsedSearchParams.interval === null
+
+  if (
+    hasInvalidDateRange ||
+    hasInvalidInterval ||
+    startDate < minDate ||
+    validInterval !== interval
+  ) {
     urlSearchParams.set('start_date', toISODate(max([minDate, startDate])))
     urlSearchParams.set('end_date', toISODate(endDate))
     urlSearchParams.set('interval', validInterval)

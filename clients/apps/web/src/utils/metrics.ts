@@ -31,16 +31,19 @@ export const fromISODate = (date: string) =>
 
 export const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
 
+const parseStrictISODate = (value: string): Date | null => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = fromISODate(value)
+  return isValid(date) ? date : null
+}
+
 export const parseAsISODate = createParser({
-  parse: (value: string) => {
-    const date = fromISODate(value)
-    return isValid(date) ? date : null
-  },
+  parse: parseStrictISODate,
   serialize: (date: Date) => toISODate(date),
 })
 
 export const parseAsISODateString = createParser({
-  parse: (value: string) => (isValid(fromISODate(value)) ? value : null),
+  parse: (value: string) => (parseStrictISODate(value) ? value : null),
   serialize: (value: string) => value,
 })
 

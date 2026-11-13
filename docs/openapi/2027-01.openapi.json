@@ -1016,7 +1016,7 @@
           "public"
         ],
         "summary": "Create Subscription",
-        "description": "Create a subscription programmatically.\n\nThis endpoint only allows to create subscription on free products.\nFor paid products, use the checkout flow.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
+        "description": "Create a subscription programmatically.\n\nSupports free products and paid products with a trial that does not require\nupfront payment setup. Paid subscriptions start with the product's configured\ntrial period. For other paid products, use the checkout flow.\n\nNo initial order will be created and no confirmation email will be sent.\n\n**Scopes**: `subscriptions:write`",
         "operationId": "subscriptions:create",
         "security": [
           {
@@ -78947,7 +78947,7 @@
             "type": "string",
             "format": "uuid4",
             "title": "Product Id",
-            "description": "The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.",
+            "description": "The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.",
             "examples": [
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
             ]
@@ -78961,7 +78961,7 @@
                 "type": "null"
               }
             ],
-            "description": "The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."
+            "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
           },
           "customer_id": {
             "type": "string",
@@ -79015,7 +79015,7 @@
             "type": "string",
             "format": "uuid4",
             "title": "Product Id",
-            "description": "The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.",
+            "description": "The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.",
             "examples": [
               "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
             ]
@@ -79029,7 +79029,7 @@
                 "type": "null"
               }
             ],
-            "description": "The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."
+            "description": "The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."
           },
           "external_customer_id": {
             "type": "string",

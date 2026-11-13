@@ -737,6 +737,7 @@ class SubscriptionService:
         created_at: datetime | None = None,
     ) -> Subscription:
         errors: list[ValidationError] = []
+        is_trial = False
 
         product = await product_service.get(
             session, auth_subject, subscription_create.product_id
@@ -776,7 +777,13 @@ class SubscriptionService:
                     }
                 )
             else:
-                if any(not price.is_free for price in currency_prices):
+                is_trial = (
+                    any(not price.is_free for price in currency_prices)
+                    and product.trial_interval is not None
+                    and product.trial_interval_count is not None
+                    and not product.trial_payment_setup_required
+                )
+                if any(not price.is_free for price in currency_prices) and not is_trial:
                     errors.append(
                         {
                             "type": "value_error",
@@ -862,14 +869,25 @@ class SubscriptionService:
             )
 
         current_period_start = utc_now()
-        current_period_end = recurring_interval.get_next_period(
+        trial_end: datetime | None = None
+        if is_trial:
+            assert product.trial_interval is not None
+            assert product.trial_interval_count is not None
+            trial_end = product.trial_interval.get_end(
+                current_period_start, product.trial_interval_count
+            )
+        current_period_end = trial_end or recurring_interval.get_next_period(
             current_period_start, current_period_start.day, recurring_interval_count
         )
         anchor_day = current_period_start.day
 
         subscription = Subscription(
-            status=SubscriptionStatus.active,
+            status=SubscriptionStatus.trialing
+            if is_trial
+            else SubscriptionStatus.active,
             started_at=current_period_start,
+            trial_start=current_period_start if is_trial else None,
+            trial_end=trial_end,
             anchor_day=anchor_day,
             current_period_start=current_period_start,
             current_period_end=current_period_end,
@@ -888,7 +906,7 @@ class SubscriptionService:
             user_metadata=subscription_create.metadata,
             pending_update=None,
         )
-        subscription.initialize_meter_period(current_period_start)
+        subscription.initialize_meter_period(None if is_trial else current_period_start)
         if created_at is not None:
             subscription.created_at = created_at
 

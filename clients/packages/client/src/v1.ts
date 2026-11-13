@@ -1745,8 +1745,9 @@ export interface paths {
      * Create Subscription
      * @description Create a subscription programmatically.
      *
-     *     This endpoint only allows to create subscription on free products.
-     *     For paid products, use the checkout flow.
+     *     Supports free products and paid products with a trial that does not require
+     *     upfront payment setup. Paid subscriptions start with the product's configured
+     *     trial period. For other paid products, use the checkout flow.
      *
      *     No initial order will be created and no confirmation email will be sent.
      *
@@ -38352,11 +38353,11 @@ export interface components {
       /**
        * Product Id
        * Format: uuid4
-       * @description The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+       * @description The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
-      /** @description The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used. */
+      /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * Customer Id
@@ -38391,11 +38392,11 @@ export interface components {
       /**
        * Product Id
        * Format: uuid4
-       * @description The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+       * @description The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
        * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
        */
       product_id: string
-      /** @description The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used. */
+      /** @description The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used. */
       currency?: components['schemas']['PresentmentCurrency'] | null
       /**
        * External Customer Id

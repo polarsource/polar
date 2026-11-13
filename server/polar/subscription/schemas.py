@@ -311,7 +311,8 @@ class SubscriptionCreateBase(MetadataInputMixin, Schema):
     product_id: UUID4 = Field(
         description=(
             "The ID of the recurring product to subscribe to. "
-            "Must be a free product, otherwise the customer should go through a checkout flow."
+            "Must be a free product or have a trial with no upfront payment setup required. "
+            "Otherwise, the customer should go through a checkout flow."
         ),
         examples=[PRODUCT_ID_EXAMPLE],
     )
@@ -321,7 +322,8 @@ class SubscriptionCreateBase(MetadataInputMixin, Schema):
         Field(
             description=(
                 "The currency of the subscription. "
-                "The product must have a free price in this currency. "
+                "The product must have a free price in this currency or have a trial "
+                "with no upfront payment setup required. "
                 "If not set, the organization's default currency is used."
             ),
         ),

@@ -330,6 +330,10 @@ class TestCreate:
         assert errors[0]["msg"] == "Product is not a recurring product."
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("trial_interval", "trial_interval_count", "trial_payment_setup_required"),
+        [(None, None, True), (None, None, False), (TrialInterval.day, 14, True)],
+    )
     async def test_product_not_free(
         self,
         save_fixture: SaveFixture,
@@ -338,7 +342,14 @@ class TestCreate:
         product: Product,
         customer: Customer,
         user_organization: UserOrganization,
+        trial_interval: TrialInterval | None,
+        trial_interval_count: int | None,
+        trial_payment_setup_required: bool,
     ) -> None:
+        product.trial_interval = trial_interval
+        product.trial_interval_count = trial_interval_count
+        product.trial_payment_setup_required = trial_payment_setup_required
+        await save_fixture(product)
         subscription_create = SubscriptionCreateCustomer(
             product_id=product.id,
             customer_id=customer.id,
@@ -356,6 +367,59 @@ class TestCreate:
             errors[0]["msg"]
             == "Product is not free. The customer should go through a checkout to create a paid subscription."
         )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("external_customer", [False, True])
+    async def test_valid_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        frozen_time: datetime,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        external_customer: bool,
+    ) -> None:
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        product.meter_interval = SubscriptionRecurringInterval.month
+        product.meter_interval_count = 1
+        await save_fixture(product)
+        customer.external_id = "trial-customer"
+        await save_fixture(customer)
+        subscription_create = (
+            SubscriptionCreateExternalCustomer(
+                product_id=product.id, external_customer_id=customer.external_id
+            )
+            if external_customer
+            else SubscriptionCreateCustomer(
+                product_id=product.id, customer_id=customer.id
+            )
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.product_id == product.id
+        assert subscription.customer_id == customer.id
+        assert subscription.prices == product.prices
+        assert subscription.amount == 1000
+        assert subscription.started_at == frozen_time
+        assert subscription.current_period_start == frozen_time
+        assert subscription.trial_start == frozen_time
+        assert subscription.trial_end == frozen_time + timedelta(days=14)
+        assert subscription.current_period_end == subscription.trial_end
+        assert subscription.current_meter_period_start is None
+        assert subscription.current_meter_period_end is None
+        assert subscription.payment_method_id is None
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
 
     @pytest.mark.auth
     async def test_product_no_price_in_default_currency(

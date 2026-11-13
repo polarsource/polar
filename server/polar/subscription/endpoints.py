@@ -345,8 +345,9 @@ async def create(
     """
     Create a subscription programmatically.
 
-    This endpoint only allows to create subscription on free products.
-    For paid products, use the checkout flow.
+    Supports free products and paid products with a trial that does not require
+    upfront payment setup. Paid subscriptions start with the product's configured
+    trial period. For other paid products, use the checkout flow.
 
     No initial order will be created and no confirmation email will be sent.
     """

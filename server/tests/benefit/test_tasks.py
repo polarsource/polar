@@ -3,6 +3,7 @@ import uuid
 import pytest
 from dramatiq import Message, Retry, get_broker
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import BenefitGrantService
@@ -20,12 +21,23 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     benefit_update,
 )
 from polar.kit.utils import utc_now
-from polar.models import Benefit, BenefitGrant, Customer, Member, Subscription
+from polar.models import (
+    Benefit,
+    BenefitGrant,
+    Customer,
+    Member,
+    Organization,
+    Subscription,
+)
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit_grant
+from tests.fixtures.random_objects import (
+    create_benefit_grant,
+    create_order,
+    create_product_fixed_and_seat,
+)
 
 
 @pytest.mark.anyio
@@ -71,6 +83,36 @@ async def test_manual_benefit_task_accepts_serialized_ids(
 
 @pytest.mark.anyio
 class TestBenefitGrant:
+    async def test_grant_and_revoke_for_order_without_purchased_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+        benefit_organization: Benefit,
+    ) -> None:
+        product = await create_product_fixed_and_seat(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        order = await create_order(save_fixture, customer=customer, product=product)
+
+        await benefit_grant(customer.id, benefit_organization.id, order_id=order.id)
+
+        grant = await session.scalar(
+            select(BenefitGrant).where(BenefitGrant.order_id == order.id)
+        )
+        assert grant is not None
+        assert grant.is_granted
+        assert grant.member_id == member_owner.id
+        grant_id = grant.id
+
+        await benefit_revoke(customer.id, benefit_organization.id, order_id=order.id)
+
+        revoked_grant = await session.get(BenefitGrant, grant_id)
+        assert revoked_grant is not None
+        assert revoked_grant.is_revoked
+
     async def test_not_existing_customer(
         self,
         subscription: Subscription,

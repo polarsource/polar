@@ -164,9 +164,10 @@ async def resolve_member(
             raise MemberNotFound(member_id)
         return member
 
-    purchase = selector.get("subscription") or selector.get("order")
-    product = purchase.product if purchase is not None else None
-    if product is not None and product.has_seat_based_price:
+    if subscription := selector.get("subscription"):
+        if subscription.product.has_seat_based_price:
+            raise MemberIdRequired()
+    elif (order := selector.get("order")) and order.seats is not None:
         raise MemberIdRequired()
 
     member = await _resolve_owner_member(

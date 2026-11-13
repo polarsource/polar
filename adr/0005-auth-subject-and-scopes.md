@@ -1,15 +1,12 @@
----
-title: "ADR-0005: Authorization is AuthSubject plus scopes, with per-module authenticators"
-description: "Every request resolves to a typed AuthSubject; endpoints opt into protection via an authenticator; roles add a second per-org layer."
----
+# ADR-0005: Authorization is AuthSubject plus scopes, with per-module authenticators
 
-<Info>
+Every request resolves to a typed AuthSubject; endpoints opt into protection via an authenticator; roles add a second per-org layer.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-07-02
-</Info>
 
 ## Context
 
@@ -22,7 +19,7 @@ across all of them, with no ambient trust and no "forgot to check the token type
 Two independent layers.
 
 **1. Who is calling, and with what scopes.** Every request resolves to a typed
-`AuthSubject[T]`: a User, Organization, Customer, Member, Agent ([ADR-0014](/engineering/decisions/0014-agent-auth-subject)), or Anonymous. An endpoint protects itself
+`AuthSubject[T]`: a User, Organization, Customer, Member, Agent ([ADR-0014](0014-agent-auth-subject.md)), or Anonymous. An endpoint protects itself
 by depending on a per-module `Authenticator` (defined in that module's `auth.py`), which fixes
 the `allowed_subjects` it accepts and the `required_scopes` it needs. Rules of thumb:
 
@@ -53,4 +50,4 @@ organization. This layer is separate from scopes and is combined with layer 1 at
 ## References
 
 - `server/polar/auth/` (`models.py`, `dependencies.py`, `scope.py`, `permission.py`); per-module `auth.py`.
-- [RBAC design document](/engineering/design-documents/rbac).
+- [RBAC design document](../handbook/engineering/design-documents/rbac.mdx).

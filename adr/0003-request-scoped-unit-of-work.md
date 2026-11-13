@@ -1,15 +1,12 @@
----
-title: "ADR-0003: One request or task is one transaction"
-description: "The session commits once at the boundary; application code never calls session.commit()."
----
+# ADR-0003: One request or task is one transaction
 
-<Info>
+The session commits once at the boundary; application code never calls session.commit().
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-07-02
-</Info>
 
 ## Context
 

@@ -1,19 +1,16 @@
----
-title: "ADR-0001: Record architecture decisions"
-description: "We keep short, durable ADRs for significant, cross-cutting decisions."
----
+# ADR-0001: Record architecture decisions
 
-<Info>
+We keep short, durable ADRs for significant, cross-cutting decisions.
+
 **Status**: Accepted
 
 **Area**: Cross-cutting
 
 **Date**: 2026-07-02
-</Info>
 
 ## Context
 
-We write [design documents](/engineering/design-documents/index),
+We write [design documents](../handbook/engineering/design-documents/index.mdx),
 and those are useful to show how a feature will work.
 We have some rules in `AGENTS.md` files and lint scripts.
 But most of the conventions in the code are not written.
@@ -26,8 +23,8 @@ ships. We need a home for short, durable *decision* records.
 ## Decision
 
 We record conventions or hard-to-reverse decisions as **ADRs** under
-`handbook/engineering/decisions/`, one sequentially numbered file each, from the
-[template](/engineering/decisions/template). One numbered sequence covers the whole
+`adr/`, one sequentially numbered file each, from the
+[template](template.md). One numbered sequence covers the whole
 monorepo, and the **Area** field scopes each ADR (Backend, Frontend, Infra, or Cross-cutting).
 
 ## Consequences
@@ -47,5 +44,5 @@ monorepo, and the **Area** field scopes each ADR (Backend, Frontend, Infra, or C
 
 ## References
 
-- [ADR index and lifecycle](/engineering/decisions/index)
-- [Design documents](/engineering/design-documents/index)
+- [ADR index and lifecycle](README.md)
+- [Design documents](../handbook/engineering/design-documents/index.mdx)

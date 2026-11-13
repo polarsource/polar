@@ -34,6 +34,7 @@ pub enum IngestError {
     EventTypeUnavailable,
     Database(sqlx::Error),
     Interrupted(tokio::task::JoinError),
+    TimedOut,
 }
 
 impl From<sqlx::Error> for IngestError {
@@ -64,6 +65,11 @@ impl IntoResponse for IngestError {
                 tracing::error!("event type could not be created");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
+            Self::TimedOut => error_response(
+                StatusCode::GATEWAY_TIMEOUT,
+                "IngestTimedOut",
+                "Storing the events took too long. None of them were stored.",
+            ),
             Self::Interrupted(error) => {
                 tracing::error!(%error, "event ingestion task failed");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()

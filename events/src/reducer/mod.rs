@@ -1,4 +1,5 @@
 mod cache;
+mod closed_buckets;
 mod filter;
 mod redis_store;
 
@@ -12,12 +13,14 @@ use uuid::Uuid;
 
 use self::{
     cache::active_reducers,
+    closed_buckets::add_to_closed_buckets,
     filter::{Aggregation, Filter, unix_seconds},
     redis_store::{add_to_buckets, bucket_key},
 };
 use crate::{
     event::{CustomerReference, EventCreate},
     jobs::Job,
+    outpost::ReducerBucketChange,
 };
 
 const BUCKET_SIZE_SECONDS: i64 = 5 * 60;
@@ -37,11 +40,13 @@ struct BucketId<'a> {
     external_customer_id: Option<&'a str>,
 }
 
-type Contributions<'a> = BTreeMap<BucketId<'a>, Vec<f64>>;
+type TimedValues = Vec<(DateTime<Utc>, f64)>;
+type Contributions<'a> = BTreeMap<BucketId<'a>, TimedValues>;
 
 pub struct Rollup {
     pub bucket_count: usize,
     pub sync_jobs: Vec<Job>,
+    pub outpost_changes: Vec<ReducerBucketChange>,
 }
 
 pub async fn rollup(
@@ -58,6 +63,18 @@ pub async fn rollup(
 
     let current_bucket_start = bucket_start(now.timestamp());
     let oldest_active_bucket_start = current_bucket_start - BUCKET_SIZE_SECONDS;
+    let closed = Vec::from_iter(
+        contributions
+            .iter()
+            .filter(|(bucket, _)| bucket.start < current_bucket_start),
+    );
+    let outpost_changes = Vec::from_iter(closed.iter().map(|(bucket, _)| ReducerBucketChange {
+        reducer_id: reducers[bucket.reducer].id,
+        customer_id: bucket.customer_id,
+        external_customer_id: bucket.external_customer_id.map(str::to_owned),
+    }));
+    add_to_closed_buckets(connection, organization_id, &reducers, closed).await?;
+
     let active = Vec::from_iter(
         contributions
             .iter()
@@ -81,9 +98,6 @@ pub async fn rollup(
         }
     }
 
-    // TODO: contributions to buckets before `current_bucket_start` must also be written to
-    // `reducer_buckets`, as `ReducerService._add_to_closed_buckets` does.
-
     let sync_jobs = Vec::from_iter(
         contributions
             .keys()
@@ -103,6 +117,7 @@ pub async fn rollup(
     Ok(Rollup {
         bucket_count: contributions.len(),
         sync_jobs,
+        outpost_changes,
     })
 }
 
@@ -110,9 +125,13 @@ fn bucket_start(unix_seconds: i64) -> i64 {
     unix_seconds - unix_seconds.rem_euclid(BUCKET_SIZE_SECONDS)
 }
 
-fn bucket_start_isoformat(start: i64) -> String {
+fn bucket_start_datetime(start: i64) -> DateTime<Utc> {
     DateTime::from_timestamp(start, 0)
         .expect("bucket starts come from timestamps chrono already represents")
+}
+
+fn bucket_start_isoformat(start: i64) -> String {
+    bucket_start_datetime(start)
         .format("%Y-%m-%dT%H:%M:%S+00:00")
         .to_string()
 }
@@ -143,7 +162,7 @@ fn reduce_events<'a>(reducers: &[Reducer], events: &[&'a EventCreate]) -> Contri
                     external_customer_id,
                 })
                 .or_default()
-                .push(value);
+                .push((event.timestamp, value));
         }
     }
     contributions
@@ -306,11 +325,10 @@ mod tests {
         ];
 
         let contributions = reduce_events(&reducers, &[&event, &event, &other_name, &later]);
-        let summary = Vec::from_iter(
-            contributions
-                .iter()
-                .map(|(bucket, values)| (bucket.reducer, bucket.start, values.clone())),
-        );
+        let summary = Vec::from_iter(contributions.iter().map(|(bucket, values)| {
+            let values = Vec::from_iter(values.iter().map(|(_, value)| *value));
+            (bucket.reducer, bucket.start, values)
+        }));
 
         assert_eq!(
             summary,
@@ -348,8 +366,9 @@ mod tests {
                 .iter()
                 .map(|bucket| bucket_key(reducers[bucket.reducer].id, bucket)),
         );
-        let first = vec![3.0, 1.5];
-        let second = vec![2.0];
+        let now = Utc::now();
+        let first = vec![(now, 3.0), (now, 1.5)];
+        let second = vec![(now, 2.0)];
 
         for values in [&first, &second] {
             let contributions = Vec::from_iter(buckets.iter().map(|bucket| (bucket, values)));

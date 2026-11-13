@@ -389,7 +389,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: ["1", "2", "3", "4", "tinybird"]
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ${{ matrix.shard == 'tinybird' && 'blacksmith-4vcpu-ubuntu-2404' || 'blacksmith-8vcpu-ubuntu-2404' }}
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
@@ -497,6 +497,14 @@ jobs:
         if: matrix.shard == 'tinybird'
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: 🐦 Prepare Tinybird workspace
+        if: matrix.shard == 'tinybird'
+        working-directory: ./server
+        run: |
+          token_file="$RUNNER_TEMP/tinybird-token"
+          rm -f "$token_file" "$token_file.error"
+          nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
+
       - name: ⚗️ alembic migrate
         working-directory: ./server
         run: uv run task db_migrate
@@ -524,20 +532,11 @@ jobs:
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
         working-directory: ./server
+        env:
+          POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
-          token_file="$RUNNER_TEMP/tinybird-token"
-          rm -f "$token_file" "$token_file.error"
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
-          prepare_pid=$!
-          if POLAR_TEST_FILES="$RUNNER_TEMP/test-files" POLAR_TEST_TINYBIRD_TOKEN_FILE="$token_file" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0; then
-            wait "$prepare_pid"
-          else
-            test_status=$?
-            kill "$prepare_pid" 2>/dev/null || true
-            wait "$prepare_pid" 2>/dev/null || true
-            exit "$test_status"
-          fi
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0
 
       - name: 💾 Save test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'

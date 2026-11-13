@@ -7,7 +7,7 @@ use anyhow::{Context, Result};
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use tracing::level_filters::LevelFilter;
 
-use crate::{aws::AwsSettings, jobs::SqsSettings};
+use crate::{aws::AwsSettings, client_ip::TrustedProxies, jobs::SqsSettings};
 
 pub struct Config {
     pub port: u16,
@@ -25,6 +25,7 @@ pub struct Config {
     pub base_url: String,
     pub aws: AwsSettings,
     pub worker_sqs: Option<SqsSettings>,
+    pub trusted_proxies: TrustedProxies,
 }
 
 impl Config {
@@ -110,10 +111,12 @@ impl Config {
             redis_url,
             secret: var("POLAR_SECRET", "super secret jwt secret"),
             hash_secrets,
-            hash_secret_arn: lookup("POLAR_AWS_HASH_SECRET_ARN"),
+            hash_secret_arn: lookup("POLAR_AWS_HASH_SECRET_ARN").filter(|arn| !arn.is_empty()),
             base_url: var("POLAR_BASE_URL", "http://127.0.0.1:8000"),
             aws,
             worker_sqs,
+            trusted_proxies: TrustedProxies::parse(&var("FORWARDED_ALLOW_IPS", "127.0.0.1"))
+                .context("FORWARDED_ALLOW_IPS")?,
         })
     }
 }
@@ -195,5 +198,19 @@ mod tests {
     fn rejects_invalid_values() {
         assert!(config(&[("POLAR_POSTGRES_PORT", "not-a-port")]).is_err());
         assert!(config(&[("POLAR_HASH_SECRETS", "not-json")]).is_err());
+        for value in [
+            "10.0.0.0/33",
+            "::/129",
+            "10.0.0.1/8",
+            "2001:db8::1/32",
+            "bad",
+            "*,127.0.0.1",
+            " * ",
+            "127.0.0.1,",
+        ] {
+            let error = config(&[("FORWARDED_ALLOW_IPS", value)]).err().unwrap();
+            assert_eq!(error.to_string(), "FORWARDED_ALLOW_IPS", "{value}");
+        }
+        assert!(config(&[("FORWARDED_ALLOW_IPS", "")]).is_ok());
     }
 }

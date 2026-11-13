@@ -1,4 +1,7 @@
-use std::{net::Ipv4Addr, time::Duration};
+use std::{
+    net::{Ipv4Addr, SocketAddr},
+    time::Duration,
+};
 
 use anyhow::Result;
 use tokio::{
@@ -25,9 +28,12 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, port)).await?;
     tracing::info!(port, "listening");
 
-    axum::serve(listener, app::router(state.clone()))
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    axum::serve(
+        listener,
+        app::router(state.clone()).into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
 
     state.tasks.close();
     if tokio::time::timeout(SHUTDOWN_GRACE, state.tasks.wait())

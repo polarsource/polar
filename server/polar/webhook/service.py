@@ -139,6 +139,7 @@ class WebhookService:
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[UUID] | None,
+        format: Sequence[WebhookFormat] | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[WebhookEndpoint], int]:
         repository = WebhookEndpointRepository.from_session(session)
@@ -153,6 +154,9 @@ class WebhookService:
             statement = statement.where(
                 WebhookEndpoint.organization_id.in_(organization_id)
             )
+
+        if format is not None:
+            statement = statement.where(WebhookEndpoint.format.in_(format))
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page

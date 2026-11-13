@@ -1,0 +1,31 @@
+server/tests/benefit/grant/test_service.py
+  s_abee0099a8bb41::t_c22d970e9795ed 293-333
+server/polar/benefit/grant/service.py
+  s_abee0099a8bb41::t_8ca061fb0b6d40 265-266
+  s_abee0099a8bb41::t_4e3fe8d989d9f3 268,271-272
+  s_1daae4581b9296::t_d628a8bea6bf03 393-395
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3931f74c5886787f3910644cfa9c840931335527",
+  "prompts": {},
+  "sessions": {
+    "s_1daae4581b9296": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c525-68ac-7ca1-b6d5-1dd9b072775c",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

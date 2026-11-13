@@ -1,0 +1,21 @@
+server/migrations/versions/2026-11-12-1405_add_manual_benefit_grant_timestamps.py
+  s_abee0099a8bb41::t_f97befcf0fa2b0 1-3,6-12,14-116
+server/polar/models/benefit_grant.py
+  s_abee0099a8bb41::t_bafdcb7b76e35d 8,86,96-100,102,110-122,132-137
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cbe6652bc59f42f35158cd4c879c684e6242e8cf",
+  "prompts": {},
+  "sessions": {
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

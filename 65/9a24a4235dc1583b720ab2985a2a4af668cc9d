@@ -1,0 +1,17 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "659a24a4235dc1583b720ab2985a2a4af668cc9d",
+  "prompts": {},
+  "sessions": {
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

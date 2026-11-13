@@ -357,6 +357,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.year,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_month",
@@ -365,6 +366,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.month,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_week",
@@ -373,6 +375,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.week,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_day",
@@ -381,6 +384,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.day,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_hour",
@@ -389,6 +393,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.hour,
         auth_type="user",
+        metrics=("orders",),
     ),
     # --- shared org: timezones (user + org) ---
     QueryCase(

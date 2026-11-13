@@ -1,25 +1,30 @@
 from collections.abc import Sequence
-from typing import Literal, Unpack
+from typing import Literal, LiteralString, Unpack
 from uuid import UUID
 
 import dramatiq
 import structlog
 from dramatiq import group
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.service import get_accessible_org_ids
+from polar.authz.service import assert_organization_permission, get_accessible_org_ids
+from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies import BenefitRetriableError
+from polar.customer.repository import CustomerRepository
 from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
+from polar.member.service import member_service
 from polar.models import (
     Benefit,
     BenefitGrant,
@@ -29,8 +34,10 @@ from polar.models import (
     Product,
     User,
 )
+from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope, BenefitGrantSelector
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
@@ -43,6 +50,7 @@ from ..strategies import (
     BenefitProperties,
 )
 from .repository import BenefitGrantRepository
+from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal
 from .scope import scope_to_args
 from .sorting import BenefitGrantSortProperty
 
@@ -52,7 +60,157 @@ log: Logger = structlog.get_logger()
 class BenefitGrantError(PolarError): ...
 
 
+class BenefitGrantAlreadyExists(BenefitGrantError):
+    def __init__(self) -> None:
+        super().__init__(
+            "An active manual grant already exists for this recipient and benefit.", 409
+        )
+
+
 class BenefitGrantService:
+    async def create(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        create: BenefitGrantCreate | BenefitGrantCreateExternal,
+    ) -> BenefitGrant:
+        external = isinstance(create, BenefitGrantCreateExternal)
+
+        def invalid_reference(
+            field: str, message: LiteralString
+        ) -> PolarRequestValidationError:
+            field = f"external_{field}" if external else field
+            return PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", field),
+                        "msg": message,
+                        "input": getattr(create, field),
+                    }
+                ]
+            )
+
+        customer_repository = CustomerRepository.from_session(session)
+        benefit_repository = BenefitRepository.from_session(session)
+        member_repository = MemberRepository.from_session(session)
+
+        if isinstance(create, BenefitGrantCreateExternal):
+            organization = await get_payload_organization(session, auth_subject, create)
+            customer = await customer_repository.get_by_external_id_and_organization(
+                create.external_customer_id, organization.id
+            )
+        else:
+            organization = None
+            org_ids = await get_accessible_org_ids(session, auth_subject)
+            customer = await customer_repository.get_readable_by_id(
+                org_ids,
+                create.customer_id,
+                options=(joinedload(Customer.organization),),
+            )
+        if customer is None:
+            raise invalid_reference("customer_id", "Customer not found.")
+        if organization is None:
+            organization = customer.organization
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization.id,
+            OrganizationPermission.customers_manage,
+        )
+
+        benefit = await benefit_repository.get_for_manual_grant(
+            organization.id,
+            benefit_id=create.benefit_id
+            if isinstance(create, BenefitGrantCreate)
+            else None,
+            external_id=create.external_benefit_id
+            if isinstance(create, BenefitGrantCreateExternal)
+            else None,
+        )
+        if benefit is None:
+            raise invalid_reference("benefit_id", "Benefit not found.")
+        if benefit.type == BenefitType.meter_credit:
+            raise invalid_reference(
+                "benefit_id", "Meter-credit benefits cannot be granted manually."
+            )
+
+        if (
+            isinstance(create, BenefitGrantCreateExternal)
+            and create.external_member_id is not None
+        ):
+            member = await member_repository.get_by_customer_id_and_external_id(
+                customer.id, create.external_member_id
+            )
+        elif isinstance(create, BenefitGrantCreate) and create.member_id is not None:
+            member = await member_repository.get_by_id_and_customer_id(
+                create.member_id, customer.id
+            )
+        else:
+            member = await member_repository.get_owner_by_customer_id(customer.id)
+            if member is None:
+                member = await member_service.create_owner_member(
+                    session, customer, organization
+                )
+        if member is None:
+            raise invalid_reference("member_id", "Member not found.")
+
+        repository = BenefitGrantRepository.from_session(session)
+        try:
+            async with session.begin_nested():
+                grant = await repository.create(
+                    BenefitGrant(
+                        customer=customer,
+                        benefit=benefit,
+                        member=member,
+                        manually_granted_at=utc_now(),
+                        properties={},
+                    ),
+                    flush=True,
+                )
+        except IntegrityError as e:
+            if "ix_benefit_grants_active_manual_unique" in str(e):
+                raise BenefitGrantAlreadyExists() from e
+            raise
+
+        enqueue_job(
+            "benefit.grant",
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            benefit_grant_id=grant.id,
+        )
+        return grant
+
+    async def revoke(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        grant_id: UUID,
+    ) -> BenefitGrant:
+        repository = BenefitGrantRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        grant = await repository.get_readable_for_update(grant_id, org_ids)
+        if grant is None:
+            raise ResourceNotFound()
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            grant.benefit.organization_id,
+            OrganizationPermission.customers_manage,
+        )
+        if grant.manually_revoked_at is None:
+            grant = await repository.update(
+                grant, update_dict={"manually_revoked_at": utc_now()}, flush=True
+            )
+        if not grant.is_revoked:
+            enqueue_job(
+                "benefit.revoke",
+                customer_id=grant.customer_id,
+                benefit_id=grant.benefit_id,
+                benefit_grant_id=grant.id,
+            )
+        return grant
+
     async def list(
         self,
         session: AsyncSession,

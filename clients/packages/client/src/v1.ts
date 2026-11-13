@@ -4444,8 +4444,44 @@ export interface paths {
      */
     get: operations['benefit-grants:list']
     put?: never
-    post?: never
+    /**
+     * Create Benefit Grant
+     * @description Manually grant a benefit to a customer or one of their members.
+     *
+     *     Use either Polar IDs for every reference or external IDs for every reference.
+     *     Fulfillment is asynchronous: the returned grant may not yet be granted.
+     *     Meter-credit benefits cannot be granted manually.
+     *
+     *     **Scopes**: `benefits:write`
+     */
+    post: operations['benefit-grants:create']
     delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/benefit-grants/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Revoke Benefit Grant
+     * @description Permanently revoke a benefit grant, including grants from purchases.
+     *
+     *     Revocation is asynchronous. Once manually revoked, this grant cannot be
+     *     reactivated by renewal or fulfillment retries. Other grants may still
+     *     provide access to the benefit. Repeating this request is safe.
+     *
+     *     **Scopes**: `benefits:write`
+     */
+    delete: operations['benefit-grants:revoke']
     options?: never
     head?: never
     patch?: never
@@ -11734,6 +11770,70 @@ export interface components {
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
         | components['schemas']['BenefitGrantSlackSharedChannelProperties']
+    }
+    /** BenefitGrantAlreadyExists */
+    BenefitGrantAlreadyExists: {
+      /**
+       * Error
+       * @example BenefitGrantAlreadyExists
+       * @constant
+       */
+      error: 'BenefitGrantAlreadyExists'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * BenefitGrantCreate
+     * @description Manually grant a benefit using Polar IDs.
+     */
+    BenefitGrantCreate: {
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      customer_id: string
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       * @example 397a17aa-15cf-4cb4-9333-18040203cf98
+       */
+      benefit_id: string
+      /**
+       * Member Id
+       * @description The ID of the member receiving the benefit. If not provided, the benefit is granted to the customer's owner.
+       */
+      member_id?: string | null
+    }
+    /**
+     * BenefitGrantCreateExternal
+     * @description Manually grant a benefit using external IDs.
+     */
+    BenefitGrantCreateExternal: {
+      /**
+       * External Customer Id
+       * @description The ID of the customer in your system.
+       * @example usr_1337
+       */
+      external_customer_id: string
+      /**
+       * External Benefit Id
+       * @description The ID of the benefit in your system. Resolves to the current version of the benefit.
+       * @example ext_1337
+       */
+      external_benefit_id: string
+      /**
+       * External Member Id
+       * @description The ID of the member in your system, scoped to the customer. If not provided, the benefit is granted to the customer's owner.
+       */
+      external_member_id?: string | null
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the customer and benefit. **Required unless your credential identifies one organization.** Omit this field when using an organization token.
+       */
+      organization_id?: string | null
     }
     /** BenefitGrantCustomProperties */
     BenefitGrantCustomProperties: Record<string, never>
@@ -58139,6 +58239,90 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ListResource_BenefitGrant_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'benefit-grants:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json':
+          | components['schemas']['BenefitGrantCreate']
+          | components['schemas']['BenefitGrantCreateExternal']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BenefitGrant']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BenefitGrantAlreadyExists']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'benefit-grants:revoke': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BenefitGrant']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

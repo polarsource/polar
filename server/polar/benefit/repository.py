@@ -31,6 +31,29 @@ class BenefitRepository(
 ):
     model = Benefit
 
+    async def get_for_manual_grant(
+        self,
+        organization_id: UUID,
+        *,
+        benefit_id: UUID | None = None,
+        external_id: str | None = None,
+    ) -> Benefit | None:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Benefit.organization_id == organization_id,
+                ~Benefit.catalog.has(Catalog.status == CatalogStatus.draft),
+            )
+            .options(*self.get_eager_options())
+        )
+        if benefit_id is not None:
+            statement = statement.where(Benefit.id == benefit_id)
+        else:
+            statement = statement.where(
+                Benefit.external_id == external_id, Benefit.is_current
+            )
+        return await self.get_one_or_none(statement)
+
     async def count_by_organization_id(self, organization_id: UUID) -> int:
         return await self.count(
             self.get_base_statement().where(Benefit.organization_id == organization_id)

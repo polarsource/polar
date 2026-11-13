@@ -83,6 +83,18 @@ class BenefitGrantRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_readable_for_update(
+        self, grant_id: UUID, org_ids: set[AccessibleOrganizationID]
+    ) -> BenefitGrant | None:
+        statement = (
+            self.get_statement_by_org_ids(org_ids)
+            .where(BenefitGrant.id == grant_id)
+            .options(*self.get_eager_options())
+            .with_for_update(of=BenefitGrant)
+            .execution_options(populate_existing=True)
+        )
+        return await self.get_one_or_none(statement)
+
     async def list_granted_by_scope(
         self, **scope: Unpack[BenefitGrantScope]
     ) -> Sequence[BenefitGrant]:

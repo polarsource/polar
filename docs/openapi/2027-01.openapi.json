@@ -3483,6 +3483,106 @@
       }
     },
     "/v1/benefit-grants/": {
+      "post": {
+        "tags": [
+          "benefit-grants",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Create Benefit Grant",
+        "description": "Manually grant a benefit to a customer or one of their members.\n\nUse either Polar IDs for every reference or external IDs for every reference.\nFulfillment is asynchronous: the returned grant may not yet be granted.\nMeter-credit benefits cannot be granted manually.\n\n**Scopes**: `benefits:write`",
+        "operationId": "benefit-grants:create",
+        "security": [
+          {
+            "oidc": [
+              "benefits:write"
+            ]
+          },
+          {
+            "pat": [
+              "benefits:write"
+            ]
+          },
+          {
+            "oat": [
+              "benefits:write"
+            ]
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/BenefitGrantCreate"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BenefitGrantCreateExternal"
+                  }
+                ],
+                "title": "Benefit Grant Create"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenefitGrant"
+                }
+              }
+            }
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenefitGrantAlreadyExists"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-tool-name": "benefit_grants_create",
+        "x-tool-title": "Create Benefit Grant",
+        "x-tool-description": "Manually grant a benefit to a customer or one of their members.\n\nUse either Polar IDs for every reference or external IDs for every reference.\nFulfillment is asynchronous: the returned grant may not yet be granted.\nMeter-credit benefits cannot be granted manually.",
+        "x-tool-annotations": [
+          "open_world"
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "benefit-grants",
+        "x-speakeasy-name-override": "create",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefit_grants.create(\n    customer_id='992fae2a-2a17-4b7a-8d9e-e287cf90131b',\n    benefit_id='397a17aa-15cf-4cb4-9333-18040203cf98',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefitGrants.create(\n  {\n    \"customer_id\": \"992fae2a-2a17-4b7a-8d9e-e287cf90131b\",\n    \"benefit_id\": \"397a17aa-15cf-4cb4-9333-18040203cf98\"\n  },\n);\nconsole.log(response);\n"
+          }
+        ]
+      },
       "get": {
         "tags": [
           "benefit-grants",
@@ -3815,6 +3915,104 @@
           {
             "lang": "typescript",
             "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nfor await (const item of polar.benefitGrants.iterList(\n  {\n    \"page\": 1,\n    \"limit\": 10,\n    \"sorting\": [\n      \"-created_at\"\n    ]\n  },\n)) {\n  console.log(item);\n}\n"
+          }
+        ]
+      }
+    },
+    "/v1/benefit-grants/{id}": {
+      "delete": {
+        "tags": [
+          "benefit-grants",
+          "public",
+          "mcp",
+          "cli"
+        ],
+        "summary": "Revoke Benefit Grant",
+        "description": "Permanently revoke a benefit grant, including grants from purchases.\n\nRevocation is asynchronous. Once manually revoked, this grant cannot be\nreactivated by renewal or fulfillment retries. Other grants may still\nprovide access to the benefit. Repeating this request is safe.\n\n**Scopes**: `benefits:write`",
+        "operationId": "benefit-grants:revoke",
+        "security": [
+          {
+            "oidc": [
+              "benefits:write"
+            ]
+          },
+          {
+            "pat": [
+              "benefits:write"
+            ]
+          },
+          {
+            "oat": [
+              "benefits:write"
+            ]
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid4",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BenefitGrant"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-tool-name": "benefit_grants_revoke",
+        "x-tool-title": "Revoke Benefit Grant",
+        "x-tool-description": "Permanently revoke a benefit grant, including grants from purchases.\n\nRevocation is asynchronous. Once manually revoked, this grant cannot be\nreactivated by renewal or fulfillment retries. Other grants may still\nprovide access to the benefit. Repeating this request is safe.",
+        "x-tool-annotations": [
+          "destructive",
+          "idempotent",
+          "open_world"
+        ],
+        "x-polar-allowed-subjects": [
+          "Organization",
+          "User"
+        ],
+        "x-speakeasy-group": "benefit-grants",
+        "x-speakeasy-name-override": "revoke",
+        "x-codeSamples": [
+          {
+            "lang": "python",
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.benefit_grants.revoke(\n    '00000000-0000-4000-8000-000000000000',\n)\nprint(response)\n"
+          },
+          {
+            "lang": "typescript",
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.benefitGrants.revoke(\n  \"00000000-0000-4000-8000-000000000000\",\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -35244,6 +35442,131 @@
           "properties"
         ],
         "title": "BenefitGrant"
+      },
+      "BenefitGrantAlreadyExists": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "BenefitGrantAlreadyExists",
+            "title": "Error",
+            "examples": [
+              "BenefitGrantAlreadyExists"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "BenefitGrantAlreadyExists"
+      },
+      "BenefitGrantCreate": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Customer Id",
+            "description": "The ID of the customer.",
+            "examples": [
+              "992fae2a-2a17-4b7a-8d9e-e287cf90131b"
+            ]
+          },
+          "benefit_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Benefit Id",
+            "description": "The ID of the benefit.",
+            "examples": [
+              "397a17aa-15cf-4cb4-9333-18040203cf98"
+            ]
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "The ID of the member receiving the benefit. If not provided, the benefit is granted to the customer's owner."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "customer_id",
+          "benefit_id"
+        ],
+        "title": "BenefitGrantCreate",
+        "description": "Manually grant a benefit using Polar IDs."
+      },
+      "BenefitGrantCreateExternal": {
+        "properties": {
+          "external_customer_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "External Customer Id",
+            "description": "The ID of the customer in your system.",
+            "examples": [
+              "usr_1337"
+            ]
+          },
+          "external_benefit_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$",
+            "title": "External Benefit Id",
+            "description": "The ID of the benefit in your system. Resolves to the current version of the benefit.",
+            "examples": [
+              "ext_1337"
+            ]
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "The ID of the member in your system, scoped to the customer. If not provided, the benefit is granted to the customer's owner."
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4",
+                "description": "The organization ID.",
+                "examples": [
+                  "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the customer and benefit. **Required unless your credential identifies one organization.** Omit this field when using an organization token."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "external_customer_id",
+          "external_benefit_id"
+        ],
+        "title": "BenefitGrantCreateExternal",
+        "description": "Manually grant a benefit using external IDs."
       },
       "BenefitGrantCustomProperties": {
         "properties": {},

@@ -1,7 +1,7 @@
 'use client'
 
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Button, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { kinds } from './VersionsTab'
@@ -32,7 +32,12 @@ export const Overview = ({
       borderColor="border-primary"
     >
       <Box flexDirection="column" rowGap="xs" minWidth={0}>
-        <span className="text-base">Unpublished changes</span>
+        <Box alignItems="center" columnGap="s" minWidth={0}>
+          <span className="truncate text-base">
+            {draft.name ?? 'Unpublished changes'}
+          </span>
+          {draft.name ? <Pill color="gray">Draft</Pill> : null}
+        </Box>
         <Box columnGap="m">
           {kinds
             .filter(({ change }) => draft.changes?.[`${change}_count`])
@@ -57,7 +62,7 @@ export const Overview = ({
           )
         }
       >
-        Review changes
+        Review draft
       </Button>
     </Box>
   )

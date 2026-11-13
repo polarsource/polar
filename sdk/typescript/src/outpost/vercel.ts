@@ -6,9 +6,12 @@
 const AFFINITY_HEADER = "x-vercel-affinity-id";
 const TRUSTED_TOKEN_HEADER = "x-vercel-trusted-oidc-idp-token";
 const OIDC_HEADER = "x-vercel-oidc-token";
+const WARMUP_HEADER = "x-polar-affinity-warmup";
 export const DEFAULT_SHARDS = 64;
 // A shard moves to a fresh instance this long before Vercel would retire its own.
 const HANDOFF_MS = 60_000;
+// The shard's next instance starts this long before the shard moves to it.
+const WARM_MS = 30_000;
 
 const MASK = (1n << 64n) - 1n;
 
@@ -47,8 +50,22 @@ export interface VercelAffinityOptions {
    * a minute before, one shard at a time.
    */
   maxDurationSeconds?: number;
+  /**
+   * With `maxDurationSeconds`: warms each shard's next instance before the shard moves to it, so
+   * the move does not land on a cold instance. `url` is the pinned route, and `waitUntil` the
+   * middleware's own (`event.waitUntil` in Next.js). The route answers the warm-up first:
+   * `if (isVercelAffinityWarmup(request))`.
+   */
+  warm?: { url: string | URL; waitUntil: (promise: Promise<unknown>) => void };
   now?: number;
 }
+
+// The next id this process warmed for each shard: one warm-up per shard and move.
+const warmed = new Map<number, string>();
+
+/** True for the request that starts a shard's next instance: answer it once Outpost is up. */
+export const isVercelAffinityWarmup = (request: { headers: Headers }): boolean =>
+  request.headers.get(WARMUP_HEADER) === "1";
 
 const affinityId = (
   shard: number,
@@ -87,16 +104,26 @@ export const vercelAffinityHeaders = async (
   const token = await oidcToken(headers);
   if (!token) return headers;
   const shards = options.shards ?? DEFAULT_SHARDS;
-  headers.set(
-    AFFINITY_HEADER,
-    affinityId(
-      jumpHash(customer, shards),
-      shards,
-      options.maxDurationSeconds,
-      options.now ?? Date.now(),
-    ),
-  );
+  const shard = jumpHash(customer, shards);
+  const now = options.now ?? Date.now();
+  const current = affinityId(shard, shards, options.maxDurationSeconds, now);
+  headers.set(AFFINITY_HEADER, current);
   headers.set(TRUSTED_TOKEN_HEADER, token);
+  const next = affinityId(shard, shards, options.maxDurationSeconds, now + WARM_MS);
+  if (options.warm && next !== current && warmed.get(shard) !== next) {
+    warmed.set(shard, next);
+    const warmup = new Headers({
+      [AFFINITY_HEADER]: next,
+      [TRUSTED_TOKEN_HEADER]: token,
+      [WARMUP_HEADER]: "1",
+    });
+    options.warm.waitUntil(
+      fetch(options.warm.url, { method: "POST", headers: warmup }).then(
+        (response) => response.body?.cancel(),
+        () => {},
+      ),
+    );
+  }
   return headers;
 };
 

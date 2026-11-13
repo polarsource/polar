@@ -1,3 +1,4 @@
+import { Redis } from "ioredis";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { startRedisServer, type RedisServer } from "./testing";
@@ -140,31 +141,37 @@ describe("warm-up", () => {
 describe("shard count", () => {
   const incoming = { "x-vercel-oidc-token": "oidc" };
   let redisServer: RedisServer;
+  let redis: Redis;
   beforeAll(async () => {
     redisServer = await startRedisServer();
+    redis = new Redis(redisServer.socket);
   });
-  afterAll(() => redisServer?.stop());
+  beforeEach(() => redis.flushall());
+  afterAll(async () => {
+    redis?.disconnect();
+    await redisServer?.stop();
+  });
+
+  const shardOf = (id: string | null) => Number(id?.split("-")[1]);
+  const shardAt = async (customer: string, now: number) =>
+    shardOf(
+      (
+        await vercelAffinityHeaders(request(incoming), event, {
+          externalCustomerId: customer,
+          redisUrl: redisServer.socket,
+          maxDurationSeconds: 300,
+          now,
+        })
+      ).get("x-vercel-affinity-id"),
+    );
+  const everyone = async (now: number) => {
+    const shards = await Promise.all(customers.map((customer) => shardAt(customer, now)));
+    await Promise.all(waited);
+    return shards;
+  };
 
   it("grows with the load: it warms the new shards, then moves their customers over", async () => {
-    const shardOf = (id: string | null) => Number(id?.split("-")[1]);
-    const shardAt = async (customer: string, now: number) =>
-      shardOf(
-        (
-          await vercelAffinityHeaders(request(incoming), event, {
-            externalCustomerId: customer,
-            redisUrl: redisServer.socket,
-            maxDurationSeconds: 300,
-            now,
-          })
-        ).get("x-vercel-affinity-id"),
-      );
-    const everyone = async (now: number) => {
-      const shards = await Promise.all(customers.map((customer) => shardAt(customer, now)));
-      await Promise.all(waited);
-      return shards;
-    };
-
-    // 4,000 requests a second for 10 s: more than 64 shards take at 50 a second each.
+    // 4,000 requests a second for 10 s: more than 64 shards take at 30 a second each.
     const start = 1_000_000;
     for (let second = 0; second < 10; second += 1) {
       await Promise.all(
@@ -184,11 +191,32 @@ describe("shard count", () => {
     const added = [...new Set(warmed.filter((shard) => shard >= 64))].sort((a, b) => a - b);
     const shards = 64 + added.length;
     expect(added).toEqual(added.map((_, index) => 64 + index));
-    expect(shards).toBeGreaterThanOrEqual(70);
-    expect(shards).toBeLessThanOrEqual(75);
+    // Twice what the load needs: the load goes on climbing while the customers move.
+    expect(shards).toBeGreaterThanOrEqual(230);
+    expect(shards).toBeLessThanOrEqual(250);
 
     const later = await everyone(start + 80_000);
     expect(later).toEqual(customers.map((customer) => jumpHash(customer, shards)));
     expect(later.filter((shard) => shard >= 64).length).toBeGreaterThan(0);
+  });
+
+  it("keeps its shards while the load climbs, even under half of what they take", async () => {
+    // From 50 requests a second, 10 % more every 10 s, for 5.5 minutes: about 1,100 at the end.
+    const start = 2_000_000;
+    for (let second = 0; second < 330; second += 1) {
+      const rate = Math.round(50 * 1.1 ** Math.floor(second / 10));
+      await Promise.all(
+        Array.from({ length: rate }, (_, index) =>
+          shardAt(
+            customers[index % customers.length],
+            start + second * 1000 + (index * 1000) / rate,
+          ),
+        ),
+      );
+      await Promise.all(waited);
+    }
+    expect(await everyone(start + 400_000)).toEqual(
+      customers.map((customer) => jumpHash(customer, 64)),
+    );
   });
 });

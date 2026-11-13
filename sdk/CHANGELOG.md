@@ -10,6 +10,9 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+- Regenerate 2027-01 version.
+- Python: don't break deserialization on unknown enum values.
+
 ## [1.1.0] - 2026-11-09
 
 ### Added

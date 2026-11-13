@@ -1086,6 +1086,41 @@ async def test_asks_polar_again_for_a_snapshot_it_asked_for_before_a_reset(
 
 
 @pytest.mark.anyio
+async def test_releases_an_older_flush_when_a_newer_one_starts(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    polar_requests: list[tuple[str, typing.Any]],
+) -> None:
+    url, _ = redis_connection
+    snapshots["external:alice:tokens"] = {**ALICE_SNAPSHOT, "delay": 0.5}
+    snapshots["external:alice:credits"] = ALICE_CREDITS
+    done: list[str] = []
+
+    async def flush(name: str) -> None:
+        await outpost.flush()
+        done.append(name)
+
+    async with Outpost(url, client=polar_client) as outpost:
+        async with anyio.create_task_group() as group:
+            group.start_soon(
+                functools.partial(outpost.actor, external_customer_id="alice")
+            )
+            with anyio.fail_after(1):
+                while not any(
+                    route == "POST /v1/outpost/meter-usage"
+                    for route, _ in polar_requests
+                ):
+                    await anyio.lowlevel.checkpoint()
+            group.start_soon(flush, "older")
+            await anyio.sleep(0.05)
+            group.start_soon(flush, "newer")
+            await anyio.sleep(0.1)
+            assert done == ["older"]
+        assert done == ["older", "newer"]
+
+
+@pytest.mark.anyio
 async def test_reads_a_customer_polar_no_longer_knows_after_a_reset_as_unknown(
     redis_connection: tuple[str, Redis],
     polar_client: httpx.AsyncClient,

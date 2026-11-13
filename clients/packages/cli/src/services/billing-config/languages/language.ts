@@ -7,7 +7,6 @@ import {
   type LoadedConfig,
   type SourceLocation,
 } from '@/schemas/BillingConfig'
-import type { Run } from '@/utils/run'
 
 export interface Installer {
   readonly command: (
@@ -30,7 +29,6 @@ export interface Language {
   readonly installer: Installer | undefined
   readonly load: (
     fs: FileSystem.FileSystem,
-    run: Run,
     file: string,
   ) => Effect.Effect<LoadedConfig, BillingConfigError>
   readonly render: (

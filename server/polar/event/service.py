@@ -61,6 +61,7 @@ from polar.worker import enqueue_events, enqueue_job
 from .repository import EventRepository
 from .schemas import (
     CustomerStat,
+    EventCreate,
     EventCreateCustomer,
     EventHistogram,
     EventHistogramBucket,
@@ -113,6 +114,9 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
+    def __init__(self) -> None:
+        self._event_type_ids: dict[tuple[uuid.UUID, str], uuid.UUID] = {}
+
     async def list(
         self,
         session: AsyncReadSession,
@@ -1053,10 +1057,7 @@ class EventService:
             session, auth_subject, member_ids_in_batch
         )
 
-        event_type_repository = EventTypeRepository.from_session(session)
-        event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
-
-        events: list[dict[str, Any]] = []
+        valid_events: list[tuple[EventCreate, uuid.UUID]] = []
         errors: list[ValidationError] = []
         for index, event_create in enumerate(ingest.events):
             try:
@@ -1064,27 +1065,50 @@ class EventService:
                     index, event_create.organization_id
                 )
                 if isinstance(event_create, EventCreateCustomer):
-                    validate_customer_id(index, event_create.customer_id)
-                    if event_create.member_id is not None:
-                        validate_member_id(index, event_create.member_id)
-
-                event_label_cache_key = (event_create.name, organization_id)
-                if event_label_cache_key not in event_types_cache:
-                    event_type = await event_type_repository.get_or_create(
-                        event_create.name, organization_id
+                    validate_customer_id(
+                        index, event_create.customer_id, organization_id
                     )
-                    event_types_cache[event_label_cache_key] = event_type.id
-                event_type_id = event_types_cache[event_label_cache_key]
+                    if event_create.member_id is not None:
+                        validate_member_id(
+                            index, event_create.member_id, organization_id
+                        )
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
+            valid_events.append((event_create, organization_id))
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_type_keys = {
+            (organization_id, event_create.name)
+            for event_create, organization_id in valid_events
+        }
+        event_type_ids = {
+            key: self._event_type_ids[key]
+            for key in event_type_keys & self._event_type_ids.keys()
+        }
+        uncached_keys = event_type_keys - event_type_ids.keys()
+        event_types = await event_type_repository.get_by_names_and_organization(
+            list({name for _, name in uncached_keys}),
+            list({organization_id for organization_id, _ in uncached_keys}),
+        )
+        for key, event_type in event_types.items():
+            self._event_type_ids[key] = event_type_ids[key] = event_type.id
+        for organization_id, name in event_type_keys - event_type_ids.keys():
+            event_type = await event_type_repository.get_or_create(
+                name, organization_id
+            )
+            event_type_ids[(organization_id, name)] = event_type.id
+
+        events: list[dict[str, Any]] = []
+        for event_create, organization_id in valid_events:
             event_dict = event_create.model_dump(
                 exclude={"organization_id", "parent_id"}, by_alias=True
             )
             event_dict["source"] = EventSource.user
             event_dict["organization_id"] = organization_id
-            event_dict["event_type_id"] = event_type_id
+            event_dict["event_type_id"] = event_type_ids[
+                (organization_id, event_create.name)
+            ]
 
             if event_create.parent_id is not None:
                 event_dict["pending_parent_external_id"] = event_create.parent_id
@@ -1129,7 +1153,7 @@ class EventService:
             event_ids.extend(direct_event_ids)
             duplicates_count += direct_duplicates_count
 
-            if org_ids_with_reducer_billing != organization_ids:
+            if direct_event_ids and org_ids_with_reducer_billing != organization_ids:
                 meter_event_ids = [
                     event["id"]
                     for event in direct_events
@@ -1523,11 +1547,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         customer_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not customer_ids:
-            allowed_customers: set[uuid.UUID] = set()
+            allowed_customers: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Customer.id).where(
+            statement = select(Customer.id, Customer.organization_id).where(
                 ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
@@ -1542,10 +1566,15 @@ class EventService:
                     Customer.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_customers = set(result.scalars().all())
+            allowed_customers = {
+                customer_id: organization_id
+                for customer_id, organization_id in result.tuples().all()
+            }
 
-        def _validate_customer_id(index: int, customer_id: uuid.UUID) -> uuid.UUID:
-            if customer_id not in allowed_customers:
+        def _validate_customer_id(
+            index: int, customer_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_customers.get(customer_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {
@@ -1566,11 +1595,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         member_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not member_ids:
-            allowed_members: set[uuid.UUID] = set()
+            allowed_members: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Member.id).where(
+            statement = select(Member.id, Member.organization_id).where(
                 ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
@@ -1583,10 +1612,15 @@ class EventService:
                     Member.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_members = set(result.scalars().all())
+            allowed_members = {
+                member_id: organization_id
+                for member_id, organization_id in result.tuples().all()
+            }
 
-        def _validate_member_id(index: int, member_id: uuid.UUID) -> uuid.UUID:
-            if member_id not in allowed_members:
+        def _validate_member_id(
+            index: int, member_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_members.get(member_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {

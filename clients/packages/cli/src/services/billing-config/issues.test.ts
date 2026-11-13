@@ -109,14 +109,15 @@ describe('issues', () => {
   })
 
   test('locates an issue in the language the config is written in', () => {
-    const python = {
-      file: 'polar_config.py',
-      source: 'class Meters(MeterSet):\n    calls = Meter("", on="call")\n',
+    const script = {
+      file: 'polar.config.ts',
+      source:
+        "export default defineConfig({\n  meters: ({ meter }) => ({\n    calls: meter('').count(),\n  }),\n})\n",
       input: { meters: [{ external_id: 'calls', name: '' }] },
       generated: true,
     }
 
-    const [issue] = issues(python, [
+    const [issue] = issues(script, [
       {
         type: 'string_too_short',
         loc: ['body', 'meters', 0, 'name'],
@@ -125,6 +126,6 @@ describe('issues', () => {
       },
     ])
 
-    expect(issue?.location).toEqual({ line: 2, column: 19, length: 2 })
+    expect(issue?.location).toEqual({ line: 3, column: 18, length: 2 })
   })
 })

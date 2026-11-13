@@ -5,7 +5,15 @@ from httpx import AsyncClient
 
 from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
-from polar.models import Meter, Organization, User, UserOrganization
+from polar.models import (
+    Catalog,
+    CatalogMeter,
+    Meter,
+    Organization,
+    User,
+    UserOrganization,
+)
+from polar.models.catalog import CatalogStatus
 from polar.postgres import AsyncSession
 from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.database import SaveFixture
@@ -92,6 +100,75 @@ class TestListMeters:
             str(meter.id),
             str(archived_meter.id),
         }
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_filter_by_catalog(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        archived = Catalog(
+            organization=organization,
+            status=CatalogStatus.archived,
+            published_at=utc_now(),
+        )
+        await save_fixture(archived)
+        previous = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+            is_current=False,
+            catalog=archived,
+        )
+        await save_fixture(
+            CatalogMeter(catalog=archived, meter=previous, external_id="tokens")
+        )
+        current = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tokens",
+        )
+
+        by_status = await client.get(
+            "/v1/meters/", params={"catalog_status": "archived"}
+        )
+        by_id = await client.get("/v1/meters/", params={"catalog_id": str(archived.id)})
+        live = await client.get("/v1/meters/", params={"catalog_status": "live"})
+
+        assert [
+            [
+                (item["id"], item["is_current"], item["catalog_id"])
+                for item in response.json()["items"]
+            ]
+            for response in (by_status, by_id, live)
+        ] == [
+            [(str(previous.id), False, str(archived.id))],
+            [(str(previous.id), False, str(archived.id))],
+            [(str(current.id), True, None)],
+        ]
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2026_10)
+    async def test_version_fields_hidden_before_2027_01(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+
+        response = await client.get("/v1/meters/")
+
+        assert response.status_code == 200
+        [item] = response.json()["items"]
+        assert "is_current" not in item
+        assert "catalog_id" not in item
 
 
 @pytest.mark.anyio

@@ -1,11 +1,19 @@
+import {
+  AGGREGATION_DISPLAY_NAMES,
+  formatProperty,
+  OPERATOR_DISPLAY_NAMES,
+} from '@/components/Meter/MeterFilterReadOnlyConfiguration'
 import { getUnitLabels } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { getMeterUnitFormat } from '@polar-sh/ui/lib/meterUnit'
 
 type Config = schemas['ConfigExportDocument']
 type Product = schemas['ConfigProductRead']
 type Price = schemas['ConfigProductPriceRead']
 type Tiers = schemas['ConfigTiersRead']
+type Meter = schemas['ConfigMeterRead']
+type Filter = schemas['Filter']
 
 export const plural = (count: number, noun: string) =>
   `${count} ${count === 1 ? noun : `${noun}s`}`
@@ -53,10 +61,35 @@ export const productFields = ({
   ...product,
 })
 
+const describeFilter = ({ conjunction, clauses }: Filter): string =>
+  clauses
+    .map((clause) =>
+      'property' in clause
+        ? `${formatProperty(clause.property)} ${OPERATOR_DISPLAY_NAMES[clause.operator]} ${clause.value}`
+        : `(${describeFilter(clause)})`,
+    )
+    .join(` ${conjunction} `)
+
+// The filter and aggregation each read as one field
+export const meterFields = ({
+  name,
+  filter,
+  aggregation,
+  ...meter
+}: Meter) => ({
+  name,
+  filter: describeFilter(filter) || 'All events',
+  aggregation:
+    aggregation.func === 'count'
+      ? AGGREGATION_DISPLAY_NAMES.count
+      : `${AGGREGATION_DISPLAY_NAMES[aggregation.func]} of ${formatProperty(aggregation.property)}`,
+  ...meter,
+})
+
 export const fieldLabel = (field: string) =>
   field === 'prices' ? 'Price' : humanize(field)
 
-const enumFields = new Set(['visibility', 'type'])
+const enumFields = new Set(['visibility', 'type', 'unit'])
 
 export const valueFormatter = (configs: Config[]) => {
   const benefits = new Map(
@@ -66,21 +99,33 @@ export const valueFormatter = (configs: Config[]) => {
   )
   const meters = new Map(
     configs.flatMap(({ meters }) =>
-      meters.map((meter) => [meter.external_id, meter.name]),
+      meters.map((meter) => [meter.external_id, meter]),
     ),
   )
-  const meterName = (externalId: string) => meters.get(externalId) ?? externalId
+  const meterName = (externalId: string) =>
+    meters.get(externalId)?.name ?? externalId
+  // Token and custom meters price per a display unit (e.g. 1M tokens), like the rest of the dashboard
+  const meterUnit = (externalId: string) => {
+    const meter = meters.get(externalId)
+    const unit = meter?.unit ?? 'scalar'
+    const { scale, label } = getMeterUnitFormat(unit, {
+      customLabel: meter?.custom_label,
+      customMultiplier: meter?.custom_multiplier,
+    })
+    const name = meterName(externalId)
+    return { scale, label: unit === 'scalar' ? name : `${label} (${name})` }
+  }
 
   const formatPrice = (price: Price) => {
-    const rate = (amount: number | string, unit: string) =>
-      `${formatCurrency('subcent')(Number(amount), price.price_currency)} / ${unit}`
+    const rate = (amount: number | string, unit: string, scale = 1) =>
+      `${formatCurrency('subcent')(Number(amount) * scale, price.price_currency)} / ${unit}`
     // Every tier is listed so a change to any one of them shows in the diff
-    const tiered = ({ type, tiers }: Tiers, unit: string) => {
+    const tiered = ({ type, tiers }: Tiers, unit: string, scale = 1) => {
       const steps = tiers
         .map(({ bound, unit_amount }) =>
           bound === null
-            ? rate(unit_amount, unit)
-            : `${rate(unit_amount, unit)} up to ${bound.toLocaleString('en-US')}`,
+            ? rate(unit_amount, unit, scale)
+            : `${rate(unit_amount, unit, scale)} up to ${bound.toLocaleString('en-US')}`,
         )
         .join(', then ')
       return tiers.length === 1 ? steps : `${capitalize(type)}: ${steps}`
@@ -98,10 +143,14 @@ export const valueFormatter = (configs: Config[]) => {
           price.price_amount,
           price.price_currency,
         )
-      case 'metered_unit':
-        return `${rate(price.unit_amount, meterName(price.meter))}${cap(price.cap_amount)}`
-      case 'metered_tiers':
-        return `${tiered(price.tiers, meterName(price.meter))}${cap(price.cap_amount)}`
+      case 'metered_unit': {
+        const { label, scale } = meterUnit(price.meter)
+        return `${rate(price.unit_amount, label, scale)}${cap(price.cap_amount)}`
+      }
+      case 'metered_tiers': {
+        const { label, scale } = meterUnit(price.meter)
+        return `${tiered(price.tiers, label, scale)}${cap(price.cap_amount)}`
+      }
       case 'seat_based':
         return `${tiered(price.tiers, 'seat')}${minimum(price.minimum_units, 'seat')}`
       case 'unit_based': {

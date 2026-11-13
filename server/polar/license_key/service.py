@@ -178,6 +178,12 @@ class LicenseKeyService:
         update_dict = updates.model_dump(exclude_unset=True)
 
         status = update_dict.get("status")
+        if status == LicenseKeyStatus.granted:
+            grant = await self._get_grant(session, license_key, for_update=True)
+            if grant is not None and grant.manually_revoked_at is not None:
+                raise NotPermitted(
+                    "Cannot reactivate a license key for a manually revoked benefit grant."
+                )
         if status is not None and status != license_key.status:
             await self._enqueue_grant_lifecycle(session, license_key, status)
 
@@ -260,7 +266,11 @@ class LicenseKeyService:
         enqueue_job("customer.state_changed", loaded.customer_id)
 
     async def _get_grant(
-        self, session: AsyncSession, license_key: LicenseKey
+        self,
+        session: AsyncSession,
+        license_key: LicenseKey,
+        *,
+        for_update: bool = False,
     ) -> BenefitGrant | None:
         grant_repository = BenefitGrantRepository.from_session(session)
         return await grant_repository.get_by_property_and_organization(
@@ -269,6 +279,7 @@ class LicenseKeyService:
             str(license_key.id),
             benefit_id=license_key.benefit_id,
             customer_id=license_key.customer_id,
+            for_update=for_update,
         )
 
     async def _enqueue_grant_lifecycle(

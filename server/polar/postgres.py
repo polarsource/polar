@@ -17,16 +17,18 @@ from polar.kit.db.postgres import create_async_engine as _create_async_engine
 from polar.kit.db.postgres import create_sync_engine as _create_sync_engine
 
 type ProcessName = Literal["app", "worker", "scheduler", "script"]
+type AsyncDriver = Literal["asyncpg", "psycopg"]
 
 
 def create_async_engine(
     process_name: ProcessName,
     *,
+    driver: AsyncDriver = "asyncpg",
     pool_logging_name: str | None = None,
     pool_pre_ping: bool = False,
 ) -> AsyncEngine:
     return _create_async_engine(
-        dsn=str(settings.get_postgres_dsn("asyncpg")),
+        dsn=str(settings.get_postgres_dsn(driver)),
         application_name=f"{settings.ENV.value}.{process_name}",
         pool_logging_name=pool_logging_name or process_name,
         debug=settings.SQLALCHEMY_DEBUG,
@@ -41,10 +43,13 @@ def create_async_engine(
 
 
 def create_async_read_engine(
-    process_name: ProcessName, *, pool_pre_ping: bool = False
+    process_name: ProcessName,
+    *,
+    driver: AsyncDriver = "asyncpg",
+    pool_pre_ping: bool = False,
 ) -> AsyncEngine:
     return _create_async_engine(
-        dsn=str(settings.get_postgres_read_dsn("asyncpg")),
+        dsn=str(settings.get_postgres_read_dsn(driver)),
         application_name=f"{settings.ENV.value}.{process_name}",
         pool_logging_name=f"{process_name}_read",
         debug=settings.SQLALCHEMY_DEBUG,
@@ -92,6 +97,7 @@ async def get_db_read_session(request: Request) -> AsyncGenerator[AsyncReadSessi
 
 
 __all__ = [
+    "AsyncDriver",
     "AsyncEngine",
     "AsyncReadSession",
     "AsyncSession",

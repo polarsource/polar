@@ -26,7 +26,7 @@ import { twMerge } from 'tailwind-merge'
 import ProductPriceTypeLabel, {
   type ProductPriceType,
 } from './ProductPriceTypeLabel'
-import { ProductVersionLabel } from './ProductVersionLabel'
+import { CatalogVersionLabel } from './CatalogVersionLabel'
 
 const ProductsCommandGroup = ({
   organization,
@@ -87,9 +87,9 @@ const ProductsCommandGroup = ({
           >
             <Box alignItems="center" columnGap="s">
               {`${product.name} ${product.is_archived ? '(Archived)' : ''}`}
-              <ProductVersionLabel
+              <CatalogVersionLabel
                 organization={organization}
-                product={product}
+                version={product}
                 label="Archived"
               />
             </Box>

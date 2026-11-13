@@ -1,5 +1,6 @@
 'use client'
 
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { useModal } from '@/components/Modal/useModal'
@@ -107,7 +108,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
       header={
         <>
           <div className="flex flex-col gap-y-4">
-            <h2 className="text-2xl">{meter.name}</h2>
+            <div className="flex items-center gap-x-3">
+              <h2 className="text-2xl">{meter.name}</h2>
+              <CatalogVersionLabel
+                organization={organization}
+                version={meter}
+              />
+            </div>
             <div className="flex flex-row items-center gap-x-2">
               <Status
                 color="blue"

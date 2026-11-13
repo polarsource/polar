@@ -1,5 +1,6 @@
 from typing import Any
 
+import structlog
 from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
 from httpx_oauth.integrations.fastapi import OAuth2AuthorizeCallback
@@ -17,12 +18,15 @@ from polar.integrations.github_repository_benefit.schemas import (
 )
 from polar.kit import jwt
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
+from polar.logging import Logger
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from .service import github_oauth_client, github_repository_benefit_user_service
+
+log: Logger = structlog.get_logger()
 
 router = APIRouter(
     prefix="/integrations/github_repository_benefit",
@@ -94,6 +98,20 @@ async def user_callback(
     ),
 ) -> RedirectResponse:
     token_data, state = await get_decoded_token_state(access_token_state)
+    return_to = state["return_to"]
+
+    if "access_token" not in token_data:
+        log.info(
+            "github_repository_benefit.user_callback.access_token_missing",
+            user_id=str(auth_subject.subject.id),
+        )
+        redirect_url = get_safe_return_url(
+            add_query_parameters(
+                return_to,
+                error="Failed to get access token. Please try again later.",
+            )
+        )
+        return RedirectResponse(redirect_url, 303)
 
     try:
         await github_repository_benefit_user_service.create_oauth_account(
@@ -106,7 +124,6 @@ async def user_callback(
             session, auth_subject.subject, token_data
         )
 
-    return_to = state["return_to"]
     redirect_url = get_safe_return_url(add_query_parameters(return_to))
 
     return RedirectResponse(redirect_url, 303)

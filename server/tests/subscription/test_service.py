@@ -46,6 +46,7 @@ from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     Benefit,
     BillingEntry,
+    BillingInterval,
     Customer,
     Discount,
     Event,
@@ -54,12 +55,14 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
+    ReducerBucket,
     Subscription,
     User,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.billing_interval import UsagePolicy
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
@@ -87,6 +90,9 @@ from polar.product.guard import (
     is_static_price,
 )
 from polar.product.price_set import PriceSet
+from polar.redis import Redis
+from polar.reducer.service import get_reducer_bucket_start
+from polar.reducer.service import reducer as reducer_service
 from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
@@ -1831,6 +1837,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_sent_once(
@@ -2162,6 +2169,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_not_sent(
@@ -2254,6 +2262,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_sent_once(
@@ -2347,6 +2356,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:
@@ -2640,6 +2650,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -2769,6 +2780,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert not any(
@@ -4947,6 +4959,7 @@ class TestUpdateMeters:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         customer: Customer,
         update_meters_fixtures: UpdateMetersFixture,
@@ -4959,7 +4972,7 @@ class TestUpdateMeters:
         await save_fixture(subscription_meter)
 
         updated_subscription = await subscription_service.update_meters(
-            session, subscription
+            session, redis, subscription
         )
 
         assert len(updated_subscription.meters) == 1
@@ -4970,10 +4983,75 @@ class TestUpdateMeters:
         assert updated_subscription_meter.credited_units == 0
         assert updated_subscription_meter.amount == 0
 
+    async def test_reducer_billing_reads_pending_reducer_usage(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        update_meters_fixtures: UpdateMetersFixture,
+    ) -> None:
+        meter, product, price, subscription = update_meters_fixtures
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        reducer = await reducer_service.sync_meter(session, meter)
+        now = utc_now()
+        await save_fixture(
+            BillingInterval(
+                organization=organization,
+                subscription=subscription,
+                customer=customer,
+                meter=meter,
+                product_price=price,
+                period_start=now - timedelta(hours=1),
+                usage_policy=UsagePolicy.charge,
+            )
+        )
+        slot = get_reducer_bucket_start(now - timedelta(minutes=30))
+        for bucket_start, tokens, billed_at in (
+            (slot, 20, None),
+            (slot + timedelta(minutes=5), 7, now),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=1,
+                    sum=Decimal(tokens),
+                    min=Decimal(tokens),
+                    max=Decimal(tokens),
+                    sealed_at=billed_at,
+                    billed_at=billed_at,
+                )
+            )
+        live_event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=now,
+            ingested_at=now,
+            metadata={"tokens": 5},
+        )
+        await reducer_service.rollup(session, redis, organization.id, [live_event])
+
+        updated_subscription = await subscription_service.update_meters(
+            session, redis, subscription
+        )
+
+        (subscription_meter,) = updated_subscription.meters
+        assert subscription_meter.consumed_units == 25
+        assert subscription_meter.credited_units == 0
+        assert subscription_meter.amount == 2500
+
     async def test_basic(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         customer: Customer,
         update_meters_fixtures: UpdateMetersFixture,
@@ -5008,7 +5086,7 @@ class TestUpdateMeters:
         ]
 
         updated_subscription = await subscription_service.update_meters(
-            session, subscription
+            session, redis, subscription
         )
 
         assert len(updated_subscription.meters) == 1
@@ -5638,6 +5716,7 @@ class TestUpdate:
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=updated.current_period_start,
+            period_start=ANY,
         )
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"
@@ -5923,6 +6002,7 @@ class TestUpdate:
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=updated.current_period_start,
+            period_start=ANY,
         )
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"
@@ -6536,6 +6616,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            period_start=ANY,
         )
 
     async def test_trial_to_no_trial_product_ends_trial(
@@ -6575,6 +6656,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            period_start=ANY,
         )
 
     async def test_trial_product_change_skips_proration_billing(

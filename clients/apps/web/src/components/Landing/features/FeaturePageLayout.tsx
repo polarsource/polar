@@ -161,7 +161,7 @@ export const FeatureRichList = ({
             gap={{ base: 's', lg: 'l' }}
           >
             <Box columnGap="xl">
-              <Text variant="heading-xxs" color="muted" tabularNums>
+              <Text variant="heading-xxs" as="p" color="muted" tabularNums>
                 {String(index + 1).padStart(2, '0')}
               </Text>
               <Text variant="heading-xxs" as="h3">

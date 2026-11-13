@@ -39,6 +39,23 @@ variable "api_service_config" {
   })
 }
 
+variable "additional_api_services" {
+  description = "Extra services running the API, keyed by name, each scaled independently"
+  type = map(object({
+    plan            = optional(string)
+    web_concurrency = optional(string)
+    start_command   = optional(string)
+    custom_domains  = optional(list(object({ name = string })), [])
+    autoscaling = object({
+      min               = number
+      max               = number
+      cpu_percentage    = optional(number, 55)
+      memory_percentage = optional(number, 85)
+    })
+  }))
+  default = {}
+}
+
 variable "workers" {
   description = "Map of worker configurations"
   type = map(object({
@@ -140,8 +157,9 @@ variable "environment_groups" {
       POLAR_USER_SESSION_COOKIE_KEY              = optional(string)
       POLAR_AUTH_COOKIE_KEY                      = optional(string)
 
-      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = optional(string)
-      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = optional(string)
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE               = optional(string)
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE      = optional(string)
+      POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS = optional(string)
 
       POLAR_LINEAR_API_KEY                            = optional(string)
       POLAR_LINEAR_TEAM_ID                            = optional(string)

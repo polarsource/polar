@@ -4,7 +4,7 @@ from typing import Annotated
 
 import structlog
 from opentelemetry import trace
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
@@ -16,6 +16,7 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
+    RedisMiddleware,
     TaskPriority,
     actor,
     enqueue_job,
@@ -182,11 +183,15 @@ async def subscription_update_meters(
             subscription_id,
             options=(
                 selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
+                joinedload(Subscription.customer),
+                joinedload(Subscription.organization),
             ),
         )
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
-        await subscription_service.update_meters(session, subscription)
+        await subscription_service.update_meters(
+            session, RedisMiddleware.get(), subscription
+        )
 
 
 @actor(

@@ -68,7 +68,7 @@ const DestinationCard = ({ title, href, Graphic }: Destination) => (
         <Text variant="heading-xxs" as="h2">
           {title}
         </Text>
-        <Text variant="heading-xs">
+        <Text variant="heading-xs" as="span">
           <OutwardArrow />
         </Text>
       </Box>
@@ -91,7 +91,9 @@ export const NotFound = () => {
         gap={{ base: '2xl', lg: 'l' }}
       >
         <Box alignItems="start" display={{ base: 'none', lg: 'flex' }}>
-          <Text variant="heading-s">404</Text>
+          <Text variant="heading-s" as="p">
+            404
+          </Text>
         </Box>
         <Box flexDirection="column" alignItems="start" rowGap="3xl">
           <Box flexDirection="column">

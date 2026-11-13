@@ -1,4 +1,6 @@
+import uuid
 from datetime import timedelta
+from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
@@ -155,6 +157,64 @@ class TestList:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+    async def test_changes(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog],
+        product: Product,
+        product_second: Product,
+        product_one_time: Product,
+    ) -> None:
+        draft, live, archived = catalogs
+        draft.parent = live
+        await save_fixture(draft)
+        team = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        perk, perk_second, extra = [
+            await create_benefit(save_fixture, organization=organization)
+            for _ in range(3)
+        ]
+        calls, calls_second = [
+            await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+            for _ in range(2)
+        ]
+        await save_fixture(CatalogMeter(catalog=live, meter=calls, external_id="calls"))
+        await save_fixture(
+            CatalogMeter(catalog=draft, meter=calls_second, external_id="calls")
+        )
+        for catalog, item, external_id in (
+            (archived, product, "pro"),
+            (archived, product_one_time, "lifetime"),
+            (live, product_second, "pro"),
+            (live, team, "team"),
+            (live, perk, "perk"),
+            (draft, product_second, "pro"),
+            (draft, team, "team"),
+            (draft, perk_second, "perk"),
+            (draft, extra, "extra"),
+        ):
+            await save_fixture(
+                CatalogProduct(catalog=catalog, product=item, external_id=external_id)
+                if isinstance(item, Product)
+                else CatalogBenefit(
+                    catalog=catalog, benefit=item, external_id=external_id
+                )
+            )
+
+        response = await client.get("/v1/catalogs/")
+
+        assert response.status_code == 200
+        assert [item["changes"] for item in response.json()["items"]] == [
+            {"added_count": 1, "changed_count": 2, "removed_count": 0},
+            {"added_count": 3, "changed_count": 1, "removed_count": 1},
+            None,
+        ]
+
 
 @pytest.mark.anyio
 class TestGet:
@@ -218,16 +278,25 @@ class TestGet:
                 )
             )
 
+        meter = await create_meter(save_fixture, organization=live.organization)
+        await save_fixture(CatalogMeter(catalog=live, meter=meter, external_id="calls"))
+
         response = await client.get(f"/v1/catalogs/{live.id}")
 
         assert response.status_code == 200
         json = response.json()
         assert json["id"] == str(live.id)
         assert json["parent_id"] == str(archived.id)
+        assert json["changes"] == {
+            "added_count": 1,
+            "changed_count": 1,
+            "removed_count": 0,
+        }
         assert json["products"] == [
             {"external_id": "lifetime", "product_id": str(product_one_time.id)},
             {"external_id": "pro", "product_id": str(product_second.id)},
         ]
+        assert json["meters"] == [{"external_id": "calls", "meter_id": str(meter.id)}]
 
         response = await client.get(f"/v1/catalogs/{draft.id}")
 
@@ -443,6 +512,20 @@ class TestListRemoved:
         for catalog in (v1, v2, v3):
             await save_fixture(catalog)
 
+        calls, unused = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id=external_id,
+            )
+            for external_id in ("calls", "unused")
+        ]
+        for meter in (calls, unused):
+            await save_fixture(
+                CatalogMeter(catalog=v2, meter=meter, external_id=meter.external_id)
+            )
+
         products = {
             external_id: await create_product(
                 save_fixture,
@@ -450,6 +533,9 @@ class TestListRemoved:
                 name=external_id.title(),
                 external_id=external_id,
                 recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(calls, Decimal(100), None, "usd")]
+                if external_id == "pro"
+                else [(1000, "usd")],
             )
             for external_id in ("free", "team", "lifetime", "pro")
         }
@@ -470,6 +556,9 @@ class TestListRemoved:
             )
         await create_active_subscription(
             save_fixture, product=products["team"], customer=customer
+        )
+        await create_active_subscription(
+            save_fixture, product=products["pro"], customer=customer
         )
 
         perk = await create_benefit(
@@ -497,6 +586,13 @@ class TestListRemoved:
             for item in response.json()
         ] == [
             (
+                "meter",
+                "calls",
+                "deprecated",
+                1,
+                *map(str, (v2.id, v2.id, calls.id, v3.id)),
+            ),
+            (
                 "benefit",
                 "perk",
                 "deprecated",
@@ -509,6 +605,13 @@ class TestListRemoved:
                 "deprecated",
                 1,
                 *map(str, (v2.id, v2.id, products["team"].id, v3.id)),
+            ),
+            (
+                "meter",
+                "unused",
+                "removed",
+                0,
+                *map(str, (v2.id, v2.id, unused.id, v3.id)),
             ),
             (
                 "product",

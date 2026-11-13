@@ -457,7 +457,10 @@ export const CheckoutLinkForm = ({
         <CheckoutLinkSeatsField selectedProducts={selectedProducts} />
 
         {hasRecurringProducts && (
-          <TrialConfigurationForm bottomText="This will override the trial configuration set on products." />
+          <TrialConfigurationForm
+            variant="field"
+            bottomText="This will override the trial configuration set on products."
+          />
         )}
 
         <MetadataForm label="Metadata" />

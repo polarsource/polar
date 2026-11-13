@@ -4,7 +4,7 @@ import { ActiveOrganization } from '@/schemas/Auth'
 export const NO_CONFIG_FILE =
   'No billing config file found in the current directory'
 
-export const FORMATS = ['ts', 'py', 'json'] as const
+export const FORMATS = ['ts', 'json'] as const
 export const Format = Schema.Literals(FORMATS)
 export type Format = typeof Format.Type
 
@@ -17,7 +17,6 @@ export const CONFIG_FILES: Record<Format, ReadonlyArray<string>> = {
     'polar.config.mjs',
     'polar.config.cjs',
   ],
-  py: ['polar_config.py'],
   json: ['polar.config.json', 'polar.json'],
 }
 

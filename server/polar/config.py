@@ -139,6 +139,7 @@ class Settings(BaseSettings):
     LOCAL_JWKS: str = DEVELOPMENT_JWKS
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
+    ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS: float = 0
 
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []

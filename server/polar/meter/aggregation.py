@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
-from pydantic import AfterValidator, BaseModel, Discriminator, TypeAdapter
+from pydantic import BaseModel, Discriminator, TypeAdapter
 from sqlalchemy import (
     ColumnExpressionArgument,
     Dialect,
@@ -14,6 +14,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB
 
 from polar.kit.metadata import get_nested_metadata_attr, get_nested_metadata_value
+from polar.meter.property import PropertyPath
 
 if TYPE_CHECKING:
     from polar.models import Event
@@ -63,11 +64,6 @@ class CountAggregation(BaseModel):
         return True
 
 
-def _strip_metadata_prefix(value: str) -> str:
-    prefix = "metadata."
-    return value.removeprefix(prefix)
-
-
 class PropertyAggregation(BaseModel):
     func: Literal[
         AggregationFunction.sum,
@@ -75,7 +71,7 @@ class PropertyAggregation(BaseModel):
         AggregationFunction.min,
         AggregationFunction.avg,
     ]
-    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
+    property: PropertyPath
 
     def get_sql_value(self, model: type[Any]) -> Any:
         if self.property in model._filterable_fields:
@@ -122,7 +118,7 @@ class PropertyAggregation(BaseModel):
 
 class UniqueAggregation(BaseModel):
     func: Literal[AggregationFunction.unique] = AggregationFunction.unique
-    property: Annotated[str, AfterValidator(_strip_metadata_prefix)]
+    property: PropertyPath
 
     def get_sql_column(self, model: type[Any]) -> Any:
         attr = get_nested_metadata_attr(model, self.property)

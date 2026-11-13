@@ -532,6 +532,67 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return len(result.all())
 
+    async def get_unbilled_totals(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        since: datetime | None,
+        until: datetime,
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
+        """id, count, sum, min and max of the identities' sealed, unbilled buckets
+        within [since, until): those `mark_as_billed` marks."""
+        result = await self.session.execute(
+            select(
+                ReducerBucket.id,
+                ReducerBucket.count,
+                ReducerBucket.sum,
+                ReducerBucket.min,
+                ReducerBucket.max,
+            ).where(*self._get_unbilled_clauses(reducer, identities, since, until))
+        )
+        return result.tuples().all()
+
+    async def get_pending_totals(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        start: datetime,
+        end: datetime,
+    ) -> Totals:
+        """count, sum, min and max of the identities' buckets not billed yet,
+        sealed or not, starting within [start, end)."""
+        result = await self.session.execute(
+            select(
+                func.coalesce(func.sum(ReducerBucket.count), 0),
+                func.coalesce(func.sum(ReducerBucket.sum), 0),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+            ).where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                _is_any_customer(identities),
+                ReducerBucket.billed_at.is_(None),
+                ReducerBucket.bucket_start >= start,
+                ReducerBucket.bucket_start < end,
+            )
+        )
+        return result.tuples().one()
+
+    async def mark_ids_as_billed(
+        self, bucket_ids: Sequence[UUID], order_id: UUID, *, billed_at: datetime
+    ) -> int:
+        """Marks the buckets not billed yet as billed by the order, and returns
+        how many it marked."""
+        result = await self.session.execute(
+            update(ReducerBucket)
+            .where(ReducerBucket.id.in_(bucket_ids), ReducerBucket.billed_at.is_(None))
+            .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
+            .returning(ReducerBucket.id)
+        )
+        return len(result.all())
+
     async def mark_as_billed(
         self,
         reducer: Reducer,
@@ -541,22 +602,12 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         since: datetime | None,
         until: datetime,
         billed_at: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
-        """Marks the identities' sealed, unbilled buckets within [since, until] as
-        billed by the order, and returns their count, sum, min and max."""
-        clauses = [ReducerBucket.bucket_end <= until]
-        if since is not None:
-            clauses.append(ReducerBucket.bucket_start >= since)
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
+        """Marks the identities' sealed, unbilled buckets within [since, until) as
+        billed by the order, and returns their id, count, sum, min and max."""
         unbilled_ids = (
             select(ReducerBucket.id)
-            .where(
-                ReducerBucket.organization_id == reducer.organization_id,
-                ReducerBucket.reducer_id == reducer.id,
-                _is_any_customer(identities),
-                ReducerBucket.sealed_at.is_not(None),
-                ReducerBucket.billed_at.is_(None),
-                *clauses,
-            )
+            .where(*self._get_unbilled_clauses(reducer, identities, since, until))
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()
         )
@@ -565,6 +616,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .where(ReducerBucket.id.in_(unbilled_ids))
             .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
             .returning(
+                ReducerBucket.id,
                 ReducerBucket.count,
                 ReducerBucket.sum,
                 ReducerBucket.min,
@@ -572,6 +624,25 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
         )
         return result.tuples().all()
+
+    def _get_unbilled_clauses(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        since: datetime | None,
+        until: datetime,
+    ) -> list[ColumnElement[bool]]:
+        clauses = [
+            ReducerBucket.organization_id == reducer.organization_id,
+            ReducerBucket.reducer_id == reducer.id,
+            _is_any_customer(identities),
+            ReducerBucket.sealed_at.is_not(None),
+            ReducerBucket.billed_at.is_(None),
+            ReducerBucket.bucket_end <= until,
+        ]
+        if since is not None:
+            clauses.append(ReducerBucket.bucket_start >= since)
+        return clauses
 
     def get_event_billed_by_other_order_clause(
         self,

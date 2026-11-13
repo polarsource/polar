@@ -10,9 +10,8 @@ import {
   languageOf,
   supportedFiles,
 } from '@/services/billing-config/languages'
-import { type Run, run as spawn } from '@/utils/run'
 
-export const loader = (fs: FileSystem.FileSystem, run: Run = spawn) => {
+export const loader = (fs: FileSystem.FileSystem) => {
   const findDefault = Effect.gen(function* () {
     for (const name of DEFAULT_CONFIG_FILES) {
       if (yield* exists(fs, name)) return name
@@ -38,6 +37,6 @@ export const loader = (fs: FileSystem.FileSystem, run: Run = spawn) => {
           hint: supportedFiles(),
         })
       }
-      return yield* language.load(fs, run, resolved)
+      return yield* language.load(fs, resolved)
     })
 }

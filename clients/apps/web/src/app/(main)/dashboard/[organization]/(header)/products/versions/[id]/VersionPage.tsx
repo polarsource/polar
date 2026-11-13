@@ -1,13 +1,14 @@
 'use client'
 
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { PublishDraftButton } from '@/components/Products/PublishDraftButton'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PublishedAt } from '../VersionList'
+import { PublishedAt } from '../PublishedAt'
 import { VersionDiff } from './VersionDiff'
 
 type Organization = schemas['Organization']
@@ -43,7 +44,7 @@ export default function VersionPage({
     notFound()
   }
   if (!catalog) {
-    return <MasterDetailLayoutContent />
+    return <DashboardBody title={null} />
   }
 
   const versionsPath = `/dashboard/${organization.slug}/products/versions`
@@ -60,49 +61,72 @@ export default function VersionPage({
       benefits.map((row) => [row.external_id, row.benefit_id]),
     ),
   )
+  const meterIds = new Map(
+    catalogs.flatMap(({ meters }) =>
+      meters.map((row) => [row.external_id, row.meter_id]),
+    ),
+  )
   const productsPath = `/dashboard/${organization.slug}/products`
 
   return (
-    <MasterDetailLayoutContent
+    <DashboardBody
+      title={null}
       header={
-        <Box flexDirection="column" rowGap="xs" minWidth={0}>
-          <Box alignItems="center" columnGap="l" minWidth={0}>
-            <Text variant="heading-xs" as="h1" truncate>
-              {catalog.name ?? 'Untitled'}
-            </Text>
-          </Box>
-          <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
-            <Text color="muted">{statusLabel[catalog.status]}</Text>
-            <Dot />
-            <Text color="muted">
-              {catalog.published_at ? (
+        <>
+          <Box flexDirection="column" rowGap="xs" minWidth={0}>
+            <Link href={versionsPath}>
+              <Box
+                as="span"
+                color={{ base: 'text-secondary', hover: 'text-primary' }}
+                transitionProperty="colors"
+                transitionDuration="fast"
+              >
+                <Text as="span" color="inherit">
+                  ← Versions
+                </Text>
+              </Box>
+            </Link>
+            <Box alignItems="center" columnGap="l" minWidth={0}>
+              <Text variant="heading-xs" as="h1" truncate>
+                {catalog.name ?? 'Untitled'}
+              </Text>
+            </Box>
+            <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
+              <Text color="muted">{statusLabel[catalog.status]}</Text>
+              <Dot />
+              <Text color="muted">
+                {catalog.published_at ? (
+                  <>
+                    Published <PublishedAt catalog={catalog} />
+                  </>
+                ) : (
+                  'Not published'
+                )}
+              </Text>
+              {parent ? (
                 <>
-                  Published <PublishedAt catalog={catalog} />
+                  <Dot />
+                  <Text color="muted">Based on</Text>
+                  <Link href={`${versionsPath}/${parent.id}`}>
+                    <Box
+                      as="span"
+                      color={{ base: 'text-primary', hover: 'text-secondary' }}
+                      transitionProperty="colors"
+                      transitionDuration="fast"
+                    >
+                      <Text as="span" color="inherit">
+                        {parent.name ?? 'Untitled'}
+                      </Text>
+                    </Box>
+                  </Link>
                 </>
-              ) : (
-                'Not published'
-              )}
-            </Text>
-            {parent ? (
-              <>
-                <Dot />
-                <Text color="muted">Based on</Text>
-                <Link href={`${versionsPath}/${parent.id}`}>
-                  <Box
-                    as="span"
-                    color={{ base: 'text-primary', hover: 'text-secondary' }}
-                    transitionProperty="colors"
-                    transitionDuration="fast"
-                  >
-                    <Text as="span" color="inherit">
-                      {parent.name ?? 'Untitled'}
-                    </Text>
-                  </Box>
-                </Link>
-              </>
-            ) : null}
+              ) : null}
+            </Box>
           </Box>
-        </Box>
+          {catalog.status === 'draft' ? (
+            <PublishDraftButton catalogId={catalog.id} />
+          ) : null}
+        </>
       }
     >
       <Box flexDirection="column" minWidth={0}>
@@ -118,9 +142,13 @@ export default function VersionPage({
               const id = benefitIds.get(externalId)
               return id ? `${productsPath}/benefits/${id}` : undefined
             }}
+            meterHref={(externalId) => {
+              const id = meterIds.get(externalId)
+              return id ? `${productsPath}/meters/${id}` : undefined
+            }}
           />
         ) : null}
       </Box>
-    </MasterDetailLayoutContent>
+    </DashboardBody>
   )
 }

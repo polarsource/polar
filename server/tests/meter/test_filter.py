@@ -5,7 +5,12 @@ from pydantic import ValidationError
 
 from polar.event.repository import EventRepository
 from polar.kit.utils import utc_now
-from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
+from polar.meter.filter import (
+    Filter,
+    FilterClause,
+    FilterConjunction,
+    FilterOperator,
+)
 from polar.models import Event, Organization
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -85,6 +90,31 @@ class TestFilterClauseValueValidation:
         """Test that strings exceeding length limit are rejected."""
         with pytest.raises(ValidationError):
             FilterClause(property="test", operator=FilterOperator.eq, value=value)
+
+
+class TestFilterClausePropertyValidation:
+    @pytest.mark.parametrize(
+        "property",
+        [
+            "a.b.c.d.e",
+            "metadata.a.b.c.d.e",
+            "a" * 255,
+        ],
+    )
+    def test_valid(self, property: str) -> None:
+        FilterClause(property=property, operator=FilterOperator.eq, value="x")
+
+    @pytest.mark.parametrize(
+        "property",
+        [
+            "a.b.c.d.e.f",
+            "a" * 256,
+            ".".join(["a"] * 500),
+        ],
+    )
+    def test_invalid(self, property: str) -> None:
+        with pytest.raises(ValidationError):
+            FilterClause(property=property, operator=FilterOperator.eq, value="x")
 
 
 @pytest.mark.anyio

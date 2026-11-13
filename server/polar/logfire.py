@@ -122,8 +122,6 @@ def _scrubbing_callback(match: logfire.ScrubMatch) -> Any | None:
         ("attributes", "message", "actor_name"),
         ("message", "actor"),
         ("message", "actor_name"),
-        # Don't scrub auth subject in log messages
-        ("attributes", "subject"),
         # Don't scrub thread stacks from the event loop watchdog — they contain
         # "session" via SQLAlchemy frames which triggers the default scrubber,
         # but these are stack traces, not secrets.

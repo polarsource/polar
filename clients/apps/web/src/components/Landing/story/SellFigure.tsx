@@ -82,7 +82,7 @@ export const SellFigure = () => {
             </Text>
           }
         >
-          <Text variant="heading-xs" tabularNums>
+          <Text variant="heading-xs" as="p" tabularNums>
             €2,735.81
           </Text>
           <Box flexDirection="column" rowGap="s">
@@ -126,7 +126,7 @@ export const SellFigure = () => {
             key={round}
             className="[animation:appear_360ms_cubic-bezier(0.2,0.8,0.2,1)_both]"
           >
-            <Text variant="heading-xs" tabularNums>
+            <Text variant="heading-xs" as="p" tabularNums>
               {PAYOUTS[round]}
             </Text>
           </div>

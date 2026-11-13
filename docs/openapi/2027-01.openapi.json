@@ -3,7 +3,7 @@
   "info": {
     "title": "Polar API",
     "summary": "Polar HTTP and Webhooks API",
-    "description": "Read the docs at https://polar.sh/docs/api-reference",
+    "description": "Read the docs at https://polar.sh/docs/api-reference. See https://polar.sh/docs/api-reference/versioning for the API versioning and deprecation policy.",
     "version": "2027-01"
   },
   "servers": [
@@ -5476,11 +5476,11 @@
         "x-codeSamples": [
           {
             "lang": "python",
-            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.create(\n    external_id='ext_1337',\n    name='string',\n    prices=[{'amount_type': 'fixed', 'price_amount': 0}],\n    recurring_interval='day',\n    recurring_interval_count=1,\n)\nprint(response)\n"
+            "source": "from polar.v2027_01 import Polar\n\npolar = Polar(\"polar_oat_xxx\")\n\nresponse = polar.products.create(\n    external_id='ext_1337',\n    name='string',\n    prices=[{'amount_type': 'fixed', 'price_amount': 0}],\n    trial_payment_setup_required=True,\n    recurring_interval='day',\n    recurring_interval_count=1,\n)\nprint(response)\n"
           },
           {
             "lang": "typescript",
-            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
+            "source": "import { createPolar } from \"@polar-sh/sdk/2027-01\";\n\nconst polar = createPolar({\n  accessToken: \"polar_oat_xxx\",\n});\n\nconst response = await polar.products.create(\n  {\n    \"external_id\": \"ext_1337\",\n    \"name\": \"string\",\n    \"prices\": [\n      {\n        \"amount_type\": \"fixed\",\n        \"price_amount\": 0\n      }\n    ],\n    \"trial_payment_setup_required\": true,\n    \"recurring_interval\": \"day\",\n    \"recurring_interval_count\": 1\n  },\n);\nconsole.log(response);\n"
           }
         ]
       }
@@ -35015,6 +35015,38 @@
       },
       "BenefitGrant": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -35196,6 +35228,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -35218,6 +35252,38 @@
       },
       "BenefitGrantCustomWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -35385,6 +35451,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -35431,6 +35499,38 @@
       },
       "BenefitGrantDiscordWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -35598,6 +35698,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -35628,6 +35730,38 @@
       },
       "BenefitGrantDownloadablesWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -35795,6 +35929,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -35840,6 +35976,38 @@
       },
       "BenefitGrantFeatureFlagWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -36007,6 +36175,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -36064,6 +36234,38 @@
       },
       "BenefitGrantGitHubRepositoryWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -36231,6 +36433,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -36266,6 +36470,38 @@
       },
       "BenefitGrantLicenseKeysWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -36433,6 +36669,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -36494,6 +36732,38 @@
       },
       "BenefitGrantMeterCreditWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -36661,6 +36931,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -36708,6 +36980,38 @@
       },
       "BenefitGrantSlackSharedChannelWebhook": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -36875,6 +37179,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -41361,6 +41667,18 @@
             "$ref": "#/components/schemas/PaymentProcessor",
             "description": "Payment processor used."
           },
+          "trial_payment_setup_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."
+          },
           "client_secret": {
             "type": "string",
             "title": "Client Secret",
@@ -41505,6 +41823,7 @@
           "trial_interval_count",
           "metadata",
           "payment_processor",
+          "trial_payment_setup_required",
           "client_secret",
           "success_url",
           "return_url",
@@ -41576,6 +41895,18 @@
             ],
             "title": "Trial Interval Count",
             "description": "The number of interval units for the trial period."
+          },
+          "trial_payment_setup_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."
           },
           "payment_processor": {
             "type": "string",
@@ -41962,6 +42293,18 @@
             "maxProperties": 50,
             "title": "Metadata",
             "description": "Key-value object allowing you to store additional information.\n\nThe key must be a string with a maximum length of **40 characters**.\nThe value must be either:\n\n* A string with a maximum length of **500 characters**\n* An integer\n* A floating-point number\n* A boolean\n\nYou can store up to **50 key-value pairs**."
+          },
+          "trial_payment_setup_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."
           },
           "products": {
             "anyOf": [
@@ -47449,6 +47792,38 @@
       },
       "CustomerBenefitGrantCustom": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -47586,6 +47961,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -47619,6 +47996,38 @@
       },
       "CustomerBenefitGrantDiscord": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -47766,6 +48175,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -47823,6 +48234,38 @@
       },
       "CustomerBenefitGrantDownloadables": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -47960,6 +48403,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -47993,6 +48438,38 @@
       },
       "CustomerBenefitGrantFeatureFlag": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -48130,6 +48607,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -48163,6 +48642,38 @@
       },
       "CustomerBenefitGrantGitHubRepository": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -48310,6 +48821,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -48367,6 +48880,38 @@
       },
       "CustomerBenefitGrantLicenseKeys": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -48504,6 +49049,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -48560,6 +49107,38 @@
       },
       "CustomerBenefitGrantMeterCredit": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -48697,6 +49276,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -48730,6 +49311,38 @@
       },
       "CustomerBenefitGrantSlackSharedChannel": {
         "properties": {
+          "manually_granted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Granted At",
+            "description": "When the manual grant was requested, if applicable."
+          },
+          "manually_revoked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Manually Revoked At",
+            "description": "When this grant was permanently revoked manually, if applicable."
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -48867,6 +49480,8 @@
         },
         "type": "object",
         "required": [
+          "manually_granted_at",
+          "manually_revoked_at",
           "created_at",
           "modified_at",
           "id",
@@ -63703,6 +64318,7 @@
           },
           "name": {
             "type": "string",
+            "maxLength": 128,
             "minLength": 3,
             "title": "Name",
             "description": "The name of the meter. Will be shown on customer's invoices and usage."
@@ -63715,7 +64331,8 @@
           "custom_label": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 32
               },
               {
                 "type": "null"
@@ -64245,6 +64862,7 @@
             "anyOf": [
               {
                 "type": "string",
+                "maxLength": 128,
                 "minLength": 3
               },
               {
@@ -64268,7 +64886,8 @@
           "custom_label": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 32
               },
               {
                 "type": "null"
@@ -73579,6 +74198,11 @@
             "title": "Organization Id",
             "description": "The ID of the organization owning the product."
           },
+          "trial_payment_setup_required": {
+            "type": "boolean",
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."
+          },
           "catalog_id": {
             "anyOf": [
               {
@@ -73675,6 +74299,7 @@
           "is_recurring",
           "is_archived",
           "organization_id",
+          "trial_payment_setup_required",
           "catalog_id",
           "is_current",
           "external_id",
@@ -74068,6 +74693,12 @@
             ],
             "title": "Trial Interval Count",
             "description": "The number of interval units for the trial period."
+          },
+          "trial_payment_setup_required": {
+            "type": "boolean",
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.",
+            "default": true
           },
           "recurring_interval": {
             "$ref": "#/components/schemas/RecurringInterval",
@@ -75754,6 +76385,18 @@
               }
             ],
             "title": "Attached Custom Fields"
+          },
+          "trial_payment_setup_required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trial Payment Setup Required",
+            "description": "Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."
           }
         },
         "type": "object",
@@ -85146,5 +85789,9 @@
       "name": "cli",
       "description": "Endpoints exposed as commands by Polar's CLI."
     }
-  ]
+  ],
+  "externalDocs": {
+    "description": "API versioning and deprecation policy",
+    "url": "https://polar.sh/docs/api-reference/versioning"
+  }
 }

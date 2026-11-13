@@ -124,7 +124,7 @@ export const MeterVignette = () => {
           <Text variant="caption" color="muted">
             Acme Inc · this cycle
           </Text>
-          <Text variant="heading-xxs" tabularNums>
+          <Text variant="heading-xxs" as="p" tabularNums>
             {tokens.toFixed(1)}M
             <Text as="span" variant="heading-xxs" color="muted">
               {' '}
@@ -238,7 +238,7 @@ export const PayoutVignette = () => {
       >
         <Box justifyContent="between" alignItems="baseline" columnGap="l">
           <Text variant="body">Acme Inc</Text>
-          <Text variant="heading-xxs" tabularNums>
+          <Text variant="heading-xxs" as="p" tabularNums>
             {PAYOUTS[Math.floor(step / 2)]}
           </Text>
         </Box>

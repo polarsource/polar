@@ -1977,6 +1977,99 @@ class TestPlan:
             await declarative_config_service.apply(session, redis, auth_subject, config)
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_changed_product_over_limit(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [PACK_PRODUCT]}),
+        )
+        organization.products_limit = 1
+        config = Config.model_validate(
+            {"products": [{**PACK_PRODUCT, "name": "Pack Plus"}]}
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+
+        [issue] = plan.issues
+        assert issue.severity == ConfigIssueSeverity.error
+        assert issue.type == ConfigIssueType.limit_exceeded
+        assert issue.loc == ["body", "products", 0]
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(session, redis, auth_subject, config)
+        assert exc_info.value.errors == [issue]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_draft_row_update_within_limit(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.products_limit = 2
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+        )
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO_25]}),
+            publish=False,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"products": [{**MONTHLY_PRO_25, "name": "Pro Plus"}]}
+            ),
+        )
+
+        assert plan.issues == []
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_draft_product_interval_change_over_limit(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.products_limit = 1
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [MONTHLY_PRO]}),
+            publish=False,
+        )
+        config = Config.model_validate(
+            {"products": [{**MONTHLY_PRO, "recurring_interval": "year"}]}
+        )
+
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+
+        [issue] = plan.issues
+        assert issue.type == ConfigIssueType.limit_exceeded
+        assert issue.loc == ["body", "products", 0]
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session, redis, auth_subject, config, publish=False
+            )
+        assert exc_info.value.errors == [issue]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_settings_diff(
         self, session: AsyncSession, auth_subject: AuthSubject[Organization]
     ) -> None:

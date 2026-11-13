@@ -15,6 +15,7 @@ export const PRODUCTS = {
     ],
     recurring_interval: 'month',
     recurring_interval_count: 1,
+    trial_payment_setup_required: true,
     trial_interval: 'day',
     trial_interval_count: 7,
   },
@@ -49,6 +50,7 @@ export const PRODUCTS = {
     ],
     recurring_interval: 'month',
     recurring_interval_count: 1,
+    trial_payment_setup_required: true,
   },
   freeProduct: {
     name: 'E2E Free product',
@@ -73,6 +75,7 @@ export const PRODUCTS = {
     ],
     recurring_interval: 'month',
     recurring_interval_count: 1,
+    trial_payment_setup_required: true,
   },
   payWhatYouWant: {
     name: 'E2E Pay what you want',
@@ -103,6 +106,7 @@ export const meteredSubscription = (meterId: string): ProductSpec => ({
   ],
   recurring_interval: 'month',
   recurring_interval_count: 1,
+  trial_payment_setup_required: true,
 })
 
 export const withRequiredCustomField = (

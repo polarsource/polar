@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from importlib import import_module
 from typing import Any
 
 import httpx
@@ -7,7 +8,6 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from starlette.types import Receive, Scope, Send
 
-from polar.app import app as polar_app
 from polar.auth.dependencies import _auth_subject_factory_cache
 from polar.auth.models import AuthSubject, Subject
 from polar.checkout.ip_geolocation import _get_client_dependency
@@ -41,9 +41,17 @@ class IsolatedSessionTestClient(httpx.AsyncClient):
         return await super().request(*args, **kwargs)
 
 
+@pytest.fixture(scope="session")
+def polar_app() -> FastAPI:
+    return import_module("polar.app").app
+
+
 @pytest.fixture
 async def app(
-    auth_subject: AuthSubject[Subject], session: AsyncSession, redis: Redis
+    polar_app: FastAPI,
+    auth_subject: AuthSubject[Subject],
+    session: AsyncSession,
+    redis: Redis,
 ) -> AsyncGenerator[FastAPI]:
     polar_app.dependency_overrides[get_db_session] = lambda: session
     polar_app.dependency_overrides[get_db_read_session] = lambda: session

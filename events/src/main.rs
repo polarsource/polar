@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
             match tokio::time::timeout_at(signalled_at + SHUTDOWN_GRACE, &mut drain).await {
                 Ok(drained) => drained?,
                 Err(_) => tracing::error!(
-                    "in-flight requests and event writes did not finish before shutdown"
+                    "in-flight requests, writes and job sends did not finish before shutdown"
                 ),
             }
         }

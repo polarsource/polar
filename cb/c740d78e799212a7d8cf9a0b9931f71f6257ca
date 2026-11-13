@@ -1,0 +1,21 @@
+server/polar/event/service.py
+  s_a3c28b0e096a4a::t_13861f083c19b5 117-119,1081-1085,1087-1088,1090-1091
+server/benchmarks/test_event.py
+  s_a3c28b0e096a4a::t_13861f083c19b5 19,32-34,216,219-220
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cbc740d78e799212a7d8cf9a0b9931f71f6257ca",
+  "prompts": {},
+  "sessions": {
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

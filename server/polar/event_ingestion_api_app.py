@@ -3,10 +3,13 @@ from fastapi import APIRouter
 from polar.app import create_app
 from polar.event.endpoints import ingest_router
 from polar.logfire import instrument_fastapi
+from polar.observability import cpu_starvation
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(ingest_router)
 
 # psycopg runs each query in one round trip behind PgBouncer; asyncpg needs three
 app = create_app(api_router, database_driver="psycopg")
+if cpu_starvation.is_supported():
+    app.add_middleware(cpu_starvation.CPUStarvationMiddleware)
 instrument_fastapi(app)

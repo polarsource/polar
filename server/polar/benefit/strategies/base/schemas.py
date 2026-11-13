@@ -111,7 +111,22 @@ class BenefitBase(MetadataOutputMixin, ExternalIDOutputMixin, BenefitPublicBase)
         return self.type.is_visibility_configurable()
 
 
-class BenefitGrantBase(IDSchema, TimestampedSchema):
+class BenefitGrantManualTimestamps(Schema):
+    manually_granted_at: Annotated[
+        datetime | None,
+        Version(starting_from=V2027_01),
+        Field(description="When the manual grant was requested, if applicable."),
+    ]
+    manually_revoked_at: Annotated[
+        datetime | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description="When this grant was permanently revoked manually, if applicable."
+        ),
+    ]
+
+
+class BenefitGrantBase(IDSchema, TimestampedSchema, BenefitGrantManualTimestamps):
     """
     A grant of a benefit to a customer.
     """

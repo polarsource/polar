@@ -17,9 +17,13 @@ from polar.kit.versioning import QuerySchema, Version
 from polar.meter.aggregation import Aggregation, AggregationFunction
 from polar.meter.filter import Filter
 from polar.meter.unit import MeterUnit
+from polar.models.catalog import CatalogStatus
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
+
+NAME_MAX_LENGTH = 128
+CUSTOM_LABEL_MAX_LENGTH = 32
 
 NAME_DESCRIPTION = (
     "The name of the meter. Will be shown on customer's invoices and usage."
@@ -33,7 +37,9 @@ _aggregation_description = (
 
 
 class MeterCreateBase(Schema, MetadataInputMixin):
-    name: str = Field(..., description=NAME_DESCRIPTION, min_length=3)
+    name: str = Field(
+        ..., description=NAME_DESCRIPTION, min_length=3, max_length=NAME_MAX_LENGTH
+    )
     unit: MeterUnit = Field(
         default=MeterUnit.scalar,
         description="The unit of the meter.",
@@ -44,6 +50,7 @@ class MeterCreateBase(Schema, MetadataInputMixin):
             "The label for the custom unit, e.g. 'request'. "
             "Required when unit is 'custom'."
         ),
+        max_length=CUSTOM_LABEL_MAX_LENGTH,
     )
     custom_multiplier: int | None = Field(
         None,
@@ -81,11 +88,14 @@ class MeterCreate(MeterCreateBase, ExternalIDInputMixin):
 
 
 class MeterUpdate(Schema, MetadataInputMixin, ExternalIDInputMixin):
-    name: str | None = Field(None, description=NAME_DESCRIPTION, min_length=3)
+    name: str | None = Field(
+        None, description=NAME_DESCRIPTION, min_length=3, max_length=NAME_MAX_LENGTH
+    )
     unit: MeterUnit | None = Field(None, description="The unit of the meter.")
     custom_label: str | None = Field(
         None,
         description=("The label for the custom unit. Required when unit is 'custom'."),
+        max_length=CUSTOM_LABEL_MAX_LENGTH,
     )
     custom_multiplier: int | None = Field(
         None,
@@ -126,6 +136,21 @@ class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin, ExternalIDOutputMi
     archived_at: datetime | None = Field(
         None, description="Whether the meter is archived and the time it was archived."
     )
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the meter. "
+                "None for meters not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the meter."),
+    ]
 
 
 MeterID = Annotated[UUID4, Path(description="The meter ID.")]
@@ -153,6 +178,16 @@ class MeterListParams(QuerySchema):
         MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
     ] = Field(
         None, title="ExternalID Filter", description="Filter by meter external ID."
+    )
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="CatalogStatus Filter",
+        description="Filter by catalog status.",
     )
     query: str | None = Field(None, description="Filter by name.")
     is_archived: bool | None = Field(None, description="Filter on archived meters.")

@@ -2681,6 +2681,25 @@ class TestCheckoutLinkCreate:
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_trial_payment_setup_not_required(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture,
+            products=[product],
+            trial_interval=TrialInterval.day,
+            trial_interval_count=7,
+            trial_payment_setup_required=False,
+        )
+
+        checkout = await checkout_service.checkout_link_create(session, checkout_link)
+
+        assert checkout.trial_payment_setup_required is False
+        assert checkout.is_payment_setup_required is False
+
     async def test_dropped_embed_origin(
         self,
         save_fixture: SaveFixture,
@@ -6253,6 +6272,139 @@ class TestConfirm:
                 ),
             )
 
+    async def test_trial_payment_setup_required(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
+        await save_fixture(checkout_recurring_fixed)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_recurring_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                    }
+                ),
+            )
+
+        locs = {error["loc"] for error in e.value.errors()}
+        assert ("body", "confirmation_token_id") in locs
+        assert ("body", "customer_billing_address") in locs
+        assert checkout_recurring_fixed.trial_end is not None
+        assert checkout_recurring_fixed.is_payment_form_required is True
+
+    async def test_valid_trial_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.checkout.service.enqueue_job")
+
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        product.trial_payment_setup_required = False
+        await save_fixture(product)
+
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
+        await save_fixture(checkout_recurring_fixed)
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_recurring_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.trial_end is not None
+        assert checkout.is_payment_setup_required is False
+        assert checkout.is_payment_form_required is False
+        assert checkout.customer_billing_address is None
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        stripe_service_mock.create_setup_intent.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "checkout.handle_free_success", checkout_id=checkout.id
+        )
+
+    async def test_trial_without_payment_method_already_redeemed(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        organization.subscription_settings["prevent_trial_abuse"] = True
+        await save_fixture(organization)
+
+        product.trial_payment_setup_required = False
+        await save_fixture(product)
+
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
+        await save_fixture(checkout_recurring_fixed)
+
+        existing_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        assert existing_customer.email is not None
+        await create_trial_redemption(
+            save_fixture,
+            customer=existing_customer,
+            customer_email=existing_customer.email,
+        )
+
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+
+        with pytest.raises(TrialAlreadyRedeemed):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_recurring_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                    }
+                ),
+            )
+
         stripe_service_mock.create_setup_intent.assert_not_called()
 
     async def test_discount_per_customer_limit_reached(
@@ -6595,6 +6747,38 @@ class TestConfirm:
                             "state": "US-CA",
                             "country": "US",
                         },
+                    }
+                ),
+            )
+
+    async def test_payment_not_ready_trial_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+        checkout_recurring_fixed: Checkout,
+    ) -> None:
+        organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(organization)
+
+        product.trial_payment_setup_required = False
+        await save_fixture(product)
+
+        checkout_recurring_fixed.trial_interval = TrialInterval.day
+        checkout_recurring_fixed.trial_interval_count = 7
+        await save_fixture(checkout_recurring_fixed)
+
+        with pytest.raises(PaymentNotReady):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_recurring_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
                     }
                 ),
             )

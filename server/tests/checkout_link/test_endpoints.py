@@ -178,6 +178,23 @@ class TestCreateCheckoutLink:
         assert json["client_secret"] in json["url"]
         assert "metadata" in json
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_valid_trial_payment_setup_not_required(
+        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+    ) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={
+                "payment_processor": "stripe",
+                "products": [str(product.id)],
+                "trial_payment_setup_required": False,
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["trial_payment_setup_required"] is False
+
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
     async def test_valid_seats(
         self,
@@ -319,6 +336,26 @@ class TestUpdateCheckoutLink:
 
         json = response.json()
         assert json["metadata"] == {"test": "test"}
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_reset_trial_payment_setup_required(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        checkout_link: CheckoutLink,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout_link.trial_payment_setup_required = False
+        await save_fixture(checkout_link)
+
+        response = await client.patch(
+            f"/v1/checkout-links/{checkout_link.id}",
+            json={"trial_payment_setup_required": None},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["trial_payment_setup_required"] is None
 
 
 @pytest.mark.anyio

@@ -133,7 +133,7 @@ export const typescript: Language = {
   defaultFiles: CONFIG_FILES.ts,
   manifest: MANIFEST,
   installer,
-  load: (fs, _run, file) =>
+  load: (fs, file) =>
     Effect.gen(function* () {
       const source = yield* readSource(fs, file)
       const exported = yield* Effect.tryPromise({

@@ -208,6 +208,23 @@ class SubscriptionRepository(
         )
         return bool(await self.session.scalar(statement))
 
+    async def get_metered_ids_by_customer(self, customer_id: UUID) -> Sequence[UUID]:
+        """Ids of the customer's subscriptions that haven't ended and have meters."""
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Subscription.id)
+            .join(
+                SubscriptionMeter, SubscriptionMeter.subscription_id == Subscription.id
+            )
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.ended_at.is_(None),
+            )
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def list_payable_by_customer(
         self, customer_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:

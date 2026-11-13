@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { AppliedEntry } from '@/schemas/BillingConfig'
 import {
   ALL_EVENTS,
@@ -138,6 +139,28 @@ const unitFacts = (
   ]
 }
 
+const meteredPrices = (product: Record<string, unknown>) => [
+  ...prices(product, 'metered_unit'),
+  ...prices(product, 'metered_tiers'),
+]
+
+type Side = 'before' | 'after'
+
+const diffMeters = (change: AppliedEntry['diff'][number], side: Side) => {
+  const value = change[side]
+  if (change.field === 'prices') {
+    return meteredPrices({ prices: value }).map((price) => name(price['meter']))
+  }
+  const meter =
+    change.field === 'properties' ? record(value)?.['meter'] : undefined
+  return meter === undefined ? [] : [name(meter)]
+}
+
+export const usedMeters = ({ action, diff }: AppliedEntry, side: Side) =>
+  action === 'updated'
+    ? [...new Set(diff.flatMap((change) => diffMeters(change, side)))]
+    : []
+
 export const productMeters = (
   input: unknown,
   unitOf: (meter: string) => string,
@@ -145,10 +168,7 @@ export const productMeters = (
   const product = record(input)
   if (product === undefined) return []
   const byMeter = new Map<string, Record<string, unknown>[]>()
-  for (const price of [
-    ...prices(product, 'metered_unit'),
-    ...prices(product, 'metered_tiers'),
-  ]) {
+  for (const price of meteredPrices(product)) {
     const id = name(price['meter'])
     byMeter.set(id, [...(byMeter.get(id) ?? []), price])
   }
@@ -232,12 +252,17 @@ const shownUrl = (url: unknown, format: unknown) =>
     ? url
     : new Rendered(webhookUrl(url, format))
 
+// A changed meter re-sends the prices and properties that use it as they were
+const changed = ({ before, after }: AppliedEntry['diff'][number]) =>
+  !isDeepStrictEqual(before, after)
+
 // Webhook URLs in a diff are redacted by the format on their own side.
 export const shownDiff = (
   section: string,
-  diff: AppliedEntry['diff'],
+  raw: AppliedEntry['diff'],
   document: unknown,
 ): AppliedEntry['diff'] => {
+  const diff = raw.filter(changed)
   if (section !== 'webhooks') return diff
   const format = diff.find((change) => change.field === 'format')
   const before =

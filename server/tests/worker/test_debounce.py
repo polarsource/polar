@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from fakeredis import FakeAsyncRedis, FakeRedis
@@ -29,29 +29,18 @@ def fake_redis() -> FakeAsyncRedis:
     return FakeAsyncRedis(decode_responses=True)
 
 
-@pytest.fixture
-def redis() -> AsyncMock:
-    pipe = AsyncMock()
-    pipe.__aenter__ = AsyncMock(return_value=pipe)
-    pipe.__aexit__ = AsyncMock(return_value=False)
-
-    mock = AsyncMock()
-    mock.pipeline = MagicMock(return_value=pipe)
-    return mock
-
-
-@pytest.mark.anyio
 class TestSetDebounceKey:
-    async def test_no_debounce_key_factory(self, redis: AsyncMock) -> None:
+    def test_no_debounce_key_factory(self) -> None:
         """Actor without debounce_key option returns None immediately."""
         actor = make_actor()
+        pipeline = MagicMock()
 
-        result = await set_debounce_key(redis, actor, "msg-1", (), {})
+        result = set_debounce_key(pipeline, actor, "msg-1", (), {})
 
         assert result is None
-        redis.pipeline.assert_not_called()
+        pipeline.hset.assert_not_called()
 
-    async def test_factory_returns_none_skips_debounce(self, redis: AsyncMock) -> None:
+    def test_factory_returns_none_skips_debounce(self) -> None:
         """When the debounce_key factory returns None, skip debouncing entirely."""
 
         def selective_key(kind: str, item_id: uuid.UUID) -> str | None:
@@ -61,15 +50,14 @@ class TestSetDebounceKey:
 
         actor = make_actor(debounce_key=selective_key)
         item_id = uuid.uuid4()
+        pipeline = MagicMock()
 
-        result = await set_debounce_key(
-            redis, actor, "msg-1", ("other_kind", item_id), {}
-        )
+        result = set_debounce_key(pipeline, actor, "msg-1", ("other_kind", item_id), {})
 
         assert result is None
-        redis.pipeline.assert_not_called()
+        pipeline.hset.assert_not_called()
 
-    async def test_factory_returns_key_sets_debounce(self, redis: AsyncMock) -> None:
+    def test_factory_returns_key_sets_debounce(self) -> None:
         """When the factory returns a key, Redis state is set and delay is returned."""
 
         def selective_key(kind: str, item_id: uuid.UUID) -> str | None:
@@ -79,16 +67,17 @@ class TestSetDebounceKey:
 
         actor = make_actor(debounce_key=selective_key, debounce_min_threshold=2)
         item_id = uuid.uuid4()
+        pipeline = MagicMock()
 
-        result = await set_debounce_key(
-            redis, actor, "msg-1", ("debounce_me", item_id), {}
+        result = set_debounce_key(
+            pipeline, actor, "msg-1", ("debounce_me", item_id), {}
         )
 
         assert result is not None
         key, delay = result
         assert key == f"debounce:test:debounce_me:{item_id}"
         assert delay == 2000  # 2 seconds * 1000ms
-        redis.pipeline.assert_called_once()
+        pipeline.hset.assert_any_call(key, "message_id", "msg-1")
 
 
 @pytest.mark.anyio
@@ -104,7 +93,9 @@ class TestCheckDebounce:
 
     async def test_executed_skips(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         await fake_redis.hset(key, "executed", 1)
@@ -113,7 +104,9 @@ class TestCheckDebounce:
 
     async def test_owner_runs(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
 
@@ -125,7 +118,9 @@ class TestCheckDebounce:
 
     async def test_non_owner_skips(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
 
@@ -135,7 +130,9 @@ class TestCheckDebounce:
         self, fake_redis: FakeAsyncRedis
     ) -> None:
         actor = make_actor(debounce_key=lambda: "test:key", debounce_max_threshold=5)
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         await fake_redis.hset(key, "enqueue_timestamp", now_timestamp() - 10)
@@ -150,7 +147,9 @@ class TestCheckDebounce:
 class TestFinalizeDebounce:
     async def test_success_marks_executed(self, fake_redis: FakeAsyncRedis) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         context = await check_debounce(fake_redis, actor, "owner", key)
@@ -166,7 +165,9 @@ class TestFinalizeDebounce:
         self, fake_redis: FakeAsyncRedis
     ) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         context = await check_debounce(fake_redis, actor, "owner", key)
@@ -181,7 +182,9 @@ class TestFinalizeDebounce:
         self, fake_redis: FakeAsyncRedis
     ) -> None:
         actor = make_actor(debounce_key=lambda: "test:key", debounce_max_threshold=5)
-        debounce = await set_debounce_key(fake_redis, actor, "owner", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "owner", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         old_timestamp = now_timestamp() - 10
@@ -201,13 +204,17 @@ class TestFinalizeDebounce:
         self, fake_redis: FakeAsyncRedis
     ) -> None:
         actor = make_actor(debounce_key=lambda: "test:key")
-        debounce = await set_debounce_key(fake_redis, actor, "first", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            debounce = set_debounce_key(pipeline, actor, "first", (), {})
+            await pipeline.execute()
         assert debounce is not None
         key, _ = debounce
         context = await check_debounce(fake_redis, actor, "first", key)
         assert context is not None
 
-        await set_debounce_key(fake_redis, actor, "second", (), {})
+        async with fake_redis.pipeline() as pipeline:
+            set_debounce_key(pipeline, actor, "second", (), {})
+            await pipeline.execute()
         await finalize_debounce(fake_redis, actor, context, None)
 
         assert await check_debounce(fake_redis, actor, "second", key) is not None

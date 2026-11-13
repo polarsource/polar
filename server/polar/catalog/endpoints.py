@@ -6,7 +6,6 @@ from pydantic import UUID4
 
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.models import Catalog
 from polar.openapi import APITag
 from polar.postgres import (
     AsyncReadSession,
@@ -51,8 +50,12 @@ async def list(
         published_before=filters.published_before,
         pagination=pagination,
     )
+    changes = await catalog_service.get_changes(session, results)
     return ListResource.from_paginated_results(
-        [CatalogSchema.model_validate(result) for result in results],
+        [
+            CatalogSchema.model_validate_overlay(result, changes=changes[result.id])
+            for result in results
+        ],
         count,
         pagination,
     )
@@ -92,12 +95,13 @@ async def get(
     id: UUID4,
     auth_subject: auth.CatalogRead,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Catalog:
+) -> CatalogVersion:
     """Get a catalog version and the products in it."""
     catalog = await catalog_service.get(session, auth_subject, id)
     if catalog is None:
         raise ResourceNotFound()
-    return catalog
+    changes = await catalog_service.get_changes(session, [catalog])
+    return CatalogVersion.model_validate_overlay(catalog, changes=changes[catalog.id])
 
 
 @router.post(
@@ -119,13 +123,15 @@ async def publish(
     id: UUID4,
     auth_subject: auth.CatalogWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> Catalog:
+) -> CatalogSchema:
     """Publish the draft catalog. Its new products and benefits replace the live
     ones for new sales. Existing customers stay on their versions until moved.
 
     Requires `products:write`, and `benefits:write` when the draft changes
     benefits."""
     draft = await catalog_service.get_draft_for_write(session, auth_subject, id)
-    return await catalog_service.publish_draft(
+    catalog = await catalog_service.publish_draft(
         session, auth_subject, draft.organization, draft
     )
+    changes = await catalog_service.get_changes(session, [catalog])
+    return CatalogSchema.model_validate_overlay(catalog, changes=changes[catalog.id])

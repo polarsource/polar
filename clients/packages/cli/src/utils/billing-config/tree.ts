@@ -1,10 +1,6 @@
 import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
 import { name, record } from '@/utils/billing-config/describe'
-import {
-  MARKS,
-  formatRows,
-  updatedBenefits,
-} from '@/utils/billing-config/entries'
+import { MARKS, formatRows, updatedIds } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
@@ -13,6 +9,7 @@ import {
   productMeters,
   productSentence,
   shownDiff,
+  usedMeters,
   webhookSentence,
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
@@ -168,10 +165,12 @@ const GRANT_MARKS: Record<Grant['status'], string> = {
   updated: ui.yellow('~'),
 }
 
-const reference = ({ id, status }: Grant): Block => ({
-  head: `${GRANT_MARKS[status]} ${ui.dim('benefit')} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}`,
-  body: [],
-})
+const reference =
+  (kind: string) =>
+  ({ id, status }: Grant): Block => ({
+    head: `${GRANT_MARKS[status]} ${ui.dim(kind)} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}`,
+    body: [],
+  })
 
 export const formatTree = (
   input: unknown,
@@ -187,7 +186,28 @@ export const formatTree = (
     webhooks: documents(input, 'webhooks'),
   }
 
-  const updated = updatedBenefits(entries)
+  const updatedBenefits = updatedIds(entries, 'benefits')
+  const updatedMeters = updatedIds(entries, 'meters')
+  const meterUses = (entry: AppliedEntry) => {
+    const before = usedMeters(entry, 'before')
+    const after = usedMeters(entry, 'after')
+    if (!after.some((id) => updatedMeters.has(id))) return []
+    return [
+      ...after.map(
+        (id): Grant => ({
+          id,
+          status: !before.includes(id)
+            ? 'added'
+            : updatedMeters.has(id)
+              ? 'updated'
+              : 'kept',
+        }),
+      ),
+      ...before
+        .filter((id) => !after.includes(id))
+        .map((id): Grant => ({ id, status: 'removed' })),
+    ].map(reference('meter'))
+  }
 
   const width = Math.max(
     0,
@@ -203,7 +223,7 @@ export const formatTree = (
   const product = (entry: AppliedEntry) => {
     if (entry.action === 'removed') return removal(entry)
     const document = docs.products.get(entry.id)
-    const granted = grants(entry, document, updated)
+    const granted = grants(entry, document, updatedBenefits)
     const regranted = granted.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'
@@ -220,7 +240,8 @@ export const formatTree = (
             meterUse,
           )
         : []),
-      ...(fresh || regranted ? granted.map(reference) : []),
+      ...meterUses(entry),
+      ...(fresh || regranted ? granted.map(reference('benefit')) : []),
     ]
     return [
       `${TOP}${own.head}`,
@@ -246,6 +267,7 @@ export const formatTree = (
       `${TOP}${own.head}`,
       ...own.body.map((line) => `${NESTED}${line}`),
       ...rows(NESTED, entry, section, document),
+      ...branches(meterUses(entry)),
     ]
   }
 

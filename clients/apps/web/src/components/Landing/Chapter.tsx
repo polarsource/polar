@@ -17,7 +17,7 @@ const ChapterMarker = ({ name, note }: ChapterMarkerProps) => {
       alignItems="start"
       display={{ md: 'flex', base: 'none' }}
     >
-      <Text variant="heading-s">
+      <Text variant="heading-s" as="p">
         {number ? (
           <Text as="span" variant="heading-s" color="muted">
             <span className="mr-4">{number}</span>
@@ -26,7 +26,7 @@ const ChapterMarker = ({ name, note }: ChapterMarkerProps) => {
         {label}
       </Text>
       {note ? (
-        <Text variant="heading-s" color="muted">
+        <Text variant="heading-s" as="p" color="muted">
           {note}
         </Text>
       ) : null}

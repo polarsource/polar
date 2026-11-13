@@ -198,6 +198,8 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             session, auth_subject, checkout_link, OrganizationPermission.products_manage
         )
 
+        exclude = {"products", "discount_id", "seats", "units"}
+
         if checkout_link_update.products is not None:
             products = await self._get_validated_products(
                 session, checkout_link_update.products, auth_subject
@@ -225,6 +227,12 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             if not any(product.is_recurring for product in products):
                 checkout_link.trial_interval = None
                 checkout_link.trial_interval_count = None
+                checkout_link.trial_payment_setup_required = None
+                exclude |= {
+                    "trial_interval",
+                    "trial_interval_count",
+                    "trial_payment_setup_required",
+                }
 
         if "discount_id" in checkout_link_update.model_fields_set:
             if checkout_link_update.discount_id is None:
@@ -277,7 +285,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             checkout_link,
             update_dict=checkout_link_update.model_dump(
                 exclude_unset=True,
-                exclude={"products", "discount_id", "seats", "units"},
+                exclude=exclude,
                 by_alias=True,
             ),
         )

@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     Boolean,
+    CheckConstraint,
     ColumnElement,
     ForeignKey,
     Index,
@@ -82,15 +83,7 @@ class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScope
 
 
 class BenefitGrant(RecordModel):
-    """
-    Represents a benefit granted to a customer or member.
-
-    Unique constraints:
-    - benefit_grants_sbc_key: Ensures one grant per (subscription, customer, benefit)
-    - benefit_grants_smb_key: Ensures one grant per (subscription, member, benefit)
-
-    These constraints allow both customer-level and member-level benefit grants.
-    """
+    """Represents a benefit granted to a customer or member."""
 
     __tablename__ = "benefit_grants"
     __table_args__ = (
@@ -100,8 +93,13 @@ class BenefitGrant(RecordModel):
             "benefit_id",
             name="benefit_grants_smb_key",
         ),
+        CheckConstraint(
+            "manually_granted_at IS NULL OR "
+            "(order_id IS NULL AND subscription_id IS NULL)",
+            name="manual_scope",
+        ),
         Index(
-            "ix_benefit_grants_scope_unique",
+            "ix_benefit_grants_non_manual_scope_unique",
             "customer_id",
             "benefit_id",
             "member_id",
@@ -109,7 +107,19 @@ class BenefitGrant(RecordModel):
             "order_id",
             unique=True,
             postgresql_nulls_not_distinct=True,
-            postgresql_where=text("deleted_at IS NULL"),
+            postgresql_where=text("deleted_at IS NULL AND manually_granted_at IS NULL"),
+        ),
+        Index(
+            "ix_benefit_grants_active_manual_unique",
+            "customer_id",
+            "member_id",
+            "benefit_id",
+            unique=True,
+            postgresql_nulls_not_distinct=True,
+            postgresql_where=text(
+                "deleted_at IS NULL AND manually_granted_at IS NOT NULL "
+                "AND manually_revoked_at IS NULL"
+            ),
         ),
     )
 
@@ -117,6 +127,12 @@ class BenefitGrant(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    manually_granted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True
+    )
+    manually_revoked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
 

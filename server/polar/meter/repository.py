@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, case, exists, or_, select
+from sqlalchemy import ColumnElement, Select, case, exists, func, or_, select
 from sqlalchemy.orm import undefer
 
 from polar.authz.types import AccessibleOrganizationID
@@ -12,6 +12,7 @@ from polar.kit.repository import (
 )
 from polar.models import (
     Catalog,
+    CatalogMeter,
     CustomerSeat,
     Meter,
     ProductPrice,
@@ -59,6 +60,37 @@ class MeterRepository(
             Meter.is_current,
         )
         return await self.get_one_or_none(statement)
+
+    def apply_catalog_filter(
+        self,
+        statement: Select[Meter],
+        org_ids: set[AccessibleOrganizationID],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
+    ) -> Select[Meter]:
+        catalog_members = (
+            select(CatalogMeter.meter_id)
+            .join(CatalogMeter.catalog)
+            .where(
+                Catalog.organization_id.in_(org_ids),
+                CatalogMeter.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+            )
+        )
+        if catalog_id is not None:
+            statement = statement.where(
+                Meter.id.in_(catalog_members.where(Catalog.id.in_(catalog_id)))
+            )
+        if catalog_status is not None:
+            in_status = Meter.id.in_(
+                catalog_members.where(Catalog.status.in_(catalog_status))
+            )
+            statement = statement.where(
+                or_(Meter.is_current, in_status)
+                if CatalogStatus.live in catalog_status
+                else in_status
+            )
+        return statement
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
@@ -168,6 +200,45 @@ class MeterRepository(
             .limit(1)
         )
         return await self.get_one_or_none(statement)
+
+    async def count_billed_customers_by_external_ids(
+        self, organization_id: UUID, external_ids: Sequence[str]
+    ) -> dict[str, int]:
+        """Count the customers with a billable subscription billing any version
+        of each external ID."""
+        if not external_ids:
+            return {}
+        statement = (
+            select(Meter.external_id, func.count(Subscription.customer_id.distinct()))
+            .join(
+                ProductPrice,
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id == Meter.id,
+            )
+            .join(
+                SubscriptionProductPrice,
+                SubscriptionProductPrice.product_price_id == ProductPrice.id,
+            )
+            .join(
+                Subscription,
+                Subscription.id == SubscriptionProductPrice.subscription_id,
+            )
+            .where(
+                Meter.organization_id == organization_id,
+                Meter.external_id.in_(external_ids),
+                ProductPrice.is_metered,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                ~Subscription.is_deleted,
+                ~SubscriptionProductPrice.is_deleted,
+            )
+            .group_by(Meter.external_id)
+        )
+        result = await self.session.execute(statement)
+        return {
+            external_id: count
+            for external_id, count in result.tuples()
+            if external_id is not None
+        }
 
     async def has_billable_subscriptions(self, meter_id: UUID) -> bool:
         statement = select(

@@ -1,0 +1,33 @@
+events/benches/load.rs
+  s_9e29c5984633d1::t_c370577abf38ae 2-50,103,162
+  s_9e29c5984633d1::t_85b7b0df35cf2d 81
+  s_9e29c5984633d1::t_e4a30b36eac115 1,51-80,82-102,104-161,163-165
+events/src/ingest.rs
+  s_9e29c5984633d1::t_eb2accc5dddf44 1-2,4,22,137,139-145,147-157,162,164-169,607-636
+  s_9e29c5984633d1::t_85b7b0df35cf2d 3,23,138,146,158-161,163
+  s_9e29c5984633d1::t_36517515b94067 24
+events/src/app.rs
+  s_9e29c5984633d1::t_eb2accc5dddf44 1,38,48,73,128,306-308,345,358,360-368,408
+events/Cargo.lock
+  s_9e29c5984633d1::t_dbc84596446935 3297
+events/Cargo.toml
+  s_9e29c5984633d1::t_24a1522da514de 27,39-42
+events/justfile
+  s_9e29c5984633d1::t_533b3aa4e0b6a3 18-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7c37a6a0e694170549d8b4b959bbd9307bc62528",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

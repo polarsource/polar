@@ -1,0 +1,20 @@
+server/tests/scripts/test_seeds_load.py
+  s_6f35f64d56f447::t_57c2787e77cb91 3
+  s_6f35f64d56f447::t_292d76a71b757a 176
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e93933446733f651669268adedd540fb830d05f",
+  "prompts": {},
+  "sessions": {
+    "s_6f35f64d56f447": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03a38869-f365-406c-91e1-00b538d38839",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

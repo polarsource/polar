@@ -1,0 +1,56 @@
+sdk/generator/tests/python/test_emitter.py
+  s_72b93dc6bcc264::t_b800f1904dbbd4 219,223
+  s_72b93dc6bcc264::t_efb91c99ed8712 216-218
+  s_72b93dc6bcc264::t_812de643e02c15 220
+  s_72b93dc6bcc264::t_1944251bc1b481 8-10,12,134-135,140,143-147,153-163,187-192,198-200,210-214,221-222,225
+  s_72b93dc6bcc264::t_85b185b69c1cbc 3-4,136-139,141-142,164-186,206-207
+  s_72b93dc6bcc264::t_84521078ac98b2 201-203
+  s_72b93dc6bcc264::t_747e428468ab35 15,17,148-152,193-197,204-205,208-209,215,224
+sdk/generator/python/template/polar/version/literals.py
+  s_72b93dc6bcc264::t_7076ed2f3f303a 3,5-6
+  s_72b93dc6bcc264::t_812de643e02c15 4
+  s_72b93dc6bcc264::t_b800f1904dbbd4 8-9,13
+sdk/generator/python/emitter.py
+  s_72b93dc6bcc264::t_e22af707315dae 308-318,321,334
+  s_72b93dc6bcc264::t_074c86696199ff 339-340
+  s_72b93dc6bcc264::t_efb91c99ed8712 325-329
+  s_72b93dc6bcc264::t_826eba0506ebfa 346
+  s_72b93dc6bcc264::t_c50fed13cdd85b 307,341,345
+  s_72b93dc6bcc264::t_b800f1904dbbd4 9,209,319-320,322-324,330-333,335-338,342-344
+sdk/generator/python/template/polar/base.py
+  s_72b93dc6bcc264::t_7076ed2f3f303a 17-20,22-23
+  s_72b93dc6bcc264::t_812de643e02c15 10,222-235,242
+  s_72b93dc6bcc264::t_b800f1904dbbd4 21
+sdk/generator/python/template/tests/test_base.py
+  s_72b93dc6bcc264::t_b800f1904dbbd4 12,325-327,333
+  s_72b93dc6bcc264::t_d182e07f1c93c6 328-332,334-356
+  s_72b93dc6bcc264::t_812de643e02c15 359-366,368
+  s_72b93dc6bcc264::t_d94ddc010ed071 369-390
+  s_72b93dc6bcc264::t_180cd1f2e6c77b 323-324,357-358,367
+sdk/python/polar/base.py
+  s_72b93dc6bcc264::t_d4279bc6101ceb 10,17-23,224-237,244
+sdk/python/polar/v2026_04/literals.py
+  s_72b93dc6bcc264::t_50bc06dbf0ad65 3-6,8,10-693,696-709,712-768,771-1090,1093-1118,1120-1882,1885-1943
+sdk/python/polar/v2026_10/literals.py
+  s_72b93dc6bcc264::t_56f4936945d950 3-9,12-695,698-711,714-770,773-1092,1095-1120,1122-1884,1887-1945
+sdk/python/polar/v2027_01/literals.py
+  s_72b93dc6bcc264::t_13d02204d72f70 3-9,12-698,701-714,717-773,776-1095,1098-1123,1125-1884,1887-1945
+sdk/python/tests/test_base.py
+  s_72b93dc6bcc264::t_9c1c64818ee47f 12,349-420
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9c7ff3d113c5fc2cc10b43e35da9795a336727a",
+  "prompts": {},
+  "sessions": {
+    "s_72b93dc6bcc264": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d137-5dbb-73d1-a47f-60f0babd0b70",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

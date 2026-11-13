@@ -1,0 +1,21 @@
+server/tests/integrations/tinybird/test_service.py
+  s_89a0c4db59f066::t_9d7b16bcd8d330 344-353,357-362
+  s_89a0c4db59f066::t_fc64cf4043448d 354-356
+  s_89a0c4db59f066::t_cf3374c195def2 342-343
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a398b0fc2e5c67d47b6a2e553b3d88d4f60d7861",
+  "prompts": {},
+  "sessions": {
+    "s_89a0c4db59f066": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d3d8-01aa-7c10-99c7-42253810de26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

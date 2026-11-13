@@ -1,0 +1,19 @@
+.github/workflows/test_server.yaml
+  s_6f35f64d56f447::t_766b36e0fb6de0 385,391,538
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9eb8f203bff1e91ad33d1f50de0649fd966e60ab",
+  "prompts": {},
+  "sessions": {
+    "s_6f35f64d56f447": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03a38869-f365-406c-91e1-00b538d38839",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,52 @@
+events/src/main.rs
+  s_9e29c5984633d1::t_823f407ef76d42 66
+  s_9e29c5984633d1::t_ecdb02e3be5463 1-65
+events/src/app.rs
+  s_9e29c5984633d1::t_5f35d617f4317b 36
+  s_9e29c5984633d1::t_bdf8c6f39f435d 1-35,37-48
+events/src/config.rs
+  s_9e29c5984633d1::t_c778d16dd1c14d 1-104,106-113
+  s_9e29c5984633d1::t_5f35d617f4317b 105
+events/Dockerfile
+  s_9e29c5984633d1::t_0bc302bb7a239e 1-36
+.github/workflows/test_events.yaml
+  s_9e29c5984633d1::t_f36e7786996bd0 1-39
+events/rust-toolchain.toml
+  s_9e29c5984633d1::t_219a4b6b675e1f 1-3
+events/Cargo.toml
+  s_85b016425b67db::t_5d5578c0caaef8 16-18
+  s_9e29c5984633d1::t_823f407ef76d42 1-9,11-15
+  s_9e29c5984633d1::t_1e29b632bc0370 10
+events/justfile
+  s_9e29c5984633d1::t_df048537a53622 1-21
+AGENTS.md
+  s_9e29c5984633d1::t_0784c120196773 37
+events/.dockerignore
+  s_9e29c5984633d1::t_7f4ae5130d6efa 1-3
+events/Cargo.lock
+  s_9e29c5984633d1::t_5a0ca6204fc447 1-1997
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ecb18f967cf51d7848704242e6885533e613b516",
+  "prompts": {},
+  "sessions": {
+    "s_85b016425b67db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de146397-a441-4f9f-ba21-9b280f87f6c9",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

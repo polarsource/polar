@@ -1,0 +1,20 @@
+server/tests/fixtures/database.py
+  s_6f35f64d56f447::t_34d91065b16685 12,74,76-77,84-89,91
+  s_6f35f64d56f447::t_3abdc20e042e89 75,90,92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ccb6f3a677639dcb612e6766b813ad48b09f810c",
+  "prompts": {},
+  "sessions": {
+    "s_6f35f64d56f447": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03a38869-f365-406c-91e1-00b538d38839",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

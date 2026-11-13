@@ -1,0 +1,28 @@
+server/tests/customer_meter/test_service.py
+  s_707b72e9bc5329::t_0a2d179404a7df 1811-1812,1814-1819,1824-1830
+  s_707b72e9bc5329::t_1d731dce8b9cfc 1784-1786
+  s_707b72e9bc5329::t_40801eef42bfe9 1789-1810,1820-1823,1831-1835
+  s_707b72e9bc5329::t_80d318e0e7e287 1761
+  s_707b72e9bc5329::t_568173c0552fa9 1813
+server/polar/customer_meter/service.py
+  s_707b72e9bc5329::t_76330de8e16d79 184,236-237,257,261-262
+  s_707b72e9bc5329::t_bada973bf2bb53 148-153,170,181,185-187,259-260,264-270
+  s_707b72e9bc5329::t_32f2edaa58ef35 705
+  s_707b72e9bc5329::t_9f8b5958888890 258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "004ae48ef0cf855de8e46669c252e52dfb83db3b",
+  "prompts": {},
+  "sessions": {
+    "s_707b72e9bc5329": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ce2322e5-0435-4d4c-992a-d1ce2a830ec3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": null
+    }
+  }
+}

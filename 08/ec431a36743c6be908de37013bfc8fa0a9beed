@@ -1,0 +1,21 @@
+server/benchmarks/conftest.py
+  s_eda87e9905e9cb::t_6717d67ef60013 37,73
+server/polar/kit/db/postgres.py
+  s_eda87e9905e9cb::t_6717d67ef60013 62-85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "08ec431a36743c6be908de37013bfc8fa0a9beed",
+  "prompts": {},
+  "sessions": {
+    "s_eda87e9905e9cb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "caf9bf33-f128-4f14-816e-65515f8c0671",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

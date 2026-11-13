@@ -1,0 +1,28 @@
+server/polar/license_key/endpoints.py
+  s_abee0099a8bb41::t_393020e2884a06 14,19,143-166
+  s_aef5cda48e9c2d::t_0f1f0a707f0fcf 167-168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9d93d9417d7d9de461cb2231c627111e99e4a080",
+  "prompts": {},
+  "sessions": {
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_aef5cda48e9c2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf3d-200f-77a1-b27b-9ba87534b40e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

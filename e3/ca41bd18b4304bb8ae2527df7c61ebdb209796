@@ -1,0 +1,25 @@
+events/src/main.rs
+  s_9e29c5984633d1::t_1cb5adb5baa139 3
+events/Cargo.toml
+  s_9e29c5984633d1::t_1cb5adb5baa139 12,18
+events/src/jobs.rs
+  s_9e29c5984633d1::t_1cb5adb5baa139 1-200
+events/Cargo.lock
+  s_9e29c5984633d1::t_7a844cf247a8ab 472,478,2322-2333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e3ca41bd18b4304bb8ae2527df7c61ebdb209796",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

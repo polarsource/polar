@@ -1,0 +1,36 @@
+events/src/reducer.rs
+  s_9e29c5984633d1::t_5be02f1f8a44fd 2
+  s_9e29c5984633d1::t_9e794b3e743d86 3,7,12-13,16-68,70-171,173-257,259,262,264,267
+  s_9e29c5984633d1::t_1e8bde204caa43 69,172
+  s_9e29c5984633d1::t_efc309450e148a 1,8-11
+  s_9e29c5984633d1::t_e61a3574836630 4-6,15
+  s_9e29c5984633d1::t_0c94f42849db48 14
+  s_9e29c5984633d1::t_877b842143ff13 258
+  s_9e29c5984633d1::t_5a481b7d39b574 260-261
+  s_9e29c5984633d1::t_9d305a2deec9c2 263
+  s_9e29c5984633d1::t_0382c3cc1866e5 265-266
+events/tests/fixtures/reducer_cases.json
+  s_9e29c5984633d1::t_2fedc4a5d74800 1-43038
+events/tests/fixtures/generate_reducer_cases.py
+  s_9e29c5984633d1::t_2fedc4a5d74800 1-18,20-112,119-147
+  s_9e29c5984633d1::t_0c94f42849db48 19,113-118
+  s_9e29c5984633d1::t_19a4487caa0f0f 148-152
+events/src/main.rs
+  s_9e29c5984633d1::t_527aa9f2e80510 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "74d41a57e0859278a29fed7118c978ca211236ea",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

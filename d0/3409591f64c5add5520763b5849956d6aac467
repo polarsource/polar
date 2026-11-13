@@ -1,0 +1,32 @@
+events/src/ingest.rs
+  s_9e29c5984633d1::t_7d0f5e0517890f 1,90-91
+  s_9e29c5984633d1::t_f11604707133ec 89
+  s_9e29c5984633d1::t_f7d797eae97e8b 2-6,9-41,43-88,92-235,237
+  s_9e29c5984633d1::t_e0136ae6b877e6 8,42
+  s_9e29c5984633d1::t_46c71f9301e2a8 7
+  s_9e29c5984633d1::t_50994fb45e2872 236
+events/src/app.rs
+  s_9e29c5984633d1::t_f11604707133ec 25,90
+  s_9e29c5984633d1::t_bdebf09c1c81c9 24,26
+  s_9e29c5984633d1::t_b99bc6527d4883 91-92
+  s_9e29c5984633d1::t_f7d797eae97e8b 85-89,93-97
+  s_9e29c5984633d1::t_91964a25fe6925 98
+events/src/main.rs
+  s_9e29c5984633d1::t_f7d797eae97e8b 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d03409591f64c5add5520763b5849956d6aac467",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

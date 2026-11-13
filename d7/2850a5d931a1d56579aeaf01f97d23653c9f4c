@@ -1,0 +1,19 @@
+clients/packages/client/src/v1.ts
+  s_abee0099a8bb41::t_29b89b67f5600d 53521-53529
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d72850a5d931a1d56579aeaf01f97d23653c9f4c",
+  "prompts": {},
+  "sessions": {
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

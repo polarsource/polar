@@ -1,0 +1,22 @@
+server/benchmarks/test_event.py
+  s_85b016425b67db::t_843ec6d3b3e82c 7,10-12,14-16,22,25-27,29-30,36,40-42,150-265
+  s_85b016425b67db::t_e18941b93afe23 266-267
+  s_85b016425b67db::t_95b82577139cd3 7,10-12,14-16,22,25-27,29-30,36,40-42,150-265
+  s_85b016425b67db::t_c3a05d67e64627 266-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6212a159e6c09ca3adb342fec41670b24901261b",
+  "prompts": {},
+  "sessions": {
+    "s_85b016425b67db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de146397-a441-4f9f-ba21-9b280f87f6c9",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

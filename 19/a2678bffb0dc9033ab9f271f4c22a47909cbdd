@@ -1,0 +1,34 @@
+server/polar/config.py
+  s_a3c28b0e096a4a::t_32062f86f4ac74 142
+terraform/test/environment.tf
+  s_a3c28b0e096a4a::t_dfd38a28769a1e 3-7
+server/tests/auth/test_middlewares.py
+  s_a3c28b0e096a4a::t_2dcccd6e0198e9 36
+  s_a3c28b0e096a4a::t_b51d20296adcdc 47-49,854-865,867-887,889-890
+  s_a3c28b0e096a4a::t_724504f6809dbf 50-52,866,888
+server/polar/organization_access_token/service.py
+  s_a3c28b0e096a4a::t_7e10fa604bed8b 133-134,137
+  s_a3c28b0e096a4a::t_724504f6809dbf 1,9,20,28,50-52,120-132,135-136,138-140
+terraform/modules/render_service/variables.tf
+  s_a3c28b0e096a4a::t_dfd38a28769a1e 159-161
+terraform/modules/backend_environment/main.tf
+  s_a3c28b0e096a4a::t_dfd38a28769a1e 43-45
+terraform/modules/backend_environment/variables.tf
+  s_a3c28b0e096a4a::t_dfd38a28769a1e 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19a2678bffb0dc9033ab9f271f4c22a47909cbdd",
+  "prompts": {},
+  "sessions": {
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

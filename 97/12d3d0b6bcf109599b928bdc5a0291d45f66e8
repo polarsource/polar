@@ -1,0 +1,44 @@
+events/src/app.rs
+  s_9e29c5984633d1::t_d28368ac9cd8b1 105-106
+  s_9e29c5984633d1::t_e3d24376cd3935 21,121-124,126-132,140-142,151
+  s_9e29c5984633d1::t_efc309450e148a 125,133-135,137-139,143
+  s_9e29c5984633d1::t_d08d411f76dce3 22,26,28,38,100-104,107-112,114,116-120,136,144
+  s_9e29c5984633d1::t_9e373b49583dce 145,148-150,152,155
+events/src/telemetry.rs
+  s_9e29c5984633d1::t_e3d24376cd3935 57-58
+events/src/ingest.rs
+  s_9e29c5984633d1::t_d08d411f76dce3 36,67-68
+  s_9e29c5984633d1::t_c6504a525ef31e 69-70
+events/src/reducer.rs
+  s_9e29c5984633d1::t_643a2effeb823e 240-246,248,250-256,258-261
+  s_9e29c5984633d1::t_e3d24376cd3935 687
+  s_9e29c5984633d1::t_d08d411f76dce3 104
+  s_9e29c5984633d1::t_9e794b3e743d86 197-198
+  s_9e29c5984633d1::t_efc309450e148a 3,5,18-103,105-196,578-686,688-696
+  s_9e29c5984633d1::t_0c94f42849db48 199-202,205-209,215,221-225,305,354,389,462,554
+  s_9e29c5984633d1::t_e61a3574836630 4,17,203-204,210-214,216-220,226-239,247,249,257,262-302,481,544-553,555-577
+  s_9e29c5984633d1::t_c1890ef4502d99 697
+events/src/jobs.rs
+  s_9e29c5984633d1::t_07d15034339154 12,50-74,207-235
+  s_9e29c5984633d1::t_b1dd9b9157403b 236
+events/src/main.rs
+  s_9e29c5984633d1::t_525d5f2355c24e 33-34,46
+events/tests/fixtures/generate_reducer_cases.py
+  s_9e29c5984633d1::t_8492e808bc54ac 19,113-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9712d3d0b6bcf109599b928bdc5a0291d45f66e8",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

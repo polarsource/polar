@@ -1,0 +1,38 @@
+terraform/modules/render_service/main.tf
+  s_4978af30dbf5bf::t_d466630d28a40c 245
+server/polar/api.py
+  s_4978af30dbf5bf::t_e531df7ed5e634 25
+  s_4978af30dbf5bf::t_507a5451e3b552 80
+server/polar/app.py
+  s_4978af30dbf5bf::t_9f57cd242ddd76 267
+  s_4978af30dbf5bf::t_faa340faa342cb 209
+  s_4978af30dbf5bf::t_fa1bb5c47850b9 6
+server/polar/event/endpoints.py
+  s_4978af30dbf5bf::t_481da99eba8dd2 61
+  s_4978af30dbf5bf::t_7f5aabcc77fb5d 431
+  s_4978af30dbf5bf::t_9e282872689697 442
+server/tests/test_event_ingestion_api_app.py
+  s_4978af30dbf5bf::t_7dabcf516e97c0 1-17
+server/polar/event_ingestion_api_app.py
+  s_4978af30dbf5bf::t_93be363d593707 1-11
+terraform/test/render.tf
+  s_4978af30dbf5bf::t_0eecc7d424e94d 92
+terraform/modules/render_service/variables.tf
+  s_4978af30dbf5bf::t_91c9107cc7b894 47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7716dbefa7584029cc0e9ee06761dc9e1dbe7009",
+  "prompts": {},
+  "sessions": {
+    "s_4978af30dbf5bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ae227ec-f76c-4908-9fb9-2e83c35edb26",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

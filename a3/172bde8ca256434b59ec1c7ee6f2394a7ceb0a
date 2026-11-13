@@ -1,0 +1,19 @@
+handbook/engineering/api-tokens-and-system-credentials.mdx
+  s_9575b7205f0041::t_43a8e1aae9660e 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3172bde8ca256434b59ec1c7ee6f2394a7ceb0a",
+  "prompts": {},
+  "sessions": {
+    "s_9575b7205f0041": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de2c3b66-210d-4957-a1f7-cabf5375435d",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

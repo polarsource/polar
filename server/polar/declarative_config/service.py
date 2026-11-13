@@ -414,7 +414,7 @@ class DeclarativeConfigService:
         if draft is not None and publish:
             await catalog_service.discard_draft(session, draft)
         draft_rows = (
-            await drafts.rows(session, draft, config)
+            await drafts.rows(session, draft, changes)
             if draft is not None and not publish
             else CatalogMembers()
         )
@@ -567,7 +567,7 @@ class DeclarativeConfigService:
                 changes,
                 CatalogMembers()
                 if draft is None
-                else await drafts.rows(session, draft, config),
+                else await drafts.rows(session, draft, changes),
             )
         )
         catalog: ConfigCatalogPlan | None = None
@@ -1071,9 +1071,7 @@ class DeclarativeConfigService:
             draft_product = draft_products.get(config.external_id)
             in_place = (
                 draft_product
-                if draft_product is not None
-                and (product is None or copy_on_write)
-                and drafts.keeps_intervals(change, draft_product, meter_ids)
+                if draft_product is not None and (product is None or copy_on_write)
                 else None
             )
             try:

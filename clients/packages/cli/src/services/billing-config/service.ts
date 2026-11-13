@@ -33,9 +33,9 @@ export type {
 export {
   languageFor,
   LANGUAGES,
-  languagesAt,
   MANIFESTS,
   projectRoot,
+  projectsAt,
 } from '@/services/billing-config/languages'
 export { output, type Ran, type Run } from '@/utils/run'
 

@@ -131,7 +131,7 @@ export const typescript: Language = {
   extension: '.ts',
   extensions: ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'],
   defaultFiles: CONFIG_FILES.ts,
-  manifest: MANIFEST,
+  manifests: [{ file: MANIFEST, project: 'TypeScript' }],
   installer,
   load: (fs, file) =>
     Effect.gen(function* () {

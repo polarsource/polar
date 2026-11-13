@@ -14,7 +14,7 @@ export const json: Language = {
   extension: '.json',
   extensions: ['.json'],
   defaultFiles: CONFIG_FILES.json,
-  manifest: undefined,
+  manifests: [{ file: 'pyproject.toml', project: 'Python' }],
   installer: undefined,
   load: (fs, file) =>
     Effect.gen(function* () {

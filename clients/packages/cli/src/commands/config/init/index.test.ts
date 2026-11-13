@@ -199,7 +199,9 @@ describe('polar config init', () => {
     ])
     expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
     expect(output).toContain('✔ Resolving organization\n    Acme (sandbox)')
-    expect(output).toContain('✔ Detecting language\n    No package.json found')
+    expect(output).toContain(
+      '✔ Detecting language\n    No package.json or pyproject.toml found',
+    )
     expect(output).toContain('✔ Reading your catalog\n    nothing in it yet')
     expect(output).toContain('✔ Writing config\n    polar.config.ts')
     expect(output).toMatch(/Imported {6}0 meters, 0 benefits, 0 products/)
@@ -283,6 +285,44 @@ describe('polar config init', () => {
     expect(calls[0]!.target.format).toBe('ts')
   })
 
+  test('writes JSON for a Python project', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    const { calls, output } = await run([])
+
+    expect(output).toContain(
+      '✔ Detecting language\n    Python detected, found a pyproject.toml',
+    )
+    expect(calls[0]!.target.format).toBe('json')
+  })
+
+  test('goes by the nearest project file, not one further up', async () => {
+    await writeFile(join(directory, 'package.json'), '{}')
+    await mkdir(join(directory, 'server/polar'), { recursive: true })
+    await writeFile(join(directory, 'server/pyproject.toml'), '')
+    process.chdir(join(directory, 'server/polar'))
+
+    const { calls, output } = await run([])
+
+    expect(output).toContain('Python detected, found a pyproject.toml')
+    expect(calls[0]!.target).toMatchObject({
+      directory: join(directory, 'server'),
+      format: 'json',
+    })
+  })
+
+  test('asks to confirm JSON for a Python project', async () => {
+    await writeFile(join(directory, 'pyproject.toml'), '')
+
+    const { calls, terminal } = await run([], {
+      interactive: true,
+      input: [keys.enter],
+    })
+
+    expect(terminal).toContain('Write a JSON config (polar.config.json)?')
+    expect(calls[0]!.target.format).toBe('json')
+  })
+
   test('asks to confirm the language it detected', async () => {
     await writeFile(join(directory, 'package.json'), '{}')
 
@@ -315,6 +355,20 @@ describe('polar config init', () => {
 
     expect(terminal).not.toContain('Write a')
     expect(calls[0]!.target.format).toBe('json')
+  })
+
+  test('asks an agent nothing, even in a terminal', async () => {
+    await writeFile(join(directory, 'package.json'), '{}')
+
+    const { calls, installed, terminal } = await run(
+      [],
+      { interactive: true },
+      { install: INSTALL, caller: { id: 'cursor', name: 'Cursor' } },
+    )
+
+    expect(terminal).not.toContain('?')
+    expect(calls[0]!.target.format).toBe('ts')
+    expect(installed).toEqual([{ command: INSTALL, cwd: directory }])
   })
 
   test('only asks before installing when the format is given', async () => {
@@ -467,7 +521,7 @@ describe('polar config init', () => {
       },
     )
 
-    expect(output).toContain('Option 1  Hand it to your coding agent')
+    expect(output).toContain('Option 1  Hand it to your agent')
     expect(output).toMatch(/1 {2}Set up the agent +polar agent setup/)
     expect(output).toMatch(/2 {2}Ask it/)
   })

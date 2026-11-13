@@ -5,9 +5,9 @@ import type { AgentSetup } from '@/services/agent-setup/service'
 import {
   languageFor,
   LANGUAGES,
-  languagesAt,
   MANIFESTS,
   projectRoot,
+  projectsAt,
 } from '@/services/billing-config/service'
 import type { Progress } from '@/utils/progress'
 import { confirm, select } from '@/utils/prompt'
@@ -23,24 +23,25 @@ export const detectFormat = (
 ) =>
   Effect.gen(function* () {
     yield* progress.start('Detecting language')
-    const detected = yield* languagesAt(fs, directory)
+    const detected = yield* projectsAt(fs, directory)
     const guess = prompt && detected.length > 1 ? undefined : detected[0]
-    const found = detected.map(({ manifest }) => `a ${manifest}`).join(' and ')
+    const found = detected.map(({ file }) => `a ${file}`).join(' and ')
     yield* progress.finish(
       guess !== undefined
-        ? `${guess.title} detected, found ${found}`
+        ? `${guess.project} detected, found ${found}`
         : detected.length === 0
           ? `No ${MANIFESTS.join(' or ')} found`
           : `Found ${found}`,
     )
-    if (!prompt) return guess?.format
+    const language = guess?.language
+    if (!prompt) return language?.format
     if (
-      guess !== undefined &&
+      language !== undefined &&
       (yield* confirm(
-        `Write a ${guess.title} config (${guess.defaultFiles[0]})?`,
+        `Write a ${language.title} config (${language.defaultFiles[0]})?`,
       ))
     ) {
-      return guess.format
+      return language.format
     }
     return yield* select(
       {

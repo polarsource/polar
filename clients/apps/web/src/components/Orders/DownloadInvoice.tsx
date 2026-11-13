@@ -14,7 +14,9 @@ import {
 } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  hasFixedStateOptions,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -454,10 +456,9 @@ const DownloadInvoice = ({
                       control={control}
                       name="billing_address.state"
                       rules={{
-                        required:
-                          country === 'US' || country === 'CA'
-                            ? 'This field is required'
-                            : false,
+                        required: hasFixedStateOptions(country)
+                          ? 'This field is required'
+                          : false,
                       }}
                       render={({ field }) => (
                         <>
@@ -471,7 +472,7 @@ const DownloadInvoice = ({
                             value={field.value || ''}
                             onChange={field.onChange}
                             placeholder={
-                              country === 'US' ? 'State' : 'Province'
+                              country === 'CA' ? 'Province' : 'State'
                             }
                           />
                           <FormMessage />

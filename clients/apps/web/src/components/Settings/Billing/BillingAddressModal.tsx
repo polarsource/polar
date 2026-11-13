@@ -9,7 +9,9 @@ import {
 import { enums } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  hasFixedStateOptions,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import { Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -40,7 +42,7 @@ export const BillingAddressModal = ({
     },
   })
 
-  const { control, handleSubmit, setValue, reset } = form
+  const { control, handleSubmit, setValue, getValues, reset } = form
   // oxlint-disable-next-line react-hooks/incompatible-library
   const country = useWatch({ control, name: 'billing_address.country' })
 
@@ -55,10 +57,11 @@ export const BillingAddressModal = ({
   }, [details, reset])
 
   useEffect(() => {
-    if (country !== 'US' && country !== 'CA') {
+    const state = getValues('billing_address.state')
+    if (!hasFixedStateOptions(country) || !state?.startsWith(`${country}-`)) {
       setValue('billing_address.state', null)
     }
-  }, [country, setValue])
+  }, [country, getValues, setValue])
 
   const onSubmit = async (data: OrganizationBillingDetailsUpdate) => {
     try {
@@ -201,7 +204,7 @@ export const BillingAddressModal = ({
                 </div>
               )}
             />
-            {(country === 'US' || country === 'CA') && (
+            {hasFixedStateOptions(country) && (
               <FormField
                 control={control}
                 name="billing_address.state"
@@ -210,10 +213,10 @@ export const BillingAddressModal = ({
                   <div className="flex flex-col gap-y-2">
                     <CountryStatePicker
                       autoComplete="billing address-level1"
-                      country={country as 'US' | 'CA'}
+                      country={country}
                       value={field.value || undefined}
                       onChange={field.onChange}
-                      placeholder={country === 'US' ? 'State' : 'Province'}
+                      placeholder={country === 'CA' ? 'Province' : 'State'}
                     />
                     <FormMessage />
                   </div>

@@ -1,0 +1,14 @@
+sdk/CHANGELOG.md
+  h_868de2c7aaf22e 13-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "730d2726cdab02ae1e47d9a3305944872fd7e53e",
+  "prompts": {},
+  "humans": {
+    "h_868de2c7aaf22e": {
+      "author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

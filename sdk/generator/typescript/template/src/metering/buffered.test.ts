@@ -496,6 +496,37 @@ it("does not include later failed events in an earlier flush boundary", async ()
   }
 });
 
+it("releases an older flush when a newer one starts, and reports both boundaries to the newer", async () => {
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const cause = new PolarClientError(422, "invalid");
+  const ingest = vi.fn(async () => {
+    await gate;
+    throw cause;
+  });
+  const strategy = await new BufferedMeteringStrategy(
+    { events: { ingest } },
+    { batchSize: 1 },
+  ).start();
+  try {
+    await strategy.track(events[0]);
+    const older = strategy.flush().then(() => "released");
+    await strategy.track(events[1]);
+    const newer = strategy.flush().catch((error) => error);
+    const waiting = new Promise((resolve) => setTimeout(() => resolve("waiting"), 50));
+    expect(await Promise.race([older, waiting])).toBe("released");
+    expect(ingest).toHaveBeenCalledOnce();
+    release();
+    expect(await newer).toMatchObject({ events: [events[0], events[1]], cause });
+  } finally {
+    release();
+    await strategy.close().catch(() => {});
+  }
+});
+
 it("a flush timeout does not cancel another flush or acknowledge unseen drops", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   let release!: () => void;

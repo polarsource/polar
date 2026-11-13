@@ -496,6 +496,44 @@ async def test_background_failures_are_retained_for_overlapping_flushes(
 
 
 @pytest.mark.anyio
+async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    release = anyio.Event()
+    released = anyio.Event()
+    observed: list[MeteringDeliveryError] = []
+    cause = PolarClientError(422, "invalid")
+
+    async def send(*, events: list[EventInput]) -> None:
+        await release.wait()
+        raise cause
+
+    async def older() -> None:
+        await strategy.flush()
+        released.set()
+
+    async def newer() -> None:
+        with pytest.raises(MeteringDeliveryError) as failure:
+            await strategy.flush()
+        observed.append(failure.value)
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
+            async with anyio.create_task_group() as callers:
+                await strategy.track(events[0])
+                callers.start_soon(older)
+                await anyio.wait_all_tasks_blocked()
+                await strategy.track(events[1])
+                callers.start_soon(newer)
+                await released.wait()
+                assert client.events.ingest.await_count == 1
+                release.set()
+            assert observed[0].events == events[:2]
+            assert observed[0].failures[0].cause is cause
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize("cancel", [False, True])
 async def test_abandoned_flush_preserves_failures_and_other_waiters(
     client: AsyncMock, events: list[EventInput], cancel: bool

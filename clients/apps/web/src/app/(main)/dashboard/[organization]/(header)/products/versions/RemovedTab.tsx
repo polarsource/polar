@@ -2,7 +2,7 @@
 
 import { useRemovedCatalogItems } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
-import { Grid, List, ListItem, Text } from '@polar-sh/orbit'
+import { Alert, Grid, List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
@@ -86,7 +86,21 @@ export const RemovedTab = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const { data: removed } = useRemovedCatalogItems(organization.id)
+  const {
+    data: removed,
+    isError,
+    refetch,
+  } = useRemovedCatalogItems(organization.id)
+
+  if (isError) {
+    return (
+      <Alert
+        variant="danger"
+        title="Could not load deprecated items"
+        actions={[{ text: 'Retry', onClick: () => refetch() }]}
+      />
+    )
+  }
 
   if (!removed) return null
 

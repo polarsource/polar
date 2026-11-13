@@ -17,6 +17,7 @@ from polar.kit.versioning import QuerySchema, Version
 from polar.meter.aggregation import Aggregation, AggregationFunction
 from polar.meter.filter import Filter
 from polar.meter.unit import MeterUnit
+from polar.models.catalog import CatalogStatus
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
 from polar.version import V2027_01
@@ -135,6 +136,21 @@ class Meter(IDSchema, TimestampedSchema, MetadataOutputMixin, ExternalIDOutputMi
     archived_at: datetime | None = Field(
         None, description="Whether the meter is archived and the time it was archived."
     )
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the meter. "
+                "None for meters not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the meter."),
+    ]
 
 
 MeterID = Annotated[UUID4, Path(description="The meter ID.")]
@@ -162,6 +178,16 @@ class MeterListParams(QuerySchema):
         MultipleQueryFilter[str] | None, Version(starting_from=V2027_01)
     ] = Field(
         None, title="ExternalID Filter", description="Filter by meter external ID."
+    )
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="CatalogStatus Filter",
+        description="Filter by catalog status.",
     )
     query: str | None = Field(None, description="Filter by name.")
     is_archived: bool | None = Field(None, description="Filter on archived meters.")

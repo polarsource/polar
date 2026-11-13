@@ -262,4 +262,41 @@ export const useBenefitGrants = (
       ),
     retry: defaultRetry,
     enabled: !!organizationId,
+    refetchInterval: ({ state }) =>
+      state.data?.items.some(
+        (grant) =>
+          grant.manually_granted_at &&
+          !grant.manually_revoked_at &&
+          !grant.is_granted &&
+          !grant.is_revoked &&
+          !grant.error,
+      )
+        ? 2000
+        : false,
+  })
+
+const invalidateBenefitGrantQueries = async (benefitId: string) => {
+  const queryClient = getQueryClient()
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['benefit-grants'] }),
+    queryClient.invalidateQueries({
+      queryKey: ['benefits', 'grants', benefitId],
+    }),
+  ])
+}
+
+export const useCreateBenefitGrant = () =>
+  useMutation({
+    mutationFn: (body: schemas['BenefitGrantCreate']) =>
+      api.POST('/v1/benefit-grants/', { body }),
+    onSuccess: ({ data }) =>
+      data && invalidateBenefitGrantQueries(data.benefit_id),
+  })
+
+export const useRevokeBenefitGrant = () =>
+  useMutation({
+    mutationFn: (id: string) =>
+      api.DELETE('/v1/benefit-grants/{id}', { params: { path: { id } } }),
+    onSuccess: ({ data }) =>
+      data && invalidateBenefitGrantQueries(data.benefit_id),
   })

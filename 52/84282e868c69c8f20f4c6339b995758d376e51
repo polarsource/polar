@@ -1,0 +1,19 @@
+docs/docs.json
+  s_0810b72cac2277::t_433b8f198e7880 1201-1202
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5284282e868c69c8f20f4c6339b995758d376e51",
+  "prompts": {},
+  "sessions": {
+    "s_0810b72cac2277": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d520-af3d-7761-8012-bd55431b3287",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

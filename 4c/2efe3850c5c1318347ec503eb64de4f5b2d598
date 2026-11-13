@@ -1,0 +1,29 @@
+server/tests/observability/observability/test_cpu_starvation.py
+  s_4978af30dbf5bf::t_afe101feb0abd4 52-53
+  s_4978af30dbf5bf::t_09330026f7d486 44-46
+  s_4978af30dbf5bf::t_0867b4f2dffada 1-2,4-18,20-27,30-43,47-48,50,54
+  s_4978af30dbf5bf::t_5043a2ee0963a3 3,19,28-29,49
+  s_4978af30dbf5bf::t_da9f1223e19dfe 51
+server/polar/event_ingestion_api_app.py
+  s_4978af30dbf5bf::t_de6740933d7828 6,13-14
+server/polar/observability/cpu_starvation.py
+  s_4978af30dbf5bf::t_46873387650f47 1,3,5-13,16,19-30,34-42,45
+  s_4978af30dbf5bf::t_249f193a52b046 4,46-53,58-59,66-72
+  s_4978af30dbf5bf::t_7a7ab8dfc74cfe 2,14-15,17-18,31-33,43-44,54-57,60-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4c2efe3850c5c1318347ec503eb64de4f5b2d598",
+  "prompts": {},
+  "sessions": {
+    "s_4978af30dbf5bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ae227ec-f76c-4908-9fb9-2e83c35edb26",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

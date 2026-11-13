@@ -133,26 +133,28 @@ export const MetadataForm = ({ label }: { label?: string }) => {
     fields.forEach((_, i) => trigger(`metadata.${i}.key`))
   }, [fields, trigger])
 
+  const addButton = (
+    <Button
+      size="sm"
+      variant="secondary"
+      type="button"
+      disabled={hasEmptyKey}
+      onClick={() => {
+        append({ key: '', value: '' })
+      }}
+    >
+      Add Metadata
+    </Button>
+  )
+
   return (
     <Box flexDirection="column" gap="s">
-      <Box
-        alignItems="center"
-        justifyContent={label ? 'between' : 'end'}
-        columnGap="s"
-      >
-        {label ? <Label>{label}</Label> : null}
-        <Button
-          size="sm"
-          variant="secondary"
-          type="button"
-          disabled={hasEmptyKey}
-          onClick={() => {
-            append({ key: '', value: '' })
-          }}
-        >
-          Add Metadata
-        </Button>
-      </Box>
+      {label ? (
+        <Box alignItems="center" justifyContent="between" columnGap="s">
+          <Label>{label}</Label>
+          {addButton}
+        </Box>
+      ) : null}
       {fields.length > 0 && (
         <Box flexDirection="column" gap="s">
           <Box
@@ -319,6 +321,12 @@ export const MetadataForm = ({ label }: { label?: string }) => {
           </Text>
         </Box>
       )}
+
+      {!label ? (
+        <Box alignItems="center" justifyContent="end">
+          {addButton}
+        </Box>
+      ) : null}
     </Box>
   )
 }

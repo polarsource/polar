@@ -517,7 +517,10 @@ jobs:
       - name: 🐍 Run tests (pytest)
         if: matrix.shard != 'tinybird'
         working-directory: ./server
-        run: uv run pytest -m "not tinybird and not benchmark" --splits 3 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+        run: |
+          uv run python -m scripts.pytest_shards --shards 3 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
+          mapfile -t test_files < "$RUNNER_TEMP/test-files"
+          uv run pytest "${test_files[@]}" -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'

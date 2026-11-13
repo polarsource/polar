@@ -170,13 +170,53 @@ class BRState(StrEnum):
     BR_TO = "BR-TO"
 
 
+class INState(StrEnum):
+    IN_AN = "IN-AN"
+    IN_AP = "IN-AP"
+    IN_AR = "IN-AR"
+    IN_AS = "IN-AS"
+    IN_BR = "IN-BR"
+    IN_CG = "IN-CG"
+    IN_CH = "IN-CH"
+    IN_DH = "IN-DH"
+    IN_DL = "IN-DL"
+    IN_GA = "IN-GA"
+    IN_GJ = "IN-GJ"
+    IN_HP = "IN-HP"
+    IN_HR = "IN-HR"
+    IN_JH = "IN-JH"
+    IN_JK = "IN-JK"
+    IN_KA = "IN-KA"
+    IN_KL = "IN-KL"
+    IN_LA = "IN-LA"
+    IN_LD = "IN-LD"
+    IN_MH = "IN-MH"
+    IN_ML = "IN-ML"
+    IN_MN = "IN-MN"
+    IN_MP = "IN-MP"
+    IN_MZ = "IN-MZ"
+    IN_NL = "IN-NL"
+    IN_OD = "IN-OD"
+    IN_PB = "IN-PB"
+    IN_PY = "IN-PY"
+    IN_RJ = "IN-RJ"
+    IN_SK = "IN-SK"
+    IN_TN = "IN-TN"
+    IN_TR = "IN-TR"
+    IN_TS = "IN-TS"
+    IN_UK = "IN-UK"
+    IN_UP = "IN-UP"
+    IN_WB = "IN-WB"
+
+
 SUBDIVISIONS: dict[str, type[StrEnum]] = {
     "US": USState,
     "CA": CASubdivision,
     "BR": BRState,
+    "IN": INState,
 }
 
-STATE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "CA", "BR"})
+STATE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "CA", "BR", "IN"})
 POSTAL_CODE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "ES", "PT"})
 CITY_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"BR"})
 

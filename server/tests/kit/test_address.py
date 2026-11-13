@@ -10,6 +10,7 @@ from polar.kit.address import Address, AddressInput
         ("US", "NY"),
         ("CA", "QC"),
         ("BR", "SP"),
+        ("IN", "MH"),
     ],
 )
 def test_valid_unprefixed_state(country: str, state: str) -> None:
@@ -24,6 +25,7 @@ def test_valid_unprefixed_state(country: str, state: str) -> None:
         ("US", "US-NY"),
         ("CA", "CA-QC"),
         ("BR", "BR-SP"),
+        ("IN", "IN-MH"),
     ],
 )
 def test_valid_prefixed_state(country: str, state: str) -> None:
@@ -93,7 +95,9 @@ class TestAddressInput:
         with pytest.raises(ValidationError):
             AddressInput.model_validate({})
 
-    @pytest.mark.parametrize(("country", "state"), [("BR", "São Paulo")])
+    @pytest.mark.parametrize(
+        ("country", "state"), [("BR", "São Paulo"), ("IN", "Maharashtra")]
+    )
     def test_invalid_state_raises_validation_error(
         self, country: str, state: str
     ) -> None:

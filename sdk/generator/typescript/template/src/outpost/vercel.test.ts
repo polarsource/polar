@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { jumpHash, vercelAffinityHeaders } from "./vercel";
+import { isVercelAffinityWarmup, jumpHash, vercelAffinityHeaders } from "./vercel";
 
 const customers = Array.from({ length: 1000 }, (_, index) => `customer-${index}`);
 
@@ -57,3 +57,43 @@ describe("vercelAffinityHeaders", () => {
     expect(ids[0]).toMatch(/^shard-\d+-\d+$/);
   });
 });
+
+describe("warm-up", () => {
+  const incoming = { "x-vercel-oidc-token": "oidc" };
+  const url = "https://app.test/api/meter";
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("warms a shard's next instance once, in the 30 s before the shard moves to it", async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const waited: Promise<unknown>[] = [];
+    const base = { externalCustomerId: "customer-warm", shards: 64, maxDurationSeconds: 300 };
+    const idAt = async (second: number) =>
+      (await vercelAffinityHeaders(incoming, { ...base, now: second * 1000 })).get(
+        "x-vercel-affinity-id",
+      );
+    let move = 1;
+    while ((await idAt(move)) === (await idAt(move - 1))) move += 1;
+    const warm = { url, waitUntil: (promise: Promise<unknown>) => waited.push(promise) };
+    const at = (second: number) =>
+      vercelAffinityHeaders(incoming, { ...base, warm, now: second * 1000 });
+
+    await at(move - 40);
+    expect(fetchMock).not.toHaveBeenCalled();
+    await at(move - 20);
+    await at(move - 10);
+    await Promise.all(waited);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [target, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = new Headers(init.headers);
+    expect(target).toBe(url);
+    expect(headers.get("x-vercel-affinity-id")).toBe(await idAt(move));
+    expect(headers.get("x-vercel-trusted-oidc-idp-token")).toBe("oidc");
+    expect(isVercelAffinityWarmup(new Request(url, { method: "POST", headers }))).toBe(true);
+  });
+
+  it("tells a warm-up apart from the merchant's own requests", () => {
+    expect(isVercelAffinityWarmup(new Request(url))).toBe(false);
+  });
+});
+

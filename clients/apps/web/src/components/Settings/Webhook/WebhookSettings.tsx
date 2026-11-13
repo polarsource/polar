@@ -21,6 +21,7 @@ import { WebhookSigningSchemeStatus } from './WebhookSigningSchemeStatus'
 const WebhookSettings = ({ org }: { org: schemas['Organization'] }) => {
   const endpoints = useListWebhooksEndpoints({
     organizationId: org.id,
+    format: ['raw', 'discord', 'slack'],
     limit: 100,
     page: 1,
   })

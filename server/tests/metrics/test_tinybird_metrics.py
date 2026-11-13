@@ -20,7 +20,6 @@ from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
 from polar.integrations.tinybird import service as tinybird_service
-from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
@@ -54,9 +53,7 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_user,
 )
-from tests.fixtures.tinybird import tinybird_available
-
-pytestmark = pytest.mark.xdist_group(name="tinybird")
+from tests.fixtures.tinybird import SynchronousIngestTinybirdClient, tinybird_available
 
 MONTHLY_PRICE = 50_00
 MONTHLY_PLUS_PRICE = 80_00
@@ -1634,7 +1631,7 @@ async def metrics_harness(
     session = create_async_sessionmaker(engine)()
     save_fixture = save_fixture_factory(session)
 
-    tinybird_client = TinybirdClient(
+    tinybird_client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,

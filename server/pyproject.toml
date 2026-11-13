@@ -80,7 +80,8 @@ dependencies = [
 [dependency-groups]
 dev = [
   "mypy>=2.1.0",
-  "pytest<10",
+  # pytest 9.2 breaks xdist grouping: https://github.com/pytest-dev/pytest/issues/15303
+  "pytest<9.2",
   "pytest-sugar>=1.0.0",
   "coverage>=7.14.1",
   "pytest-mock>=3.10.0",

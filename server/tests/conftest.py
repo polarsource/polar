@@ -18,7 +18,9 @@ def pytest_configure(config: pytest.Config) -> None:
     )
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
         if "tinybird_workspace" in getattr(item, "fixturenames", ()):
             item.add_marker(pytest.mark.tinybird)
+            item.add_marker(pytest.mark.xdist_group(name="tinybird"))

@@ -38,8 +38,6 @@ from polar.models.event import EventSource
 from polar.worker import MAX_JOB_PAYLOAD_BYTES
 from tests.fixtures.tinybird import tinybird_available
 
-pytestmark = pytest.mark.xdist_group(name="tinybird")
-
 
 def create_test_event(
     *,

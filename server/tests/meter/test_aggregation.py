@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import func, select
 
 from polar.meter.aggregation import (
@@ -20,6 +21,17 @@ def test_strip_metadata_prefix() -> None:
         func=AggregationFunction.sum, property="metadata.property"
     )
     assert aggregation.property == "property"
+
+
+@pytest.mark.parametrize(
+    "property",
+    ["a.b.c.d.e.f", "a" * 256, ".".join(["a"] * 500)],
+)
+def test_property_bounds(property: str) -> None:
+    with pytest.raises(ValidationError):
+        PropertyAggregation(func=AggregationFunction.sum, property=property)
+    with pytest.raises(ValidationError):
+        UniqueAggregation(property=property)
 
 
 @pytest.mark.parametrize(

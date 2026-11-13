@@ -50,6 +50,7 @@ const NonCurrentMeterBanner = ({
   const { data: currentMeters } = useMeters(organization.id, {
     external_id: externalId,
     catalog_status: 'live',
+    is_archived: false,
     limit: 1,
   })
   const current = currentMeters?.items[0]

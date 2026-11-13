@@ -1,19 +1,25 @@
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
 import pytest
+from fastapi import FastAPI
 from pytest_mock import MockerFixture
 from reauth.factors.oauth2.base import OAuth2Account, OAuth2Enrollment
 from sqlalchemy import select
 
+from polar.auth.authentication_session import AuthenticationSessionService
 from polar.auth.exceptions import UnverifiedEmailError
+from polar.auth.oauth2.apple import AppleFactor
 from polar.auth.oauth2.google import GoogleFactor
 from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain, User
 from polar.postgres import AsyncSession
 from tests.auth.sso.test_endpoints import create_sso_connection
+from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
 
 
@@ -185,3 +191,98 @@ class TestLoginCallback:
 
         assert response.status_code == 303
         assert response.headers["location"] == settings.generate_frontend_url("/auth")
+
+
+@pytest.fixture
+async def https_client_factory(
+    app: FastAPI, session: AsyncSession
+) -> Callable[[], AbstractAsyncContextManager[httpx.AsyncClient]]:
+    def _factory() -> AbstractAsyncContextManager[httpx.AsyncClient]:
+        return IsolatedSessionTestClient(
+            session=session,
+            auto_expunge=False,
+            transport=httpx.ASGITransport(app=app),
+            base_url="https://127.0.0.1",
+        )
+
+    return _factory
+
+
+async def apple_authorize(client: httpx.AsyncClient) -> httpx.Response:
+    start = await client.post("/v1/auth/start", json={"return_to": "/dashboard"})
+    assert start.status_code == 201
+    authorize = await client.get("/v1/auth/apple/authorize")
+    assert authorize.status_code == 303
+    return authorize
+
+
+@pytest.mark.anyio
+class TestAppleLoginCallback:
+    async def test_state_cookie_is_cross_site(
+        self,
+        https_client_factory: Callable[
+            [], AbstractAsyncContextManager[httpx.AsyncClient]
+        ],
+    ) -> None:
+        async with https_client_factory() as client:
+            authorize = await apple_authorize(client)
+
+        set_cookie = next(
+            header
+            for header in authorize.headers.get_list("set-cookie")
+            if header.startswith(f"{settings.OAUTH2_SESSION_STATE_COOKIE_KEY}=")
+        ).lower()
+        assert "samesite=none" in set_cookie
+        assert "secure" in set_cookie
+
+    async def test_same_browser(
+        self,
+        mocker: MockerFixture,
+        https_client_factory: Callable[
+            [], AbstractAsyncContextManager[httpx.AsyncClient]
+        ],
+    ) -> None:
+        async with https_client_factory() as client:
+            authorize = await apple_authorize(client)
+            state = parse_qs(urlsplit(authorize.headers["location"]).query)["state"][0]
+
+            mocker.patch.object(
+                AppleFactor,
+                "callback",
+                return_value=(None, google_account(), MagicMock()),
+            )
+            mocker.patch.object(AppleFactor, "get_email", return_value="jane@acme.com")
+            mocker.patch.object(AppleFactor, "enroll", return_value=MagicMock())
+
+            response = await client.post(
+                "/v1/auth/apple/callback", data={"code": "the-code", "state": state}
+            )
+
+        assert response.status_code == 303
+        assert response.headers["location"] == settings.generate_frontend_url("/auth")
+
+    async def test_state_from_another_browser(
+        self,
+        mocker: MockerFixture,
+        https_client_factory: Callable[
+            [], AbstractAsyncContextManager[httpx.AsyncClient]
+        ],
+    ) -> None:
+        async with https_client_factory() as attacker_client:
+            authorize = await apple_authorize(attacker_client)
+            state = parse_qs(urlsplit(authorize.headers["location"]).query)["state"][0]
+
+        callback_mock = mocker.patch.object(AppleFactor, "callback")
+        advance_mock = mocker.patch.object(AuthenticationSessionService, "advance")
+
+        async with https_client_factory() as victim_client:
+            response = await victim_client.post(
+                "/v1/auth/apple/callback", data={"code": "the-code", "state": state}
+            )
+
+        assert response.status_code == 303
+        location = urlsplit(response.headers["location"])
+        assert location.path == "/auth"
+        assert parse_qs(location.query)["error"] == ["Missing OAuth2 state cookie"]
+        callback_mock.assert_not_called()
+        advance_mock.assert_not_called()

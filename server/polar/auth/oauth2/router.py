@@ -54,6 +54,7 @@ def get_oauth_login_router(
     callback_method: typing.Literal["GET", "POST"] = "GET",
 ) -> APIRouter:  # type: ignore[valid-type]
     router = APIRouter(prefix=f"/{identifier}", include_in_schema=False)
+    cross_site_callback = callback_method == "POST"
 
     @router.get("/authorize", name=f"auth.{identifier}.authorize")
     async def _authorize(
@@ -84,7 +85,13 @@ def get_oauth_login_router(
             raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
         response = RedirectResponse(authorization_url, status_code=303)
-        set_state_cookie(request, response, state, oauth2_state.expires_at)
+        set_state_cookie(
+            request,
+            response,
+            state,
+            oauth2_state.expires_at,
+            cross_site=cross_site_callback,
+        )
         return response
 
     QueryOrForm = Query if callback_method == "GET" else Form
@@ -110,14 +117,12 @@ def get_oauth_login_router(
         if state is None:
             raise PolarAuthRedirectionError("Missing OAuth2 state")
 
-        # Skip state binding for POST callbacks, as we can't rely on cookies being sent in this case.
-        if request.method != "POST":
-            state_cookie = request.cookies.get(settings.OAUTH2_SESSION_STATE_COOKIE_KEY)
-            if state_cookie is None:
-                raise PolarAuthRedirectionError("Missing OAuth2 state cookie")
+        state_cookie = request.cookies.get(settings.OAUTH2_SESSION_STATE_COOKIE_KEY)
+        if state_cookie is None:
+            raise PolarAuthRedirectionError("Missing OAuth2 state cookie")
 
-            if state != state_cookie:
-                raise PolarAuthRedirectionError("Invalid OAuth2 state")
+        if not secrets.compare_digest(state, state_cookie):
+            raise PolarAuthRedirectionError("Invalid OAuth2 state")
 
         try:
             enrollment, oauth_account, oauth_state = await factor.callback(
@@ -140,8 +145,8 @@ def get_oauth_login_router(
         except OIDCException as e:
             raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
-        # In POST callback flows, we can't rely on cookies for state management,
-        # so we need to retrieve the authentication session using the token hash stored in the state.
+        # Cross-site POST callbacks don't carry the SameSite=Lax authentication session cookie,
+        # so retrieve it from the state, which is bound to this browser by the state cookie above.
         if authentication_session is None:
             context = oauth_state.context
             if context is None:
@@ -169,7 +174,9 @@ def get_oauth_login_router(
             if user is not None and (
                 sso_redirect := await _get_sso_redirect(session, user.email, context)
             ):
-                set_state_cookie(request, sso_redirect, "", 0)
+                set_state_cookie(
+                    request, sso_redirect, "", 0, cross_site=cross_site_callback
+                )
                 return sso_redirect
         # New user
         else:
@@ -183,7 +190,9 @@ def get_oauth_login_router(
                 raise PolarAuthRedirectionError(e.message) from e
 
             if sso_redirect := await _get_sso_redirect(session, email, context):
-                set_state_cookie(request, sso_redirect, "", 0)
+                set_state_cookie(
+                    request, sso_redirect, "", 0, cross_site=cross_site_callback
+                )
                 return sso_redirect
 
             try:
@@ -204,7 +213,7 @@ def get_oauth_login_router(
         response = RedirectResponse(
             settings.generate_frontend_url("/auth"), status_code=303
         )
-        set_state_cookie(request, response, "", 0)
+        set_state_cookie(request, response, "", 0, cross_site=cross_site_callback)
         return response
 
     return router

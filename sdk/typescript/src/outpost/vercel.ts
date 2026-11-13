@@ -14,6 +14,10 @@ const SHARDS = 128;
 const HANDOFF_MS = 60_000;
 // The shard's next instance starts this long before the shard moves to it.
 const WARM_MS = 30_000;
+// Temporary, while Vercel answers 503 to a fresh pinned instance that takes a whole shard at once:
+// each customer moves at its own moment within this window around its shard's move. The last
+// leave 15 s before Vercel retires the instance, which started with its warm-up.
+const SPREAD_MS = 30_000;
 
 export interface VercelAffinityOptions {
   /**
@@ -85,9 +89,12 @@ export const vercelAffinity = ({ maxDurationSeconds }: VercelAffinityOptions = {
     const token = await oidcToken(headers);
     if (!token) return headers;
     const now = Date.now();
-    const shard = jump((await digestOf(customer)).getBigUint64(0), SHARDS);
+    const digest = await digestOf(customer);
+    const shard = jump(digest.getBigUint64(0), SHARDS);
     const current = affinityId(shard, maxDurationSeconds, now);
-    headers.set(AFFINITY_HEADER, current);
+    // Where in the spread the customer moves: other bits of its digest than the ones of its shard.
+    const skew = (Number(digest.getBigUint64(8) >> 11n) / 2 ** 53 - 0.5) * SPREAD_MS;
+    headers.set(AFFINITY_HEADER, affinityId(shard, maxDurationSeconds, now - skew));
     headers.set(TRUSTED_TOKEN_HEADER, token);
     const next = affinityId(shard, maxDurationSeconds, now + WARM_MS);
     if (next !== current && warmed.get(shard) !== next) {

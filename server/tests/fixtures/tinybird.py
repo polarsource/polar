@@ -21,6 +21,7 @@ from scripts.tinybird_test_workspace import (
 )
 
 TOKEN_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN"
+REQUIRED_ENV_VAR = "POLAR_TEST_TINYBIRD_REQUIRED"
 
 
 class SynchronousIngestTinybirdClient(TinybirdClient):
@@ -40,7 +41,11 @@ class SynchronousIngestTinybirdClient(TinybirdClient):
 
 
 def tinybird_available() -> bool:
-    return bool(os.environ.get(TOKEN_ENV_VAR)) or get_tokens() is not None
+    return (
+        bool(os.environ.get(TOKEN_ENV_VAR))
+        or os.environ.get(REQUIRED_ENV_VAR) == "true"
+        or get_tokens() is not None
+    )
 
 
 @pytest.fixture(scope="session")
@@ -54,6 +59,8 @@ def tinybird_workspace() -> Generator[str]:
     host = settings.TINYBIRD_API_URL
     tokens = get_tokens(host)
     if not tokens:
+        if os.environ.get(REQUIRED_ENV_VAR) == "true":
+            raise RuntimeError("Tinybird is required but is not running")
         pytest.skip("Tinybird not running")
 
     workspace_id, workspace_token = create_workspace(host, tokens)

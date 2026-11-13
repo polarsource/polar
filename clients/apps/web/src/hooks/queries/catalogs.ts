@@ -1,6 +1,7 @@
+import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useLiveCatalog = (organizationId: string, enabled: boolean) =>
@@ -128,4 +129,20 @@ export const useRemovedCatalogItems = (organizationId: string) =>
       ),
     retry: defaultRetry,
     staleTime: 0,
+  })
+
+export const usePublishCatalog = () =>
+  useMutation({
+    mutationFn: (id: string) =>
+      api.POST('/v1/catalogs/{id}/publish', { params: { path: { id } } }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      // Publishing changes which product, benefit and meter rows are current
+      const queryClient = getQueryClient()
+      for (const key of ['catalogs', 'products', 'benefits', 'meters']) {
+        queryClient.invalidateQueries({ queryKey: [key] })
+      }
+    },
   })

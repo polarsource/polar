@@ -1,6 +1,7 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { PublishDraftButton } from '@/components/Products/PublishDraftButton'
 import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
@@ -71,56 +72,61 @@ export default function VersionPage({
     <DashboardBody
       title={null}
       header={
-        <Box flexDirection="column" rowGap="xs" minWidth={0}>
-          <Link href={versionsPath}>
-            <Box
-              as="span"
-              color={{ base: 'text-secondary', hover: 'text-primary' }}
-              transitionProperty="colors"
-              transitionDuration="fast"
-            >
-              <Text as="span" color="inherit">
-                ← Versions
+        <>
+          <Box flexDirection="column" rowGap="xs" minWidth={0}>
+            <Link href={versionsPath}>
+              <Box
+                as="span"
+                color={{ base: 'text-secondary', hover: 'text-primary' }}
+                transitionProperty="colors"
+                transitionDuration="fast"
+              >
+                <Text as="span" color="inherit">
+                  ← Versions
+                </Text>
+              </Box>
+            </Link>
+            <Box alignItems="center" columnGap="l" minWidth={0}>
+              <Text variant="heading-xs" as="h1" truncate>
+                {catalog.name ?? 'Untitled'}
               </Text>
             </Box>
-          </Link>
-          <Box alignItems="center" columnGap="l" minWidth={0}>
-            <Text variant="heading-xs" as="h1" truncate>
-              {catalog.name ?? 'Untitled'}
-            </Text>
-          </Box>
-          <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
-            <Text color="muted">{statusLabel[catalog.status]}</Text>
-            <Dot />
-            <Text color="muted">
-              {catalog.published_at ? (
+            <Box alignItems="baseline" columnGap="s" flexWrap="wrap">
+              <Text color="muted">{statusLabel[catalog.status]}</Text>
+              <Dot />
+              <Text color="muted">
+                {catalog.published_at ? (
+                  <>
+                    Published <PublishedAt catalog={catalog} />
+                  </>
+                ) : (
+                  'Not published'
+                )}
+              </Text>
+              {parent ? (
                 <>
-                  Published <PublishedAt catalog={catalog} />
+                  <Dot />
+                  <Text color="muted">Based on</Text>
+                  <Link href={`${versionsPath}/${parent.id}`}>
+                    <Box
+                      as="span"
+                      color={{ base: 'text-primary', hover: 'text-secondary' }}
+                      transitionProperty="colors"
+                      transitionDuration="fast"
+                    >
+                      <Text as="span" color="inherit">
+                        {parent.name ?? 'Untitled'}
+                      </Text>
+                    </Box>
+                  </Link>
                 </>
-              ) : (
-                'Not published'
-              )}
-            </Text>
-            {parent ? (
-              <>
-                <Dot />
-                <Text color="muted">Based on</Text>
-                <Link href={`${versionsPath}/${parent.id}`}>
-                  <Box
-                    as="span"
-                    color={{ base: 'text-primary', hover: 'text-secondary' }}
-                    transitionProperty="colors"
-                    transitionDuration="fast"
-                  >
-                    <Text as="span" color="inherit">
-                      {parent.name ?? 'Untitled'}
-                    </Text>
-                  </Box>
-                </Link>
-              </>
-            ) : null}
+              ) : null}
+            </Box>
           </Box>
-        </Box>
+          {catalog.status === 'draft' ? (
+            <PublishDraftButton catalogId={catalog.id} />
+          ) : null}
+        </>
       }
     >
       <Box flexDirection="column" minWidth={0}>

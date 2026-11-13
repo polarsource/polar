@@ -4,6 +4,7 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { PublishDraftButton } from './PublishDraftButton'
 
 export const DraftVersionBanner = ({
   organization,
@@ -66,6 +67,7 @@ export const DraftVersionBanner = ({
             View current version
           </Button>
         ) : null}
+        <PublishDraftButton catalogId={draftId} />
       </Box>
     </Box>
   )

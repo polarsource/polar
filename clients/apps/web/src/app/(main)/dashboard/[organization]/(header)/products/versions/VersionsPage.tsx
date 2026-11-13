@@ -5,7 +5,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { schemas } from '@polar-sh/client'
-import { Subnav, SubnavItem, Text } from '@polar-sh/orbit'
+import { Subnav, SubnavItem } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { HistoryRounded } from '@polar-sh/orbit/icons'
 import { useSearchParams } from 'next/navigation'
@@ -24,15 +24,9 @@ const HistoryTab = ({
 }) => {
   const searchParams = useSearchParams()
   const [page, setPage] = useQueryState('page', parseAsInteger.withDefault(1))
-  const { data, isError } = useCatalogs(organization.id, page, PAGE_SIZE)
+  const { data } = useCatalogs(organization.id, page, PAGE_SIZE)
 
-  if (!data) {
-    return (
-      <Text color="muted">
-        {isError ? 'Couldn’t load versions.' : 'Loading versions…'}
-      </Text>
-    )
-  }
+  if (!data) return null
 
   if (!data.pagination.total_count) {
     return (

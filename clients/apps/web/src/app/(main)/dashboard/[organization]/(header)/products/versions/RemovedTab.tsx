@@ -86,15 +86,9 @@ export const RemovedTab = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const { data: removed, isError } = useRemovedCatalogItems(organization.id)
+  const { data: removed } = useRemovedCatalogItems(organization.id)
 
-  if (!removed) {
-    return (
-      <Text color="muted">
-        {isError ? 'Couldn’t load removed items.' : 'Loading removed items…'}
-      </Text>
-    )
-  }
+  if (!removed) return null
 
   if (!removed.length) {
     return <Text color="muted">Nothing has been removed from the catalog.</Text>

@@ -1419,6 +1419,7 @@ class TestApply:
         ] == [
             ("trial_interval", TrialInterval.day),
             ("trial_interval_count", 14),
+            ("trial_payment_setup_required", True),
         ]
 
         created = await declarative_config_service.apply(
@@ -1436,7 +1437,15 @@ class TestApply:
             redis,
             auth_subject,
             Config.model_validate(
-                {"products": [{**product_config, "trial_interval_count": 7}]}
+                {
+                    "products": [
+                        {
+                            **product_config,
+                            "trial_interval_count": 7,
+                            "trial_payment_setup_required": False,
+                        }
+                    ]
+                }
             ),
         )
         assert updated.changes[0].action == ConfigAction.updated
@@ -1445,6 +1454,7 @@ class TestApply:
         ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval == TrialInterval.day
         assert product.trial_interval_count == 7
+        assert product.trial_payment_setup_required is False
 
         cleared = await declarative_config_service.apply(
             session,
@@ -1469,6 +1479,50 @@ class TestApply:
         ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval is None
         assert product.trial_interval_count is None
+        assert product.trial_payment_setup_required is False
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_trial_payment_setup_kept_without_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            trial_payment_setup_required=False,
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "products": [
+                        {
+                            "external_id": "pro",
+                            "name": "Renamed",
+                            "description": "Description",
+                            "recurring_interval": "month",
+                            "prices": [{"amount_type": "fixed", "price_amount": 1000}],
+                        }
+                    ]
+                }
+            ),
+        )
+
+        assert result.changes[0].action == ConfigAction.updated
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pro"])
+        assert product.name == "Renamed"
+        assert product.trial_payment_setup_required is False
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -4884,6 +4938,7 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "recurring_interval_count": 3,
             "trial_interval": "day",
             "trial_interval_count": 14,
+            "trial_payment_setup_required": False,
             "prices": [
                 {"amount_type": "fixed", "price_amount": 2000},
                 {

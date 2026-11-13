@@ -1134,6 +1134,10 @@ class DeclarativeConfigService:
                                     update_dict["meter_interval_count"] = (
                                         previous.meter_interval_count
                                     )
+                                if config.trial_interval is None:
+                                    update_dict["trial_payment_setup_required"] = (
+                                        previous.trial_payment_setup_required
+                                    )
                             await repository.update(
                                 product, update_dict=update_dict, flush=True
                             )

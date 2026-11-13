@@ -46,6 +46,7 @@ export const productFields = ({
   recurring_interval_count,
   trial_interval,
   trial_interval_count,
+  trial_payment_setup_required,
   meter_interval,
   meter_interval_count,
   ...product
@@ -55,7 +56,7 @@ export const productFields = ({
   visibility,
   billing: cadence(recurring_interval, recurring_interval_count) ?? 'One-time',
   trial: trial_interval
-    ? plural(trial_interval_count ?? 1, trial_interval)
+    ? `${plural(trial_interval_count ?? 1, trial_interval)}${trial_payment_setup_required !== null ? ', no payment method' : ''}`
     : null,
   meter_cycle: cadence(meter_interval, meter_interval_count),
   ...product,

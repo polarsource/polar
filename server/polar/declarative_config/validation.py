@@ -937,6 +937,15 @@ def _get_product_update_dict(
         value = getattr(product_config, name)
         if getattr(product, name) != value:
             update_dict[name] = value
+    # Without a trial, config doesn't describe it: checkout link trials still use it.
+    if (
+        product_config.trial_interval is not None
+        and product.trial_payment_setup_required
+        != product_config.trial_payment_setup_required
+    ):
+        update_dict["trial_payment_setup_required"] = (
+            product_config.trial_payment_setup_required
+        )
     config_prices = [price.model_dump() for price in product_config.prices]
     if sorted(map(price_key, config_prices)) != sorted(
         price_key(price) for price in prices if price is not None
@@ -1001,6 +1010,8 @@ async def diff_products(
         product = existing_products.get(product_config.external_id)
         if product is None:
             create_dict = _create_update_dict(product_config)
+            if product_config.trial_interval is None:
+                del create_dict["trial_payment_setup_required"]
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]

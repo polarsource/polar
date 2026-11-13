@@ -7,6 +7,7 @@ from pydantic import (
     UUID4,
     AfterValidator,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Discriminator,
     Field,
@@ -36,6 +37,7 @@ from polar.models.product_price import ProductPriceAmountType
 from polar.organization.schemas import OrganizationID
 from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
+    TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION,
     PriceAmount,
     ProductDescription,
     ProductName,
@@ -287,6 +289,10 @@ class ConfigProduct(
         le=999,
         description="Meter cycle length in intervals. Defaults to 1.",
     )
+    # Export sends null for the default.
+    trial_payment_setup_required: Annotated[
+        bool, BeforeValidator(lambda v: True if v is None else v)
+    ] = Field(default=True, description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION)
     prices: list[ConfigProductPrice] = Field(
         min_length=1, description="The prices of the product."
     )
@@ -297,6 +303,8 @@ class ConfigProduct(
 
     @model_validator(mode="after")
     def validate_recurring(self) -> Self:
+        if not self.trial_payment_setup_required and self.trial_interval is None:
+            raise ValueError("Only products with a trial can skip the payment method.")
         if self.recurring_interval is None:
             if self.recurring_interval_count is not None:
                 raise ValueError(
@@ -766,6 +774,11 @@ class ConfigProductRead(_ConfigRead):
     recurring_interval_count: int | None
     trial_interval: TrialInterval | None
     trial_interval_count: int | None
+    trial_payment_setup_required: Literal[False] | None = Field(
+        description=(
+            "`false` when customers can start the trial without a payment method."
+        ),
+    )
     meter_interval: MeterInterval | None
     meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]

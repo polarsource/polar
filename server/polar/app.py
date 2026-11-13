@@ -3,7 +3,7 @@ from collections.abc import AsyncIterator
 from typing import TypedDict
 
 import structlog
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 
 from polar import worker  # noqa
 from polar.agent.endpoints import auth_md_router
@@ -206,7 +206,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Polar API stopped")
 
 
-def create_app() -> FastAPI:
+def create_app(api_router: APIRouter = router) -> FastAPI:
     app = FastAPI(lifespan=lifespan, openapi_url=None)
 
     app.add_middleware(OperationalErrorMiddleware)
@@ -264,7 +264,7 @@ def create_app() -> FastAPI:
 
     add_versioned_routers(
         app,
-        router,
+        api_router,
         get_webhook_routes(),
         VERSIONS,
         CURRENT_API_VERSION,

@@ -44,6 +44,7 @@ variable "additional_api_services" {
   type = map(object({
     plan            = optional(string)
     web_concurrency = optional(string)
+    start_command   = optional(string)
     custom_domains  = optional(list(object({ name = string })), [])
     autoscaling = object({
       min               = number

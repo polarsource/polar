@@ -1,0 +1,22 @@
+.github/workflows/test_server.yaml
+  s_89a0c4db59f066::t_28a614b5214604 388,509-522
+server/scripts/pytest_profile.py
+  s_89a0c4db59f066::t_843290cb0098da 47-57,59-62,67-73,75-78,80-82,114-121
+  s_89a0c4db59f066::t_28a614b5214604 1-46,58,63-66,74,79,83-113,122-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d34babb2fd57c5763cd5d6865bf5b25a269db78",
+  "prompts": {},
+  "sessions": {
+    "s_89a0c4db59f066": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d3d8-01aa-7c10-99c7-42253810de26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

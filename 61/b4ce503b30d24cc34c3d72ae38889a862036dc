@@ -1,0 +1,49 @@
+clients/packages/client/src/v1.ts
+  ai_agent 2842-2847,2850,2855,2857-2862,2864-2871,2873,2880,2882-2886,2888-2895,2897,2904,2906-2907,2919-2920,17841-17846,26817,41929-41934,41959-41964,41990-41995,42020-42025,42050-42055,42080-42085,42110-42115,42142-42147,42171-42176,42205-42210,42234-42239,42264-42269,42293-42298,42322-42327,42357-42362,42390-42395,42460-42465,42490-42495,42520-42525,42642-42647,42676-42677,42812-42817,42844-42849,42876-42881,42915-42920,42946-42951,42975-42980,43009-43014,43038-43043,43067-43072,43096-43101,43125-43130,43154-43159,43184-43189,43214-43219,43245-43250,43282-43287,43315-43320,43361-43366,43393-43398,43424-43429,43456-43461,43489-43494,43522-43527,73255-73257,76828-76830,76834-76836
+server/polar/webhook/webhooks.py
+  s_f145015d4638d3::t_156ac4a2c330c5 15,178,188-191,193-198
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 50
+  s_ef0ee0cf80beae::t_bb40c2fac3f0de 170,179,187,192
+  s_ef0ee0cf80beae::t_99cc3cde176ce4 51,161-164
+  s_ef0ee0cf80beae::t_ea78e45ada613a 76
+server/tests/webhooks/test_webhooks.py
+  s_f145015d4638d3::t_156ac4a2c330c5 410-434,150-151,153,157-158
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 726
+  s_ef0ee0cf80beae::t_bb40c2fac3f0de 759,794,807,835,868,903,916
+  s_ef0ee0cf80beae::t_e54de4dad802ec 23
+  s_ef0ee0cf80beae::t_b725120a05dadb 39,141-149,152,154-156
+server/tests/declarative_config/test_schemas.py
+  s_ef0ee0cf80beae::t_69536ab1f09f2e 1-2,5-9
+  s_ef0ee0cf80beae::t_882a68a187a4f5 10,24-26,28-36
+  s_ef0ee0cf80beae::t_34a057bba688ef 27
+server/polar/webhook/schemas.py
+  s_f145015d4638d3::t_156ac4a2c330c5 91-92
+  s_ef0ee0cf80beae::t_99cc3cde176ce4 89,95
+  s_ef0ee0cf80beae::t_78686c72b2d3c8 90,93,96
+  s_ef0ee0cf80beae::t_372cc3af403ef8 196,228
+  s_ef0ee0cf80beae::t_34a057bba688ef 94
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "61b4ce503b30d24cc34c3d72ae38889a862036dc",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    },
+    "s_f145015d4638d3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "58682541-903e-4f8b-9b37-02f980adbd6d",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

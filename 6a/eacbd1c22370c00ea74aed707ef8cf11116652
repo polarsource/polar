@@ -1,0 +1,133 @@
+server/migrations/versions/2026-11-12-1405_add_manual_benefit_grant_timestamps.py
+  s_abee0099a8bb41::t_f97befcf0fa2b0 1-3,6-12,14-116
+server/polar/models/benefit_grant.py
+  s_abee0099a8bb41::t_bafdcb7b76e35d 8,102,112-116,118,126-138,148-153
+  s_abee0099a8bb41::t_9d44d19643ef71 48-51,78-83,88-93
+  s_feb647f1338f47::t_23c867b1abf8c4 232-240
+sdk/e2e/harness.py
+  s_abee0099a8bb41::t_cb05f7c4c404a3 167,344-345,483-485
+  s_abee0099a8bb41::t_beeee6bffc557b 387
+sdk/e2e/scenarios.py
+  s_abee0099a8bb41::t_cb05f7c4c404a3 352-367
+server/polar/benefit/grant/service.py
+  s_abee0099a8bb41::t_21763f515d75f9 38,327,336-337,339,351,405,414-415,417,425,509,511,518-521,527-529,540-542,617,620-625,688,691-697,740,756,772,776-777,805-828
+  s_abee0099a8bb41::t_8ca061fb0b6d40 423-424
+  s_abee0099a8bb41::t_4e3fe8d989d9f3 426,429-430
+  s_1daae4581b9296::t_d628a8bea6bf03 549-551
+  s_feb647f1338f47::t_54ce60d4854109 510
+  s_feb647f1338f47::t_4b8dbdac19db18 2,77-93,104,112-114,132,134-135,156
+  s_feb647f1338f47::t_da626ad20b0864 65-67,107-109,116-119,124-129,136,138-141,152-154,196-199
+  s_feb647f1338f47::t_351e4115852265 9,14-15,17,21,24,27,37,40,53,63-64,68-69,71-76,94-103,105-106,110-111,115,120-123,130-131,133,137,142-151,155,157-195,200-213
+server/polar/benefit/grant/repository.py
+  s_1daae4581b9296::t_79f24bd0911f75 65-69,73-74,91-95,253,276,316,331,335-337,386-390,400,403-420
+  s_feb647f1338f47::t_a8d8d88e3da69e 103,137,228
+  s_feb647f1338f47::t_23d77d776a9338 70-72,75-79
+  s_feb647f1338f47::t_351e4115852265 86-97
+server/polar/license_key/service.py
+  s_1daae4581b9296::t_f312744f4f63e3 181-186,269-273,282
+server/polar/license_key/tasks.py
+  s_1daae4581b9296::t_47fdf1a26e93ab 49-50,64,75-78
+  s_feb647f1338f47::t_79755667970194 38,55-58
+server/tests/benefit/grant/test_repository.py
+  s_1daae4581b9296::t_e7b9516a3bcfad 5-6,39-60
+server/tests/license_key/test_service.py
+  s_1daae4581b9296::t_51a87ed78cb394 25,332-356
+server/tests/license_key/test_tasks.py
+  s_1daae4581b9296::t_fae05ef9127ee0 215-216
+server/tests/benefit/grant/test_service.py
+  s_abee0099a8bb41::t_c22d970e9795ed 700-740
+  s_feb647f1338f47::t_cd891a019d4205 858-897
+  s_feb647f1338f47::t_894633eed3e4a6 37,387-398
+  s_feb647f1338f47::t_08b228f129ae36 141-143
+  s_feb647f1338f47::t_813d9f0e935b59 449
+  s_feb647f1338f47::t_674e2e5028bc2a 10,40,103,113-114,136,149,182,374,382
+  s_feb647f1338f47::t_2a724009d3199a 121-127
+  s_feb647f1338f47::t_ef240f9964c529 4,12,18,20,30-31,33-35,43,46,104-112,115-120,128-135,137-140,144-148,150-181,183-333,335-341,344,349,351,353-362,369,371-373,376,383,399-448,450-454
+  s_feb647f1338f47::t_0d3749235a75e7 13,65-102,334,342-343,345-348,350,352,363-368,370,375,377-381,384-386
+  s_feb647f1338f47::t_49e148af373dd1 455-456
+clients/packages/client/src/v1.ts
+  s_feb647f1338f47::t_2ec383b7d1e7a7 2704-2711,2712,2715,2717,2720-2724,11774-11837
+server/polar/license_key/endpoints.py
+  s_abee0099a8bb41::t_393020e2884a06 14,19,143-166
+  s_aef5cda48e9c2d::t_0f1f0a707f0fcf 167-168
+server/polar/benefit/grant/scope.py
+  s_feb647f1338f47::t_809f1139fc2c62 100-103
+server/tests/benefit/test_tasks.py
+  s_feb647f1338f47::t_5961d3702bc9c6 4,7,22,31-71
+server/tests/test_openapi.py
+  s_feb647f1338f47::t_4b8dbdac19db18 133-136,176-178
+  s_feb647f1338f47::t_7055bc309521ec 179-180
+server/polar/benefit/repository.py
+  s_feb647f1338f47::t_351e4115852265 34-56
+server/tests/benefit/grant/test_endpoints.py
+  s_feb647f1338f47::t_705aa509517123 10,320-323,325,327-340,346,349-353,355-359
+  s_feb647f1338f47::t_a27431cd1384cf 324,326,363-384
+  s_feb647f1338f47::t_ef240f9964c529 341-345,347-348,354,360-362
+server/polar/benefit/auth.py
+  s_feb647f1338f47::t_351e4115852265 43-52
+server/polar/benefit/grant/schemas.py
+  s_feb647f1338f47::t_da626ad20b0864 13,16
+  s_feb647f1338f47::t_4b8dbdac19db18 4,14-15,17-20,22-26,36-38,41-45,48,50-53,56-61
+  s_feb647f1338f47::t_351e4115852265 1-3,5-12,21,27-35,39-40,46-47,49,54-55,62
+server/polar/benefit/grant/endpoints.py
+  s_feb647f1338f47::t_4b8dbdac19db18 35
+  s_feb647f1338f47::t_da626ad20b0864 19,49-51
+  s_feb647f1338f47::t_b26ff0a4b8b9b2 4,7,9-11,14,16,18,29-34,36-48,52-73
+  s_feb647f1338f47::t_23694bd87c5736 74-75
+docs/openapi/2027-01.openapi.json
+  s_feb647f1338f47::t_d687d434033b6d 3486-3585,3922-4019,35446-35570
+clients/apps/web/src/components/Benefit/BenefitGrantStatus.tsx
+  s_feb647f1338f47::t_7754cea6edcd04 10-20,25-26,34-35
+clients/apps/web/src/components/Customer/CustomerPage/GrantBenefitSheet.tsx
+  s_feb647f1338f47::t_3028c307efe57b 65,80,91,97,187
+  s_feb647f1338f47::t_7dab5be31dadbd 229
+  s_feb647f1338f47::t_b835e2524bb1c7 76-77,120-122,133-137,149-158,160-162,165-171,178-185,191-193,197-201,203-209,215-219,221-228,230-231
+  s_feb647f1338f47::t_1a106e1734c3ce 1-64,66-75,78-79,81-90,92-96,98-119,123-132,138-148,159,163-164,172-177,186,188-190,194-196,202,210-214,220,232-235
+clients/apps/web/src/components/Customer/CustomerPage/CustomerBenefitGrantsTable.tsx
+  s_feb647f1338f47::t_b835e2524bb1c7 71-75,100-101,132-142,156,160-162
+  s_feb647f1338f47::t_3fcdc232059d18 5-7,9-10,16-17,28-33,45-50,66-70,76-78,99,102-103,108-109,124-131,151-155,157-159,163-174
+clients/apps/web/src/components/Customer/CustomerPage/CustomerOverview.tsx
+  s_feb647f1338f47::t_7754cea6edcd04 40
+clients/apps/web/src/hooks/queries/benefits.ts
+  s_feb647f1338f47::t_7754cea6edcd04 265-301
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6aeacbd1c22370c00ea74aed707ef8cf11116652",
+  "prompts": {},
+  "sessions": {
+    "s_1daae4581b9296": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c525-68ac-7ca1-b6d5-1dd9b072775c",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_abee0099a8bb41": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c4c3-8fd2-7023-acdb-2b9f71e8b2d0",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_aef5cda48e9c2d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf3d-200f-77a1-b27b-9ba87534b40e",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_feb647f1338f47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c473-d69e-7e73-b567-f9f591836add",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

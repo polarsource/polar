@@ -1,0 +1,21 @@
+server/polar/app.py
+  s_322a59c7a4f484::t_ffe412cd7cf57b 41,168
+server/polar/logfire.py
+  s_322a59c7a4f484::t_ffe412cd7cf57b 10,35,292-295,299
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "27c7eba4fe0172ee605c3b5f696cf76803373493",
+  "prompts": {},
+  "sessions": {
+    "s_322a59c7a4f484": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b9bfb40a-c73c-4427-ad7d-a6e1def57bbd",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

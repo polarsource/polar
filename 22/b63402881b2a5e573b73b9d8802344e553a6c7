@@ -1,0 +1,29 @@
+server/tests/webhooks/test_endpoints.py
+  s_ef0ee0cf80beae::t_9b8466ab2a89ce 99-124,126-129
+  s_ef0ee0cf80beae::t_9eac56ff1821ac 125
+server/polar/webhook/endpoints.py
+  s_ef0ee0cf80beae::t_960fd11e02da94 58
+server/polar/webhook/service.py
+  s_ef0ee0cf80beae::t_9b8466ab2a89ce 142
+  s_ef0ee0cf80beae::t_960fd11e02da94 158-159
+server/polar/webhook/schemas.py
+  s_ef0ee0cf80beae::t_960fd11e02da94 28-33,37,315-317
+clients/packages/client/src/v1.ts
+  ai_agent 58235-58239
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "22b63402881b2a5e573b73b9d8802344e553a6c7",
+  "prompts": {},
+  "sessions": {
+    "s_ef0ee0cf80beae": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4b47a0c6-3289-4f71-9ec0-b36ac82332d3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

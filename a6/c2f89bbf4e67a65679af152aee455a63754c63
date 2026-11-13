@@ -1,0 +1,19 @@
+server/tests/test_openapi.py
+  s_89a0c4db59f066::t_72a692f81bc2b9 27-35,38,52,66-67,145,341-351
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6c2f89bbf4e67a65679af152aee455a63754c63",
+  "prompts": {},
+  "sessions": {
+    "s_89a0c4db59f066": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d3d8-01aa-7c10-99c7-42253810de26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

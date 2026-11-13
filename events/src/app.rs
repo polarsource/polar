@@ -111,7 +111,11 @@ impl AppState {
                 legacy: config.secret.clone(),
             },
         };
-        let auth = Arc::new(AuthSettings::new(hash_secrets, &config.base_url));
+        let auth = Arc::new(AuthSettings::new(
+            hash_secrets,
+            &config.base_url,
+            config.organization_access_token_cache_ttl,
+        ));
         if let Some(arn) = config.hash_secret_arn {
             tokio::spawn(refresh_hash_secrets(
                 auth.clone(),

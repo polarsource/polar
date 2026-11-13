@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     env,
+    time::Duration,
 };
 
 use anyhow::{Context, Result};
@@ -8,6 +9,8 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use tracing::level_filters::LevelFilter;
 
 use crate::{aws::AwsSettings, client_ip::TrustedProxies, jobs::SqsSettings};
+
+const MAX_TOKEN_CACHE_TTL_SECONDS: f64 = 86_400.0;
 
 pub struct Config {
     pub port: u16,
@@ -18,6 +21,7 @@ pub struct Config {
     pub logfire_token: Option<String>,
     pub postgres: PgConnectOptions,
     pub postgres_pool_size: u32,
+    pub organization_access_token_cache_ttl: Duration,
     pub redis_url: String,
     pub secret: String,
     pub hash_secrets: HashMap<String, String>,
@@ -108,6 +112,13 @@ impl Config {
             postgres_pool_size: var("POLAR_DATABASE_POOL_SIZE", "5")
                 .parse()
                 .context("POLAR_DATABASE_POOL_SIZE")?,
+            organization_access_token_cache_ttl: Duration::try_from_secs_f64(
+                var("POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS", "0")
+                    .parse::<f64>()
+                    .context("POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS")?
+                    .clamp(0.0, MAX_TOKEN_CACHE_TTL_SECONDS),
+            )
+            .context("POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS")?,
             redis_url,
             secret: var("POLAR_SECRET", "super secret jwt secret"),
             hash_secrets,

@@ -12,6 +12,7 @@ from polar.checkout_link.service import checkout_link as checkout_link_service
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
+from polar.kit.trial import TrialInterval
 from polar.models import Discount, Organization, Product, User, UserOrganization
 from polar.models.checkout_link import CheckoutLink
 from polar.models.product_price import ProductPriceFixed
@@ -540,6 +541,37 @@ class TestUpdate:
         await session.flush()
 
         assert updated_checkout_link.products == [product_one_time, product]
+
+    @pytest.mark.auth
+    async def test_products_one_time_resets_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        checkout_link: CheckoutLink,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link.trial_interval = TrialInterval.month
+        checkout_link.trial_interval_count = 1
+        checkout_link.trial_payment_setup_required = False
+        await save_fixture(checkout_link)
+
+        updated_checkout_link = await checkout_link_service.update(
+            session,
+            checkout_link,
+            CheckoutLinkUpdate(
+                products=[product_one_time.id],
+                trial_interval=TrialInterval.month,
+                trial_interval_count=1,
+                trial_payment_setup_required=False,
+            ),
+            auth_subject,
+        )
+
+        assert updated_checkout_link.trial_interval is None
+        assert updated_checkout_link.trial_interval_count is None
+        assert updated_checkout_link.trial_payment_setup_required is None
 
     @pytest.mark.auth
     async def test_products_different_organization(

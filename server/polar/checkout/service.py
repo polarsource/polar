@@ -944,6 +944,7 @@ class CheckoutService:
             max_units=max_units,
             trial_interval=checkout_link.trial_interval,
             trial_interval_count=checkout_link.trial_interval_count,
+            trial_payment_setup_required=checkout_link.trial_payment_setup_required,
             allow_discount_codes=checkout_link.allow_discount_codes,
             allow_trial=True,
             require_billing_address=checkout_link.require_billing_address,
@@ -1175,7 +1176,7 @@ class CheckoutService:
             if checkout.is_payment_required:
                 raise PaymentNotReady()
 
-            if checkout.is_payment_setup_required:
+            if checkout.has_future_charges:
                 raise PaymentNotReady()
 
         confirmation_token: stripe_lib.ConfirmationToken | None = None

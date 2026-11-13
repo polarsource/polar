@@ -367,6 +367,32 @@ class TestGetProduct:
         json = response.json()
         assert json["catalog_id"] == str(catalog.id)
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_trial_payment_setup_required_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        assert response.json()["trial_payment_setup_required"] is True
+
+    @pytest.mark.api_version(V2026_04, V2026_10)
+    @pytest.mark.auth
+    async def test_trial_payment_setup_required_before_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/products/{product.id}")
+
+        assert response.status_code == 200
+        assert "trial_payment_setup_required" not in response.json()
+
 
 @pytest.mark.anyio
 class TestCreateProduct:
@@ -819,6 +845,36 @@ class TestCreateProduct:
         assert response.status_code == 201
         assert response.json()["external_id"] == "ext_1337"
 
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_trial_payment_setup_required_2027_01(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/products/",
+            json={
+                "name": "Product",
+                "organization_id": str(organization.id),
+                "recurring_interval": "month",
+                "trial_interval": "day",
+                "trial_interval_count": 14,
+                "trial_payment_setup_required": False,
+                "prices": [
+                    {
+                        "amount_type": "fixed",
+                        "price_amount": 1000,
+                        "price_currency": "usd",
+                    }
+                ],
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["trial_payment_setup_required"] is False
+
 
 @pytest.mark.anyio
 class TestUpdateProduct:
@@ -916,6 +972,30 @@ class TestUpdateProduct:
         price = response.json()["prices"][0]
         assert price["amount_type"] == "seat_based"
         assert price["tiers"] == tiers
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_trial_payment_setup_required_2027_01(
+        self,
+        client: AsyncClient,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={"trial_payment_setup_required": False},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["trial_payment_setup_required"] is False
+
+        response = await client.patch(
+            f"/v1/products/{product.id}",
+            json={"trial_payment_setup_required": None},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["trial_payment_setup_required"] is False
 
     @pytest.mark.auth
     async def test_existing_price_with_full_schema(

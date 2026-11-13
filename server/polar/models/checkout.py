@@ -390,7 +390,7 @@ class Checkout(
         return self.total_amount > 0 and self.trial_end is None
 
     @property
-    def is_payment_setup_required(self) -> bool:
+    def has_future_charges(self) -> bool:
         if self.product is None:
             return False
 
@@ -413,6 +413,16 @@ class Checkout(
             return False
 
         return self.product.is_recurring
+
+    @property
+    def is_payment_setup_required(self) -> bool:
+        if self.product is None or not self.has_future_charges:
+            return False
+        if self.trial_end is None:
+            return True
+        if self.trial_payment_setup_required is not None:
+            return self.trial_payment_setup_required
+        return self.product.trial_payment_setup_required
 
     @property
     def should_save_payment_method(self) -> bool:

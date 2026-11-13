@@ -185,6 +185,32 @@ class TestCustomerRelationship:
         assert loaded_event is not None
         assert loaded_event.customer is None
 
+    async def test_customer_id_from_other_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+
+        event = await create_event(
+            save_fixture,
+            timestamp=utc_now(),
+            organization=organization,
+            customer=customer_organization_second,
+        )
+
+        repository = EventRepository.from_session(session)
+        loaded_event = await repository.get_by_id(
+            event.id, options=(joinedload(Event.customer),)
+        )
+
+        assert loaded_event is not None
+        assert loaded_event.customer is None
+
 
 @pytest.mark.anyio
 class TestEventLabel:

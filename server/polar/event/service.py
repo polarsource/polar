@@ -1065,9 +1065,13 @@ class EventService:
                     index, event_create.organization_id
                 )
                 if isinstance(event_create, EventCreateCustomer):
-                    validate_customer_id(index, event_create.customer_id)
+                    validate_customer_id(
+                        index, event_create.customer_id, organization_id
+                    )
                     if event_create.member_id is not None:
-                        validate_member_id(index, event_create.member_id)
+                        validate_member_id(
+                            index, event_create.member_id, organization_id
+                        )
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
@@ -1543,11 +1547,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         customer_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not customer_ids:
-            allowed_customers: set[uuid.UUID] = set()
+            allowed_customers: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Customer.id).where(
+            statement = select(Customer.id, Customer.organization_id).where(
                 ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
@@ -1562,10 +1566,15 @@ class EventService:
                     Customer.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_customers = set(result.scalars().all())
+            allowed_customers = {
+                customer_id: organization_id
+                for customer_id, organization_id in result.tuples().all()
+            }
 
-        def _validate_customer_id(index: int, customer_id: uuid.UUID) -> uuid.UUID:
-            if customer_id not in allowed_customers:
+        def _validate_customer_id(
+            index: int, customer_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_customers.get(customer_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {
@@ -1586,11 +1595,11 @@ class EventService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
         member_ids: set[uuid.UUID],
-    ) -> Callable[[int, uuid.UUID], uuid.UUID]:
+    ) -> Callable[[int, uuid.UUID, uuid.UUID], uuid.UUID]:
         if not member_ids:
-            allowed_members: set[uuid.UUID] = set()
+            allowed_members: dict[uuid.UUID, uuid.UUID] = {}
         else:
-            statement = select(Member.id).where(
+            statement = select(Member.id, Member.organization_id).where(
                 ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
@@ -1603,10 +1612,15 @@ class EventService:
                     Member.organization_id == auth_subject.subject.id
                 )
             result = await session.execute(statement)
-            allowed_members = set(result.scalars().all())
+            allowed_members = {
+                member_id: organization_id
+                for member_id, organization_id in result.tuples().all()
+            }
 
-        def _validate_member_id(index: int, member_id: uuid.UUID) -> uuid.UUID:
-            if member_id not in allowed_members:
+        def _validate_member_id(
+            index: int, member_id: uuid.UUID, organization_id: uuid.UUID
+        ) -> uuid.UUID:
+            if allowed_members.get(member_id) != organization_id:
                 raise EventIngestValidationError(
                     [
                         {

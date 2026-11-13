@@ -519,8 +519,7 @@ jobs:
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          mapfile -t test_files < "$RUNNER_TEMP/test-files"
-          uv run pytest "${test_files[@]}" -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
@@ -528,9 +527,10 @@ jobs:
         run: |
           token_file="$RUNNER_TEMP/tinybird-token"
           rm -f "$token_file" "$token_file.error"
+          uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
           uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
           prepare_pid=$!
-          if POLAR_TEST_TINYBIRD_TOKEN_FILE="$token_file" uv run pytest @tests/tinybird-files.txt -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0; then
+          if POLAR_TEST_FILES="$RUNNER_TEMP/test-files" POLAR_TEST_TINYBIRD_TOKEN_FILE="$token_file" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0; then
             wait "$prepare_pid"
           else
             test_status=$?

@@ -14,6 +14,22 @@ if os.environ.get("POLAR_TEST_XDIST") != "true" or os.environ.get(
 
 freezegun.configure(extend_ignore_list=["_pytest.timing"])
 
+_ci_collection_paths: set[Path] | None = None
+if test_files_path := os.environ.get("POLAR_TEST_FILES"):
+    test_files = {
+        Path(__file__).parents[1] / file
+        for file in Path(test_files_path).read_text().splitlines()
+    }
+    _ci_collection_paths = test_files | {
+        parent for file in test_files for parent in file.parents
+    }
+
+
+def pytest_ignore_collect(collection_path: Path) -> bool | None:
+    if _ci_collection_paths is not None:
+        return collection_path not in _ci_collection_paths
+    return None
+
 
 def pytest_configure(config: pytest.Config) -> None:
     """Register custom markers."""

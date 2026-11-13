@@ -36,11 +36,13 @@ def split_files(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--shards", type=int, required=True)
-    parser.add_argument("--shard", type=int, required=True)
+    parser.add_argument("--shards", type=int, default=4)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--shard", type=int)
+    selection.add_argument("--tinybird", action="store_true")
     parser.add_argument("--durations-path", type=Path, default=Path(".test_durations"))
     args = parser.parse_args()
-    if not 1 <= args.shard <= args.shards:
+    if args.shard is not None and not 1 <= args.shard <= args.shards:
         parser.error("--shard must be between 1 and --shards")
 
     files = sorted(
@@ -53,9 +55,18 @@ def main() -> None:
         if args.durations_path.exists()
         else {}
     )
-    selected = split_files(files, durations, args.shards)[args.shard - 1]
+    selected = (
+        [
+            Path(file)
+            for file in Path("tests/tinybird-files.txt").read_text().splitlines()
+        ]
+        if args.tinybird
+        else split_files(files, durations, args.shards)[args.shard - 1]
+    )
     if not selected:
         parser.error("shard contains no test files")
+    if missing := set(selected) - set(files):
+        parser.error(f"unknown test files: {sorted(missing)}")
     for file in selected:
         print(file.as_posix())
 

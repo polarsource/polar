@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.pytest_shards import split_files
+from scripts.pytest_shards import main, split_files
 
 
 @pytest.mark.parametrize("cached", [False, True])
@@ -40,3 +40,23 @@ def test_balances_files_by_recorded_test_duration(tmp_path: Path) -> None:
         frozenset([files[0], files[3]]),
         frozenset([files[1], files[2]]),
     }
+
+
+def test_cli_discovers_uncached_files_without_importing_them(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    tests = tmp_path / "tests"
+    tests.mkdir()
+    for name in ("test_new.py", "new_test.py", "helper.py"):
+        (tests / name).write_text('raise RuntimeError("must not import tests")')
+
+    selected = []
+    for shard in ("1", "2"):
+        monkeypatch.setattr(
+            "sys.argv", ["pytest_shards", "--shards", "2", "--shard", shard]
+        )
+        main()
+        selected.extend(capsys.readouterr().out.splitlines())
+
+    assert sorted(selected) == ["tests/new_test.py", "tests/test_new.py"]

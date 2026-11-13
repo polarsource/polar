@@ -39,6 +39,7 @@ from polar.logfire import (
     configure_logfire,
     instrument_fastapi,
     instrument_httpx,
+    instrument_redis,
     instrument_sqlalchemy,
 )
 from polar.logging import Logger
@@ -170,6 +171,7 @@ async def lifespan(
     instrument_sqlalchemy(instrument_engines)
 
     redis = create_redis("app")
+    instrument_redis(redis)
 
     try:
         ip_geolocation_client = ip_geolocation.get_client()

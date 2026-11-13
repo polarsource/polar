@@ -19,6 +19,7 @@ from . import auth
 from .schemas import Catalog as CatalogSchema
 from .schemas import (
     CatalogListParams,
+    CatalogUpdate,
     CatalogVersion,
     RemovedCatalogItem,
     RemovedCatalogItemsParams,
@@ -102,6 +103,30 @@ async def get(
         raise ResourceNotFound()
     changes = await catalog_service.get_changes(session, [catalog])
     return CatalogVersion.model_validate_overlay(catalog, changes=changes[catalog.id])
+
+
+@router.patch(
+    "/{id}",
+    summary="Update Catalog",
+    response_model=CatalogSchema,
+    responses={
+        404: {
+            "description": "No catalog with this ID.",
+            "model": CatalogNotFound.schema(),
+        },
+    },
+)
+async def update(
+    id: UUID4,
+    catalog_update: CatalogUpdate,
+    auth_subject: auth.CatalogWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> CatalogSchema:
+    """Update a catalog."""
+    catalog = await catalog_service.get_for_write(session, auth_subject, id)
+    catalog = await catalog_service.update(session, catalog, catalog_update)
+    changes = await catalog_service.get_changes(session, [catalog])
+    return CatalogSchema.model_validate_overlay(catalog, changes=changes[catalog.id])
 
 
 @router.post(

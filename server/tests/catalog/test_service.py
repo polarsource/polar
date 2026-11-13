@@ -5,8 +5,10 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.catalog.service import (
+    CatalogMembers,
     CatalogNotDraft,
     CatalogNotFound,
+    CatalogRemovals,
 )
 from polar.catalog.service import catalog as catalog_service
 from polar.kit.utils import utc_now
@@ -195,6 +197,26 @@ class TestPublishDraft:
             await catalog_service.publish_draft(
                 session, auth_subject, organization, draft
             )
+
+
+@pytest.mark.anyio
+class TestSaveDraft:
+    async def test_keeps_name_when_config_has_none(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, live, draft, _ = catalogs
+        draft.name = "Spring launch"
+        await save_fixture(draft)
+
+        saved = await catalog_service.save_draft(
+            session, organization, live, CatalogMembers(), "d" * 64, CatalogRemovals()
+        )
+
+        assert (saved.id, saved.name) == (draft.id, "Spring launch")
 
 
 @pytest.mark.anyio

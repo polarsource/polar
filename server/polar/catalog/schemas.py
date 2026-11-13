@@ -3,7 +3,13 @@ from enum import StrEnum
 
 from pydantic import UUID4, AwareDatetime, Field
 
-from polar.kit.schemas import IDSchema, MultipleQueryFilter, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    EmptyStrToNone,
+    IDSchema,
+    MultipleQueryFilter,
+    Schema,
+    TimestampedSchema,
+)
 from polar.kit.versioning import QuerySchema
 from polar.models.catalog import CatalogStatus
 from polar.organization.schemas import OrganizationID
@@ -43,6 +49,16 @@ class Catalog(IDSchema, TimestampedSchema):
     )
     changes: CatalogChanges | None = Field(
         description="What changed since the parent catalog. Null for the first one."
+    )
+
+
+class CatalogUpdate(Schema):
+    name: EmptyStrToNone = Field(
+        max_length=255,
+        description=(
+            "New name of the catalog. A draft's name can be cleared, so it's named "
+            "`v{n}` when published. Published catalogs always keep a name."
+        ),
     )
 
 

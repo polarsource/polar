@@ -18,12 +18,14 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
+use tracing::{Instrument, field::Empty};
+use uuid::Uuid;
 
 use crate::{
     auth::{AuthSettings, OrganizationAuth},
-    event,
+    event::{self, EventCreate},
     ingest::{self, IngestError, IngestResponse},
-    telemetry,
+    jobs, reducer, telemetry,
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
@@ -33,6 +35,7 @@ const MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 pub struct AppState {
     pub db: PgPool,
     pub redis: ConnectionManager,
+    pub redis_client: redis::Client,
     pub auth: Arc<AuthSettings>,
 }
 
@@ -94,23 +97,62 @@ async fn ingest(
         return Err(IngestError::StagedIngestDisabled);
     }
 
+    // A dropped connection or the request timeout cancels this handler: the write runs in its
+    // own task so it never stops between the commit and enqueueing the bucket syncs.
+    tokio::spawn(store_events(state, auth.organization_id, events).in_current_span())
+        .await
+        .map_err(IngestError::Interrupted)?
+        .map(Json)
+}
+
+async fn store_events(
+    state: AppState,
+    organization_id: Uuid,
+    events: Vec<EventCreate>,
+) -> Result<IngestResponse, IngestError> {
     let mut transaction = state.db.begin().await?;
-    ingest::validate_references(&mut transaction, auth.organization_id, &events).await?;
+    ingest::validate_references(&mut transaction, organization_id, &events).await?;
     let event_types =
-        ingest::resolve_event_types(&mut transaction, auth.organization_id, &events).await?;
-    let staged = ingest::insert_staged_events(
-        &mut transaction,
-        auth.organization_id,
-        &events,
-        &event_types,
-    )
-    .await?;
+        ingest::resolve_event_types(&mut transaction, organization_id, &events).await?;
+    let staged =
+        ingest::insert_staged_events(&mut transaction, organization_id, &events, &event_types)
+            .await?;
+    let request_span = tracing::Span::current();
+    request_span.record("inserted_events", staged.inserted.len());
+    request_span.record("skipped_duplicates", staged.duplicates);
+
+    let sync_jobs = if staged.inserted.is_empty() {
+        Vec::new()
+    } else {
+        let span = tracing::info_span!(
+            "rollup_reducer_buckets",
+            organization_count = 1,
+            event_count = staged.inserted.len(),
+            rolled_up_buckets = Empty,
+        );
+        let rollup = reducer::rollup(
+            &mut transaction,
+            &state.redis_client,
+            &mut state.redis.clone(),
+            organization_id,
+            &staged.inserted,
+            Utc::now(),
+        )
+        .instrument(span.clone())
+        .await?;
+        span.record("rolled_up_buckets", rollup.bucket_count);
+        rollup.sync_jobs
+    };
     transaction.commit().await?;
 
-    Ok(Json(IngestResponse {
+    if let Err(error) = jobs::enqueue(&mut state.redis.clone(), sync_jobs).await {
+        tracing::error!(%error, "failed to enqueue reducer bucket syncs");
+    }
+
+    Ok(IngestResponse {
         inserted: staged.inserted.len(),
         duplicates: staged.duplicates,
-    }))
+    })
 }
 
 fn is_json(headers: &HeaderMap) -> bool {

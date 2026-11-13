@@ -14,10 +14,9 @@ from polar.meter.filter import Filter
 from polar.models import Event
 from polar.models.event import EventSource
 
-TIMESTAMP = "2025-01-01T00:00:00.750000+00:00"
 EVENT = {
     "name": "api.call",
-    "timestamp": TIMESTAMP,
+    "timestamp": "2025-01-01T00:00:00.750000+00:00",
     "metadata": {
         "model": "gpt-5",
         "tokens": 12,
@@ -111,16 +110,12 @@ GROUPS: list[dict[str, Any]] = [
 ]
 
 
-def build_event(event: dict[str, Any]) -> Event:
-    return Event(
-        name=event["name"],
-        source=EventSource.user,
-        timestamp=datetime.fromisoformat(event["timestamp"]).astimezone(UTC),
-        user_metadata=event["metadata"],
-    )
-
-
-event = build_event(EVENT)
+event = Event(
+    name=EVENT["name"],
+    source=EventSource.user,
+    timestamp=datetime.fromisoformat(EVENT["timestamp"]).astimezone(UTC),
+    user_metadata=EVENT["metadata"],
+)
 filters = [
     {
         "conjunction": "and",

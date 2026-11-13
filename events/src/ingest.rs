@@ -33,6 +33,7 @@ pub enum IngestError {
     InvalidReferences(Vec<ValidationError>),
     EventTypeUnavailable,
     Database(sqlx::Error),
+    Interrupted(tokio::task::JoinError),
 }
 
 impl From<sqlx::Error> for IngestError {
@@ -61,6 +62,10 @@ impl IntoResponse for IngestError {
             ),
             Self::EventTypeUnavailable => {
                 tracing::error!("event type could not be created");
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+            Self::Interrupted(error) => {
+                tracing::error!(%error, "event ingestion task failed");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
             Self::Database(error) => {

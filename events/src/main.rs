@@ -30,7 +30,8 @@ async fn main() -> Result<()> {
         .connect_with(config.postgres)
         .await
         .context("connecting to Postgres")?;
-    let redis = ConnectionManager::new(redis::Client::open(config.redis_url)?)
+    let redis_client = redis::Client::open(config.redis_url)?;
+    let redis = ConnectionManager::new(redis_client.clone())
         .await
         .context("connecting to Redis")?;
 
@@ -42,6 +43,7 @@ async fn main() -> Result<()> {
         app::router(AppState {
             db: db.clone(),
             redis,
+            redis_client,
             auth: Arc::new(config.auth),
         }),
     )

@@ -4,6 +4,7 @@ mod config;
 mod event;
 mod ingest;
 mod jobs;
+mod reducer;
 mod telemetry;
 
 use std::{net::Ipv4Addr, sync::Arc, time::Duration};

@@ -10,7 +10,13 @@ from polar.base import (
     parse_response_json,
 )
 from polar.v2027_01.errors import (
+    BenefitGrantAlreadyExists,
     HTTPValidationError,
+    ResourceNotFound,
+)
+from polar.v2027_01.inputs import (
+    BenefitGrantCreate,
+    BenefitGrantCreateExternal,
 )
 from polar.v2027_01.literals import (
     BenefitGrantSortProperty,
@@ -154,6 +160,115 @@ class BenefitGrantsSync(SyncServiceBase):
                 break
             page += 1
 
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[BenefitGrantCreate],
+    ) -> BenefitGrant: ...
+
+    @typing.overload
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[BenefitGrantCreateExternal],
+    ) -> BenefitGrant: ...
+
+    def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> BenefitGrant:
+        """
+        Manually grant a benefit to a customer or one of their members.
+
+        Use either Polar IDs for every reference or external IDs for every reference.
+        Fulfillment is asynchronous: the returned grant may not yet be granted.
+        Meter-credit benefits cannot be granted manually.
+
+        **Scopes**: `benefits:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            BenefitGrantAlreadyExists: Conflict
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/benefit-grants/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            409: BenefitGrantAlreadyExists,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, BenefitGrant, method_errors)
+
+    def revoke(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> BenefitGrant:
+        """
+        Permanently revoke a benefit grant, including grants from purchases.
+
+        Revocation is asynchronous. Once manually revoked, this grant cannot be
+        reactivated by renewal or fulfillment retries. Other grants may still
+        provide access to the benefit. Repeating this request is safe.
+
+        **Scopes**: `benefits:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            ResourceNotFound: Not Found
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/benefit-grants/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, BenefitGrant, method_errors)
+
 
 class BenefitGrantsAsync(AsyncServiceBase):
     async def list(
@@ -288,3 +403,112 @@ class BenefitGrantsAsync(AsyncServiceBase):
             if page >= response.pagination.max_page:
                 break
             page += 1
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[BenefitGrantCreate],
+    ) -> BenefitGrant: ...
+
+    @typing.overload
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[BenefitGrantCreateExternal],
+    ) -> BenefitGrant: ...
+
+    async def create(
+        self,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Any,
+    ) -> BenefitGrant:
+        """
+        Manually grant a benefit to a customer or one of their members.
+
+        Use either Polar IDs for every reference or external IDs for every reference.
+        Fulfillment is asynchronous: the returned grant may not yet be granted.
+        Meter-credit benefits cannot be granted manually.
+
+        **Scopes**: `benefits:write`
+
+        Args:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            BenefitGrantAlreadyExists: Conflict
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/benefit-grants/",
+            path_params={},
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            409: BenefitGrantAlreadyExists,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, BenefitGrant, method_errors)
+
+    async def revoke(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+    ) -> BenefitGrant:
+        """
+        Permanently revoke a benefit grant, including grants from purchases.
+
+        Revocation is asynchronous. Once manually revoked, this grant cannot be
+        reactivated by renewal or fulfillment retries. Other grants may still
+        provide access to the benefit. Repeating this request is safe.
+
+        **Scopes**: `benefits:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_access_token: Access token override for this request.
+
+
+        Raises:
+            ResourceNotFound: Not Found
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="DELETE",
+            url="/v1/benefit-grants/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, BenefitGrant, method_errors)

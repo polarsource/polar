@@ -788,6 +788,10 @@ export type FilterConjunction = "and" | "or";
  */
 export type FilterOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
 /**
+ * The format of the webhook payload.
+ */
+export type Format = "raw" | "discord" | "slack";
+/**
  * Func
  */
 export type Func = "sum" | "max" | "min" | "avg";
@@ -941,7 +945,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1971,7 +1975,7 @@ export type WebhookEventType =
 /**
  * WebhookFormat
  */
-export type WebhookFormat = "raw" | "discord" | "slack";
+export type WebhookFormat = "raw" | "discord" | "slack" | "mcp";
 
 /**
  * Address
@@ -24186,7 +24190,7 @@ export interface WebhookEndpointCreate {
   /**
    * The format of the webhook payload.
    */
-  format: WebhookFormat;
+  format: Format;
   /**
    * The events that will trigger the webhook.
    */
@@ -24216,7 +24220,7 @@ export interface WebhookEndpointUpdate {
   /**
    * format
    */
-  format?: WebhookFormat | null;
+  format?: ("raw" | "discord" | "slack") | null;
   /**
    * events
    */

@@ -35,6 +35,9 @@ class WebhookBenefitCreatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["benefit.created"]
 
     timestamp: str
@@ -49,6 +52,9 @@ class WebhookBenefitGrantCreatedPayload:
     """Sent when a new benefit grant is created.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["benefit_grant.created"]
 
@@ -66,6 +72,9 @@ class WebhookBenefitGrantCycledPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["benefit_grant.cycled"]
 
     timestamp: str
@@ -80,6 +89,9 @@ class WebhookBenefitGrantRevokedPayload:
     """Sent when a benefit grant is revoked.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["benefit_grant.revoked"]
 
@@ -96,6 +108,9 @@ class WebhookBenefitGrantUpdatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["benefit_grant.updated"]
 
     timestamp: str
@@ -111,6 +126,9 @@ class WebhookBenefitUpdatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["benefit.updated"]
 
     timestamp: str
@@ -125,6 +143,9 @@ class WebhookCheckoutCreatedPayload:
     """Sent when a new checkout is created.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["checkout.created"]
 
@@ -144,6 +165,9 @@ class WebhookCheckoutExpiredPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["checkout.expired"]
 
     timestamp: str
@@ -158,6 +182,9 @@ class WebhookCheckoutUpdatedPayload:
     """Sent when a checkout is updated.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["checkout.updated"]
 
@@ -179,6 +206,9 @@ class WebhookCustomerCreatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["customer.created"]
 
     timestamp: str
@@ -193,6 +223,9 @@ class WebhookCustomerDeletedPayload:
     """Sent when a customer is deleted.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["customer.deleted"]
 
@@ -210,6 +243,9 @@ class WebhookCustomerSeatAssignedPayload:
     This event is triggered when a seat is assigned to a customer by the organization.
     The customer will receive an invitation email to claim the seat."""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["customer_seat.assigned"]
 
     timestamp: str
@@ -225,6 +261,9 @@ class WebhookCustomerSeatClaimedPayload:
 
     This event is triggered when a customer accepts the seat invitation and claims their access."""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["customer_seat.claimed"]
 
     timestamp: str
@@ -239,6 +278,9 @@ class WebhookCustomerSeatRevokedPayload:
     """Sent when a customer seat is revoked.
 
     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled."""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["customer_seat.revoked"]
 
@@ -261,6 +303,9 @@ class WebhookCustomerStateChangedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["customer.state_changed"]
 
     timestamp: str
@@ -280,6 +325,9 @@ class WebhookCustomerUpdatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["customer.updated"]
 
     timestamp: str
@@ -294,6 +342,9 @@ class WebhookDiscountCreatedPayload:
     """Sent when a new discount is created.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["discount.created"]
 
@@ -310,6 +361,9 @@ class WebhookDiscountDeletedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["discount.deleted"]
 
     timestamp: str
@@ -324,6 +378,9 @@ class WebhookDiscountUpdatedPayload:
     """Sent when a discount is updated.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["discount.updated"]
 
@@ -345,6 +402,9 @@ class WebhookMemberCreatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["member.created"]
 
     timestamp: str
@@ -363,6 +423,9 @@ class WebhookMemberDeletedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["member.deleted"]
 
     timestamp: str
@@ -380,6 +443,9 @@ class WebhookMemberUpdatedPayload:
     such as their name or role within the customer.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["member.updated"]
 
@@ -406,6 +472,9 @@ class WebhookOrderCreatedPayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["order.created"]
 
     timestamp: str
@@ -423,6 +492,9 @@ class WebhookOrderPaidPayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["order.paid"]
 
     timestamp: str
@@ -437,6 +509,9 @@ class WebhookOrderRefundedPayload:
     """Sent when an order is fully or partially refunded.
 
     **Discord & Slack support:** Full"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["order.refunded"]
 
@@ -458,6 +533,9 @@ class WebhookOrderUpdatedPayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["order.updated"]
 
     timestamp: str
@@ -472,6 +550,9 @@ class WebhookOrganizationUpdatedPayload:
     """Sent when a organization is updated.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["organization.updated"]
 
@@ -488,6 +569,9 @@ class WebhookProductCreatedPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["product.created"]
 
     timestamp: str
@@ -502,6 +586,9 @@ class WebhookProductUpdatedPayload:
     """Sent when a product is updated.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["product.updated"]
 
@@ -518,6 +605,9 @@ class WebhookRefundCreatedPayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["refund.created"]
 
     timestamp: str
@@ -532,6 +622,9 @@ class WebhookRefundUpdatedPayload:
     """Sent when a refund is updated.
 
     **Discord & Slack support:** Full"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["refund.updated"]
 
@@ -549,6 +642,9 @@ class WebhookSubscriptionActivePayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["subscription.active"]
 
     timestamp: str
@@ -564,6 +660,9 @@ class WebhookSubscriptionCanceledPayload:
     Customers might still have access until the end of the current period.
 
     **Discord & Slack support:** Full"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["subscription.canceled"]
 
@@ -581,6 +680,9 @@ class WebhookSubscriptionCreatedPayload:
     When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
 
     **Discord & Slack support:** Full"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["subscription.created"]
 
@@ -605,6 +707,9 @@ class WebhookSubscriptionCycledPayload:
 
     **Discord & Slack support:** Basic"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["subscription.cycled"]
 
     timestamp: str
@@ -623,6 +728,9 @@ class WebhookSubscriptionMigratedPayload:
     provider so you can correlate the two.
 
     **Discord & Slack support:** Basic"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["subscription.migrated"]
 
@@ -650,6 +758,9 @@ class WebhookSubscriptionPastDuePayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["subscription.past_due"]
 
     timestamp: str
@@ -668,6 +779,9 @@ class WebhookSubscriptionPausedPayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["subscription.paused"]
 
     timestamp: str
@@ -684,6 +798,9 @@ class WebhookSubscriptionResumedPayload:
     Resuming starts a new billing period and charges the customer immediately.
 
     **Discord & Slack support:** Full"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["subscription.resumed"]
 
@@ -702,6 +819,9 @@ class WebhookSubscriptionRevokedPayload:
     For payment failures that can still be recovered, see `subscription.past_due`.
 
     **Discord & Slack support:** Full"""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["subscription.revoked"]
 
@@ -722,6 +842,9 @@ class WebhookSubscriptionUncanceledPayload:
 
     **Discord & Slack support:** Full"""
 
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
+
     type: typing.Literal["subscription.uncanceled"]
 
     timestamp: str
@@ -740,6 +863,9 @@ class WebhookSubscriptionUpdatedPayload:
     To listen specifically for renewals, listen to `subscription.cycled`.
 
     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped."""
+
+    event_id: str | None = None
+    """The ID of the event. Use it to discard duplicate deliveries."""
 
     type: typing.Literal["subscription.updated"]
 

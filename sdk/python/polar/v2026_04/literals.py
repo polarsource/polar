@@ -767,6 +767,10 @@ FilterConjunction: typing.TypeAlias = typing.Annotated[
 FilterOperator: typing.TypeAlias = typing.Annotated[
     typing.Literal["eq", "ne", "gt", "gte", "lt", "lte", "like", "not_like"], _OPEN_ENUM
 ]
+Format: typing.TypeAlias = typing.Annotated[
+    typing.Literal["raw", "discord", "slack"], _OPEN_ENUM
+]
+"""The format of the webhook payload."""
 Func: typing.TypeAlias = typing.Literal["sum", "max", "min", "avg"]
 LicenseKeyStatus: typing.TypeAlias = typing.Annotated[
     typing.Literal["granted", "revoked", "disabled"], _OPEN_ENUM
@@ -922,6 +926,7 @@ PaymentTrigger: typing.TypeAlias = typing.Annotated[
 Permission: typing.TypeAlias = typing.Annotated[
     typing.Literal["pull", "triage", "push", "maintain", "admin"], _OPEN_ENUM
 ]
+"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Annotated[
     typing.Literal[
         "aed",
@@ -1939,5 +1944,5 @@ WebhookEventType: typing.TypeAlias = typing.Annotated[
     _OPEN_ENUM,
 ]
 WebhookFormat: typing.TypeAlias = typing.Annotated[
-    typing.Literal["raw", "discord", "slack"], _OPEN_ENUM
+    typing.Literal["raw", "discord", "slack", "mcp"], _OPEN_ENUM
 ]

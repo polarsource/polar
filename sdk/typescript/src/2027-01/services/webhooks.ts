@@ -7,6 +7,7 @@ import type {
   WebhookEndpointCreate,
   WebhookEndpointUpdate,
   WebhookEventType,
+  WebhookFormat,
 } from "../models";
 
 import {
@@ -32,6 +33,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
   return async (
     query?: {
       organization_id?: string | string[] | null;
+      format?: WebhookFormat | WebhookFormat[] | null;
       page?: number;
       limit?: number;
     },
@@ -40,6 +42,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
     const pathParams = {};
     const queryParams = {
       organization_id: query?.organization_id,
+      format: query?.format,
       page: query?.page ?? 1,
       limit: query?.limit ?? 10,
     };
@@ -73,6 +76,7 @@ export const iterListWebhookEndpointsWebhooks = (client: ClientBase) => {
   return async function* (
     query?: {
       organization_id?: string | string[] | null;
+      format?: WebhookFormat | WebhookFormat[] | null;
       page?: number;
       limit?: number;
     },

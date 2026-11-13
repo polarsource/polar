@@ -15,6 +15,7 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 ### Added
 
 - Send a `User-Agent` header with the SDK language and version, such as `polar-sdk-python/1.0.3` or `polar-sdk-typescript/1.0.3`.
+- TypeScript: Export Zod Mini schemas for every model and webhook payload from `@polar-sh/sdk/<version>/zod`, so payloads can be validated at runtime against the imported API version. `zod` (3.25.65 or later, or 4) is an optional peer dependency.
 
 ### Changed
 

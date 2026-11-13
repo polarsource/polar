@@ -297,3 +297,40 @@ secret, including `whsec_`) and the Standard Webhooks key (base64-decode of the 
 `whsec_`). `validateEvent` throws `PolarWebhookVerificationError` for invalid signatures
 and `PolarWebhookUnknownTypeError` when the event is not supported by the selected API version.
 Both inherit from `PolarWebhookError`.
+
+### Runtime validation with Zod
+
+`validateEvent` checks the signature and the event type, but it doesn't check the shape of
+`data`. To check a payload against the API version you import, use the schemas exported from
+`@polar-sh/sdk/<version>/zod`. They are built with [Zod Mini](https://zod.dev/packages/mini) and
+import it from `zod/v4-mini`, so they work with `zod` 4 and with `zod` 3.25.65 or later. Install
+`zod` next to the SDK:
+
+```bash
+npm install zod
+```
+
+```typescript
+import { webhooks } from "@polar-sh/sdk/2026-10";
+import { Order, WebhookPayload } from "@polar-sh/sdk/2026-10/zod";
+
+const event = WebhookPayload.parse(await webhooks.validateEvent(body, headers, webhookSecret));
+
+const result = Order.safeParse(untrustedOrder);
+if (!result.success) {
+    console.error(result.error.issues);
+}
+```
+
+Every model, enum, and union in the API version has a schema with the same name, and each webhook
+payload has one too, such as `WebhookOrderCreatedPayload`. Objects keep fields they don't know, so
+a field added to the API later is passed through instead of dropped. The schemas also implement
+[Standard Schema](https://standardschema.dev), so libraries that accept Standard Schema validators
+can use them directly.
+
+Zod Mini throws `z.core.$ZodError`, not the `z.ZodError` class from the regular `zod` import. Use
+`safeParse()` or check `error instanceof z.core.$ZodError`. Each schema is typed as
+`ZodMiniType<Order>`, so `z.infer<typeof Order>` gives the SDK's `Order` type and the schema can be
+nested in your own Zod schemas. Object helpers such as `extend()` and `pick()` aren't available on
+them. On `zod` 3, nest them only in schemas built from `zod/v4` or `zod/v4-mini`. Schemas from the
+`zod` 3 API can't contain them.

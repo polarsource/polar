@@ -7,6 +7,7 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    Member,
     Organization,
     Subscription,
     UserOrganization,
@@ -316,3 +317,68 @@ class TestListBenefitGrants:
         )
         assert response.status_code == 200
         assert response.json()["pagination"]["total_count"] == 0
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestCreate:
+    @pytest.mark.auth
+    async def test_create(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        benefit_organization: Benefit,
+        member_owner: Member,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefit-grants/",
+            json={
+                "customer_id": str(customer.id),
+                "benefit_id": str(benefit_organization.id),
+            },
+        )
+        assert response.status_code == 201
+        grant = response.json()
+        assert grant["member_id"] == str(member_owner.id)
+        assert grant["manually_granted_at"] is not None
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("field", ["customer_id", "benefit_id", "member_id"])
+    async def test_mixed_ids_rejected(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        field: str,
+    ) -> None:
+        payload = {
+            "customer_id": str(customer.id),
+            "benefit_id": str(benefit_organization.id),
+        }
+        payload[f"external_{field}"] = "external"
+        response = await client.post("/v1/benefit-grants/", json=payload)
+        assert response.status_code == 422
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestRevoke:
+    @pytest.mark.auth
+    async def test_revoke(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit_organization, granted=True, member=None
+        )
+
+        response = await client.delete(f"/v1/benefit-grants/{grant.id}")
+
+        assert response.status_code == 200
+        assert response.json()["manually_revoked_at"] is not None

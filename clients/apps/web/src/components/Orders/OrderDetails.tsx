@@ -1,6 +1,6 @@
 'use client'
 
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -44,9 +44,9 @@ export const OrderDetails = ({
                 <Text as="span" variant="body" truncate>
                   {product.name}
                 </Text>
-                <ProductVersionLabel
+                <CatalogVersionLabel
                   organization={organization}
-                  product={product}
+                  version={product}
                 />
                 <Box as="span" display="inline-flex" flexShrink={0}>
                   <ArrowUpRightIcon size={16} />

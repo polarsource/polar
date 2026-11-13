@@ -1,7 +1,7 @@
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { Pagination } from '@/components/Products/Benefits/components/Pagination'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { useProducts } from '@/hooks/queries/products'
 import { schemas } from '@polar-sh/client'
@@ -75,9 +75,9 @@ export const BenefitProducts = ({
                     columnGap="s"
                   >
                     <Text truncate>{product.name}</Text>
-                    <ProductVersionLabel
+                    <CatalogVersionLabel
                       organization={organization}
-                      product={product}
+                      version={product}
                     />
                     {product.visibility === 'private' && (
                       <Pill

@@ -16,6 +16,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
 import { useCallback } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import {
@@ -132,9 +133,28 @@ export const MetadataForm = ({ label }: { label?: string }) => {
     fields.forEach((_, i) => trigger(`metadata.${i}.key`))
   }, [fields, trigger])
 
+  const addButton = (
+    <Button
+      size="sm"
+      variant="secondary"
+      type="button"
+      disabled={hasEmptyKey}
+      onClick={() => {
+        append({ key: '', value: '' })
+      }}
+    >
+      Add Metadata
+    </Button>
+  )
+
   return (
     <Box flexDirection="column" gap="s">
-      {label ? <Text variant="label">{label}</Text> : null}
+      {label ? (
+        <Box alignItems="center" justifyContent="between" columnGap="s">
+          <Label>{label}</Label>
+          {addButton}
+        </Box>
+      ) : null}
       {fields.length > 0 && (
         <Box flexDirection="column" gap="s">
           <Box
@@ -302,19 +322,11 @@ export const MetadataForm = ({ label }: { label?: string }) => {
         </Box>
       )}
 
-      <Box alignItems="center" justifyContent="end">
-        <Button
-          size="sm"
-          variant="secondary"
-          type="button"
-          disabled={hasEmptyKey}
-          onClick={() => {
-            append({ key: '', value: '' })
-          }}
-        >
-          Add Metadata
-        </Button>
-      </Box>
+      {!label ? (
+        <Box alignItems="center" justifyContent="end">
+          {addButton}
+        </Box>
+      ) : null}
     </Box>
   )
 }

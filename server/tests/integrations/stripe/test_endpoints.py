@@ -11,6 +11,7 @@ from polar.config import settings
 from polar.integrations.stripe.endpoints import WebhookEventGetter
 from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, User
+from polar.payout_account.service import PayoutAccountRejected
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_payout_account
 
@@ -127,6 +128,9 @@ class TestStripeConnectRefresh:
         stripe_service_mock.create_account_link.assert_not_called()  # type: ignore[attr-defined]
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "error", [stripe_lib.APIConnectionError("boom"), PayoutAccountRejected()]
+    )
     async def test_stripe_error_falls_back_to_dashboard(
         self,
         client: AsyncClient,
@@ -134,12 +138,11 @@ class TestStripeConnectRefresh:
         organization: Organization,
         user: User,
         stripe_service_mock: StripeService,
+        error: Exception,
     ) -> None:
         return_path = "/dashboard/acme/finance/account"
         payout_account = await create_payout_account(save_fixture, organization, user)
-        stripe_service_mock.create_account_link.side_effect = (  # type: ignore[attr-defined]
-            stripe_lib.APIConnectionError("boom")
-        )
+        stripe_service_mock.create_account_link.side_effect = error  # type: ignore[attr-defined]
 
         response = await client.get(
             "/v1/integrations/stripe/refresh",

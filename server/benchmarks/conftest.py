@@ -34,6 +34,7 @@ from tests.fixtures.random_objects import (
 )
 
 DATABASE = "benchmarks"
+DRIVER = os.environ.get("BENCHMARK_DB_DRIVER", "asyncpg")
 # A database index of its own: the benchmarks flush it.
 REDIS_DB = 15
 
@@ -69,7 +70,7 @@ def database() -> collections.abc.Iterator[None]:
 @pytest.fixture
 def session(run: Run[typing.Any]) -> collections.abc.Iterator[AsyncSession]:
     engine = create_async_engine(
-        dsn=get_database_url(DATABASE),
+        dsn=get_database_url(DATABASE, DRIVER),
         application_name="benchmarks",
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,

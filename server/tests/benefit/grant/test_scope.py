@@ -4,15 +4,50 @@ import pytest
 
 from polar.benefit.grant.scope import (
     CustomerDoesntHaveOwnerMember,
+    InvalidScopeError,
     MemberIdRequired,
     MemberNotFound,
     resolve_member,
+    resolve_selector,
 )
-from polar.models import Account, Member
+from polar.models import Account, BenefitGrant, Member, Order, Product, Subscription
 from polar.models.member import MemberRole
+from polar.models.product_price import ProductPriceSeatUnit
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_organization
+
+
+@pytest.mark.anyio
+class TestResolveSelector:
+    async def test_rejects_empty_and_mixed_selectors(
+        self, session: AsyncSession
+    ) -> None:
+        grant_id = uuid.uuid4()
+        customer_id, benefit_id = uuid.uuid4(), uuid.uuid4()
+        with pytest.raises(InvalidScopeError):
+            await resolve_selector(
+                session, {}, customer_id=customer_id, benefit_id=benefit_id
+            )
+        with pytest.raises(InvalidScopeError):
+            await resolve_selector(
+                session,
+                {"benefit_grant_id": grant_id, "order_id": uuid.uuid4()},
+                customer_id=customer_id,
+                benefit_id=benefit_id,
+            )
+        with pytest.raises(ValueError, match="cannot be combined"):
+            _ = BenefitGrant.scope == {"benefit_grant_id": grant_id, "order": object()}
+
+
+@pytest.fixture
+def purchase_subscription() -> Subscription:
+    return Subscription(product=Product())
+
+
+@pytest.fixture
+def seat_based_subscription() -> Subscription:
+    return Subscription(product=Product(prices=[ProductPriceSeatUnit()]))
 
 
 @pytest.mark.anyio
@@ -24,6 +59,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """When feature flag is disabled, explicit member_id is still used."""
         organization = await create_organization(
@@ -46,7 +82,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=member.id,  # Explicit member_id provided
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -57,6 +93,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """A direct purchase links the owner member even before the flip."""
         organization = await create_organization(
@@ -78,7 +115,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -89,6 +126,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """A legacy customer without an owner member gets one."""
         organization = await create_organization(
@@ -101,7 +139,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -114,6 +152,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """When feature flag enabled and member_id provided, load and return that member."""
         organization = await create_organization(
@@ -135,7 +174,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=member.id,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -168,7 +207,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,  # No explicit member_id
-            is_seat_based=False,  # B2C - not seat-based
+            selector={"order": Order(product=Product())},
         )
 
         assert result is not None
@@ -180,6 +219,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """B2C with feature flag enabled but no owner member auto-creates one."""
         organization = await create_organization(
@@ -193,7 +233,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -206,6 +246,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """B2C auto-creates owner member even when only regular member exists."""
         organization = await create_organization(
@@ -227,7 +268,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -239,6 +280,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        seat_based_subscription: Subscription,
     ) -> None:
         """B2B (seat-based) with feature flag enabled but no member_id raises MemberIdRequired."""
         organization = await create_organization(
@@ -252,7 +294,7 @@ class TestResolveMember:
                 customer_id=customer.id,
                 organization=organization,
                 member_id=None,  # No member_id provided
-                is_seat_based=True,  # B2B - seat-based
+                selector={"subscription": seat_based_subscription},
             )
 
     async def test_b2b_with_member_id_returns_member(
@@ -260,6 +302,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        seat_based_subscription: Subscription,
     ) -> None:
         """B2B (seat-based) with explicit member_id returns that member."""
         organization = await create_organization(
@@ -281,7 +324,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=member.id,
-            is_seat_based=True,
+            selector={"subscription": seat_based_subscription},
         )
 
         assert result is not None
@@ -292,6 +335,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """B2C: When customer_id doesn't match any customer, raises error."""
         organization = await create_organization(
@@ -305,7 +349,7 @@ class TestResolveMember:
                 customer_id=fake_customer_id,
                 organization=organization,
                 member_id=None,
-                is_seat_based=False,
+                selector={"subscription": purchase_subscription},
             )
 
     async def test_b2c_deleted_owner_not_found_without_include_deleted(
@@ -313,6 +357,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """B2C: Soft-deleted owner member is not found without include_deleted."""
         organization = await create_organization(
@@ -337,7 +382,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
         )
 
         assert result is not None
@@ -348,6 +393,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        purchase_subscription: Subscription,
     ) -> None:
         """B2C: Soft-deleted owner member is found with include_deleted=True.
         This is the benefit.revoke path for deleted customers."""
@@ -375,7 +421,7 @@ class TestResolveMember:
             customer_id=customer.id,
             organization=organization,
             member_id=None,
-            is_seat_based=False,
+            selector={"subscription": purchase_subscription},
             include_deleted=True,
         )
 
@@ -388,6 +434,7 @@ class TestResolveMember:
         session: AsyncSession,
         save_fixture: SaveFixture,
         account: Account,
+        seat_based_subscription: Subscription,
     ) -> None:
         """B2B: When explicit member_id doesn't exist, raises MemberNotFound."""
 
@@ -403,7 +450,7 @@ class TestResolveMember:
                 customer_id=customer.id,
                 organization=organization,
                 member_id=nonexistent_id,  # Non-existent member ID
-                is_seat_based=True,  # B2B - seat-based
+                selector={"subscription": seat_based_subscription},
             )
 
         assert exc_info.value.member_id == nonexistent_id

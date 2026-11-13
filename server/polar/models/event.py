@@ -62,10 +62,9 @@ class CustomerComparator(Relationship.Comparator[Customer]):
                     and_(
                         Event.external_customer_id.is_not(None),
                         Event.external_customer_id == other.external_id,
-                        Event.organization_id == other.organization_id,
                     ),
                 )
-            return clause
+            return and_(Event.organization_id == other.organization_id, clause)
 
         raise NotImplementedError()
 
@@ -231,11 +230,11 @@ class Event(Model, MetadataMixin):
         return relationship(
             Customer,
             primaryjoin=(
+                "and_("
+                "Event.organization_id == Customer.organization_id,"
                 "or_("
                 "Event.customer_id == Customer.id,"
-                "and_("
-                "Event.external_customer_id == Customer.external_id,"
-                "Event.organization_id == Customer.organization_id"
+                "Event.external_customer_id == Customer.external_id"
                 ")"
                 ")"
             ),

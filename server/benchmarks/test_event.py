@@ -16,6 +16,7 @@ from polar.app import app as polar_app
 from polar.auth.middlewares import AuthSubjectMiddleware
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.event.schemas import EventCreateExternalCustomer, EventsIngest
 from polar.event.service import event as event_service
@@ -28,6 +29,9 @@ from polar.models import Organization, OrganizationAccessToken
 from polar.models.event import EventSource
 from polar.observability.http_middleware import HttpMetricsMiddleware
 from polar.organization_access_token.service import TOKEN_PREFIX
+from polar.organization_access_token.service import (
+    organization_access_token as organization_access_token_service,
+)
 from polar.redis import Redis
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
 from tests.fixtures.database import SaveFixture
@@ -209,8 +213,11 @@ def test_ingest_staged_events_http(
     redis: Redis,
     save_fixture: SaveFixture,
     organization: Organization,
+    monkeypatch: pytest.MonkeyPatch,
     size: int,
 ) -> None:
+    monkeypatch.setattr(settings, "ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS", 60)
+    monkeypatch.setattr(organization_access_token_service, "_cache", {})
     token = f"{TOKEN_PREFIX}benchmark"
 
     async def seed() -> None:

@@ -341,6 +341,27 @@ class TestQueryBindsValuesInsteadOfInlining:
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
 @pytest.mark.anyio
+class TestTinybirdIngest:
+    async def test_wait_makes_events_queryable(
+        self, tinybird_client: TinybirdClient
+    ) -> None:
+        event = create_test_event()
+
+        await TinybirdClient.ingest(
+            tinybird_client, DATASOURCE_EVENTS, [_event_to_tinybird(event)], wait=True
+        )
+
+        stats = await TinybirdEventTypesQuery(
+            event.organization_id
+        ).get_event_type_stats()
+
+        assert len(stats) == 1
+        assert stats[0].name == event.name
+        assert stats[0].occurrences == 1
+
+
+@pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
+@pytest.mark.anyio
 class TestTinybirdEventsQuery:
     async def test_get_event_type_stats(self, tinybird_client: TinybirdClient) -> None:
         org_id = uuid.uuid4()

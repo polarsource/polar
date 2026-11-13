@@ -24,6 +24,7 @@ export const useListWebhooksDeliveries = (
 
 export const useListWebhooksEndpoints = (variables: {
   organizationId: string
+  format?: schemas['WebhookFormat'][]
   limit: number
   page: number
 }) =>
@@ -35,6 +36,7 @@ export const useListWebhooksEndpoints = (variables: {
           params: {
             query: {
               organization_id: variables.organizationId,
+              format: variables.format,
               limit: variables.limit,
               page: variables.page,
             },

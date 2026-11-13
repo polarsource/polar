@@ -45,6 +45,10 @@ class BenefitGrantScope(TypedDict, total=False):
     order: "Order"
 
 
+class BenefitGrantSelector(BenefitGrantScope, total=False):
+    grant: "BenefitGrant"
+
+
 if TYPE_CHECKING:
 
     class BenefitGrantScopeArgs(TypedDict, total=False):
@@ -71,10 +75,22 @@ else:
             return self.get("subscription_id"), self.get("order_id")
 
 
+class BenefitGrantSelectorArgs(TypedDict, total=False):
+    subscription_id: Annotated[UUID, LoggableField]
+    order_id: Annotated[UUID, LoggableField]
+    benefit_grant_id: Annotated[UUID, LoggableField]
+
+
 class BenefitGrantScopeComparator(CompositeProperty.Comparator[BenefitGrantScopeArgs]):
     def __eq__(self, other: object) -> ColumnElement[bool]:  # type: ignore[override]
         if not isinstance(other, dict) or other == {}:
             raise ValueError("A non-empty dictionary scope must be provided.")
+        if "benefit_grant_id" in other:
+            if len(other) != 1:
+                raise ValueError(
+                    "A direct grant ID cannot be combined with purchase scope."
+                )
+            return BenefitGrant.id == other["benefit_grant_id"]
         clauses = []
         composite_columns = self.__clause_element__().columns
         for key, value in other.items():
@@ -212,6 +228,15 @@ class BenefitGrant(RecordModel):
     @classmethod
     def _is_granted_expression(cls) -> ColumnElement[bool]:
         return type_coerce(cls.granted_at.is_not(None), Boolean)
+
+    @hybrid_property
+    def is_granted_and_unsuppressed(self) -> bool:
+        return self.is_granted and self.manually_revoked_at is None
+
+    @is_granted_and_unsuppressed.inplace.expression
+    @classmethod
+    def _is_granted_and_unsuppressed_expression(cls) -> ColumnElement[bool]:
+        return and_(cls.is_granted, cls.manually_revoked_at.is_(None))
 
     @hybrid_property
     def is_revoked(self) -> bool:

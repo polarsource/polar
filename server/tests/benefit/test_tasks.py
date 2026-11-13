@@ -1,9 +1,10 @@
 import uuid
 
 import pytest
-from dramatiq import Retry
+from dramatiq import Message, Retry, get_broker
 from pytest_mock import MockerFixture
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import BenefitGrantService
 from polar.benefit.strategies import BenefitRetriableError
 from polar.benefit.tasks import (  # type: ignore[attr-defined]
@@ -18,12 +19,54 @@ from polar.benefit.tasks import (  # type: ignore[attr-defined]
     benefit_revoke,
     benefit_update,
 )
+from polar.kit.utils import utc_now
 from polar.models import Benefit, BenefitGrant, Customer, Member, Subscription
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_benefit_grant
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("revoke", [False, True], ids=["grant", "revoke"])
+async def test_manual_benefit_task_accepts_serialized_ids(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    customer: Customer,
+    benefit_organization: Benefit,
+    member_owner: Member,
+    revoke: bool,
+) -> None:
+    grant = await create_benefit_grant(
+        save_fixture,
+        customer,
+        benefit_organization,
+        granted=True if revoke else None,
+        member=member_owner,
+    )
+    grant.manually_granted_at = utc_now()
+    if revoke:
+        grant.manually_revoked_at = utc_now()
+    await save_fixture(grant)
+    grant_id = grant.id
+
+    actor = get_broker().get_actor("benefit.revoke" if revoke else "benefit.grant")
+    message = Message.decode(
+        actor.message(
+            customer_id=customer.id,
+            benefit_id=benefit_organization.id,
+            benefit_grant_id=grant_id,
+        ).encode()
+    )
+
+    task = benefit_revoke if revoke else benefit_grant
+    await task(**message.kwargs)
+
+    updated = await BenefitGrantRepository.from_session(session).get_by_id(grant_id)
+    assert updated is not None
+    assert updated.is_granted is not revoke
+    assert updated.is_revoked is revoke
 
 
 @pytest.mark.anyio

@@ -1,14 +1,15 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, select
+from sqlalchemy import Select, or_, select
 
 from polar.kit.repository import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import CustomField
+from polar.models import Catalog, CatalogCustomField, CustomField
+from polar.models.catalog import CatalogStatus
 
 
 class CustomFieldRepository(
@@ -49,6 +50,35 @@ class CustomFieldRepository(
         if for_update:
             statement = statement.with_for_update(of=CustomField, key_share=True)
         return await self.get_all(statement)
+
+    def apply_catalog_filter(
+        self,
+        statement: Select[CustomField],
+        catalog_id: Sequence[UUID] | None,
+        catalog_status: Sequence[CatalogStatus] | None,
+    ) -> Select[CustomField]:
+        catalog_members = (
+            select(CatalogCustomField.custom_field_id)
+            .join(CatalogCustomField.catalog)
+            .where(
+                CatalogCustomField.deleted_at.is_(None),
+                Catalog.deleted_at.is_(None),
+            )
+        )
+        if catalog_id is not None:
+            statement = statement.where(
+                CustomField.id.in_(catalog_members.where(Catalog.id.in_(catalog_id)))
+            )
+        if catalog_status is not None:
+            in_status = CustomField.id.in_(
+                catalog_members.where(Catalog.status.in_(catalog_status))
+            )
+            statement = statement.where(
+                or_(CustomField.is_current, in_status)
+                if CatalogStatus.live in catalog_status
+                else in_status
+            )
+        return statement
 
     async def has_versions(self, custom_field: CustomField) -> bool:
         statement = select(

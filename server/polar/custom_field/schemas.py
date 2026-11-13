@@ -22,7 +22,8 @@ from polar.kit.schemas import (
     SetSchemaReference,
     TimestampedSchema,
 )
-from polar.kit.versioning import QuerySchema
+from polar.kit.versioning import QuerySchema, Version
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import (
     CustomFieldCheckboxProperties,
     CustomFieldDateProperties,
@@ -32,6 +33,7 @@ from polar.models.custom_field import (
     CustomFieldType,
 )
 from polar.organization.schemas import OrganizationID
+from polar.version import V2027_01
 
 Slug = Annotated[
     str,
@@ -189,6 +191,21 @@ class CustomFieldBase(MetadataOutputMixin, IDSchema, TimestampedSchema):
     organization_id: OrganizationID = Field(
         description="The ID of the organization owning the custom field."
     )
+    catalog_id: Annotated[
+        UUID4 | None,
+        Version(starting_from=V2027_01),
+        Field(
+            description=(
+                "ID of the catalog that introduced this version of the custom "
+                "field. None for custom fields not managed by declarative config."
+            )
+        ),
+    ]
+    is_current: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description="Whether this is the current version of the custom field."),
+    ]
 
 
 class CustomFieldText(CustomFieldBase):
@@ -274,4 +291,14 @@ class CustomFieldListParams(QuerySchema):
     query: str | None = Field(None, description="Filter by custom field name or slug.")
     type: MultipleQueryFilter[CustomFieldType] | None = Field(
         None, title="CustomFieldType Filter", description="Filter by custom field type."
+    )
+    catalog_id: Annotated[
+        MultipleQueryFilter[UUID4] | None, Version(starting_from=V2027_01)
+    ] = Field(None, title="CatalogID Filter", description="Filter by catalog ID.")
+    catalog_status: Annotated[
+        MultipleQueryFilter[CatalogStatus] | None, Version(starting_from=V2027_01)
+    ] = Field(
+        None,
+        title="CatalogStatus Filter",
+        description="Filter by catalog status.",
     )

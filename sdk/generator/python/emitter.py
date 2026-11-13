@@ -6,6 +6,7 @@ from generator.ir import (
     APIIR,
     APIVersion,
     ArrayType,
+    EnumRef,
     ErrorResponse,
     MapType,
     ModelRef,
@@ -201,6 +202,7 @@ class PythonEmitter(EmitterBase):
                 version_dir / "literals.py",
                 {
                     **self.get_version_context(api),
+                    "open_enum_names": self._get_open_enum_names(api),
                 },
             )
             self.render_file(
@@ -297,6 +299,46 @@ class PythonEmitter(EmitterBase):
                 "imports": self._get_service_imports(service, api),
             },
         )
+
+    def _get_open_enum_names(self, api: APIVersion) -> set[str]:
+        models = api.input_models + api.output_models + api.webhooks
+        unions = [
+            *api.input_unions,
+            *api.output_unions,
+            *(
+                field.type
+                for model in models
+                for field in model.fields
+                if isinstance(field.type, UnionType)
+            ),
+        ]
+        discriminator_fields = {
+            (model_name, union.discriminator.property_name)
+            for union in unions
+            if union.discriminator is not None
+            for model_name in (
+                *union.discriminator.mapping.values(),
+                *(
+                    variant.name
+                    for variant in union.variants
+                    if isinstance(variant, ModelRef)
+                ),
+            )
+        }
+        discriminator_enums = {
+            field.type.name
+            for model in models
+            for field in model.fields
+            if isinstance(field.type, EnumRef)
+            and (model.name, field.name) in discriminator_fields
+        }
+        # OpenAPI omits the callable discriminator that combines these fields.
+        discriminator_enums.update({"DiscountType", "DiscountDuration"})
+        return {
+            enum.name
+            for enum in api.enums
+            if enum.type == "string" and enum.name not in discriminator_enums
+        }
 
     def _get_input_enum_imports(self, api: APIVersion) -> set[str]:
         enum_imports: set[str] = set()

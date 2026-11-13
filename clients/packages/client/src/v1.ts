@@ -58232,6 +58232,11 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by webhook payload format. */
+        format?:
+          | components['schemas']['WebhookFormat']
+          | components['schemas']['WebhookFormat'][]
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

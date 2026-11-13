@@ -96,6 +96,37 @@ class TestListWebhookEndpoints:
         assert response.status_code == 200
         assert response.json()["items"] == []
 
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2027_01)
+    async def test_format_filter(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        response = await client.get(
+            "/v1/webhooks/endpoints", params={"format": ["raw", "slack"]}
+        )
+
+        assert response.status_code == 200
+        [item] = response.json()["items"]
+        assert item["id"] == str(webhook_endpoint_organization.id)
+
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2026_10)
+    async def test_format_filter_ignored_before_v2027_01(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        webhook_endpoint_organization: WebhookEndpoint,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        response = await client.get("/v1/webhooks/endpoints", params={"format": "raw"})
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 2
+
 
 @pytest.mark.anyio
 class TestGetExternalWebhookEndpoint:

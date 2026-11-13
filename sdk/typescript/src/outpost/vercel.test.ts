@@ -56,6 +56,26 @@ describe("vercelAffinityHeaders", () => {
     );
     expect(ids[0]).toMatch(/^shard-\d+-\d+$/);
   });
+
+  it("moves a shard's customers to its next instance one by one, over 30 s", async () => {
+    const shard = customers.filter((customer) => jumpHash(customer, 64) === 0);
+    const moveOf = async (customer: string) => {
+      const options = { externalCustomerId: customer, shards: 64, maxDurationSeconds: 300 };
+      const at = async (second: number) =>
+        (await vercelAffinityHeaders(incoming, { ...options, now: second * 1000 })).get(
+          "x-vercel-affinity-id",
+        );
+      const moves: number[] = [];
+      for (let second = 101; second < 400; second += 1)
+        if ((await at(second)) !== (await at(second - 1))) moves.push(second);
+      return moves;
+    };
+    const moves = await Promise.all(shard.map(moveOf));
+    expect(moves.every((each) => each.length === 1)).toBe(true);
+    const seconds = moves.flat();
+    expect(new Set(seconds).size).toBeGreaterThan(shard.length / 2);
+    expect(Math.max(...seconds) - Math.min(...seconds)).toBeLessThanOrEqual(30);
+  });
 });
 
 describe("warm-up", () => {
@@ -78,10 +98,10 @@ describe("warm-up", () => {
     const at = (second: number) =>
       vercelAffinityHeaders(incoming, { ...base, warm, now: second * 1000 });
 
-    await at(move - 40);
+    await at(move - 60);
     expect(fetchMock).not.toHaveBeenCalled();
-    await at(move - 20);
-    await at(move - 10);
+    await at(move - 15);
+    await at(move - 5);
     await Promise.all(waited);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [target, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];

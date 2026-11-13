@@ -1,3 +1,4 @@
+from decimal import Decimal
 from enum import StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
@@ -115,6 +116,8 @@ class PropertyAggregation(BaseModel):
         if self.property in ("name", "source"):
             return None
         value = get_nested_metadata_value(event.user_metadata, self.property)
+        if isinstance(value, Decimal):
+            return float(value)
         if isinstance(value, int | float) and not isinstance(value, bool):
             return value
         return None

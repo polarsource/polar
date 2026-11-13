@@ -16,7 +16,8 @@ use chrono::Utc;
 use redis::aio::ConnectionManager;
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
+use tokio_util::task::TaskTracker;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::{Instrument, field::Empty};
 use uuid::Uuid;
@@ -25,10 +26,13 @@ use crate::{
     auth::{AuthSettings, OrganizationAuth},
     event::{self, EventCreate},
     ingest::{self, IngestError, IngestResponse},
-    jobs, reducer, telemetry,
+    jobs::{self, Job},
+    outpost::{self, ReducerBucketChange},
+    reducer, telemetry,
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
+const WRITE_TIMEOUT: Duration = Duration::from_secs(25);
 const MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 
 #[derive(Clone)]
@@ -37,6 +41,7 @@ pub struct AppState {
     pub redis: ConnectionManager,
     pub redis_client: redis::Client,
     pub auth: Arc<AuthSettings>,
+    pub tasks: TaskTracker,
 }
 
 pub fn router(state: AppState) -> Router {
@@ -99,7 +104,10 @@ async fn ingest(
 
     // A dropped connection or the request timeout cancels this handler: the write runs in its
     // own task so it never stops between the commit and enqueueing the bucket syncs.
-    tokio::spawn(store_events(state, auth.organization_id, events).in_current_span())
+    state
+        .tasks
+        .clone()
+        .spawn(store_events(state, auth.organization_id, events).in_current_span())
         .await
         .map_err(IngestError::Interrupted)?
         .map(Json)
@@ -110,19 +118,58 @@ async fn store_events(
     organization_id: Uuid,
     events: Vec<EventCreate>,
 ) -> Result<IngestResponse, IngestError> {
+    // Everything up to the commit is abandoned before the request times out, so a client that
+    // retries a timed out request never finds its first attempt stored after all.
+    let written = tokio::time::timeout(
+        WRITE_TIMEOUT,
+        write_events(&state, organization_id, &events),
+    )
+    .await
+    .map_err(|_| IngestError::TimedOut)??;
+    written.transaction.commit().await?;
+
+    if let Err(error) = jobs::enqueue(&mut state.redis.clone(), written.sync_jobs).await {
+        tracing::error!(%error, "failed to enqueue reducer bucket syncs");
+    }
+    outpost::publish(
+        &mut state.redis.clone(),
+        organization_id,
+        &written.outpost_changes,
+    )
+    .await;
+    Ok(written.response)
+}
+
+struct WrittenEvents {
+    transaction: Transaction<'static, Postgres>,
+    response: IngestResponse,
+    sync_jobs: Vec<Job>,
+    outpost_changes: Vec<ReducerBucketChange>,
+}
+
+async fn write_events(
+    state: &AppState,
+    organization_id: Uuid,
+    events: &[EventCreate],
+) -> Result<WrittenEvents, IngestError> {
     let mut transaction = state.db.begin().await?;
-    ingest::validate_references(&mut transaction, organization_id, &events).await?;
+    // Waiting on a bucket lock must not outlive the request and pin a pooled connection.
+    sqlx::query("SELECT set_config('statement_timeout', $1, true)")
+        .bind(WRITE_TIMEOUT.as_millis().to_string())
+        .execute(&mut *transaction)
+        .await?;
+    ingest::validate_references(&mut transaction, organization_id, events).await?;
     let event_types =
-        ingest::resolve_event_types(&mut transaction, organization_id, &events).await?;
+        ingest::resolve_event_types(&mut transaction, organization_id, events).await?;
     let staged =
-        ingest::insert_staged_events(&mut transaction, organization_id, &events, &event_types)
+        ingest::insert_staged_events(&mut transaction, organization_id, events, &event_types)
             .await?;
     let request_span = tracing::Span::current();
     request_span.record("inserted_events", staged.inserted.len());
     request_span.record("skipped_duplicates", staged.duplicates);
 
-    let sync_jobs = if staged.inserted.is_empty() {
-        Vec::new()
+    let (sync_jobs, outpost_changes) = if staged.inserted.is_empty() {
+        (Vec::new(), Vec::new())
     } else {
         let span = tracing::info_span!(
             "rollup_reducer_buckets",
@@ -141,17 +188,16 @@ async fn store_events(
         .instrument(span.clone())
         .await?;
         span.record("rolled_up_buckets", rollup.bucket_count);
-        rollup.sync_jobs
+        (rollup.sync_jobs, rollup.outpost_changes)
     };
-    transaction.commit().await?;
-
-    if let Err(error) = jobs::enqueue(&mut state.redis.clone(), sync_jobs).await {
-        tracing::error!(%error, "failed to enqueue reducer bucket syncs");
-    }
-
-    Ok(IngestResponse {
-        inserted: staged.inserted.len(),
-        duplicates: staged.duplicates,
+    Ok(WrittenEvents {
+        response: IngestResponse {
+            inserted: staged.inserted.len(),
+            duplicates: staged.duplicates,
+        },
+        transaction,
+        sync_jobs,
+        outpost_changes,
     })
 }
 

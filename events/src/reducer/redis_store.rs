@@ -4,7 +4,7 @@ use redis::{RedisResult, aio::ConnectionManager};
 use ring::digest;
 use uuid::Uuid;
 
-use super::{BucketId, Reducer, filter::Aggregation};
+use super::{BucketId, Reducer, TimedValues, filter::Aggregation};
 
 pub(super) const BUCKET_TTL_SECONDS: i64 = 24 * 60 * 60;
 
@@ -27,7 +27,7 @@ pub(super) fn bucket_key(reducer_id: Uuid, bucket: &BucketId) -> String {
 pub(super) async fn add_to_buckets(
     redis: &mut ConnectionManager,
     reducers: &[Reducer],
-    contributions: &[(&BucketId<'_>, &Vec<f64>)],
+    contributions: &[(&BucketId<'_>, &TimedValues)],
 ) -> RedisResult<()> {
     let mut pipeline = redis::pipe();
     for (bucket, values) in contributions {
@@ -35,6 +35,7 @@ pub(super) async fn add_to_buckets(
         let key = bucket_key(reducer.id, bucket);
         // ponytail: Python sums as Decimal before converting; summing floats can differ in the
         // last digit. These buckets are replaced by the Postgres sync once they close.
+        let values = Vec::from_iter(values.iter().map(|(_, value)| *value));
         let sum: f64 = values.iter().sum();
         match reducer.aggregation {
             Aggregation::Count => pipeline.incr(&key, values.len()),

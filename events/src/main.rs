@@ -4,6 +4,7 @@ mod config;
 mod event;
 mod ingest;
 mod jobs;
+mod outpost;
 mod reducer;
 mod telemetry;
 
@@ -16,6 +17,7 @@ use tokio::{
     net::TcpListener,
     signal::unix::{SignalKind, signal},
 };
+use tokio_util::task::TaskTracker;
 
 use crate::{app::AppState, config::Config};
 
@@ -38,6 +40,7 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind((Ipv4Addr::UNSPECIFIED, config.port)).await?;
     tracing::info!(port = config.port, "listening");
 
+    let tasks = TaskTracker::new();
     axum::serve(
         listener,
         app::router(AppState {
@@ -45,11 +48,14 @@ async fn main() -> Result<()> {
             redis,
             redis_client,
             auth: Arc::new(config.auth),
+            tasks: tasks.clone(),
         }),
     )
     .with_graceful_shutdown(shutdown_signal())
     .await?;
 
+    tasks.close();
+    tasks.wait().await;
     db.close().await;
     Ok(())
 }

@@ -4,21 +4,30 @@ import {
   fromISODate,
   METRIC_GROUPS,
   metricGroupSlug,
+  parseAsISODate,
+  TIME_INTERVALS,
   toISODate,
 } from '@/utils/metrics'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { schemas, unwrap } from '@polar-sh/client'
-import { endOfDay, isValid, max, subMonths } from 'date-fns'
+import { endOfDay, max, subMonths } from 'date-fns'
 import { redirect, RedirectType } from 'next/navigation'
+import { createLoader, parseAsStringLiteral } from 'nuqs/server'
 
 const RECURRING_ONLY_GROUPS = new Set(['subscriptions', 'cancellations'])
+
+const loadMetricsSearchParams = createLoader({
+  start_date: parseAsISODate,
+  end_date: parseAsISODate,
+  interval: parseAsStringLiteral(TIME_INTERVALS),
+})
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
   searchParams: Promise<{
     start_date?: string
     end_date?: string
-    interval?: schemas['TimeInterval']
+    interval?: string
     product_id?: string | string[]
     external_product_id?: string | string[]
   }>
@@ -34,12 +43,9 @@ export default async function Page(props: {
 
   const redirectPath = `/dashboard/${organizationSlug}/analytics/metrics`
 
-  const defaultInterval = 'day'
   const today = new Date()
   const defaultStartDate = subMonths(today, 1)
   const defaultEndDate = today
-
-  const interval = searchParams.interval || defaultInterval
 
   const urlSearchParams = new URLSearchParams(
     Object.entries(searchParams).flatMap(([key, value]) =>
@@ -47,29 +53,19 @@ export default async function Page(props: {
     ),
   )
 
-  if (!['year', 'month', 'week', 'day', 'hour'].includes(interval)) {
-    urlSearchParams.set('interval', defaultInterval)
-    redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
-  }
+  const parsedSearchParams = loadMetricsSearchParams(searchParams)
+  const hasInvalidParam = (
+    ['start_date', 'end_date', 'interval'] as const
+  ).some(
+    (key) =>
+      searchParams[key] !== undefined && parsedSearchParams[key] === null,
+  )
 
-  const parsedStartDate = searchParams.start_date
-    ? fromISODate(searchParams.start_date)
-    : undefined
-  const parsedEndDate = searchParams.end_date
-    ? fromISODate(searchParams.end_date)
-    : undefined
-  const hasInvalidDate =
-    (parsedStartDate !== undefined && !isValid(parsedStartDate)) ||
-    (parsedEndDate !== undefined && !isValid(parsedEndDate))
-
-  const startDate =
-    parsedStartDate && isValid(parsedStartDate)
-      ? parsedStartDate
-      : defaultStartDate
-  const endDate =
-    parsedEndDate && isValid(parsedEndDate)
-      ? endOfDay(parsedEndDate)
-      : defaultEndDate
+  const interval = parsedSearchParams.interval ?? 'day'
+  const startDate = parsedSearchParams.start_date ?? defaultStartDate
+  const endDate = parsedSearchParams.end_date
+    ? endOfDay(parsedSearchParams.end_date)
+    : defaultEndDate
 
   const [limits, recurringProducts] = await Promise.all([
     unwrap(api.GET('/v1/metrics/limits')),
@@ -126,7 +122,7 @@ export default async function Page(props: {
 
   const validInterval = findValidInterval(startDate, endDate, interval)
 
-  if (hasInvalidDate || startDate < minDate || validInterval !== interval) {
+  if (hasInvalidParam || startDate < minDate || validInterval !== interval) {
     urlSearchParams.set('start_date', toISODate(max([minDate, startDate])))
     urlSearchParams.set('end_date', toISODate(endDate))
     urlSearchParams.set('interval', validInterval)

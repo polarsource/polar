@@ -43,6 +43,7 @@ from polar.models import (
     Product,
     Reducer,
     Subscription,
+    SubscriptionProductPrice,
     User,
     UserOrganization,
 )
@@ -52,6 +53,7 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
+from polar.product.guard import is_metered_price
 from polar.subscription.repository import SubscriptionProductPriceRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -1998,6 +2000,114 @@ class TestCreateBillingEntries:
                 subscriptions[2].id,
                 subscriptions[0].id,
             )
+        )
+
+
+@pytest.fixture
+async def meter_versions(
+    save_fixture: SaveFixture, organization: Organization, meter: Meter
+) -> tuple[Product, Product]:
+    """Products billing a meter's previous and current version."""
+    products: list[Product] = []
+    for is_current in (False, True):
+        version = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="lite",
+            filter=meter.filter,
+            aggregation=meter.aggregation,
+            is_current=is_current,
+        )
+        products.append(
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(version, Decimal(100), None, "usd")],
+            )
+        )
+    return products[0], products[1]
+
+
+@pytest.mark.anyio
+class TestCreateBillingEntriesAcrossVersions:
+    async def test_event_billed_by_an_archived_version_isnt_billed_again(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter_versions: tuple[Product, Product],
+    ) -> None:
+        previous_product, current_product = meter_versions
+        subscription = await create_active_subscription(
+            save_fixture, product=previous_product, customer=customer
+        )
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await event_service._create_meter_events(session, [event])
+        [previous_price] = previous_product.prices
+        [current_price] = current_product.prices
+        assert is_metered_price(previous_price)
+        assert is_metered_price(current_price)
+
+        [entry] = await meter_service.create_billing_entries(
+            session, previous_price.meter
+        )
+        await session.delete(subscription.subscription_product_prices[0])
+        await save_fixture(
+            SubscriptionProductPrice(
+                subscription=subscription, product_price=current_price, amount=0
+            )
+        )
+        previous_price.meter.archived_at = utc_now()
+        await save_fixture(previous_price.meter)
+
+        assert entry.product_price == previous_price
+        assert (
+            await meter_service.create_billing_entries(session, current_price.meter)
+            == []
+        )
+
+    async def test_customer_without_price_on_the_version_bills_on_theirs(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        meter_versions: tuple[Product, Product],
+    ) -> None:
+        previous_product, current_product = meter_versions
+        await create_active_subscription(
+            save_fixture, product=current_product, customer=customer
+        )
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await event_service._create_meter_events(session, [event])
+        [previous_price] = previous_product.prices
+        [current_price] = current_product.prices
+        assert is_metered_price(previous_price)
+        assert is_metered_price(current_price)
+
+        [entry] = await meter_service.create_billing_entries(
+            session, previous_price.meter
+        )
+
+        assert entry.product_price == current_price
+        assert (
+            await meter_service.create_billing_entries(session, current_price.meter)
+            == []
         )
 
 

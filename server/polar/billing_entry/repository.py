@@ -28,6 +28,22 @@ class BillingEntryRepository(
 ):
     model = BillingEntry
 
+    async def get_event_ids_billed_on_meters(
+        self, event_ids: Sequence[UUID], meter_ids: Sequence[UUID]
+    ) -> set[UUID]:
+        statement = (
+            select(BillingEntry.event_id)
+            .join(ProductPrice, ProductPrice.id == BillingEntry.product_price_id)
+            .where(
+                BillingEntry.event_id.in_(event_ids),
+                BillingEntry.deleted_at.is_(None),
+                # The subclass attribute would add a polymorphic filter and drop tiered prices.
+                ProductPrice.__table__.c.meter_id.in_(meter_ids),
+            )
+        )
+        result = await self.session.execute(statement)
+        return set(result.scalars())
+
     async def update_order_item_id(
         self, billing_entries: Sequence[UUID], order_item_id: UUID
     ) -> None:

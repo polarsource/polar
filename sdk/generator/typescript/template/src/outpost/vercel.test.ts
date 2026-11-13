@@ -71,6 +71,19 @@ describe("vercelAffinity", () => {
     );
     expect(await idAt(pin, "customer-7", 0)).toMatch(/^shard-\d+-\d+$/);
   });
+
+  it("moves a shard's customers to its next instance one by one, over 30 s", async () => {
+    const pin = vercelAffinity({ maxDurationSeconds: 300 });
+    const customers = Array.from({ length: 5000 }, (_, index) => `customer-${index}`);
+    const shards = await Promise.all(customers.map((customer) => jumpHash(customer, 128)));
+    const shard = customers.filter((_, index) => shards[index] === 0);
+    const moves = [];
+    for (const customer of shard) moves.push(await movesOf(pin, customer, 100, 400));
+    expect(moves.every((each) => each.length === 1)).toBe(true);
+    const seconds = moves.flat();
+    expect(Math.max(...seconds) - Math.min(...seconds)).toBeGreaterThan(20);
+    expect(Math.max(...seconds) - Math.min(...seconds)).toBeLessThanOrEqual(30);
+  });
 });
 
 describe("warm-up", () => {

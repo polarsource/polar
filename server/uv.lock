@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.14"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -11,11 +11,11 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
-certifi = false
-reauth = false
 brotli = false
+certifi = false
 polar-sdk = false
 pypdf = false
+reauth = false
 
 [manifest]
 overrides = [

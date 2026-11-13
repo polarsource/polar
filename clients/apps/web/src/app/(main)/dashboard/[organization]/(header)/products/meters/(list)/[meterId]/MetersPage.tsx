@@ -2,6 +2,7 @@
 
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { MeterPage } from '@/components/Meter/MeterPage'
+import { MeterVersionBanner } from '@/components/Meter/MeterVersionBanner'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
 import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
@@ -11,6 +12,7 @@ import { permissionDeniedMessage } from '@/utils/permissions'
 import { MoreVertOutlined } from '@polar-sh/orbit/icons'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Status } from '@polar-sh/orbit'
 import {
   DropdownMenu,
@@ -164,12 +166,15 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
         </>
       }
     >
-      <MeterPage
-        meter={meter}
-        organization={organization}
-        isEditMeterModalShown={isEditMeterModalShown}
-        hideEditMeterModal={hideEditMeterModal}
-      />
+      <Box flexDirection="column" rowGap="xl">
+        <MeterVersionBanner organization={organization} meter={meter} />
+        <MeterPage
+          meter={meter}
+          organization={organization}
+          isEditMeterModalShown={isEditMeterModalShown}
+          hideEditMeterModal={hideEditMeterModal}
+        />
+      </Box>
     </MasterDetailLayoutContent>
   )
 }

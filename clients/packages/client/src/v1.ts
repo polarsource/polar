@@ -34023,6 +34023,17 @@ export interface components {
       /** Slug */
       slug: string
     }
+    /** PayoutAccountRejected */
+    PayoutAccountRejected: {
+      /**
+       * Error
+       * @example PayoutAccountRejected
+       * @constant
+       */
+      error: 'PayoutAccountRejected'
+      /** Detail */
+      detail: string
+    }
     /**
      * PayoutAccountStatus
      * @enum {string}
@@ -60174,6 +60185,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['PayoutAccountLink']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountRejected']
         }
       }
       /** @description Validation Error */

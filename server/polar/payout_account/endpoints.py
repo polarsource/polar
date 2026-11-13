@@ -26,6 +26,7 @@ from .schemas import (
     PayoutAccountWithOrganizations,
 )
 from .service import (
+    PayoutAccountRejected,
     PayoutAccountStripeAccountDoesNotExist,
     PayoutAccountSyncFailed,
     PayoutAccountSyncUnsupported,
@@ -93,7 +94,11 @@ async def sync(
     return await payout_account_service.sync_from_stripe(session, authz.payout_account)
 
 
-@router.post("/{id}/onboarding-link", response_model=PayoutAccountLink)
+@router.post(
+    "/{id}/onboarding-link",
+    response_model=PayoutAccountLink,
+    responses={409: {"model": PayoutAccountRejected.schema()}},
+)
 async def onboarding_link(
     authz: AuthorizePayoutAccountWrite,
     return_path: str = Query(...),

@@ -1,7 +1,9 @@
 const IS_WIDGET_BUILD = process.env.EXPO_WIDGET_BUILD === '1'
 
 const plugins = [
-  ['expo-build-properties', { ios: { enableSceneSupport: true } }],
+  ...(IS_WIDGET_BUILD
+    ? []
+    : [['expo-build-properties', { ios: { enableSceneSupport: true } }]]),
   'expo-router',
   [
     'expo-splash-screen',

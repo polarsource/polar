@@ -88,6 +88,13 @@ class AddressDict:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class AlreadyActiveSubscription:
+    error: typing.Literal["AlreadyActiveSubscription"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class AlreadyActiveSubscriptionError:
     error: typing.Literal["AlreadyActiveSubscriptionError"]
 
@@ -1529,6 +1536,13 @@ class BenefitGrant:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantAlreadyExists:
+    error: typing.Literal["BenefitGrantAlreadyExists"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantCustomProperties: ...
 
 
@@ -2623,7 +2637,7 @@ class BenefitSubscriberOrganization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -3119,6 +3133,9 @@ class CheckoutLink:
     payment_processor: PaymentProcessor
     """Payment processor used."""
 
+    trial_payment_setup_required: bool | None
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."""
+
     client_secret: str
     """Client secret used to access the checkout link."""
 
@@ -3250,7 +3267,7 @@ class CheckoutOrganization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -4880,7 +4897,7 @@ class CustomerOrganization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -7498,6 +7515,12 @@ class Meter:
     archived_at: str | None = None
     """Whether the meter is archived and the time it was archived."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the meter. None for meters not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the meter."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class MeterCreditEvent:
@@ -8763,7 +8786,7 @@ class Organization:
     avatar_url: str | None
     """Avatar URL shown in checkout, customer portal, emails etc."""
 
-    proration_behavior: SubscriptionProrationBehavior
+    proration_behavior: SubscriptionProrationBehavior | typing.Literal["auto"]
     """Proration behavior applied when customer updates their subscription from the portal."""
 
     allow_customer_updates: bool
@@ -8979,6 +9002,9 @@ class OrganizationFeatureSettings:
     config_as_code_enabled: bool = False
     """If this organization can manage its configuration from a declarative config document."""
 
+    reducer_billing_enabled: bool = False
+    """If this organization's metered usage is billed from the reducer instead of the legacy billing entries."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:
@@ -9000,7 +9026,7 @@ class OrganizationSocialLink:
 class OrganizationSubscriptionSettings:
     allow_multiple_subscriptions: bool
 
-    proration_behavior: PublicSubscriptionProrationBehavior
+    proration_behavior: PublicSubscriptionProrationBehavior | typing.Literal["auto"]
 
     benefit_revocation_grace_period: int
 
@@ -9260,6 +9286,9 @@ class Product:
 
     organization_id: str
     """The ID of the organization owning the product."""
+
+    trial_payment_setup_required: bool
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."""
 
     catalog_id: str | None
     """ID of the catalog that introduced this version of the product. None for products not managed by declarative config."""

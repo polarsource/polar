@@ -792,6 +792,10 @@ export type FilterConjunction = "and" | "or";
  */
 export type FilterOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
 /**
+ * The format of the webhook payload.
+ */
+export type Format = "raw" | "discord" | "slack";
+/**
  * Func
  */
 export type Func = "sum" | "max" | "min" | "avg";
@@ -945,7 +949,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1971,7 +1975,7 @@ export type WebhookEventType =
 /**
  * WebhookFormat
  */
-export type WebhookFormat = "raw" | "discord" | "slack";
+export type WebhookFormat = "raw" | "discord" | "slack" | "mcp";
 
 /**
  * Address
@@ -2061,6 +2065,20 @@ export interface AddressInput {
    * country
    */
   country: CountryAlpha2Input;
+}
+
+/**
+ * AlreadyActiveSubscription
+ */
+export interface AlreadyActiveSubscription {
+  /**
+   * error
+   */
+  error: "AlreadyActiveSubscription";
+  /**
+   * detail
+   */
+  detail: string;
 }
 
 /**
@@ -2984,7 +3002,7 @@ export interface BenefitCustom {
  */
 export interface BenefitCustomCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -3150,7 +3168,7 @@ export interface BenefitCustomSubscriberProperties {
  */
 export interface BenefitCustomUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -3324,7 +3342,7 @@ export interface BenefitDiscord {
  */
 export interface BenefitDiscordCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -3506,7 +3524,7 @@ export interface BenefitDiscordSubscriberProperties {
  */
 export interface BenefitDiscordUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -3694,7 +3712,7 @@ export interface BenefitDownloadables {
  */
 export interface BenefitDownloadablesCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -3868,7 +3886,7 @@ export interface BenefitDownloadablesSubscriberProperties {
  */
 export interface BenefitDownloadablesUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -3977,7 +3995,7 @@ export interface BenefitFeatureFlag {
  */
 export interface BenefitFeatureFlagCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -4128,7 +4146,7 @@ export interface BenefitFeatureFlagSubscriberProperties extends Record<string, n
  */
 export interface BenefitFeatureFlagUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -4240,7 +4258,7 @@ export interface BenefitGitHubRepository {
  */
 export interface BenefitGitHubRepositoryCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -4426,7 +4444,7 @@ export interface BenefitGitHubRepositorySubscriberProperties {
  */
 export interface BenefitGitHubRepositoryUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -4544,6 +4562,60 @@ export interface BenefitGrant {
     | BenefitGrantCustomProperties
     | BenefitGrantFeatureFlagProperties
     | BenefitGrantSlackSharedChannelProperties;
+}
+
+/**
+ * BenefitGrantAlreadyExists
+ */
+export interface BenefitGrantAlreadyExists {
+  /**
+   * error
+   */
+  error: "BenefitGrantAlreadyExists";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
+ * Manually grant a benefit using Polar IDs.
+ */
+export interface BenefitGrantCreate {
+  /**
+   * The ID of the customer.
+   */
+  customer_id: string;
+  /**
+   * The ID of the benefit.
+   */
+  benefit_id: string;
+  /**
+   * The ID of the member receiving the benefit. If not provided, the benefit is granted to the customer's owner.
+   */
+  member_id?: string | null;
+}
+
+/**
+ * Manually grant a benefit using external IDs.
+ */
+export interface BenefitGrantCreateExternal {
+  /**
+   * The ID of the customer in your system.
+   */
+  external_customer_id: string;
+  /**
+   * The ID of the benefit in your system. Resolves to the current version of the benefit.
+   */
+  external_benefit_id: string;
+  /**
+   * The ID of the member in your system, scoped to the customer. If not provided, the benefit is granted to the customer's owner.
+   */
+  external_member_id?: string | null;
+  /**
+   * The ID of the organization owning the customer and benefit. **Required unless your credential identifies one organization.** Omit this field when using an organization token.
+   */
+  organization_id?: string | null;
 }
 
 /**
@@ -5587,7 +5659,7 @@ export interface BenefitLicenseKeys {
  */
 export interface BenefitLicenseKeysCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -5789,7 +5861,7 @@ export interface BenefitLicenseKeysSubscriberProperties {
  */
 export interface BenefitLicenseKeysUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -5901,7 +5973,7 @@ export interface BenefitMeterCredit {
  */
 export interface BenefitMeterCreditCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -6111,7 +6183,7 @@ export interface BenefitMeterCreditSubscriberProperties {
  */
 export interface BenefitMeterCreditUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -6283,7 +6355,7 @@ export interface BenefitSlackSharedChannel {
  */
 export interface BenefitSlackSharedChannelCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -6484,7 +6556,7 @@ export interface BenefitSlackSharedChannelSubscriberProperties extends Record<st
  */
 export interface BenefitSlackSharedChannelUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -6546,7 +6618,7 @@ export interface BenefitSubscriberOrganization {
   /**
    * Proration behavior applied when customer updates their subscription from the portal.
    */
-  proration_behavior: SubscriptionProrationBehavior;
+  proration_behavior: SubscriptionProrationBehavior | "auto";
   /**
    * Whether customers can update their subscriptions from the customer portal.
    */
@@ -7401,6 +7473,10 @@ export interface CheckoutLink {
    */
   payment_processor: PaymentProcessor;
   /**
+   * Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used.
+   */
+  trial_payment_setup_required: boolean | null;
+  /**
    * Client secret used to access the checkout link.
    */
   client_secret: string;
@@ -7487,6 +7563,10 @@ You can store up to **50 key-value pairs**.
    * The number of interval units for the trial period.
    */
   trial_interval_count?: number | null;
+  /**
+   * Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used.
+   */
+  trial_payment_setup_required?: boolean | null;
   /**
    * Payment processor to use. Currently only Stripe is supported.
    */
@@ -7638,6 +7718,10 @@ You can store up to **50 key-value pairs**.
    */
   metadata?: Record<string, string | number | boolean>;
   /**
+   * Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used.
+   */
+  trial_payment_setup_required?: boolean | null;
+  /**
    * List of products that will be available to select at checkout.
    */
   products?: string[] | null;
@@ -7720,7 +7804,7 @@ export interface CheckoutOrganization {
   /**
    * Proration behavior applied when customer updates their subscription from the portal.
    */
-  proration_behavior: SubscriptionProrationBehavior;
+  proration_behavior: SubscriptionProrationBehavior | "auto";
   /**
    * Whether customers can update their subscriptions from the customer portal.
    */
@@ -11433,7 +11517,7 @@ export interface CustomerOrganization {
   /**
    * Proration behavior applied when customer updates their subscription from the portal.
    */
-  proration_behavior: SubscriptionProrationBehavior;
+  proration_behavior: SubscriptionProrationBehavior | "auto";
   /**
    * Whether customers can update their subscriptions from the customer portal.
    */
@@ -13286,7 +13370,7 @@ export interface CustomerWallet {
  */
 export interface DiscountFixedCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -13660,7 +13744,7 @@ export interface DiscountFixedRepeatDurationBase {
  */
 export interface DiscountPercentageCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -14121,7 +14205,7 @@ export interface DiscountRedemptionLimitReached {
  */
 export interface DiscountUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -16563,6 +16647,14 @@ export interface Meter {
    * Whether the meter is archived and the time it was archived.
    */
   archived_at?: string | null;
+  /**
+   * ID of the catalog that introduced this version of the meter. None for meters not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * Whether this is the current version of the meter.
+   */
+  is_current: boolean;
 }
 
 /**
@@ -16570,7 +16662,7 @@ export interface Meter {
  */
 export interface MeterCreate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -16806,7 +16898,7 @@ export interface MeterResetMetadata {
  */
 export interface MeterUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -18931,7 +19023,7 @@ export interface Organization {
   /**
    * Proration behavior applied when customer updates their subscription from the portal.
    */
-  proration_behavior: SubscriptionProrationBehavior;
+  proration_behavior: SubscriptionProrationBehavior | "auto";
   /**
    * Whether customers can update their subscriptions from the customer portal.
    */
@@ -19424,6 +19516,10 @@ export interface OrganizationFeatureSettings {
    * If this organization can manage its configuration from a declarative config document.
    */
   config_as_code_enabled?: boolean;
+  /**
+   * If this organization's metered usage is billed from the reducer instead of the legacy billing entries.
+   */
+  reducer_billing_enabled?: boolean;
 }
 
 /**
@@ -19492,7 +19588,7 @@ export interface OrganizationSubscriptionSettings {
   /**
    * proration_behavior
    */
-  proration_behavior: PublicSubscriptionProrationBehavior;
+  proration_behavior: PublicSubscriptionProrationBehavior | "auto";
   /**
    * benefit_revocation_grace_period
    */
@@ -19992,6 +20088,10 @@ export interface Product {
    */
   organization_id: string;
   /**
+   * Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+   */
+  trial_payment_setup_required: boolean;
+  /**
    * ID of the catalog that introduced this version of the product. None for products not managed by declarative config.
    */
   catalog_id: string | null;
@@ -20044,7 +20144,7 @@ export interface ProductBenefitsUpdate {
  */
 export interface ProductCreateOneTime {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -20111,7 +20211,7 @@ You can store up to **50 key-value pairs**.
  */
 export interface ProductCreateRecurring {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -20171,6 +20271,10 @@ You can store up to **50 key-value pairs**.
    * The number of interval units for the trial period.
    */
   trial_interval_count?: number | null;
+  /**
+   * Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+   */
+  trial_payment_setup_required?: boolean;
   /**
    * The recurring interval of the product.
    */
@@ -21242,7 +21346,7 @@ export interface ProductPriceUnitBasedCreate {
  */
 export interface ProductUpdate {
   /**
-   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource.
+   * An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`.
    */
   external_id?: string | null;
   /**
@@ -21315,6 +21419,10 @@ You can store up to **50 key-value pairs**.
    * attached_custom_fields
    */
   attached_custom_fields?: AttachedCustomFieldCreate[] | null;
+  /**
+   * Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details.
+   */
+  trial_payment_setup_required?: boolean | null;
 }
 
 /**
@@ -22317,11 +22425,11 @@ You can store up to **50 key-value pairs**.
    */
   metadata?: Record<string, string | number | boolean>;
   /**
-   * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+   * The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
    */
   product_id: string;
   /**
-   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   * The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used.
    */
   currency?: PresentmentCurrency | null;
   /**
@@ -22349,11 +22457,11 @@ You can store up to **50 key-value pairs**.
    */
   metadata?: Record<string, string | number | boolean>;
   /**
-   * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+   * The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow.
    */
   product_id: string;
   /**
-   * The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used.
+   * The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used.
    */
   currency?: PresentmentCurrency | null;
   /**
@@ -23779,7 +23887,7 @@ You can store up to **50 key-value pairs**.
   /**
    * Determine how to handle the proration billing. If not provided, will use the default organization setting.
    */
-  proration_behavior?: SubscriptionProrationBehavior | null;
+  proration_behavior?: SubscriptionProrationBehavior | "auto" | null;
   /**
    * Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.
    */
@@ -23897,7 +24005,7 @@ export interface SubscriptionUpdateSeats {
   /**
    * Determine how to handle the proration billing. If not provided, will use the default organization setting.
    */
-  proration_behavior?: SubscriptionProrationBehavior | null;
+  proration_behavior?: SubscriptionProrationBehavior | "auto" | null;
 }
 
 /**
@@ -23911,7 +24019,7 @@ export interface SubscriptionUpdateUnits {
   /**
    * Determine how to handle the proration billing. If not provided, will use the default organization setting.
    */
-  proration_behavior?: SubscriptionProrationBehavior | null;
+  proration_behavior?: SubscriptionProrationBehavior | "auto" | null;
 }
 
 /**
@@ -24637,7 +24745,7 @@ export interface WebhookEndpointCreate {
   /**
    * The format of the webhook payload.
    */
-  format: WebhookFormat;
+  format: Format;
   /**
    * The events that will trigger the webhook.
    */
@@ -24667,7 +24775,7 @@ export interface WebhookEndpointUpdate {
   /**
    * format
    */
-  format?: WebhookFormat | null;
+  format?: ("raw" | "discord" | "slack") | null;
   /**
    * events
    */

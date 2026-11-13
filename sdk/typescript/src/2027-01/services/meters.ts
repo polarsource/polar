@@ -1,6 +1,7 @@
 import type { ClientBase, RequestOptions } from "../../base";
 import type {
   AggregationFunction,
+  CatalogStatus,
   ListResourceMeter,
   MetadataQuery,
   Meter,
@@ -32,6 +33,8 @@ export const listMeters = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       external_id?: string | string[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       page?: number;
@@ -45,6 +48,8 @@ export const listMeters = (client: ClientBase) => {
     const queryParams = {
       organization_id: query?.organization_id,
       external_id: query?.external_id,
+      catalog_id: query?.catalog_id,
+      catalog_status: query?.catalog_status,
       query: query?.query,
       is_archived: query?.is_archived,
       page: query?.page ?? 1,
@@ -77,6 +82,8 @@ export const iterListMeters = (client: ClientBase) => {
     query?: {
       organization_id?: string | string[] | null;
       external_id?: string | string[] | null;
+      catalog_id?: string | string[] | null;
+      catalog_status?: CatalogStatus | CatalogStatus[] | null;
       query?: string | null;
       is_archived?: boolean | null;
       page?: number;

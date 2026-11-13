@@ -15,6 +15,7 @@ from polar.v2027_01.errors import (
     HTTPValidationError,
     ResourceNotFound,
     SubscriptionLocked,
+    SubscriptionsCreate409Error,
     SubscriptionsUpdate402Error,
     SubscriptionsUpdate403Error,
     SubscriptionsUpdate409Error,
@@ -258,8 +259,9 @@ class SubscriptionsSync(SyncServiceBase):
         """
         Create a subscription programmatically.
 
-        This endpoint only allows to create subscription on free products.
-        For paid products, use the checkout flow.
+        Supports free products and paid products with a trial that does not require
+        upfront payment setup. Paid subscriptions start with the product's configured
+        trial period. For other paid products, use the checkout flow.
 
         No initial order will be created and no confirmation email will be sent.
 
@@ -272,6 +274,7 @@ class SubscriptionsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            SubscriptionsCreate409Error: Conflict
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -288,6 +291,7 @@ class SubscriptionsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            409: SubscriptionsCreate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Subscription, method_errors)
@@ -802,8 +806,9 @@ class SubscriptionsAsync(AsyncServiceBase):
         """
         Create a subscription programmatically.
 
-        This endpoint only allows to create subscription on free products.
-        For paid products, use the checkout flow.
+        Supports free products and paid products with a trial that does not require
+        upfront payment setup. Paid subscriptions start with the product's configured
+        trial period. For other paid products, use the checkout flow.
 
         No initial order will be created and no confirmation email will be sent.
 
@@ -816,6 +821,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            SubscriptionsCreate409Error: Conflict
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -832,6 +838,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            409: SubscriptionsCreate409Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Subscription, method_errors)

@@ -14,6 +14,7 @@ from polar.v2026_10.literals import (
     DiscountType,
     FilterConjunction,
     FilterOperator,
+    Format,
     Func,
     LicenseKeyStatus,
     MemberRole,
@@ -36,7 +37,6 @@ from polar.v2026_10.literals import (
     TokenEndpointAuthMethod,
     TrialInterval,
     WebhookEventType,
-    WebhookFormat,
 )
 
 
@@ -3847,7 +3847,7 @@ class WebhookEndpointCreate(typing.TypedDict):
     api_version: typing.NotRequired[ApiVersion]
     """The API version that'll be used in event payloads."""
 
-    format: WebhookFormat
+    format: Format
     """The format of the webhook payload."""
 
     events: list[WebhookEventType]
@@ -3868,7 +3868,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     api_version: typing.NotRequired[typing.Literal["2026-04", "2026-10"] | None]
     """The API version that'll be used in event payloads."""
 
-    format: typing.NotRequired[WebhookFormat | None]
+    format: typing.NotRequired[typing.Literal["raw", "discord", "slack"] | None]
 
     events: typing.NotRequired[list[WebhookEventType] | None]
 

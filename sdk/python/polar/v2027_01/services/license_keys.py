@@ -213,6 +213,7 @@ class LicenseKeysSync(SyncServiceBase):
 
         Raises:
             Unauthorized: Not authorized to manage license key.
+            NotPermitted: Cannot reactivate a license key for a manually revoked benefit grant.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -233,6 +234,7 @@ class LicenseKeysSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             401: Unauthorized,
+            403: NotPermitted,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -639,6 +641,7 @@ class LicenseKeysAsync(AsyncServiceBase):
 
         Raises:
             Unauthorized: Not authorized to manage license key.
+            NotPermitted: Cannot reactivate a license key for a manually revoked benefit grant.
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -659,6 +662,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             401: Unauthorized,
+            403: NotPermitted,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }

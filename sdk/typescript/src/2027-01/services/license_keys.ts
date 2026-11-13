@@ -168,6 +168,7 @@ export const updateLicenseKeys = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Unauthorized} Not authorized to manage license key.
+   * @throws {NotPermitted} Cannot reactivate a license key for a manually revoked benefit grant.
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -190,6 +191,7 @@ export const updateLicenseKeys = (client: ClientBase) => {
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<LicenseKeyRead>(response, "json", {
       401: Unauthorized,
+      403: NotPermitted,
       404: ResourceNotFound,
       422: HTTPValidationError,
     });

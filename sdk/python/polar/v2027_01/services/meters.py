@@ -21,6 +21,7 @@ from polar.v2027_01.inputs import (
 )
 from polar.v2027_01.literals import (
     AggregationFunction,
+    CatalogStatus,
     MeterSortProperty,
     TimeInterval,
     Timezone,
@@ -38,6 +39,8 @@ class MetersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -55,6 +58,8 @@ class MetersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             external_id: Filter by meter external ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -78,6 +83,8 @@ class MetersSync(SyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "external_id": external_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "is_archived": is_archived,
                 "page": page,
@@ -99,6 +106,8 @@ class MetersSync(SyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -116,6 +125,8 @@ class MetersSync(SyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             external_id: Filter by meter external ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -139,6 +150,8 @@ class MetersSync(SyncServiceBase):
             response = self.list(
                 organization_id=organization_id,
                 external_id=external_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 is_archived=is_archived,
                 page=page,
@@ -397,6 +410,8 @@ class MetersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -414,6 +429,8 @@ class MetersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             external_id: Filter by meter external ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -437,6 +454,8 @@ class MetersAsync(AsyncServiceBase):
             query_params={
                 "organization_id": organization_id,
                 "external_id": external_id,
+                "catalog_id": catalog_id,
+                "catalog_status": catalog_status,
                 "query": query,
                 "is_archived": is_archived,
                 "page": page,
@@ -458,6 +477,8 @@ class MetersAsync(AsyncServiceBase):
         *,
         organization_id: str | builtins.list[str] | None = None,
         external_id: str | builtins.list[str] | None = None,
+        catalog_id: str | builtins.list[str] | None = None,
+        catalog_status: CatalogStatus | builtins.list[CatalogStatus] | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
         page: int = 1,
@@ -475,6 +496,8 @@ class MetersAsync(AsyncServiceBase):
         Args:
             organization_id: Filter by organization ID.
             external_id: Filter by meter external ID.
+            catalog_id: Filter by catalog ID.
+            catalog_status: Filter by catalog status.
             query: Filter by name.
             is_archived: Filter on archived meters.
             page: Page number, defaults to 1.
@@ -498,6 +521,8 @@ class MetersAsync(AsyncServiceBase):
             response = await self.list(
                 organization_id=organization_id,
                 external_id=external_id,
+                catalog_id=catalog_id,
+                catalog_status=catalog_status,
                 query=query,
                 is_archived=is_archived,
                 page=page,

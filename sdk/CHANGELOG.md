@@ -10,6 +10,11 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-13
+
+- Regenerate 2027-01 version.
+- Python: don't break deserialization on unknown enum values.
+
 ## [1.1.0] - 2026-11-09
 
 ### Added
@@ -56,7 +61,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 - Generate next 2027-01 version.
 
-[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.1.0...HEAD
+[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.2.0...HEAD
+[1.2.0]: https://github.com/polarsource/polar/compare/sdk%2F1.1.0...sdk%2F1.2.0
 [1.1.0]: https://github.com/polarsource/polar/compare/sdk%2F1.0.2...sdk%2F1.1.0
 [1.0.2]: https://github.com/polarsource/polar/compare/sdk%2F1.0.1...sdk%2F1.0.2
 [1.0.1]: https://github.com/polarsource/polar/compare/sdk%2F1.0.0...sdk%2F1.0.1

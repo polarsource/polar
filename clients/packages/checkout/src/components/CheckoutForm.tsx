@@ -9,6 +9,7 @@ import CountryPicker from './ui/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
 } from './ui/CountryStatePicker'
+import { usesStateLabel } from '@polar-sh/ui/lib/states'
 import { Input } from './ui/Input'
 import { Checkbox } from './ui/Checkbox'
 import {
@@ -587,8 +588,7 @@ const BaseCheckoutForm = ({
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 placeholder={
-                                  country &&
-                                  ['US', 'BR', 'IN'].includes(country)
+                                  usesStateLabel(country)
                                     ? t('checkout.form.billingAddress.state')
                                     : t('checkout.form.billingAddress.province')
                                 }

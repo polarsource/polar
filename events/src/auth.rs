@@ -12,6 +12,7 @@ use axum::{
 };
 use ring::hmac;
 use serde_json::json;
+use tracing::Instrument;
 use uuid::Uuid;
 
 use crate::{
@@ -124,8 +125,20 @@ async fn authenticate(
     .ok_or(AuthError::InvalidToken)?;
 
     let usage = Job::record_organization_access_token_usage(token_id, SystemTime::now());
-    if let Err(error) = jobs::enqueue(&mut state.redis.clone(), vec![usage]).await {
-        tracing::warn!(%error, "failed to enqueue organization access token usage");
+    if let Ok(permit) = state.background.clone().try_acquire_owned() {
+        let (sqs, mut redis) = (state.sqs.clone(), state.redis.clone());
+        state.tasks.spawn(
+            async move {
+                if let Err(error) = jobs::enqueue(sqs.as_deref(), &mut redis, vec![usage]).await {
+                    tracing::warn!(
+                        error = format!("{error:#}"),
+                        "failed to enqueue organization access token usage"
+                    );
+                }
+                drop(permit);
+            }
+            .instrument(telemetry::background_span("record_token_usage")),
+        );
     }
 
     if let Some(requested) = headers.get(ORGANIZATION_HEADER) {

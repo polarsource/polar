@@ -5,6 +5,9 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.104"
+aws-config = { version = "1.13.2", default-features = false, features = ["rt-tokio"] }
+aws-sdk-sqs = { version = "1.121.0", default-features = false, features = ["rt-tokio"] }
+aws-smithy-http-client = { version = "1.5.2", default-features = false, features = ["rustls-ring"] }
 axum = "0.8.9"
 chrono = { version = "0.4.45", default-features = false, features = ["std", "clock"] }
 logfire = { version = "0.13.1", default-features = false, features = ["export-http-protobuf"] }

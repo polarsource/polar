@@ -67,6 +67,12 @@ pub fn record_response<B>(response: &Response<B>, _latency: Duration, span: &Spa
     }
 }
 
+pub fn background_span(name: &'static str) -> Span {
+    let span = tracing::info_span!(parent: None, "background", otel.name = name);
+    span.follows_from(Span::current());
+    span
+}
+
 pub fn log_database_error(error: &sqlx::Error, operation: &'static str) {
     match error.as_database_error() {
         Some(database_error) => tracing::error!(

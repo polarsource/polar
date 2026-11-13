@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
         .await
         .is_err()
     {
-        tracing::error!("in-flight event writes did not finish before shutdown");
+        tracing::error!("in-flight writes and job sends did not finish before shutdown");
     }
     state.db.close().await;
     Ok(())

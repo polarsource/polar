@@ -1,10 +1,13 @@
-use std::{collections::HashMap, env};
+use std::{
+    collections::{HashMap, HashSet},
+    env,
+};
 
 use anyhow::{Context, Result};
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use tracing::level_filters::LevelFilter;
 
-use crate::auth::AuthSettings;
+use crate::{auth::AuthSettings, jobs::SqsSettings};
 
 pub struct Config {
     pub port: u16,
@@ -17,6 +20,7 @@ pub struct Config {
     pub postgres_pool_size: u32,
     pub redis_url: String,
     pub auth: AuthSettings,
+    pub worker_sqs: Option<SqsSettings>,
 }
 
 impl Config {
@@ -27,10 +31,13 @@ impl Config {
     fn from_lookup(lookup: impl Fn(&str) -> Option<String>) -> Result<Self> {
         let var = |key: &str, default: &str| lookup(key).unwrap_or_else(|| default.to_owned());
 
-        let postgres_ssl = matches!(
-            var("POLAR_POSTGRES_SSL", "false").to_lowercase().as_str(),
-            "true" | "1" | "yes" | "on"
-        );
+        let flag = |key: &str| {
+            matches!(
+                var(key, "false").to_lowercase().as_str(),
+                "true" | "1" | "yes" | "on"
+            )
+        };
+        let postgres_ssl = flag("POLAR_POSTGRES_SSL");
         let postgres = PgConnectOptions::new()
             .host(&var("POLAR_POSTGRES_HOST", "127.0.0.1"))
             .port(
@@ -65,9 +72,30 @@ impl Config {
             &var("POLAR_BASE_URL", "http://127.0.0.1:8000"),
         );
 
+        let environment = var("POLAR_ENV", "development");
+        let sqs_actors: HashSet<String> = serde_json::from_str(&var(
+            "POLAR_WORKER_SQS_ACTORS",
+            r#"["dummy", "observability.invariants.enqueue", "observability.invariants.check"]"#,
+        ))
+        .context("POLAR_WORKER_SQS_ACTORS")?;
+        let worker_sqs = flag("POLAR_WORKER_SQS_ENABLED").then(|| SqsSettings {
+            queue_prefix: var("POLAR_WORKER_SQS_QUEUE_PREFIX", "polar-tasks"),
+            actors: (sqs_actors != HashSet::from(["*".to_owned()])).then_some(sqs_actors),
+            region: var("POLAR_AWS_REGION", "us-east-2"),
+            endpoint_url: lookup("POLAR_SQS_ENDPOINT_URL"),
+            static_credentials: matches!(environment.as_str(), "development" | "testing").then(
+                || {
+                    (
+                        var("POLAR_AWS_ACCESS_KEY_ID", "polar-development"),
+                        var("POLAR_AWS_SECRET_ACCESS_KEY", "polar123456789"),
+                    )
+                },
+            ),
+        });
+
         Ok(Self {
             port: var("PORT", "10000").parse().context("PORT")?,
-            environment: var("POLAR_ENV", "development"),
+            environment,
             service_name: var("RENDER_SERVICE_NAME", "events"),
             release_version: lookup("RELEASE_VERSION"),
             log_level: var("POLAR_LOG_LEVEL", "info")
@@ -80,6 +108,7 @@ impl Config {
                 .context("POLAR_DATABASE_POOL_SIZE")?,
             redis_url,
             auth,
+            worker_sqs,
         })
     }
 }
@@ -105,6 +134,7 @@ mod tests {
         assert_eq!(config.service_name, "events");
         assert_eq!(config.log_level, LevelFilter::INFO);
         assert!(config.logfire_token.is_none());
+        assert!(config.worker_sqs.is_none());
         assert_eq!(config.postgres.get_host(), "127.0.0.1");
         assert_eq!(config.postgres.get_port(), 5432);
         assert_eq!(config.postgres.get_database(), Some("polar"));
@@ -118,6 +148,9 @@ mod tests {
             ("POLAR_ENV", "production"),
             ("POLAR_LOG_LEVEL", "DEBUG"),
             ("POLAR_LOGFIRE_TOKEN", "token"),
+            ("POLAR_WORKER_SQS_ENABLED", "true"),
+            ("POLAR_WORKER_SQS_ACTORS", r#"["reducer_bucket.sync"]"#),
+            ("POLAR_WORKER_SQS_QUEUE_PREFIX", "polar-production-tasks"),
             ("POLAR_POSTGRES_HOST", "db.internal"),
             ("POLAR_POSTGRES_SSL", "True"),
             ("POLAR_REDIS_HOST", "ignored"),
@@ -129,9 +162,28 @@ mod tests {
         assert_eq!(config.environment, "production");
         assert_eq!(config.log_level, LevelFilter::DEBUG);
         assert_eq!(config.logfire_token.as_deref(), Some("token"));
+        let worker_sqs = config.worker_sqs.unwrap();
+        assert_eq!(worker_sqs.queue_prefix, "polar-production-tasks");
+        assert_eq!(
+            worker_sqs.actors,
+            Some(HashSet::from(["reducer_bucket.sync".to_owned()]))
+        );
+        assert_eq!(worker_sqs.region, "us-east-2");
+        assert!(worker_sqs.static_credentials.is_none());
         assert_eq!(config.postgres.get_host(), "db.internal");
         assert!(matches!(config.postgres.get_ssl_mode(), PgSslMode::Require));
         assert_eq!(config.redis_url, "rediss://cache.internal:6380/1");
+    }
+
+    #[test]
+    fn routes_every_actor_to_sqs_on_a_wildcard() {
+        let config = config(&[
+            ("POLAR_WORKER_SQS_ENABLED", "true"),
+            ("POLAR_WORKER_SQS_ACTORS", r#"["*"]"#),
+        ])
+        .unwrap();
+
+        assert!(config.worker_sqs.unwrap().actors.is_none());
     }
 
     #[test]

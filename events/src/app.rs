@@ -18,7 +18,7 @@ use redis::aio::ConnectionManager;
 use serde::Serialize;
 use serde_json::{Value, json};
 use sqlx::{PgPool, Postgres, Transaction, postgres::PgPoolOptions};
-use tokio::time::Instant;
+use tokio::{sync::Semaphore, time::Instant};
 use tokio_util::task::TaskTracker;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
 use tracing::{Instrument, field::Empty};
@@ -29,7 +29,7 @@ use crate::{
     config::Config,
     event::{self, EventCreate},
     ingest::{self, IngestError, IngestResponse},
-    jobs::{self, Job},
+    jobs::{self, Job, SqsQueue, SqsSettings},
     outpost::{self, ReducerBucketChange},
     reducer::{self, ActiveBuckets},
     telemetry,
@@ -39,6 +39,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const WRITE_TIMEOUT: Duration = Duration::from_secs(25);
 const STATEMENT_TIMEOUT: Duration = Duration::from_secs(10);
 const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_BACKGROUND_TASKS: usize = 256;
 const MAX_REQUEST_BODY_SIZE: usize = 10 * 1024 * 1024;
 
 #[derive(Clone, Copy)]
@@ -51,6 +52,8 @@ pub struct AppState {
     pub redis_client: redis::Client,
     pub auth: Arc<AuthSettings>,
     pub tasks: TaskTracker,
+    pub sqs: Option<Arc<SqsQueue>>,
+    pub background: Arc<Semaphore>,
 }
 
 impl AppState {
@@ -65,7 +68,25 @@ impl AppState {
         let redis = ConnectionManager::new(redis_client.clone())
             .await
             .context("connecting to Redis")?;
+        let routes_to_sqs = |settings: &SqsSettings| {
+            jobs::ACTORS.iter().any(|actor| {
+                settings
+                    .actors
+                    .as_ref()
+                    .is_none_or(|actors| actors.contains(*actor))
+            })
+        };
+        let sqs = match config.worker_sqs {
+            Some(settings) if routes_to_sqs(&settings) => Some(Arc::new(
+                SqsQueue::connect(settings)
+                    .await
+                    .context("connecting to SQS")?,
+            )),
+            _ => None,
+        };
         Ok(Self {
+            sqs,
+            background: Arc::new(Semaphore::new(MAX_BACKGROUND_TASKS)),
             db,
             redis,
             redis_client,
@@ -140,7 +161,7 @@ async fn ingest(
     }
 
     // A dropped connection or the request timeout cancels this handler: the write runs in its
-    // own task so it never stops between the commit and enqueueing the bucket syncs.
+    // own task so it never stops between the commit and handing off the bucket syncs.
     state
         .tasks
         .clone()
@@ -167,11 +188,31 @@ async fn store_events(
     if let Some(active_buckets) = written.active_buckets {
         active_buckets.apply(&mut redis, organization_id).await;
     }
-    if let Err(error) = jobs::enqueue(&mut redis, written.sync_jobs).await {
-        tracing::error!(%error, "failed to enqueue reducer bucket syncs");
+    let (tasks, background) = (state.tasks.clone(), state.background.clone());
+    let response = written.response;
+    let notify = async move {
+        if let Err(error) = jobs::enqueue(state.sqs.as_deref(), &mut redis, written.sync_jobs).await
+        {
+            tracing::error!(
+                error = format!("{error:#}"),
+                "failed to enqueue reducer bucket syncs"
+            );
+        }
+        outpost::publish(&mut redis, organization_id, &written.outpost_changes).await;
     }
-    outpost::publish(&mut redis, organization_id, &written.outpost_changes).await;
-    Ok(written.response)
+    .instrument(telemetry::background_span("notify_reducer_changes"));
+    // Sent in the background unless too much already is: then the request waits, and a slow
+    // queue slows ingestion down instead of piling work up in memory.
+    match background.try_acquire_owned() {
+        Ok(permit) => {
+            tasks.spawn(async move {
+                notify.await;
+                drop(permit);
+            });
+        }
+        Err(_) => notify.await,
+    }
+    Ok(response)
 }
 
 struct WrittenEvents {

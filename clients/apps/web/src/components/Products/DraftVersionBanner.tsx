@@ -51,7 +51,13 @@ export const DraftVersionBanner = ({
           until it is.
         </Text>
       </Box>
-      <Box alignItems="center" columnGap="m" flexShrink={0}>
+      <Box
+        alignItems="center"
+        flexWrap="wrap"
+        columnGap="m"
+        rowGap="m"
+        flexShrink={0}
+      >
         <Button
           variant="secondary"
           onClick={() =>

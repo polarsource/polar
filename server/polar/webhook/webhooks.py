@@ -48,7 +48,7 @@ from polar.integrations.slack.payload import (
 )
 from polar.kit.schemas import IDSchema, Schema
 from polar.kit.utils import generate_uuid
-from polar.kit.versioning import APIVersion, api_version_context
+from polar.kit.versioning import APIVersion, Version, api_version_context
 from polar.member.schemas import Member as MemberSchema
 from polar.models import (
     Benefit,
@@ -73,6 +73,7 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
+from polar.version import V2027_01
 
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]
@@ -157,7 +158,10 @@ def get_slack_customer_field(customer: CustomerBase) -> SlackText:
 
 
 class BaseWebhookPayload(Schema):
-    event_id: SkipJsonSchema[UUID] = Field(default_factory=generate_uuid, exclude=True)
+    event_id: Annotated[UUID, Version(starting_from=V2027_01)] = Field(
+        default_factory=generate_uuid,
+        description="The ID of the event. Use it to discard duplicate deliveries.",
+    )
     type: WebhookEventType
     timestamp: datetime
     api_version: APIVersion

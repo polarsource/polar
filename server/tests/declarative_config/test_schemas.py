@@ -24,7 +24,7 @@ def test_export_schema_is_not_split() -> None:
 
 
 def test_webhook_endpoint_rejects_mcp_format() -> None:
-    with pytest.raises(ValidationError, match="MCP endpoints can only be created"):
+    with pytest.raises(ValidationError, match="literal_error"):
         ConfigWebhookEndpoint.model_validate(
             {
                 "external_id": "mcp",

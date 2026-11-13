@@ -90,16 +90,9 @@ EndpointFormat = Annotated[
 ]
 
 
-def _is_creatable_format(format: WebhookFormat) -> WebhookFormat:
-    if format == WebhookFormat.mcp:
-        raise ValueError(
-            "MCP endpoints can only be created by subscribing to MCP events."
-        )
-    return format
-
-
 CreatableEndpointFormat = Annotated[
-    EndpointFormat, AfterValidator(_is_creatable_format)
+    Literal[WebhookFormat.raw, WebhookFormat.discord, WebhookFormat.slack],
+    Field(description="The format of the webhook payload."),
 ]
 
 

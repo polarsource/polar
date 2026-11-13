@@ -30,6 +30,7 @@ variable "backend_config" {
     environment                                      = optional(string, null)
     database_statement_cache_size                    = optional(number, null)
     database_prepared_statement_cache_size           = optional(number, null)
+    organization_access_token_cache_ttl_seconds      = optional(number, null)
     base_url                                         = string
     backoffice_host                                  = optional(string, null)
     checkout_link_host                               = optional(string, null)

@@ -385,7 +385,7 @@ jobs:
     name: "Server: Tests 🐍"
     needs: changes
     if: always() && (needs.changes.result != 'success' || needs.changes.outputs.server == 'true')
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    runs-on: blacksmith-32vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
       POLAR_ENV: testing

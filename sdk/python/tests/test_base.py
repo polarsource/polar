@@ -9,6 +9,7 @@ import typing_extensions
 
 from polar import PolarDeserializationError, deserialize
 from polar.base import (
+    _OPEN_ENUM,
     AsyncClientBase,
     SyncClientBase,
     _register_extra_items_typed_dict,
@@ -345,3 +346,75 @@ def test_parse_response_json_empty_body() -> None:
     response = httpx.Response(202, headers={"Content-Type": "application/json"})
 
     assert parse_response_json(response) is None
+
+
+OrderStatus: typing.TypeAlias = typing.Annotated[
+    typing.Literal["pending", "paid"], _OPEN_ENUM
+]
+
+
+@dataclasses.dataclass
+class Order:
+    type: typing.Literal["order"]
+    statuses: list[OrderStatus | None]
+
+
+def test_parse_response_json_preserves_unknown_enum_value() -> None:
+    statuses = ["paid", "requires_review", None]
+    response = httpx.Response(200, json={"type": "order", "statuses": statuses})
+
+    order = parse_response_json(response, Order)
+
+    assert order.statuses == statuses
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"type": "order", "statuses": [42]},
+        {"type": "refund", "statuses": ["requires_review"]},
+    ],
+)
+def test_parse_response_json_open_enum_preserves_other_validation(
+    payload: dict[str, object],
+) -> None:
+    with pytest.raises(PolarDeserializationError):
+        parse_response_json(httpx.Response(200, json=payload), Order)
+
+
+@pytest.mark.parametrize(
+    "hint",
+    [
+        typing.Literal["pending", "paid"],
+        typing.Annotated[typing.Literal["pending", "paid"], object()],
+    ],
+)
+def test_deserialize_enum_without_marker_stays_closed(hint: typing.Any) -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize("requires_review", hint)
+
+
+@pytest.mark.parametrize("tag", ["type", "duration"])
+def test_checkout_discount_rejects_unknown_discriminator(tag: str) -> None:
+    from polar.v2026_04.outputs import (
+        CheckoutDiscountFixedOnceForeverDuration,
+    )
+
+    payload = {
+        "id": "discount_1",
+        "name": "Discount",
+        "code": None,
+        "type": "fixed",
+        "duration": "once",
+        "currency": "usd",
+        "amount": 100,
+        "amounts": {"usd": 100},
+    }
+    assert (
+        deserialize(payload, CheckoutDiscountFixedOnceForeverDuration).type == "fixed"
+    )
+
+    with pytest.raises(PolarDeserializationError):
+        deserialize(
+            {**payload, tag: "future"}, CheckoutDiscountFixedOnceForeverDuration
+        )

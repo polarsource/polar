@@ -7,10 +7,18 @@ import adaptix
 import adaptix.load_error
 import httpx
 import typing_extensions
+from adaptix._internal.provider.loc_stack_filtering import LocStack, LocStackChecker
 
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 _ModelT = typing.TypeVar("_ModelT")
 RequestTimeout: typing.TypeAlias = float | httpx.Timeout
+
+
+class _OpenEnumMarker:
+    pass
+
+
+_OPEN_ENUM = _OpenEnumMarker()
 
 
 class PolarError(Exception):
@@ -213,12 +221,27 @@ def _load_exact_float(data: object) -> float:
     raise adaptix.load_error.TypeLoadError(float, data)
 
 
+class _OpenEnumChecker(LocStackChecker):
+    def check_loc_stack(self, mediator: object, loc_stack: LocStack) -> bool:
+        hint = loc_stack.last.type
+        return typing.get_origin(hint) is typing.Annotated and any(
+            metadata is _OPEN_ENUM for metadata in typing.get_args(hint)[1:]
+        )
+
+
+def _load_open_enum(data: object) -> str:
+    if isinstance(data, str):
+        return data
+    raise adaptix.load_error.TypeLoadError(str, data)
+
+
 # Adaptix's float loader also accepts int, and union cases are tried in an
 # order that puts float first, so int | float would always coerce to float.
 # P[Union][float] targets float only as a member of that union (not standalone
 # float fields, which should still coerce JSON ints).
 _retort = adaptix.Retort(
     recipe=[
+        adaptix.loader(_OpenEnumChecker(), _load_open_enum),
         adaptix.loader(
             adaptix.P[int | float][float]
             | adaptix.P[int | float | None][float]

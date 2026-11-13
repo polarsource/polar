@@ -16,6 +16,7 @@ import {
   FormItem,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
 import { useCallback } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import {
@@ -134,7 +135,24 @@ export const MetadataForm = ({ label }: { label?: string }) => {
 
   return (
     <Box flexDirection="column" gap="s">
-      {label ? <Text variant="label">{label}</Text> : null}
+      <Box
+        alignItems="center"
+        justifyContent={label ? 'between' : 'end'}
+        columnGap="s"
+      >
+        {label ? <Label>{label}</Label> : null}
+        <Button
+          size="sm"
+          variant="secondary"
+          type="button"
+          disabled={hasEmptyKey}
+          onClick={() => {
+            append({ key: '', value: '' })
+          }}
+        >
+          Add Metadata
+        </Button>
+      </Box>
       {fields.length > 0 && (
         <Box flexDirection="column" gap="s">
           <Box
@@ -301,20 +319,6 @@ export const MetadataForm = ({ label }: { label?: string }) => {
           </Text>
         </Box>
       )}
-
-      <Box alignItems="center" justifyContent="end">
-        <Button
-          size="sm"
-          variant="secondary"
-          type="button"
-          disabled={hasEmptyKey}
-          onClick={() => {
-            append({ key: '', value: '' })
-          }}
-        >
-          Add Metadata
-        </Button>
-      </Box>
     </Box>
   )
 }

@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { Label } from '@polar-sh/ui/components/ui/label'
 import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 
@@ -35,8 +36,10 @@ const trialIntervalValueDisplayNames: Record<
 
 export const TrialConfigurationForm = ({
   bottomText,
+  variant = 'section',
 }: {
   bottomText?: string
+  variant?: 'section' | 'field'
 }) => {
   const { control, setValue } = useFormContext<{
     trial_interval_count?: number | null
@@ -62,9 +65,13 @@ export const TrialConfigurationForm = ({
   const displayNameIndex = count && count > 1 ? 1 : 0
 
   return (
-    <Box flexDirection="column" rowGap="l">
+    <Box flexDirection="column" rowGap={variant === 'field' ? 's' : 'l'}>
       <Box alignItems="center" justifyContent="between" columnGap="s">
-        <h3>Free Trial Configuration</h3>
+        {variant === 'field' ? (
+          <Label>Free Trial Configuration</Label>
+        ) : (
+          <h3>Free Trial Configuration</h3>
+        )}
         <Button
           type="button"
           variant="secondary"
@@ -78,10 +85,15 @@ export const TrialConfigurationForm = ({
         <Box
           alignItems="center"
           justifyContent="center"
-          minHeight={40}
+          borderRadius="l"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          padding="2xl"
+          textAlign="center"
           color="text-secondary"
         >
-          <span className="text-sm">No trial configured</span>
+          <span className="text-xs leading-snug">No trial configured</span>
         </Box>
       )}
       {trialEnabled && (

@@ -11,8 +11,9 @@ const OIDC_HEADER = "x-vercel-oidc-token";
 const WARMUP_HEADER = "x-polar-affinity-warmup";
 // The shard count until Redis first answers.
 const INITIAL_SHARDS = 64;
-// Requests a second for one shard: about half of what one takes before Vercel answers 503.
-const TARGET_PER_SHARD = 50;
+// Requests a second for one shard on average: the busiest shard takes two to three times as much,
+// and about half of what one takes before Vercel answers 503.
+const TARGET_PER_SHARD = 30;
 // About four Redis connections per shard: past this, the merchant's Redis runs out first.
 const MAX_SHARDS = 512;
 // A shard moves to a fresh instance this long before Vercel would retire its own.
@@ -29,7 +30,7 @@ const WINDOW_MS = 10_000;
 // A new count applies this long after Redis decides it: the new shards are warm before the first
 // customer moves, at the start of the spread.
 const RESIZE_MS = WARM_MS + SPREAD_MS / 2;
-// The count goes down only after this long under half the target.
+// The count goes down only after this long under a quarter of the target.
 const SHRINK_AFTER_MS = 5 * 60_000;
 const PLAN_KEY = "outpost:v1:vercel-affinity";
 const COUNT_KEY = "outpost:v1:vercel-affinity:requests";
@@ -121,8 +122,9 @@ interface Plan {
 }
 
 // The shared plan, from the last window's requests. A new count waits RESIZE_MS, then settles once
-// every customer has moved; it grows past the target at once, and shrinks after SHRINK_AFTER_MS
-// under half of it, to half of it.
+// every customer has moved. Past the target, it grows at once to twice what the load needs, since
+// the load goes on climbing while the customers move; after SHRINK_AFTER_MS under a quarter of the
+// target, it shrinks to the same two times.
 const RESIZE_SCRIPT = `
 local now, count, window_s = tonumber(ARGV[1]), tonumber(ARGV[2]), tonumber(ARGV[3])
 local target, initial, max = tonumber(ARGV[4]), tonumber(ARGV[5]), tonumber(ARGV[6])
@@ -145,8 +147,8 @@ local last = redis.call('GET', KEYS[3])
 if last and not next then
   local rate = tonumber(last) / window_s
   if rate > shards * target and shards < max then
-    next, from, low = math.min(max, math.ceil(rate / target)), now + resize_ms, nil
-  elseif rate < shards * target / 2 then
+    next, from, low = math.min(max, math.ceil(2 * rate / target)), now + resize_ms, nil
+  elseif rate < shards * target / 4 then
     low = low or now
     if now - low >= shrink_after_ms then
       next, from, low = math.max(1, math.ceil(2 * rate / target)), now + resize_ms, nil

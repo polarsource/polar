@@ -7,6 +7,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
+from polar.kit.versioning import Version
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
@@ -20,9 +21,11 @@ from polar.subscription.schemas import (
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
+    MeterVersionConflict,
     SubscriptionNotScheduledToCancel,
 )
 from polar.subscription.service import subscription as subscription_service
+from polar.version import V2027_01
 
 from .. import auth
 from ..schemas.subscription import (
@@ -213,7 +216,8 @@ async def get_cancel_preview(
             "model": AlreadyCanceledSubscription.schema()
             | UpdateSubscriptionPlanNotAllowed.schema()
             | UpdateSubscriptionSeatsNotAllowed.schema()
-            | UpdateSubscriptionUnitsNotAllowed.schema(),
+            | UpdateSubscriptionUnitsNotAllowed.schema()
+            | Annotated[MeterVersionConflict.schema(), Version(starting_from=V2027_01)],
         },
         404: SubscriptionNotFound,
     },
@@ -259,7 +263,8 @@ async def preview_change(
             | PauseResumeNotAllowed.schema()
             | UpdateSubscriptionPlanNotAllowed.schema()
             | UpdateSubscriptionSeatsNotAllowed.schema()
-            | UpdateSubscriptionUnitsNotAllowed.schema(),
+            | UpdateSubscriptionUnitsNotAllowed.schema()
+            | Annotated[MeterVersionConflict.schema(), Version(starting_from=V2027_01)],
         },
         404: SubscriptionNotFound,
         409: {

@@ -308,8 +308,12 @@ def _iter_omitted_union_members(
         yield from _iter_omitted_union_members(arg, version)
 
 
-def _get_omitted_schema_names(version: APIVersion) -> set[str]:
+def _get_omitted_schema_names(
+    version: APIVersion, response_models: Iterable[typing.Any]
+) -> set[str]:
     omitted: list[typing.Any] = []
+    for response_model in response_models:
+        omitted.extend(_iter_omitted_union_members(response_model, version))
     for model in _iter_model_classes():
         for field in model.__pydantic_fields__.values():
             if _is_omitted(field.metadata, version):
@@ -331,10 +335,13 @@ def _get_schema_refs(value: typing.Any) -> set[str]:
 
 
 def prune_version_omitted_schemas(
-    openapi_schema: dict[str, typing.Any], version: APIVersion
+    openapi_schema: dict[str, typing.Any],
+    version: APIVersion,
+    response_models: Iterable[typing.Any] = (),
 ) -> dict[str, typing.Any]:
     """
-    Remove component schemas only reachable through fields omitted in this version.
+    Remove component schemas only reachable through fields or `response_models`
+    union members omitted in this version.
 
     FastAPI emits every model reachable through type annotations as a component,
     including the ones behind fields that `Version` omits from this version.
@@ -354,7 +361,7 @@ def prune_version_omitted_schemas(
         reachable.add(name)
         pending |= _get_schema_refs(schemas[name])
 
-    for name in _get_omitted_schema_names(version) - reachable:
+    for name in _get_omitted_schema_names(version, response_models) - reachable:
         schemas.pop(name, None)
     return openapi_schema
 

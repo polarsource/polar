@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
 
 from fastapi.openapi.utils import get_openapi as _get_openapi
-from fastapi.routing import RouteContext
+from fastapi.routing import APIRoute, RouteContext
 from starlette.routing import BaseRoute
 
 from polar.kit.metadata import add_metadata_query_schema
@@ -215,7 +215,17 @@ def get_openapi(
         )
     openapi_schema = add_metadata_query_schema(openapi_schema)
     openapi_schema = add_oauth2_form_schemas(openapi_schema)
-    openapi_schema = prune_version_omitted_schemas(openapi_schema, version)
+    openapi_schema = prune_version_omitted_schemas(
+        openapi_schema,
+        version,
+        [
+            response["model"]
+            for route_context in route_contexts
+            if isinstance(route_context.original_route, APIRoute)
+            for response in route_context.original_route.responses.values()
+            if "model" in response
+        ],
+    )
     openapi_schema = add_destructive_tool_annotations(openapi_schema)
 
     return openapi_schema

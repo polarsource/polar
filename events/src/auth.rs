@@ -1,7 +1,8 @@
 use std::{
+    collections::HashMap,
     fmt::Write,
-    sync::{Arc, PoisonError, RwLock},
-    time::SystemTime,
+    sync::{Arc, Mutex, PoisonError, RwLock},
+    time::{Duration, Instant, SystemTime},
 };
 
 use axum::{
@@ -37,17 +38,57 @@ const INVALID_TOKEN_DESCRIPTION: &str =
 const INSUFFICIENT_SCOPE_DESCRIPTION: &str =
     "The request requires higher privileges than provided by the access token.";
 
+#[derive(Clone)]
+struct AccessToken {
+    id: Uuid,
+    scope: String,
+    organization_id: Uuid,
+    staged_events_ingest_enabled: bool,
+    rate_limit_group: String,
+}
+
 pub struct AuthSettings {
     hash_secrets: RwLock<Arc<HashSecrets>>,
     resource_metadata_url: String,
+    token_cache_ttl: Duration,
+    token_cache: Mutex<HashMap<String, (Instant, AccessToken)>>,
 }
 
 impl AuthSettings {
-    pub fn new(hash_secrets: HashSecrets, base_url: &str) -> Self {
+    pub fn new(hash_secrets: HashSecrets, base_url: &str, token_cache_ttl: Duration) -> Self {
         Self {
             hash_secrets: RwLock::new(Arc::new(hash_secrets)),
             resource_metadata_url: format!("{base_url}/.well-known/oauth-protected-resource"),
+            token_cache_ttl,
+            token_cache: Mutex::default(),
         }
+    }
+
+    fn token_cache_key(&self, token: &str) -> String {
+        let hash_secrets = self
+            .hash_secrets
+            .read()
+            .unwrap_or_else(PoisonError::into_inner);
+        digest(token, &hash_secrets.legacy)
+    }
+
+    fn cached_token(&self, key: &str) -> Option<AccessToken> {
+        let cache = self
+            .token_cache
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        let (expires_at, token) = cache.get(key)?;
+        (*expires_at > Instant::now()).then(|| token.clone())
+    }
+
+    fn cache_token(&self, key: String, token: AccessToken) {
+        let now = Instant::now();
+        let mut cache = self
+            .token_cache
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        cache.retain(|_, (expires_at, _)| *expires_at > now);
+        cache.insert(key, (now + self.token_cache_ttl, token));
     }
 
     pub fn replace_hash_secrets(&self, hash_secrets: HashSecrets) {
@@ -135,30 +176,16 @@ async fn authenticate(
         return Err(AuthError::InvalidToken);
     }
 
-    let (token_id, scope, organization_id, staged_events_ingest_enabled, rate_limit_group): (
-        Uuid,
-        String,
-        Uuid,
-        bool,
-        String,
-    ) = sqlx::query_as(
-        "SELECT organization_access_tokens.id, organization_access_tokens.scope, organizations.id, \
-         COALESCE(organizations.feature_settings -> 'staged_events_ingest_enabled' = 'true', false), \
-         organizations.rate_limit_group \
-         FROM organization_access_tokens \
-         JOIN organizations ON organizations.id = organization_access_tokens.organization_id \
-         WHERE organization_access_tokens.deleted_at IS NULL \
-         AND organization_access_tokens.token_v2 = ANY($1) \
-         AND organizations.deleted_at IS NULL \
-         AND CAST((organizations.capabilities ->> 'api_access') AS BOOLEAN) \
-         AND (organization_access_tokens.expires_at IS NULL \
-              OR organization_access_tokens.expires_at > now())",
-    )
-    .bind(state.auth.token_hash_candidates(token))
-    .fetch_optional(&state.db)
-    .await
-    .map_err(AuthError::Database)?
-    .ok_or(AuthError::InvalidToken)?;
+    let AccessToken {
+        id: token_id,
+        scope,
+        organization_id,
+        staged_events_ingest_enabled,
+        rate_limit_group,
+    } = access_token(state, token)
+        .await
+        .map_err(AuthError::Database)?
+        .ok_or(AuthError::InvalidToken)?;
 
     if let Some(requested) = headers.get(ORGANIZATION_HEADER) {
         let requested = requested
@@ -200,6 +227,52 @@ async fn authenticate(
         organization_id,
         staged_events_ingest_enabled,
     })
+}
+
+async fn access_token(state: &AppState, token: &str) -> sqlx::Result<Option<AccessToken>> {
+    if state.auth.token_cache_ttl.is_zero() {
+        return select_access_token(state, token).await;
+    }
+    let key = state.auth.token_cache_key(token);
+    if let Some(cached) = state.auth.cached_token(&key) {
+        return Ok(Some(cached));
+    }
+    let selected = select_access_token(state, token).await?;
+    if let Some(selected) = &selected {
+        state.auth.cache_token(key, selected.clone());
+    }
+    Ok(selected)
+}
+
+async fn select_access_token(state: &AppState, token: &str) -> sqlx::Result<Option<AccessToken>> {
+    let selected: Option<(Uuid, String, Uuid, bool, String)> = sqlx::query_as(
+        "SELECT organization_access_tokens.id, organization_access_tokens.scope, \
+         organizations.id, \
+         COALESCE(organizations.feature_settings -> 'staged_events_ingest_enabled' = 'true', false), \
+         organizations.rate_limit_group \
+         FROM organization_access_tokens \
+         JOIN organizations ON organizations.id = organization_access_tokens.organization_id \
+         WHERE organization_access_tokens.deleted_at IS NULL \
+         AND organization_access_tokens.token_v2 = ANY($1) \
+         AND organizations.deleted_at IS NULL \
+         AND CAST((organizations.capabilities ->> 'api_access') AS BOOLEAN) \
+         AND (organization_access_tokens.expires_at IS NULL \
+              OR organization_access_tokens.expires_at > now())",
+    )
+    .bind(state.auth.token_hash_candidates(token))
+    .fetch_optional(&state.db)
+    .await?;
+    Ok(selected.map(
+        |(id, scope, organization_id, staged_events_ingest_enabled, rate_limit_group)| {
+            AccessToken {
+                id,
+                scope,
+                organization_id,
+                staged_events_ingest_enabled,
+                rate_limit_group,
+            }
+        },
+    ))
 }
 
 pub fn record_token_usage(state: &AppState, token_id: Uuid) {
@@ -309,7 +382,7 @@ fn oauth2_error(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
+    use std::thread;
 
     use super::*;
 
@@ -340,6 +413,7 @@ mod tests {
                 legacy: "super secret jwt secret".to_owned(),
             },
             "http://127.0.0.1:8000",
+            Duration::ZERO,
         );
 
         assert_eq!(
@@ -352,6 +426,35 @@ mod tests {
     }
 
     #[test]
+    fn caches_tokens_until_they_expire() {
+        let token = AccessToken {
+            id: Uuid::from_u128(1),
+            scope: REQUIRED_SCOPE.to_owned(),
+            organization_id: Uuid::from_u128(2),
+            staged_events_ingest_enabled: true,
+            rate_limit_group: "default".to_owned(),
+        };
+        let secrets = || HashSecrets {
+            secrets: HashMap::new(),
+            legacy: "secret".to_owned(),
+        };
+        let lasting = AuthSettings::new(secrets(), "", Duration::from_secs(60));
+        let expiring = AuthSettings::new(secrets(), "", Duration::from_nanos(1));
+        let key = lasting.token_cache_key("polar_oat_test");
+
+        lasting.cache_token(key.clone(), token.clone());
+        expiring.cache_token(key.clone(), token);
+        thread::sleep(Duration::from_millis(1));
+
+        assert_eq!(
+            lasting.cached_token(&key).map(|token| token.id),
+            Some(Uuid::from_u128(1))
+        );
+        assert!(lasting.cached_token("other").is_none());
+        assert!(expiring.cached_token(&key).is_none());
+    }
+
+    #[test]
     fn challenges_name_the_missing_scope() {
         let settings = AuthSettings::new(
             HashSecrets {
@@ -359,6 +462,7 @@ mod tests {
                 legacy: String::new(),
             },
             "http://127.0.0.1:8000",
+            Duration::ZERO,
         );
 
         let response = AuthError::InsufficientScope.into_response(&settings);

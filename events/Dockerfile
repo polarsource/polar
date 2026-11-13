@@ -7,6 +7,7 @@ RUN sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
 WORKDIR /app
 COPY rust-toolchain.toml Cargo.toml Cargo.lock ./
 COPY src src/
+COPY benches benches/
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
   --mount=type=cache,target=/app/target \
   cargo build --release --locked \

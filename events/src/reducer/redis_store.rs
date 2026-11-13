@@ -1,6 +1,5 @@
 use std::fmt::Write;
 
-use redis::{RedisResult, aio::ConnectionManager};
 use ring::digest;
 use uuid::Uuid;
 
@@ -24,11 +23,10 @@ pub(super) fn bucket_key(reducer_id: Uuid, bucket: &BucketId) -> String {
     key
 }
 
-pub(super) async fn add_to_buckets(
-    redis: &mut ConnectionManager,
+pub(super) fn bucket_increments(
     reducers: &[Reducer],
     contributions: &[(&BucketId<'_>, &TimedValues)],
-) -> RedisResult<()> {
+) -> redis::Pipeline {
     let mut pipeline = redis::pipe();
     for (bucket, values) in contributions {
         let reducer = &reducers[bucket.reducer];
@@ -63,5 +61,5 @@ pub(super) async fn add_to_buckets(
             .arg(BUCKET_TTL_SECONDS)
             .arg("NX");
     }
-    pipeline.query_async(redis).await
+    pipeline
 }

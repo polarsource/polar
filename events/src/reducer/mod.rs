@@ -15,7 +15,7 @@ use self::{
     cache::active_reducers,
     closed_buckets::add_to_closed_buckets,
     filter::{Aggregation, Filter, unix_seconds},
-    redis_store::{add_to_buckets, bucket_key},
+    redis_store::{bucket_increments, bucket_key},
 };
 use crate::{
     event::{CustomerReference, EventCreate},
@@ -43,8 +43,38 @@ struct BucketId<'a> {
 type TimedValues = Vec<(DateTime<Utc>, f64)>;
 type Contributions<'a> = BTreeMap<BucketId<'a>, TimedValues>;
 
+pub struct ActiveBuckets {
+    increments: redis::Pipeline,
+    bucket_count: usize,
+    event_count: usize,
+}
+
+impl ActiveBuckets {
+    pub async fn apply(self, redis: &mut ConnectionManager, organization_id: Uuid) {
+        if self.bucket_count == 0 {
+            return;
+        }
+        match self.increments.query_async::<()>(redis).await {
+            Ok(()) => tracing::info!(
+                %organization_id,
+                bucket_count = self.bucket_count,
+                event_count = self.event_count,
+                "active reducer buckets updated in Redis"
+            ),
+            Err(error) => tracing::error!(
+                %error,
+                %organization_id,
+                bucket_count = self.bucket_count,
+                event_count = self.event_count,
+                "failed to update active reducer buckets in Redis"
+            ),
+        }
+    }
+}
+
 pub struct Rollup {
     pub bucket_count: usize,
+    pub active_buckets: ActiveBuckets,
     pub sync_jobs: Vec<Job>,
     pub outpost_changes: Vec<ReducerBucketChange>,
 }
@@ -80,23 +110,11 @@ pub async fn rollup(
             .iter()
             .filter(|(bucket, _)| bucket.start >= oldest_active_bucket_start),
     );
-    if !active.is_empty() {
-        match add_to_buckets(redis, &reducers, &active).await {
-            Ok(()) => tracing::info!(
-                %organization_id,
-                bucket_count = active.len(),
-                event_count = events.len(),
-                "active reducer buckets updated in Redis"
-            ),
-            Err(error) => tracing::error!(
-                %error,
-                %organization_id,
-                bucket_count = active.len(),
-                event_count = events.len(),
-                "failed to update active reducer buckets in Redis"
-            ),
-        }
-    }
+    let active_buckets = ActiveBuckets {
+        increments: bucket_increments(&reducers, &active),
+        bucket_count: active.len(),
+        event_count: events.len(),
+    };
 
     let sync_jobs = Vec::from_iter(
         contributions
@@ -116,6 +134,7 @@ pub async fn rollup(
     );
     Ok(Rollup {
         bucket_count: contributions.len(),
+        active_buckets,
         sync_jobs,
         outpost_changes,
     })
@@ -372,7 +391,8 @@ mod tests {
 
         for values in [&first, &second] {
             let contributions = Vec::from_iter(buckets.iter().map(|bucket| (bucket, values)));
-            add_to_buckets(&mut redis, &reducers, &contributions)
+            bucket_increments(&reducers, &contributions)
+                .query_async::<()>(&mut redis)
                 .await
                 .unwrap();
         }

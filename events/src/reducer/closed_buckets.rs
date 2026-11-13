@@ -60,8 +60,8 @@ pub(super) async fn add_to_closed_buckets(
     if closed.is_empty() {
         return Ok(());
     }
-    // Locks are taken in one global order before any row is written, like the seal does, so
-    // neither can deadlock the other.
+    // Advisory locks are taken in one global order before any row is read or written, the
+    // order the seal takes them in.
     let mut closed = Vec::from_iter(closed.into_iter().map(|(bucket, values)| {
         (
             bucket_key(reducers[bucket.reducer].id, bucket),

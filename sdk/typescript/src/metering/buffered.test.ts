@@ -77,7 +77,7 @@ it("starts the batch interval with the first event without resetting it", async 
   }
 });
 
-it("keeps concurrent flush boundaries separate while a batch is in flight", async () => {
+it("keeps the newest flush boundary while a batch is in flight", async () => {
   let finishDelivery!: () => void;
   const ingest = vi.fn(
     (_body: { events: EventInput[] }) =>
@@ -93,17 +93,15 @@ it("keeps concurrent flush boundaries separate while a batch is in flight", asyn
     try {
       await strategy.track(events[0]);
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledOnce());
-      const firstDone = vi.fn();
-      const firstFlush = strategy.flush().then(firstDone);
+      const firstFlush = strategy.flush();
       await strategy.track(events[1]);
       const secondDone = vi.fn();
       const secondFlush = strategy.flush().then(secondDone);
       const closed = vi.fn();
       const closing = strategy.close().then(closed);
       await expect(strategy.flush()).rejects.toThrow("not running");
-      expect(firstDone).not.toHaveBeenCalled();
-      finishDelivery();
       await firstFlush;
+      finishDelivery();
       await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(2));
       expect(secondDone).not.toHaveBeenCalled();
       expect(closed).not.toHaveBeenCalled();
@@ -123,7 +121,7 @@ it.each([
   { batchSize: 100, batches: [[1, 2, 3]] },
   { batchSize: 2, batches: [[1, 2], [3]] },
 ])(
-  "batches events queued behind pending flushes (batch size $batchSize)",
+  "batches events queued behind released flushes (batch size $batchSize)",
   async ({ batchSize, batches }) => {
     const deliveries: (() => void)[] = [];
     const ingest = vi.fn(
@@ -147,17 +145,15 @@ it.each([
           await strategy.track(event);
           flushes.push(strategy.flush().then(flushed[index]));
         }
+        await Promise.all([first, ...flushes.slice(0, -1)]);
         deliveries.shift()!();
-        await first;
-        let delivered = 0;
         for (const [index, batch] of batches.entries()) {
           await vi.waitFor(() => expect(ingest).toHaveBeenCalledTimes(index + 2));
           expect(ingest.mock.calls[index + 1][0].events).toEqual(batch.map((i) => events[i]));
-          expect(flushed.filter((done) => done.mock.calls.length)).toHaveLength(delivered);
+          expect(flushed[2]).not.toHaveBeenCalled();
           deliveries.shift()!();
-          delivered += batch.length;
-          await Promise.all(flushes.slice(0, delivered));
         }
+        await flushes[2];
         expect(ingest).toHaveBeenCalledTimes(batches.length + 1);
       } finally {
         ingest.mockResolvedValue(undefined);
@@ -170,7 +166,7 @@ it.each([
 );
 
 it.each(["shutdown timeout", "worker error"])(
-  "rejects active and queued flushes on %s",
+  "rejects the waiting flush on %s",
   async (failure) => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     let failDelivery!: (error: Error) => void;
@@ -206,15 +202,15 @@ it.each(["shutdown timeout", "worker error"])(
         );
         expect(onDropped).toHaveBeenCalledExactlyOnceWith(events.slice(0, 2), "shutdown_timeout");
       }
-      for (const result of await flushes) {
-        expect(result).toMatchObject({
-          status: "rejected",
-          reason:
-            failure === "worker error"
-              ? { message: expect.stringContaining(error) }
-              : expect.any(MeteringDeliveryError),
-        });
-      }
+      const [first, second] = await flushes;
+      expect(first.status).toBe("fulfilled");
+      expect(second).toMatchObject({
+        status: "rejected",
+        reason:
+          failure === "worker error"
+            ? { message: expect.stringContaining(error) }
+            : expect.any(MeteringDeliveryError),
+      });
     } finally {
       await strategy.close().catch(() => {});
     }
@@ -437,7 +433,7 @@ it("keeps a failing onDelivered out of the delivery retries", async () => {
   }
 });
 
-it("remembers background drops for every overlapping flush, then recovers", async () => {
+it("reports background drops to the newest overlapping flush, then recovers", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const cause = new PolarClientError(422, "invalid");
   const ingest = vi.fn().mockRejectedValueOnce(cause).mockResolvedValue(undefined);
@@ -449,17 +445,16 @@ it("remembers background drops for every overlapping flush, then recovers", asyn
   try {
     await strategy.track(events[0]);
     await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-    const results = await Promise.allSettled([strategy.flush(), strategy.flush()]);
-    for (const result of results) {
-      expect(result).toMatchObject({
-        status: "rejected",
-        reason: {
-          events: [events[0]],
-          cause,
-          failures: [{ reason: "permanent_error", cause }],
-        },
-      });
-    }
+    const [older, newer] = await Promise.allSettled([strategy.flush(), strategy.flush()]);
+    expect(older.status).toBe("fulfilled");
+    expect(newer).toMatchObject({
+      status: "rejected",
+      reason: {
+        events: [events[0]],
+        cause,
+        failures: [{ reason: "permanent_error", cause }],
+      },
+    });
     await strategy.track(events[1]);
     await strategy.flush();
     expect(ingest).toHaveBeenCalledTimes(2);
@@ -527,7 +522,30 @@ it("releases an older flush when a newer one starts, and reports both boundaries
   }
 });
 
-it("a flush timeout does not cancel another flush or acknowledge unseen drops", async () => {
+it("a newer flush with a shorter timeout does not release an older one", async () => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const strategy = await new BufferedMeteringStrategy(
+    { events: { ingest: () => gate } },
+    { batchSize: 1 },
+  ).start();
+  try {
+    await strategy.track(events[0]);
+    const olderDone = vi.fn();
+    const older = strategy.flush().then(olderDone);
+    await expect(strategy.flush({ timeoutMs: 10 })).rejects.toBeInstanceOf(MeteringDeliveryError);
+    expect(olderDone).not.toHaveBeenCalled();
+    release();
+    await older;
+  } finally {
+    release();
+    await strategy.close();
+  }
+});
+
+it("a flush timeout does not cancel delivery or acknowledge unseen drops", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
@@ -547,14 +565,13 @@ it("a flush timeout does not cancel another flush or acknowledge unseen drops", 
   try {
     await strategy.track(events[0]);
     const timedOut = strategy.flush({ timeoutMs: 10 }).catch((error) => error);
-    const waiting = strategy.flush().catch((error) => error);
     expect(await timedOut).toMatchObject({
       events: [events[0]],
       failures: [{ reason: "flush_timeout" }],
     });
     expect(signal?.aborted).toBe(false);
     release();
-    expect(await waiting).toMatchObject({ events: [events[0]], cause });
+    await expect(strategy.flush()).rejects.toMatchObject({ events: [events[0]], cause });
     await strategy.flush();
   } finally {
     release();

@@ -1,0 +1,37 @@
+events/src/app.rs
+  s_9e29c5984633d1::t_f11604707133ec 93-95,99,101-107,110-113
+  s_9e29c5984633d1::t_e0136ae6b877e6 138
+  s_9e29c5984633d1::t_df9c9d92cbaae1 25,90
+events/Cargo.toml
+  s_9e29c5984633d1::t_f11604707133ec 16
+events/src/ingest.rs
+  s_9e29c5984633d1::t_46c71f9301e2a8 371
+  s_9e29c5984633d1::t_f11604707133ec 8,20-29,31,57-61,149,158-179,181-209,211-214,217-219,221-242,244,246-282,458-464,466-473,475-533,535-538,540
+  s_9e29c5984633d1::t_f7d797eae97e8b 283-284
+  s_9e29c5984633d1::t_e0136ae6b877e6 16,19,34,62-63,180,243,465,474,534
+  s_9e29c5984633d1::t_b99bc6527d4883 7,210,215-216,220,245
+  s_9e29c5984633d1::t_3c0d4fef0f1214 10,67,146-148,151-153,539,541
+events/src/telemetry.rs
+  s_9e29c5984633d1::t_e0136ae6b877e6 67-78
+events/src/auth.rs
+  s_9e29c5984633d1::t_f11604707133ec 75,107-110,153-156
+  s_9e29c5984633d1::t_e0136ae6b877e6 21,204
+events/Cargo.lock
+  s_9e29c5984633d1::t_23abe90fd52eaa 1892,1968,1997,2031
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7701bca8bf197956e098d7ebd3d3cdf89165f867",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

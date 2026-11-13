@@ -1,0 +1,32 @@
+events/src/main.rs
+  s_9e29c5984633d1::t_fe1147840e669d 2,7,42
+events/src/telemetry.rs
+  s_9e29c5984633d1::t_fe1147840e669d 55-56
+events/Cargo.toml
+  s_9e29c5984633d1::t_fe1147840e669d 11,15
+events/src/config.rs
+  s_9e29c5984633d1::t_fe1147840e669d 1,7-8,19,60-67,82,138,140
+events/src/auth.rs
+  s_9e29c5984633d1::t_fe1147840e669d 1-286
+events/src/app.rs
+  s_9e29c5984633d1::t_fe1147840e669d 1,3-8,14-17,25,30,44-45
+  s_9e29c5984633d1::t_2347ee670dd331 46-47
+events/Cargo.lock
+  s_9e29c5984633d1::t_a0daedb0633a6d 171-173,474,497-507,1051-1060,1303-1308,1761-1771,1860-1868,1877,1879,1916,1949,1951,1957-1983,2016,2020-2044,2449-2454
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ccabb75abc1023388ed0dbfb6619fe94c986ec86",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

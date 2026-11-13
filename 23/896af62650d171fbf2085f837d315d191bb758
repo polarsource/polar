@@ -1,0 +1,49 @@
+events/src/jobs/sqs.rs
+  s_9e29c5984633d1::t_9ea2b0b50f82cb 4,6,66-67,76,78,227,285,289-298
+  s_9e29c5984633d1::t_254ba961234710 299
+events/src/app.rs
+  s_9e29c5984633d1::t_6a03a34c83bf68 84
+  s_10be35fc3e00b9::t_b56c3810b5d8cb 29,32,81-83,85-90,96-104,111-115
+events/Cargo.toml
+  s_9e29c5984633d1::t_4f5c0a415663b3 10
+  s_9e29c5984633d1::t_2d02db15146ce7 9
+events/src/aws.rs
+  s_9e29c5984633d1::t_14c8dbf8aa774f 1-27
+events/src/hash_secrets.rs
+  s_9e29c5984633d1::t_65a1786785a17d 26-29,31-34,177,179-200,218-225
+  s_9e29c5984633d1::t_84bb9d8c2bad16 129-134,172-176,207-210
+  s_9e29c5984633d1::t_2368dce69af6bd 1-11,13-25,30,35-100,102-128,135-171,178,201-206,211-217,226-229
+  s_9e29c5984633d1::t_644c3f1a2b7c0f 12
+  s_9e29c5984633d1::t_dd641495f7f443 101
+events/src/lib.rs
+  s_9e29c5984633d1::t_6a03a34c83bf68 3,6
+events/src/config.rs
+  s_9e29c5984633d1::t_84bb9d8c2bad16 10
+  s_9e29c5984633d1::t_644c3f1a2b7c0f 22-26,84-86,95,111-115,176-177
+events/Cargo.lock
+  s_10be35fc3e00b9::t_13681ef342c697 177-199,1062-1063
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "23896af62650d171fbf2085f837d315d191bb758",
+  "prompts": {},
+  "sessions": {
+    "s_10be35fc3e00b9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d3d2-5bde-7ef0-abf2-26b857b559c9",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

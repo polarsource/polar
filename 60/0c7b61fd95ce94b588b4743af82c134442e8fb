@@ -1,0 +1,19 @@
+server/tests/fixtures/tinybird.py
+  s_6f35f64d56f447::t_6ea6e209dd5412 1,13,26-41,87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "600c7b61fd95ce94b588b4743af82c134442e8fb",
+  "prompts": {},
+  "sessions": {
+    "s_6f35f64d56f447": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03a38869-f365-406c-91e1-00b538d38839",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

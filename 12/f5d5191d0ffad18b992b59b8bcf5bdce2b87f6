@@ -1,0 +1,33 @@
+events/src/reducer/mod.rs
+  s_9e29c5984633d1::t_4ef981a88f174c 1-15,17-39,42-66,72-98,100-131,133-147,149-294,299-363,366-367,370,376,380
+  s_9e29c5984633d1::t_44e472ecd1b1a6 99
+  s_9e29c5984633d1::t_16ff95469bea49 295-298
+  s_9e29c5984633d1::t_2e6f218b1d2dee 40-41,132
+  s_9e29c5984633d1::t_2997bf45e011f3 16,67-71
+  s_9e29c5984633d1::t_574d3a20eff0dc 148
+events/src/reducer/cache.rs
+  s_9e29c5984633d1::t_4ef981a88f174c 1-107
+events/src/reducer/filter.rs
+  s_9e29c5984633d1::t_4ef981a88f174c 1-183
+events/src/reducer/redis_store.rs
+  s_9e29c5984633d1::t_4ef981a88f174c 1-5,7-25,27,30-62,64-65
+  s_9e29c5984633d1::t_2997bf45e011f3 26,29,63
+  s_9e29c5984633d1::t_2e6f218b1d2dee 6,28
+  s_9e29c5984633d1::t_cc8fb09bf84408 66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "12f5d5191d0ffad18b992b59b8bcf5bdce2b87f6",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

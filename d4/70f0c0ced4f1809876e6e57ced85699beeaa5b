@@ -1,0 +1,21 @@
+server/tests/meter/test_aggregation.py
+  s_a3c28b0e096a4a::t_08559d5b6f190c 1-2,311-324
+server/polar/meter/aggregation.py
+  s_a3c28b0e096a4a::t_08559d5b6f190c 1,119-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d470f0c0ced4f1809876e6e57ced85699beeaa5b",
+  "prompts": {},
+  "sessions": {
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

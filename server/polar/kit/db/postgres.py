@@ -59,18 +59,32 @@ def create_async_engine(
     debug: bool = False,
     ssl: str | None = None,
 ) -> AsyncEngine:
-    connect_args: dict[str, Any] = {
-        "statement_cache_size": statement_cache_size,
-        "prepared_statement_cache_size": prepared_statement_cache_size,
-    }
-    if application_name is not None:
-        connect_args["server_settings"] = {"application_name": application_name}
-    if command_timeout is not None:
-        connect_args["command_timeout"] = command_timeout
-    if connect_timeout is not None:
-        connect_args["timeout"] = connect_timeout
-    if ssl is not None:
-        connect_args["ssl"] = ssl
+    connect_args: dict[str, Any]
+    if dsn.startswith("postgresql+psycopg"):
+        connect_args = {"prepare_threshold": None}
+        if application_name is not None:
+            connect_args["application_name"] = application_name
+        if command_timeout is not None:
+            connect_args["options"] = (
+                f"-c statement_timeout={int(command_timeout * 1000)}"
+            )
+        if connect_timeout is not None:
+            connect_args["connect_timeout"] = int(connect_timeout)
+        if ssl is not None:
+            connect_args["sslmode"] = ssl
+    else:
+        connect_args = {
+            "statement_cache_size": statement_cache_size,
+            "prepared_statement_cache_size": prepared_statement_cache_size,
+        }
+        if application_name is not None:
+            connect_args["server_settings"] = {"application_name": application_name}
+        if command_timeout is not None:
+            connect_args["command_timeout"] = command_timeout
+        if connect_timeout is not None:
+            connect_args["timeout"] = connect_timeout
+        if ssl is not None:
+            connect_args["ssl"] = ssl
 
     return _create_async_engine(
         dsn,

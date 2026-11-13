@@ -1,4 +1,5 @@
 import contextlib
+import functools
 from collections.abc import AsyncIterator
 from typing import TypedDict
 
@@ -65,6 +66,7 @@ from polar.observability.remote_write import (
 )
 from polar.observability.slo import start_slo_metrics, stop_slo_metrics
 from polar.postgres import (
+    AsyncDriver,
     create_async_engine,
     create_async_read_engine,
     create_sync_engine,
@@ -126,7 +128,9 @@ class State(TypedDict):
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[State]:
+async def lifespan(
+    app: FastAPI, *, database_driver: AsyncDriver = "asyncpg"
+) -> AsyncIterator[State]:
     log.info("Starting Polar API")
 
     # Fail the deploy on a misconfigured secret
@@ -147,14 +151,16 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     # Initialize SLO target metrics for critical endpoints (refreshed every 5 minutes)
     start_slo_metrics()
 
-    async_engine = async_read_engine = create_async_engine("app")
+    async_engine = async_read_engine = create_async_engine(
+        "app", driver=database_driver
+    )
     async_sessionmaker = async_read_sessionmaker = create_async_sessionmaker(
         async_engine
     )
     instrument_engines = [async_engine.sync_engine]
 
     if settings.is_read_replica_configured():
-        async_read_engine = create_async_read_engine("app")
+        async_read_engine = create_async_read_engine("app", driver=database_driver)
         async_read_sessionmaker = create_async_sessionmaker(async_read_engine)
         instrument_engines.append(async_read_engine.sync_engine)
 
@@ -206,8 +212,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     log.info("Polar API stopped")
 
 
-def create_app(api_router: APIRouter = router) -> FastAPI:
-    app = FastAPI(lifespan=lifespan, openapi_url=None)
+def create_app(
+    api_router: APIRouter = router, database_driver: AsyncDriver = "asyncpg"
+) -> FastAPI:
+    app = FastAPI(
+        lifespan=functools.partial(lifespan, database_driver=database_driver),
+        openapi_url=None,
+    )
 
     app.add_middleware(OperationalErrorMiddleware)
     if settings.is_sandbox():

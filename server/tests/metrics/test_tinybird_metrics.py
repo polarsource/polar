@@ -41,7 +41,12 @@ from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
-from tests.fixtures.database import get_database_url, save_fixture_factory
+from tests.fixtures.database import (
+    TEMPLATE_DATABASE,
+    clone_template_database,
+    get_database_url,
+    save_fixture_factory,
+)
 from tests.fixtures.random_objects import (
     create_account,
     create_customer,
@@ -1586,7 +1591,10 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
 
-    create_database(sync_database_url)
+    if TEMPLATE_DATABASE:
+        clone_template_database(sync_database_url)
+    else:
+        create_database(sync_database_url)
 
     async_database_url = get_database_url(database_id)
     engine = create_async_engine(
@@ -1597,17 +1605,18 @@ async def tinybird_metrics_database_url(worker_id: str) -> AsyncIterator[str]:
     )
 
     try:
-        async with engine.begin() as conn:
-            await conn.execute(CreateSequence(Customer.short_id_sequence))
-            for entity in entities_registry.entities():
-                if isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
-            await conn.run_sync(Model.metadata.create_all)
-            for entity in entities_registry.entities():
-                if not isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
+        if not TEMPLATE_DATABASE:
+            async with engine.begin() as conn:
+                await conn.execute(CreateSequence(Customer.short_id_sequence))
+                for entity in entities_registry.entities():
+                    if isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
+                await conn.run_sync(Model.metadata.create_all)
+                for entity in entities_registry.entities():
+                    if not isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
 
         yield async_database_url
     finally:

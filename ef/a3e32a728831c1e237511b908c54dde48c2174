@@ -1,0 +1,21 @@
+server/polar/worker/_debounce.py
+  s_85b016425b67db::t_1e1452b6a5584a 20,23,50-51,76-83
+server/polar/worker/_enqueue.py
+  s_85b016425b67db::t_1e1452b6a5584a 119,135-136,161,179,185-187,203
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "efa3e32a728831c1e237511b908c54dde48c2174",
+  "prompts": {},
+  "sessions": {
+    "s_85b016425b67db": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "de146397-a441-4f9f-ba21-9b280f87f6c9",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -9,9 +9,8 @@ const CURRENT_STAGE: &str = "AWSCURRENT";
 const AWS_MANAGED_STAGES: [&str; 3] = [CURRENT_STAGE, "AWSPREVIOUS", "AWSPENDING"];
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 const READ_TIMEOUT: Duration = Duration::from_secs(5);
-const MAX_ATTEMPTS: u32 = 3;
+const MAX_ATTEMPTS: u32 = 4;
 
-#[derive(Debug, PartialEq)]
 pub struct HashSecrets {
     pub secrets: HashMap<String, String>,
     pub legacy: String,
@@ -99,7 +98,7 @@ pub async fn fetch(
                 .with_context(|| format!("reading hash secret version {version_id}"))?
                 .secret_string
                 .ok_or_else(|| anyhow!("hash secret version {version_id} has no string value"))?;
-            if role.is_legacy {
+            if role.is_legacy && !secret.is_empty() {
                 legacy = Some(secret.clone());
             }
             if let Some(secret_id) = role.secret_id {
@@ -127,14 +126,19 @@ pub async fn fetch(
 
 #[cfg(test)]
 mod tests {
-    use std::net::Ipv4Addr;
+    use std::{
+        net::Ipv4Addr,
+        sync::{Arc, Mutex},
+    };
 
-    use axum::{Json, Router, http::HeaderMap};
+    use axum::{Json, Router, extract::State, http::HeaderMap};
     use serde_json::{Value, json};
     use tokio::net::TcpListener;
 
     use super::*;
     use crate::aws::{AwsSettings, sdk_config};
+
+    type ReadVersions = Arc<Mutex<Vec<String>>>;
 
     fn stages(stages: &[&str]) -> Vec<String> {
         Vec::from_iter(stages.iter().map(|stage| (*stage).to_owned()))
@@ -167,8 +171,15 @@ mod tests {
         assert!(version_role("v", &ambiguous).is_err());
     }
 
-    async fn mock_secrets_manager(headers: HeaderMap, body: String) -> Json<Value> {
+    async fn mock_secrets_manager(
+        State(read): State<ReadVersions>,
+        headers: HeaderMap,
+        body: String,
+    ) -> Json<Value> {
         let body: Value = serde_json::from_str(&body).unwrap();
+        if let Some(version_id) = body["VersionId"].as_str() {
+            read.lock().unwrap().push(version_id.to_owned());
+        }
         let target = headers["x-amz-target"].to_str().unwrap();
         Json(
             match (
@@ -176,6 +187,13 @@ mod tests {
                 body["NextToken"].as_str(),
                 body["VersionId"].as_str(),
             ) {
+                ("secretsmanager.ListSecretVersionIds", ..)
+                    if body["SecretId"] != "arn" || body["IncludeDeprecated"] != false =>
+                {
+                    json!({
+                        "Versions": [{ "VersionId": "v0", "VersionStages": ["k0", "LEGACY"] }],
+                    })
+                }
                 ("secretsmanager.ListSecretVersionIds", None, _) => json!({
                     "Versions": [
                         { "VersionId": "v3", "VersionStages": ["AWSCURRENT", "k2"] },
@@ -198,7 +216,10 @@ mod tests {
     async fn fetches_every_labelled_version_across_pages() {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, 0)).await.unwrap();
         let endpoint_url = format!("http://{}", listener.local_addr().unwrap());
-        let mock = Router::new().fallback(mock_secrets_manager);
+        let read = ReadVersions::default();
+        let mock = Router::new()
+            .fallback(mock_secrets_manager)
+            .with_state(read.clone());
         tokio::spawn(async move { axum::serve(listener, mock).await });
         let sdk_config = sdk_config(&AwsSettings {
             region: "us-east-2".to_owned(),
@@ -214,16 +235,25 @@ mod tests {
         )
         .await
         .unwrap();
+        let without_current = fetch(
+            &sdk_config,
+            "other-arn",
+            "fallback".to_owned(),
+            Some(&endpoint_url),
+        )
+        .await;
 
         assert_eq!(
-            hash_secrets,
-            HashSecrets {
-                secrets: HashMap::from([
-                    ("k2".to_owned(), "secret-v3".to_owned()),
-                    ("k1".to_owned(), "secret-v1".to_owned()),
-                ]),
-                legacy: "secret-v1".to_owned(),
-            }
+            hash_secrets.secrets,
+            HashMap::from([
+                ("k2".to_owned(), "secret-v3".to_owned()),
+                ("k1".to_owned(), "secret-v1".to_owned()),
+            ])
+        );
+        assert_eq!(hash_secrets.legacy, "secret-v1");
+        assert_eq!(*read.lock().unwrap(), ["v3", "v1", "v0"]);
+        assert!(
+            without_current.is_err_and(|error| error.to_string().contains("no current version"))
         );
     }
 }

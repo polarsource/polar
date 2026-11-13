@@ -17,7 +17,7 @@ const MAX_BATCH_BYTES: usize = 262_144;
 const MAX_DELAY_SECONDS: u64 = 900;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
 const READ_TIMEOUT: Duration = Duration::from_secs(5);
-const MAX_ATTEMPTS: u32 = 2;
+const MAX_ATTEMPTS: u32 = 3;
 
 pub struct SqsSettings {
     pub queue_prefix: String,

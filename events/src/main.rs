@@ -1,4 +1,7 @@
-use std::{net::Ipv4Addr, time::Duration};
+use std::{
+    net::{Ipv4Addr, SocketAddr},
+    time::Duration,
+};
 
 use anyhow::Result;
 use tokio::{
@@ -28,11 +31,14 @@ async fn main() -> Result<()> {
     tracing::info!(port, "listening");
 
     let (signalled, signalled_at) = oneshot::channel();
-    let server =
-        axum::serve(listener, app::router(state.clone())).with_graceful_shutdown(async move {
-            shutdown_signal().await;
-            let _ = signalled.send(Instant::now());
-        });
+    let server = axum::serve(
+        listener,
+        app::router(state.clone()).into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(async move {
+        shutdown_signal().await;
+        let _ = signalled.send(Instant::now());
+    });
     let drain = async {
         server.await?;
         state.tasks.close();

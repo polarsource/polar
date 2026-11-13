@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fmt::Write, time::SystemTime};
+use std::{
+    fmt::Write,
+    sync::{Arc, PoisonError, RwLock},
+    time::SystemTime,
+};
 
 use axum::{
     Json,
@@ -16,10 +20,11 @@ use tracing::Instrument;
 use uuid::Uuid;
 
 use crate::{
-    app::{AppState, error_response},
+    app::{AppState, ClientIp, error_response},
+    hash_secrets::HashSecrets,
     jobs,
     jobs::Job,
-    telemetry,
+    rate_limit, telemetry,
 };
 
 const TOKEN_PREFIX: &str = "polar_oat_";
@@ -33,29 +38,36 @@ const INSUFFICIENT_SCOPE_DESCRIPTION: &str =
     "The request requires higher privileges than provided by the access token.";
 
 pub struct AuthSettings {
-    hash_secrets: HashMap<String, String>,
-    legacy_secret: String,
+    hash_secrets: RwLock<Arc<HashSecrets>>,
     resource_metadata_url: String,
 }
 
 impl AuthSettings {
-    pub fn new(
-        hash_secrets: HashMap<String, String>,
-        legacy_secret: String,
-        base_url: &str,
-    ) -> Self {
+    pub fn new(hash_secrets: HashSecrets, base_url: &str) -> Self {
         Self {
-            hash_secrets,
-            legacy_secret,
+            hash_secrets: RwLock::new(Arc::new(hash_secrets)),
             resource_metadata_url: format!("{base_url}/.well-known/oauth-protected-resource"),
         }
     }
 
+    pub fn replace_hash_secrets(&self, hash_secrets: HashSecrets) {
+        *self
+            .hash_secrets
+            .write()
+            .unwrap_or_else(PoisonError::into_inner) = Arc::new(hash_secrets);
+    }
+
     fn token_hash_candidates(&self, token: &str) -> Vec<String> {
-        self.hash_secrets
+        let hash_secrets = self
+            .hash_secrets
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone();
+        hash_secrets
+            .secrets
             .iter()
             .map(|(id, secret)| format!("{id}{HASH_SEPARATOR}{}", digest(token, secret)))
-            .chain([digest(token, &self.legacy_secret)])
+            .chain([digest(token, &hash_secrets.legacy)])
             .collect()
     }
 }
@@ -72,6 +84,7 @@ fn digest(token: &str, secret: &str) -> String {
 }
 
 pub struct OrganizationAuth {
+    pub token_id: Uuid,
     pub organization_id: Uuid,
     pub staged_events_ingest_enabled: bool,
 }
@@ -83,6 +96,7 @@ enum AuthError {
     InsufficientScope,
     InvalidRequestedOrganization,
     RequestedOrganizationNotAccessible,
+    RateLimited(u64),
     Database(sqlx::Error),
 }
 
@@ -90,7 +104,8 @@ impl FromRequestParts<AppState> for OrganizationAuth {
     type Rejection = Response;
 
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, Response> {
-        authenticate(&parts.headers, state)
+        let client_ip = parts.extensions.get::<ClientIp>().cloned();
+        authenticate(&parts.headers, client_ip.as_ref(), state)
             .await
             .map_err(|error| error.into_response(&state.auth))
     }
@@ -98,17 +113,40 @@ impl FromRequestParts<AppState> for OrganizationAuth {
 
 async fn authenticate(
     headers: &HeaderMap,
+    client_ip: Option<&ClientIp>,
     state: &AppState,
 ) -> Result<OrganizationAuth, AuthError> {
-    let token = bearer_token(headers).ok_or(AuthError::Unauthorized)?;
+    let Some(token) = bearer_token(headers) else {
+        let ip = client_ip.and_then(|ClientIp(ip)| ip.as_deref());
+        return Err(
+            match state
+                .rate_limiter
+                .anonymous_retry_after(&mut state.redis.clone(), ip)
+                .await
+            {
+                Ok(0) => AuthError::Unauthorized,
+                Ok(retry_after) => AuthError::RateLimited(retry_after),
+                Err(error) => {
+                    tracing::error!(%error, "failed to check the anonymous rate limit");
+                    AuthError::Unauthorized
+                }
+            },
+        );
+    };
     if !token.starts_with(TOKEN_PREFIX) {
         return Err(AuthError::InvalidToken);
     }
 
-    let (token_id, scope, organization_id, staged_events_ingest_enabled): (Uuid, String, Uuid, bool) =
-        sqlx::query_as(
+    let (token_id, scope, organization_id, staged_events_ingest_enabled, rate_limit_group): (
+        Uuid,
+        String,
+        Uuid,
+        bool,
+        String,
+    ) = sqlx::query_as(
         "SELECT organization_access_tokens.id, organization_access_tokens.scope, organizations.id, \
-         COALESCE(organizations.feature_settings -> 'staged_events_ingest_enabled' = 'true', false) \
+         COALESCE(organizations.feature_settings -> 'staged_events_ingest_enabled' = 'true', false), \
+         organizations.rate_limit_group \
          FROM organization_access_tokens \
          JOIN organizations ON organizations.id = organization_access_tokens.organization_id \
          WHERE organization_access_tokens.deleted_at IS NULL \
@@ -124,23 +162,6 @@ async fn authenticate(
     .map_err(AuthError::Database)?
     .ok_or(AuthError::InvalidToken)?;
 
-    let usage = Job::record_organization_access_token_usage(token_id, SystemTime::now());
-    if let Ok(permit) = state.background.clone().try_acquire_owned() {
-        let (sqs, mut redis) = (state.sqs.clone(), state.redis.clone());
-        state.tasks.spawn(
-            async move {
-                if let Err(error) = jobs::enqueue(sqs.as_deref(), &mut redis, vec![usage]).await {
-                    tracing::warn!(
-                        error = format!("{error:#}"),
-                        "failed to enqueue organization access token usage"
-                    );
-                }
-                drop(permit);
-            }
-            .instrument(telemetry::background_span("record_token_usage")),
-        );
-    }
-
     if let Some(requested) = headers.get(ORGANIZATION_HEADER) {
         let requested = requested
             .to_str()
@@ -150,6 +171,19 @@ async fn authenticate(
         if requested != organization_id {
             return Err(AuthError::RequestedOrganizationNotAccessible);
         }
+    }
+
+    match state
+        .rate_limiter
+        .organization_retry_after(&mut state.redis.clone(), organization_id, &rate_limit_group)
+        .await
+    {
+        Ok(0) => {}
+        Ok(retry_after) => {
+            record_token_usage(state, token_id);
+            return Err(AuthError::RateLimited(retry_after));
+        }
+        Err(error) => tracing::error!(%error, "failed to check the organization rate limit"),
     }
 
     if !scope
@@ -164,9 +198,30 @@ async fn authenticate(
     span.record("subject_id", organization_id.to_string());
 
     Ok(OrganizationAuth {
+        token_id,
         organization_id,
         staged_events_ingest_enabled,
     })
+}
+
+pub fn record_token_usage(state: &AppState, token_id: Uuid) {
+    let Ok(permit) = state.background.clone().try_acquire_owned() else {
+        return;
+    };
+    let usage = Job::record_organization_access_token_usage(token_id, SystemTime::now());
+    let (sqs, mut redis) = (state.sqs.clone(), state.redis.clone());
+    state.tasks.spawn(
+        async move {
+            if let Err(error) = jobs::enqueue(sqs.as_deref(), &mut redis, vec![usage]).await {
+                tracing::warn!(
+                    error = format!("{error:#}"),
+                    "failed to enqueue organization access token usage"
+                );
+            }
+            drop(permit);
+        }
+        .instrument(telemetry::background_span("record_token_usage")),
+    );
 }
 
 fn bearer_token(headers: &HeaderMap) -> Option<&str> {
@@ -213,6 +268,7 @@ impl AuthError {
                 "The organization in the Polar-Organization header \
                  is not accessible with this credential.",
             ),
+            Self::RateLimited(retry_after) => rate_limit::too_many_requests(retry_after),
             Self::Database(error) => {
                 telemetry::log_database_error(&error, "organization access token lookup");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -251,6 +307,8 @@ fn oauth2_error(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use super::*;
 
     fn headers(authorization: &str) -> HeaderMap {
@@ -275,8 +333,10 @@ mod tests {
     #[test]
     fn hashes_tokens_like_the_python_server() {
         let settings = AuthSettings::new(
-            HashMap::from([("v2".to_owned(), "other".to_owned())]),
-            "super secret jwt secret".to_owned(),
+            HashSecrets {
+                secrets: HashMap::from([("v2".to_owned(), "other".to_owned())]),
+                legacy: "super secret jwt secret".to_owned(),
+            },
             "http://127.0.0.1:8000",
         );
 
@@ -291,7 +351,13 @@ mod tests {
 
     #[test]
     fn challenges_name_the_missing_scope() {
-        let settings = AuthSettings::new(HashMap::new(), String::new(), "http://127.0.0.1:8000");
+        let settings = AuthSettings::new(
+            HashSecrets {
+                secrets: HashMap::new(),
+                legacy: String::new(),
+            },
+            "http://127.0.0.1:8000",
+        );
 
         let response = AuthError::InsufficientScope.into_response(&settings);
 

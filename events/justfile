@@ -15,6 +15,9 @@ bench-seed:
 bench:
     POLAR_POSTGRES_DATABASE="${POLAR_POSTGRES_DATABASE}_benchmarks_events" POLAR_REDIS_DB=14 cargo bench --locked --bench ingest
 
+load pool="16":
+    POLAR_POSTGRES_DATABASE="${POLAR_POSTGRES_DATABASE}_benchmarks_events" POLAR_REDIS_DB=14 POLAR_DATABASE_POOL_SIZE={{pool}} cargo bench --locked --bench load
+
 lint:
     cargo fmt
     cargo clippy --all-targets --fix --allow-dirty --allow-staged -- -D warnings

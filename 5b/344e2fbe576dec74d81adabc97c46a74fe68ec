@@ -1,0 +1,41 @@
+server/tests/scripts/test_tinybird_test_workspace.py
+  s_89a0c4db59f066::t_3a25e2d41889d3 18-20,46,53
+  s_89a0c4db59f066::t_8791fc000a22ae 1-17,21-45,47-49,51-52,54-64,66-69
+  s_89a0c4db59f066::t_f3df3fdfa4e315 50,65
+server/tests/fixtures/tinybird.py
+  s_89a0c4db59f066::t_b15978ce7274ba 3,6,27,62-75
+  s_a3c28b0e096a4a::t_789240dc0f1e02 76
+server/scripts/tinybird_test_workspace.py
+  s_89a0c4db59f066::t_b15978ce7274ba 139,141-156
+.github/workflows/test_server.yaml
+  s_89a0c4db59f066::t_7fa8695199a5fe 398
+  s_89a0c4db59f066::t_c181d427817eac 527
+  s_89a0c4db59f066::t_b15978ce7274ba 385,387-392,399,428,497,505,509-516,518,520-526,528-541,543-563
+server/tests/conftest.py
+  s_89a0c4db59f066::t_34b5d5c29b6ef4 9-12
+  s_89a0c4db59f066::t_7fa8695199a5fe 13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5b344e2fbe576dec74d81adabc97c46a74fe68ec",
+  "prompts": {},
+  "sessions": {
+    "s_89a0c4db59f066": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d3d8-01aa-7c10-99c7-42253810de26",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -74,14 +74,21 @@ export interface VercelAffinityOptions {
    * a minute before, one shard at a time.
    */
   maxDurationSeconds?: number;
-  /**
-   * Warms each shard's next instance, and each new shard, before customers move to it. `url` is the
-   * pinned route, and `waitUntil` the middleware's own (`event.waitUntil` in Next.js), which also
-   * carries the request count to Redis. The route answers the warm-up first:
-   * `if (isVercelAffinityWarmup(request))`.
-   */
-  warm?: { url: string | URL; waitUntil: (promise: Promise<unknown>) => void };
   now?: number;
+}
+
+/** The middleware's request: the pinned route, and the headers to pass on. */
+export interface VercelAffinityRequest {
+  headers: Headers;
+  url: string | URL;
+}
+
+/**
+ * The middleware's event (`NextFetchEvent` in Next.js): its `waitUntil` carries the warm-ups and the
+ * request count past the response.
+ */
+export interface VercelAffinityEvent {
+  waitUntil(promise: Promise<unknown>): void;
 }
 
 // The id this process last warmed for each shard: one warm-up per shard and move.
@@ -210,12 +217,16 @@ const oidcToken = async (headers: Headers): Promise<string | null> => {
 /**
  * The request's headers, with the customer pinned to its shard and the project vouching for it, for
  * a middleware to pass on. A request without a customer, or outside Vercel, goes on unpinned.
+ *
+ * Each shard's next instance, and each new shard, gets one request first, at the request's own URL:
+ * the route answers it before anything else, `if (isVercelAffinityWarmup(request))`.
  */
 export const vercelAffinityHeaders = async (
-  init: HeadersInit,
+  request: VercelAffinityRequest,
+  event: VercelAffinityEvent,
   options: VercelAffinityOptions,
 ): Promise<Headers> => {
-  const headers = new Headers(init);
+  const headers = new Headers(request.headers);
   // A warm-up already names the shard's next instance: re-pinning it would send it to the current one.
   if (isVercelAffinityWarmup({ headers })) return headers;
   const customer = options.externalCustomerId ?? options.customerId;
@@ -229,7 +240,7 @@ export const vercelAffinityHeaders = async (
       flushedAt = now;
       const flush = resize(options.redisUrl, now, counted).catch(() => {});
       counted = 0;
-      options.warm?.waitUntil(flush);
+      event.waitUntil(flush);
     }
   }
   const { maxDurationSeconds } = options;
@@ -237,8 +248,6 @@ export const vercelAffinityHeaders = async (
   const current = affinityId(shard, maxDurationSeconds, now);
   headers.set(AFFINITY_HEADER, affinityId(shard, maxDurationSeconds, now - skewOf(customer)));
   headers.set(TRUSTED_TOKEN_HEADER, token);
-  const { warm } = options;
-  if (!warm) return headers;
   // The request's own headers, so the warm-up passes the merchant's middleware as it did.
   const warmUp = (target: number, id: string) => {
     if (warmed.get(target) === id) return;
@@ -248,8 +257,8 @@ export const vercelAffinityHeaders = async (
       warmup.delete(hop);
     warmup.set(AFFINITY_HEADER, id);
     warmup.set(WARMUP_HEADER, "1");
-    warm.waitUntil(
-      fetch(warm.url, { method: "POST", headers: warmup }).then(
+    event.waitUntil(
+      fetch(request.url, { method: "POST", headers: warmup }).then(
         (response) => response.body?.cancel(),
         () => {},
       ),

@@ -1,9 +1,21 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { startRedisServer, type RedisServer } from "./testing";
 import { isVercelAffinityWarmup, jumpHash, vercelAffinityHeaders } from "./vercel";
 
 const customers = Array.from({ length: 1000 }, (_, index) => `customer-${index}`);
+const url = "https://app.test/api/meter";
+const request = (headers: HeadersInit) => ({ headers: new Headers(headers), url });
+const waited: Promise<unknown>[] = [];
+const event = { waitUntil: (promise: Promise<unknown>) => void waited.push(promise) };
+let fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+
+beforeEach(() => {
+  fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+  vi.stubGlobal("fetch", fetchMock);
+  waited.length = 0;
+});
+afterEach(() => vi.unstubAllGlobals());
 
 describe("jumpHash", () => {
   it("spreads customers over every shard and keeps each one on its shard", () => {
@@ -28,7 +40,7 @@ describe("vercelAffinityHeaders", () => {
   const incoming = { "x-vercel-oidc-token": "oidc", authorization: "Bearer token" };
 
   it("pins a known customer to its shard and vouches for it with the request's OIDC token", async () => {
-    const headers = await vercelAffinityHeaders(incoming, {
+    const headers = await vercelAffinityHeaders(request(incoming), event, {
       externalCustomerId: "customer-7",
     });
     expect(headers.get("x-vercel-affinity-id")).toBe(`shard-${jumpHash("customer-7", 64)}`);
@@ -37,15 +49,21 @@ describe("vercelAffinityHeaders", () => {
   });
 
   it("leaves a request without a customer or a token unpinned, so it scales as before", async () => {
-    expect((await vercelAffinityHeaders(incoming, {})).has("x-vercel-affinity-id")).toBe(false);
-    const tokenless = await vercelAffinityHeaders({}, { externalCustomerId: "customer-7" });
+    expect(
+      (await vercelAffinityHeaders(request(incoming), event, {})).has("x-vercel-affinity-id"),
+    ).toBe(false);
+    const tokenless = await vercelAffinityHeaders(request({}), event, {
+      externalCustomerId: "customer-7",
+    });
     expect(tokenless.has("x-vercel-affinity-id")).toBe(false);
   });
 
   it("moves a shard to a fresh instance a minute before Vercel would retire its own", async () => {
     const options = { externalCustomerId: "customer-7", maxDurationSeconds: 300 };
     const at = async (now: number) =>
-      (await vercelAffinityHeaders(incoming, { ...options, now })).get("x-vercel-affinity-id");
+      (await vercelAffinityHeaders(request(incoming), event, { ...options, now })).get(
+        "x-vercel-affinity-id",
+      );
     const ids = await Promise.all(Array.from({ length: 1000 }, (_, second) => at(second * 1000)));
     const moves = ids.flatMap((id, second) =>
       second > 0 && id !== ids[second - 1] ? [second] : [],
@@ -62,9 +80,9 @@ describe("vercelAffinityHeaders", () => {
     const moveOf = async (customer: string) => {
       const options = { externalCustomerId: customer, maxDurationSeconds: 300 };
       const at = async (second: number) =>
-        (await vercelAffinityHeaders(incoming, { ...options, now: second * 1000 })).get(
-          "x-vercel-affinity-id",
-        );
+        (
+          await vercelAffinityHeaders(request(incoming), event, { ...options, now: second * 1000 })
+        ).get("x-vercel-affinity-id");
       const moves: number[] = [];
       for (let second = 101; second < 400; second += 1)
         if ((await at(second)) !== (await at(second - 1))) moves.push(second);
@@ -80,23 +98,18 @@ describe("vercelAffinityHeaders", () => {
 
 describe("warm-up", () => {
   const incoming = { "x-vercel-oidc-token": "oidc", authorization: "Basic merchant" };
-  const url = "https://app.test/api/meter";
-  afterEach(() => vi.unstubAllGlobals());
 
   it("warms a shard's next instance once, in the 30 s before the shard moves to it", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
-    vi.stubGlobal("fetch", fetchMock);
-    const waited: Promise<unknown>[] = [];
     const base = { externalCustomerId: "customer-warm", maxDurationSeconds: 300 };
-    const idAt = async (second: number) =>
-      (await vercelAffinityHeaders(incoming, { ...base, now: second * 1000 })).get(
-        "x-vercel-affinity-id",
-      );
-    let move = 1;
-    while ((await idAt(move)) === (await idAt(move - 1))) move += 1;
-    const warm = { url, waitUntil: (promise: Promise<unknown>) => waited.push(promise) };
     const at = (second: number) =>
-      vercelAffinityHeaders(incoming, { ...base, warm, now: second * 1000 });
+      vercelAffinityHeaders(request(incoming), event, { ...base, now: second * 1000 });
+    const idAt = async (second: number) => (await at(second)).get("x-vercel-affinity-id");
+    // Far from the other tests' moves; the move after the first one found is not warmed yet.
+    let move = 100_001;
+    while ((await idAt(move)) === (await idAt(move - 1))) move += 1;
+    move += 240;
+    await Promise.all(waited);
+    fetchMock.mockClear();
 
     await at(move - 60);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -112,7 +125,10 @@ describe("warm-up", () => {
     expect(isVercelAffinityWarmup(new Request(url, { method: "POST", headers }))).toBe(true);
     // It passes the merchant's middleware as the request that sent it, and stays on the next id.
     expect(headers.get("authorization")).toBe("Basic merchant");
-    const again = await vercelAffinityHeaders(headers, { ...base, warm, now: (move - 10) * 1000 });
+    const again = await vercelAffinityHeaders({ headers, url }, event, {
+      ...base,
+      now: (move - 10) * 1000,
+    });
     expect(again.get("x-vercel-affinity-id")).toBe(await idAt(move));
   });
 
@@ -128,25 +144,16 @@ describe("shard count", () => {
     redisServer = await startRedisServer();
   });
   afterAll(() => redisServer?.stop());
-  afterEach(() => vi.unstubAllGlobals());
 
   it("grows with the load: it warms the new shards, then moves their customers over", async () => {
-    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
-    vi.stubGlobal("fetch", fetchMock);
-    const waited: Promise<unknown>[] = [];
-    const warm = {
-      url: "https://app.test/api/meter",
-      waitUntil: (promise: Promise<unknown>) => waited.push(promise),
-    };
     const shardOf = (id: string | null) => Number(id?.split("-")[1]);
     const shardAt = async (customer: string, now: number) =>
       shardOf(
         (
-          await vercelAffinityHeaders(incoming, {
+          await vercelAffinityHeaders(request(incoming), event, {
             externalCustomerId: customer,
             redisUrl: redisServer.socket,
             maxDurationSeconds: 300,
-            warm,
             now,
           })
         ).get("x-vercel-affinity-id"),

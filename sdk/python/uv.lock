@@ -418,6 +418,7 @@ outpost = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "anyio" },
     { name = "fakeredis", extra = ["lua"] },
     { name = "pytest" },
     { name = "pytest-codspeed" },
@@ -441,6 +442,7 @@ provides-extras = ["outpost"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "anyio", specifier = ">=4.5.0" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },
     { name = "pytest" },
     { name = "pytest-codspeed", specifier = ">=5.0.3" },

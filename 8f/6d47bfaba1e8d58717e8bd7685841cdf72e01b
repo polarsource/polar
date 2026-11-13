@@ -1,0 +1,35 @@
+server/polar/benefit/grant/repository.py
+  s_feb647f1338f47::t_4cff9f46985c6d 86-97
+server/polar/benefit/grant/schemas.py
+  s_feb647f1338f47::t_4cff9f46985c6d 1-62
+server/polar/benefit/repository.py
+  s_feb647f1338f47::t_4cff9f46985c6d 34-56
+server/tests/benefit/grant/test_endpoints.py
+  s_feb647f1338f47::t_4cff9f46985c6d 10,320-384
+server/polar/benefit/auth.py
+  s_feb647f1338f47::t_4cff9f46985c6d 43-52
+server/tests/test_openapi.py
+  s_feb647f1338f47::t_4cff9f46985c6d 133-136,176-178
+server/polar/benefit/grant/endpoints.py
+  s_feb647f1338f47::t_4cff9f46985c6d 4,7,9-11,14,16,18-19,29-73
+server/polar/benefit/grant/service.py
+  s_feb647f1338f47::t_4cff9f46985c6d 2,9,14-15,17,21,24,27,37,40,53,63-69,71-213
+server/tests/benefit/grant/test_service.py
+  s_feb647f1338f47::t_4cff9f46985c6d 4,10,12-13,18,20,30-31,33-35,37,40,43,46,65-454
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8f6d47bfaba1e8d58717e8bd7685841cdf72e01b",
+  "prompts": {},
+  "sessions": {
+    "s_feb647f1338f47": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1c473-d69e-7e73-b567-f9f591836add",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

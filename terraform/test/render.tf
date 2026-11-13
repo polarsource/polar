@@ -95,6 +95,13 @@ module "test" {
     }
   }
 
+  events_services = {
+    events-test = {
+      custom_domains = [{ name = "events.test.polar.sh" }]
+      autoscaling    = { min = 1, max = 3 }
+    }
+  }
+
   workers = {
     worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
@@ -133,6 +140,16 @@ resource "cloudflare_dns_record" "test_api_events" {
   name    = "test-api-events.polar.sh"
   type    = "CNAME"
   content = replace(module.test[0].additional_api_service_urls["api-events-test"], "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "test_events" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "events.test.polar.sh"
+  type    = "CNAME"
+  content = replace(module.test[0].events_service_urls["events-test"], "https://", "")
   proxied = true
   ttl     = 1
 }

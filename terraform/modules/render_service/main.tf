@@ -362,12 +362,12 @@ locals {
 # Env group links
 resource "render_env_group_link" "database" {
   env_group_id = render_env_group.database.id
-  service_ids  = local.all_service_ids
+  service_ids  = concat(local.all_service_ids, local.events_ids)
 }
 
 resource "render_env_group_link" "redis" {
   env_group_id = render_env_group.redis.id
-  service_ids  = local.all_service_ids
+  service_ids  = concat(local.all_service_ids, local.events_ids)
 }
 
 resource "render_env_group_link" "aws_s3" {
@@ -377,13 +377,13 @@ resource "render_env_group_link" "aws_s3" {
 
 resource "render_env_group_link" "secrets_kms" {
   env_group_id = render_env_group.secrets_kms.id
-  service_ids  = local.all_service_ids
+  service_ids  = concat(local.all_service_ids, local.events_ids)
 }
 
 resource "render_env_group_link" "worker_sqs" {
   count        = nonsensitive(var.environment_groups.worker_sqs != null) ? 1 : 0
   env_group_id = render_env_group.worker_sqs[0].id
-  service_ids  = local.all_service_ids
+  service_ids  = concat(local.all_service_ids, local.events_ids)
 }
 
 resource "render_env_group_link" "google" {
@@ -398,7 +398,7 @@ resource "render_env_group_link" "github" {
 
 resource "render_env_group_link" "backend" {
   env_group_id = render_env_group.backend.id
-  service_ids  = local.all_service_ids
+  service_ids  = concat(local.all_service_ids, local.events_ids)
 }
 
 resource "render_env_group_link" "backend_production" {
@@ -415,7 +415,7 @@ resource "render_env_group_link" "stripe" {
 resource "render_env_group_link" "logfire" {
   count        = nonsensitive(var.environment_groups.logfire != null) ? 1 : 0
   env_group_id = render_env_group.logfire[0].id
-  service_ids  = local.all_service_ids
+  service_ids  = concat(local.all_service_ids, local.events_ids)
 }
 
 resource "render_env_group_link" "pydantic_ai_gateway" {

@@ -2,21 +2,22 @@ import { useCatalogVersionLabels } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Pill } from '@polar-sh/orbit'
 import { History } from '@polar-sh/orbit/icons'
+import { CatalogVersion } from './CatalogVersionSelect'
 
-export const ProductVersionLabel = ({
+export const CatalogVersionLabel = ({
   organization,
-  product,
+  version,
   label,
 }: {
   organization: schemas['Organization']
-  product: { catalog_id?: string | null; is_current: boolean }
+  version: Pick<CatalogVersion, 'catalog_id' | 'is_current'>
   label?: string
 }) => {
   // Every table row calls this, but React Query sends one request per organization and all rows share it.
   const { data: labels } = useCatalogVersionLabels(organization)
-  const catalog = product.catalog_id && labels?.get(product.catalog_id)
+  const catalog = version.catalog_id && labels?.get(version.catalog_id)
   if (
-    product.is_current ||
+    version.is_current ||
     !organization.feature_settings?.config_as_code_enabled ||
     !catalog ||
     catalog.status !== 'archived' ||

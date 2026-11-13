@@ -1,5 +1,6 @@
 'use client'
 
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useCreditCustomerMeter } from '@/hooks/queries/customerMeters'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
@@ -144,8 +145,14 @@ export const AddCreditsModal = ({
                   <SelectContent>
                     {options.map(({ meter, productName }) => (
                       <SelectItem key={meter.id} value={meter.id}>
-                        {meter.name}
-                        {productName && ` · ${productName}`}
+                        <Box alignItems="center" columnGap="s">
+                          {meter.name}
+                          {productName && ` · ${productName}`}
+                          <CatalogVersionLabel
+                            organization={organization}
+                            version={meter}
+                          />
+                        </Box>
                       </SelectItem>
                     ))}
                   </SelectContent>

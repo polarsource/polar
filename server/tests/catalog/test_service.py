@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from sqlalchemy import update
 
 from polar.auth.models import AuthSubject
 from polar.catalog.schemas import CatalogUpdate
@@ -254,13 +255,17 @@ class TestDiscardDraft:
 class TestUpdate:
     async def test_discarded_concurrently(
         self,
-        save_fixture: SaveFixture,
         session: AsyncSession,
         catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
     ) -> None:
         _, _, draft, _ = catalogs
-        draft.deleted_at = utc_now()
-        await save_fixture(draft)
+        await session.execute(
+            update(Catalog)
+            .where(Catalog.id == draft.id)
+            .values(deleted_at=utc_now())
+            .execution_options(synchronize_session=False)
+        )
+        assert draft.deleted_at is None
 
         with pytest.raises(CatalogNotFound):
             await catalog_service.update(session, draft, CatalogUpdate(name="Renamed"))

@@ -74,7 +74,7 @@ export function SaleSummary({
             {customer_name}
           </Text>
         )}
-        {customer_email && (
+        {customer_email && customer_email !== customer_name && (
           <Text variant="caption" noMargin>
             {customer_email}
           </Text>

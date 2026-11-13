@@ -158,10 +158,11 @@ def test_emits_zod_entry_point(
     TypeScriptEmitter(generate_ir(code_samples_spec), "1.2.3").emit(tmp_path)
 
     manifest = json.loads((tmp_path / "package.json").read_text())
+    assert manifest["peerDependencies"]["zod"] == "^3.25.65 || ^4.0.0"
     assert manifest["peerDependenciesMeta"]["zod"]["optional"] is True
     assert manifest["exports"]["./2026-04/zod"]["import"]["default"] == (
         "./dist/2026-04/zod.mjs"
     )
     source = (tmp_path / "src" / "2026-04" / "zod.ts").read_text()
-    assert 'import * as z from "zod/mini";' in source
+    assert 'import * as z from "zod/v4-mini";' in source
     assert "export const WebhookPayload" in source

@@ -1,4 +1,4 @@
-import * as z from "zod/mini";
+import * as z from "zod/v4-mini";
 
 import type * as models from "./models";
 import type * as webhooks from "./webhooks";

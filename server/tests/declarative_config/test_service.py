@@ -7,6 +7,7 @@ from uuid import UUID
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
@@ -76,6 +77,7 @@ from polar.models import (
     Meter,
     Organization,
     Product,
+    ProductCustomField,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
@@ -1805,6 +1807,104 @@ class TestApply:
         ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_field_change_creates_version(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product = {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"custom_fields": [COMPANY_FIELD], "products": [product]}
+            ),
+        )
+        custom_field_repository = CustomFieldRepository.from_session(session)
+        product_repository = ProductRepository.from_session(session)
+        first = await custom_field_repository.get_by_organization_and_slug(
+            organization.id, "company"
+        )
+        [first_product] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [{**COMPANY_FIELD, "name": "Company name"}],
+                    "products": [product],
+                }
+            ),
+        )
+
+        assert [change.action for change in result.changes] == [
+            ConfigAction.updated,
+            ConfigAction.updated,
+        ]
+        second = await custom_field_repository.get_by_organization_and_slug(
+            organization.id, "company"
+        )
+        [second_product] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+        assert first is not None
+        assert second is not None
+        await session.refresh(first)
+        assert (first.is_current, first.name) == (False, "Company")
+        assert (second.is_current, second.name) == (True, "Company name")
+        assert second_product.id != first_product.id
+        attached = await session.execute(
+            select(ProductCustomField.product_id, ProductCustomField.custom_field_id)
+        )
+        assert set(attached.tuples()) == {
+            (first_product.id, first.id),
+            (second_product.id, second.id),
+        }
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_field_change_on_product_outside_config(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [COMPANY_FIELD],
+                    "products": [
+                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+                    ],
+                }
+            ),
+        )
+
+        with pytest.raises(ConfigInvalid) as exc_info:
+            await declarative_config_service.apply(
+                session,
+                redis,
+                auth_subject,
+                Config.model_validate(
+                    {"custom_fields": [{**COMPANY_FIELD, "name": "Company name"}]}
+                ),
+            )
+
+        assert [(issue.type, issue.loc) for issue in exc_info.value.errors] == [
+            (ConfigIssueType.not_supported, ["body", "custom_fields", 0])
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_custom_field_draft(
         self,
         session: AsyncSession,
@@ -1849,6 +1949,62 @@ class TestApply:
         await session.refresh(live)
         assert live.is_current is False
         assert (current.name, current.catalog_id) == ("Company name", draft.id)
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_field_draft_reapplied_in_place(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        def config(name: str) -> Config:
+            return Config.model_validate(
+                {
+                    "custom_fields": [{**COMPANY_FIELD, "name": name}],
+                    "products": [
+                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+                    ],
+                }
+            )
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, config("Company")
+        )
+        await declarative_config_service.apply(
+            session, redis, auth_subject, config("Company name"), publish=False
+        )
+        catalogs = CatalogRepository.from_session(session)
+        draft = await catalogs.get_draft(organization.id)
+        assert draft is not None
+        [draft_field] = (
+            await catalog_service.get_catalog_custom_fields(
+                session, organization, draft
+            )
+        ).values()
+
+        await declarative_config_service.apply(
+            session, redis, auth_subject, config("Organization"), publish=False
+        )
+
+        assert await catalogs.get_draft(organization.id) == draft
+        members = await catalog_service.get_catalog_custom_fields(
+            session, organization, draft
+        )
+        assert (members["company"].id, members["company"].name) == (
+            draft_field.id,
+            "Organization",
+        )
+        [pack] = await CatalogProductRepository.from_session(
+            session
+        ).get_products_by_external_ids(
+            draft.id,
+            ["pack"],
+            options=ProductRepository.from_session(session).get_eager_options(),
+        )
+        assert [field.custom_field_id for field in pack.attached_custom_fields] == [
+            draft_field.id
+        ]
 
     @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_custom_field_type_changed(
@@ -1964,6 +2120,65 @@ class TestApply:
             organization.id, ["pack"]
         )
         assert second.id != first.id
+        assert [
+            (field.custom_field.slug, field.required)
+            for field in second.attached_custom_fields
+        ] == []
+        assert [
+            (field.custom_field.slug, field.required)
+            for field in first.attached_custom_fields
+        ] == [("company", False)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unlisted_custom_field_leaves_catalog(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        product_repository = ProductRepository.from_session(session)
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [COMPANY_FIELD, SEATS_FIELD],
+                    "products": [
+                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+                    ],
+                }
+            ),
+        )
+        [first] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
+
+        result = await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"custom_fields": [SEATS_FIELD], "products": [PACK_PRODUCT]}
+            ),
+        )
+
+        assert result.removed == [
+            ConfigRemoval(
+                resource=ConfigResource.custom_field,
+                external_id="company",
+                reason=ConfigRemovalReason.missing,
+            )
+        ]
+        repository = CustomFieldRepository.from_session(session)
+        assert (
+            await repository.get_by_organization_and_slug(organization.id, "company")
+            is None
+        )
+        [second] = await product_repository.get_all_by_external_ids(
+            organization.id, ["pack"]
+        )
         assert [
             (field.custom_field.slug, field.required)
             for field in second.attached_custom_fields

@@ -182,3 +182,43 @@ async def meters(
         )
         for external_id in missing
     ]
+
+
+async def custom_fields(
+    session: AsyncReadSession,
+    organization: Organization,
+    config: Config,
+    *,
+    catalog: Catalog | None = None,
+) -> list[ConfigRemoval]:
+    """Custom fields of the live catalog, or of `catalog` when given, that the
+    config doesn't list.
+
+    Custom fields that pull doesn't export are left untouched. Answers are
+    stored by slug, so they're kept.
+    """
+    if "custom_fields" not in config.model_fields_set:
+        return []
+    if catalog is None:
+        catalog = await CatalogRepository.from_session(session).get_live(
+            organization.id
+        )
+    live_custom_fields = await catalog_service.get_catalog_custom_fields(
+        session, organization, catalog
+    )
+    listed = {custom_field.slug for custom_field in config.custom_fields}
+    missing = sorted(live_custom_fields.keys() - listed)
+    if missing:
+        exported = await export_config(session, organization, catalog)
+        describable = {
+            custom_field.slug for custom_field in exported.config.custom_fields or []
+        }
+        missing = [slug for slug in missing if slug in describable]
+    return [
+        ConfigRemoval(
+            resource=ConfigResource.custom_field,
+            external_id=slug,
+            reason=ConfigRemovalReason.missing,
+        )
+        for slug in missing
+    ]

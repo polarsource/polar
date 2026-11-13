@@ -24,6 +24,7 @@ from polar.models import (
     CheckoutProduct,
     Product,
     ProductBenefit,
+    ProductCustomField,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
@@ -124,6 +125,25 @@ class ProductRepository(
         )
         result = await self.session.execute(statement)
         return list(dict.fromkeys((product, id) for product, id in result.tuples()))
+
+    async def get_current_by_custom_fields(
+        self, organization_id: UUID, custom_field_ids: Sequence[UUID]
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .join(ProductCustomField, ProductCustomField.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                ProductCustomField.custom_field_id.in_(custom_field_ids),
+                Product.is_current,
+                ~Product.is_archived,
+            )
+            .options(
+                undefer(Product.external_id),
+                selectinload(Product.attached_custom_fields),
+            )
+        )
+        return await self.get_all(statement)
 
     async def get_all_by_external_ids(
         self,

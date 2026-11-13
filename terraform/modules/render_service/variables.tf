@@ -157,8 +157,9 @@ variable "environment_groups" {
       POLAR_USER_SESSION_COOKIE_KEY              = optional(string)
       POLAR_AUTH_COOKIE_KEY                      = optional(string)
 
-      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = optional(string)
-      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = optional(string)
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE               = optional(string)
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE      = optional(string)
+      POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS = optional(string)
 
       POLAR_LINEAR_API_KEY                            = optional(string)
       POLAR_LINEAR_TEAM_ID                            = optional(string)

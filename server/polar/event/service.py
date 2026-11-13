@@ -114,6 +114,9 @@ class EventIngestValidationError(EventError):
 
 
 class EventService:
+    def __init__(self) -> None:
+        self._event_type_ids: dict[tuple[uuid.UUID, str], uuid.UUID] = {}
+
     async def list(
         self,
         session: AsyncReadSession,
@@ -1075,11 +1078,17 @@ class EventService:
             (organization_id, event_create.name)
             for event_create, organization_id in valid_events
         }
+        event_type_ids = {
+            key: self._event_type_ids[key]
+            for key in event_type_keys & self._event_type_ids.keys()
+        }
+        uncached_keys = event_type_keys - event_type_ids.keys()
         event_types = await event_type_repository.get_by_names_and_organization(
-            list({name for _, name in event_type_keys}),
-            list({organization_id for organization_id, _ in event_type_keys}),
+            list({name for _, name in uncached_keys}),
+            list({organization_id for organization_id, _ in uncached_keys}),
         )
-        event_type_ids = {key: event_types[key].id for key in event_types}
+        for key, event_type in event_types.items():
+            self._event_type_ids[key] = event_type_ids[key] = event_type.id
         for organization_id, name in event_type_keys - event_type_ids.keys():
             event_type = await event_type_repository.get_or_create(
                 name, organization_id

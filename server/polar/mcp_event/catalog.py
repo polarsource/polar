@@ -8,9 +8,31 @@ from polar.order.schemas import Order
 from polar.subscription.schemas import Subscription
 
 
+def _collapse_refs(node: Any, defs: dict[str, Any]) -> Any:
+    if isinstance(node, dict):
+        if "$ref" in node:
+            name = node["$ref"].rsplit("/", 1)[-1]
+            return {"type": defs.get(name, {}).get("type", "object"), "title": name}
+        return {
+            key: _collapse_refs(value, defs)
+            for key, value in node.items()
+            if key != "$defs"
+        }
+    if isinstance(node, list):
+        return [_collapse_refs(item, defs) for item in node]
+    return node
+
+
 class MCPEventDefinition(NamedTuple):
     description: str
     data: TypeAdapter[Any]
+
+    def payload_schema(self) -> dict[str, Any]:
+        """The payload's top-level fields, with nested models reduced to their
+        type and title: the full schemas add up to ~900 KB across the catalog,
+        more than MCP clients accept in `events/list`."""
+        schema = self.data.json_schema(mode="serialization")
+        return _collapse_refs(schema, schema.get("$defs", {}))
 
 
 _order = TypeAdapter(Order)

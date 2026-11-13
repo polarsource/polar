@@ -47,7 +47,7 @@ async def list_mcp_events(auth_subject: WebhooksWrite) -> MCPEventList:
                     name=name,
                     description=event.description,
                     input_schema=input_schema,
-                    payload_schema=event.data.json_schema(mode="serialization"),
+                    payload_schema=event.payload_schema(),
                 )
                 for name, event in MCP_EVENTS.items()
             ]

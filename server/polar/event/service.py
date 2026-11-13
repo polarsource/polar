@@ -61,6 +61,7 @@ from polar.worker import enqueue_events, enqueue_job
 from .repository import EventRepository
 from .schemas import (
     CustomerStat,
+    EventCreate,
     EventCreateCustomer,
     EventHistogram,
     EventHistogramBucket,
@@ -1053,10 +1054,7 @@ class EventService:
             session, auth_subject, member_ids_in_batch
         )
 
-        event_type_repository = EventTypeRepository.from_session(session)
-        event_types_cache: dict[tuple[str, uuid.UUID], uuid.UUID] = {}
-
-        events: list[dict[str, Any]] = []
+        valid_events: list[tuple[EventCreate, uuid.UUID]] = []
         errors: list[ValidationError] = []
         for index, event_create in enumerate(ingest.events):
             try:
@@ -1067,24 +1065,37 @@ class EventService:
                     validate_customer_id(index, event_create.customer_id)
                     if event_create.member_id is not None:
                         validate_member_id(index, event_create.member_id)
-
-                event_label_cache_key = (event_create.name, organization_id)
-                if event_label_cache_key not in event_types_cache:
-                    event_type = await event_type_repository.get_or_create(
-                        event_create.name, organization_id
-                    )
-                    event_types_cache[event_label_cache_key] = event_type.id
-                event_type_id = event_types_cache[event_label_cache_key]
             except EventIngestValidationError as e:
                 errors.extend(e.errors)
                 continue
+            valid_events.append((event_create, organization_id))
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_type_keys = {
+            (organization_id, event_create.name)
+            for event_create, organization_id in valid_events
+        }
+        event_types = await event_type_repository.get_by_names_and_organization(
+            list({name for _, name in event_type_keys}),
+            list({organization_id for organization_id, _ in event_type_keys}),
+        )
+        event_type_ids = {key: event_types[key].id for key in event_types}
+        for organization_id, name in event_type_keys - event_type_ids.keys():
+            event_type = await event_type_repository.get_or_create(
+                name, organization_id
+            )
+            event_type_ids[(organization_id, name)] = event_type.id
+
+        events: list[dict[str, Any]] = []
+        for event_create, organization_id in valid_events:
             event_dict = event_create.model_dump(
                 exclude={"organization_id", "parent_id"}, by_alias=True
             )
             event_dict["source"] = EventSource.user
             event_dict["organization_id"] = organization_id
-            event_dict["event_type_id"] = event_type_id
+            event_dict["event_type_id"] = event_type_ids[
+                (organization_id, event_create.name)
+            ]
 
             if event_create.parent_id is not None:
                 event_dict["pending_parent_external_id"] = event_create.parent_id

@@ -7,11 +7,6 @@ os.environ["POLAR_ENV"] = "testing"
 import freezegun
 import pytest
 
-if os.environ.get("POLAR_TEST_XDIST") != "true" or os.environ.get(
-    "PYTEST_XDIST_WORKER"
-):
-    from tests.fixtures import *
-
 freezegun.configure(extend_ignore_list=["_pytest.timing"])
 
 _ci_collection_paths: set[Path] | None = None
@@ -32,11 +27,34 @@ def pytest_ignore_collect(collection_path: Path) -> bool | None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Register custom markers."""
+    is_controller = (
+        config.getoption("dist", "no") != "no"
+        and bool(config.getoption("tx", []))
+        and not hasattr(config, "workerinput")
+        and not config.option.collectonly
+    )
+    if not is_controller:
+        from tests import fixtures
+
+        globals().update(
+            {
+                name: value
+                for name, value in vars(fixtures).items()
+                if not name.startswith("_") and not name.startswith("pytest_")
+            }
+        )
     config.addinivalue_line(
         "markers",
         "keep_session_state: Disable automatic session clearing before HTTP requests (for old tests only)",
     )
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    from tests.fixtures.auth import pytest_generate_tests as generate_auth
+    from tests.fixtures.base import pytest_generate_tests_api_version
+
+    pytest_generate_tests_api_version(metafunc)
+    generate_auth(metafunc)
 
 
 @pytest.hookimpl(tryfirst=True)

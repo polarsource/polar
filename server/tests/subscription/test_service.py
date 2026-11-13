@@ -107,6 +107,7 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
+    MeterVersionConflict,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
@@ -6356,6 +6357,165 @@ class TestUpdateProduct:
         assert error.value.errors()[0]["msg"] == (
             "Product is no longer sold. Use the current version."
         )
+
+    async def test_claimed_seat_bills_another_meter_version(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="tool-calls",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        team_product, current_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        team = await create_active_subscription(
+            save_fixture, product=team_product, customer=customer_second
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=team,
+            status=SeatStatus.claimed,
+            customer=customer,
+            claimed_at=utc_now(),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(MeterVersionConflict):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=current_product.id
+                )
+
+    async def test_seat_holder_bills_another_meter_version(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        customer_second: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="tool-calls",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        previous_product, current_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        await create_active_subscription(
+            save_fixture, product=previous_product, customer=customer
+        )
+        team = await create_active_subscription(
+            save_fixture, product=product, customer=customer_second
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=team,
+            status=SeatStatus.claimed,
+            customer=customer,
+            claimed_at=utc_now(),
+        )
+
+        with pytest.raises(MeterVersionConflict):
+            async with SubscriptionUpdateContext(
+                session, team, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, team, product_id=current_product.id
+                )
+
+    async def test_other_subscription_bills_another_meter_version(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        previous = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tool-calls",
+            is_current=False,
+        )
+        current = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="tool-calls",
+        )
+        previous_product, current_product = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        grandfathered = await create_active_subscription(
+            save_fixture, product=previous_product, customer=customer
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(MeterVersionConflict) as error:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session, ctx, subscription, product_id=current_product.id
+                )
+        assert error.value.external_ids == ["tool-calls"]
+
+        async with SubscriptionUpdateContext(
+            session, grandfathered, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                grandfathered,
+                product_id=current_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        assert grandfathered.pending_update is not None
+        assert grandfathered.pending_update.product_id == current_product.id
 
     @freeze_time("2026-06-15")
     async def test_meter_clock_contains_now_when_period_started_in_past(

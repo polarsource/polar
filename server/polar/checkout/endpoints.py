@@ -15,7 +15,7 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     SetSchemaReference,
 )
-from polar.kit.versioning import version
+from polar.kit.versioning import Version, version
 from polar.models import Checkout
 from polar.openapi import APITag
 from polar.organization.embed_hosts import (
@@ -31,6 +31,7 @@ from polar.postgres import (
 )
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
+from polar.subscription.service import MeterVersionConflict
 from polar.version import V2027_01
 
 from . import auth, ip_geolocation, legacy_schemas, sorting
@@ -103,7 +104,8 @@ CheckoutForbiddenError = {
         | NotPermitted.schema()
         | PaymentNotReady.schema()
         | TrialAlreadyRedeemed.schema()
-        | DiscountRedemptionLimitReached.schema(),
+        | DiscountRedemptionLimitReached.schema()
+        | Annotated[MeterVersionConflict.schema(), Version(starting_from=V2027_01)],
         SetSchemaReference("CheckoutForbiddenError"),
     ],
 }

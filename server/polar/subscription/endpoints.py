@@ -10,7 +10,7 @@ from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.versioning import version
+from polar.kit.versioning import Version, version
 from polar.models import Subscription, SubscriptionBulkUpdate
 from polar.openapi import APITag, cli_preview
 from polar.order.service import PaymentActionRequired, PaymentFailed
@@ -49,6 +49,7 @@ from .schemas import (
 from .service import (
     AlreadyCanceledSubscription,
     InactiveSubscription,
+    MeterVersionConflict,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
@@ -278,7 +279,10 @@ async def get_cancel_preview(
     summary="Preview Subscription Change",
     response_model=SubscriptionChargePreview,
     responses={
-        403: {"model": AlreadyCanceledSubscription.schema()},
+        403: {
+            "model": AlreadyCanceledSubscription.schema()
+            | Annotated[MeterVersionConflict.schema(), Version(starting_from=V2027_01)]
+        },
         404: SubscriptionNotFound,
     },
     tags=[APITag.private],
@@ -431,7 +435,8 @@ async def get_bulk_update(
             ),
             "model": AlreadyCanceledSubscription.schema()
             | InactiveSubscription.schema()
-            | PaymentNotReady.schema(),
+            | PaymentNotReady.schema()
+            | Annotated[MeterVersionConflict.schema(), Version(starting_from=V2027_01)],
         },
         404: SubscriptionNotFound,
         409: {

@@ -15089,6 +15089,7 @@ export interface components {
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
       | components['schemas']['DiscountRedemptionLimitReached']
+      | components['schemas']['MeterVersionConflict']
     /**
      * CheckoutLink
      * @description Checkout link data.
@@ -28213,6 +28214,17 @@ export interface components {
     MeterUsageRequest: {
       /** Identities */
       identities: components['schemas']['MeterUsageIdentity'][]
+    }
+    /** MeterVersionConflict */
+    MeterVersionConflict: {
+      /**
+       * Error
+       * @example MeterVersionConflict
+       * @constant
+       */
+      error: 'MeterVersionConflict'
+      /** Detail */
+      detail: string
     }
     /**
      * Metric
@@ -48571,6 +48583,7 @@ export interface operations {
             | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
             | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
+            | components['schemas']['MeterVersionConflict']
         }
       }
       /** @description Customer subscription was not found. */
@@ -48763,6 +48776,7 @@ export interface operations {
             | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
             | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
+            | components['schemas']['MeterVersionConflict']
         }
       }
       /** @description Customer subscription was not found. */
@@ -50315,6 +50329,7 @@ export interface operations {
             | components['schemas']['AlreadyCanceledSubscription']
             | components['schemas']['InactiveSubscription']
             | components['schemas']['PaymentNotReady']
+            | components['schemas']['MeterVersionConflict']
         }
       }
       /** @description Subscription not found. */
@@ -50502,7 +50517,9 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['MeterVersionConflict']
         }
       }
       /** @description Subscription not found. */

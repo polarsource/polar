@@ -1,0 +1,73 @@
+adr/template.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-32
+adr/README.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-110
+handbook/engineering/design-documents/merchant-migrations.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 83,155
+adr/0007-no-default-in-output-schemas.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-41
+adr/0013-minimize-personal-data-in-telemetry.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-89
+adr/0012-minimize-data-in-ai-api-calls.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-59
+AGENTS.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 159,165
+.agents/skills/adr-check/SKILL.md
+  s_ae1707cb60d5d9::t_0777505cd62524 3,17,47
+handbook/engineering/oncall/rotate-jwks.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 10
+adr/0001-record-architecture-decisions.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-48
+adr/0011-specialized-webhooks-also-emit-updated.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-69
+handbook/working-at-polar/onboarding.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 31
+handbook/engineering/introduction.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 8,27,31,33
+adr/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-49
+handbook/engineering/data-flows.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 151,197-198
+adr/0014-agent-auth-subject.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-90
+adr/0004-orbit-box-design-system.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-42
+adr/0008-encrypt-secrets-at-rest.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-65
+handbook/engineering/design-documents/secrets-encryption.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 299
+adr/0006-migration-and-backfill-safety.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-115
+handbook/engineering/design-documents/index.mdx
+  s_ae1707cb60d5d9::t_36a39e1d728932 8
+CODEOWNERS
+  s_ae1707cb60d5d9::t_36a39e1d728932 52
+adr/0005-auth-subject-and-scopes.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-53
+adr/0003-request-scoped-unit-of-work.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-43
+adr/0002-status-coded-polar-errors.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-43
+adr/0010-jwks-signing-keys-in-kms.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 1-69
+server/polar/kit/signer.py
+  s_ae1707cb60d5d9::t_36a39e1d728932 10
+.github/pull_request_template.md
+  s_ae1707cb60d5d9::t_36a39e1d728932 28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c63c116667e0de5d20416b7ccc1a7423fbca0c47",
+  "prompts": {},
+  "sessions": {
+    "s_ae1707cb60d5d9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf65-c2e5-7390-865f-b1a0c7e433fd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -83,6 +83,15 @@ fn invalid_characters() -> FieldError {
     )
 }
 
+fn missing(object: &Map<String, Value>, field: &'static str) -> ValidationError {
+    ValidationError {
+        kind: "missing",
+        loc: vec![LocItem::Field(field)],
+        msg: "Field required".to_owned(),
+        input: Value::Object(object.clone()),
+    }
+}
+
 #[derive(Default)]
 struct Errors(Vec<ValidationError>);
 
@@ -105,11 +114,7 @@ impl Errors {
         match object.get(field) {
             Some(value) => self.check(field, value, parse(value)),
             None => {
-                self.push(
-                    &[LocItem::Field(field)],
-                    &Value::Object(object.clone()),
-                    FieldError::new("missing", "Field required"),
-                );
+                self.0.push(missing(object, field));
                 None
             }
         }
@@ -125,6 +130,16 @@ impl Errors {
             Some(Value::Null) | None => None,
             Some(value) => self.check(field, value, parse(value)),
         }
+    }
+
+    fn if_present<T>(
+        &mut self,
+        object: &Map<String, Value>,
+        field: &'static str,
+        parse: impl FnOnce(&Value) -> FieldResult<T>,
+    ) -> Option<T> {
+        let value = object.get(field)?;
+        self.check(field, value, parse(value))
     }
 
     fn check<T>(
@@ -265,11 +280,12 @@ fn parse_event(value: &Value, now: DateTime<Utc>) -> Result<EventCreate, Errors>
     };
 
     let mut polar_errors = Errors::default();
-    let customer_id = polar_errors.required(object, "customer_id", parse_uuid4);
+    let customer_id = polar_errors.if_present(object, "customer_id", parse_uuid4);
     let member_id = polar_errors.optional(object, "member_id", parse_uuid4);
 
     let mut external_errors = Errors::default();
-    let external_customer_id = external_errors.required(object, "external_customer_id", parse_text);
+    let external_customer_id =
+        external_errors.if_present(object, "external_customer_id", parse_text);
     let external_member_id = external_errors.optional(object, "external_member_id", parse_text);
 
     let fields_set = |fields: [&str; 2]| {
@@ -318,10 +334,13 @@ fn parse_event(value: &Value, now: DateTime<Utc>) -> Result<EventCreate, Errors>
         });
     }
 
-    for (variant, variant_errors) in [
-        (POLAR_VARIANT, polar_errors),
-        (EXTERNAL_VARIANT, external_errors),
+    for (variant, required, mut variant_errors) in [
+        (POLAR_VARIANT, "customer_id", polar_errors),
+        (EXTERNAL_VARIANT, "external_customer_id", external_errors),
     ] {
+        if !object.contains_key(required) {
+            variant_errors.0.insert(0, missing(object, required));
+        }
         let prefix = [LocItem::Field(variant)];
         errors.nested(&prefix, Errors(shared.0.clone()));
         errors.nested(&prefix, variant_errors);

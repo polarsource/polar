@@ -93,6 +93,12 @@ module "test" {
       custom_domains  = [{ name = "test-api-events.polar.sh" }]
       autoscaling     = { min = 3, max = 6 }
     }
+    events-test = {
+      image_url      = "ghcr.io/polarsource/polar-events"
+      plan           = "standard"
+      custom_domains = [{ name = "events.test.polar.sh" }]
+      autoscaling    = { min = 1, max = 3 }
+    }
   }
 
   workers = {
@@ -133,6 +139,16 @@ resource "cloudflare_dns_record" "test_api_events" {
   name    = "test-api-events.polar.sh"
   type    = "CNAME"
   content = replace(module.test[0].additional_api_service_urls["api-events-test"], "https://", "")
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "test_events" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = "events.test.polar.sh"
+  type    = "CNAME"
+  content = replace(module.test[0].additional_api_service_urls["events-test"], "https://", "")
   proxied = true
   ttl     = 1
 }

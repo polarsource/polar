@@ -30,6 +30,7 @@ from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
     ConfigCatalogPublished,
+    ConfigCustomFieldConflict,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
@@ -212,6 +213,7 @@ async def disable(
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
             | ConfigProductConflict.schema()
+            | ConfigCustomFieldConflict.schema()
             | ConfigWebhookConflict.schema(),
         },
     },

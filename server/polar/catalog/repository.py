@@ -18,8 +18,10 @@ from polar.models import (
     Benefit,
     Catalog,
     CatalogBenefit,
+    CatalogCustomField,
     CatalogMeter,
     CatalogProduct,
+    CustomField,
     Meter,
     Product,
 )
@@ -64,7 +66,7 @@ class CatalogRepository(
     async def delete(self, catalog: Catalog) -> None:
         """Delete the catalog and its memberships. The rows created in it stay,
         no longer tied to a catalog."""
-        for model in (Product, Benefit, Meter):
+        for model in (Product, Benefit, Meter, CustomField):
             await self.session.execute(
                 update(model)
                 .where(model.catalog_id == catalog.id)
@@ -362,5 +364,69 @@ class CatalogMeterRepository(
             self.get_base_statement()
             .where(CatalogMeter.catalog_id == catalog_id)
             .options(joinedload(CatalogMeter.meter))
+        )
+        return await self.get_all(statement)
+
+
+class CatalogCustomFieldRepository(
+    RepositorySoftDeletionIDMixin[CatalogCustomField, UUID],
+    RepositorySoftDeletionMixin[CatalogCustomField],
+    RepositoryBase[CatalogCustomField],
+):
+    model = CatalogCustomField
+
+    async def get_first_published_at(self, organization_id: UUID) -> datetime | None:
+        """When the organization's first catalog listing custom fields was
+        published.
+
+        Soft-deleted rows count too, so the boundary never moves.
+        """
+        statement = (
+            select(func.min(Catalog.published_at))
+            .join(CatalogCustomField, CatalogCustomField.catalog_id == Catalog.id)
+            .where(Catalog.organization_id == organization_id)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
+    async def has_members(self, catalog_id: UUID) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(CatalogCustomField.catalog_id == catalog_id)
+            .exists()
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one()
+
+    def get_custom_fields_statement(self, catalog_id: UUID) -> Select[CustomField]:
+        return (
+            select(CustomField)
+            .join(
+                CatalogCustomField, CatalogCustomField.custom_field_id == CustomField.id
+            )
+            .where(
+                CatalogCustomField.catalog_id == catalog_id,
+                CatalogCustomField.deleted_at.is_(None),
+                CustomField.deleted_at.is_(None),
+            )
+            .order_by(CustomField.created_at, CustomField.id)
+        )
+
+    async def delete_by_catalog(self, catalog_id: UUID) -> None:
+        """Delete a draft's memberships. They aren't history, and the next
+        apply lists the same slugs again."""
+        await self.session.execute(
+            delete(CatalogCustomField).where(
+                CatalogCustomField.catalog_id == catalog_id
+            )
+        )
+
+    async def get_all_by_catalog(
+        self, catalog_id: UUID
+    ) -> Sequence[CatalogCustomField]:
+        statement = (
+            self.get_base_statement()
+            .where(CatalogCustomField.catalog_id == catalog_id)
+            .options(joinedload(CatalogCustomField.custom_field))
         )
         return await self.get_all(statement)

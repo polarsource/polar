@@ -74,128 +74,128 @@ from polar.webhook.endpoints import router as webhook_router
 
 router = APIRouter(prefix="/v1")
 
-# /users
-router.include_router(user_router)
-# /integrations/github
-router.include_router(github_router)
-# /integrations/github_repository_benefit
-router.include_router(github_repository_benefit_router)
-# /integrations/stripe
-router.include_router(stripe_router)
-# /integrations/discord
-router.include_router(discord_router)
-# /integrations/slack
-router.include_router(slack_router)
-# /notifications
-router.include_router(notifications_router)
-# /personal_access_tokens
-router.include_router(pat_router)
-# /accounts
-router.include_router(accounts_router)
-# /stream
-router.include_router(stream_router)
-# /organizations
-router.include_router(organization_router)
-# /organizations/{id}/sso-connections
-router.include_router(sso_router)
-# /organizations/{id}/domains
-router.include_router(organization_domain_router)
-router.include_router(organization_email_router)
-# /subscriptions
-router.include_router(subscription_router)
-# /transactions
-router.include_router(transaction_router)
-# /taxes
-router.include_router(tax_router)
-# /auth
-router.include_router(auth_router)
-# /oauth2
-router.include_router(oauth2_router)
-# /benefits
-router.include_router(benefits_router)
-# /benefits/slack
-router.include_router(slack_shared_channel_benefit_router)
-# /benefit-grants
-router.include_router(benefit_grants_router)
-# /webhooks
-router.include_router(webhook_router)
-# /products
-router.include_router(product_router)
-# /orders
-router.include_router(order_router)
-# /refunds
-router.include_router(refund_router)
-# /disputes
-router.include_router(dispute_router)
-# /support-cases
-router.include_router(support_case_router)
-# /checkouts
-router.include_router(checkout_router)
-# /cli
-router.include_router(cli_router)
-# /files
-router.include_router(files_router)
-# /metrics
-router.include_router(metrics_router)
-# /license-keys
-router.include_router(license_key_router)
-# /checkout-links
-router.include_router(checkout_link_router)
-# /catalogs
-router.include_router(catalog_router)
-# /custom-fields
-router.include_router(custom_field_router)
-# /discounts
-router.include_router(discount_router)
-# /customers
-router.include_router(customer_router)
-# /members
-router.include_router(member_router)
-# /customers/{id}/members (nested member CRUD; defined in the member module)
-router.include_router(customer_members_router)
-# /customer-portal
-router.include_router(customer_portal_router)
-# /seats
-router.include_router(customer_seat_router)
-# /merchant-migrations
-router.include_router(merchant_migration_router)
-# /update-email
-router.include_router(email_update_router)
-# /customer-sessions
-router.include_router(customer_session_router)
-# /integrations/plain
-router.include_router(plain_router)
 # /events
 router.include_router(event_router)
-# /event-types
-router.include_router(event_type_router)
-# /meters
-router.include_router(meter_router)
-# /config
-router.include_router(declarative_config_router)
-# /organization-access-tokens
-router.include_router(organization_access_token_router)
+# /customer-portal
+router.include_router(customer_portal_router)
+# /customers
+router.include_router(customer_router)
+# /checkouts
+router.include_router(checkout_router)
+# /subscriptions
+router.include_router(subscription_router)
+# /products
+router.include_router(product_router)
+# /users
+router.include_router(user_router)
+# /license-keys
+router.include_router(license_key_router)
+# /orders
+router.include_router(order_router)
+# /organizations
+router.include_router(organization_router)
 # /customer-meters
 router.include_router(customer_meter_router)
+# /metrics
+router.include_router(metrics_router)
+# /discounts
+router.include_router(discount_router)
+# /oauth2
+router.include_router(oauth2_router)
+# /meters
+router.include_router(meter_router)
+# /integrations/stripe
+router.include_router(stripe_router)
+# /benefits
+router.include_router(benefits_router)
+# /notifications
+router.include_router(notifications_router)
 # /payments
 router.include_router(payment_router)
+# /disputes
+router.include_router(dispute_router)
+# /refunds
+router.include_router(refund_router)
+# /webhooks
+router.include_router(webhook_router)
+# /stream
+router.include_router(stream_router)
+# /benefit-grants
+router.include_router(benefit_grants_router)
+# /checkout-links
+router.include_router(checkout_link_router)
 # /payouts
 router.include_router(payout_router)
-# /search
-router.include_router(search_router)
-# /wallets
-router.include_router(wallet_router)
-# /integrations/resend
-router.include_router(resend_router)
-# /integrations/chargeback-stop
-router.include_router(chargeback_stop_router)
-# /integrations/polar
-router.include_router(polar_self_router)
+# /transactions
+router.include_router(transaction_router)
+# /auth
+router.include_router(auth_router)
+# /support-cases
+router.include_router(support_case_router)
+# /customer-sessions
+router.include_router(customer_session_router)
 # /payout-accounts
 router.include_router(payout_account_router)
+# /files
+router.include_router(files_router)
+# /members
+router.include_router(member_router)
+# /seats
+router.include_router(customer_seat_router)
+# /organizations/{id}/domains
+router.include_router(organization_domain_router)
+# /custom-fields
+router.include_router(custom_field_router)
+# /organization-access-tokens
+router.include_router(organization_access_token_router)
+router.include_router(organization_email_router)
+# /wallets
+router.include_router(wallet_router)
+# /event-types
+router.include_router(event_type_router)
+# /customers/{id}/members (nested member CRUD; defined in the member module)
+router.include_router(customer_members_router)
+# /integrations/plain
+router.include_router(plain_router)
+# /taxes
+router.include_router(tax_router)
+# /integrations/resend
+router.include_router(resend_router)
+# /merchant-migrations
+router.include_router(merchant_migration_router)
+# /search
+router.include_router(search_router)
+# /personal_access_tokens
+router.include_router(pat_router)
+# /cli
+router.include_router(cli_router)
+# /integrations/github_repository_benefit
+router.include_router(github_repository_benefit_router)
+# /accounts
+router.include_router(accounts_router)
+# /integrations/polar
+router.include_router(polar_self_router)
+# /integrations/chargeback-stop
+router.include_router(chargeback_stop_router)
+# /integrations/discord
+router.include_router(discord_router)
 # /feedbacks
 router.include_router(feedback_router)
-# /outpost
-router.include_router(outpost_router)
+# /update-email
+router.include_router(email_update_router)
+# /catalogs
+router.include_router(catalog_router)
+# /config
+router.include_router(declarative_config_router)
 # /agent
 router.include_router(agent_router)
+# /integrations/slack
+router.include_router(slack_router)
+# /organizations/{id}/sso-connections
+router.include_router(sso_router)
+# /integrations/github
+router.include_router(github_router)
+# /outpost
+router.include_router(outpost_router)
+# /benefits/slack
+router.include_router(slack_shared_channel_benefit_router)

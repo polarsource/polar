@@ -382,16 +382,21 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test:
-    name: "Server: Tests 🐍"
+    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/3', matrix.shard) }})"
     needs: changes
-    if: always() && (needs.changes.result != 'success' || needs.changes.outputs.server == 'true')
-    runs-on: blacksmith-16vcpu-ubuntu-2404
+    if: needs.changes.outputs.server == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ["1", "2", "3", "tinybird"]
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 15
     env:
       POLAR_ENV: testing
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
-      POLAR_TEST_TINYBIRD_REQUIRED: "true"
+      POLAR_TEST_XDIST: "true"
+      POLAR_TEST_TINYBIRD_REQUIRED: ${{ matrix.shard == 'tinybird' && 'true' || 'false' }}
 
     services:
       postgres:
@@ -420,7 +425,7 @@ jobs:
           - 6379:6379
 
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local:latest' || '' }}
         ports:
           - 7181:7181
           - 7182:7182
@@ -435,11 +440,6 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Check change detection
-        env:
-          CHANGES_RESULT: ${{ needs.changes.result }}
-        run: test "$CHANGES_RESULT" = "success"
-
       - uses: actions/checkout@v7.0.1
 
       - name: 📬 Restore emails renderer
@@ -494,6 +494,7 @@ jobs:
           uv sync --dev --frozen
 
       - name: 🐦 Install Tinybird CLI
+        if: matrix.shard == 'tinybird'
         run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: ⚗️ alembic migrate
@@ -501,22 +502,62 @@ jobs:
         run: uv run task db_migrate
 
       - name: ⚗️ alembic check
+        if: matrix.shard == '1'
         working-directory: ./server
         run: uv run alembic check
 
-      - name: 🐍 Run tests (pytest)
-        working-directory: ./server
-        env:
-          PYTHONPATH: .
-          POLAR_CI_PROFILE_DIRECTORY: ${{ runner.temp }}/pytest-profile
-          POLAR_CI_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
-          POLAR_CI_TINYBIRD_CONTAINER: ${{ job.services.tinybird.id }}
-        run: uv run pytest -p scripts.pytest_profile -m "not benchmark" -n auto --dist=loadgroup --no-cov --durations=0
-
-      - name: Upload test profiles
-        if: always()
-        uses: actions/upload-artifact@v7
+      - name: 📊 Restore test durations
+        if: matrix.shard != 'tinybird'
+        uses: actions/cache/restore@v6.1.0
         with:
-          name: server-test-profiles
-          path: ${{ runner.temp }}/pytest-profile
-          retention-days: 3
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+          restore-keys: test-durations-
+
+      - name: 🐍 Run tests (pytest)
+        if: matrix.shard != 'tinybird'
+        working-directory: ./server
+        run: uv run pytest -m "not tinybird and not benchmark" --splits 3 --group ${{ matrix.shard }} --splitting-algorithm least_duration -n auto --dist=loadgroup --no-cov --durations=0 --store-durations
+
+      - name: 🐦 Run Tinybird tests (pytest)
+        if: matrix.shard == 'tinybird'
+        working-directory: ./server
+        run: |
+          token_file="$RUNNER_TEMP/tinybird-token"
+          rm -f "$token_file" "$token_file.error"
+          uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
+          prepare_pid=$!
+          if POLAR_TEST_TINYBIRD_TOKEN_FILE="$token_file" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0; then
+            wait "$prepare_pid"
+          else
+            test_status=$?
+            kill "$prepare_pid" 2>/dev/null || true
+            wait "$prepare_pid" 2>/dev/null || true
+            exit "$test_status"
+          fi
+
+      - name: 💾 Save test durations
+        if: github.event_name == 'push' && matrix.shard != 'tinybird'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
+
+  test-status:
+    name: "Server: Tests 🐍"
+    needs: [changes, test]
+    if: always()
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    steps:
+      - name: Check shard results
+        env:
+          RESULT: ${{ needs.test.result }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+        run: |
+          if [ "$RESULT" = "success" ]; then
+            exit 0
+          fi
+          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
+            exit 0
+          fi
+          exit 1

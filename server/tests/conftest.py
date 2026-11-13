@@ -3,9 +3,13 @@ import os
 os.environ["POLAR_ENV"] = "testing"
 
 
-from tests.fixtures import *  # noqa
 import freezegun
 import pytest
+
+if os.environ.get("POLAR_TEST_XDIST") != "true" or os.environ.get(
+    "PYTEST_XDIST_WORKER"
+):
+    from tests.fixtures import *
 
 freezegun.configure(extend_ignore_list=["_pytest.timing"])
 

@@ -1,7 +1,9 @@
 import json
 import os
+import time
 import uuid
 from collections.abc import Generator
+from pathlib import Path
 from unittest.mock import patch
 
 import httpx
@@ -22,6 +24,7 @@ from scripts.tinybird_test_workspace import (
 
 TOKEN_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN"
 REQUIRED_ENV_VAR = "POLAR_TEST_TINYBIRD_REQUIRED"
+TOKEN_FILE_ENV_VAR = "POLAR_TEST_TINYBIRD_TOKEN_FILE"
 
 
 class SynchronousIngestTinybirdClient(TinybirdClient):
@@ -55,6 +58,21 @@ def tinybird_workspace() -> Generator[str]:
     if shared_token:
         yield shared_token
         return
+
+    token_file_path = os.environ.get(TOKEN_FILE_ENV_VAR)
+    if token_file_path:
+        token_file = Path(token_file_path)
+        error_file = token_file.with_suffix(".error")
+        for _ in range(1200):
+            if token_file.exists():
+                yield token_file.read_text().strip()
+                return
+            if error_file.exists():
+                raise RuntimeError(
+                    f"Tinybird workspace preparation failed: {error_file.read_text()}"
+                )
+            time.sleep(0.1)
+        raise RuntimeError("Timed out waiting for Tinybird workspace preparation")
 
     host = settings.TINYBIRD_API_URL
     tokens = get_tokens(host)

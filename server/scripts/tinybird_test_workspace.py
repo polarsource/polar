@@ -136,14 +136,24 @@ def delete_workspace(host: str, workspace_id: str, user_token: str) -> None:
 
 
 @cli.command()
-def main() -> None:
+def main(token_file: Path | None = None) -> None:
     host = settings.TINYBIRD_API_URL
-    tokens = request("GET", f"{host}/tokens", timeout=2).json()
-    _, workspace_token = create_workspace(host, tokens)
-    deploy_schema(host, workspace_token)
-    wait_for_ingestion(host, workspace_token)
+    try:
+        tokens = request("GET", f"{host}/tokens", timeout=2).json()
+        _, workspace_token = create_workspace(host, tokens)
+        deploy_schema(host, workspace_token)
+        wait_for_ingestion(host, workspace_token)
 
-    print(workspace_token)
+        if token_file is None:
+            print(workspace_token)
+        else:
+            temporary_file = token_file.with_suffix(".tmp")
+            temporary_file.write_text(workspace_token)
+            temporary_file.replace(token_file)
+    except Exception as error:
+        if token_file is not None:
+            token_file.with_suffix(".error").write_text(type(error).__name__)
+        raise
 
 
 if __name__ == "__main__":

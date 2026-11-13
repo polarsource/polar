@@ -46,6 +46,7 @@ async def _add_member(
 
 @pytest.mark.anyio
 class TestSendChargebackPreventionNotice:
+    @pytest.mark.usefixtures("session")
     async def test_missing_refund_is_noop(
         self, enqueue_email_template_mock: MagicMock
     ) -> None:

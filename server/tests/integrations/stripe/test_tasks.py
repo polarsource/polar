@@ -204,6 +204,7 @@ class TestAccountRiskSignal:
         assert updated is not None
         assert updated.status == OrganizationStatus.REVIEW
 
+    @pytest.mark.usefixtures("session")
     async def test_unmatched_evaluation_retries(
         self,
         mocker: MockerFixture,
@@ -214,6 +215,7 @@ class TestAccountRiskSignal:
         with pytest.raises(Retry):
             await account_risk_signal(uuid.uuid4())
 
+    @pytest.mark.usefixtures("session")
     async def test_unmatched_evaluation_raises_when_retries_exhausted(
         self,
         mocker: MockerFixture,
@@ -371,6 +373,7 @@ class TestPaymentIntentSucceeded:
         # Then: Subscription service is not called (no recurring product)
         subscription_service_mock.assert_not_called()
 
+    @pytest.mark.usefixtures("session")
     async def test_payment_intent_without_order_metadata_ignored(
         self,
         mocker: MockerFixture,
@@ -483,6 +486,7 @@ class TestPaymentMethodDetached:
         assert refreshed_customer is not None
         assert refreshed_customer.default_payment_method_id is None
 
+    @pytest.mark.usefixtures("session")
     async def test_unknown_payment_method_is_noop(
         self,
         mocker: MockerFixture,
@@ -552,6 +556,7 @@ class TestPaymentMethodAutomaticallyUpdated:
             "exp_year": 2032,
         }
 
+    @pytest.mark.usefixtures("session")
     async def test_unknown_payment_method_is_noop(
         self,
         mocker: MockerFixture,

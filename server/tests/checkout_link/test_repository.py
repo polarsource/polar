@@ -96,7 +96,7 @@ async def _attempt_archive_product(
 @pytest.mark.anyio
 class TestArchiveProductConcurrency:
     async def test_concurrent_archive_of_every_product_soft_deletes_the_link(
-        self, worker_id: str
+        self, worker_id: str, initialize_test_database: None
     ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),

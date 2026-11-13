@@ -79,7 +79,9 @@ async def _wait_for_lock_waiter(sessionmaker: AsyncSessionMaker) -> None:
 
 
 @pytest.fixture
-async def sessionmaker(worker_id: str) -> AsyncIterator[AsyncSessionMaker]:
+async def sessionmaker(
+    worker_id: str, initialize_test_database: None
+) -> AsyncIterator[AsyncSessionMaker]:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),
         application_name=f"test_{worker_id}_catalog_publish_concurrency",

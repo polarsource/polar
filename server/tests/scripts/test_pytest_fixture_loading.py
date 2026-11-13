@@ -64,3 +64,9 @@ def example():
     assert {path.name for path in imports.iterdir()} == (
         {"gw0", "gw1"} if arguments == ["-n", "2"] else {"controller"}
     )
+
+
+def test_unit_test_does_not_request_database(request: pytest.FixtureRequest) -> None:
+    assert {"initialize_test_database", "database_engine", "session"}.isdisjoint(
+        request.fixturenames
+    )

@@ -2796,7 +2796,7 @@ class TestAssignSeatConcurrency:
     """
 
     async def test_concurrent_assign_seat_does_not_over_provision(
-        self, worker_id: str
+        self, worker_id: str, initialize_test_database: None
     ) -> None:
         """Five concurrent seat assignments against a 1-seat subscription must
         produce exactly one assigned seat and four SeatNotAvailable failures."""

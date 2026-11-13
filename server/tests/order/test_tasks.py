@@ -995,6 +995,7 @@ async def _add_member(
 
 @pytest.mark.anyio
 class TestOrderSubscriptionRenewalNotification:
+    @pytest.mark.usefixtures("session")
     async def test_missing_order_raises(self) -> None:
         with pytest.raises(OrderDoesNotExist):
             await order_subscription_renewal_notification(uuid.uuid4())

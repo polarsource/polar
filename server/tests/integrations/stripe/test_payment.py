@@ -70,7 +70,7 @@ class TestHandleFailure:
 
     @pytest.mark.parametrize("current_intent_id", ["pi_failed", "pi_new"])
     async def test_failure_waits_for_confirmation(
-        self, worker_id: str, current_intent_id: str
+        self, worker_id: str, current_intent_id: str, initialize_test_database: None
     ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id), pool_size=2, pool_recycle=3600

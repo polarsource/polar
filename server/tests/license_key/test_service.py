@@ -84,7 +84,9 @@ async def _attempt_activation(
 
 @pytest.mark.anyio
 class TestConcurrentActivation:
-    async def test_limit_enforced_under_concurrency(self, worker_id: str) -> None:
+    async def test_limit_enforced_under_concurrency(
+        self, worker_id: str, initialize_test_database: None
+    ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),
             application_name=f"test_{worker_id}_lk_concurrency",
@@ -173,6 +175,7 @@ async def _attempt_validation(
 @pytest.fixture
 async def committed_license_key(
     worker_id: str,
+    initialize_test_database: None,
 ) -> AsyncIterator[tuple[AsyncSessionMaker, UUID]]:
     engine = create_async_engine(
         dsn=get_database_url(worker_id),

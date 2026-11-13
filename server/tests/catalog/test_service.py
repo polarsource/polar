@@ -2,11 +2,15 @@ import uuid
 from datetime import timedelta
 
 import pytest
+from sqlalchemy import update
 
 from polar.auth.models import AuthSubject
+from polar.catalog.schemas import CatalogUpdate
 from polar.catalog.service import (
+    CatalogMembers,
     CatalogNotDraft,
     CatalogNotFound,
+    CatalogRemovals,
 )
 from polar.catalog.service import catalog as catalog_service
 from polar.kit.utils import utc_now
@@ -198,6 +202,26 @@ class TestPublishDraft:
 
 
 @pytest.mark.anyio
+class TestSaveDraft:
+    async def test_keeps_name_when_config_has_none(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, live, draft, _ = catalogs
+        draft.name = "Spring launch"
+        await save_fixture(draft)
+
+        saved = await catalog_service.save_draft(
+            session, organization, live, CatalogMembers(), "d" * 64, CatalogRemovals()
+        )
+
+        assert (saved.id, saved.name) == (draft.id, "Spring launch")
+
+
+@pytest.mark.anyio
 class TestDiscardDraft:
     async def test_deletes_rows_only_the_draft_has(
         self,
@@ -225,3 +249,23 @@ class TestDiscardDraft:
             True,
             True,
         )
+
+
+@pytest.mark.anyio
+class TestUpdate:
+    async def test_discarded_concurrently(
+        self,
+        session: AsyncSession,
+        catalogs: tuple[Catalog, Catalog, Catalog, Catalog],
+    ) -> None:
+        _, _, draft, _ = catalogs
+        await session.execute(
+            update(Catalog)
+            .where(Catalog.id == draft.id)
+            .values(deleted_at=utc_now())
+            .execution_options(synchronize_session=False)
+        )
+        assert draft.deleted_at is None
+
+        with pytest.raises(CatalogNotFound):
+            await catalog_service.update(session, draft, CatalogUpdate(name="Renamed"))

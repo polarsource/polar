@@ -475,6 +475,33 @@ class TestPublish:
 
 
 @pytest.mark.anyio
+@pytest.mark.usefixtures("config_as_code_enabled", "user_organization")
+class TestUpdate:
+    @pytest.mark.auth
+    async def test_renames_published(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.patch(
+            f"/v1/catalogs/{live.id}", json={"name": " Launch pricing "}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["name"] == "Launch pricing"
+
+    @pytest.mark.auth
+    async def test_clears_published_name(
+        self, client: AsyncClient, catalogs: tuple[Catalog, Catalog, Catalog]
+    ) -> None:
+        _, live, _ = catalogs
+
+        response = await client.patch(f"/v1/catalogs/{live.id}", json={"name": ""})
+
+        assert response.status_code == 422
+
+
+@pytest.mark.anyio
 class TestListRemoved:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization

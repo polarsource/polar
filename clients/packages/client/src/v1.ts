@@ -6658,7 +6658,13 @@ export interface paths {
     delete?: never
     options?: never
     head?: never
-    patch?: never
+    /**
+     * Update Catalog
+     * @description Update a catalog.
+     *
+     *     **Scopes**: `products:write`
+     */
+    patch: operations['catalogs:update']
     trace?: never
   }
   '/v1/catalogs/{id}/publish': {
@@ -14385,6 +14391,14 @@ export interface components {
      * @enum {string}
      */
     CatalogStatus: 'draft' | 'live' | 'archived'
+    /** CatalogUpdate */
+    CatalogUpdate: {
+      /**
+       * Name
+       * @description New name of the catalog. A draft's name can be cleared, so it's named `v{n}` when published. Published catalogs always keep a name.
+       */
+      name: string | null
+    }
     /**
      * CatalogVersion
      * @description A catalog version with its products, benefits and meters.
@@ -65082,6 +65096,50 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalogs:update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CatalogUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Catalog']
+        }
+      }
+      /** @description No catalog with this ID. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogNotFound']
         }
       }
       /** @description Validation Error */

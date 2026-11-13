@@ -17,7 +17,7 @@ from polar.authz.types import AccessibleOrganizationID
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
-from polar.exceptions import PolarError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
@@ -52,6 +52,7 @@ from .repository import (
 )
 from .schemas import (
     CatalogChanges,
+    CatalogUpdate,
     RemovedCatalogItem,
     RemovedCatalogItemResource,
     RemovedCatalogItemStatus,
@@ -388,7 +389,7 @@ class CatalogService:
             ),
         )
 
-    async def get_draft_for_write(
+    async def get_for_write(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization | Agent],
@@ -402,9 +403,42 @@ class CatalogService:
         ).get_by_id_with_organization(set(org_ids), id)
         if catalog is None or not catalog.organization.is_config_as_code_enabled:
             raise CatalogNotFound(id)
+        return catalog
+
+    async def get_draft_for_write(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization | Agent],
+        id: uuid.UUID,
+    ) -> Catalog:
+        catalog = await self.get_for_write(session, auth_subject, id)
         if catalog.status != CatalogStatus.draft:
             raise CatalogNotDraft(id)
         return catalog
+
+    async def update(
+        self, session: AsyncSession, catalog: Catalog, catalog_update: CatalogUpdate
+    ) -> Catalog:
+        repository = CatalogRepository.from_session(session)
+        # A concurrent publish could turn the draft live after it was loaded.
+        await repository.lock(catalog.organization_id)
+        await repository.refresh(catalog)
+        if catalog.deleted_at is not None:
+            raise CatalogNotFound(catalog.id)
+        if catalog_update.name is None and catalog.status != CatalogStatus.draft:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "name"),
+                        "msg": "A published catalog needs a name.",
+                        "input": catalog_update.name,
+                    }
+                ]
+            )
+        return await repository.update(
+            catalog, update_dict={"name": catalog_update.name}, flush=True
+        )
 
     async def _get_readable_org_ids(
         self,
@@ -750,7 +784,8 @@ class CatalogService:
         await repository.update(
             draft,
             update_dict={
-                "name": name,
+                # Keep a name given from the dashboard when the config has none
+                "name": name if name is not None else draft.name,
                 "version_hash": version_hash,
                 "parent": live,
             },

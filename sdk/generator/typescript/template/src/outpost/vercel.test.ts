@@ -59,7 +59,7 @@ describe("vercelAffinityHeaders", () => {
 });
 
 describe("warm-up", () => {
-  const incoming = { "x-vercel-oidc-token": "oidc" };
+  const incoming = { "x-vercel-oidc-token": "oidc", authorization: "Basic merchant" };
   const url = "https://app.test/api/meter";
   afterEach(() => vi.unstubAllGlobals());
 
@@ -90,10 +90,13 @@ describe("warm-up", () => {
     expect(headers.get("x-vercel-affinity-id")).toBe(await idAt(move));
     expect(headers.get("x-vercel-trusted-oidc-idp-token")).toBe("oidc");
     expect(isVercelAffinityWarmup(new Request(url, { method: "POST", headers }))).toBe(true);
+    // It passes the merchant's middleware as the request that sent it, and stays on the next id.
+    expect(headers.get("authorization")).toBe("Basic merchant");
+    const again = await vercelAffinityHeaders(headers, { ...base, warm, now: (move - 10) * 1000 });
+    expect(again.get("x-vercel-affinity-id")).toBe(await idAt(move));
   });
 
   it("tells a warm-up apart from the merchant's own requests", () => {
     expect(isVercelAffinityWarmup(new Request(url))).toBe(false);
   });
 });
-

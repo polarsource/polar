@@ -139,10 +139,19 @@ export const usePublishCatalog = () =>
       if (result.error) {
         return
       }
-      // Publishing changes which product, benefit and meter rows are current
+      // Publishing changes which product, benefit and meter rows are current,
+      // and repoints checkout links to the new products
       const queryClient = getQueryClient()
-      for (const key of ['catalogs', 'products', 'benefits', 'meters']) {
-        queryClient.invalidateQueries({ queryKey: [key] })
+      for (const queryKey of [
+        ['catalogs'],
+        ['products'],
+        ['benefits'],
+        ['meters'],
+        ['infinite', 'benefits'],
+        ['infinite', 'meters'],
+        ['checkout_links'],
+      ]) {
+        queryClient.invalidateQueries({ queryKey })
       }
     },
   })

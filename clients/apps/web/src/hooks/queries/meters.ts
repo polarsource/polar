@@ -24,6 +24,7 @@ export const useMetersInfinite = (
         api.GET('/v1/meters/', {
           params: {
             query: {
+              catalog_status: 'live',
               organization_id: organizationId,
               ...(parameters || {}),
               page: pageParam,
@@ -46,7 +47,7 @@ export const useMetersInfinite = (
   })
 
 export const useMeters = (
-  organizationId: string,
+  organizationId: string | undefined,
   parameters?: Omit<
     NonNullable<operations['meters:list']['parameters']['query']>,
     'organization_id'
@@ -58,11 +59,16 @@ export const useMeters = (
       unwrap(
         api.GET('/v1/meters/', {
           params: {
-            query: { organization_id: organizationId, ...(parameters || {}) },
+            query: {
+              catalog_status: 'live',
+              organization_id: organizationId,
+              ...(parameters || {}),
+            },
           },
         }),
       ),
     retry: defaultRetry,
+    enabled: !!organizationId,
   })
 
 export const useMeter = (

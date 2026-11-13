@@ -30,6 +30,7 @@ export default async function Page(props: {
         limit: 1,
         sorting: ['-created_at'],
         is_archived: false,
+        catalog_status: 'live',
       },
     },
   })

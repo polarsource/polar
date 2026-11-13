@@ -1,10 +1,11 @@
 'use client'
 
-import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { MeterPage } from '@/components/Meter/MeterPage'
 import { MeterVersionBanner } from '@/components/Meter/MeterVersionBanner'
+import { MeterVersionSelect } from '@/components/Meter/MeterVersionSelect'
 import { useModal } from '@/components/Modal/useModal'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { useToast } from '@/components/Toast/use-toast'
 import { useHasPermission, useIsManagedAsCode } from '@/hooks/permissions'
 import { useUpdateMeter } from '@/hooks/queries/meters'
@@ -130,6 +131,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, meter }) => {
           </div>
 
           <div className="flex flex-row items-center gap-4">
+            <MeterVersionSelect organization={organization} meter={meter} />
             {!managedAsCode && (
               <Button onClick={showEditMeterModal}>Edit Meter</Button>
             )}

@@ -87,7 +87,6 @@ class LoggingEmailSender(EmailSender):
         log.info(
             "Sending an email",
             to_email_addr=to_ascii_email(to_email_addr),
-            subject=subject,
             from_name=from_name,
             from_email_addr=to_ascii_email(from_email_addr),
             tags=tags,

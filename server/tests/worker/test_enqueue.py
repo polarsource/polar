@@ -17,7 +17,7 @@ class TestFlush:
     async def test_enqueues_jobs_when_publishing_fails(
         self, redis: Redis, mocker: MockerFixture
     ) -> None:
-        mocker.patch.object(redis, "pipeline", side_effect=RedisError)
+        mocker.patch("redis.asyncio.client.Pipeline.xadd", side_effect=RedisError)
 
         CorrelationID.set()
         jqm = JobQueueManager()

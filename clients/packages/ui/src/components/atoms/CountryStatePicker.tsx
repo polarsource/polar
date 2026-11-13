@@ -153,6 +153,9 @@ export const COUNTRIES_WITH_FIXED_STATE_OPTIONS =
 export const hasFixedStateOptions = (country?: string | null): boolean =>
   !!country && country in FIXED_STATE_OPTIONS
 
+export const getStateLabel = (country?: string | null): string =>
+  country && ['US', 'BR', 'IN'].includes(country) ? 'State' : 'Province'
+
 const CountryStatePicker = ({
   className,
   value,

@@ -15,6 +15,7 @@ import {
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker, {
+  getStateLabel,
   hasFixedStateOptions,
 } from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import {
@@ -471,9 +472,7 @@ const DownloadInvoice = ({
                             country={country}
                             value={field.value || ''}
                             onChange={field.onChange}
-                            placeholder={
-                              country === 'CA' ? 'Province' : 'State'
-                            }
+                            placeholder={getStateLabel(country)}
                           />
                           <FormMessage />
                         </>

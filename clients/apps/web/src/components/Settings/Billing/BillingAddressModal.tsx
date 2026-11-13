@@ -10,6 +10,7 @@ import { enums } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker, {
+  getStateLabel,
   hasFixedStateOptions,
 } from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import { Input } from '@polar-sh/orbit'
@@ -216,7 +217,7 @@ export const BillingAddressModal = ({
                       country={country}
                       value={field.value || undefined}
                       onChange={field.onChange}
-                      placeholder={country === 'CA' ? 'Province' : 'State'}
+                      placeholder={getStateLabel(country)}
                     />
                     <FormMessage />
                   </div>

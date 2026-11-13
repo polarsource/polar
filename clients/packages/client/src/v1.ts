@@ -4429,6 +4429,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/mcp/events/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Mcp Events
+     * @description **Scopes**: `webhooks:write`
+     */
+    get: operations['mcp_events:list_mcp_events']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/mcp/events/subscribe': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Subscribe Mcp Event
+     * @description **Scopes**: `webhooks:write`
+     */
+    post: operations['mcp_events:subscribe_mcp_event']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/mcp/events/unsubscribe': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Unsubscribe Mcp Event
+     * @description **Scopes**: `webhooks:write`
+     */
+    post: operations['mcp_events:unsubscribe_mcp_event']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/benefit-grants/': {
     parameters: {
       query?: never
@@ -13979,6 +14039,17 @@ export interface components {
        */
       action: 'allow' | 'deny'
     }
+    /** CallbackEndpointError */
+    CallbackEndpointError: {
+      /**
+       * Error
+       * @example CallbackEndpointError
+       * @constant
+       */
+      error: 'CallbackEndpointError'
+      /** Detail */
+      detail: string
+    }
     /** CannotCreateOrganizationError */
     CannotCreateOrganizationError: {
       /**
@@ -17838,8 +17909,12 @@ export interface components {
        * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
        */
       url: string
-      /** @description The format of the webhook payload. */
-      format: components['schemas']['WebhookFormat']
+      /**
+       * Format
+       * @description The format of the webhook payload.
+       * @enum {string}
+       */
+      format: 'raw' | 'discord' | 'slack'
       /**
        * Events
        * @description The events that will trigger the webhook.
@@ -26807,6 +26882,75 @@ export interface components {
        * @description Outlier events ordered by value descending.
        */
       items: components['schemas']['VarianceEvent'][]
+    }
+    /** MCPEvent */
+    MCPEvent: {
+      name: components['schemas']['WebhookEventType']
+      /** Description */
+      description: string
+      /** Input Schema */
+      input_schema: {
+        [key: string]: unknown
+      }
+      /** Payload Schema */
+      payload_schema: {
+        [key: string]: unknown
+      }
+    }
+    /** MCPEventArguments */
+    MCPEventArguments: {
+      /** Organization Id */
+      organization_id?: string | null
+    }
+    /** MCPEventList */
+    MCPEventList: {
+      /** Items */
+      items: components['schemas']['MCPEvent'][]
+    }
+    /** MCPEventSubscribe */
+    MCPEventSubscribe: {
+      /** Name */
+      name: string
+      arguments: components['schemas']['MCPEventArguments']
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
+      /** Secret */
+      secret: string
+      /** Ttl Ms */
+      ttl_ms?: number | null
+    }
+    /** MCPEventSubscription */
+    MCPEventSubscription: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+    }
+    /** MCPEventUnsubscribe */
+    MCPEventUnsubscribe: {
+      /** Name */
+      name: string
+      arguments: components['schemas']['MCPEventArguments']
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
     }
     /** MaintainerAccountCreditsGrantedNotification */
     MaintainerAccountCreditsGrantedNotification: {
@@ -41923,6 +42067,12 @@ export interface components {
      */
     WebhookBenefitCreatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example benefit.created
        * @constant
@@ -41946,6 +42096,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookBenefitGrantCreatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example benefit_grant.created
@@ -41972,6 +42128,12 @@ export interface components {
      */
     WebhookBenefitGrantCycledPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example benefit_grant.cycled
        * @constant
@@ -41995,6 +42157,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookBenefitGrantRevokedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example benefit_grant.revoked
@@ -42020,6 +42188,12 @@ export interface components {
      */
     WebhookBenefitGrantUpdatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example benefit_grant.updated
        * @constant
@@ -42044,6 +42218,12 @@ export interface components {
      */
     WebhookBenefitUpdatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example benefit.updated
        * @constant
@@ -42067,6 +42247,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookCheckoutCreatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example checkout.created
@@ -42094,6 +42280,12 @@ export interface components {
      */
     WebhookCheckoutExpiredPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example checkout.expired
        * @constant
@@ -42116,6 +42308,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookCheckoutUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example checkout.updated
@@ -42145,6 +42343,12 @@ export interface components {
      */
     WebhookCustomerCreatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example customer.created
        * @constant
@@ -42167,6 +42371,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookCustomerDeletedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example customer.deleted
@@ -42192,6 +42402,12 @@ export interface components {
      */
     WebhookCustomerSeatAssignedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example customer_seat.assigned
        * @constant
@@ -42215,6 +42431,12 @@ export interface components {
      */
     WebhookCustomerSeatClaimedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example customer_seat.claimed
        * @constant
@@ -42237,6 +42459,12 @@ export interface components {
      *     This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
      */
     WebhookCustomerSeatRevokedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example customer_seat.revoked
@@ -42267,6 +42495,12 @@ export interface components {
      */
     WebhookCustomerStateChangedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example customer.state_changed
        * @constant
@@ -42293,6 +42527,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookCustomerUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example customer.updated
@@ -42358,6 +42598,12 @@ export interface components {
      */
     WebhookDiscountCreatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example discount.created
        * @constant
@@ -42382,6 +42628,12 @@ export interface components {
      */
     WebhookDiscountDeletedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example discount.deleted
        * @constant
@@ -42405,6 +42657,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookDiscountUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example discount.updated
@@ -42521,8 +42779,12 @@ export interface components {
        * @enum {string}
        */
       api_version: '2026-04' | '2026-10' | '2027-01'
-      /** @description The format of the webhook payload. */
-      format: components['schemas']['WebhookFormat']
+      /**
+       * Format
+       * @description The format of the webhook payload.
+       * @enum {string}
+       */
+      format: 'raw' | 'discord' | 'slack'
       /**
        * Events
        * @description The events that will trigger the webhook.
@@ -42551,7 +42813,8 @@ export interface components {
        * @description The API version that'll be used in event payloads.
        */
       api_version?: ('2026-04' | '2026-10' | '2027-01') | null
-      format?: components['schemas']['WebhookFormat'] | null
+      /** Format */
+      format?: ('raw' | 'discord' | 'slack') | null
       /** Events */
       events?: components['schemas']['WebhookEventType'][] | null
       /**
@@ -42673,7 +42936,7 @@ export interface components {
      * WebhookFormat
      * @enum {string}
      */
-    WebhookFormat: 'raw' | 'discord' | 'slack'
+    WebhookFormat: 'raw' | 'discord' | 'slack' | 'mcp'
     /**
      * WebhookMemberCreatedPayload
      * @description Sent when a new member is created.
@@ -42686,6 +42949,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookMemberCreatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example member.created
@@ -42713,6 +42982,12 @@ export interface components {
      */
     WebhookMemberDeletedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example member.deleted
        * @constant
@@ -42738,6 +43013,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookMemberUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example member.updated
@@ -42772,6 +43053,12 @@ export interface components {
      */
     WebhookOrderCreatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example order.created
        * @constant
@@ -42797,6 +43084,12 @@ export interface components {
      */
     WebhookOrderPaidPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example order.paid
        * @constant
@@ -42819,6 +43112,12 @@ export interface components {
      *     **Discord & Slack support:** Full
      */
     WebhookOrderRefundedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example order.refunded
@@ -42848,6 +43147,12 @@ export interface components {
      */
     WebhookOrderUpdatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example order.updated
        * @constant
@@ -42870,6 +43175,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookOrganizationUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example organization.updated
@@ -42894,6 +43205,12 @@ export interface components {
      */
     WebhookProductCreatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example product.created
        * @constant
@@ -42916,6 +43233,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookProductUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example product.updated
@@ -42940,6 +43263,12 @@ export interface components {
      */
     WebhookRefundCreatedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example refund.created
        * @constant
@@ -42962,6 +43291,12 @@ export interface components {
      *     **Discord & Slack support:** Full
      */
     WebhookRefundUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example refund.updated
@@ -42987,6 +43322,12 @@ export interface components {
      */
     WebhookSubscriptionActivePayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example subscription.active
        * @constant
@@ -43010,6 +43351,12 @@ export interface components {
      *     **Discord & Slack support:** Full
      */
     WebhookSubscriptionCanceledPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example subscription.canceled
@@ -43035,6 +43382,12 @@ export interface components {
      *     **Discord & Slack support:** Full
      */
     WebhookSubscriptionCreatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example subscription.created
@@ -43067,6 +43420,12 @@ export interface components {
      */
     WebhookSubscriptionCycledPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example subscription.cycled
        * @constant
@@ -43093,6 +43452,12 @@ export interface components {
      *     **Discord & Slack support:** Basic
      */
     WebhookSubscriptionMigratedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example subscription.migrated
@@ -43134,6 +43499,12 @@ export interface components {
      */
     WebhookSubscriptionPastDuePayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example subscription.past_due
        * @constant
@@ -43160,6 +43531,12 @@ export interface components {
      */
     WebhookSubscriptionPausedPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example subscription.paused
        * @constant
@@ -43184,6 +43561,12 @@ export interface components {
      *     **Discord & Slack support:** Full
      */
     WebhookSubscriptionResumedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example subscription.resumed
@@ -43210,6 +43593,12 @@ export interface components {
      *     **Discord & Slack support:** Full
      */
     WebhookSubscriptionRevokedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example subscription.revoked
@@ -43238,6 +43627,12 @@ export interface components {
      */
     WebhookSubscriptionUncanceledPayload: {
       /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
+      /**
        * Type
        * @example subscription.uncanceled
        * @constant
@@ -43264,6 +43659,12 @@ export interface components {
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
     WebhookSubscriptionUpdatedPayload: {
+      /**
+       * Event Id
+       * Format: uuid
+       * @description The ID of the event. Use it to discard duplicate deliveries.
+       */
+      event_id?: string
       /**
        * Type
        * @example subscription.updated
@@ -58202,6 +58603,117 @@ export interface operations {
       }
     }
   }
+  'mcp_events:list_mcp_events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MCPEventList']
+        }
+      }
+    }
+  }
+  'mcp_events:subscribe_mcp_event': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MCPEventSubscribe']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MCPEventSubscription']
+        }
+      }
+      /** @description The callback endpoint could not be verified. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CallbackEndpointError']
+        }
+      }
+      /** @description Unknown event. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'mcp_events:unsubscribe_mcp_event': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MCPEventUnsubscribe']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unknown event. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'benefit-grants:list': {
     parameters: {
       query?: {
@@ -72991,6 +73503,9 @@ export const configResourceValues: ReadonlyArray<
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']
+export const configWebhookEndpointFormatValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigWebhookEndpoint']['format']
+> = ['raw', 'discord', 'slack']
 export const configWebhookEndpointApi_versionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigWebhookEndpoint']['api_version']
 > = ['2026-04', '2026-10', '2027-01']
@@ -76561,9 +77076,15 @@ export const walletTypeValues: ReadonlyArray<
 export const webhookEndpointCreateApi_versionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointCreate']['api_version']
 > = ['2026-04', '2026-10', '2027-01']
+export const webhookEndpointCreateFormatValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['WebhookEndpointCreate']['format']
+> = ['raw', 'discord', 'slack']
 export const webhookEndpointUpdateApi_versionAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['api_version']
 > = ['2026-04', '2026-10', '2027-01']
+export const webhookEndpointUpdateFormatAnyOf0Values: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['WebhookEndpointUpdate']['format']
+> = ['raw', 'discord', 'slack']
 export const webhookEventTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookEventType']
 > = [
@@ -76612,7 +77133,7 @@ export const webhookEventTypeValues: ReadonlyArray<
 ]
 export const webhookFormatValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookFormat']
-> = ['raw', 'discord', 'slack']
+> = ['raw', 'discord', 'slack', 'mcp']
 export const webTokenRequestSub_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebTokenRequest']['sub_type']
 > = ['user', 'organization']

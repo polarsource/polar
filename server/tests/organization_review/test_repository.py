@@ -9,6 +9,7 @@ from polar.models.organization import Organization
 from polar.models.payment import PaymentStatus
 from polar.models.product import Product
 from polar.models.product_price import ProductPriceSource
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.organization_review.report import (
     AgentReportV2,
     AnyAgentReport,
@@ -1370,3 +1371,31 @@ class TestDisputeStats:
         repo = OrganizationReviewRepository.from_session(session)
         assert await repo.get_dispute_stats(organization.id) == (2, 2000)
         assert await repo.get_chargeback_stop_stats(organization.id) == (3, 3000)
+
+
+@pytest.mark.anyio
+class TestGetWebhookEndpoints:
+    async def test_excludes_mcp_endpoints(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        endpoint = WebhookEndpoint(
+            url="https://myapp.com/webhook",
+            format=WebhookFormat.raw,
+            secret="secret",
+            organization=organization,
+        )
+        await save_fixture(endpoint)
+        await save_fixture(
+            WebhookEndpoint(
+                url="https://chatgpt.com/mcp/events",
+                format=WebhookFormat.mcp,
+                secret="secret",
+                organization=organization,
+            )
+        )
+
+        repo = OrganizationReviewRepository.from_session(session)
+        assert await repo.get_webhook_endpoints(organization.id) == [endpoint]

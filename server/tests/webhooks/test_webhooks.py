@@ -20,7 +20,7 @@ from polar.config import settings
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.schemas import IDSchema
 from polar.kit.utils import utc_now
-from polar.kit.versioning import Version
+from polar.kit.versioning import APIVersion, Version
 from polar.models.organization import Organization
 from polar.models.subscription import (
     CustomerCancellationReason,
@@ -36,7 +36,7 @@ from polar.models.webhook_endpoint import (
 from polar.models.webhook_event import WebhookEvent
 from polar.subscription.schemas import PendingSubscriptionUpdate
 from polar.subscription.schemas import Subscription as SubscriptionSchema
-from polar.version import CURRENT_API_VERSION
+from polar.version import CURRENT_API_VERSION, V2026_10, V2027_01
 from polar.webhook.constants import (
     WEBHOOK_SECRET_KEY_BYTES,
     WEBHOOK_SECRET_PREFIX,
@@ -136,6 +136,24 @@ def test_versioned_raw_payload() -> None:
     assert "shared_field" in next_payload_data["data"]
     assert "current_field" not in next_payload_data["data"]
     assert "next_field" in next_payload_data["data"]
+
+
+@pytest.mark.parametrize(
+    ("api_version", "included"), [(V2026_10, False), (V2027_01, True)]
+)
+def test_raw_payload_event_id(api_version: APIVersion, included: bool) -> None:
+    payload = BaseWebhookPayload(
+        type=WebhookEventType.product_created,
+        timestamp=utc_now(),
+        api_version=api_version,
+        data=IDSchema(id=uuid.uuid4()),
+    )
+
+    payload_data = json.loads(payload.get_raw_payload())
+
+    assert ("event_id" in payload_data) is included
+    if included:
+        assert payload_data["event_id"] == str(payload.event_id)
 
 
 class TestUsesStandardWebhookSignature:
@@ -377,6 +395,32 @@ async def test_webhook_send_not_subscribed_to_event(
         organization_id=organization.id,
         secret="mysecret",
         events=[],  # not subscribing
+    )
+    await save_fixture(endpoint)
+
+    events = await webhook_service.send(
+        session, organization, WebhookEventType.subscription_created, subscription
+    )
+
+    assert len(events) == 0
+    enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.anyio
+async def test_webhook_send_expired_endpoint(
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    enqueue_job_mock: MagicMock,
+    organization: Organization,
+    subscription: Subscription,
+) -> None:
+    endpoint = WebhookEndpoint(
+        url="https://example.com/hook",
+        format=WebhookFormat.mcp,
+        organization_id=organization.id,
+        secret="mysecret",
+        events=[WebhookEventType.subscription_created],
+        expires_at=utc_now() - timedelta(minutes=1),
     )
     await save_fixture(endpoint)
 

@@ -32,7 +32,7 @@ export default function WebhookContextView({
       url: endpoint.url,
       name: endpoint.name,
       api_version: apiVersion,
-      format: endpoint.format,
+      format: endpoint.format === 'mcp' ? undefined : endpoint.format,
       events: endpoint.events,
     },
   })

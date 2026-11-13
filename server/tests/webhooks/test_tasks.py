@@ -1,13 +1,24 @@
+import json
 import uuid
 from unittest.mock import MagicMock
 
+import httpx
 import pytest
+import respx
 from pytest_mock import MockerFixture
 
 from polar.config import settings
-from polar.models import WebhookEndpoint, WebhookEvent
+from polar.kit.versioning import api_version_context
+from polar.models import (
+    Organization,
+    Subscription,
+    UserOrganization,
+    WebhookEndpoint,
+    WebhookEvent,
+)
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
+from polar.subscription.schemas import Subscription as SubscriptionSchema
 from polar.version import CURRENT_API_VERSION
 from polar.webhook.service import webhook as webhook_service
 from polar.webhook.tasks import (
@@ -52,6 +63,93 @@ class TestWebhookEventSend:
 
     async def test_missing_event_skips_send(self, session: AsyncSession) -> None:
         await _webhook_event_send(session, webhook_event_id=uuid.uuid4())
+
+    async def test_mcp_envelope_and_headers(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        respx_mock: respx.MockRouter,
+        organization: Organization,
+        subscription: Subscription,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        mocker.patch("polar.webhook.service.enqueue_job")
+        route = respx_mock.post(webhook_endpoint_mcp.url).mock(
+            return_value=httpx.Response(200)
+        )
+        [event] = await webhook_service.send(
+            session, organization, WebhookEventType.subscription_created, subscription
+        )
+        event_id, timestamp = event.id, event.created_at
+
+        await _webhook_event_send(session, webhook_event_id=event_id)
+
+        with api_version_context(CURRENT_API_VERSION):
+            expected_data = SubscriptionSchema.model_validate(subscription).model_dump(
+                mode="json"
+            )
+        request = route.calls.last.request
+        assert json.loads(request.content) == {
+            "eventId": str(event_id),
+            "name": "subscription.created",
+            "timestamp": timestamp.isoformat(),
+            "data": expected_data,
+            "cursor": None,
+        }
+        assert request.headers["webhook-id"] == str(event_id)
+        assert request.headers["X-MCP-Subscription-Id"] == str(webhook_endpoint_mcp.id)
+
+    async def test_mcp_gone_soft_deletes_endpoint(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        respx_mock: respx.MockRouter,
+        enqueue_job_mock: MagicMock,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        respx_mock.post(webhook_endpoint_mcp.url).mock(return_value=httpx.Response(410))
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_mcp,
+            type=WebhookEventType.subscription_created,
+            api_version=CURRENT_API_VERSION,
+            payload='{"foo":"bar"}',
+        )
+        await save_fixture(event)
+
+        await _webhook_event_send(session, webhook_event_id=event.id)
+
+        await session.refresh(event)
+        await session.refresh(webhook_endpoint_mcp)
+        assert event.succeeded is False
+        assert webhook_endpoint_mcp.deleted_at is not None
+        enqueue_job_mock.assert_not_called()
+
+    async def test_mcp_payload_too_large_does_not_retry(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        respx_mock: respx.MockRouter,
+        enqueue_job_mock: MagicMock,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        respx_mock.post(webhook_endpoint_mcp.url).mock(return_value=httpx.Response(413))
+        event = WebhookEvent(
+            webhook_endpoint=webhook_endpoint_mcp,
+            type=WebhookEventType.subscription_created,
+            api_version=CURRENT_API_VERSION,
+            payload='{"foo":"bar"}',
+        )
+        await save_fixture(event)
+
+        await _webhook_event_send(session, webhook_event_id=event.id)
+
+        await session.refresh(event)
+        assert event.succeeded is False
+        enqueue_job_mock.assert_called_once_with(
+            "webhook_event.failed",
+            webhook_event_id=event.id,
+            webhook_endpoint_id=webhook_endpoint_mcp.id,
+        )
 
 
 @pytest.mark.anyio
@@ -264,6 +362,33 @@ class TestOnEventFailed:
         for pending_event in pending_events:
             await session.refresh(pending_event)
             assert pending_event.skipped is True
+
+    async def test_soft_deletes_mcp_endpoint_without_email(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        webhook_endpoint_mcp: WebhookEndpoint,
+    ) -> None:
+        enqueue_email_mock = mocker.patch(
+            "polar.webhook.service.enqueue_email_template"
+        )
+        for _ in range(settings.WEBHOOK_FAILURE_THRESHOLD):
+            event = WebhookEvent(
+                webhook_endpoint=webhook_endpoint_mcp,
+                type=WebhookEventType.subscription_created,
+                api_version=CURRENT_API_VERSION,
+                payload='{"foo":"bar"}',
+                succeeded=False,
+            )
+            await save_fixture(event)
+
+        await webhook_service.on_event_failed(session, event.id)
+
+        assert webhook_endpoint_mcp.deleted_at is not None
+        assert webhook_endpoint_mcp.enabled is True
+        enqueue_email_mock.assert_not_called()
 
 
 class TestWebhookEventFailedDebounceKey:

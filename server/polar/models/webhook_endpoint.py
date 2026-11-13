@@ -73,6 +73,7 @@ class WebhookFormat(StrEnum):
     raw = "raw"
     discord = "discord"
     slack = "slack"
+    mcp = "mcp"
 
 
 class WebhookEndpoint(ExternalIDMixin, RecordModel):

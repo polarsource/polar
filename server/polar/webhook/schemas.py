@@ -88,6 +88,14 @@ EndpointFormat = Annotated[
     WebhookFormat,
     Field(description="The format of the webhook payload."),
 ]
+
+
+CreatableEndpointFormat = Annotated[
+    Literal[WebhookFormat.raw, WebhookFormat.discord, WebhookFormat.slack],
+    Field(description="The format of the webhook payload."),
+]
+
+
 EndpointSecret = Annotated[
     str,
     Field(
@@ -185,7 +193,7 @@ class WebhookEndpointCreate(Schema):
         default=str(CURRENT_API_VERSION),  # type: ignore
         description="The API version that'll be used in event payloads.",
     )
-    format: EndpointFormat
+    format: CreatableEndpointFormat
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
         None,
@@ -217,7 +225,7 @@ class WebhookEndpointUpdate(Schema):
     api_version: AvailableAPIVersion | None = Field(
         default=None, description="The API version that'll be used in event payloads."
     )
-    format: EndpointFormat | None = None
+    format: CreatableEndpointFormat | None = None
     events: EndpointEvents | None = None
     enabled: bool | None = Field(
         default=None,

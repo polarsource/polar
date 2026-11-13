@@ -48,8 +48,8 @@ from polar.product.schemas import (
 from polar.product.tiers import TiersInput, TierType
 from polar.webhook.schemas import (
     AvailableAPIVersion,
+    CreatableEndpointFormat,
     EndpointEvents,
-    EndpointFormat,
     EndpointURL,
 )
 
@@ -359,7 +359,7 @@ class ConfigWebhookEndpoint(Schema):
         description="Your identifier for the webhook endpoint, used to match it.",
     )
     url: EndpointURL
-    format: EndpointFormat
+    format: CreatableEndpointFormat
     events: EndpointEvents = Field(min_length=1)
     api_version: AvailableAPIVersion = Field(
         description="The API version that'll be used in event payloads."

@@ -10,15 +10,12 @@ from polar.auth.scope import UNCLAIMED_AGENT_SCOPES, Scope
 from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import (
-    Agent,
     BackofficeUser,
     BackofficeUserSession,
-    Customer,
-    Member,
-    Organization,
     User,
     UserSession,
 )
+from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
@@ -102,11 +99,7 @@ MEMBER_AUTH_SUBJECT = AuthSubjectFixture(
 @pytest.fixture
 def auth_subject(
     request: pytest.FixtureRequest,
-    user: User,
-    user_second: User,
-    organization: Organization,
-    organization_second: Organization,
-    customer: Customer,
+    session: AsyncSession,
 ) -> AuthSubject[Subject]:
     """
     This fixture generates an AuthSubject instance used by the `client` fixture
@@ -118,37 +111,11 @@ def auth_subject(
     """
     auth_subject_fixture: AuthSubjectFixture = request.param
 
-    # Build subjects map, loading member lazily only when needed
-    subjects_map: dict[
-        str, Anonymous | Customer | Member | User | Organization | Agent
-    ] = {
-        "anonymous": Anonymous(),
-        "user": user,
-        "user_second": user_second,
-        "organization": organization,
-        "organization_second": organization_second,
-        "customer": customer,
-    }
-
-    # Only load member fixtures when actually needed to avoid creating
-    # extra Member records that pollute member count tests
-    subject_key = auth_subject_fixture.subject
-    if subject_key == "member":
-        member: Member = request.getfixturevalue("member")
-        subjects_map["member"] = member
-    elif subject_key == "member_owner":
-        member_owner: Member = request.getfixturevalue("member_owner")
-        subjects_map["member_owner"] = member_owner
-    elif subject_key == "member_billing_manager":
-        member_billing_manager: Member = request.getfixturevalue(
-            "member_billing_manager"
-        )
-        subjects_map["member_billing_manager"] = member_billing_manager
-    elif subject_key == "agent":
-        agent: Agent = request.getfixturevalue("agent")
-        subjects_map["agent"] = agent
-
-    subject = subjects_map[subject_key]
+    subject: Subject = (
+        Anonymous()
+        if auth_subject_fixture.subject == "anonymous"
+        else request.getfixturevalue(auth_subject_fixture.subject)
+    )
 
     # For User subjects, provide a mock UserSession so is_web_session() returns True.
     # This matches real web session behavior where all User sessions are UserSessions.

@@ -88,8 +88,9 @@ module "test" {
 
   additional_api_services = {
     api-events-test = {
-      custom_domains = [{ name = "test-api-events.polar.sh" }]
-      autoscaling    = { min = 3, max = 6 }
+      web_concurrency = "4"
+      custom_domains  = [{ name = "test-api-events.polar.sh" }]
+      autoscaling     = { min = 3, max = 6 }
     }
   }
 

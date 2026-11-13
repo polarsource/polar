@@ -4429,6 +4429,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/mcp/events/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Mcp Events
+     * @description **Scopes**: `webhooks:write`
+     */
+    get: operations['mcp_events:list_mcp_events']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/mcp/events/subscribe': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Subscribe Mcp Event
+     * @description **Scopes**: `webhooks:write`
+     */
+    post: operations['mcp_events:subscribe_mcp_event']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/mcp/events/unsubscribe': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Unsubscribe Mcp Event
+     * @description **Scopes**: `webhooks:write`
+     */
+    post: operations['mcp_events:unsubscribe_mcp_event']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/benefit-grants/': {
     parameters: {
       query?: never
@@ -13978,6 +14038,17 @@ export interface components {
        * @enum {string}
        */
       action: 'allow' | 'deny'
+    }
+    /** CallbackEndpointError */
+    CallbackEndpointError: {
+      /**
+       * Error
+       * @example CallbackEndpointError
+       * @constant
+       */
+      error: 'CallbackEndpointError'
+      /** Detail */
+      detail: string
     }
     /** CannotCreateOrganizationError */
     CannotCreateOrganizationError: {
@@ -26811,6 +26882,75 @@ export interface components {
        * @description Outlier events ordered by value descending.
        */
       items: components['schemas']['VarianceEvent'][]
+    }
+    /** MCPEvent */
+    MCPEvent: {
+      name: components['schemas']['WebhookEventType']
+      /** Description */
+      description: string
+      /** Input Schema */
+      input_schema: {
+        [key: string]: unknown
+      }
+      /** Payload Schema */
+      payload_schema: {
+        [key: string]: unknown
+      }
+    }
+    /** MCPEventArguments */
+    MCPEventArguments: {
+      /** Organization Id */
+      organization_id?: string | null
+    }
+    /** MCPEventList */
+    MCPEventList: {
+      /** Items */
+      items: components['schemas']['MCPEvent'][]
+    }
+    /** MCPEventSubscribe */
+    MCPEventSubscribe: {
+      /** Name */
+      name: string
+      arguments: components['schemas']['MCPEventArguments']
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
+      /** Secret */
+      secret: string
+      /** Ttl Ms */
+      ttl_ms?: number | null
+    }
+    /** MCPEventSubscription */
+    MCPEventSubscription: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Expires At
+       * Format: date-time
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      expires_at: string
+    }
+    /** MCPEventUnsubscribe */
+    MCPEventUnsubscribe: {
+      /** Name */
+      name: string
+      arguments: components['schemas']['MCPEventArguments']
+      /**
+       * Url
+       * Format: uri
+       * @description The URL where the webhook events will be sent.
+       * @example https://webhook.site/cb791d80-f26e-4f8c-be88-6e56054192b0
+       */
+      url: string
     }
     /** MaintainerAccountCreditsGrantedNotification */
     MaintainerAccountCreditsGrantedNotification: {
@@ -42796,7 +42936,7 @@ export interface components {
      * WebhookFormat
      * @enum {string}
      */
-    WebhookFormat: 'raw' | 'discord' | 'slack'
+    WebhookFormat: 'raw' | 'discord' | 'slack' | 'mcp'
     /**
      * WebhookMemberCreatedPayload
      * @description Sent when a new member is created.
@@ -58444,6 +58584,117 @@ export interface operations {
         }
       }
       /** @description Webhook event not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'mcp_events:list_mcp_events': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MCPEventList']
+        }
+      }
+    }
+  }
+  'mcp_events:subscribe_mcp_event': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MCPEventSubscribe']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MCPEventSubscription']
+        }
+      }
+      /** @description The callback endpoint could not be verified. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CallbackEndpointError']
+        }
+      }
+      /** @description Unknown event. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'mcp_events:unsubscribe_mcp_event': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MCPEventUnsubscribe']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Unknown event. */
       404: {
         headers: {
           [name: string]: unknown
@@ -76882,7 +77133,7 @@ export const webhookEventTypeValues: ReadonlyArray<
 ]
 export const webhookFormatValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebhookFormat']
-> = ['raw', 'discord', 'slack']
+> = ['raw', 'discord', 'slack', 'mcp']
 export const webTokenRequestSub_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['WebTokenRequest']['sub_type']
 > = ['user', 'organization']

@@ -97,6 +97,7 @@ enum AuthError {
     InvalidRequestedOrganization,
     RequestedOrganizationNotAccessible,
     RateLimited(u64),
+    RateLimiter(redis::RedisError),
     Database(sqlx::Error),
 }
 
@@ -126,10 +127,7 @@ async fn authenticate(
             {
                 Ok(0) => AuthError::Unauthorized,
                 Ok(retry_after) => AuthError::RateLimited(retry_after),
-                Err(error) => {
-                    tracing::error!(%error, "failed to check the anonymous rate limit");
-                    AuthError::Unauthorized
-                }
+                Err(error) => AuthError::RateLimiter(error),
             },
         );
     };
@@ -183,7 +181,7 @@ async fn authenticate(
             record_token_usage(state, token_id);
             return Err(AuthError::RateLimited(retry_after));
         }
-        Err(error) => tracing::error!(%error, "failed to check the organization rate limit"),
+        Err(error) => return Err(AuthError::RateLimiter(error)),
     }
 
     if !scope
@@ -269,6 +267,10 @@ impl AuthError {
                  is not accessible with this credential.",
             ),
             Self::RateLimited(retry_after) => rate_limit::too_many_requests(retry_after),
+            Self::RateLimiter(error) => {
+                tracing::error!(%error, "failed to check the rate limit");
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
             Self::Database(error) => {
                 telemetry::log_database_error(&error, "organization access token lookup");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()

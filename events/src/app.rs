@@ -246,7 +246,7 @@ async fn limit_by_ip(State(state): State<AppState>, mut request: Request, next: 
         Ok(retry_after) => rate_limit::too_many_requests(retry_after),
         Err(error) => {
             tracing::error!(%error, "failed to check the IP rate limit");
-            next.run(request).await
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         }
     }
 }

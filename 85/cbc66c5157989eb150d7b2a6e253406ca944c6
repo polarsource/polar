@@ -1,0 +1,11 @@
+clients/apps/web/src/components/Settings/Webhook/WebhookSettings.tsx
+  ai_agent 37,45,50
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/webhooks/endpoints/[id]/EndpointsPage.tsx
+  ai_agent 24,153-155,163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "85cbc66c5157989eb150d7b2a6e253406ca944c6",
+  "prompts": {}
+}

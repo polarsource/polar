@@ -1,0 +1,9 @@
+[project]
+name = "demo-app-python"
+version = "0.0.0"
+description = "Uses a JSON billing config and its generated names from Python"
+requires-python = ">=3.11"
+dependencies = ["polar-sdk"]
+
+[tool.uv.sources]
+polar-sdk = { path = "../../../sdk/python", editable = true }

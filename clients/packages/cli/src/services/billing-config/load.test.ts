@@ -126,6 +126,36 @@ describe('load', () => {
     expect(error.message).toContain('is not valid JSON')
   })
 
+  test.each([
+    [
+      'a missing comma',
+      '{\n  "meters": [\n    { "external_id": "a" }\n    { "external_id": "b" }\n  ]\n}',
+      ':4:5 A comma is missing before this.',
+    ],
+    [
+      'a trailing comma',
+      '{\n  "meters": [],\n}',
+      ':3:1 A property name in double quotes is missing here, or the comma before it should go.',
+    ],
+    [
+      'a comment',
+      '{\n  // mine\n  "meters": []\n}',
+      ':2:3 JSON does not allow comments.',
+    ],
+  ])('says where %s is in invalid JSON', async (_, source, expected) => {
+    const file = await write(source)
+
+    const error = await failure(load(file))
+
+    expect(error.hint).toBe(`${file}${expected}`)
+  })
+
+  test('says so when a JSON config is empty', async () => {
+    const error = await failure(load(await write('')))
+
+    expect(error.hint).toBe('The file is empty.')
+  })
+
   test('says when the file does not exist', async () => {
     const error = await failure(load(join(directory, 'missing.ts')))
     expect(error.message).toBe(

@@ -117,7 +117,10 @@ async def list(
 
 
 @router.get(
-    "/export", summary="Export Subscriptions", response_class=CSVStreamingResponse
+    "/export",
+    summary="Export Subscriptions",
+    response_class=CSVStreamingResponse,
+    tags=[APITag.private],
 )
 async def export(
     auth_subject: auth.SubscriptionsRead,

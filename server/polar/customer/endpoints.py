@@ -114,7 +114,12 @@ async def list(
     )
 
 
-@router.get("/export", summary="Export Customers", response_class=CSVStreamingResponse)
+@router.get(
+    "/export",
+    summary="Export Customers",
+    response_class=CSVStreamingResponse,
+    tags=[APITag.private],
+)
 async def export(
     filters: Annotated[CustomerExportParams, Query()],
     auth_subject: auth.CustomerRead,

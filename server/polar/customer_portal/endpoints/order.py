@@ -225,6 +225,7 @@ async def receipt(
     summary="Get Order Payment Status",
     response_model=CustomerOrderPaymentStatus,
     responses={404: OrderNotFound},
+    tags=[APITag.private],
 )
 async def get_payment_status(
     id: OrderID,
@@ -271,6 +272,7 @@ async def get_payment_status(
             "model": ManualRetryLimitExceeded.schema(),
         },
     },
+    tags=[APITag.private],
 )
 async def confirm_retry_payment(
     id: OrderID,

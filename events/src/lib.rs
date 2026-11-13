@@ -1,7 +1,9 @@
 pub mod app;
 mod auth;
+mod aws;
 pub mod config;
 mod event;
+mod hash_secrets;
 mod ingest;
 mod jobs;
 mod outpost;

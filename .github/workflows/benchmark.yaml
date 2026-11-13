@@ -71,8 +71,8 @@ env:
 
 # Instruction counts, on the runners the rest of CI uses, for the pure CPU benchmarks: wall time
 # would add noise, not information. Real time, on CodSpeed's dedicated ARM64 machines, for the
-# Redis benchmarks, whose cost is in another process, and the warm reads, which a few simulated
-# calls would measure cold.
+# Redis benchmarks, whose cost is in another process, the warm reads, which a few simulated
+# calls would measure cold, and SDK request throughput.
 jobs:
   changes:
     name: Detect changes
@@ -89,8 +89,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       # The macro runner minutes are metered: real time runs on every SDK change except the
-      # ones that cannot reach a benchmark, that is the generated API clients, the tests and
-      # the docs. The weekly run on main catches anything this misses.
+      # ones that cannot reach a benchmark, such as the unit tests and docs. The weekly run
+      # on main catches anything this misses.
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
@@ -121,11 +121,9 @@ jobs:
               - '.github/workflows/benchmark.yaml'
             walltime:
               - 'sdk/typescript/**'
-              - '!sdk/typescript/src/20*/**'
               - '!sdk/typescript/**/*.test.ts'
               - '!sdk/typescript/README.md'
               - 'sdk/python/**'
-              - '!sdk/python/polar/v20*/**'
               - '!sdk/python/tests/ingestion/**'
               - '!sdk/python/tests/metering/**'
               - '!sdk/python/tests/outpost/**'
@@ -165,7 +163,7 @@ jobs:
         with:
           mode: simulation
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts
+          run: pnpm vitest bench --run --exclude src/outpost/scripts.bench.ts --exclude src/outpost/seal.bench.ts --exclude src/outpost/confirm.bench.ts --exclude src/outpost/seal-confirmed.bench.ts --exclude src/outpost/ingest.bench.ts --exclude src/outpost/read.bench.ts --exclude src/outpost/read-buckets.bench.ts --exclude src/requests.bench.ts
 
   python-simulation:
     name: Python SDK (simulation)
@@ -197,7 +195,7 @@ jobs:
         with:
           mode: simulation
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_seal.py --ignore=tests/benchmarks/test_confirm.py --ignore=tests/benchmarks/test_seal_confirmed.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py --ignore=tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
+          run: uv run --no-sync pytest tests/benchmarks --ignore=tests/benchmarks/test_scripts.py --ignore=tests/benchmarks/test_seal.py --ignore=tests/benchmarks/test_confirm.py --ignore=tests/benchmarks/test_seal_confirmed.py --ignore=tests/benchmarks/test_ingest.py --ignore=tests/benchmarks/test_read.py --ignore=tests/benchmarks/test_read_buckets.py --ignore=tests/benchmarks/test_requests.py -m benchmark --codspeed
 
   # Both SDKs in one job: the macro runner minutes are metered, and the setup is most of them.
   walltime:
@@ -250,14 +248,14 @@ jobs:
         with:
           mode: walltime
           working-directory: sdk/typescript
-          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts
+          run: pnpm vitest bench --run src/outpost/scripts.bench.ts src/outpost/seal.bench.ts src/outpost/confirm.bench.ts src/outpost/seal-confirmed.bench.ts src/outpost/ingest.bench.ts src/outpost/read.bench.ts src/outpost/read-buckets.bench.ts src/requests.bench.ts
 
       - name: Run Python benchmarks
         uses: CodSpeedHQ/action@v5
         with:
           mode: walltime
           working-directory: sdk/python
-          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_seal.py tests/benchmarks/test_confirm.py tests/benchmarks/test_seal_confirmed.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py tests/benchmarks/test_read_buckets.py -m benchmark --codspeed
+          run: uv run --no-sync pytest tests/benchmarks/test_scripts.py tests/benchmarks/test_seal.py tests/benchmarks/test_confirm.py tests/benchmarks/test_seal_confirmed.py tests/benchmarks/test_ingest.py tests/benchmarks/test_read.py tests/benchmarks/test_read_buckets.py tests/benchmarks/test_requests.py -m benchmark --codspeed
 
   server:
     name: Server (walltime)

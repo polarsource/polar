@@ -26,7 +26,7 @@ from python.utils import format_default_value, format_default_value_dataclass
 from typescript.types import collect_enum_names
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
-BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
+BENCHMARK_DATA_DIRECTORY = EMITTER_DIRECTORY.parent / "benchmarks"
 
 
 def _collect_type_ref_names(
@@ -178,8 +178,23 @@ class PythonEmitter(EmitterBase):
                 self.get_context(),
             )
         self.copy_file(
-            BENCHMARK_DATA, root_directory / "tests" / "benchmarks" / "benchmark.json"
+            BENCHMARK_DATA_DIRECTORY / "outpost.json",
+            root_directory / "tests" / "benchmarks" / "benchmark.json",
         )
+        if any(api.version == "2027-01" for api in self.ir.versions):
+            benchmarks_dir = root_directory / "tests" / "benchmarks"
+            self.copy_file(
+                BENCHMARK_DATA_DIRECTORY / "customers.json",
+                benchmarks_dir / "customers.json",
+            )
+            self.copy_file(
+                BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
+                benchmarks_dir / "customer-server.mjs",
+            )
+            self.copy_file(
+                self.templates_dir / "tests" / "benchmarks" / "test_requests.py",
+                benchmarks_dir / "test_requests.py",
+            )
 
         for api in self.ir.versions:
             version_dir = root_directory / "polar" / self.get_version_string(api)

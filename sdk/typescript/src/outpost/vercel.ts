@@ -99,6 +99,8 @@ export const vercelAffinityHeaders = async (
   options: VercelAffinityOptions,
 ): Promise<Headers> => {
   const headers = new Headers(init);
+  // A warm-up already names the shard's next instance: re-pinning it would send it to the current one.
+  if (isVercelAffinityWarmup({ headers })) return headers;
   const customer = options.externalCustomerId ?? options.customerId;
   if (!customer) return headers;
   const token = await oidcToken(headers);
@@ -112,11 +114,12 @@ export const vercelAffinityHeaders = async (
   const next = affinityId(shard, shards, options.maxDurationSeconds, now + WARM_MS);
   if (options.warm && next !== current && warmed.get(shard) !== next) {
     warmed.set(shard, next);
-    const warmup = new Headers({
-      [AFFINITY_HEADER]: next,
-      [TRUSTED_TOKEN_HEADER]: token,
-      [WARMUP_HEADER]: "1",
-    });
+    // The request's own headers, so the warm-up passes the merchant's middleware as it did.
+    const warmup = new Headers(headers);
+    for (const hop of ["content-length", "transfer-encoding", "connection", "host"])
+      warmup.delete(hop);
+    warmup.set(AFFINITY_HEADER, next);
+    warmup.set(WARMUP_HEADER, "1");
     options.warm.waitUntil(
       fetch(options.warm.url, { method: "POST", headers: warmup }).then(
         (response) => response.body?.cancel(),

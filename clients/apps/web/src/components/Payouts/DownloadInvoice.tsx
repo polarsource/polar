@@ -44,7 +44,7 @@ export const InvoiceModal = ({
     onClose: closeInvoiceModal,
   })
 
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, setValue } = form
   const { errors } = useFormState({ control })
 
   if (!selectedPayout) return null
@@ -195,7 +195,12 @@ export const InvoiceModal = ({
                       <CountryPicker
                         autoComplete="billing country"
                         value={field.value || undefined}
-                        onChange={field.onChange}
+                        onChange={(value) => {
+                          if (value !== field.value) {
+                            setValue('billing_address.state', null)
+                          }
+                          field.onChange(value)
+                        }}
                         allowedCountries={enums.addressInputCountryValues}
                       />
                       <FormMessage />

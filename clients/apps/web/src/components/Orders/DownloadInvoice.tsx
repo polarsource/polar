@@ -139,7 +139,7 @@ const DownloadInvoice = ({
       },
     },
   )
-  const { control, handleSubmit, setError, clearErrors } = form
+  const { control, handleSubmit, setError, clearErrors, setValue } = form
   const { errors, isDirty } = useFormState({ control })
   const country = useWatch({ control, name: 'billing_address.country' })
 
@@ -495,7 +495,12 @@ const DownloadInvoice = ({
                             }
                             autoComplete="billing country"
                             value={field.value || undefined}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              if (value !== field.value) {
+                                setValue('billing_address.state', null)
+                              }
+                              field.onChange(value)
+                            }}
                             allowedCountries={enums.addressInputCountryValues}
                           />
                           <FormMessage />

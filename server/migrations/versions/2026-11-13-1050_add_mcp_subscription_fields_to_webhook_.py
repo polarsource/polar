@@ -1,8 +1,8 @@
 """add mcp subscription fields to webhook endpoints
 
 Revision ID: f09f2f11e21c
-Revises: 367fe9fac05f
-Create Date: 2026-11-11 16:13:00.000000
+Revises: eb0688ca4793
+Create Date: 2026-11-13 10:50:00.000000
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "f09f2f11e21c"
-down_revision = "367fe9fac05f"
+down_revision = "eb0688ca4793"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

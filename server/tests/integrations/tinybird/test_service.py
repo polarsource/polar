@@ -265,6 +265,13 @@ class TestQueryWildcardsAreLiteral:
         sql, _ = compile_clause(query._translate_filter_clause(clause))
         assert sql == "false"
 
+    @pytest.mark.parametrize("operator", [FilterOperator.eq, FilterOperator.ne])
+    def test_boolean_timestamp_matches_nothing(self, operator: FilterOperator) -> None:
+        clause = FilterClause(property="timestamp", operator=operator, value=True)
+        query = TinybirdEventsQuery([uuid.uuid4()])
+        sql, _ = compile_clause(query._translate_filter_clause(clause))
+        assert sql == "false"
+
     def test_like_operator_metadata_checks_json_type(self) -> None:
         clause = FilterClause(
             property="_llm.tier", operator=FilterOperator.not_like, value="lite"

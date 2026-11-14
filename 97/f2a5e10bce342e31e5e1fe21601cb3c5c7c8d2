@@ -1,0 +1,26 @@
+sdk/generator/python/template/tests/benchmarks/test_requests.py
+  s_470100ccd212ab::t_de1412c6ed8016 13-14
+sdk/generator/python/emitter.py
+  s_470100ccd212ab::t_de1412c6ed8016 184-185,188-197
+  s_470100ccd212ab::t_7f4d5af7b1bc7e 186-187
+sdk/generator/typescript/template/src/requests.bench.ts
+  s_470100ccd212ab::t_de1412c6ed8016 8,10
+sdk/generator/typescript/emitter.py
+  s_470100ccd212ab::t_de1412c6ed8016 135-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "97f2a5e10bce342e31e5e1fe21601cb3c5c7c8d2",
+  "prompts": {},
+  "sessions": {
+    "s_470100ccd212ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d5af-d280-74d1-9791-00971ab3b4c2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

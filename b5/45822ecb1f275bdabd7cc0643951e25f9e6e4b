@@ -1,0 +1,60 @@
+sdk/generator/benchmarks/customer-server.mjs
+  s_470100ccd212ab::t_dd04191777c553 1-21
+sdk/generator/typescript/emitter.py
+  s_470100ccd212ab::t_a13156ec868596 30,134
+  s_470100ccd212ab::t_faffa4cea92809 135-147
+  s_470100ccd212ab::t_a925b941f5cf2f 132-133
+  s_470100ccd212ab::t_5513e402ce8581 131
+sdk/generator/python/emitter.py
+  s_470100ccd212ab::t_a13156ec868596 29,181-182
+  s_470100ccd212ab::t_faffa4cea92809 184-186,189-197
+  s_470100ccd212ab::t_c758b94134eaf2 187-188
+sdk/generator/python/template/pyproject.toml
+  s_470100ccd212ab::t_a13156ec868596 43
+sdk/generator/benchmarks/customers.json
+  s_470100ccd212ab::t_519e612aef5d5c 1-36
+sdk/generator/python/template/tests/benchmarks/test_requests.py
+  s_470100ccd212ab::t_dd04191777c553 2,5,18-19,38-53,58
+  s_470100ccd212ab::t_519e612aef5d5c 1,3-4,6-8,10-17,20-37,57,59,68,70-82
+  s_470100ccd212ab::t_a925b941f5cf2f 61
+  s_470100ccd212ab::t_a13156ec868596 9,54-56,60,62-67,69
+.github/workflows/benchmark.yaml
+  s_470100ccd212ab::t_5513e402ce8581 74-75,92-93,166,198,251,258
+sdk/generator/typescript/template/src/requests.bench.ts
+  s_470100ccd212ab::t_56e93a4523b4e1 2-5,13,28-29,72
+  s_470100ccd212ab::t_519e612aef5d5c 1,7-8,11-12,14-27,30-32,69-71,73-75,89
+  s_470100ccd212ab::t_f1cc18787e0768 9-10
+  s_470100ccd212ab::t_b5cfb6d4323960 6,33-68,76-88
+sdk/python/tests/benchmarks/customer-server.mjs
+  s_470100ccd212ab::t_9d8c05f71593b0 1-21
+sdk/python/tests/benchmarks/customers.json
+  s_470100ccd212ab::t_05df3f8b5a7bb3 1-36
+sdk/python/tests/benchmarks/test_requests.py
+  s_470100ccd212ab::t_92e601ecb382f6 1-82
+sdk/python/uv.lock
+  s_470100ccd212ab::t_6e5c6316519ae1 421,445
+sdk/typescript/src/customer-server.mjs
+  s_470100ccd212ab::t_db20096cc3fe8b 1-21
+sdk/typescript/src/customers.benchmark.json
+  s_470100ccd212ab::t_f3a818ccdf179f 1-36
+sdk/typescript/src/requests.bench.ts
+  s_470100ccd212ab::t_e4eecbc54f6c6e 1-89
+sdk/python/pyproject.toml
+  s_470100ccd212ab::t_e6dd81a619b1f2 43,59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b545822ecb1f275bdabd7cc0643951e25f9e6e4b",
+  "prompts": {},
+  "sessions": {
+    "s_470100ccd212ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d5af-d280-74d1-9791-00971ab3b4c2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

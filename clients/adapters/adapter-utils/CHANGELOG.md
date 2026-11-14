@@ -1,5 +1,11 @@
 # @polar-sh/adapter-utils
 
+## 1.1.1
+
+### Patch Changes
+
+- b5ead87: Update `@polar-sh/sdk` to version 1.1.0.
+
 ## 1.1.0
 
 ### Minor Changes

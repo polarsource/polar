@@ -384,7 +384,25 @@
                       "GET /v1/orders/",
                       "POST /v1/orders/{id}/invoice",
                       "GET /v1/orders/{id}/invoice",
-                      "GET /v1/orders/{id}/receipt"
+                      "GET /v1/orders/{id}/receipt",
+                      "POST /v1/orders/",
+                      "GET /v1/orders/export",
+                      "POST /v1/orders/{id}/finalize"
+                    ]
+                  },
+                  {
+                    "group": "Payments",
+                    "pages": [
+                      "GET /v1/payments/",
+                      "GET /v1/payments/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Disputes",
+                    "pages": [
+                      "GET /v1/disputes/",
+                      "GET /v1/disputes/{id}",
+                      "POST /v1/disputes/{id}/accept"
                     ]
                   },
                   {
@@ -434,7 +452,8 @@
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
                       "PATCH /v1/benefits/{id}",
-                      "DELETE /v1/benefits/{id}"
+                      "DELETE /v1/benefits/{id}",
+                      "GET /v1/benefit-grants/"
                     ]
                   },
                   {
@@ -450,14 +469,23 @@
                       "GET /v1/license-keys/{id}/activations/{activation_id}",
                       "POST /v1/license-keys/validate",
                       "POST /v1/license-keys/activate",
-                      "POST /v1/license-keys/deactivate"
+                      "POST /v1/license-keys/deactivate",
+                      "POST /v1/license-keys/{id}/rotate"
                     ]
                   },
                   {
                     "group": "Members",
                     "pages": [
                       "GET /v1/customers/{id}/members",
-                      "GET /v1/customers/external/{external_id}/members"
+                      "POST /v1/customers/{id}/members",
+                      "GET /v1/customers/{id}/members/{member_id}",
+                      "PATCH /v1/customers/{id}/members/{member_id}",
+                      "DELETE /v1/customers/{id}/members/{member_id}",
+                      "GET /v1/customers/external/{external_id}/members",
+                      "POST /v1/customers/external/{external_id}/members",
+                      "GET /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "PATCH /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "DELETE /v1/customers/external/{external_id}/members/{member_external_id}"
                     ]
                   },
                   {
@@ -501,10 +529,17 @@
                 "pages": [
                   "GET /v1/customer-portal/customers/me",
                   "PATCH /v1/customer-portal/customers/me",
+                  "POST /v1/customer-portal/customers/me/email-update/request",
+                  "GET /v1/customer-portal/customers/me/email-update/check",
+                  "POST /v1/customer-portal/customers/me/email-update/verify",
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": ["POST /v1/customer-sessions/"]
+                    "pages": [
+                      "POST /v1/customer-sessions/",
+                      "GET /v1/customer-portal/customer-session/introspect",
+                      "GET /v1/customer-portal/customer-session/user"
+                    ]
                   },
                   {
                     "group": "Subscriptions",
@@ -527,13 +562,29 @@
                     ]
                   },
                   {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "GET /v1/customer-portal/benefit-grants/",
+                      "GET /v1/customer-portal/benefit-grants/{id}",
+                      "PATCH /v1/customer-portal/benefit-grants/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Customer Meters",
+                    "pages": [
+                      "GET /v1/customer-portal/meters/",
+                      "GET /v1/customer-portal/meters/{id}"
+                    ]
+                  },
+                  {
                     "group": "License Keys",
                     "pages": [
                       "POST /v1/customer-portal/license-keys/validate",
                       "POST /v1/customer-portal/license-keys/activate",
                       "POST /v1/customer-portal/license-keys/deactivate",
                       "GET /v1/customer-portal/license-keys/{id}",
-                      "GET /v1/customer-portal/license-keys/"
+                      "GET /v1/customer-portal/license-keys/",
+                      "POST /v1/customer-portal/license-keys/{id}/rotate"
                     ]
                   },
                   {
@@ -551,10 +602,21 @@
                     ]
                   },
                   {
+                    "group": "Members",
+                    "pages": [
+                      "GET /v1/customer-portal/members",
+                      "POST /v1/customer-portal/members",
+                      "PATCH /v1/customer-portal/members/{id}",
+                      "DELETE /v1/customer-portal/members/{id}"
+                    ]
+                  },
+                  {
                     "group": "Payment Methods",
                     "pages": [
                       "GET /v1/customer-portal/customers/me/payment-methods",
-                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}"
+                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}",
+                      "POST /v1/customer-portal/customers/me/payment-methods",
+                      "POST /v1/customer-portal/customers/me/payment-methods/confirm"
                     ]
                   }
                 ]
@@ -667,7 +729,11 @@
                       "POST /v1/oauth2/token",
                       "POST /v1/oauth2/introspect",
                       "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo"
+                      "GET /v1/oauth2/userinfo",
+                      "POST /v1/oauth2/register",
+                      "GET /v1/oauth2/register/{client_id}",
+                      "PUT /v1/oauth2/register/{client_id}",
+                      "DELETE /v1/oauth2/register/{client_id}"
                     ]
                   },
                   {
@@ -677,7 +743,10 @@
                       "GET /v1/webhooks/endpoints/{id}",
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}"
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
                     ]
                   }
                 ]
@@ -767,7 +836,25 @@
                       "GET /v1/orders/",
                       "POST /v1/orders/{id}/invoice",
                       "GET /v1/orders/{id}/invoice",
-                      "GET /v1/orders/{id}/receipt"
+                      "GET /v1/orders/{id}/receipt",
+                      "POST /v1/orders/",
+                      "GET /v1/orders/export",
+                      "POST /v1/orders/{id}/finalize"
+                    ]
+                  },
+                  {
+                    "group": "Payments",
+                    "pages": [
+                      "GET /v1/payments/",
+                      "GET /v1/payments/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Disputes",
+                    "pages": [
+                      "GET /v1/disputes/",
+                      "GET /v1/disputes/{id}",
+                      "POST /v1/disputes/{id}/accept"
                     ]
                   },
                   {
@@ -817,7 +904,8 @@
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
                       "PATCH /v1/benefits/{id}",
-                      "DELETE /v1/benefits/{id}"
+                      "DELETE /v1/benefits/{id}",
+                      "GET /v1/benefit-grants/"
                     ]
                   },
                   {
@@ -833,14 +921,23 @@
                       "GET /v1/license-keys/{id}/activations/{activation_id}",
                       "POST /v1/license-keys/validate",
                       "POST /v1/license-keys/activate",
-                      "POST /v1/license-keys/deactivate"
+                      "POST /v1/license-keys/deactivate",
+                      "POST /v1/license-keys/{id}/rotate"
                     ]
                   },
                   {
                     "group": "Members",
                     "pages": [
                       "GET /v1/customers/{id}/members",
-                      "GET /v1/customers/external/{external_id}/members"
+                      "POST /v1/customers/{id}/members",
+                      "GET /v1/customers/{id}/members/{member_id}",
+                      "PATCH /v1/customers/{id}/members/{member_id}",
+                      "DELETE /v1/customers/{id}/members/{member_id}",
+                      "GET /v1/customers/external/{external_id}/members",
+                      "POST /v1/customers/external/{external_id}/members",
+                      "GET /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "PATCH /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "DELETE /v1/customers/external/{external_id}/members/{member_external_id}"
                     ]
                   },
                   {
@@ -884,10 +981,17 @@
                 "pages": [
                   "GET /v1/customer-portal/customers/me",
                   "PATCH /v1/customer-portal/customers/me",
+                  "POST /v1/customer-portal/customers/me/email-update/request",
+                  "GET /v1/customer-portal/customers/me/email-update/check",
+                  "POST /v1/customer-portal/customers/me/email-update/verify",
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": ["POST /v1/customer-sessions/"]
+                    "pages": [
+                      "POST /v1/customer-sessions/",
+                      "GET /v1/customer-portal/customer-session/introspect",
+                      "GET /v1/customer-portal/customer-session/user"
+                    ]
                   },
                   {
                     "group": "Subscriptions",
@@ -910,13 +1014,29 @@
                     ]
                   },
                   {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "GET /v1/customer-portal/benefit-grants/",
+                      "GET /v1/customer-portal/benefit-grants/{id}",
+                      "PATCH /v1/customer-portal/benefit-grants/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Customer Meters",
+                    "pages": [
+                      "GET /v1/customer-portal/meters/",
+                      "GET /v1/customer-portal/meters/{id}"
+                    ]
+                  },
+                  {
                     "group": "License Keys",
                     "pages": [
                       "POST /v1/customer-portal/license-keys/validate",
                       "POST /v1/customer-portal/license-keys/activate",
                       "POST /v1/customer-portal/license-keys/deactivate",
                       "GET /v1/customer-portal/license-keys/{id}",
-                      "GET /v1/customer-portal/license-keys/"
+                      "GET /v1/customer-portal/license-keys/",
+                      "POST /v1/customer-portal/license-keys/{id}/rotate"
                     ]
                   },
                   {
@@ -934,10 +1054,21 @@
                     ]
                   },
                   {
+                    "group": "Members",
+                    "pages": [
+                      "GET /v1/customer-portal/members",
+                      "POST /v1/customer-portal/members",
+                      "PATCH /v1/customer-portal/members/{id}",
+                      "DELETE /v1/customer-portal/members/{id}"
+                    ]
+                  },
+                  {
                     "group": "Payment Methods",
                     "pages": [
                       "GET /v1/customer-portal/customers/me/payment-methods",
-                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}"
+                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}",
+                      "POST /v1/customer-portal/customers/me/payment-methods",
+                      "POST /v1/customer-portal/customers/me/payment-methods/confirm"
                     ]
                   }
                 ]
@@ -1050,7 +1181,11 @@
                       "POST /v1/oauth2/token",
                       "POST /v1/oauth2/introspect",
                       "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo"
+                      "GET /v1/oauth2/userinfo",
+                      "POST /v1/oauth2/register",
+                      "GET /v1/oauth2/register/{client_id}",
+                      "PUT /v1/oauth2/register/{client_id}",
+                      "DELETE /v1/oauth2/register/{client_id}"
                     ]
                   },
                   {
@@ -1060,7 +1195,10 @@
                       "GET /v1/webhooks/endpoints/{id}",
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}"
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
                     ]
                   }
                 ]
@@ -1149,7 +1287,25 @@
                       "GET /v1/orders/",
                       "POST /v1/orders/{id}/invoice",
                       "GET /v1/orders/{id}/invoice",
-                      "GET /v1/orders/{id}/receipt"
+                      "GET /v1/orders/{id}/receipt",
+                      "POST /v1/orders/",
+                      "GET /v1/orders/export",
+                      "POST /v1/orders/{id}/finalize"
+                    ]
+                  },
+                  {
+                    "group": "Payments",
+                    "pages": [
+                      "GET /v1/payments/",
+                      "GET /v1/payments/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Disputes",
+                    "pages": [
+                      "GET /v1/disputes/",
+                      "GET /v1/disputes/{id}",
+                      "POST /v1/disputes/{id}/accept"
                     ]
                   },
                   {
@@ -1188,7 +1344,8 @@
                       "GET /v1/meters/{id}",
                       "GET /v1/meters/",
                       "PATCH /v1/meters/{id}",
-                      "GET /v1/meters/{id}/quantities"
+                      "GET /v1/meters/{id}/quantities",
+                      "GET /v1/meters/external/{external_id}"
                     ]
                   },
                   {
@@ -1201,7 +1358,8 @@
                       "POST /v1/benefit-grants/",
                       "DELETE /v1/benefit-grants/{id}",
                       "PATCH /v1/benefits/{id}",
-                      "DELETE /v1/benefits/{id}"
+                      "DELETE /v1/benefits/{id}",
+                      "GET /v1/benefit-grants/"
                     ]
                   },
                   {
@@ -1222,14 +1380,23 @@
                       "GET /v1/license-keys/{id}/activations/{activation_id}",
                       "POST /v1/license-keys/validate",
                       "POST /v1/license-keys/activate",
-                      "POST /v1/license-keys/deactivate"
+                      "POST /v1/license-keys/deactivate",
+                      "POST /v1/license-keys/{id}/rotate"
                     ]
                   },
                   {
                     "group": "Members",
                     "pages": [
                       "GET /v1/customers/{id}/members",
-                      "GET /v1/customers/external/{external_id}/members"
+                      "POST /v1/customers/{id}/members",
+                      "GET /v1/customers/{id}/members/{member_id}",
+                      "PATCH /v1/customers/{id}/members/{member_id}",
+                      "DELETE /v1/customers/{id}/members/{member_id}",
+                      "GET /v1/customers/external/{external_id}/members",
+                      "POST /v1/customers/external/{external_id}/members",
+                      "GET /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "PATCH /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "DELETE /v1/customers/external/{external_id}/members/{member_external_id}"
                     ]
                   },
                   {
@@ -1273,10 +1440,17 @@
                 "pages": [
                   "GET /v1/customer-portal/customers/me",
                   "PATCH /v1/customer-portal/customers/me",
+                  "POST /v1/customer-portal/customers/me/email-update/request",
+                  "GET /v1/customer-portal/customers/me/email-update/check",
+                  "POST /v1/customer-portal/customers/me/email-update/verify",
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": ["POST /v1/customer-sessions/"]
+                    "pages": [
+                      "POST /v1/customer-sessions/",
+                      "GET /v1/customer-portal/customer-session/introspect",
+                      "GET /v1/customer-portal/customer-session/user"
+                    ]
                   },
                   {
                     "group": "Subscriptions",
@@ -1299,13 +1473,29 @@
                     ]
                   },
                   {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "GET /v1/customer-portal/benefit-grants/",
+                      "GET /v1/customer-portal/benefit-grants/{id}",
+                      "PATCH /v1/customer-portal/benefit-grants/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Customer Meters",
+                    "pages": [
+                      "GET /v1/customer-portal/meters/",
+                      "GET /v1/customer-portal/meters/{id}"
+                    ]
+                  },
+                  {
                     "group": "License Keys",
                     "pages": [
                       "POST /v1/customer-portal/license-keys/validate",
                       "POST /v1/customer-portal/license-keys/activate",
                       "POST /v1/customer-portal/license-keys/deactivate",
                       "GET /v1/customer-portal/license-keys/{id}",
-                      "GET /v1/customer-portal/license-keys/"
+                      "GET /v1/customer-portal/license-keys/",
+                      "POST /v1/customer-portal/license-keys/{id}/rotate"
                     ]
                   },
                   {
@@ -1323,10 +1513,21 @@
                     ]
                   },
                   {
+                    "group": "Members",
+                    "pages": [
+                      "GET /v1/customer-portal/members",
+                      "POST /v1/customer-portal/members",
+                      "PATCH /v1/customer-portal/members/{id}",
+                      "DELETE /v1/customer-portal/members/{id}"
+                    ]
+                  },
+                  {
                     "group": "Payment Methods",
                     "pages": [
                       "GET /v1/customer-portal/customers/me/payment-methods",
-                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}"
+                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}",
+                      "POST /v1/customer-portal/customers/me/payment-methods",
+                      "POST /v1/customer-portal/customers/me/payment-methods/confirm"
                     ]
                   }
                 ]
@@ -1439,7 +1640,11 @@
                       "POST /v1/oauth2/token",
                       "POST /v1/oauth2/introspect",
                       "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo"
+                      "GET /v1/oauth2/userinfo",
+                      "POST /v1/oauth2/register",
+                      "GET /v1/oauth2/register/{client_id}",
+                      "PUT /v1/oauth2/register/{client_id}",
+                      "DELETE /v1/oauth2/register/{client_id}"
                     ]
                   },
                   {
@@ -1449,7 +1654,11 @@
                       "GET /v1/webhooks/endpoints/{id}",
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}"
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "GET /v1/webhooks/endpoints/external/{external_id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
                     ]
                   }
                 ]

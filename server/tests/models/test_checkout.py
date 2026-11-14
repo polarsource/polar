@@ -84,6 +84,90 @@ async def test_billing_address_fields(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
+    ("country", "expected_fields"),
+    [
+        (
+            "FR",
+            {
+                "state": BillingAddressFieldMode.disabled,
+                "line1": BillingAddressFieldMode.disabled,
+                "line2": BillingAddressFieldMode.disabled,
+                "city": BillingAddressFieldMode.disabled,
+                "postal_code": BillingAddressFieldMode.disabled,
+            },
+        ),
+        (
+            "CA",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.optional,
+                "postal_code": BillingAddressFieldMode.optional,
+            },
+        ),
+        (
+            "ES",
+            {
+                "state": BillingAddressFieldMode.optional,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.optional,
+                "postal_code": BillingAddressFieldMode.required,
+            },
+        ),
+        (
+            "PT",
+            {
+                "state": BillingAddressFieldMode.optional,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.optional,
+                "postal_code": BillingAddressFieldMode.required,
+            },
+        ),
+        (
+            "BR",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.required,
+                "postal_code": BillingAddressFieldMode.optional,
+            },
+        ),
+        (
+            "IN",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.optional,
+                "postal_code": BillingAddressFieldMode.optional,
+            },
+        ),
+    ],
+)
+async def test_billing_address_fields_country_requirements(
+    country: CountryAlpha2,
+    expected_fields: dict[str, BillingAddressFieldMode],
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        customer_billing_address=Address(country=country),
+    )
+
+    assert checkout.billing_address_fields == {
+        "country": BillingAddressFieldMode.required,
+        **expected_fields,
+    }
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
     ("success_url_input", "expected_factory"),
     [
         pytest.param(

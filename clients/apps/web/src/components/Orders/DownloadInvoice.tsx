@@ -14,7 +14,10 @@ import {
 } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  getStateLabel,
+  hasFixedStateOptions,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -136,7 +139,7 @@ const DownloadInvoice = ({
       },
     },
   )
-  const { control, handleSubmit, setError, clearErrors } = form
+  const { control, handleSubmit, setError, clearErrors, setValue } = form
   const { errors, isDirty } = useFormState({ control })
   const country = useWatch({ control, name: 'billing_address.country' })
 
@@ -454,10 +457,9 @@ const DownloadInvoice = ({
                       control={control}
                       name="billing_address.state"
                       rules={{
-                        required:
-                          country === 'US' || country === 'CA'
-                            ? 'This field is required'
-                            : false,
+                        required: hasFixedStateOptions(country)
+                          ? 'This field is required'
+                          : false,
                       }}
                       render={({ field }) => (
                         <>
@@ -470,9 +472,7 @@ const DownloadInvoice = ({
                             country={country}
                             value={field.value || ''}
                             onChange={field.onChange}
-                            placeholder={
-                              country === 'US' ? 'State' : 'Province'
-                            }
+                            placeholder={getStateLabel(country)}
                           />
                           <FormMessage />
                         </>
@@ -495,7 +495,12 @@ const DownloadInvoice = ({
                             }
                             autoComplete="billing country"
                             value={field.value || undefined}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              if (value !== field.value) {
+                                setValue('billing_address.state', null)
+                              }
+                              field.onChange(value)
+                            }}
                             allowedCountries={enums.addressInputCountryValues}
                           />
                           <FormMessage />

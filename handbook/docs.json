@@ -119,7 +119,8 @@
               "engineering/decisions/0011-specialized-webhooks-also-emit-updated",
               "engineering/decisions/0012-minimize-data-in-ai-api-calls",
               "engineering/decisions/0013-minimize-personal-data-in-telemetry",
-              "engineering/decisions/0014-agent-auth-subject"
+              "engineering/decisions/0014-agent-auth-subject",
+              "engineering/decisions/0015-dedicated-event-ingestion-architecture"
             ]
           },
           "engineering/data-flows",

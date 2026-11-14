@@ -831,7 +831,11 @@ def benefit_type_changes(changes: Sequence[BenefitChange]) -> list[ConfigIssue]:
 
 
 _PRODUCT_FIELDS = ("name", "description", "visibility")
-_TRIAL_FIELDS = ("trial_interval", "trial_interval_count")
+_TRIAL_FIELDS = (
+    "trial_interval",
+    "trial_interval_count",
+    "trial_payment_setup_required",
+)
 
 
 def is_expressible_price(price: ProductPrice) -> bool:
@@ -1001,6 +1005,8 @@ async def diff_products(
         product = existing_products.get(product_config.external_id)
         if product is None:
             create_dict = _create_update_dict(product_config)
+            if product_config.trial_interval is None:
+                del create_dict["trial_payment_setup_required"]
             create_dict["prices"] = [
                 price.model_dump() for price in product_config.prices
             ]

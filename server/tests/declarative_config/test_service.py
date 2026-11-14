@@ -1419,6 +1419,7 @@ class TestApply:
         ] == [
             ("trial_interval", TrialInterval.day),
             ("trial_interval_count", 14),
+            ("trial_payment_setup_required", True),
         ]
 
         created = await declarative_config_service.apply(
@@ -1436,7 +1437,15 @@ class TestApply:
             redis,
             auth_subject,
             Config.model_validate(
-                {"products": [{**product_config, "trial_interval_count": 7}]}
+                {
+                    "products": [
+                        {
+                            **product_config,
+                            "trial_interval_count": 7,
+                            "trial_payment_setup_required": False,
+                        }
+                    ]
+                }
             ),
         )
         assert updated.changes[0].action == ConfigAction.updated
@@ -1445,6 +1454,7 @@ class TestApply:
         ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval == TrialInterval.day
         assert product.trial_interval_count == 7
+        assert product.trial_payment_setup_required is False
 
         cleared = await declarative_config_service.apply(
             session,
@@ -1469,6 +1479,7 @@ class TestApply:
         ).get_all_by_external_ids(organization.id, ["pro"])
         assert product.trial_interval is None
         assert product.trial_interval_count is None
+        assert product.trial_payment_setup_required is True
 
     @pytest.mark.auth
     @pytest.mark.usefixtures("config_as_code_enabled")
@@ -4884,6 +4895,7 @@ ROUND_TRIP_CONFIG: dict[str, Any] = {
             "recurring_interval_count": 3,
             "trial_interval": "day",
             "trial_interval_count": 14,
+            "trial_payment_setup_required": False,
             "prices": [
                 {"amount_type": "fixed", "price_amount": 2000},
                 {

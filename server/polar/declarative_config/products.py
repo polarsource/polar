@@ -112,6 +112,7 @@ def product_create(
         recurring_interval_count=config.recurring_interval_count or 1,
         trial_interval=config.trial_interval,
         trial_interval_count=config.trial_interval_count,
+        trial_payment_setup_required=config.trial_payment_setup_required,
         meter_interval=config.meter_interval,
         meter_interval_count=config.meter_interval_count,
         prices=prices,
@@ -131,6 +132,8 @@ def product_update(
     if {"trial_interval", "trial_interval_count"} & set(fields):
         values["trial_interval"] = config.trial_interval
         values["trial_interval_count"] = config.trial_interval_count
+    if "trial_payment_setup_required" in fields:
+        values["trial_payment_setup_required"] = config.trial_payment_setup_required
     if "user_metadata" in fields:
         values["metadata"] = config.metadata
     if "prices" in fields:

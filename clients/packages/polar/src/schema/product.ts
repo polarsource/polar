@@ -137,6 +137,7 @@ export const ProductConfig = Schema.Struct({
       Schema.isLessThanOrEqualTo(1000),
     ),
   ),
+  trial_payment_setup_required: Schema.optionalKey(Schema.Boolean),
   meter_interval: Schema.optionalKey(IntervalUnit),
   meter_interval_count: Schema.optionalKey(
     Schema.Int.check(
@@ -189,6 +190,7 @@ type OneTime = {
 type Trial = {
   readonly trial_interval: IntervalUnit
   readonly trial_interval_count: number
+  readonly trial_payment_setup_required?: boolean
 }
 
 type MeterCycle = {
@@ -309,16 +311,23 @@ class ProductBuilder<
     })
   }
 
-  /** A free trial before the first charge, like `.trial(14, 'days')`. */
+  /**
+   * A free trial before the first charge, like `.trial(14, 'days')`. Pass
+   * `{ requirePaymentMethod: false }` to let customers start it without one.
+   */
   trial(
     this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     count: number,
     interval: Interval,
+    options: { readonly requirePaymentMethod?: boolean } = {},
   ): this {
     return this.with({
       trialPeriod: {
         trial_interval: unitOf(interval),
         trial_interval_count: count,
+        ...(options.requirePaymentMethod !== undefined && {
+          trial_payment_setup_required: options.requirePaymentMethod,
+        }),
       },
     })
   }

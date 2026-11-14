@@ -377,6 +377,7 @@ const renderProduct =
       recurring_interval_count: count,
       trial_interval: trialInterval,
       trial_interval_count: trialCount,
+      trial_payment_setup_required: trialPaymentRequired,
       meter_interval: meterInterval,
       meter_interval_count: meterCount,
     } = product
@@ -401,7 +402,7 @@ const renderProduct =
       trialInterval !== undefined &&
       trialCount !== undefined
         ? [
-            `.trial(${literal(trialCount)}, ${plural(trialInterval, trialCount)})`,
+            `.trial(${literal(trialCount)}, ${plural(trialInterval, trialCount)}${trialPaymentRequired === false ? ', { requirePaymentMethod: false }' : ''})`,
           ]
         : []),
       ...(product.benefits.length === 0

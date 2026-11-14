@@ -17476,6 +17476,12 @@ export interface components {
        */
       meter_interval_count?: number | null
       /**
+       * Trial Payment Setup Required
+       * @description Whether customers need a payment method to start the trial. Defaults to `true`.
+       * @default true
+       */
+      trial_payment_setup_required: boolean
+      /**
        * Prices
        * @description The prices of the product.
        */
@@ -17730,6 +17736,11 @@ export interface components {
       trial_interval: components['schemas']['TrialInterval'] | null
       /** Trial Interval Count */
       trial_interval_count: number | null
+      /**
+       * Trial Payment Setup Required
+       * @description `false` when customers can start the trial without a payment method.
+       */
+      trial_payment_setup_required: false | null
       meter_interval: components['schemas']['RecurringInterval'] | null
       /** Meter Interval Count */
       meter_interval_count: number | null

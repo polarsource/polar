@@ -70,6 +70,7 @@ class FlushRequest {
   resolve!: () => void;
   reject!: (error: unknown) => void;
   active = true;
+  deadline = Infinity;
   readonly completed = new Promise<void>((resolve, reject) => {
     this.resolve = resolve;
     this.reject = reject;
@@ -153,9 +154,10 @@ export class BufferedMeteringStrategy {
   /**
    * Wait for events queued before this call and report unacknowledged delivery failures.
    *
-   * Overlapping flushes each observe failures within their queue boundary. A completed
-   * flush acknowledges those outcomes; a timeout leaves them observable by a later flush
-   * and does not cancel background delivery or other callers.
+   * A newer flush releases the ones still waiting that it outlasts, and reports their failures
+   * instead: one waiter keeps a serverless function alive, and the others return without
+   * waiting for Polar. A completed flush acknowledges those outcomes; a timeout leaves them observable
+   * by a later flush and does not cancel background delivery.
    *
    * @param options Maximum wait in milliseconds; defaults to 30000.
    * @throws MeteringDeliveryError if earlier events were dropped or remain pending at the deadline.
@@ -165,10 +167,16 @@ export class BufferedMeteringStrategy {
     const timeout = deliveryTimeout(options);
     if (!this.worker || this.closing) throw new PolarError("Buffered metering is not running");
     const request = this.barrier();
+    request.deadline = Date.now() + timeout;
     if (this.finished || this.failure) this.finish(request);
     else {
       this.queue.push(request);
       this.wake?.();
+    }
+    for (const older of this.barriers) {
+      if (older === request || older.deadline > request.deadline) continue;
+      older.resolve();
+      this.release(older);
     }
     const timer = setTimeout(() => {
       request.reject(this.timeoutError(request, timeout, "flush_timeout"));
@@ -314,8 +322,8 @@ export class BufferedMeteringStrategy {
           }
           const next = this.queue.shift();
           if (next === undefined) break;
-          if (next instanceof FlushRequest) requests.push(next);
-          else this.batch.push(next);
+          if (!(next instanceof FlushRequest)) this.batch.push(next);
+          else if (next.active) requests.push(next);
         }
         const events = this.batch.map((item) => item.event);
         const failure = await this.processBatch(events);

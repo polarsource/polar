@@ -637,6 +637,21 @@ it("asks Polar again for a snapshot it asked for before a reset", async () => {
   expect(asked()).toBe(2);
 });
 
+it("releases an older flush when a newer one starts", async () => {
+  const outpost = await start();
+  snapshot = aliceSnapshot;
+  reducerSnapshots = { tokens: { delay: 500 } };
+  const read = outpost.actor(customer);
+  await vi.waitFor(() => expect(meterUsageRequests).not.toHaveLength(0));
+  const older = outpost.flush().then(() => "released");
+  const newer = outpost.flush().then(() => "delivered");
+  const waiting = new Promise((resolve) => setTimeout(() => resolve("waiting"), 100));
+  expect(await Promise.race([older, waiting])).toBe("released");
+  expect(await Promise.race([newer, waiting])).toBe("waiting");
+  await read;
+  expect(await newer).toBe("delivered");
+});
+
 it("reads a customer Polar no longer knows after a reset as unknown", async () => {
   await seed();
   const outpost = await start();

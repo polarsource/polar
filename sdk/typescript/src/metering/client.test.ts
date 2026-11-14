@@ -918,7 +918,7 @@ it("closing an unused helper does not start resources", async () => {
   expect(strategy.close).not.toHaveBeenCalled();
 });
 
-it("overlapping public flushes both observe a previous background drop", async () => {
+it("overlapping public flushes report a previous background drop to the newest", async () => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
   const polar = createPolar({ accessToken: "token" });
   const cause = new PolarNetworkError("offline");
@@ -928,13 +928,12 @@ it("overlapping public flushes both observe a previous background drop", async (
   try {
     await metering.track(event);
     await vi.waitFor(() => expect(onDropped).toHaveBeenCalledOnce());
-    const results = await Promise.allSettled([metering.flush(), metering.flush()]);
-    expect(results).toHaveLength(2);
-    for (const result of results)
-      expect(result).toMatchObject({
-        status: "rejected",
-        reason: { cause, events: [expect.objectContaining(event)] },
-      });
+    const [older, newer] = await Promise.allSettled([metering.flush(), metering.flush()]);
+    expect(older.status).toBe("fulfilled");
+    expect(newer).toMatchObject({
+      status: "rejected",
+      reason: { cause, events: [expect.objectContaining(event)] },
+    });
     await metering.flush();
   } finally {
     await metering.close();

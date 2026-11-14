@@ -220,8 +220,11 @@ Leaving the context drains the queue within `shutdown_timeout` (30 seconds by de
 raises if any earlier, unacknowledged events could not be confirmed.
 
 In serverless environments such as Vercel or AWS Lambda, await `flush(timeout=30)` before
-returning from each request. It confirms events queued before the call without closing the
-shared helper. Concurrent handlers share HTTP batches.
+returning from each request, so the function does not freeze with events in the queue. It
+waits for events queued before the call without closing the shared helper. A newer flush
+releases older ones whose deadline is no later than its own and waits for their events too,
+so concurrent handlers do not each wait for a round trip to Polar. Concurrent handlers share
+HTTP batches.
 
 ```python
 async def handle_request() -> dict[str, bool]:
@@ -239,11 +242,12 @@ async def handle_request() -> dict[str, bool]:
     return {"ok": True}
 ```
 
-A successful `flush()` confirms delivery. Failed delivery raises `MeteringDeliveryError`,
-importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
+A `flush()` confirms delivery unless a newer flush released it. Failed delivery raises
+`MeteringDeliveryError`, importable from `polar.metering`. Its `events` contains the unconfirmed events; each item in
 `failures` includes `events`, a `reason`, and the original `cause`. Drops are still logged
 and passed to `on_dropped`. A completed flush acknowledges the reported failures, so a later
-flush reports only subsequent outcomes. Overlapping flushes each observe their own boundary.
+flush reports only subsequent outcomes. The newest overlapping flush reports the failures of
+the ones it released.
 Periodically flush long-running helpers to observe failures and release their retained records.
 
 If the wait expires, `flush()` raises `MeteringTimeoutError`. Timeout and caller cancellation

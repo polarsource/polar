@@ -105,7 +105,7 @@ from polar.models import (
     User,
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
-from polar.models.discount import DiscountPercentage
+from polar.models.discount import DiscountDuration, DiscountPercentage
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.product_price import (
     ProductPriceFixed,
@@ -1470,6 +1470,59 @@ class SubscriptionService:
             )
 
         return subscription
+
+    def should_expire_trial(self, subscription: Subscription) -> bool:
+        if not subscription.trialing or subscription.cancel_at_period_end:
+            return False
+        return self._requires_payment_method(subscription)
+
+    async def expire_trial(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        subscription = await self.revoke(session, ctx, subscription)
+        await self.reset_meters(
+            session,
+            subscription,
+            reset_at=min(subscription.current_period_end, utc_now()),
+            include_meter_credits=False,
+        )
+        return subscription
+
+    def _requires_payment_method(self, subscription: Subscription) -> bool:
+        if (
+            subscription.payment_method_id is not None
+            or subscription.customer.default_payment_method_id is not None
+        ):
+            return False
+        # Mirror checkout, which doesn't ask for a payment method when the
+        # subscription costs nothing: free prices, pay-what-you-want at 0, or a
+        # forever 100% discount. Converting those creates a paid 0-amount order.
+        # A discount that expires at conversion is dropped by the cycle, so judge
+        # the price the customer is billed for the next period.
+        has_metered_prices = any(
+            is_metered_price(price) for price in subscription.prices
+        )
+        discount = subscription.discount
+        renews_at = subscription.current_period_end
+        if discount is not None and discount.is_repetition_expired(
+            subscription.discount_applied_at or renews_at, renews_at
+        ):
+            discount = None
+        amount = (
+            subscription.amount
+            if discount is not None
+            else sum(spp.amount for spp in subscription.subscription_product_prices)
+        )
+        if amount == 0 and not has_metered_prices:
+            return False
+        return not (
+            isinstance(discount, DiscountPercentage)
+            and discount.duration == DiscountDuration.forever
+            and discount.basis_points == 10_000
+        )
 
     def _clear_expired_discount(
         self,
@@ -4722,10 +4775,7 @@ class SubscriptionService:
             return
         if self._is_free_after_trial(subscription, subscription.trial_end):
             return
-        if (
-            subscription.payment_method_id is None
-            and subscription.customer.default_payment_method_id is None
-        ):
+        if self._requires_payment_method(subscription):
             return await self._send_customer_email(
                 session,
                 subscription,

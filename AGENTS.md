@@ -34,6 +34,7 @@ polar/
 │   │   ├── models/             # SQLAlchemy models (global, not per-module)
 │   │   └── backoffice/         # Admin UI (HTMX + DaisyUI) — see server/polar/backoffice/AGENTS.md
 │   └── migrations/             # Alembic database migrations
+├── events/                 # Rust/axum service — `just run|test|lint` from events/
 ├── clients/                # Turborepo + pnpm frontend — see clients/AGENTS.md
 │   ├── adapters/               # Published framework and authentication adapters
 │   ├── apps/web/               # Next.js dashboard

@@ -33,7 +33,7 @@ import {
   StripeElementsOptionsMode,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   UseFormReturn,
   WatchObserver,
@@ -140,6 +140,7 @@ const BaseCheckoutForm = ({
     control,
     name: 'customer_billing_address.country',
   })
+  const lastSentCountryRef = useRef(checkout.customer_billing_address?.country)
   const watcher: WatchObserver<schemas['CheckoutUpdatePublic']> = useCallback(
     async (value, { name }) => {
       if (!name) {
@@ -181,7 +182,8 @@ const BaseCheckoutForm = ({
         if (customerBillingAddress && customerBillingAddress.country) {
           const countryChanged =
             customerBillingAddress.country !==
-            checkout.customer_billing_address?.country
+              checkout.customer_billing_address?.country ||
+            customerBillingAddress.country !== lastSentCountryRef.current
           if (
             countryChanged ||
             isAddressComplete(
@@ -205,6 +207,9 @@ const BaseCheckoutForm = ({
         return
       }
 
+      if (payload.customer_billing_address) {
+        lastSentCountryRef.current = payload.customer_billing_address.country
+      }
       try {
         await update(payload)
       } catch {
@@ -251,7 +256,11 @@ const BaseCheckoutForm = ({
   )
 
   useEffect(() => {
-    const subscription = watch(debouncedWatcher)
+    const subscription = watch((value, info) => {
+      if (info.name?.startsWith('customer_billing_address')) {
+        debouncedWatcher(value, info)
+      }
+    })
     return () => subscription.unsubscribe()
   }, [watch, debouncedWatcher])
 

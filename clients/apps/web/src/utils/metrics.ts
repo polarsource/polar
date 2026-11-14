@@ -5,8 +5,10 @@ import {
   differenceInMonths,
   differenceInWeeks,
   differenceInYears,
+  isValid,
   parse,
 } from 'date-fns'
+import { createParser } from 'nuqs/server'
 import { formatCostAmount, formatPercentage, formatScalar } from './formatters'
 
 /**
@@ -26,6 +28,24 @@ export const toISODate = (date: Date) => {
  */
 export const fromISODate = (date: string) =>
   parse(date, 'yyyy-MM-dd', new Date(1970, 0, 1, 0, 0, 0))
+
+export const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
+
+const parseStrictISODate = (value: string): Date | null => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null
+  const date = fromISODate(value)
+  return isValid(date) ? date : null
+}
+
+export const parseAsISODate = createParser({
+  parse: parseStrictISODate,
+  serialize: (date: Date) => toISODate(date),
+})
+
+export const parseAsISODateString = createParser({
+  parse: (value: string) => (parseStrictISODate(value) ? value : null),
+  serialize: (value: string) => value,
+})
 
 export const getFormattedMetricValue = (
   metric: schemas['Metric'],

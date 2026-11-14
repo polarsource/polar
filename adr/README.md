@@ -1,7 +1,6 @@
----
-title: "Architecture Decision Records"
-description: "Short records of the significant, cross-cutting decisions behind Polar. Corrected in place; superseded when the decision changes."
----
+# Architecture Decision Records
+
+Short records of the significant, cross-cutting decisions behind Polar. Corrected in place; superseded when the decision changes.
 
 An **Architecture Decision Record (ADR)** captures one significant decision: what we
 chose, why, and what it costs us.
@@ -11,7 +10,7 @@ should understand the load-bearing choices in the codebase in under an hour.
 
 ## ADR vs. design document
 
-We already write [design documents](/engineering/design-documents/index): big,
+We already write [design documents](../handbook/engineering/design-documents/index.mdx): big,
 forward-looking RFCs that explore a *solution*. ADRs are the
 opposite shape:
 
@@ -20,7 +19,7 @@ opposite shape:
 | Answers | "What are we going to build?" | "Why is it this way?" |
 | Size | Pages | One page |
 | Lifespan | Goes stale after ship | Corrected in place; superseded when the decision changes |
-| When | [When a design document is required](/engineering/design-documents/index) | A decision we need to remember |
+| When | [When a design document is required](../handbook/engineering/design-documents/index.mdx) | A decision we need to remember |
 
 A design doc can make several decisions; distil each into an ADR that links back. Reach for
 an ADR when the *decision* outlives the *document*.
@@ -38,7 +37,7 @@ Don't write one for reversible, local, or obvious choices; a comment or a PR is 
 
 ## Structure in a monorepo
 
-One **global, sequentially numbered** sequence for the whole repo (`NNNN-title.mdx`), not a
+One **global, sequentially numbered** sequence for the whole repo (`NNNN-title.md`), not a
 separate log per package. Our most important decisions (the OpenAPI to generated-client
 seam, API versioning, auth) span tiers, and a single log keeps them findable.
 
@@ -72,11 +71,10 @@ what changed in the PR description.
 
 ## Writing a new ADR
 
-1. Copy [`template.mdx`](/engineering/decisions/template) to `NNNN-title.mdx` with the next
+1. Copy [`template.md`](template.md) to `NNNN-title.md` with the next
    free number.
 2. Fill in Context / Decision / Consequences. Keep it to a page.
-3. Add it to the **All decisions** list below and to the `Architecture Decisions` group in
-   `handbook/docs.json`.
+3. Add it to the **All decisions** list below.
 4. Open a PR. Review happens there, like design docs.
 
 ## For AI agents and reviewers
@@ -84,7 +82,7 @@ what changed in the PR description.
 Agents working in this repo should treat **Accepted** ADRs as binding conventions:
 
 - **Read them for the *why*.** Before changing a load-bearing pattern, check for a
-  relevant ADR (grep `handbook/engineering/decisions/`).
+  relevant ADR (grep `adr/`).
 - **Flag violations.** If code contradicts an Accepted ADR, call it out and cite the ADR id
   (e.g. "violates ADR-0004: raw Tailwind used for layout instead of Orbit Box").
 - **Suggest new ADRs.** If a PR makes a significant, cross-cutting, or hard-to-reverse
@@ -96,17 +94,17 @@ To check a diff against these ADRs, run the `adr-check` skill.
 
 ## All decisions
 
-- [ADR-0001: Record architecture decisions](/engineering/decisions/0001-record-architecture-decisions) · Cross-cutting · Accepted
-- [ADR-0002: Business errors are status-coded PolarError subclasses](/engineering/decisions/0002-status-coded-polar-errors) · Backend · Accepted
-- [ADR-0003: One request or task is one transaction](/engineering/decisions/0003-request-scoped-unit-of-work) · Backend · Accepted
-- [ADR-0004: Frontend UI is authored with Orbit Box and design tokens](/engineering/decisions/0004-orbit-box-design-system) · Frontend · Accepted
-- [ADR-0005: Authorization is AuthSubject plus scopes](/engineering/decisions/0005-auth-subject-and-scopes) · Backend · Accepted
-- [ADR-0006: Migrations and backfills are deploy-safe by construction](/engineering/decisions/0006-migration-and-backfill-safety) · Backend · Accepted
-- [ADR-0007: No default in output schemas](/engineering/decisions/0007-no-default-in-output-schemas) · Backend · Accepted
-- [ADR-0008: Encrypt secrets at rest](/engineering/decisions/0008-encrypt-secrets-at-rest) · Backend · Accepted
-- [ADR-0009: Use bare boolean expressions in SQLAlchemy predicates](/engineering/decisions/0009-use-bare-boolean-expressions-in-sqlalchemy-predicates) · Backend · Accepted
-- [ADR-0010: JWKS signing keys live in KMS and rotate by kid](/engineering/decisions/0010-jwks-signing-keys-in-kms) · Backend · Accepted
-- [ADR-0011: Specialized webhook events also emit the catch-all updated](/engineering/decisions/0011-specialized-webhooks-also-emit-updated) · Backend · Accepted
-- [ADR-0012: Minimize data in AI API calls](/engineering/decisions/0012-minimize-data-in-ai-api-calls) · Cross-cutting · Accepted
-- [ADR-0013: Minimize personal data in telemetry](/engineering/decisions/0013-minimize-personal-data-in-telemetry) · Cross-cutting · Accepted
-- [ADR-0014: AI agents are their own auth subject until a human claims them](/engineering/decisions/0014-agent-auth-subject) · Backend · Accepted
+- [ADR-0001: Record architecture decisions](0001-record-architecture-decisions.md) · Cross-cutting · Accepted
+- [ADR-0002: Business errors are status-coded PolarError subclasses](0002-status-coded-polar-errors.md) · Backend · Accepted
+- [ADR-0003: One request or task is one transaction](0003-request-scoped-unit-of-work.md) · Backend · Accepted
+- [ADR-0004: Frontend UI is authored with Orbit Box and design tokens](0004-orbit-box-design-system.md) · Frontend · Accepted
+- [ADR-0005: Authorization is AuthSubject plus scopes](0005-auth-subject-and-scopes.md) · Backend · Accepted
+- [ADR-0006: Migrations and backfills are deploy-safe by construction](0006-migration-and-backfill-safety.md) · Backend · Accepted
+- [ADR-0007: No default in output schemas](0007-no-default-in-output-schemas.md) · Backend · Accepted
+- [ADR-0008: Encrypt secrets at rest](0008-encrypt-secrets-at-rest.md) · Backend · Accepted
+- [ADR-0009: Use bare boolean expressions in SQLAlchemy predicates](0009-use-bare-boolean-expressions-in-sqlalchemy-predicates.md) · Backend · Accepted
+- [ADR-0010: JWKS signing keys live in KMS and rotate by kid](0010-jwks-signing-keys-in-kms.md) · Backend · Accepted
+- [ADR-0011: Specialized webhook events also emit the catch-all updated](0011-specialized-webhooks-also-emit-updated.md) · Backend · Accepted
+- [ADR-0012: Minimize data in AI API calls](0012-minimize-data-in-ai-api-calls.md) · Cross-cutting · Accepted
+- [ADR-0013: Minimize personal data in telemetry](0013-minimize-personal-data-in-telemetry.md) · Cross-cutting · Accepted
+- [ADR-0014: AI agents are their own auth subject until a human claims them](0014-agent-auth-subject.md) · Backend · Accepted

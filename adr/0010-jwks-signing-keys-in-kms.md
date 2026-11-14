@@ -1,15 +1,12 @@
----
-title: "ADR-0010: JWKS signing keys live in KMS and rotate by kid"
-description: "The private signing key never leaves KMS; replacing one is a publication problem, solved with kid."
----
+# ADR-0010: JWKS signing keys live in KMS and rotate by kid
 
-<Info>
+The private signing key never leaves KMS; replacing one is a publication problem, solved with kid.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-09-15
-</Info>
 
 ## Context
 
@@ -64,7 +61,7 @@ key and moving `CURRENT_JWK_KID`, never by asking KMS to rotate a key.
 
 ## References
 
-- [ADR-0008: Encrypt secrets at rest](/engineering/decisions/0008-encrypt-secrets-at-rest) —
+- [ADR-0008: Encrypt secrets at rest](0008-encrypt-secrets-at-rest.md) —
   the envelope pattern, which this deliberately does not reuse.
 - [Rotating KMS keys](https://docs.aws.amazon.com/kms/latest/developerguide/rotate-keys.html)
   and [Key spec reference](https://docs.aws.amazon.com/kms/latest/developerguide/asymmetric-key-specs.html)

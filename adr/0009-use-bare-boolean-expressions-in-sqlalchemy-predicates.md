@@ -1,15 +1,12 @@
----
-title: "ADR-0009: Use bare boolean expressions in SQLAlchemy predicates"
-description: "Avoid wrapping SQLAlchemy query predicates in IS TRUE or IS FALSE so PostgreSQL can match indexes."
----
+# ADR-0009: Use bare boolean expressions in SQLAlchemy predicates
 
-<Info>
+Avoid wrapping SQLAlchemy query predicates in IS TRUE or IS FALSE so PostgreSQL can match indexes.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-08-12
-</Info>
 
 ## Context
 

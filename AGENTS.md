@@ -156,13 +156,13 @@ job auto-translates the rest. Don't edit other locale files. (More in `clients/A
 ## Architecture Decisions (ADRs)
 
 Significant, cross-cutting, or hard-to-reverse decisions are recorded as short ADRs in
-`handbook/engineering/decisions/` (see the [index](handbook/engineering/decisions/index.mdx)).
+`adr/` (see the [index](adr/README.md)).
 Treat **Accepted** ADRs as binding:
 
 - Before changing a load-bearing pattern, check for a relevant ADR (grep that directory).
 - If code contradicts an Accepted ADR, flag it and cite the id (e.g. "violates ADR-0002").
 - If a change makes a significant decision no ADR covers, propose a new one from
-  `handbook/engineering/decisions/template.mdx` rather than losing the rationale in the diff.
+  `adr/template.md` rather than losing the rationale in the diff.
 - **ADR-0012:** AI API prompts send only the fields the feature needs. Do not
   dump a whole org, customer, or payment object into a model call.
 

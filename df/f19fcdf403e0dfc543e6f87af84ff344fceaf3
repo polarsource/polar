@@ -1,0 +1,79 @@
+server/tests/benefit/grant/test_service.py
+  s_e9205871ad54e1::t_06c1e8dbf3c9b2 620-658
+  s_e9205871ad54e1::t_e49aaa5e67ed36 12-16,41,462-464,469-618
+  s_e9205871ad54e1::t_c8cff7619bffaf 465-468
+  s_e9205871ad54e1::t_09fad5dc6f3dbd 659
+  s_e9205871ad54e1::t_63286a1e9801a8 619
+clients/apps/web/src/components/Benefit/BenefitPage.tsx
+  s_e9205871ad54e1::t_57b720457d309b 2,38-41,164-167,173-175,177
+  s_e9205871ad54e1::t_71381d65d66e10 17,168-172
+server/polar/benefit/grant/schemas.py
+  s_e9205871ad54e1::t_cede9ee2334708 10-12
+  s_e9205871ad54e1::t_45b78b9c6f3a9d 8-9,13-15
+clients/apps/web/src/components/Customer/CustomerPage/CustomerBenefitGrantsTable.tsx
+  s_e9205871ad54e1::t_71381d65d66e10 3,126-127
+  s_e9205871ad54e1::t_ce849a89b0e8c1 128
+server/polar/benefit/grant/endpoints.py
+  s_e9205871ad54e1::t_c8cff7619bffaf 7,60
+  s_e9205871ad54e1::t_78e4432112ecb8 76
+  s_e9205871ad54e1::t_45b78b9c6f3a9d 18,54-59,61,63-75,77-82,96,100-101
+  s_e9205871ad54e1::t_65c638aca2a1fa 62
+server/polar/benefit/tasks.py
+  s_e9205871ad54e1::t_06c1e8dbf3c9b2 152-155
+  s_e9205871ad54e1::t_ce91ff7fa106b5 228-230
+  s_e9205871ad54e1::t_b36a537c2b9245 227
+  s_e9205871ad54e1::t_d0ec221005a7f0 231
+clients/packages/client/src/v1.ts
+  s_e9205871ad54e1::t_48e8c37c58c32b 4537,4541-4542,4549-4559,11779,11938,12036,12128,12226,12329,12425,12531,12633,12722-12730,19312,19379,19453,19520,19587,19661,19741,19808,58913-58974
+docs/openapi/2027-01.openapi.json
+  s_e9205871ad54e1::t_716d5136a22d58 21003-21126,21135,21200,33406,33768,34015,34246,34492,34750,34986,35248,35496,35694-35707,46340,46544,46782,46986,47190,47428,47655,47859
+clients/apps/web/src/components/Benefit/UnrevokeBenefitGrantButton.tsx
+  s_e9205871ad54e1::t_57b720457d309b 1-5,11-12,27-31,33-37
+  s_e9205871ad54e1::t_4bf3ea5b04ecac 13-26,32
+  s_e9205871ad54e1::t_ce849a89b0e8c1 6-10
+clients/apps/web/src/hooks/queries/benefits.ts
+  s_e9205871ad54e1::t_57b720457d309b 303-313
+clients/apps/web/src/components/Benefit/BenefitGrantAction.tsx
+  s_e9205871ad54e1::t_dbd88a6bf05ccb 10-14,21-25,31-36
+  s_e9205871ad54e1::t_71381d65d66e10 1-9,15-20,26-30,37-63
+clients/apps/web/src/components/Benefit/BenefitGrantStatus.tsx
+  s_e9205871ad54e1::t_8015cc210a5702 26
+server/polar/benefit/strategies/base/schemas.py
+  s_e9205871ad54e1::t_45b78b9c6f3a9d 123
+docs/docs.json
+  s_e9205871ad54e1::t_d0ec221005a7f0 1359
+server/tests/test_openapi.py
+  s_e9205871ad54e1::t_d0ec221005a7f0 145
+server/polar/benefit/grant/repository.py
+  s_e9205871ad54e1::t_9cc15caa6ac989 137
+  s_e9205871ad54e1::t_7dbf5f510b5ecc 104
+  s_e9205871ad54e1::t_78e4432112ecb8 102,116,125-134,136
+  s_e9205871ad54e1::t_4584ebb3ed8cd7 5,103
+  s_e9205871ad54e1::t_d0ec221005a7f0 21,23,26,30,105-115,117-124,135
+server/tests/benefit/grant/test_endpoints.py
+  s_e9205871ad54e1::t_77fa92dfe46a52 391,399
+  s_e9205871ad54e1::t_8015cc210a5702 385-390,401-403,405-406,410-411,413-416
+  s_e9205871ad54e1::t_e49aaa5e67ed36 392-398,400,404,407-409,412,417-422
+server/polar/benefit/grant/service.py
+  s_e9205871ad54e1::t_45b78b9c6f3a9d 53,191,205-212,217-229,234-241,833-848
+  s_e9205871ad54e1::t_ce91ff7fa106b5 213-216
+  s_e9205871ad54e1::t_65c638aca2a1fa 230-232
+  s_e9205871ad54e1::t_78e4432112ecb8 233
+  s_e9205871ad54e1::t_724302bed106b7 849-851
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dff19fcdf403e0dfc543e6f87af84ff344fceaf3",
+  "prompts": {},
+  "sessions": {
+    "s_e9205871ad54e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d581-99aa-7b70-8e7c-0425712d92da",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": null
+    }
+  }
+}

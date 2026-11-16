@@ -15,9 +15,9 @@ import SubscriptionStatusSelect, {
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
-import SubscriptionsProductSelect, {
+import ProductSelect, {
   type ProductFilter,
-} from '@/components/Subscriptions/SubscriptionsProductSelect'
+} from '@/components/Products/ProductSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import {
   latestVersions,
@@ -78,12 +78,14 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
     ? product.external_product_id
     : product.product_id
   const onProductFilterChange = useCallback(
-    (value: string | null) =>
+    (value: string[]) => {
+      const selected = value.length > 0 ? value : null
       onProductSelect(
         filterByExternalId
-          ? { product_id: null, external_product_id: value }
-          : { product_id: value, external_product_id: null },
-      ),
+          ? { product_id: null, external_product_id: selected }
+          : { product_id: selected, external_product_id: null },
+      )
+    },
     [filterByExternalId, onProductSelect],
   )
 
@@ -96,11 +98,10 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
       limit: 100,
     },
   )
-  const selectedValues = productFilter ? [productFilter] : []
   const { data: selectedProducts } = useSelectedProducts(
     filterByExternalId
-      ? { organization_id: organization.id, external_id: selectedValues }
-      : { id: selectedValues },
+      ? { organization_id: organization.id, external_id: productFilter ?? [] }
+      : { id: productFilter ?? [] },
     { includeArchived: true, includeAllVersions: true },
   )
 
@@ -177,13 +178,13 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
         key: 'product',
         label: 'Product',
         icon: <HiveOutlined fontSize="inherit" />,
-        type: 'single',
+        type: 'multi',
         options: productOptions,
         loading: productsPending,
         searchPlaceholder: 'Search products…',
         searchQuery: productQuery,
         onSearchQueryChange: setProductQuery,
-        value: productFilter,
+        value: productFilter ?? [],
         onChange: onProductFilterChange,
       },
       {
@@ -247,10 +248,13 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
           </Box>
         )}
         <Box display="block">
-          <SubscriptionsProductSelect
-            options={productOptions}
-            value={productFilter}
+          <ProductSelect
+            organization={organization}
+            value={productFilter ?? []}
             onChange={onProductFilterChange}
+            includeArchived
+            recurringOnly
+            filterByExternalId={filterByExternalId}
           />
         </Box>
         <DateRangePicker

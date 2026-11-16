@@ -5,7 +5,7 @@ import { ExportColumnGroup } from '@/components/Export/ExportColumns'
 import { downloadCsvExport } from '@/components/Export/utils'
 import { schemas } from '@polar-sh/client'
 import React from 'react'
-import { type ProductFilter } from './SubscriptionsProductSelect'
+import { type ProductFilter } from '@/components/Products/ProductSelect'
 import { SubscriptionStatusFilter } from './SubscriptionStatusSelect'
 
 type ExportColumn = schemas['SubscriptionExportColumn']
@@ -95,11 +95,11 @@ const ExportSubscriptionsModal: React.FC<ExportSubscriptionsModalProps> = ({
         selection,
         (search, { dateRange, timezone }) => {
           search.set('organization_id', organization.id)
-          if (product.product_id) {
-            search.append('product_id', product.product_id)
+          for (const id of product.product_id ?? []) {
+            search.append('product_id', id)
           }
-          if (product.external_product_id) {
-            search.append('external_product_id', product.external_product_id)
+          for (const id of product.external_product_id ?? []) {
+            search.append('external_product_id', id)
           }
           if (status !== 'any') {
             search.append('status', status)

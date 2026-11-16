@@ -5,6 +5,7 @@ use aws_config::{SdkConfig, retry::RetryConfig, timeout::TimeoutConfig};
 use aws_sdk_sqs::{
     Client, config::Builder, error::DisplayErrorContext, types::SendMessageBatchRequestEntry,
 };
+use futures_util::{StreamExt, stream};
 use redis::aio::ConnectionManager;
 use serde::Serialize;
 use serde_json::{Map, Value};
@@ -13,6 +14,7 @@ use uuid::Uuid;
 use super::{Job, QUEUE, set_debounce};
 
 const BATCH_SIZE: usize = 10;
+const MAX_CONCURRENT_BATCHES: usize = 8;
 const MAX_BATCH_BYTES: usize = 262_144;
 const MAX_DELAY_SECONDS: u64 = 900;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
@@ -98,6 +100,56 @@ impl SqsQueue {
             .is_none_or(|actors| actors.contains(actor))
     }
 
+    async fn send_batch(
+        &self,
+        mut redis: ConnectionManager,
+        batch: Vec<QueuedJob>,
+        now: Duration,
+    ) -> Vec<String> {
+        let (entries, owners): (Vec<_>, Vec<_>) = batch
+            .into_iter()
+            .map(|job| (job.entry, (job.message_id, job.debounce_key)))
+            .unzip();
+        let sent = match self
+            .client
+            .send_message_batch()
+            .queue_url(&self.queue_url)
+            .set_entries(Some(entries))
+            .send()
+            .await
+        {
+            Ok(sent) => sent,
+            Err(error) => {
+                return vec![format!(
+                    "{} job(s): {}",
+                    owners.len(),
+                    DisplayErrorContext(&error)
+                )];
+            }
+        };
+        let mut rejected =
+            Vec::from_iter(sent.failed().iter().map(|failed| failed.code().to_owned()));
+
+        // A job owns its debounce key only once SQS has it: a job that was never queued
+        // must not make the worker skip the one queued before it.
+        let mut debounces = redis::pipe();
+        debounces.atomic();
+        for queued in sent.successful() {
+            let owner = queued
+                .id()
+                .parse::<usize>()
+                .ok()
+                .and_then(|id| owners.get(id));
+            if let Some((message_id, Some(key))) = owner {
+                set_debounce(&mut debounces, key, *message_id, now);
+            }
+        }
+        if let Err(error) = debounces.query_async::<()>(&mut redis).await {
+            rejected.push(format!("debounce keys not written: {error}"));
+        }
+        rejected
+    }
+
     pub(super) async fn send(
         &self,
         redis: &mut ConnectionManager,
@@ -133,50 +185,15 @@ impl SqsQueue {
             });
         }
 
-        let mut rejected = Vec::new();
-        for batch in batches {
-            let (entries, owners): (Vec<_>, Vec<_>) = batch
-                .into_iter()
-                .map(|job| (job.entry, (job.message_id, job.debounce_key)))
-                .unzip();
-            let sent = match self
-                .client
-                .send_message_batch()
-                .queue_url(&self.queue_url)
-                .set_entries(Some(entries))
-                .send()
+        let rejected = Vec::from_iter(
+            stream::iter(batches)
+                .map(|batch| self.send_batch(redis.clone(), batch, now))
+                .buffered(MAX_CONCURRENT_BATCHES)
+                .collect::<Vec<_>>()
                 .await
-            {
-                Ok(sent) => sent,
-                Err(error) => {
-                    rejected.push(format!(
-                        "{} job(s): {}",
-                        owners.len(),
-                        DisplayErrorContext(&error)
-                    ));
-                    continue;
-                }
-            };
-            rejected.extend(sent.failed().iter().map(|failed| failed.code().to_owned()));
-
-            // A job owns its debounce key only once SQS has it: a job that was never queued
-            // must not make the worker skip the one queued before it.
-            let mut debounces = redis::pipe();
-            debounces.atomic();
-            for queued in sent.successful() {
-                let owner = queued
-                    .id()
-                    .parse::<usize>()
-                    .ok()
-                    .and_then(|id| owners.get(id));
-                if let Some((message_id, Some(key))) = owner {
-                    set_debounce(&mut debounces, key, *message_id, now);
-                }
-            }
-            if let Err(error) = debounces.query_async::<()>(redis).await {
-                rejected.push(format!("debounce keys not written: {error}"));
-            }
-        }
+                .into_iter()
+                .flatten(),
+        );
         if !rejected.is_empty() {
             bail!("SQS did not accept every job: {}", rejected.join(", "));
         }

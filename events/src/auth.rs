@@ -247,7 +247,9 @@ async fn access_token(state: &AppState, token: &str) -> sqlx::Result<Option<Acce
     if let Some(cached) = state.auth.cached_token(&key) {
         return Ok(Some(cached));
     }
-    let selected = select_access_token(state, token).await?;
+    let selected = select_access_token(state, token)
+        .instrument(tracing::info_span!("select_access_token"))
+        .await?;
     if let Some(selected) = &selected {
         state.auth.cache_token(key, selected.clone());
     }

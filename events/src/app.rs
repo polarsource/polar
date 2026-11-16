@@ -313,7 +313,11 @@ async fn store_events(
     let written = tokio::time::timeout_at(deadline, write_events(&state, organization_id, &events))
         .await
         .map_err(|_| IngestError::TimedOut)??;
-    written.transaction.commit().await?;
+    written
+        .transaction
+        .commit()
+        .instrument(tracing::info_span!("commit"))
+        .await?;
     if let Some(event_types) = written.resolved_event_types {
         state.event_types.store(organization_id, event_types);
     }
@@ -321,7 +325,10 @@ async fn store_events(
 
     let mut redis = state.redis.clone();
     if let Some(active_buckets) = written.active_buckets {
-        active_buckets.apply(&mut redis, organization_id).await;
+        active_buckets
+            .apply(&mut redis, organization_id)
+            .instrument(tracing::info_span!("update_active_buckets"))
+            .await;
     }
     let (tasks, background) = (state.tasks.clone(), state.background.clone());
     let response = written.response;
@@ -358,8 +365,14 @@ async fn write_events(
 ) -> Result<WrittenEvents, IngestError> {
     // A statement stuck behind a bucket lock must not pin a pooled connection for long after
     // the write is abandoned.
-    let mut transaction = state.db.begin_with(BEGIN_WITH_STATEMENT_TIMEOUT).await?;
-    ingest::validate_references(&mut transaction, organization_id, events).await?;
+    let mut transaction = state
+        .db
+        .begin_with(BEGIN_WITH_STATEMENT_TIMEOUT)
+        .instrument(tracing::info_span!("begin"))
+        .await?;
+    ingest::validate_references(&mut transaction, organization_id, events)
+        .instrument(tracing::info_span!("validate_references"))
+        .await?;
     let (event_types, resolved_event_types) =
         match state.event_types.lookup(organization_id, events) {
             Some(event_types) => (event_types, None),
@@ -371,6 +384,7 @@ async fn write_events(
         };
     let staged =
         ingest::insert_staged_events(&mut transaction, organization_id, events, &event_types)
+            .instrument(tracing::info_span!("insert_staged_events"))
             .await?;
     let request_span = tracing::Span::current();
     request_span.record("inserted_events", staged.inserted.len());
@@ -402,7 +416,9 @@ async fn write_events(
             rollup.outpost_changes,
         )
     };
+    let job_count = sync_jobs.len();
     jobs::enqueue(state.sqs.as_deref(), &mut state.redis.clone(), sync_jobs)
+        .instrument(tracing::info_span!("enqueue_bucket_syncs", job_count))
         .await
         .map_err(IngestError::QueueUnavailable)?;
     Ok(WrittenEvents {

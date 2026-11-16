@@ -1066,6 +1066,7 @@ dependencies = [
  "axum",
  "chrono",
  "codspeed-criterion-compat",
+ "futures-util",
  "ipnet",
  "logfire",
  "redis",

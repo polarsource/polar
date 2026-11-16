@@ -2,6 +2,7 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import { useUpdateCatalog } from '@/hooks/queries/catalogs'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
@@ -78,6 +79,18 @@ const RenameForm = ({
 
 export const VersionTitle = ({ catalog }: { catalog: Catalog }) => {
   const { isShown, show, hide } = useModal()
+  const canManageProducts = useHasPermission(
+    catalog.organization_id,
+    'products:manage',
+  )
+
+  if (!canManageProducts) {
+    return (
+      <Text variant="heading-xs" as="h1" truncate>
+        {catalog.name ?? 'Untitled'}
+      </Text>
+    )
+  }
 
   return (
     <>

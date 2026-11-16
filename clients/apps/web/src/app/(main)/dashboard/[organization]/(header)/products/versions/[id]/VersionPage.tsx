@@ -123,7 +123,10 @@ export default function VersionPage({
             </Box>
           </Box>
           {catalog.status === 'draft' ? (
-            <PublishDraftButton catalogId={catalog.id} />
+            <PublishDraftButton
+              organizationId={organization.id}
+              catalogId={catalog.id}
+            />
           ) : null}
         </>
       }

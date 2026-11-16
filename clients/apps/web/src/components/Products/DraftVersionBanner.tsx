@@ -73,7 +73,10 @@ export const DraftVersionBanner = ({
             View current version
           </Button>
         ) : null}
-        <PublishDraftButton catalogId={draftId} />
+        <PublishDraftButton
+          organizationId={organization.id}
+          catalogId={draftId}
+        />
       </Box>
     </Box>
   )

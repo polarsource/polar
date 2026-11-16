@@ -1,15 +1,17 @@
 import { CliError, CliOutput } from 'effect/cli'
 
 const MOVED = new Map([
-  ['listen', 'webhook listen'],
-  ['trigger', 'webhook trigger'],
+  ['polar listen', 'webhook listen'],
+  ['polar trigger', 'webhook trigger'],
+  ['polar auth status', 'whoami'],
+  ['polar products archive', 'update <id> --is-archived=true'],
 ])
 
 const suggestMoved = (error: CliError.CliError) => {
-  if (error._tag !== 'UnknownSubcommand' || error.parent?.length !== 1) {
+  if (error._tag !== 'UnknownSubcommand' || error.parent === undefined) {
     return error
   }
-  const moved = MOVED.get(error.subcommand)
+  const moved = MOVED.get([...error.parent, error.subcommand].join(' '))
   return moved === undefined
     ? error
     : new CliError.UnknownSubcommand({

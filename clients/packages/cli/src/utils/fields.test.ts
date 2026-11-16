@@ -53,6 +53,32 @@ describe('selectFields', () => {
     })
   })
 
+  test('accepts fields of a list prefixed with items', () => {
+    const list = {
+      items: [product, { ...product, id: 'prod-2', name: 'Free' }],
+      pagination: { total_count: 2, max_page: 1 },
+    }
+    expect(selected(list, 'items.id,items.prices.price_amount')).toEqual({
+      items: [
+        { id: 'prod-1', prices: [{ price_amount: 1000 }, { price_amount: 0 }] },
+        { id: 'prod-2', prices: [{ price_amount: 1000 }, { price_amount: 0 }] },
+      ],
+      pagination: { total_count: 2, max_page: 1 },
+    })
+    expect(selected(list, 'items')).toBe(list)
+  })
+
+  test('keeps items as a field of each record when the records have one', () => {
+    const list = {
+      items: [{ id: 'order-1', items: [{ label: 'Pro', amount: 1000 }] }],
+      pagination: { total_count: 1, max_page: 1 },
+    }
+    expect(selected(list, 'items.label')).toEqual({
+      items: [{ items: [{ label: 'Pro' }] }],
+      pagination: { total_count: 1, max_page: 1 },
+    })
+  })
+
   test('treats a record with its own items as one record, not a list', () => {
     const order = { id: 'order-1', items: [{ label: 'Pro', amount: 1000 }] }
     expect(selected(order, 'id,items.label')).toEqual({

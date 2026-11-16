@@ -1,0 +1,19 @@
+events/src/ingest.rs
+  s_4b5eb4ed5edf2a::t_347499284984c0 203-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fdd1d62dc0d522f4fb35d4090024c73a693413fe",
+  "prompts": {},
+  "sessions": {
+    "s_4b5eb4ed5edf2a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05bad081-3db0-4f78-89d4-0a6fd2614e96",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

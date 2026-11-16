@@ -643,7 +643,7 @@ jobs:
           overwrite: true
           retention-days: 3
 
-      - name: Upload shared-startup diagnostics
+      - name: Record shared-startup evidence
         if: always() && matrix.shard != 'tinybird'
         uses: actions/upload-artifact@v7
         with:

@@ -1,0 +1,33 @@
+.github/ci_startup_probe.py
+  s_f83d2c94945117::t_e3988127339b25 1-171
+.github/ci_pool/pool.py
+  s_94f2b33009c1e9::t_22438105c606d4 12-13,26-28,40-46,48,86,109-114
+.github/ci_pool/preload.py
+  s_94f2b33009c1e9::t_a05d281f841f1a 14-15,19-21,25,68
+.github/workflows/test_server.yaml
+  s_94f2b33009c1e9::t_39f586b6cf530f 21,32-35,599-609,640,645
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "add9d46e73b5e9f74d684b7949419e92b7a1498a",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

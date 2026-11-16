@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
   pull-requests: write
 
 defaults:
@@ -23,7 +24,6 @@ jobs:
     timeout-minutes: 15
 
     env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
 
     steps:
@@ -44,6 +44,12 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: clients/packages/cli/package.json
+
+      - name: Set up Turborepo Remote Cache
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        continue-on-error: true
+        with:
+          team: ${{ vars.TURBO_TEAM }}
 
       - name: 📦 Install dependencies
         run: pnpm install

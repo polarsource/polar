@@ -17,6 +17,9 @@ export interface BenefitGrantEventCardProps {
     | schemas['BenefitCycledEvent']
     | schemas['BenefitUpdatedEvent']
     | schemas['BenefitRevokedEvent']
+    | schemas['BenefitManuallyGrantedEvent']
+    | schemas['BenefitManuallyRevokedEvent']
+    | schemas['BenefitUnrevokedEvent']
 }
 
 export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
@@ -35,6 +38,12 @@ export const BenefitEventCard = ({ event }: BenefitGrantEventCardProps) => {
         return ['Updated', 'blue']
       case 'benefit.revoked':
         return ['Revoked', 'red']
+      case 'benefit.manually_granted':
+        return ['Manually Granted', 'green']
+      case 'benefit.manually_revoked':
+        return ['Manually Revoked', 'red']
+      case 'benefit.unrevoked':
+        return ['Unrevoked', 'green']
       default:
         return null
     }

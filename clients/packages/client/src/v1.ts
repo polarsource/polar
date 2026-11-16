@@ -13142,6 +13142,158 @@ export interface components {
         | null
     }
     /**
+     * BenefitManuallyGrantedEvent
+     * @description An event created by Polar when a benefit grant is created manually.
+     */
+    BenefitManuallyGrantedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'benefit.manually_granted'
+      metadata: components['schemas']['BenefitGrantMetadata']
+    }
+    /**
+     * BenefitManuallyRevokedEvent
+     * @description An event created by Polar when a benefit grant is manually revoked.
+     */
+    BenefitManuallyRevokedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'benefit.manually_revoked'
+      metadata: components['schemas']['BenefitGrantMetadata']
+    }
+    /**
      * BenefitMeterCredit
      * @description A benefit of type `meter_unit`.
      *
@@ -13963,6 +14115,82 @@ export interface components {
       | 'meter_credit'
       | 'feature_flag'
       | 'slack_shared_channel'
+    /**
+     * BenefitUnrevokedEvent
+     * @description An event created by Polar when a manual revocation is cleared.
+     */
+    BenefitUnrevokedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'benefit.unrevoked'
+      metadata: components['schemas']['BenefitGrantMetadata']
+    }
     /**
      * BenefitUpdatedEvent
      * @description An event created by Polar when a benefit is updated.
@@ -40620,6 +40848,9 @@ export interface components {
       | components['schemas']['BenefitCycledEvent']
       | components['schemas']['BenefitUpdatedEvent']
       | components['schemas']['BenefitRevokedEvent']
+      | components['schemas']['BenefitManuallyGrantedEvent']
+      | components['schemas']['BenefitManuallyRevokedEvent']
+      | components['schemas']['BenefitUnrevokedEvent']
       | components['schemas']['SubscriptionCreatedEvent']
       | components['schemas']['SubscriptionUpdatedEvent']
       | components['schemas']['SubscriptionCycledEvent']
@@ -73494,6 +73725,12 @@ export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<
 export const benefitLicenseKeysPublicTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysPublic']['type']
 > = ['license_keys']
+export const benefitManuallyGrantedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitManuallyGrantedEvent']['name']
+> = ['benefit.manually_granted']
+export const benefitManuallyRevokedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitManuallyRevokedEvent']['name']
+> = ['benefit.manually_revoked']
 export const benefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCredit']['type']
 > = ['meter_credit']
@@ -73539,6 +73776,9 @@ export const benefitTypeValues: ReadonlyArray<
   'feature_flag',
   'slack_shared_channel',
 ]
+export const benefitUnrevokedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitUnrevokedEvent']['name']
+> = ['benefit.unrevoked']
 export const benefitUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
 > = ['benefit.updated']

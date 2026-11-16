@@ -12,6 +12,9 @@ const DEDICATED_CARD_EVENTS = new Set([
   'benefit.cycled',
   'benefit.updated',
   'benefit.revoked',
+  'benefit.manually_granted',
+  'benefit.manually_revoked',
+  'benefit.unrevoked',
   'subscription.cycled',
   'subscription.revoked',
   'subscription.product_updated',
@@ -31,6 +34,9 @@ export const useEventCard = (event: schemas['Event']) => {
           case 'benefit.cycled':
           case 'benefit.updated':
           case 'benefit.revoked':
+          case 'benefit.manually_granted':
+          case 'benefit.manually_revoked':
+          case 'benefit.unrevoked':
             return <BenefitEventCard event={event} />
           case 'subscription.cycled':
           case 'subscription.revoked':

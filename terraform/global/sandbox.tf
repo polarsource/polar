@@ -875,3 +875,63 @@ resource "tfe_variable" "backoffice_google_hosted_domain_sandbox" {
     ignore_changes = [value]
   }
 }
+
+# Claude self-hosted runners (terraform/sandbox/claude_runners.tf)
+
+resource "tfe_variable" "claude_runner_environment_secret_sandbox" {
+  key             = "claude_runner_environment_secret"
+  category        = "terraform"
+  description     = "Secret of the sandbox Claude self-hosted environment"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "claude_runner_tailscale_oauth_client_id_sandbox" {
+  key             = "claude_runner_tailscale_oauth_client_id"
+  category        = "terraform"
+  description     = "Tailscale OAuth client with Auth Keys write permission for tag:claude-session"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "claude_runner_tailscale_oauth_client_secret_sandbox" {
+  key             = "claude_runner_tailscale_oauth_client_secret"
+  category        = "terraform"
+  description     = "Secret of the Tailscale OAuth client for Claude session nodes"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "claude_runner_ghcr_username_sandbox" {
+  key             = "claude_runner_ghcr_username"
+  category        = "terraform"
+  description     = "GitHub user whose token pulls the Claude runner image from GHCR"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "claude_runner_ghcr_token_sandbox" {
+  key             = "claude_runner_ghcr_token"
+  category        = "terraform"
+  description     = "GitHub token with read:packages for the Claude runner image"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

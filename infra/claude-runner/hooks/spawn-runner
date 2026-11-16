@@ -1,0 +1,81 @@
+#!/bin/bash
+# Called by `claude self-hosted-runner orchestrator` once per spawn request. Starts one
+# Fargate task that serves exactly one session, then returns.
+#
+# Exit 0: submitted. Exit 1: retryable. Exit 2: misconfigured, retrying won't help.
+set -uo pipefail
+umask 077
+
+for var in RUNNER_CLUSTER RUNNER_TASK_DEFINITION RUNNER_CONTAINER_NAME RUNNER_SUBNETS \
+  RUNNER_SECURITY_GROUPS TS_OAUTH_CLIENT_ID TS_OAUTH_CLIENT_SECRET TS_SESSION_TAG \
+  CLAUDE_RUNNER_WORK_ORDER_FILE CLAUDE_RUNNER_ORDER_ID; do
+  if [ -z "${!var:-}" ]; then
+    echo "spawn-runner: $var is not set" >&2
+    exit 2
+  fi
+done
+
+session_id="${CLAUDE_RUNNER_SESSION_ID:-}"
+standby=0
+[ -n "$session_id" ] || standby=1
+
+overrides=$(mktemp)
+trap 'rm -f "$overrides"' EXIT
+
+ts_token=$(curl -fsS --max-time 10 https://api.tailscale.com/api/v2/oauth/token \
+  -d "client_id=$TS_OAUTH_CLIENT_ID" -d "client_secret=$TS_OAUTH_CLIENT_SECRET" |
+  jq -er .access_token) || { echo "spawn-runner: Tailscale OAuth token request failed" >&2; exit 1; }
+
+ts_key=$(jq -n --arg tag "$TS_SESSION_TAG" '{
+    capabilities: {devices: {create: {
+      reusable: false, ephemeral: true, preauthorized: true, tags: [$tag]
+    }}},
+    expirySeconds: 900,
+    description: "claude-session"
+  }' |
+  curl -fsS --max-time 10 https://api.tailscale.com/api/v2/tailnet/-/keys \
+    -H "Authorization: Bearer $ts_token" -H "Content-Type: application/json" -d @- |
+  jq -er .key) || { echo "spawn-runner: Tailscale auth key request failed" >&2; exit 1; }
+
+jq -n \
+  --arg container "$RUNNER_CONTAINER_NAME" \
+  --rawfile work_order "$CLAUDE_RUNNER_WORK_ORDER_FILE" \
+  --arg ts_key "$ts_key" \
+  --arg session_id "$session_id" \
+  --arg standby "$standby" \
+  '{containerOverrides: [{
+    name: $container,
+    environment: [
+      {name: "SELF_HOSTED_RUNNER_ENVIRONMENT_SECRET", value: ($work_order | rtrimstr("\n"))},
+      {name: "TS_AUTHKEY", value: $ts_key},
+      {name: "CLAUDE_RUNNER_SESSION_ID", value: $session_id},
+      {name: "CLAUDE_RUNNER_STANDBY", value: $standby}
+    ]
+  }]}' > "$overrides"
+
+# ECS keeps a RunTask client token for a while and returns the existing task for a repeat,
+# so a re-delivered order never starts a second task. The token allows at most 64 characters.
+client_token=$(printf '%s' "$CLAUDE_RUNNER_ORDER_ID" | sha256sum | cut -c1-64)
+
+if ! out=$(aws ecs run-task \
+  --cluster "$RUNNER_CLUSTER" \
+  --task-definition "$RUNNER_TASK_DEFINITION" \
+  --capacity-provider-strategy "capacityProvider=${RUNNER_CAPACITY_PROVIDER:-FARGATE},weight=1" \
+  --network-configuration "awsvpcConfiguration={subnets=[$RUNNER_SUBNETS],securityGroups=[$RUNNER_SECURITY_GROUPS],assignPublicIp=DISABLED}" \
+  --overrides "file://$overrides" \
+  --client-token "$client_token" \
+  --started-by "claude-orchestrator" \
+  --tags "key=claude-order-id,value=$CLAUDE_RUNNER_ORDER_ID" \
+         "key=claude-session-id,value=${session_id:-standby}" \
+  --output json 2>&1); then
+  printf 'spawn-runner: run-task failed: %s\n' "$out" >&2
+  exit 1
+fi
+
+if [ "$(printf '%s' "$out" | jq '.failures | length')" != "0" ]; then
+  printf 'spawn-runner: run-task reported failures: %s\n' "$(printf '%s' "$out" | jq -c .failures)" >&2
+  exit 1
+fi
+
+printf 'spawn-runner: order %s session %s -> %s\n' "$CLAUDE_RUNNER_ORDER_ID" \
+  "${session_id:-standby}" "$(printf '%s' "$out" | jq -r '.tasks[0].taskArn')"

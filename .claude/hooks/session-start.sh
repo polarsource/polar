@@ -5,7 +5,12 @@
 # failures, so one broken step never blocks the session.
 set -uo pipefail
 
-if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
+# Self-hosted runners on ECS Fargate (infra/claude-runner) set this: Postgres, Redis and
+# MinIO run as sidecar containers on localhost, and Fargate cannot run a Docker daemon.
+SIDECARS=0
+[ "${POLAR_SESSION_SERVICES:-}" = "sidecars" ] && SIDECARS=1
+
+if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ] && [ "$SIDECARS" -eq 0 ]; then
   exit 0
 fi
 
@@ -122,8 +127,38 @@ ensure_dockerd() {
   return 1
 }
 
+wait_sidecars() {
+  for _ in $(seq 1 120); do
+    if pg_isready -q -h 127.0.0.1 -U polar &&
+      (exec 3<>/dev/tcp/127.0.0.1/6379) 2>/dev/null &&
+      curl -fsS -o /dev/null http://127.0.0.1:9000/minio/health/live; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+env_value() {
+  sed -n "s/^$1=//p" "$ROOT/server/.env" | tail -n 1 | tr -d '"'
+}
+
+setup_sidecar_buckets() {
+  MINIO_HOST=127.0.0.1 \
+    MINIO_ROOT_USER="$(env_value POLAR_MINIO_USER)" \
+    MINIO_ROOT_PASSWORD="$(env_value POLAR_MINIO_PWD)" \
+    BUCKET_NAME="$(env_value POLAR_S3_FILES_BUCKET_NAME)" \
+    PUBLIC_BUCKET_NAME="$(env_value POLAR_S3_FILES_PUBLIC_BUCKET_NAME)" \
+    POLICY_FILE="$ROOT/server/.minio/policy.json" \
+    ACCESS_KEY="$(env_value POLAR_AWS_ACCESS_KEY_ID)" \
+    SECRET_ACCESS_KEY="$(env_value POLAR_AWS_SECRET_ACCESS_KEY)" \
+    timeout 120 bash "$ROOT/server/.minio/local.sh" "$ROOT/server/.minio/configure.sh"
+}
+
 DOCKER_LAUNCHED=0
-step "docker daemon" launch_dockerd && DOCKER_LAUNCHED=1
+if [ "$SIDECARS" -eq 0 ]; then
+  step "docker daemon" launch_dockerd && DOCKER_LAUNCHED=1
+fi
 
 # Must precede compose, which interpolates the Postgres credentials and MinIO bucket
 # names from server/.env and silently starts dead containers without them.
@@ -193,7 +228,12 @@ fi
 [ -n "$PULL_PID" ] && reap "image pull" "$PULL_PID" "$PULL_LOG" optional
 
 PG_OK=0
-if [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" ensure_dockerd; then
+if [ "$SIDECARS" -eq 1 ]; then
+  if step "infrastructure (sidecars)" wait_sidecars; then
+    PG_OK=1
+    step "minio buckets" setup_sidecar_buckets
+  fi
+elif [ "$DOCKER_LAUNCHED" -eq 1 ] && step "docker daemon ready" ensure_dockerd; then
   # --wait uses the healthchecks docker-compose.yml declares. Services are named because
   # a bare `up -d` also pulls tinybird, whose tests skip themselves when it is absent.
   if step "infrastructure" "${COMPOSE[@]}" up -d --wait --wait-timeout 120 db redis minio; then

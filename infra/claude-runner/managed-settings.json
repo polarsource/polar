@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "ask": ["mcp__speakeasy"],
+    "disableBypassPermissionsMode": "disable"
+  }
+}

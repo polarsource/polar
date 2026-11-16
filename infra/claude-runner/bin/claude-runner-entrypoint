@@ -1,0 +1,88 @@
+#!/bin/bash
+set -euo pipefail
+umask 077
+
+mode="${1:-runner}"
+secrets_dir=/run/claude
+mkdir -p "$secrets_dir"
+
+run_orchestrator() {
+  : "${CLAUDE_ENVIRONMENT_SECRET:?Set the environment secret}"
+  printf '%s' "$CLAUDE_ENVIRONMENT_SECRET" > "$secrets_dir/environment-secret"
+  unset CLAUDE_ENVIRONMENT_SECRET
+
+  args=(
+    --environment-secret-file "$secrets_dir/environment-secret"
+    --hooks-dir /etc/claude/hooks
+    --hook-timeout 30
+    --shutdown-drain-sec 40
+    --expected-spawn-seconds "${CLAUDE_EXPECTED_SPAWN_SECONDS:-240}"
+  )
+  if [ "${CLAUDE_MIN_IDLE:-0}" -gt 0 ]; then
+    args+=(--min-idle "$CLAUDE_MIN_IDLE")
+  fi
+  exec claude self-hosted-runner orchestrator "${args[@]}"
+}
+
+# Only the Speakeasy gateway goes over the tailnet: requests to its hostname resolve to
+# 127.0.0.1:443 and socat forwards them through `tailscale nc`. TLS still terminates at the
+# gateway, so its certificate is checked as usual. Everything else, including the session's
+# stream to api.anthropic.com, leaves directly through the NAT gateway.
+start_gateway_tunnel() {
+  local url="${SPEAKEASY_GATEWAY_URL:-}"
+  [ -n "$url" ] || return 0
+
+  local host
+  host=$(printf '%s' "$url" | sed -E 's#^https://([^/:]+).*#\1#')
+
+  mkdir -p /tmp/tailscale
+  tailscaled --tun=userspace-networking --statedir=/tmp/tailscale \
+    --socket=/tmp/tailscale/tailscaled.sock >/tmp/tailscaled.log 2>&1 &
+  for _ in $(seq 1 50); do
+    [ -S /tmp/tailscale/tailscaled.sock ] && break
+    sleep 0.2
+  done
+  tailscale --socket=/tmp/tailscale/tailscaled.sock up \
+    --auth-key="${TS_AUTHKEY:?spawn-runner must pass a single-use Tailscale key}" \
+    --hostname="claude-session-${CLAUDE_RUNNER_SESSION_ID:-standby}" \
+    --accept-dns=false --timeout=60s
+  unset TS_AUTHKEY
+
+  printf '127.0.0.1 %s\n' "$host" >> /etc/hosts
+  socat TCP-LISTEN:443,bind=127.0.0.1,reuseaddr,fork \
+    EXEC:"tailscale --socket=/tmp/tailscale/tailscaled.sock nc $host 443" &
+
+  jq -n --arg url "$url" '{mcpServers: {speakeasy: {type: "http", url: $url}}}' \
+    > /etc/claude/mcp.json
+  chmod 644 /etc/claude/mcp.json
+}
+
+run_runner() {
+  : "${SELF_HOSTED_RUNNER_ENVIRONMENT_SECRET:?spawn-runner must pass the work order}"
+  printf '%s' "$SELF_HOSTED_RUNNER_ENVIRONMENT_SECRET" > "$secrets_dir/work-order"
+  unset SELF_HOSTED_RUNNER_ENVIRONMENT_SECRET
+
+  start_gateway_tunnel
+
+  args=(
+    --environment-secret-file "$secrets_dir/work-order"
+    --base-dir /workspace
+    --capacity 1
+    --use-anthropic-git-proxy
+    --exec-path /usr/local/sbin/claude-session-wrapper
+    --remove-session-state
+    --push-outcome-on-release
+    --release-idle-session-min "${CLAUDE_RELEASE_IDLE_SESSION_MIN:-30}"
+    --kill-session-after-min "${CLAUDE_KILL_SESSION_AFTER_MIN:-480}"
+  )
+  if [ "${CLAUDE_RUNNER_STANDBY:-0}" = "1" ]; then
+    args+=(--exit-if-unused-min 60)
+  fi
+  exec claude self-hosted-runner "${args[@]}"
+}
+
+case "$mode" in
+  orchestrator) run_orchestrator ;;
+  runner) run_runner ;;
+  *) exec "$@" ;;
+esac

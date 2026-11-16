@@ -141,6 +141,12 @@ variable "logfire" {
   sensitive = true
 }
 
+variable "stop_timeout" {
+  description = "Seconds ECS waits after SIGTERM before killing the main container. Fargate allows up to 120."
+  type        = number
+  default     = null
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention in days."
   type        = number

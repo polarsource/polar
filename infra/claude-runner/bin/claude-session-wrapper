@@ -1,0 +1,6 @@
+#!/bin/bash
+extra=()
+if [ -f /etc/claude/mcp.json ]; then
+  extra+=(--mcp-config /etc/claude/mcp.json)
+fi
+exec "$CLAUDE_RUNNER_CLAUDE_BIN" "$@" "${extra[@]}"

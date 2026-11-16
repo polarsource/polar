@@ -33,6 +33,13 @@ Two things to know when running tests here:
   isolation. Scope with `--filter`, or pass `--concurrency=2`.
 - `packages/cli` tests need `bun`.
 
+### Self-hosted runners (ECS Fargate)
+
+Sessions in the self-hosted environment (`infra/claude-runner/`) run with
+`POLAR_SESSION_SERVICES=sidecars`. Postgres, Redis and MinIO are sidecar containers on
+`localhost`, so the hook skips Docker, waits for them, and creates the MinIO buckets with `mc`.
+Docker itself isn't available there: Fargate can't run a daemon.
+
 ## Cursor Cloud specific instructions
 
 Prefer the Polar Development CLI (`dev/cli/`, alias `dev`) — the same path local developers use.

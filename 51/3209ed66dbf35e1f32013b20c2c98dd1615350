@@ -1,0 +1,19 @@
+events/src/app.rs
+  s_9e29c5984633d1::t_f1e970c88c0231 81,83-89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "513209ed66dbf35e1f32013b20c2c98dd1615350",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+.github/ci/ci_runtime_profile.py
+  s_f83d2c94945117::t_bf35eb91093a3a 1-87
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_6aef60349cb38c 525-531,537,546-556
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ddb6ab87490194f320b099afeaf5a6bb56e2b8b",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

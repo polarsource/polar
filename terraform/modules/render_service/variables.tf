@@ -272,6 +272,7 @@ variable "memory_profile_config" {
   type = object({
     s3_bucket_name = string
     interval       = optional(number, 300)
+    api_only       = optional(bool, false)
   })
   default = null
 }

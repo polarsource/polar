@@ -455,7 +455,7 @@ resource "render_env_group_link" "polar_self" {
 resource "render_env_group_link" "memory_profile" {
   count        = var.memory_profile_config != null ? 1 : 0
   env_group_id = render_env_group.memory_profile[0].id
-  service_ids  = concat(local.api_ids, local.worker_ids, render_private_service.backoffice[*].id)
+  service_ids  = var.memory_profile_config.api_only ? local.api_ids : concat(local.api_ids, local.worker_ids, render_private_service.backoffice[*].id)
 }
 
 resource "cloudflare_dns_record" "resend_dkim" {

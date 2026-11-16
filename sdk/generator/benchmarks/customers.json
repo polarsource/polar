@@ -1,0 +1,36 @@
+{
+  "concurrency": 100,
+  "page_size": 100,
+  "customer": {
+    "id": "00000000-0000-4000-8000-000000000001",
+    "created_at": "2026-10-01T12:00:00Z",
+    "modified_at": "2026-10-02T12:00:00Z",
+    "metadata": {
+      "source": "website",
+      "plan": "professional",
+      "seats": 12,
+      "active": true
+    },
+    "external_id": "customer-1",
+    "email": "customer-1@example.com",
+    "email_verified": true,
+    "type": "individual",
+    "name": "Alex Example",
+    "billing_name": "Example Company",
+    "billing_address": {
+      "line1": "123 Example Street",
+      "line2": "Suite 200",
+      "postal_code": "10001",
+      "city": "New York",
+      "state": "NY",
+      "country": "US"
+    },
+    "tax_id": null,
+    "locale": "en-US",
+    "organization_id": "00000000-0000-4000-8000-000000000002",
+    "default_payment_method_id": null,
+    "deleted_at": null,
+    "first_user_event_at": "2026-10-02T12:00:00Z",
+    "avatar_url": null
+  }
+}

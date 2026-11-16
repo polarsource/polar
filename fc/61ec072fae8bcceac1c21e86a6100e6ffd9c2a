@@ -1,0 +1,19 @@
+server/polar/logging.py
+  s_0d80fa5d0b4a98::t_ddfa072c780d25 47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc61ec072fae8bcceac1c21e86a6100e6ffd9c2a",
+  "prompts": {},
+  "sessions": {
+    "s_0d80fa5d0b4a98": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "904d44c6-d094-4170-b06b-98b2e91a224f",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

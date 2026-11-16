@@ -176,6 +176,11 @@ class NumeralTaxService(TaxServiceProtocol):
     def __init__(self) -> None:
         self.client = httpx2.AsyncClient(
             base_url="https://api.numeralhq.com",
+            limits=httpx2.Limits(
+                max_connections=100,
+                max_keepalive_connections=20,
+                keepalive_expiry=30.0,
+            ),
             headers={
                 "X-API-Version": NUMERAL_API_VERSION,
                 "Authorization": f"Bearer {settings.NUMERAL_API_KEY}",

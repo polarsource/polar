@@ -181,7 +181,9 @@ jobs:
         working-directory: ./server
         run: |
           for durations in "$RUNNER_TEMP"/test-durations/*/.test_durations; do
-            jq -e '.failed == false and .workers == 8' "$(dirname "$durations")/summary.json" > /dev/null
+            expected_workers=8
+            if [[ "$(basename "$(dirname "$durations")")" = 'test-results-1' ]]; then expected_workers=4; fi
+            jq -e --argjson workers "$expected_workers" '.failed == false and .workers == $workers' "$(dirname "$durations")/summary.json" > /dev/null
           done
           uv run python -m scripts.merge_test_durations --expected-shards 3 --output .test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
 

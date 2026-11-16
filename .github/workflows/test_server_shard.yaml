@@ -168,7 +168,7 @@ jobs:
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
-          uv run python -m scripts.pytest_shards --shards 3 --shard ${{ inputs.shard }} > "$RUNNER_TEMP/ordinary-files"
+          uv run python -m scripts.pytest_shards --shards 3 --workers-per-shard 3,8,8 --shard ${{ inputs.shard }} > "$RUNNER_TEMP/ordinary-files"
           cp "$RUNNER_TEMP/ordinary-files" "$RUNNER_TEMP/test-files"
           weights=()
           extra=()
@@ -180,7 +180,7 @@ jobs:
             extra=(--ordinary-files "$RUNNER_TEMP/ordinary-files")
             marker='not benchmark'
           fi
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run python -m scripts.pytest_pool --workers 8 --timeout 840 --output "$RUNNER_TEMP/pytest-pool" "${weights[@]}" "${extra[@]}" --marker "$marker" tests
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run python -m scripts.pytest_pool --workers ${{ inputs.shard == '1' && '4' || '8' }} --timeout 840 --output "$RUNNER_TEMP/pytest-pool" "${weights[@]}" "${extra[@]}" --marker "$marker" tests
           cp "$RUNNER_TEMP/pytest-pool/.test_durations" .test_durations
 
       - name: Collect setup logs

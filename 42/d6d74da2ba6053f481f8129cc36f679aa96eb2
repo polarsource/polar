@@ -1,0 +1,21 @@
+server/scripts/tinybird_test_workspace.py
+  s_94f2b33009c1e9::t_30f0609eac67d3 146
+server/tests/scripts/test_tinybird_deployment.py
+  s_94f2b33009c1e9::t_9bb48b042b987f 82-83,110-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "42d6d74da2ba6053f481f8129cc36f679aa96eb2",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

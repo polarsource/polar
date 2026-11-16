@@ -1,0 +1,31 @@
+server/scripts/tinybird_test_workspace.py
+  s_f83d2c94945117::t_7bef69b7a72079 1-3,81-122,131-132,134-135,137,144,146-211
+server/tests/scripts/test_tinybird_deployment.py
+  s_f83d2c94945117::t_72b8f2da48fcd0 1-292
+.github/workflows/test_server.yaml
+  s_94f2b33009c1e9::t_2666e621193d24 184-187,190-194,549-553,561
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "52d49ef60683a44d646153ed7a08c5893eb4c76b",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

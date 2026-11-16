@@ -1,0 +1,25 @@
+.github/ci_pool/pool.py
+  s_f83d2c94945117::t_4c6ac8893345f3 93-98,166,171-172,180-182,204,223-226,265-268
+.github/ci_pool/preload.py
+  s_f83d2c94945117::t_4c6ac8893345f3 8-9,21-33,56,84
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_4c6ac8893345f3 424,433-434,442,461,471,480,491,548,557,596-597,599-600,602-603,605-611,615-616,619-621,626-627,630-631,653-663,665,669,690,693,700,705
+server/scripts/tinybird_test_workspace.py
+  s_f83d2c94945117::t_98b1a89e3b9bb1 87,89,97-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "00b86acf79ad5584fb6e14cb5c6098557cf97f14",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

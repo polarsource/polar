@@ -16,6 +16,7 @@ from .campaign import Campaign
 from .catalog import Catalog
 from .catalog_benefit import CatalogBenefit
 from .catalog_meter import CatalogMeter
+from .catalog_migration import CatalogMigration
 from .catalog_product import CatalogProduct
 from .checkout import Checkout
 from .checkout_link import CheckoutLink
@@ -166,6 +167,7 @@ __all__ = [
     "Catalog",
     "CatalogBenefit",
     "CatalogMeter",
+    "CatalogMigration",
     "CatalogProduct",
     "Checkout",
     "CheckoutLink",

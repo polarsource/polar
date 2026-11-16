@@ -20,8 +20,8 @@ jobs:
     name: "Detect changes"
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      server: ${{ steps.filter.outputs.server }}
-      emails: ${{ steps.filter.outputs.emails }}
+      server: ${{ 'true' }}
+      emails: ${{ 'true' }}
       migrations: ${{ steps.filter.outputs.migrations }}
       migration_heads: ${{ steps.filter.outputs.migration_heads }}
       tinybird: ${{ steps.filter.outputs.tinybird }}

@@ -16,9 +16,8 @@ TOKEN = "workspace-secret"
 
 @pytest.fixture
 def submitted(mocker: MockerFixture) -> Mock:
-    return mocker.patch.object(
-        workspace.subprocess,
-        "run",
+    return mocker.patch(
+        "scripts.tinybird_test_workspace.subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, '{"id": 7}', ""),
     )
 

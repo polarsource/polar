@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import select
 
 from polar.agent.identity_assertion import (

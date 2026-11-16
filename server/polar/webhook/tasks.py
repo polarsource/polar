@@ -4,7 +4,7 @@ from ssl import SSLError
 from typing import Annotated
 from uuid import UUID
 
-import httpx
+import httpx2
 import idna
 import sentry_sdk
 import structlog
@@ -174,7 +174,7 @@ async def _webhook_event_send(
             delivery.response = None
         else:
             response = await client.post(
-                httpx.URL(event.webhook_endpoint.url),
+                httpx2.URL(event.webhook_endpoint.url),
                 content=event.payload,
                 headers=headers,
                 timeout=10.0,
@@ -188,11 +188,11 @@ async def _webhook_event_send(
             event.last_http_code = response.status_code
             response.raise_for_status()
     # Error
-    except (httpx.HTTPError, SSLError, SSRFBlockedError) as e:
+    except (httpx2.HTTPError, SSLError, SSRFBlockedError) as e:
         bound_log.info("An error occurred while sending a webhook", error=e)
 
         if (
-            isinstance(e, httpx.HTTPStatusError)
+            isinstance(e, httpx2.HTTPStatusError)
             and e.response.status_code == 429
             and "discord" in event.webhook_endpoint.url.lower()
         ):

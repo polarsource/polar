@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import func, select
 
 from polar.models import (

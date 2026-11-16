@@ -1,6 +1,7 @@
+from unittest.mock import Mock
+
 import pytest
-import respx
-from httpx import Response
+from httpx2 import Response
 
 from polar.integrations.discord.client import DiscordClient
 
@@ -20,9 +21,9 @@ def client() -> DiscordClient:
 @pytest.mark.anyio
 class TestAddMember:
     async def test_everyone_role_member_already_in_guild(
-        self, client: DiscordClient, respx_mock: respx.MockRouter
+        self, client: DiscordClient, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        add_member = respx_mock.put(MEMBER_URL).mock(return_value=Response(204))
+        add_member = http_mocks["PUT", MEMBER_URL] = Mock(return_value=Response(204))
 
         await client.add_member(
             guild_id=GUILD_ID,
@@ -32,12 +33,12 @@ class TestAddMember:
         )
 
         assert add_member.called
-        assert len(respx_mock.calls) == 1
+        assert sum(mock.call_count for mock in http_mocks.values()) == 1
 
     async def test_everyone_role_member_added_to_guild(
-        self, client: DiscordClient, respx_mock: respx.MockRouter
+        self, client: DiscordClient, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        add_member = respx_mock.put(MEMBER_URL).mock(return_value=Response(201))
+        add_member = http_mocks["PUT", MEMBER_URL] = Mock(return_value=Response(201))
 
         await client.add_member(
             guild_id=GUILD_ID,
@@ -46,16 +47,16 @@ class TestAddMember:
             role_id=GUILD_ID,
         )
 
-        assert add_member.calls.last.request.read() == (
+        assert add_member.call_args.args[0].read() == (
             b'{"access_token":"discord_access_token","roles":["123456789"]}'
         )
-        assert len(respx_mock.calls) == 1
+        assert sum(mock.call_count for mock in http_mocks.values()) == 1
 
     async def test_role_member_already_in_guild(
-        self, client: DiscordClient, respx_mock: respx.MockRouter
+        self, client: DiscordClient, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        add_member = respx_mock.put(MEMBER_URL).mock(return_value=Response(204))
-        add_member_role = respx_mock.put(f"{MEMBER_URL}/roles/{ROLE_ID}").mock(
+        add_member = http_mocks["PUT", MEMBER_URL] = Mock(return_value=Response(204))
+        add_member_role = http_mocks["PUT", f"{MEMBER_URL}/roles/{ROLE_ID}"] = Mock(
             return_value=Response(204)
         )
 
@@ -73,31 +74,31 @@ class TestAddMember:
 @pytest.mark.anyio
 class TestAddMemberRole:
     async def test_everyone_role(
-        self, client: DiscordClient, respx_mock: respx.MockRouter
+        self, client: DiscordClient, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
         await client.add_member_role(
             guild_id=GUILD_ID, discord_user_id=DISCORD_USER_ID, role_id=GUILD_ID
         )
 
-        assert len(respx_mock.calls) == 0
+        assert sum(mock.call_count for mock in http_mocks.values()) == 0
 
 
 @pytest.mark.anyio
 class TestRemoveMemberRole:
     async def test_everyone_role(
-        self, client: DiscordClient, respx_mock: respx.MockRouter
+        self, client: DiscordClient, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
         await client.remove_member_role(
             guild_id=GUILD_ID, discord_user_id=DISCORD_USER_ID, role_id=GUILD_ID
         )
 
-        assert len(respx_mock.calls) == 0
+        assert sum(mock.call_count for mock in http_mocks.values()) == 0
 
     async def test_role(
-        self, client: DiscordClient, respx_mock: respx.MockRouter
+        self, client: DiscordClient, http_mocks: dict[tuple[str, str], Mock]
     ) -> None:
-        remove_member_role = respx_mock.delete(f"{MEMBER_URL}/roles/{ROLE_ID}").mock(
-            return_value=Response(204)
+        remove_member_role = http_mocks["DELETE", f"{MEMBER_URL}/roles/{ROLE_ID}"] = (
+            Mock(return_value=Response(204))
         )
 
         await client.remove_member_role(

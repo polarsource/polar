@@ -2,7 +2,7 @@ import argparse
 import sys
 from typing import Annotated, cast
 
-import httpx
+import httpx2
 import ipinfo_db
 import ipinfo_db.reader
 from fastapi import Depends, Request
@@ -37,7 +37,7 @@ def _download_database(access_token: str) -> None:
         access_token: IPInfo access token.
     """
     with open(DATABASE_PATH, "wb") as db_file:
-        with httpx.Client() as http_client:
+        with httpx2.Client() as http_client:
             with http_client.stream(
                 "GET", DOWNLOAD_PATH.format(token=access_token), follow_redirects=True
             ) as response:

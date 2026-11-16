@@ -1,7 +1,7 @@
 from typing import Any
 from urllib.parse import quote
 
-import httpx
+import httpx2
 
 from polar.config import settings
 from polar.exceptions import PolarError
@@ -34,7 +34,7 @@ class ResendAPIError(ResendClientError):
         )
 
 
-def _raise_for_status(response: httpx.Response, path: str) -> None:
+def _raise_for_status(response: httpx2.Response, path: str) -> None:
     if not response.is_success:
         raise ResendAPIError(
             response.request.method, path, response.status_code
@@ -43,7 +43,7 @@ def _raise_for_status(response: httpx.Response, path: str) -> None:
 
 class ResendClient:
     def __init__(self) -> None:
-        self.client = httpx.AsyncClient(
+        self.client = httpx2.AsyncClient(
             base_url=settings.RESEND_API_BASE_URL,
             headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
         )

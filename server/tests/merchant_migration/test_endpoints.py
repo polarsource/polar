@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 import stripe as stripe_lib
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import READ_ONLY_SCOPES, Scope

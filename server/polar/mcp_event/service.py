@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from typing import Literal
 from uuid import UUID
 
-import httpx
+import httpx2
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
@@ -146,13 +146,13 @@ async def _verify_callback(
     }
 
     try:
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             transport=SSRFSafeTransport(), follow_redirects=False, timeout=10.0
         ) as client:
             response = await client.post(url, content=payload, headers=headers)
-    except httpx.TimeoutException as e:
+    except httpx2.TimeoutException as e:
         raise CallbackEndpointError("timeout") from e
-    except (httpx.HTTPError, ssl.SSLError, SSRFBlockedError) as e:
+    except (httpx2.HTTPError, ssl.SSLError, SSRFBlockedError) as e:
         reason: CallbackEndpointErrorReason = "connection_refused"
         cause: BaseException | None = e
         while cause is not None:

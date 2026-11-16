@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.kit.visibility import Visibility
 from polar.models import Benefit, Customer, Member, Organization, Subscription

@@ -3,7 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import DBAPIError
 

@@ -3,7 +3,7 @@ import uuid
 import pytest
 import stripe as stripe_lib
 from fastapi import HTTPException
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from starlette.requests import Request
 

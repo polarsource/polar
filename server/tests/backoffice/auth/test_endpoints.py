@@ -1,10 +1,11 @@
 from collections.abc import AsyncIterator
+from unittest.mock import Mock
 from urllib.parse import parse_qs, urlsplit
 
 import httpx
+import httpx2
 import jwt
 import pytest
-import respx
 from cryptography.hazmat.primitives.asymmetric import rsa
 from pydantic import SecretStr
 from sqlalchemy import select
@@ -22,7 +23,7 @@ from polar.postgres import AsyncSession, get_db_session
 @pytest.fixture
 async def client(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
-) -> AsyncIterator[httpx.AsyncClient]:
+) -> AsyncIterator[httpx2.AsyncClient]:
     monkeypatch.setattr(settings, "BASE_URL", "http://localhost")
     monkeypatch.setattr(settings, "BACKOFFICE_HOST", None)
     monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "backoffice-client")
@@ -35,14 +36,14 @@ async def client(
     )
     app = Starlette()
     app.mount("/backoffice", backoffice_app)
-    async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://localhost"
+    async with httpx2.AsyncClient(
+        transport=httpx2.ASGITransport(app=app), base_url="http://localhost"
     ) as client:
         yield client
 
 
 @pytest.fixture
-def claims(respx_mock: respx.MockRouter) -> dict[str, object]:
+def claims(oauth_http_mocks: dict[tuple[str, str], Mock]) -> dict[str, object]:
     issuer = "https://accounts.google.com"
     key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     public_key = jwt.get_algorithm_by_name("RS256").to_jwk(
@@ -59,18 +60,23 @@ def claims(respx_mock: respx.MockRouter) -> dict[str, object]:
         "hd": "polar.sh",
         "sub": "google-subject",
     }
-    respx_mock.get(GOOGLE_DISCOVERY_ENDPOINT).respond(
-        json={
-            "issuer": issuer,
-            "authorization_endpoint": f"{issuer}/auth",
-            "token_endpoint": "https://oauth2.googleapis.com/token",
-            "jwks_uri": f"{issuer}/jwks",
-            "id_token_signing_alg_values_supported": ["RS256"],
-            "token_endpoint_auth_methods_supported": ["client_secret_post"],
-        }
+    oauth_http_mocks["GET", GOOGLE_DISCOVERY_ENDPOINT] = Mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "issuer": issuer,
+                "authorization_endpoint": f"{issuer}/auth",
+                "token_endpoint": "https://oauth2.googleapis.com/token",
+                "jwks_uri": f"{issuer}/jwks",
+                "id_token_signing_alg_values_supported": ["RS256"],
+                "token_endpoint_auth_methods_supported": ["client_secret_post"],
+            },
+        )
     )
-    respx_mock.get(f"{issuer}/jwks").respond(
-        json={"keys": [{**public_key, "kid": "test-key", "alg": "RS256"}]}
+    oauth_http_mocks["GET", f"{issuer}/jwks"] = Mock(
+        return_value=httpx.Response(
+            200, json={"keys": [{**public_key, "kid": "test-key", "alg": "RS256"}]}
+        )
     )
 
     def exchange(request: httpx.Request) -> httpx.Response:
@@ -90,11 +96,13 @@ def claims(respx_mock: respx.MockRouter) -> dict[str, object]:
             },
         )
 
-    respx_mock.post("https://oauth2.googleapis.com/token").mock(side_effect=exchange)
+    oauth_http_mocks["POST", "https://oauth2.googleapis.com/token"] = Mock(
+        side_effect=exchange
+    )
     return claims
 
 
-async def start_login(client: httpx.AsyncClient, claims: dict[str, object]) -> str:
+async def start_login(client: httpx2.AsyncClient, claims: dict[str, object]) -> str:
     response = await client.get("/backoffice/auth/")
     assert response.status_code == 303
     params = parse_qs(urlsplit(response.headers["location"]).query)
@@ -106,11 +114,10 @@ async def start_login(client: httpx.AsyncClient, claims: dict[str, object]) -> s
 
 
 @pytest.mark.anyio
-@pytest.mark.respx(assert_all_called=False)
 class TestGoogleLogin:
     async def test_provision_reuse_and_logout(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         session: AsyncSession,
         claims: dict[str, object],
     ) -> None:
@@ -168,7 +175,7 @@ class TestGoogleLogin:
         assert (await session.scalars(select(BackofficeUserSession))).first() is None
 
     async def test_dashboard_session_does_not_authorize_backoffice(
-        self, client: httpx.AsyncClient, session: AsyncSession, user: User
+        self, client: httpx2.AsyncClient, session: AsyncSession, user: User
     ) -> None:
         token, _ = await auth_service._create_user_session(
             session, user, user_agent="tests", scopes=[]
@@ -189,7 +196,7 @@ class TestGoogleLogin:
     )
     async def test_links_preexisting_staff_by_email(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         session: AsyncSession,
         claims: dict[str, object],
         existing_provider_id: str | None,
@@ -211,7 +218,7 @@ class TestGoogleLogin:
         )
 
     async def test_callback_rejects_state_from_another_flow(
-        self, client: httpx.AsyncClient, claims: dict[str, object]
+        self, client: httpx2.AsyncClient, claims: dict[str, object]
     ) -> None:
         old_state = await start_login(client, claims)
         await start_login(client, claims)
@@ -227,7 +234,7 @@ class TestGoogleLogin:
     )
     async def test_rejects_ineligible_claims(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         session: AsyncSession,
         claims: dict[str, object],
         claim: str,
@@ -244,7 +251,7 @@ class TestGoogleLogin:
 
     @pytest.mark.parametrize("claim", ["aud", "nonce"])
     async def test_rejects_invalid_id_token(
-        self, client: httpx.AsyncClient, claims: dict[str, object], claim: str
+        self, client: httpx2.AsyncClient, claims: dict[str, object], claim: str
     ) -> None:
         state = await start_login(client, claims)
         claims[claim] = "invalid"
@@ -256,7 +263,7 @@ class TestGoogleLogin:
 
     async def test_session_survives_hash_secret_rotation(
         self,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         session: AsyncSession,
         claims: dict[str, object],
         monkeypatch: pytest.MonkeyPatch,

@@ -2,7 +2,7 @@ import uuid
 from collections.abc import AsyncIterator
 from unittest.mock import MagicMock
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
@@ -21,11 +21,11 @@ from tests.fixtures.random_objects import create_customer, create_member
 @pytest.fixture
 async def portal_client(
     app: FastAPI, session: AsyncSession
-) -> AsyncIterator[httpx.AsyncClient]:
+) -> AsyncIterator[httpx2.AsyncClient]:
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=False,
-        transport=httpx.ASGITransport(app=app),
+        transport=httpx2.ASGITransport(app=app),
         base_url="http://127.0.0.1",
     ) as client:
         yield client
@@ -50,7 +50,7 @@ def sent_code(send_code: MagicMock) -> str:
     return send_code.call_args.args[2]
 
 
-async def start(client: httpx.AsyncClient, organization: Organization) -> None:
+async def start(client: httpx2.AsyncClient, organization: Organization) -> None:
     response = await client.post(
         "/v1/customer-portal/customer-session/start",
         json={"organization_id": str(organization.id)},
@@ -62,8 +62,8 @@ async def start(client: httpx.AsyncClient, organization: Organization) -> None:
 
 
 async def request_code(
-    client: httpx.AsyncClient, email: str, customer: Customer | None = None
-) -> httpx.Response:
+    client: httpx2.AsyncClient, email: str, customer: Customer | None = None
+) -> httpx2.Response:
     return await client.post(
         "/v1/customer-portal/customer-session/email-otp/request",
         json={
@@ -74,7 +74,7 @@ async def request_code(
     )
 
 
-async def verify(client: httpx.AsyncClient, code: str) -> httpx.Response:
+async def verify(client: httpx2.AsyncClient, code: str) -> httpx2.Response:
     return await client.post(
         "/v1/customer-portal/customer-session/email-otp/verify",
         json={"code": code},
@@ -84,7 +84,7 @@ async def verify(client: httpx.AsyncClient, code: str) -> httpx.Response:
 @pytest.mark.anyio
 class TestEmailOTPRequest:
     async def test_without_authentication_session(
-        self, portal_client: httpx.AsyncClient
+        self, portal_client: httpx2.AsyncClient
     ) -> None:
         response = await request_code(portal_client, "customer@example.com")
 
@@ -92,7 +92,7 @@ class TestEmailOTPRequest:
 
     async def test_turnstile_failed(
         self,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         organization: Organization,
         member_owner: Member,
         send_code: MagicMock,
@@ -108,7 +108,7 @@ class TestEmailOTPRequest:
         send_code.assert_not_called()
 
     async def test_unknown_organization(
-        self, portal_client: httpx.AsyncClient, send_code: MagicMock
+        self, portal_client: httpx2.AsyncClient, send_code: MagicMock
     ) -> None:
         response = await portal_client.post(
             "/v1/customer-portal/customer-session/start",
@@ -123,7 +123,7 @@ class TestEmailOTPRequest:
 
     async def test_unknown_email(
         self,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         organization: Organization,
         send_code: MagicMock,
     ) -> None:
@@ -136,7 +136,7 @@ class TestEmailOTPRequest:
 
     async def test_customer_selection(
         self,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -184,7 +184,7 @@ class TestEmailOTPRequest:
     )
     async def test_sends_to_member_email(
         self,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         send_code: MagicMock,
@@ -212,7 +212,7 @@ class TestEmailOTPRequest:
 class TestEmailOTPVerify:
     async def test_valid(
         self,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         customer: Customer,
@@ -237,7 +237,7 @@ class TestEmailOTPVerify:
         self,
         app: FastAPI,
         session: AsyncSession,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         organization: Organization,
         member_owner: Member,
         send_code: MagicMock,
@@ -249,7 +249,7 @@ class TestEmailOTPVerify:
         async with IsolatedSessionTestClient(
             session=session,
             auto_expunge=False,
-            transport=httpx.ASGITransport(app=app),
+            transport=httpx2.ASGITransport(app=app),
             base_url="http://127.0.0.1",
         ) as attacker_client:
             await start(attacker_client, organization)
@@ -259,7 +259,7 @@ class TestEmailOTPVerify:
 
     async def test_new_request_invalidates_previous_code(
         self,
-        portal_client: httpx.AsyncClient,
+        portal_client: httpx2.AsyncClient,
         organization: Organization,
         member_owner: Member,
         send_code: MagicMock,

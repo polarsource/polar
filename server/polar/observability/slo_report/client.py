@@ -8,7 +8,7 @@ https://prometheus.io/docs/prometheus/latest/querying/api/
 from datetime import datetime
 from typing import Any
 
-import httpx
+import httpx2
 import structlog
 
 from polar.config import settings
@@ -41,10 +41,10 @@ class GrafanaCloudPrometheusClient:
         if not self.base_url or not self.user or not self.api_key:
             raise GrafanaCloudConfigError("Grafana Cloud credentials not configured")
 
-        self.client = httpx.AsyncClient(
+        self.client = httpx2.AsyncClient(
             base_url=self.base_url,
             auth=(self.user, self.api_key),
-            timeout=httpx.Timeout(30.0, connect=10.0),
+            timeout=httpx2.Timeout(30.0, connect=10.0),
         )
 
     async def query(self, promql: str, time: datetime | None = None) -> dict[str, Any]:
@@ -57,7 +57,7 @@ class GrafanaCloudPrometheusClient:
         try:
             response = await self.client.post("/api/v1/query", data=params)
             response.raise_for_status()
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             raise GrafanaCloudAPIError(_format_api_error(e.response)) from None
         return response.json()
 
@@ -80,7 +80,7 @@ class GrafanaCloudPrometheusClient:
         try:
             response = await self.client.post("/api/v1/query_range", data=params)
             response.raise_for_status()
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             raise GrafanaCloudAPIError(_format_api_error(e.response)) from None
         return response.json()
 
@@ -88,7 +88,7 @@ class GrafanaCloudPrometheusClient:
         await self.client.aclose()
 
 
-def _format_api_error(response: httpx.Response) -> str:
+def _format_api_error(response: httpx2.Response) -> str:
     message = f"Grafana API error: {response.status_code}"
     try:
         body = response.json()

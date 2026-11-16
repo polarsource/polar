@@ -1,5 +1,5 @@
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission

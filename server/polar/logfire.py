@@ -6,7 +6,10 @@ import httpx
 import logfire
 from fastapi import FastAPI, Request, WebSocket
 from logfire.sampling import SpanLevel
-from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+from opentelemetry.instrumentation.httpx import (
+    HTTPX2ClientInstrumentor,
+    HTTPXClientInstrumentor,
+)
 from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.sdk.trace import ReadableSpan, Span, SpanProcessor
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
@@ -252,6 +255,7 @@ def instrument_httpx(client: httpx.AsyncClient | httpx.Client | None = None) -> 
     if client:
         HTTPXClientInstrumentor().instrument_client(client)
     else:
+        HTTPX2ClientInstrumentor().instrument()
         HTTPXClientInstrumentor().instrument()
 
 

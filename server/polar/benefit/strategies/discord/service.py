@@ -1,6 +1,6 @@
 from typing import Any, Unpack, cast
 
-import httpx
+import httpx2
 import structlog
 from httpx_oauth.oauth2 import RefreshTokenError
 
@@ -89,7 +89,7 @@ class BenefitDiscordService(
             await discord_bot_service.add_member(
                 guild_id, role_id, oauth_account.account_id, oauth_account.access_token
             )
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             bound_logger.warning(
                 "HTTP error while adding member",
                 error_type=type(e).__name__,
@@ -105,7 +105,7 @@ class BenefitDiscordService(
                     f"Discord error: {e.response.text}"
                 ) from e
             raise BenefitRetriableError() from e
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning(
                 "HTTP error while adding member",
                 error_type=type(e).__name__,
@@ -166,7 +166,7 @@ class BenefitDiscordService(
                 await discord_bot_service.remove_member_role(
                     guild_id, role_id, account_id
                 )
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             bound_logger.warning(
                 "HTTP error while removing member",
                 error_type=type(e).__name__,
@@ -182,7 +182,7 @@ class BenefitDiscordService(
                     f"Discord error: {e.response.text}"
                 ) from e
             raise BenefitRetriableError() from e
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning(
                 "HTTP error while removing member",
                 error_type=type(e).__name__,

@@ -1,6 +1,6 @@
 from typing import Any, Literal
 
-import httpx
+import httpx2
 import structlog
 
 from polar.config import settings
@@ -22,7 +22,7 @@ def is_everyone_role(guild_id: str, role_id: str) -> bool:
 
 class DiscordClient:
     def __init__(self, scheme: Literal["Bot", "Bearer"], token: str) -> None:
-        self.client = httpx.AsyncClient(
+        self.client = httpx2.AsyncClient(
             base_url=BASE_URL,
             headers={"Authorization": f"{scheme} {token}"},
             proxy=settings.DISCORD_PROXY_URL or None,
@@ -141,7 +141,7 @@ class DiscordClient:
             discord_user_id=discord_user_id,
         )
 
-    def _handle_response(self, response: httpx.Response) -> httpx.Response:
+    def _handle_response(self, response: httpx2.Response) -> httpx2.Response:
         response.raise_for_status()
         return response
 

@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository

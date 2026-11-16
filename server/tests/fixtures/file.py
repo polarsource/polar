@@ -10,7 +10,7 @@ from uuid import UUID
 
 import pytest
 from botocore.stub import ANY, Stubber
-from httpx import Response
+from httpx2 import Response
 
 from polar.config import settings
 from polar.file.s3 import S3_SERVICES

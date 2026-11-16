@@ -13,7 +13,7 @@ from typing import Annotated, Any
 from urllib.parse import urlparse
 from uuid import UUID
 
-import httpx
+import httpx2
 import structlog
 import typer
 from anyio import open_file
@@ -58,7 +58,7 @@ async def resolve_file_path(file_input: str) -> AsyncIterator[pathlib.Path]:
     temp_path = pathlib.Path(temp_dir) / "tax_filing_import.csv"
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             async with client.stream("GET", file_input) as response:
                 response.raise_for_status()
                 async with await open_file(temp_path, "wb") as f:

@@ -1,7 +1,7 @@
 import random
 import time
 
-import httpx
+import httpx2
 import typer
 from rich.progress import track
 
@@ -17,7 +17,7 @@ def ingest_test_events(
     delay: float = typer.Option(0.1),
     base_url: str = typer.Option("http://127.0.0.1:8000/v1/"),
 ) -> None:
-    with httpx.Client(
+    with httpx2.Client(
         base_url=base_url, headers={"Authorization": f"Bearer {api_key}"}
     ) as client:
         for _ in track(range(batch_count), description="Ingesting..."):

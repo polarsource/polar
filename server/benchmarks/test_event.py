@@ -4,7 +4,7 @@ import typing
 import uuid
 from collections.abc import Sequence
 
-import httpx
+import httpx2
 import pytest
 from pytest_codspeed import BenchmarkFixture
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -251,8 +251,8 @@ def test_ingest_staged_events_http(
         scope.setdefault("state", {}).update(state)
         await app(scope, receive, send)
 
-    client = httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app_with_state),
+    client = httpx2.AsyncClient(
+        transport=httpx2.ASGITransport(app=app_with_state),
         base_url="http://test",
         headers={"Authorization": f"Bearer {token}"},
     )

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, TypedDict
 
-import httpx
+import httpx2
 import structlog
 from email_validator import validate_email
 
@@ -96,7 +96,7 @@ class LoggingEmailSender(EmailSender):
 
 class ResendEmailSender(EmailSender):
     def __init__(self) -> None:
-        self.client = httpx.AsyncClient(
+        self.client = httpx2.AsyncClient(
             base_url=settings.RESEND_API_BASE_URL,
             headers={"Authorization": f"Bearer {settings.RESEND_API_KEY}"},
         )
@@ -144,7 +144,7 @@ class ResendEmailSender(EmailSender):
             response = await self.client.post("/emails", json=payload)
             response.raise_for_status()
             email = response.json()
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             log.warning(
                 "resend.send_network_error",
                 template=tags.get("category") if tags else None,
@@ -153,7 +153,7 @@ class ResendEmailSender(EmailSender):
                 error_type=type(e).__name__,
             )
             raise EmailSenderOperationalError(str(e)) from e
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             log.warning(
                 "resend.send_error",
                 template=tags.get("category") if tags else None,
@@ -161,7 +161,7 @@ class ResendEmailSender(EmailSender):
                 attachment_count=len(payload["attachments"]),
                 error_type=type(e).__name__,
                 status_code=e.response.status_code
-                if isinstance(e, httpx.HTTPStatusError)
+                if isinstance(e, httpx2.HTTPStatusError)
                 else None,
             )
             raise SendEmailError(str(e)) from e

@@ -4,6 +4,7 @@ from tests.fixtures.auth import *
 from tests.fixtures.base import *
 from tests.fixtures.database import *
 from tests.fixtures.file import *
+from tests.fixtures.http import *
 from tests.fixtures.locker import *
 from tests.fixtures.random_objects import *
 from tests.fixtures.redis import *

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 from typer.testing import CliRunner
@@ -15,7 +15,7 @@ def workspace_api(mocker: MockerFixture) -> None:
     mocker.patch.object(
         workspace_script,
         "request",
-        return_value=httpx.Response(
+        return_value=httpx2.Response(
             200, json={"user_token": "user-token", "admin_token": "admin-token"}
         ),
     )

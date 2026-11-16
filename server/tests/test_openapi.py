@@ -5,7 +5,7 @@ import pytest
 from fastapi import APIRouter as _APIRouter
 from fastapi import Query
 from fastapi.openapi.utils import get_openapi
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from openapi_kit.diff import compare
 from openapi_kit.parser import OpenAPIParser
 from pydantic import Field

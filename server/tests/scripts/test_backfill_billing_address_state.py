@@ -4,7 +4,7 @@ from sqlalchemy import text
 from polar.kit.address import Address
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
-from polar.models import CreditNote, Customer, Organization, Product, User
+from polar.models import CreditNote, Customer, Organization, Product
 from polar.models.credit_note import CreditNoteReason
 from scripts.backfill_billing_address_state import (
     Target,
@@ -14,7 +14,6 @@ from scripts.backfill_billing_address_state import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
-    create_account,
     create_checkout,
     create_customer,
     create_order,
@@ -112,7 +111,6 @@ class TestBackfillBillingAddressState:
         save_fixture: SaveFixture,
         customer: Customer,
         product: Product,
-        user: User,
     ) -> None:
         named_order = await create_order(
             save_fixture, customer=customer, billing_address=address("BR", "São Paulo")
@@ -140,14 +138,11 @@ class TestBackfillBillingAddressState:
             products=[product],
             customer_billing_address=address("BR", "Recife"),
         )
-        account = await create_account(
-            save_fixture, user, billing_address=address("IN", "Heaven")
-        )
 
         named_order_id, junk_order_id = str(named_order.id), str(junk_order.id)
         named_credit_note_id = str(named_credit_note.id)
         junk_credit_note_id = str(junk_credit_note.id)
-        checkout_id, account_id = str(checkout.id), str(account.id)
+        checkout_id = str(checkout.id)
 
         plan = await plan_corrections(session, list(Target))
         updated = await apply_corrections(session, plan.corrections)
@@ -155,7 +150,6 @@ class TestBackfillBillingAddressState:
         assert plan.unresolved == {
             (Target.order, "IN", "Heaven"): 1,
             (Target.credit_note, "IN", "Heaven"): 1,
-            (Target.account, "IN", "Heaven"): 1,
         }
         assert updated == {Target.order: 1, Target.credit_note: 1, Target.checkout: 1}
 
@@ -169,5 +163,37 @@ class TestBackfillBillingAddressState:
             session, "checkouts", "customer_billing_address"
         )
         assert checkouts[checkout_id]["state"] == "PE"
-        accounts = await stored_addresses(session, "accounts")
-        assert accounts[account_id]["state"] == "Heaven"
+
+    async def test_skips_records_changed_since_planning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        moved = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="moved@example.com",
+            billing_address=address("BR", "Parana"),
+        )
+        deleted = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="deleted@example.com",
+            billing_address=address("BR", "Bahia"),
+        )
+        moved_id, deleted_id = str(moved.id), str(deleted.id)
+
+        plan = await plan_corrections(session, [Target.customer])
+
+        moved.billing_address = address("AR", "Parana")
+        await save_fixture(moved)
+        deleted.deleted_at = utc_now()
+        await save_fixture(deleted)
+
+        updated = await apply_corrections(session, plan.corrections)
+
+        assert updated.total() == 0
+        addresses = await stored_addresses(session, "customers")
+        assert addresses[moved_id]["state"] == "Parana"
+        assert addresses[deleted_id]["state"] == "Bahia"

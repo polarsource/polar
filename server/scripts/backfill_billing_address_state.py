@@ -1,7 +1,7 @@
 """Normalize the free-text state of BR and IN billing addresses.
 
-Covers every model bearing an address: customers, orders, credit notes, checkouts and
-accounts. Each state becomes its bare ISO 3166-2 code (`SP`, `MH`). A state that can't
+Covers every model bearing an address: customers, orders, credit notes and
+checkouts. Each state becomes its bare ISO 3166-2 code (`SP`, `MH`). A state that can't
 be resolved is removed from customers and left untouched everywhere else.
 
 Dry-run by default: it writes every planned change to a CSV, which is also the only
@@ -29,7 +29,7 @@ from sqlalchemy.orm import InstrumentedAttribute
 from polar.kit.address import Address
 from polar.kit.db.models import RecordModel
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.models import Account, Checkout, CreditNote, Customer, Order
+from polar.models import Checkout, CreditNote, Customer, Order
 from polar.postgres import create_async_engine
 from scripts.helper import configure_script_logging, read_engine, typer_async
 
@@ -217,7 +217,6 @@ class Target(StrEnum):
     order = "order"
     credit_note = "credit_note"
     checkout = "checkout"
-    account = "account"
 
 
 @dataclass(frozen=True)
@@ -234,7 +233,6 @@ SOURCES: dict[Target, AddressSource] = {
     Target.order: AddressSource(Order, Order.billing_address),
     Target.credit_note: AddressSource(CreditNote, CreditNote.billing_address),
     Target.checkout: AddressSource(Checkout, Checkout.customer_billing_address),
-    Target.account: AddressSource(Account, Account.billing_address),
 }
 
 
@@ -281,7 +279,11 @@ async def plan_corrections(session: AsyncSession, targets: Sequence[Target]) -> 
 
 
 def correction_statement(
-    target: Target, record_ids: Sequence[UUID], old_state: str, new_state: str | None
+    target: Target,
+    record_ids: Sequence[UUID],
+    country: str,
+    old_state: str,
+    new_state: str | None,
 ) -> Update:
     source = SOURCES[target]
     corrected: ColumnElement[Any]
@@ -294,6 +296,8 @@ def correction_statement(
         .values({source.address: corrected, "modified_at": source.model.modified_at})
         .where(
             source.model.id.in_(record_ids),
+            source.model.deleted_at.is_(None),
+            source.address["country"].astext == country,
             source.address["state"].astext == old_state,
         )
     )
@@ -306,18 +310,27 @@ async def apply_corrections(
     batch_size: int = 1000,
     sleep_seconds: float = 0,
 ) -> Counter[Target]:
-    grouped: dict[tuple[Target, str, str | None], list[UUID]] = defaultdict(list)
+    grouped: dict[tuple[Target, str, str, str | None], list[UUID]] = defaultdict(list)
     for correction in corrections:
-        grouped[(correction.target, correction.old_state, correction.new_state)].append(
-            correction.record_id
-        )
+        grouped[
+            (
+                correction.target,
+                correction.country,
+                correction.old_state,
+                correction.new_state,
+            )
+        ].append(correction.record_id)
 
     updated: Counter[Target] = Counter()
-    for (target, old_state, new_state), record_ids in grouped.items():
+    for (target, country, old_state, new_state), record_ids in grouped.items():
         for start in range(0, len(record_ids), batch_size):
             result = await session.execute(
                 correction_statement(
-                    target, record_ids[start : start + batch_size], old_state, new_state
+                    target,
+                    record_ids[start : start + batch_size],
+                    country,
+                    old_state,
+                    new_state,
                 )
             )
             await session.commit()

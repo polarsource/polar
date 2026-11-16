@@ -1,0 +1,21 @@
+sdk/generator/python/template/tests/outpost/test_vercel.py
+  s_7e19d239afd9c1::t_44cadbc8a1e79f 88,90,92,94
+sdk/python/tests/outpost/test_vercel.py
+  s_7e19d239afd9c1::t_1d1e71927a1612 90,92,94,96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ec2419cef3608ea733061189a38e63d153146d3d",
+  "prompts": {},
+  "sessions": {
+    "s_7e19d239afd9c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-25ad-76e1-b267-0adda152d04c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

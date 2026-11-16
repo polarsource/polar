@@ -1,0 +1,37 @@
+server/polar/logging.py
+  s_0d80fa5d0b4a98::t_ddfa072c780d25 47
+server/polar/worker/_enqueue.py
+  s_0d80fa5d0b4a98::t_6a6730b5465472 23-24,111,125,164,179,219,224,226-233
+  s_0d80fa5d0b4a98::t_6f842f6022535a 163,203-204
+  s_0d80fa5d0b4a98::t_7e5551f9fe9f9d 190
+  s_0d80fa5d0b4a98::t_304837f31c80aa 225,234
+  s_0d80fa5d0b4a98::t_267d5dcb6a0840 112
+  s_0d80fa5d0b4a98::t_c35be85fcf03b2 21-22,25-26
+server/tests/worker/test_enqueue.py
+  s_0d80fa5d0b4a98::t_37006c43d81216 2,30-32,38-50,52-53,55-59,61-63,65-66,68-70,72-74,76-79,82-83
+  s_0d80fa5d0b4a98::t_6f842f6022535a 33-37,51,54,60,64,67,71,75,80-81,84-100
+  s_0d80fa5d0b4a98::t_760ac7cb51fbe1 11
+server/polar/reducer/tasks.py
+  s_0d80fa5d0b4a98::t_6a6730b5465472 75
+server/polar/worker/_debounce.py
+  s_0d80fa5d0b4a98::t_26b84020509c91 54,59,78-80,101-111
+  s_0d80fa5d0b4a98::t_90a36b559fcf7d 89-90
+  s_0d80fa5d0b4a98::t_b845dbb37b6407 2,45-47,81-88,91-100,231-236
+  s_0d80fa5d0b4a98::t_21d9769ddd253b 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "079b6e262aa22bb5951597101f87af532c28fdca",
+  "prompts": {},
+  "sessions": {
+    "s_0d80fa5d0b4a98": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "904d44c6-d094-4170-b06b-98b2e91a224f",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -18,7 +18,12 @@ from polar.logging import CorrelationID, Logger
 from polar.redis import Redis
 
 from . import _sqs
-from ._debounce import set_debounce_key
+from ._debounce import (
+    get_debounce,
+    is_debounce_queued,
+    record_queued_debounces,
+    set_debounce_key,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -103,6 +108,8 @@ class JobQueueManager:
         ):
             self.enqueue_job("event.ingested", list(chunk))
 
+        self._drop_queued_debounces(broker)
+
         if not self._enqueued_jobs:
             await self._publish(redis)
             self.reset()
@@ -115,6 +122,7 @@ class JobQueueManager:
 
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
         all_messages: list[tuple[str, str]] = []
+        debounce_etas: dict[str, int] = {}
 
         debounce_pipeline = redis.pipeline(transaction=True)
         for actor_name, args, kwargs, delay in redis_jobs:
@@ -152,6 +160,8 @@ class JobQueueManager:
                     queue_name=dq_name(message.queue_name),
                     options={**message.options, "eta": eta},
                 )
+                if debounce is not None and "debounce_requeue_window" in fn.options:
+                    debounce_etas[debounce[0]] = eta
 
             encoded_message = message.encode()
             queue_messages[message.queue_name].append(
@@ -166,6 +176,7 @@ class JobQueueManager:
                 await self._batch_rpush_queue(
                     redis, queue_name, (message_id for message_id, _ in batch)
                 )
+        record_queued_debounces(debounce_etas, int(time.time() * 1000))
 
         for actor_name, message_id in all_messages:
             log.debug(
@@ -176,6 +187,7 @@ class JobQueueManager:
         if sqs_jobs:
             correlation_id = CorrelationID.get()
             prepared_sqs_jobs: list[_sqs.Job] = []
+            debounce_etas = {}
             debounce_pipeline = redis.pipeline(transaction=True)
             for actor_name, args, kwargs, delay in sqs_jobs:
                 fn = broker.get_actor(actor_name)
@@ -188,6 +200,8 @@ class JobQueueManager:
                 if debounce is not None:
                     debounce_key, debounce_delay = debounce
                     delay = max(delay or 0, debounce_delay)
+                    if "debounce_requeue_window" in fn.options:
+                        debounce_etas[debounce_key] = int(time.time() * 1000) + delay
 
                 prepared_sqs_jobs.append(
                     _sqs.Job(
@@ -202,9 +216,21 @@ class JobQueueManager:
                 )
             await debounce_pipeline.execute()
             await _sqs.send_jobs(prepared_sqs_jobs)
+            record_queued_debounces(debounce_etas, int(time.time() * 1000))
 
         await self._publish(redis)
         self.reset()
+
+    def _drop_queued_debounces(self, broker: dramatiq.Broker) -> None:
+        now = int(time.time() * 1000)
+        jobs = []
+        for job in self._enqueued_jobs:
+            actor_name, args, kwargs, _ = job
+            actor = broker.get_actor(actor_name)
+            debounce = get_debounce(actor, args, kwargs)
+            if debounce is None or not is_debounce_queued(actor, debounce[0], now):
+                jobs.append(job)
+        self._enqueued_jobs = jobs
 
     async def _publish(self, redis: Redis) -> None:
         """Publish last and never raise: a lost entry must not drop or replay the

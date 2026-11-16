@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any, Never
 
@@ -42,18 +42,21 @@ DEBOUNCE_KEY_PREFIX = "debounce:"
 Implicitly added prefix to avoid collisions in Redis.
 """
 
+MAX_QUEUED_DEBOUNCES = 100_000
+
+_queued_debounce_etas: dict[str, int] = {}
+
 
 def now_timestamp() -> int:
     return int(datetime.now(UTC).timestamp())
 
 
-def set_debounce_key(
-    pipeline: RedisAsyncIOPipeline,
+def get_debounce(
     actor: dramatiq.Actor[Any, Any],
-    message_id: str,
     args: tuple["JSONSerializable", ...],
     kwargs: dict[str, "JSONSerializable"],
 ) -> tuple[str, int] | None:
+    """The job's debounce key and minimum delay in milliseconds."""
     debounce_key_factory: Callable[..., str | None] | None = actor.options.get(
         "debounce_key"
     )
@@ -72,6 +75,40 @@ def set_debounce_key(
         )
         * 1000
     )
+    return key, delay
+
+
+def is_debounce_queued(actor: dramatiq.Actor[Any, Any], key: str, now: int) -> bool:
+    """Whether this process queued a job for the key that runs after the actor's
+    requeue window. `now` is in milliseconds."""
+    requeue_window: int | None = actor.options.get("debounce_requeue_window")
+    if requeue_window is None:
+        return False
+    eta = _queued_debounce_etas.get(key)
+    return eta is not None and eta - now > requeue_window * 1000
+
+
+def record_queued_debounces(etas: Mapping[str, int], now: int) -> None:
+    if len(_queued_debounce_etas) + len(etas) > MAX_QUEUED_DEBOUNCES:
+        for key in [k for k, eta in _queued_debounce_etas.items() if eta < now]:
+            del _queued_debounce_etas[key]
+    for key, eta in etas.items():
+        if len(_queued_debounce_etas) >= MAX_QUEUED_DEBOUNCES:
+            break
+        _queued_debounce_etas[key] = eta
+
+
+def set_debounce_key(
+    pipeline: RedisAsyncIOPipeline,
+    actor: dramatiq.Actor[Any, Any],
+    message_id: str,
+    args: tuple["JSONSerializable", ...],
+    kwargs: dict[str, "JSONSerializable"],
+) -> tuple[str, int] | None:
+    debounce = get_debounce(actor, args, kwargs)
+    if debounce is None:
+        return None
+    key, delay = debounce
 
     # Always keep the oldest timestamp, if it exists
     pipeline.hsetnx(key, "enqueue_timestamp", now_timestamp())
@@ -191,7 +228,12 @@ class DebounceMiddleware(dramatiq.Middleware):
 
     @property
     def actor_options(self) -> set[str]:
-        return {"debounce_key", "debounce_min_threshold", "debounce_max_threshold"}
+        return {
+            "debounce_key",
+            "debounce_min_threshold",
+            "debounce_max_threshold",
+            "debounce_requeue_window",
+        }
 
     @property
     def ephemeral_options(self) -> set[str]:

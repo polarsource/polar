@@ -72,6 +72,7 @@ def _sync_debounce_key(
     debounce_key=_sync_debounce_key,
     debounce_min_threshold=10,
     debounce_max_threshold=360,
+    debounce_requeue_window=30,
 )
 async def sync(
     reducer_id: Annotated[uuid.UUID, LoggableField],

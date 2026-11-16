@@ -1,7 +1,8 @@
 """Normalize the free-text state of BR and IN billing addresses.
 
 Covers every model bearing an address: customers, orders, credit notes and
-checkouts. Each state becomes its bare ISO 3166-2 code (`SP`, `MH`). A state that can't
+checkouts. Each state becomes its ISO 3166-2 code (`BR-SP`, `IN-MH`),
+the form `Address` stores. A state that can't
 be resolved is removed from customers and left untouched everywhere else.
 
 Dry-run by default: it writes every planned change to a CSV, which is also the only
@@ -26,7 +27,7 @@ from sqlalchemy import ColumnElement, Text, Update, func, select, update
 from sqlalchemy import cast as sql_cast
 from sqlalchemy.orm import InstrumentedAttribute
 
-from polar.kit.address import Address
+from polar.kit.address import SUBDIVISIONS, Address
 from polar.kit.db.models import RecordModel
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Checkout, CreditNote, Customer, Order
@@ -209,7 +210,11 @@ LOOKUPS = {country: _build_lookup(country) for country in COUNTRIES}
 
 
 def resolve_state(country: str, state: str) -> str | None:
-    return LOOKUPS[country].get(normalize(state))
+    code = LOOKUPS[country].get(normalize(state.removeprefix(f"{country}-")))
+    if code is None:
+        return None
+    resolved = f"{country}-{code}"
+    return resolved if resolved in SUBDIVISIONS[country] else None
 
 
 class Target(StrEnum):

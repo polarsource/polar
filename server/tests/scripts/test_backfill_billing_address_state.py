@@ -23,24 +23,26 @@ from tests.fixtures.random_objects import (
 @pytest.mark.parametrize(
     ("country", "state", "expected"),
     [
-        ("BR", "SP", "SP"),
-        ("BR", "sp", "SP"),
-        ("BR", "São Paulo", "SP"),
-        ("BR", "SAO PAULO", "SP"),
-        ("BR", "São Paulo/SP", "SP"),
-        ("BR", "Cotia/SP", "SP"),
-        ("BR", "Mato Grosso do Sul", "MS"),
-        ("BR", "Recife", "PE"),
+        ("BR", "SP", "BR-SP"),
+        ("BR", "BR-SP", "BR-SP"),
+        ("IN", "IN-OR", "IN-OD"),
+        ("BR", "sp", "BR-SP"),
+        ("BR", "São Paulo", "BR-SP"),
+        ("BR", "SAO PAULO", "BR-SP"),
+        ("BR", "São Paulo/SP", "BR-SP"),
+        ("BR", "Cotia/SP", "BR-SP"),
+        ("BR", "Mato Grosso do Sul", "BR-MS"),
+        ("BR", "Recife", "BR-PE"),
         ("BR", "Florida", None),
         ("BR", "78557682", None),
-        ("IN", "Mahārāshtra", "MH"),
-        ("IN", "Tamilnadu", "TN"),
-        ("IN", "J&K", "JK"),
-        ("IN", "TG", "TS"),
-        ("IN", "OR", "OD"),
-        ("IN", "UT", "UK"),
-        ("IN", "CT", "CG"),
-        ("IN", "RJ", "RJ"),
+        ("IN", "Mahārāshtra", "IN-MH"),
+        ("IN", "Tamilnadu", "IN-TN"),
+        ("IN", "J&K", "IN-JK"),
+        ("IN", "TG", "IN-TS"),
+        ("IN", "OR", "IN-OD"),
+        ("IN", "UT", "IN-UK"),
+        ("IN", "CT", "IN-CG"),
+        ("IN", "RJ", "IN-RJ"),
         ("IN", "मध्य प्रदेश", None),
         ("IN", "Select an option…", None),
     ],
@@ -85,6 +87,14 @@ class TestBackfillBillingAddressState:
 
         named = await customer("BR", "São Paulo")
         coded = await customer("BR", "SP")
+        bare = await customer("IN", "MH")
+        await session.execute(
+            text(
+                "UPDATE customers SET billing_address = "
+                'billing_address || \'{"state": "MH"}\' WHERE id = :id'
+            ),
+            {"id": bare},
+        )
         junk = await customer("IN", "Heaven")
         legacy = await customer("IN", "TG")
         other_country = await customer("FR", "Bretagne")
@@ -95,13 +105,14 @@ class TestBackfillBillingAddressState:
 
         assert plan.unchanged == 1
         assert not plan.unresolved
-        assert updated == {Target.customer: 3}
+        assert updated == {Target.customer: 4}
 
         addresses = await stored_addresses(session, "customers")
-        assert addresses[named] == {"country": "BR", "state": "SP", "city": "City"}
-        assert addresses[coded] == {"country": "BR", "state": "SP", "city": "City"}
+        assert addresses[named] == {"country": "BR", "state": "BR-SP", "city": "City"}
+        assert addresses[coded] == {"country": "BR", "state": "BR-SP", "city": "City"}
+        assert addresses[bare]["state"] == "IN-MH"
         assert addresses[junk] == {"country": "IN", "city": "City"}
-        assert addresses[legacy] == {"country": "IN", "state": "TS", "city": "City"}
+        assert addresses[legacy] == {"country": "IN", "state": "IN-TS", "city": "City"}
         assert addresses[other_country]["state"] == "Bretagne"
         assert addresses[deleted]["state"] == "Karnataka"
 
@@ -154,15 +165,15 @@ class TestBackfillBillingAddressState:
         assert updated == {Target.order: 1, Target.credit_note: 1, Target.checkout: 1}
 
         orders = await stored_addresses(session, "orders")
-        assert orders[named_order_id]["state"] == "SP"
+        assert orders[named_order_id]["state"] == "BR-SP"
         assert orders[junk_order_id]["state"] == "Heaven"
         credit_note_addresses = await stored_addresses(session, "credit_notes")
-        assert credit_note_addresses[named_credit_note_id]["state"] == "TN"
+        assert credit_note_addresses[named_credit_note_id]["state"] == "IN-TN"
         assert credit_note_addresses[junk_credit_note_id]["state"] == "Heaven"
         checkouts = await stored_addresses(
             session, "checkouts", "customer_billing_address"
         )
-        assert checkouts[checkout_id]["state"] == "PE"
+        assert checkouts[checkout_id]["state"] == "BR-PE"
 
     async def test_skips_records_changed_since_planning(
         self,

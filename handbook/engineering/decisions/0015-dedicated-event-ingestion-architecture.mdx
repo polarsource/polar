@@ -1,0 +1,43 @@
+---
+title: "ADR-0015: Dedicated event ingestion architecture"
+description: "Event ingestion should run in its own services for indendent optimization and scaling."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend & Infra
+
+**Date**: 2026-11-12
+</Info>
+
+## Context
+
+Event ingestion and metering will be an extreme hot path for us.
+We'd be well served by an architecture that allows for tweaking and optimizating of
+it without affecting or being affected by other parts of our platform.
+
+## Decision
+
+### Run the event ingestion API endpoint(s) on a dedicated service
+
+This would remove the risk of event ingestions getting stuck because the process is stuck for a
+while serving other CPU intensive endpoints such as for instance `GET /v1/subscriptions` and `GET /v1/orders`.
+In the longer run it also allows for slimming down and optimizing this service further should it needed.
+Since we're behind Cloudflare we can leverage [Origin Rules](https://developers.cloudflare.com/rules/origin-rules/) to
+direct `/v1/events/ingest` traffic there.
+
+### Run the staged events mover on a dedicated service
+
+This is already the case, a simple service just continuously looping `staged_events` and moving them to `events`.
+This can also be done using a background task, but then it'd be competing with other tasks running including being vulnerable to sudden
+queue spikes etc.
+
+## Consequences
+
+- More services to monitor and and pay for.
+
+## Alternatives considered
+
+- Moving staged events as a regular background task on a cron through `scheduler`
+    - Anticipate too much overhead and delay given the expected traffic volume

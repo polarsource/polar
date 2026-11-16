@@ -1,0 +1,51 @@
+server/tests/fixtures/database.py
+  s_f83d2c94945117::t_257c3dfc749510 18,59-61
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_257c3dfc749510 76,84-106,115-125,427,546-547,549-555,584-588,599-609,620-625,686
+  s_f83d2c94945117::t_461bf1a3778893 626
+  s_94f2b33009c1e9::t_8c7b0903c87a45 21,654
+server/scripts/ci_migrations.py
+  s_f83d2c94945117::t_257c3dfc749510 1-50
+.github/ci_pool/__init__.py
+  s_f83d2c94945117::t_c7a71667f22667 1
+.github/ci_pool/resources.py
+  s_f83d2c94945117::t_14ba8d7c7700b7 1-44
+.github/ci_pool/__main__.py
+  s_2ad442080c4f49::t_287c2632e77186 1-45
+.github/ci_pool/pool.py
+  s_2ad442080c4f49::t_bd2e44c174b07b 1-250
+.github/ci_pool/preload.py
+  s_2ad442080c4f49::t_10607ab234c5b4 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe8de60439d8b62950c43034df032e2e0ff6a104",
+  "prompts": {},
+  "sessions": {
+    "s_2ad442080c4f49": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-952d-7ed0-b6eb-4e36299b3913",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

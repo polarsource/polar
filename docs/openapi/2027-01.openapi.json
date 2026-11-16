@@ -36589,6 +36589,292 @@
         ],
         "title": "BenefitLicenseKeysUpdate"
       },
+      "BenefitManuallyGrantedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "benefit.manually_granted",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/BenefitGrantMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "BenefitManuallyGrantedEvent",
+        "description": "An event created by Polar when a benefit grant is created manually."
+      },
+      "BenefitManuallyRevokedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "benefit.manually_revoked",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/BenefitGrantMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "BenefitManuallyRevokedEvent",
+        "description": "An event created by Polar when a benefit grant is manually revoked."
+      },
       "BenefitMeterCredit": {
         "properties": {
           "id": {
@@ -38075,6 +38361,149 @@
           "slack_shared_channel"
         ],
         "title": "BenefitType"
+      },
+      "BenefitUnrevokedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event.",
+            "examples": [
+              "2026-01-01T00:00:00.000000Z"
+            ]
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "benefit.unrevoked",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/BenefitGrantMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "BenefitUnrevokedEvent",
+        "description": "An event created by Polar when a manual revocation is cleared."
       },
       "BenefitUpdatedEvent": {
         "properties": {
@@ -80513,6 +80942,15 @@
             "$ref": "#/components/schemas/BenefitRevokedEvent"
           },
           {
+            "$ref": "#/components/schemas/BenefitManuallyGrantedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitManuallyRevokedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/BenefitUnrevokedEvent"
+          },
+          {
             "$ref": "#/components/schemas/SubscriptionCreatedEvent"
           },
           {
@@ -80617,7 +81055,10 @@
             "balance.refund_reversal": "#/components/schemas/BalanceRefundReversalEvent",
             "benefit.cycled": "#/components/schemas/BenefitCycledEvent",
             "benefit.granted": "#/components/schemas/BenefitGrantedEvent",
+            "benefit.manually_granted": "#/components/schemas/BenefitManuallyGrantedEvent",
+            "benefit.manually_revoked": "#/components/schemas/BenefitManuallyRevokedEvent",
             "benefit.revoked": "#/components/schemas/BenefitRevokedEvent",
+            "benefit.unrevoked": "#/components/schemas/BenefitUnrevokedEvent",
             "benefit.updated": "#/components/schemas/BenefitUpdatedEvent",
             "checkout.created": "#/components/schemas/CheckoutCreatedEvent",
             "customer.created": "#/components/schemas/CustomerCreatedEvent",

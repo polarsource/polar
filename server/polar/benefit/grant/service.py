@@ -173,6 +173,9 @@ class BenefitGrantService:
                 raise BenefitGrantAlreadyExists() from e
             raise
 
+        await self._create_manual_event(
+            session, grant, organization, SystemEvent.benefit_manually_granted
+        )
         enqueue_job(
             "benefit.grant",
             customer_id=customer.id,
@@ -192,6 +195,12 @@ class BenefitGrantService:
         if grant.manually_revoked_at is None:
             grant = await repository.update(
                 grant, update_dict={"manually_revoked_at": utc_now()}, flush=True
+            )
+            await self._create_manual_event(
+                session,
+                grant,
+                grant.benefit.organization,
+                SystemEvent.benefit_manually_revoked,
             )
         if not grant.is_revoked:
             enqueue_job(
@@ -227,6 +236,9 @@ class BenefitGrantService:
                 raise BenefitGrantAlreadyExists() from e
             raise
 
+        await self._create_manual_event(
+            session, grant, grant.benefit.organization, SystemEvent.benefit_unrevoked
+        )
         if grant.is_granted:
             return grant
 
@@ -872,6 +884,27 @@ class BenefitGrantService:
             customer=customer, benefit=benefit, member=member, properties={}, **scope
         )
         return await repository.create(grant, flush=True)
+
+    async def _create_manual_event(
+        self,
+        session: AsyncSession,
+        grant: BenefitGrant,
+        organization: Organization,
+        name: Literal[
+            SystemEvent.benefit_manually_granted,
+            SystemEvent.benefit_manually_revoked,
+            SystemEvent.benefit_unrevoked,
+        ],
+    ) -> None:
+        await event_service.create_event(
+            session,
+            build_system_event(
+                name,
+                customer=grant.customer,
+                organization=organization,
+                metadata=self._build_benefit_grant_metadata(grant, grant.benefit),
+            ),
+        )
 
     def _build_benefit_grant_metadata(
         self, grant: BenefitGrant, benefit: Benefit

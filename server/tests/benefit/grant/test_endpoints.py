@@ -12,9 +12,12 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.models.event import EventSource
+from polar.postgres import AsyncSession
 from polar.version import V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.events import get_all_by_organization
 from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
@@ -322,6 +325,56 @@ class TestListBenefitGrants:
 @pytest.mark.anyio
 @pytest.mark.api_version(V2027_01)
 class TestCreate:
+    @pytest.mark.auth
+    async def test_manual_lifecycle_events(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        customer: Customer,
+        benefit_organization: Benefit,
+        member_owner: Member,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefit-grants/",
+            json={
+                "customer_id": str(customer.id),
+                "benefit_id": str(benefit_organization.id),
+            },
+        )
+        assert response.status_code == 201
+        grant_id = response.json()["id"]
+        grant_url = f"/v1/benefit-grants/{grant_id}"
+
+        for _ in range(2):
+            response = await client.delete(grant_url)
+            assert response.status_code == 200
+        for _ in range(2):
+            response = await client.patch(grant_url, json={"manually_revoked_at": None})
+            assert response.status_code == 200
+
+        events = [
+            event
+            for event in await get_all_by_organization(
+                session, benefit_organization.organization_id
+            )
+            if event.user_metadata.get("benefit_grant_id") == grant_id
+        ]
+        assert sorted(event.name for event in events) == [
+            "benefit.manually_granted",
+            "benefit.manually_revoked",
+            "benefit.unrevoked",
+        ]
+        for event in events:
+            assert event.source == EventSource.system
+            assert event.customer_id == customer.id
+            assert event.user_metadata == {
+                "benefit_id": str(benefit_organization.id),
+                "benefit_grant_id": grant_id,
+                "benefit_type": benefit_organization.type,
+                "member_id": str(member_owner.id),
+            }
+
     @pytest.mark.auth
     async def test_create(
         self,

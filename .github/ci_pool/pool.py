@@ -90,6 +90,12 @@ def child(worker, nodeids, arguments, directory):
 
 
 def assign(nodes, workers, weights):
+    tinybird = [node for node in nodes if node.get("tinybird")]
+    if tinybird:
+        if workers < 2 or len({node["group"] for node in tinybird}) != 1:
+            raise RuntimeError("Tinybird must occupy one dedicated worker beside ordinary tests")
+        ordinary, estimates = assign([node for node in nodes if not node.get("tinybird")], workers - 1, weights)
+        return [[node["nodeid"] for node in tinybird], *ordinary], [0.0, *estimates]
     groups = collections.defaultdict(list)
     estimates = {}
     positive = [value for value in weights.values() if isinstance(value, (float, int)) and value > 0]
@@ -157,13 +163,13 @@ def verify(nodes, children, directory):
     return records, failure
 
 
-def merge_artifacts(directory, workers, identities):
+def merge_artifacts(directory, workers, identities, tinybird_ids):
     from scripts.merge_test_durations import merge_durations
 
     paths = [directory / f"gw{index}" / ".test_durations" for index in range(workers)]
     durations = merge_durations(paths)
-    stock_durations = {identities[source]: duration for source, duration in durations.items()}
-    if len(stock_durations) != len(durations):
+    stock_durations = {identities[source]: duration for source, duration in durations.items() if source not in tinybird_ids}
+    if len(stock_durations) != len(durations) - len(tinybird_ids):
         raise RuntimeError("Canonical duration identities collided")
     write_json(directory / ".test_durations", stock_durations)
     root = ET.Element("testsuites", name="pytest pool")
@@ -171,6 +177,9 @@ def merge_artifacts(directory, workers, identities):
     seconds = 0.0
     for index in range(workers):
         tree = ET.parse(directory / f"gw{index}" / "junit.xml").getroot()
+        if tinybird_ids and index == 0:
+            ET.ElementTree(tree).write(directory / "tinybird-junit.xml", encoding="utf-8", xml_declaration=True)
+            continue
         suites = [tree] if tree.tag == "testsuite" else list(tree)
         for suite in suites:
             if suite.tag != "testsuite":
@@ -192,6 +201,7 @@ def main():
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--weights", type=Path)
+    parser.add_argument("--ordinary-files", type=Path)
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("arguments", nargs=argparse.REMAINDER)
     options = parser.parse_args()
@@ -210,6 +220,10 @@ def main():
     directory.mkdir(parents=True, exist_ok=False)
     weights = json.loads(options.weights.read_text()) if options.weights else {}
     os.environ["POLAR_CI_POOL_ARGUMENTS"] = json.dumps(arguments)
+    if options.ordinary_files:
+        os.environ["POLAR_CI_ORDINARY_FILES"] = str(options.ordinary_files.resolve())
+    else:
+        os.environ.pop("POLAR_CI_ORDINARY_FILES", None)
     os.environ["POLAR_CI_POOL_OUTPUT"] = str(directory)
     os.environ["POLAR_CI_POOL_WORKERS"] = str(options.workers)
     multiprocessing.set_forkserver_preload(["ci_pool.preload"])
@@ -248,7 +262,10 @@ def main():
         if process.is_alive():
             raise RuntimeError("Child execution exceeded pool deadline")
     records, failure = verify(state["nodes"], children, directory)
-    totals = merge_artifacts(directory, options.workers, identities)
+    tinybird_ids = {node["nodeid"] for node in state["nodes"] if node.get("tinybird")}
+    if tinybird_ids and set(records[0]["collected"]) != tinybird_ids:
+        raise RuntimeError("Tinybird group did not exclusively occupy worker gw0")
+    totals = merge_artifacts(directory, options.workers, identities, tinybird_ids)
     outcomes = collections.Counter()
     for result in records:
         for report in result["reports"]:

@@ -5,6 +5,8 @@ import resource
 import time
 from pathlib import Path
 
+import pytest
+
 from .resources import inspect_resources, require_clean
 
 READY = False
@@ -16,6 +18,19 @@ _STARTED = time.monotonic()
 
 
 class Collector:
+    @pytest.hookimpl(trylast=True)
+    def pytest_collection_modifyitems(self, config, items):
+        ordinary_path = os.environ.get("POLAR_CI_ORDINARY_FILES")
+        if not ordinary_path:
+            return
+        ordinary = set(Path(ordinary_path).read_text().splitlines())
+        kept, excluded = [], []
+        for item in items:
+            selected = item.get_closest_marker("tinybird") or item.nodeid.split("::", 1)[0] in ordinary
+            (kept if selected else excluded).append(item)
+        items[:] = kept
+        config.hook.pytest_deselected(items=excluded)
+
     def pytest_sessionstart(self, session):
         PHASES["configuration_finished"] = time.monotonic() - _STARTED
 
@@ -38,6 +53,7 @@ class Collector:
                     classes.append(parent.name)
                 parent = parent.parent
             MANIFEST.append({"nodeid": item.nodeid, "group": group,
+                             "tinybird": item.get_closest_marker("tinybird") is not None,
                              "stock_report_nodeid": f"{item.nodeid}@{group}" if group is not None else item.nodeid,
                              "location": list(item.location), "class_chain": list(reversed(classes)),
                              "test_name": item.name, "module_path": str(item.path.relative_to(session.config.rootpath))})
@@ -65,6 +81,7 @@ def initialize():
         READY = True
         usage = resource.getrusage(resource.RUSAGE_SELF)
         state = {"ready": True, "nodes": MANIFEST, "root": ROOT,
+                 "python": __import__("sys").version.split()[0], "pytest": pytest.__version__,
                  "seconds": time.monotonic() - started, "phases": PHASES,
                  "cpu_user_seconds": usage.ru_utime, "cpu_system_seconds": usage.ru_stime,
                  "peak_rss_native_units": usage.ru_maxrss,

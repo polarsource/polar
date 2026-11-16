@@ -1,6 +1,3 @@
-import json
-import logging
-import re
 import subprocess
 import time
 import uuid
@@ -78,48 +75,6 @@ def create_workspace(host: str, tokens: dict[str, str]) -> tuple[str, str]:
     return workspace_id, workspace_token
 
 
-def deployment_id(value: object) -> str:
-    if type(value) is int and value >= 0:
-        return str(value)
-    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9_-]+", value):
-        return value
-    raise RuntimeError("Tinybird returned an invalid deployment ID")
-
-
-def deployment_time_remaining(deadline: float) -> float:
-    remaining = deadline - time.monotonic()
-    if remaining <= 0:
-        raise RuntimeError("Timed out waiting for Tinybird deployment")
-    return remaining
-
-
-def deployment_request(
-    client: httpx.Client, path: str, deadline: float
-) -> dict[str, object]:
-    while True:
-        try:
-            response = client.get(
-                path, timeout=min(2, deployment_time_remaining(deadline))
-            )
-        except httpx.RequestError:
-            response = None
-        if response is not None and response.status_code < 500:
-            if response.status_code != 200:
-                raise RuntimeError(
-                    f"Tinybird deployment API returned HTTP {response.status_code}"
-                )
-            try:
-                payload: object = response.json()
-            except ValueError:
-                raise RuntimeError(
-                    "Tinybird returned invalid deployment JSON"
-                ) from None
-            if not isinstance(payload, dict) or payload.get("error"):
-                raise RuntimeError("Tinybird returned a deployment API error")
-            return dict(payload)
-        time.sleep(min(0.2, deployment_time_remaining(deadline)))
-
-
 def deploy_schema(host: str, workspace_token: str) -> None:
     deploy_cmd = [
         "tb",
@@ -128,87 +83,28 @@ def deploy_schema(host: str, workspace_token: str) -> None:
         host,
         "--token",
         workspace_token,
-        "--output",
-        "json",
         "deploy",
-        "--no-wait",
-        "--auto",
+        "--wait",
     ]
-    try:
+    for attempt in range(3):
         result = subprocess.run(
             deploy_cmd,
             capture_output=True,
             text=True,
             cwd=TINYBIRD_DIR,
             check=False,
-            timeout=300,
         )
-    except subprocess.TimeoutExpired, OSError:
-        raise RuntimeError("Tinybird deployment submission failed") from None
-    deadline = time.monotonic() + 300
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"Tinybird deployment failed with exit code {result.returncode}"
-        )
-    try:
-        submitted: object = json.loads(result.stdout)
-    except ValueError:
-        raise RuntimeError("Tinybird CLI returned invalid deployment JSON") from None
-    if not isinstance(submitted, dict):
-        raise RuntimeError("Tinybird CLI did not return a deployment object")
-    if submitted.get("error") or submitted.get("errors"):
-        raise RuntimeError("Tinybird CLI returned deployment errors")
-    new_id = deployment_id(submitted.get("id"))
-    with httpx.Client(
-        base_url=host, headers={"Authorization": f"Bearer {workspace_token}"}
-    ) as client:
-        while True:
-            payload = deployment_request(client, f"/v1/deployments/{new_id}", deadline)
-            deployment = payload.get("deployment")
-            if not isinstance(deployment, dict):
-                raise RuntimeError("Tinybird returned no deployment object")
-            if deployment_id(deployment.get("id")) != new_id:
-                raise RuntimeError("Tinybird returned a different deployment")
-            status = deployment.get("status")
-            if not isinstance(status, str) or not status:
-                raise RuntimeError("Tinybird returned an invalid deployment status")
-            if (
-                status in {"failed", "deleting", "deleted", "error"}
-                or deployment.get("error")
-                or deployment.get("errors")
-            ):
-                raise RuntimeError("Tinybird deployment failed before becoming live")
-            if status == "data_ready" and deployment.get("live") is True:
-                break
-            time.sleep(min(0.2, deployment_time_remaining(deadline)))
-        deployments = deployment_request(client, "/v1/deployments", deadline).get(
-            "deployments"
-        )
-        if not isinstance(deployments, list):
-            raise RuntimeError("Tinybird returned an invalid deployment list")
-        for previous in deployments:
-            if not isinstance(previous, dict):
-                raise RuntimeError("Tinybird returned an invalid previous deployment")
-            old_id = deployment_id(previous.get("id"))
-            if old_id == new_id:
-                continue
-            while True:
-                old = deployment_request(
-                    client, f"/v1/deployments/{old_id}", deadline
-                ).get("deployment")
-                if old is None or old == {}:
-                    return
-                if not isinstance(old, dict) or deployment_id(old.get("id")) != old_id:
-                    raise RuntimeError("Tinybird returned a different old deployment")
-                if old.get("status") == "deleted":
-                    return
-                if old.get("status") == "failed":
-                    logging.getLogger(__name__).warning(
-                        "Deployment is live, but the old deployment "
-                        "failed to be removed"
-                    )
-                    return
-                time.sleep(min(0.2, deployment_time_remaining(deadline)))
+        if result.returncode == 0:
+            return
+        if attempt < 2:
+            time.sleep(0.5)
+    raise RuntimeError(
+        "Tinybird deploy failed after 3 attempts.\n"
+        f"Command: {' '.join(result.args)}\n"
+        f"Exit code: {result.returncode}\n"
+        f"stdout:\n{result.stdout}\n"
+        f"stderr:\n{result.stderr}"
+    )
 
 
 def wait_for_ingestion(host: str, workspace_token: str) -> None:

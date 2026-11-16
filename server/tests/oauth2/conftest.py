@@ -13,8 +13,8 @@ from typing import Literal, cast
 
 import pytest
 from authlib.oauth2.rfc7636 import create_s256_code_challenge
-from fastapi import FastAPI
 
+from polar.app import app
 from polar.config import settings
 from polar.kit.crypto import get_token_hash
 from polar.kit.db.postgres import Engine, Session, create_sync_engine
@@ -90,15 +90,13 @@ def save_fixture(sync_session: Session) -> SaveFixture:
 
 
 @pytest.fixture(autouse=True)
-def override_get_authorization_server(
-    polar_app: FastAPI, sync_session: Session
-) -> Iterator[None]:
+def override_get_authorization_server(sync_session: Session) -> Iterator[None]:
     # Built per request, as in production: the registered grants depend on settings.
-    polar_app.dependency_overrides[get_authorization_server] = lambda: (
+    app.dependency_overrides[get_authorization_server] = lambda: (
         AuthorizationServer.build(sync_session)
     )
     yield
-    polar_app.dependency_overrides.pop(get_authorization_server)
+    app.dependency_overrides.pop(get_authorization_server)
 
 
 async def create_oauth2_token(

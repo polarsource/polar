@@ -1,6 +1,5 @@
 import ssl
 from collections.abc import AsyncIterator, Iterator
-from importlib import import_module
 from typing import Any
 
 import dramatiq
@@ -47,7 +46,6 @@ def patch_middlewares(
     httpx_client: httpx.AsyncClient,
 ) -> None:
     if "session" in request.fixturenames:
-        import_module("polar.tasks")
         mocker.patch.object(
             SQLAlchemyMiddleware,
             "get_async_session",

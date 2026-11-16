@@ -121,7 +121,7 @@ customer_state = polar.customers.get_state_external(
 )
 ```
 
-Pass an `httpx.Timeout` instance to configure connect, read, write, and pool timeouts separately.
+Pass an `httpx2.Timeout` instance to configure connect, read, write, and pool timeouts separately.
 
 ## Organizations
 

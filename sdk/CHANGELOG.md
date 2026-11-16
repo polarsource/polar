@@ -10,6 +10,10 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+### Changed
+
+- Python: use HTTPX2 for HTTP transport. Use `httpx2.Timeout` for custom timeouts and `httpx2.AsyncClient` when passing a client to Outpost or the Vercel warmup helper.
+
 ## [1.2.0] - 2026-11-13
 
 - Regenerate 2027-01 version.

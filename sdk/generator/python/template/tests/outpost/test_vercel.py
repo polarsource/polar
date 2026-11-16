@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 import pytest
 
 from polar.outpost import vercel
@@ -28,13 +28,13 @@ def test_is_vercel_affinity_warmup(headers: dict[str, str], expected: bool) -> N
 
 @pytest.mark.anyio
 async def test_warms_the_next_instance_once_from_the_instance_that_holds_the_shard() -> None:
-    sent: list[httpx.Request] = []
+    sent: list[httpx2.Request] = []
 
-    def answer(request: httpx.Request) -> httpx.Response:
+    def answer(request: httpx2.Request) -> httpx2.Response:
         sent.append(request)
-        return httpx.Response(204)
+        return httpx2.Response(204)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(answer)) as client:
         headers = {**PINNED, "x-polar-affinity-next": "shard-7-4"}
         for _ in range(2):
             await warm_next_vercel_instance(URL, headers, client=client)
@@ -61,17 +61,17 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> list[float]:
 async def test_warms_again_when_a_warm_up_fails_and_never_warms_its_own_instance(
     failure: str, clock: list[float]
 ) -> None:
-    attempts: list[httpx.Request] = []
+    attempts: list[httpx2.Request] = []
 
-    def answer(request: httpx.Request) -> httpx.Response:
+    def answer(request: httpx2.Request) -> httpx2.Response:
         attempts.append(request)
         if len(attempts) > 1:
-            return httpx.Response(204)
+            return httpx2.Response(204)
         if failure == "offline":
-            raise httpx.ConnectError("offline")
-        return httpx.Response(503)
+            raise httpx2.ConnectError("offline")
+        return httpx2.Response(503)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(answer)) as client:
         headers = {**PINNED, "x-polar-affinity-next": f"shard-8-{failure}"}
         for _ in range(2):
             await warm_next_vercel_instance(URL, headers, client=client)
@@ -85,13 +85,13 @@ async def test_warms_again_when_a_warm_up_fails_and_never_warms_its_own_instance
 async def test_waits_a_second_before_warming_again_after_a_failure(
     clock: list[float],
 ) -> None:
-    attempts: list[httpx.Request] = []
+    attempts: list[httpx2.Request] = []
 
-    def answer(request: httpx.Request) -> httpx.Response:
+    def answer(request: httpx2.Request) -> httpx2.Response:
         attempts.append(request)
-        return httpx.Response(503)
+        return httpx2.Response(503)
 
-    async with httpx.AsyncClient(transport=httpx.MockTransport(answer)) as client:
+    async with httpx2.AsyncClient(transport=httpx2.MockTransport(answer)) as client:
         headers = {**PINNED, "x-polar-affinity-next": "shard-9-1"}
         for step in [0.0, 0.5, 0.6]:
             clock[0] += step

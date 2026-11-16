@@ -12,7 +12,7 @@ import typing
 import uuid
 
 import anyio
-import httpx
+import httpx2
 from opentelemetry import context as otel_context
 from opentelemetry import trace
 from opentelemetry.metrics import Counter, Histogram, _Gauge
@@ -190,7 +190,7 @@ def _is_connection_error(error: BaseException) -> bool:
     return isinstance(
         error,
         (
-            httpx.HTTPError,
+            httpx2.HTTPError,
             OSError,
             RedisConnectionError,
             RedisTimeoutError,
@@ -666,7 +666,7 @@ class Outpost:
         self,
         redis_url: str,
         *,
-        client: httpx.AsyncClient,
+        client: httpx2.AsyncClient,
         telemetry: bool = True,
         confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:
@@ -1400,7 +1400,7 @@ class Outpost:
                             "/v1/outpost/meter-usage",
                             json={"identities": requested},
                         )
-                    except (httpx.HTTPStatusError, httpx.TransportError) as error:
+                    except (httpx2.HTTPStatusError, httpx2.TransportError) as error:
                         response = getattr(error, "response", None)
                         if response is not None and (
                             response.is_client_error and response.status_code != 429
@@ -1716,7 +1716,7 @@ class Outpost:
                     changes: Changes = await self._request(
                         "GET", "/v1/outpost/changes", params=params
                     )
-                except httpx.HTTPStatusError as error:
+                except httpx2.HTTPStatusError as error:
                     # Only a rate limit clears on its own: any other 4xx would repeat forever.
                     if (
                         error.response.is_client_error
@@ -1926,7 +1926,7 @@ class Outpost:
                                 "ids": batch,
                             },
                         )
-                except (httpx.HTTPError, TimeoutError):
+                except (httpx2.HTTPError, TimeoutError):
                     return confirmation, False
                 confirmation.confirmed.setdefault(bucket_start, []).extend(
                     answer["ids"]

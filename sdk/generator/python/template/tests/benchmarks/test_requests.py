@@ -5,7 +5,7 @@ import pathlib
 import subprocess
 import typing
 
-import httpx
+import httpx2
 import pytest
 from anyio import from_thread, to_thread
 from pytest_codspeed import BenchmarkFixture
@@ -85,7 +85,7 @@ def test_decode_customer_page(
     benchmark: BenchmarkFixture,
     customer_type: typing.Literal["individual", "team", "mixed"],
 ) -> None:
-    response = httpx.Response(
+    response = httpx2.Response(
         200, content=customer_page(DATA["page_size"], customer_type)
     )
 

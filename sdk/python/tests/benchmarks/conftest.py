@@ -9,7 +9,7 @@ import time
 import typing
 import uuid
 
-import httpx
+import httpx2
 import pytest
 
 from polar.outpost.client import Outpost
@@ -127,10 +127,10 @@ def outpost(
 ) -> collections.abc.Iterator[Outpost]:
     # Each module configures its own reducers on the session's Redis: a token of its own
     # keeps another module's stored configuration out.
-    client = httpx.AsyncClient(
+    client = httpx2.AsyncClient(
         base_url="http://polar.test",
         headers={"Authorization": f"Bearer {uuid.uuid4()}"},
-        transport=httpx.ASGITransport(polar_server(reducers, snapshot)),
+        transport=httpx2.ASGITransport(polar_server(reducers, snapshot)),
     )
     outpost = Outpost(f"unix://{redis_socket}", client=client)
     stop = asyncio.Event()

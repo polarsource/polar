@@ -97,7 +97,7 @@ class SubscriptionsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -190,7 +190,7 @@ class SubscriptionsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -268,7 +268,7 @@ class SubscriptionsSync(SyncServiceBase):
         **Scopes**: `subscriptions:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -328,7 +328,7 @@ class SubscriptionsSync(SyncServiceBase):
             started_before: Only include subscriptions started before this date. Must include a UTC offset.
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -376,7 +376,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -418,7 +418,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -555,7 +555,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -643,7 +643,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -736,7 +736,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -815,7 +815,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         **Scopes**: `subscriptions:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -875,7 +875,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             started_before: Only include subscriptions started before this date. Must include a UTC offset.
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -923,7 +923,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -965,7 +965,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1102,7 +1102,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Args:
             id: The subscription ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

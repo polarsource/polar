@@ -1,14 +1,10 @@
 import builtins
 import collections.abc
-import os
-import ssl
 import types
 import typing
 
 import adaptix
 import adaptix.load_error
-import certifi
-import httpx2
 import typing_extensions
 from adaptix._internal.provider.loc_stack_filtering import LocStack, LocStackChecker
 
@@ -100,14 +96,6 @@ def _default_headers(
     return headers
 
 
-def _ssl_context() -> ssl.SSLContext:
-    if cafile := os.environ.get("SSL_CERT_FILE"):
-        return ssl.create_default_context(cafile=cafile)
-    if capath := os.environ.get("SSL_CERT_DIR"):
-        return ssl.create_default_context(capath=capath)
-    return ssl.create_default_context(cafile=certifi.where())
-
-
 class BuildRequestMixin:
     def build_request(
         self: "SyncClientBase | AsyncClientBase",
@@ -118,7 +106,7 @@ class BuildRequestMixin:
         body: typing.Any | None = None,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> httpx2.Request:
+    ) -> _httpx_compat.Request:
         url = url.format(**(path_params or {}))
 
         params: dict[str, typing.Any] = {}
@@ -155,11 +143,10 @@ class SyncClientBase(BuildRequestMixin):
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
     ) -> None:
-        self._client = httpx2.Client(
+        self._client = _httpx_compat.Client(
             base_url=base_url,
             timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
-            verify=_ssl_context(),
         )
 
     def __enter__(self) -> typing.Self:
@@ -174,10 +161,10 @@ class SyncClientBase(BuildRequestMixin):
     ) -> None:
         self._client.__exit__(exc_type, exc_val, exc_tb)
 
-    def send_request(self, request: httpx2.Request) -> httpx2.Response:
+    def send_request(self, request: _httpx_compat.Request) -> _httpx_compat.Response:
         try:
             return self._client.send(request)
-        except httpx2.RequestError as e:
+        except _httpx_compat.RequestError as e:
             raise PolarNetworkError(str(e)) from e
 
 
@@ -190,11 +177,10 @@ class AsyncClientBase(BuildRequestMixin):
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
     ) -> None:
-        self._client = httpx2.AsyncClient(
+        self._client = _httpx_compat.AsyncClient(
             base_url=base_url,
             timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
-            verify=_ssl_context(),
         )
 
     async def __aenter__(self) -> typing.Self:
@@ -209,10 +195,12 @@ class AsyncClientBase(BuildRequestMixin):
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
-    async def send_request(self, request: httpx2.Request) -> httpx2.Response:
+    async def send_request(
+        self, request: _httpx_compat.Request
+    ) -> _httpx_compat.Response:
         try:
             return await self._client.send(request)
-        except httpx2.RequestError as e:
+        except _httpx_compat.RequestError as e:
             raise PolarNetworkError(str(e)) from e
 
 
@@ -319,7 +307,7 @@ def deserialize(data: object, model: typing_extensions.TypeForm[_ModelT]) -> _Mo
 
 
 def _handle_errors(
-    response: httpx2.Response,
+    response: _httpx_compat.Response,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     status_code = response.status_code
@@ -351,7 +339,7 @@ def _handle_errors(
 
 
 def parse_response_json(
-    response: httpx2.Response,
+    response: _httpx_compat.Response,
     response_model: typing.Any | None = None,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> typing.Any:
@@ -367,7 +355,7 @@ def parse_response_json(
 
 
 def parse_response_text(
-    response: httpx2.Response,
+    response: _httpx_compat.Response,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> str:
     _handle_errors(response, errors)
@@ -375,7 +363,7 @@ def parse_response_text(
 
 
 def parse_response_none(
-    response: httpx2.Response,
+    response: _httpx_compat.Response,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     _handle_errors(response, errors)

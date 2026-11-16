@@ -37,7 +37,7 @@ from polar._httpx_compat import (
     HTTP_ERRORS,
     STATUS_ERRORS,
     STATUS_OR_TRANSPORT_ERRORS,
-    AsyncClient,
+    AsyncClientType,
 )
 from polar.base import PolarError
 from polar.metering.client import PolarClient
@@ -424,7 +424,7 @@ class Outpost:
         self,
         redis_url: str,
         *,
-        client: AsyncClient,
+        client: AsyncClientType,
         telemetry: bool = True,
         confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:

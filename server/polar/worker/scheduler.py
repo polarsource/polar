@@ -2,7 +2,6 @@ import threading
 import time
 
 import logfire
-from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.base import STATE_STOPPED
 from apscheduler.schedulers.blocking import BlockingScheduler
 from sqlalchemy import text
@@ -20,6 +19,7 @@ from polar.subscription.scheduler import (
 )
 
 from ._broker import scheduler_middleware
+from ._cron import CronJobStore
 from ._health import _run_exposition_server, set_heartbeat_checker
 
 configure_sentry()
@@ -76,12 +76,11 @@ def start() -> None:
 
     scheduler = LogfireBlockingScheduler()
 
-    scheduler.add_jobstore(MemoryJobStore(), "memory")
+    scheduler.add_jobstore(
+        CronJobStore(health_engine, scheduler_middleware.cron_triggers), "cron"
+    )
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
     scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
-
-    for func, cron_trigger in scheduler_middleware.cron_triggers:
-        scheduler.add_job(func, cron_trigger, jobstore="memory")
 
     try:
         scheduler.start()

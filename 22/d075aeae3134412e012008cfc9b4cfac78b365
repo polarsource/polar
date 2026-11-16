@@ -1,0 +1,22 @@
+server/scripts/ci_services.py
+  s_f83d2c94945117::t_61047e0038f64b 15-16,37-52,54,57-66,80-82,85-87,114-126
+  s_f83d2c94945117::t_abf0dff119839f 53
+.github/workflows/test_server_shard.yaml
+  s_f83d2c94945117::t_61047e0038f64b 190
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "22d075aeae3134412e012008cfc9b4cfac78b365",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

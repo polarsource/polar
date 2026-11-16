@@ -1,15 +1,12 @@
----
-title: "ADR-0011: Specialized webhook events also emit the catch-all updated"
-description: "A resource change that has a specialized webhook also fires the generic *.updated event, so catch-all subscribers never miss it."
----
+# ADR-0011: Specialized webhook events also emit the catch-all updated
 
-<Info>
+A resource change that has a specialized webhook also fires the generic *.updated event, so catch-all subscribers never miss it.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-09-15
-</Info>
 
 ## Context
 

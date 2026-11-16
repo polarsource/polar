@@ -1430,6 +1430,7 @@ class TestClientConfirm:
         api_prefix: str,
         stripe_service_mock: MagicMock,
         client: AsyncClient,
+        session: AsyncSession,
         checkout_open: Checkout,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -1446,12 +1447,22 @@ class TestClientConfirm:
                 "customer_billing_address": {"country": "FR"},
                 "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
             },
+            headers={"True-Client-IP": "1.2.3.4"},
         )
 
         assert response.status_code == 200
 
         json = response.json()
         assert "customer_session_token" in json
+        assert "customer_signals" not in json
+
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(checkout_open.id)
+        assert checkout is not None
+        assert checkout.customer_signals == {
+            "ip_address": "1.2.3.4",
+            "ip_country": None,
+        }
 
     async def test_confirm_with_discount_code(
         self,

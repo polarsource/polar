@@ -1,15 +1,12 @@
----
-title: "ADR-0002: Business errors are status-coded PolarError subclasses"
-description: "Logical errors carry an explicit HTTP status; 422 is reserved for payload validation."
----
+# ADR-0002: Business errors are status-coded PolarError subclasses
 
-<Info>
+Logical errors carry an explicit HTTP status; 422 is reserved for payload validation.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-07-02
-</Info>
 
 ## Context
 

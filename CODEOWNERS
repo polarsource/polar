@@ -49,7 +49,7 @@ clients/packages/orbit/** @emilwidlund @sebastianekstrom
 /docs/openapi/**
 
 # ADR
-handbook/engineering/decisions/** @frankie567
+adr/** @frankie567
 
 # Design documents
 handbook/engineering/design-documents/** @frankie567

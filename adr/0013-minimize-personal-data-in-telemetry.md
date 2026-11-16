@@ -1,16 +1,13 @@
----
-title: "ADR-0013: Minimize personal data in telemetry"
-description: "Log selected operational facts, not customer payloads. Keep useful diagnostics without copying personal data or secrets into telemetry."
----
+# ADR-0013: Minimize personal data in telemetry
 
-<Info>
+Log selected operational facts, not customer payloads. Keep useful diagnostics without copying personal data or secrets into telemetry.
+
 **Status**: Accepted
 
 **Area**: Cross-cutting
 
 **Date**: 2026-09-24
 
-</Info>
 
 ## Context
 

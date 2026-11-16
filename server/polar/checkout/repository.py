@@ -161,6 +161,7 @@ class CheckoutRepository(
                     Checkout.customer_name: null(),
                     Checkout.customer_email: null(),
                     Checkout._customer_ip_address: null(),
+                    Checkout.customer_signals: null(),
                     Checkout.customer_billing_name: null(),
                     Checkout.customer_billing_address: null(),
                     Checkout.customer_tax_id: null(),

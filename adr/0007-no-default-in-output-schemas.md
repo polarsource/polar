@@ -1,16 +1,13 @@
----
-title: "ADR-0007: No default in output schemas"
-description: "Pydantic schemas used in API responses should not have default values, so the OpenAPI schema marks them as required."
----
+# ADR-0007: No default in output schemas
 
-<Info>
+Pydantic schemas used in API responses should not have default values, so the OpenAPI schema marks them as required.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-07-06
 
-</Info>
 
 ## Context
 

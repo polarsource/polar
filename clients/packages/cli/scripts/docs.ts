@@ -43,6 +43,7 @@ const helpOnlyServices = Layer.mergeAll(
       catalogs: unused,
       publish: unused,
       disable: unused,
+      generate: unused,
     }),
   ),
   Layer.succeed(Organizations, fakeOrganizations().organizations),

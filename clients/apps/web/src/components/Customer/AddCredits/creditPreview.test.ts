@@ -2,6 +2,7 @@ import { MeteredPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
 import {
+  getMeterCreditOptions,
   formatCredits,
   getCreditPreview,
   MeterCreditOption,
@@ -102,5 +103,49 @@ describe('formatCredits', () => {
   it('pluralizes', () => {
     expect(formatCredits(1)).toBe('1 credit')
     expect(formatCredits(1000)).toBe('1,000 credits')
+  })
+})
+
+describe('getMeterCreditOptions', () => {
+  const live = meter({ id: 'tokens_v2', name: 'AI tokens' })
+  const billed = meter({ id: 'calls_v1', name: 'API calls' })
+  const stale = meter({ id: 'exports_v1', name: 'Exports' })
+  const selected = meter({ id: 'tokens_v1', name: 'AI tokens' })
+  const subscription = {
+    product: { name: 'Pro' },
+    meters: [
+      { meter_id: billed.id, meter: billed },
+      { meter_id: stale.id, meter: stale },
+    ],
+    prices: [{ ...unitPrice, meter_id: billed.id }],
+  } as unknown as schemas['Subscription']
+  const customerMeters = [
+    { meter_id: selected.id, meter: selected, balance: -60 },
+    { meter_id: stale.id, meter: stale, balance: 0 },
+  ] as schemas['CustomerMeter'][]
+
+  it('lists live meters, the versions current prices bill, and the selected meter', () => {
+    const options = getMeterCreditOptions(
+      [live],
+      [subscription],
+      customerMeters,
+      selected.id,
+    )
+
+    expect(options.map((o) => o.meter.id)).toEqual([
+      'tokens_v2',
+      'tokens_v1',
+      'calls_v1',
+    ])
+    expect(options[1]).toMatchObject({ balance: -60, productName: null })
+    expect(options[2]).toMatchObject({
+      productName: 'Pro',
+      unitPrice: { meter_id: billed.id },
+    })
+  })
+
+  it('leaves out archived meters', () => {
+    const archived = meter({ archived_at: '2026-01-01' })
+    expect(getMeterCreditOptions([archived], [], [])).toEqual([])
   })
 })

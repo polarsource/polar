@@ -148,7 +148,7 @@ sequenceDiagram
 ```
 
 Review prompts are built from a named field list rather than a serialized object, so only those
-fields reach the provider ([ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls)).
+fields reach the provider ([ADR-0012](https://github.com/polarsource/polar/blob/main/adr/0012-minimize-data-in-ai-api-calls.md)).
 
 ### Checkout and payment
 
@@ -194,6 +194,6 @@ If Numeral is unavailable, the tax calculation falls back to Stripe.
 | Audit logs and span archive | Trace spans | Gzipped JSONL, the **Audit Logs** asset | S3 | Sensitive attribute keys redacted before the object is written |
 | Backups | PlanetScale Postgres | **Everything in this document** | PlanetScale | Managed by PlanetScale. Earlier Render Postgres exports stay in S3 under Object Lock in COMPLIANCE mode, so they **cannot be deleted before retention elapses, by anyone, including root**; deletion reaches backups by expiry rather than erasure |
 | Staff access | Polar admin via backoffice | Any production record; impersonation renders the merchant dashboard | Postgres | Backoffice reachable only over Tailscale; impersonation restricted to `READ_ONLY_SCOPES` and one organization |
-| AI: organization review | Merchant signup | Products, website text, Stripe-verified identity (**name, address country**), payout-account details, payment totals and risk scores, user history | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
-| AI: Plain subject lines | Support message | The customer's message | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](/engineering/decisions/0012-minimize-data-in-ai-api-calls) |
+| AI: organization review | Merchant signup | Products, website text, Stripe-verified identity (**name, address country**), payout-account details, payment totals and risk scores, user history | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](https://github.com/polarsource/polar/blob/main/adr/0012-minimize-data-in-ai-api-calls.md) |
+| AI: Plain subject lines | Support message | The customer's message | Pydantic AI Gateway → OpenAI, Anthropic | [ADR-0012](https://github.com/polarsource/polar/blob/main/adr/0012-minimize-data-in-ai-api-calls.md) |
 | Workspace assistant | Meetings, calendar, Slack, Google Workspace, GitHub | Meeting audio and transcripts, internal communications, documents, source code | Stilla | Zero-data-retention agreements with the underlying LLM providers; contractual bar on training |

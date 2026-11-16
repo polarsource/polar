@@ -5502,6 +5502,61 @@ class TestConfirm:
         assert customer_session.customer == checkout.customer
 
     @pytest.mark.parametrize(
+        ("ip_address", "ip_country", "expected_customer_signals"),
+        [
+            pytest.param(
+                "1.2.3.4",
+                "FR",
+                {"ip_address": "1.2.3.4", "ip_country": "FR"},
+                id="resolved country",
+            ),
+            pytest.param(
+                "1.2.3.4",
+                "",
+                {"ip_address": "1.2.3.4", "ip_country": None},
+                id="unresolved country",
+            ),
+            pytest.param(None, "FR", None, id="no ip address"),
+        ],
+    )
+    async def test_customer_signals(
+        self,
+        ip_address: str | None,
+        ip_country: str,
+        expected_customer_signals: dict[str, str | None] | None,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        ip_geolocation_client = MagicMock()
+        ip_geolocation_client.getCountry.return_value = ip_country
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+            ip_geolocation_client,
+            ip_address,
+        )
+
+        assert checkout.customer_signals == expected_customer_signals
+
+    @pytest.mark.parametrize(
         ("customer_billing_address", "expected_tax_metadata"),
         [
             ({"country": "FR"}, {"tax_country": "FR"}),

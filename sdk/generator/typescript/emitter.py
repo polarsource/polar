@@ -210,10 +210,11 @@ class TypeScriptEmitter(EmitterBase):
     def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
         """Run post-processing actions: pnpm install, lint, build."""
         super().run_post_actions(root_directory)
-        self.run_command("just install", cwd=root_directory)
+        # `prepare` would build before lint-fix; build once after it instead.
+        self.run_command("pnpm install --ignore-scripts", cwd=root_directory)
         self.run_command("just lint-fix", cwd=root_directory)
-        self.run_command("just typecheck", cwd=root_directory)
         self.run_command("just build", cwd=root_directory)
+        self.run_command("just typecheck", cwd=root_directory)
         self.run_command("just test", cwd=root_directory)
 
     def _emit_models(self, version_dir: pathlib.Path, api: APIVersion) -> None:

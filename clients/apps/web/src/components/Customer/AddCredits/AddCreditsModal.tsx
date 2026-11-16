@@ -57,6 +57,7 @@ export const AddCreditsModal = ({
   const { options, isLoading } = useMeterCreditOptions(
     organization.id,
     customer,
+    meterId,
   )
   const creditCustomerMeter = useCreditCustomerMeter()
   const form = useForm<AddCreditsForm>({

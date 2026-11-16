@@ -26,6 +26,8 @@ class ChildPlugin:
         self.started = _CLOCKS[0]()
         self.phases = {}
         self.fixture_calls = collections.Counter()
+        self.measure_tinybird = False
+        self.clickhouse_initializations = []
 
     def pytest_configure(self, config):
         import pytest
@@ -39,6 +41,17 @@ class ChildPlugin:
 
     def pytest_sessionstart(self, session):
         self.phases["configuration_finished"] = _CLOCKS[0]() - self.started
+        if self.measure_tinybird:
+            import clickhouse_connect
+
+            original = clickhouse_connect.get_async_client
+            async def measured(*args, **kwargs):
+                before = _CLOCKS[0]()
+                try:
+                    return await original(*args, **kwargs)
+                finally:
+                    self.clickhouse_initializations.append(_CLOCKS[0]() - before)
+            clickhouse_connect.get_async_client = measured
 
     def pytest_fixture_setup(self, fixturedef, request):
         if fixturedef.scope != "function":
@@ -73,6 +86,8 @@ def child(worker, nodeids, arguments, directory):
     import pytest
 
     plugin = ChildPlugin(worker)
+    assigned_tinybird = {node["nodeid"] for node in preload.MANIFEST if node.get("tinybird")}
+    plugin.measure_tinybird = bool(assigned_tinybird) and set(nodeids) == assigned_tinybird
     started = time.monotonic()
     arguments = [*arguments, *nodeids, "-n", "0", "-q", "--store-durations", "--clean-durations",
                  f"--durations-path={directory / '.test_durations'}",
@@ -84,6 +99,7 @@ def child(worker, nodeids, arguments, directory):
     write_json(directory / "result.json", {"worker": worker, "pid": os.getpid(), "exit_code": int(status),
                "assigned": nodeids, "collected": plugin.collected, "reports": plugin.reports,
                "phases": plugin.phases, "high_scope_fixtures": plugin.fixture_calls,
+               "clickhouse_initializations": plugin.clickhouse_initializations,
                "seconds": time.monotonic() - started, "cpu_user_seconds": usage.ru_utime,
                "cpu_system_seconds": usage.ru_stime, "peak_rss_native_units": usage.ru_maxrss})
     raise SystemExit(int(status))

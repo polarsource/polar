@@ -612,33 +612,13 @@ jobs:
           cp "$RUNNER_TEMP/pytest-pool/.test_durations" .test_durations
           cp "$RUNNER_TEMP/pytest-pool/junit.xml" "$RUNNER_TEMP/junit.xml"
 
-      - name: Record shared-startup evidence
-        if: always() && matrix.shard != 'tinybird'
-        uses: actions/upload-artifact@v7
-        with:
-          name: pytest-pool-${{ matrix.shard }}
-          path: ${{ runner.temp }}/pytest-pool
-          include-hidden-files: true
-          if-no-files-found: error
-          overwrite: true
-          retention-days: 3
-
-      - name: Upload Tinybird test results
-        if: always() && matrix.shard == '1'
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-results-tinybird
-          path: ${{ runner.temp }}/pytest-pool/tinybird-junit.xml
-          if-no-files-found: error
-          overwrite: true
-          retention-days: 3
-
-      - name: Upload test results
+      - name: Upload test reports and timings
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.shard }}
-          path: ${{ runner.temp }}/junit.xml
+          path: ${{ runner.temp }}/pytest-pool
+          include-hidden-files: true
           if-no-files-found: error
           overwrite: true
           retention-days: 3
@@ -649,17 +629,6 @@ jobs:
         run: |
           uv run python -m scripts.ci_migrations --result-file "$POLAR_TEST_MIGRATION_RESULT"
           cat "$RUNNER_TEMP/migrations.log"
-
-      - name: 📊 Upload shard test durations
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-durations-${{ matrix.shard }}
-          path: server/.test_durations
-          include-hidden-files: true
-          if-no-files-found: error
-          overwrite: true
-          retention-days: 1
 
       - name: Wait for ordinary timing artifacts
         if: github.event_name == 'push' && matrix.shard == '1'
@@ -693,7 +662,7 @@ jobs:
         if: github.event_name == 'push' && matrix.shard == '1'
         uses: actions/download-artifact@v8.0.2
         with:
-          pattern: test-durations-*
+          pattern: test-results-*
           path: ${{ runner.temp }}/test-durations
 
       - name: 📊 Merge shard test durations

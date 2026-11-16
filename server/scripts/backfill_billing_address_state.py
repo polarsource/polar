@@ -210,7 +210,8 @@ LOOKUPS = {country: _build_lookup(country) for country in COUNTRIES}
 
 
 def resolve_state(country: str, state: str) -> str | None:
-    code = LOOKUPS[country].get(normalize(state.removeprefix(f"{country}-")))
+    unprefixed = re.sub(rf"^\s*{country}\s*-", "", state, flags=re.IGNORECASE)
+    code = LOOKUPS[country].get(normalize(unprefixed))
     if code is None:
         return None
     resolved = f"{country}-{code}"

@@ -25,6 +25,8 @@ from tests.fixtures.random_objects import (
     [
         ("BR", "SP", "BR-SP"),
         ("BR", "BR-SP", "BR-SP"),
+        ("BR", "br-sp", "BR-SP"),
+        ("IN", "In - Karnataka", "IN-KA"),
         ("IN", "IN-OR", "IN-OD"),
         ("BR", "sp", "BR-SP"),
         ("BR", "São Paulo", "BR-SP"),

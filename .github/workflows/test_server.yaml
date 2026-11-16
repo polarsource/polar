@@ -424,7 +424,7 @@ jobs:
       POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
       POLAR_TEST_DATABASE_TEMPLATE: polar_test
       POLAR_TEST_XDIST: "true"
-      POLAR_TEST_MIGRATION_RESULT: ${{ runner.temp }}/migration-result.json
+      POLAR_TEST_MIGRATION_RESULT: ${{ github.workspace }}/migration-result.json
       POLAR_TEST_TINYBIRD_REQUIRED: ${{ matrix.shard == 'tinybird' && 'true' || 'false' }}
 
     services:

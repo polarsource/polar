@@ -15,6 +15,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 from polar.config import settings
 from polar.kit.db.postgres import create_async_engine
 from polar.models import Model
+from scripts.ci_migrations import wait_for_migrations
 
 
 def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
@@ -55,6 +56,9 @@ def clone_template_database(sync_database_url: str) -> None:
 
 @pytest.fixture(scope="session")
 def initialize_test_database(worker_id: str) -> Iterator[None]:
+    if result_file := os.environ.get("POLAR_TEST_MIGRATION_RESULT"):
+        wait_for_migrations(pathlib.Path(result_file))
+
     sync_database_url = get_database_url(worker_id, "psycopg")
 
     if database_exists(sync_database_url):

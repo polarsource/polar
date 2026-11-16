@@ -61,7 +61,7 @@ const render = (
         applied(config, organization, result.entries),
         ...(result.draft
           ? next(
-              `${ui.INDENT}Products, benefits and meters are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
+              `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
             )
           : []),
         ui.blank,
@@ -104,7 +104,7 @@ const approve = (
 
 export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   Command.withDescription(
-    'Apply a billing config file to your organization. Products, benefits and meters are saved as a draft until you publish them. Settings and webhooks apply right away',
+    'Apply a billing config file to your organization. Products, benefits, meters and settings are saved as a draft until you publish them. Webhooks apply right away',
   ),
   Command.withExamples([
     {

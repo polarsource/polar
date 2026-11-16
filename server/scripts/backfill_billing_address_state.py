@@ -1,8 +1,11 @@
-"""Normalize the free-text billing address state of BR and IN customers.
+"""Normalize the free-text state of BR and IN billing addresses.
 
-Each state becomes its bare ISO 3166-2 code (`SP`, `MH`), or is removed when it can't
-be resolved. Dry-run by default: it writes every planned change to a CSV, which is also
-the only record of the original values once `--execute` has run.
+Covers every model bearing an address: customers, orders, credit notes, checkouts and
+accounts. Each state becomes its bare ISO 3166-2 code (`SP`, `MH`). A state that can't
+be resolved is removed from customers and left untouched everywhere else.
+
+Dry-run by default: it writes every planned change to a CSV, which is also the only
+record of the original values once `--execute` has run.
 """
 
 import asyncio
@@ -12,6 +15,7 @@ import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, cast
 from uuid import UUID
@@ -20,9 +24,12 @@ import pycountry
 import typer
 from sqlalchemy import ColumnElement, Text, Update, func, select, update
 from sqlalchemy import cast as sql_cast
+from sqlalchemy.orm import InstrumentedAttribute
 
+from polar.kit.address import Address
+from polar.kit.db.models import RecordModel
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
-from polar.models import Customer
+from polar.models import Account, Checkout, CreditNote, Customer, Order
 from polar.postgres import create_async_engine
 from scripts.helper import configure_script_logging, read_engine, typer_async
 
@@ -205,52 +212,89 @@ def resolve_state(country: str, state: str) -> str | None:
     return LOOKUPS[country].get(normalize(state))
 
 
+class Target(StrEnum):
+    customer = "customer"
+    order = "order"
+    credit_note = "credit_note"
+    checkout = "checkout"
+    account = "account"
+
+
+@dataclass(frozen=True)
+class AddressSource:
+    model: type[RecordModel]
+    address: InstrumentedAttribute[Address | None]
+    remove_unresolved: bool = False
+
+
+SOURCES: dict[Target, AddressSource] = {
+    Target.customer: AddressSource(
+        Customer, Customer.billing_address, remove_unresolved=True
+    ),
+    Target.order: AddressSource(Order, Order.billing_address),
+    Target.credit_note: AddressSource(CreditNote, CreditNote.billing_address),
+    Target.checkout: AddressSource(Checkout, Checkout.customer_billing_address),
+    Target.account: AddressSource(Account, Account.billing_address),
+}
+
+
 @dataclass(frozen=True)
 class Correction:
-    customer_id: UUID
+    target: Target
+    record_id: UUID
     country: str
     old_state: str
     new_state: str | None
 
 
-async def plan_corrections(session: AsyncSession) -> tuple[list[Correction], int]:
-    country = Customer.billing_address["country"].astext
-    state = Customer.billing_address["state"].astext
-    result = await session.execute(
-        select(Customer.id, country, state).where(
-            country.in_(COUNTRIES),
-            func.coalesce(state, "") != "",
-            Customer.deleted_at.is_(None),
+@dataclass
+class Plan:
+    corrections: list[Correction]
+    unchanged: int
+    unresolved: Counter[tuple[Target, str, str]]
+
+
+async def plan_corrections(session: AsyncSession, targets: Sequence[Target]) -> Plan:
+    plan = Plan(corrections=[], unchanged=0, unresolved=Counter())
+    for target in targets:
+        source = SOURCES[target]
+        country = source.address["country"].astext
+        state = source.address["state"].astext
+        result = await session.execute(
+            select(source.model.id, country, state).where(
+                country.in_(COUNTRIES),
+                func.coalesce(state, "") != "",
+                source.model.deleted_at.is_(None),
+            )
         )
-    )
-    corrections = []
-    unchanged = 0
-    for customer_id, customer_country, old_state in result:
-        new_state = resolve_state(customer_country, old_state)
-        if new_state == old_state:
-            unchanged += 1
-            continue
-        corrections.append(
-            Correction(customer_id, customer_country, old_state, new_state)
-        )
-    return corrections, unchanged
+        for record_id, record_country, old_state in result:
+            new_state = resolve_state(record_country, old_state)
+            if new_state == old_state:
+                plan.unchanged += 1
+            elif new_state is None and not source.remove_unresolved:
+                plan.unresolved[(target, record_country, old_state)] += 1
+            else:
+                plan.corrections.append(
+                    Correction(target, record_id, record_country, old_state, new_state)
+                )
+    return plan
 
 
 def correction_statement(
-    customer_ids: Sequence[UUID], old_state: str, new_state: str | None
+    target: Target, record_ids: Sequence[UUID], old_state: str, new_state: str | None
 ) -> Update:
-    address = Customer.billing_address
+    source = SOURCES[target]
     corrected: ColumnElement[Any]
     if new_state is None:
-        corrected = address.op("-")(sql_cast("state", Text))
+        corrected = source.address.op("-")(sql_cast("state", Text))
     else:
-        corrected = address.op("||")(func.jsonb_build_object("state", new_state))
+        corrected = source.address.op("||")(func.jsonb_build_object("state", new_state))
     return (
-        update(Customer)
-        .values(billing_address=corrected, modified_at=Customer.modified_at)
+        update(source.model)
+        .values({source.address: corrected, "modified_at": source.model.modified_at})
         .where(
-            Customer.id.in_(customer_ids),
-            Customer.billing_address["state"].astext == old_state,
+            source.model.id.in_(record_ids),
+            source.address["state"].astext == old_state,
         )
     )
 
@@ -261,23 +305,23 @@ async def apply_corrections(
     *,
     batch_size: int = 1000,
     sleep_seconds: float = 0,
-) -> int:
-    grouped: dict[tuple[str, str | None], list[UUID]] = defaultdict(list)
+) -> Counter[Target]:
+    grouped: dict[tuple[Target, str, str | None], list[UUID]] = defaultdict(list)
     for correction in corrections:
-        grouped[(correction.old_state, correction.new_state)].append(
-            correction.customer_id
+        grouped[(correction.target, correction.old_state, correction.new_state)].append(
+            correction.record_id
         )
 
-    updated = 0
-    for (old_state, new_state), customer_ids in grouped.items():
-        for start in range(0, len(customer_ids), batch_size):
+    updated: Counter[Target] = Counter()
+    for (target, old_state, new_state), record_ids in grouped.items():
+        for start in range(0, len(record_ids), batch_size):
             result = await session.execute(
                 correction_statement(
-                    customer_ids[start : start + batch_size], old_state, new_state
+                    target, record_ids[start : start + batch_size], old_state, new_state
                 )
             )
             await session.commit()
-            updated += cast(Any, result).rowcount
+            updated[target] += cast(Any, result).rowcount
             if sleep_seconds > 0:
                 await asyncio.sleep(sleep_seconds)
     return updated
@@ -286,11 +330,12 @@ async def apply_corrections(
 def write_corrections(corrections: Sequence[Correction], output: Path) -> None:
     with output.open("w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["customer_id", "country", "old_state", "new_state"])
+        writer.writerow(["target", "id", "country", "old_state", "new_state"])
         for correction in corrections:
             writer.writerow(
                 [
-                    correction.customer_id,
+                    correction.target,
+                    correction.record_id,
                     correction.country,
                     correction.old_state,
                     correction.new_state or "",
@@ -298,25 +343,32 @@ def write_corrections(corrections: Sequence[Correction], output: Path) -> None:
             )
 
 
-def print_summary(corrections: Sequence[Correction], unchanged: int) -> None:
+def print_summary(plan: Plan) -> None:
     removed = Counter(
-        (correction.country, correction.old_state)
-        for correction in corrections
+        (correction.target, correction.country, correction.old_state)
+        for correction in plan.corrections
         if correction.new_state is None
     )
-    typer.echo(f"Already a code: {unchanged}")
-    typer.echo(f"Set to a code: {len(corrections) - removed.total()}")
-    typer.echo(f"State removed: {removed.total()}")
-    for (country, old_state), count in sorted(removed.items()):
-        typer.echo(f"  {country} {old_state!r}: {count}")
+    typer.echo(f"Already a code: {plan.unchanged}")
+    typer.echo(f"Set to a code: {len(plan.corrections) - removed.total()}")
+    for label, states in (
+        ("State removed", removed),
+        ("Unresolved, left untouched", plan.unresolved),
+    ):
+        typer.echo(f"{label}: {states.total()}")
+        for (target, country, old_state), count in sorted(states.items()):
+            typer.echo(f"  {target} {country} {old_state!r}: {count}")
 
 
 @cli.command()
 @typer_async
-async def backfill_customer_billing_address_state(
+async def backfill_billing_address_state(
     execute: bool = typer.Option(False, help="Apply the changes; dry-run otherwise"),
+    target: list[Target] = typer.Option(
+        list(Target), help="Models to process; all of them by default"
+    ),
     output: Path = typer.Option(
-        Path("customer_billing_address_state_corrections.csv"),
+        Path("billing_address_state_corrections.csv"),
         help="CSV of the planned changes, including the original values",
     ),
     batch_size: int = typer.Option(1000, help="Number of rows to update per batch"),
@@ -325,12 +377,12 @@ async def backfill_customer_billing_address_state(
     engine = read_engine(command_timeout=600)
     try:
         async with create_async_sessionmaker(engine)() as session:
-            corrections, unchanged = await plan_corrections(session)
+            plan = await plan_corrections(session, target)
     finally:
         await engine.dispose()
 
-    write_corrections(corrections, output)
-    print_summary(corrections, unchanged)
+    write_corrections(plan.corrections, output)
+    print_summary(plan)
     typer.echo(f"Planned changes written to {output}")
 
     if not execute:
@@ -341,11 +393,15 @@ async def backfill_customer_billing_address_state(
     try:
         async with create_async_sessionmaker(engine)() as session:
             updated = await apply_corrections(
-                session, corrections, batch_size=batch_size, sleep_seconds=sleep_seconds
+                session,
+                plan.corrections,
+                batch_size=batch_size,
+                sleep_seconds=sleep_seconds,
             )
     finally:
         await engine.dispose()
-    typer.echo(f"Updated {updated} customers")
+    for updated_target, count in updated.items():
+        typer.echo(f"Updated {count} {updated_target} rows")
 
 
 if __name__ == "__main__":

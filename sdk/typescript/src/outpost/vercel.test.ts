@@ -51,6 +51,11 @@ describe("vercelAffinity", () => {
     expect(headers.get("authorization")).toBe("Basic merchant");
   });
 
+  it("spreads the customers over as many shards as it is given", async () => {
+    const headers = await headersAt(vercelAffinity({ shards: 256 }), "customer-0", 0);
+    expect(headers.get("x-vercel-affinity-id")).toBe(`shard-${await jumpHash("customer-0", 256)}`);
+  });
+
   it("leaves a request without a customer or a token unpinned, so it scales as before", async () => {
     const pin = vercelAffinity();
     const stale = { "x-vercel-affinity-id": "shard-9", "x-vercel-trusted-oidc-idp-token": "stale" };

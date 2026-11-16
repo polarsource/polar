@@ -10,7 +10,7 @@ const TRUSTED_TOKEN_HEADER = "x-vercel-trusted-oidc-idp-token";
 const OIDC_HEADER = "x-vercel-oidc-token";
 const WARMUP_HEADER = "x-polar-affinity-warmup";
 const NEXT_HEADER = "x-polar-affinity-next";
-const SHARDS = 128;
+const DEFAULT_SHARDS = 128;
 // A shard moves to a fresh instance this long before Vercel would retire its own.
 const HANDOFF_MS = 60_000;
 // The shard's next instance starts this long before the shard moves to it.
@@ -27,6 +27,8 @@ export interface VercelAffinityOptions {
    * a minute before, one shard at a time, and its next instance gets one request first.
    */
   maxDurationSeconds?: number;
+  /** How many shards, so how many pinned instances, the customers spread over. Defaults to 128. */
+  shards?: number;
 }
 
 /** The customer a request is for, by Polar's id or by yours; without one it is not pinned. */
@@ -45,10 +47,15 @@ export interface VercelAffinityRequest {
 export const isVercelAffinityWarmup = (request: { headers: Headers }): boolean =>
   request.headers.get(WARMUP_HEADER) === "1";
 
-const affinityId = (shard: number, maxDurationSeconds: number | undefined, now: number) => {
+const affinityId = (
+  shard: number,
+  shards: number,
+  maxDurationSeconds: number | undefined,
+  now: number,
+) => {
   if (!maxDurationSeconds) return `shard-${shard}`;
   const period = Math.max(maxDurationSeconds * 500, maxDurationSeconds * 1000 - HANDOFF_MS);
-  return `shard-${shard}-${Math.floor((now + (shard * period) / SHARDS) / period)}`;
+  return `shard-${shard}-${Math.floor((now + (shard * period) / shards) / period)}`;
 };
 
 // Vercel passes the token on the request; `@vercel/oidc` finds it elsewhere, where it is installed.
@@ -64,13 +71,13 @@ const oidcToken = async (headers: Headers): Promise<string | null> => {
 };
 
 /**
- * Pins each customer to one of 128 shards: the middleware passes on the headers it returns. A
+ * Pins each customer to one of `shards` shards: the middleware passes on the headers it returns. A
  * request without a customer, or outside Vercel, goes on unpinned. The route answers a warm-up
  * before anything else, then warms the shard's next instance:
  * `if (isVercelAffinityWarmup(request))`, then `warmNextVercelInstance(request, after)`.
  */
 export const vercelAffinity =
-  ({ maxDurationSeconds }: VercelAffinityOptions = {}) =>
+  ({ maxDurationSeconds, shards = DEFAULT_SHARDS }: VercelAffinityOptions = {}) =>
   async (
     request: { headers: Headers },
     { customerId, externalCustomerId }: VercelAffinityCustomer,
@@ -85,13 +92,13 @@ export const vercelAffinity =
     if (!token) return headers;
     const now = Date.now();
     const digest = await digestOf(customer);
-    const shard = jump(digest.getBigUint64(0), SHARDS);
-    const current = affinityId(shard, maxDurationSeconds, now);
+    const shard = jump(digest.getBigUint64(0), shards);
+    const current = affinityId(shard, shards, maxDurationSeconds, now);
     // Where in the spread the customer moves: other bits of its digest than the ones of its shard.
     const skew = (Number(digest.getBigUint64(8) >> 11n) / 2 ** 53 - 0.5) * SPREAD_MS;
-    headers.set(AFFINITY_HEADER, affinityId(shard, maxDurationSeconds, now - skew));
+    headers.set(AFFINITY_HEADER, affinityId(shard, shards, maxDurationSeconds, now - skew));
     headers.set(TRUSTED_TOKEN_HEADER, token);
-    const next = affinityId(shard, maxDurationSeconds, now + WARM_MS);
+    const next = affinityId(shard, shards, maxDurationSeconds, now + WARM_MS);
     if (next !== current) headers.set(NEXT_HEADER, next);
     return headers;
   };

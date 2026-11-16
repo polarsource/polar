@@ -9,6 +9,7 @@ const AFFINITY_HEADER = "x-vercel-affinity-id";
 const TRUSTED_TOKEN_HEADER = "x-vercel-trusted-oidc-idp-token";
 const OIDC_HEADER = "x-vercel-oidc-token";
 const WARMUP_HEADER = "x-polar-affinity-warmup";
+const NEXT_HEADER = "x-polar-affinity-next";
 const SHARDS = 128;
 // A shard moves to a fresh instance this long before Vercel would retire its own.
 const HANDOFF_MS = 60_000;
@@ -34,15 +35,10 @@ export interface VercelAffinityCustomer {
   externalCustomerId?: string | null;
 }
 
-/** The middleware's request: the pinned route, and the headers to pass on. */
+/** The pinned route's request: its URL, and the headers the middleware passed on. */
 export interface VercelAffinityRequest {
   headers: Headers;
   url: string | URL;
-}
-
-/** The middleware's event (`NextFetchEvent` in Next.js): its `waitUntil` carries the warm-ups. */
-export interface VercelAffinityEvent {
-  waitUntil(promise: Promise<unknown>): void;
 }
 
 /** True for the request that starts a shard's next instance: answer it once Outpost is up. */
@@ -70,20 +66,19 @@ const oidcToken = async (headers: Headers): Promise<string | null> => {
 /**
  * Pins each customer to one of 128 shards: the middleware passes on the headers it returns. A
  * request without a customer, or outside Vercel, goes on unpinned. The route answers a warm-up
- * before anything else: `if (isVercelAffinityWarmup(request))`.
+ * before anything else, then warms the shard's next instance:
+ * `if (isVercelAffinityWarmup(request))`, then `warmNextVercelInstance(request, after)`.
  */
-export const vercelAffinity = ({ maxDurationSeconds }: VercelAffinityOptions = {}) => {
-  // The next id this middleware warmed for each shard: one warm-up per shard and move.
-  const warmed = new Map<number, string>();
-  return async (
-    request: VercelAffinityRequest,
-    event: VercelAffinityEvent,
+export const vercelAffinity =
+  ({ maxDurationSeconds }: VercelAffinityOptions = {}) =>
+  async (
+    request: { headers: Headers },
     { customerId, externalCustomerId }: VercelAffinityCustomer,
   ): Promise<Headers> => {
     const headers = new Headers(request.headers);
     // A warm-up already names the shard's next instance: re-pinning it would send it to the current one.
     if (isVercelAffinityWarmup({ headers })) return headers;
-    for (const name of [AFFINITY_HEADER, TRUSTED_TOKEN_HEADER]) headers.delete(name);
+    for (const name of [AFFINITY_HEADER, TRUSTED_TOKEN_HEADER, NEXT_HEADER]) headers.delete(name);
     const customer = externalCustomerId ?? customerId;
     if (!customer) return headers;
     const token = await oidcToken(headers);
@@ -97,26 +92,43 @@ export const vercelAffinity = ({ maxDurationSeconds }: VercelAffinityOptions = {
     headers.set(AFFINITY_HEADER, affinityId(shard, maxDurationSeconds, now - skew));
     headers.set(TRUSTED_TOKEN_HEADER, token);
     const next = affinityId(shard, maxDurationSeconds, now + WARM_MS);
-    if (next !== current && warmed.get(shard) !== next) {
-      warmed.set(shard, next);
-      // The request's own headers, so the warm-up passes the merchant's middleware as it did.
-      const warmup = new Headers(headers);
-      for (const hop of ["content-length", "transfer-encoding", "connection", "host"])
-        warmup.delete(hop);
-      warmup.set(AFFINITY_HEADER, next);
-      warmup.set(WARMUP_HEADER, "1");
-      event.waitUntil(
-        fetch(request.url, { method: "POST", headers: warmup }).then(
-          (response) => response.body?.cancel(),
-          () => {
-            // The next request in the window tries again.
-            if (warmed.get(shard) === next) warmed.delete(shard);
-          },
-        ),
-      );
-    }
+    if (next !== current) headers.set(NEXT_HEADER, next);
     return headers;
   };
+
+// The next ids this instance warmed. Vercel runs one instance per id, so a shard's next instance
+// gets one warm-up per move, however many instances the middleware runs on.
+const warmed = new Set<string>();
+
+/**
+ * Starts the shard's next instance from the one that holds the shard, in the 30 s before the shard
+ * moves to it. Call it in the pinned route with the route's `waitUntil` (`after` in Next.js).
+ */
+export const warmNextVercelInstance = (
+  request: VercelAffinityRequest,
+  waitUntil: (promise: Promise<unknown>) => void,
+): void => {
+  const next = request.headers.get(NEXT_HEADER);
+  if (!next || next === request.headers.get(AFFINITY_HEADER) || warmed.has(next)) return;
+  warmed.add(next);
+  // The request's own headers, so the warm-up passes the merchant's middleware as it did.
+  const headers = new Headers(request.headers);
+  for (const name of ["content-length", "transfer-encoding", "connection", "host", NEXT_HEADER])
+    headers.delete(name);
+  headers.set(AFFINITY_HEADER, next);
+  headers.set(WARMUP_HEADER, "1");
+  waitUntil(
+    fetch(request.url, { method: "POST", headers })
+      .then(async (response) => {
+        await response.body?.cancel();
+        return response.ok;
+      })
+      .catch(() => false)
+      .then((warm) => {
+        // The next request in the window tries again.
+        if (!warm) warmed.delete(next);
+      }),
+  );
 };
 
 export interface VercelConfig {

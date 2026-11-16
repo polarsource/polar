@@ -1,0 +1,21 @@
+server/tests/worker/test_asyncio_watchdog.py
+  s_f83d2c94945117::t_4621201f2edb59 25-29,31,35,38-43,67,69,109,111,137,140,162,169,188,190,216,218,237,244,268,275,305,307
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_4621201f2edb59 530,539
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c893ac9c1027436f2ec279bdbb6c885d8bac4821",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

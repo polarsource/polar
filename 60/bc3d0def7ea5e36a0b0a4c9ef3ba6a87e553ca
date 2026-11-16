@@ -1,0 +1,21 @@
+sdk/generator/python/template/tests/benchmarks/test_requests.py
+  s_5ee9bde7cfe7bc::t_94cc795d813975 6,15-19,27-30,34-36,83-90,97-105
+sdk/python/tests/benchmarks/test_requests.py
+  s_5ee9bde7cfe7bc::t_b55c8cced84f07 6,15-19,27-30,34-36,83-90,97-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60bc3d0def7ea5e36a0b0a4c9ef3ba6a87e553ca",
+  "prompts": {},
+  "sessions": {
+    "s_5ee9bde7cfe7bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-dbab-76f3-b706-e92f43f91f2c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

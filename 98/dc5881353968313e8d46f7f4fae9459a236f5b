@@ -1,0 +1,19 @@
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_3473d2df3be168 139,155-157,430,507-509,534,555,564,577,620-624
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "98dc5881353968313e8d46f7f4fae9459a236f5b",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

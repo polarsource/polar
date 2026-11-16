@@ -1,0 +1,22 @@
+server/polar/event/repository.py
+  s_a3c28b0e096a4a::t_9a0aa8bf77360d 197
+  s_a3c28b0e096a4a::t_ab5b3f79a50ed1 214
+  s_a3c28b0e096a4a::t_d5ccf6cbd8af20 187-196,198-200,204-213,215-217,222-231,233-235
+  s_a3c28b0e096a4a::t_7336e8d551bbb9 232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9ef54b3716a5a4daa374fe48f168140ab8bb23bb",
+  "prompts": {},
+  "sessions": {
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

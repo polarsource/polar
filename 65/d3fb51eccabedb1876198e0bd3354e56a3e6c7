@@ -1,0 +1,52 @@
+docs/openapi/2026-04.openapi.json
+  h_868de2c7aaf22e 25061,52305,66293,69040,70483,80897
+docs/openapi/2026-10.openapi.json
+  h_868de2c7aaf22e 25061,52305,66405,69152,70595,81065
+docs/openapi/2027-01.openapi.json
+  h_868de2c7aaf22e 26432,55034,69069,71768,73308,84032
+sdk/CHANGELOG.md
+  h_868de2c7aaf22e 13-14,70-71
+sdk/python/polar/__init__.py
+  h_868de2c7aaf22e 12
+sdk/python/polar/base.py
+  h_868de2c7aaf22e 169
+sdk/python/polar/v2027_01/inputs.py
+  h_868de2c7aaf22e 437-441
+sdk/python/polar/v2027_01/outputs.py
+  h_868de2c7aaf22e 1480,1555,1624,1687,1758,1829,1896,1974,2047,2290-2381,2739-2784,4090,4134,4180,4224,4268,4314,4366,4410,11738-11740,11783-11784,11786
+sdk/python/polar/v2027_01/services/benefit_grants.py
+  h_868de2c7aaf22e 15,21,236,240-241,275-327,534,538-539,572-624
+sdk/python/pyproject.toml
+  h_868de2c7aaf22e 59
+sdk/python/tests/test_base.py
+  h_868de2c7aaf22e 456
+sdk/typescript/package.json
+  h_868de2c7aaf22e 3
+sdk/typescript/pnpm-lock.yaml
+  h_868de2c7aaf22e 174,216,220-221,223-224,280-281,534-535,540-541,546-547,552-553,558-559,564-565,570-571,577-578,584-585,591-592,598-599,605-606,612-613,618-619,624-625,630-631,978-979,1265-1266,1380-1381,1496,1506,1508,1510-1511,1529,1545,1553,1566,1568,1690,1693,1696,1699,1702,1705,1708,1711,1714,1717,1720,1723,1726,1729,1732,1735,1778,1784,1898,1992,2231,2236,2245,2248,2250-2264,2318-2319,2344,2349,2355,2358,2375
+sdk/typescript/src/2026-04/models.ts
+  h_868de2c7aaf22e 944
+sdk/typescript/src/2026-10/models.ts
+  h_868de2c7aaf22e 944
+sdk/typescript/src/2027-01/models.ts
+  h_868de2c7aaf22e 948,4457,4605,4713,4809,4918,5030,5134,5260,5376,5453-5462,5879-6002,6732-6793,9904,9992,10098,10186,10274,10380,10482,10570,25048-25050
+sdk/typescript/src/2027-01/services/benefit_grants.ts
+  h_868de2c7aaf22e 7,11-16,160,164-165,197-243,250
+sdk/typescript/src/base.test.ts
+  h_868de2c7aaf22e 214
+sdk/typescript/src/base.ts
+  h_868de2c7aaf22e 171
+sdk/typescript/src/version.ts
+  h_868de2c7aaf22e 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "65d3fb51eccabedb1876198e0bd3354e56a3e6c7",
+  "prompts": {},
+  "humans": {
+    "h_868de2c7aaf22e": {
+      "author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

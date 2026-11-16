@@ -1,0 +1,19 @@
+terraform/test/aws.tf
+  s_d518880e409113::t_f3ad1417e02bdd 258-264
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "680eb0a6f1b1dbdb619c6d368c93a8697a67a0f9",
+  "prompts": {},
+  "sessions": {
+    "s_d518880e409113": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "90587f0a-8020-4d25-9fa6-30e4fc3f9d52",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

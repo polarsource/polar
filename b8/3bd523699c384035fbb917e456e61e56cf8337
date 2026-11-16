@@ -1,0 +1,303 @@
+sdk/generator/python/emitter.py
+  s_7e19d239afd9c1::t_95d2dcc76abea5 131
+sdk/generator/python/template/tests/test_base.py
+  s_7e19d239afd9c1::t_eac147bf862f42 6,217,221,227,239-247
+  s_7e19d239afd9c1::t_e31cc9ed3a4111 248-249
+sdk/generator/python/template/tests/outpost/test_vercel.py
+  s_7e19d239afd9c1::t_eac147bf862f42 1-3,56,59,63,66,68-69,71-72
+  s_7e19d239afd9c1::t_ca294f4f5a91df 61
+sdk/generator/python/template/pyproject.toml
+  s_7e19d239afd9c1::t_95d2dcc76abea5 43
+sdk/generator/python/template/polar/outpost/client.py
+  s_7e19d239afd9c1::t_95d2dcc76abea5 36-41,198,427,1161,1471,1668
+sdk/CHANGELOG.md
+  s_7e19d239afd9c1::t_95d2dcc76abea5 15
+sdk/generator/python/template/tests/outpost/test_client.py
+  s_7e19d239afd9c1::t_eac147bf862f42 16,2810-2811
+sdk/generator/python/template/polar/_httpx_compat.py
+  s_7e19d239afd9c1::t_95d2dcc76abea5 1-32
+sdk/generator/python/template/polar/version/services/service.py
+  s_7e19d239afd9c1::t_1ee1804af6818b 164,302,455,590
+sdk/generator/python/template/README.md
+  s_7e19d239afd9c1::t_95d2dcc76abea5 124
+  s_7e19d239afd9c1::t_ca294f4f5a91df 125
+sdk/generator/python/template/polar/outpost/vercel.py
+  s_7e19d239afd9c1::t_95d2dcc76abea5 5,48,77
+sdk/e2e/python_client.py
+  s_7e19d239afd9c1::t_02e55a81583e15 8,30
+sdk/generator/python/template/polar/base.py
+  s_7e19d239afd9c1::t_95d2dcc76abea5 16
+  s_7e19d239afd9c1::t_4ec24b443bf318 15,19,134-138,158,193
+sdk/e2e/uv.lock
+  s_7e19d239afd9c1::t_da461256720e92 371
+sdk/python/README.md
+  s_7e19d239afd9c1::t_a1ea34a203447d 122-123
+sdk/python/polar/_httpx_compat.py
+  s_7e19d239afd9c1::t_04a106ea5accd2 1-32
+sdk/python/polar/base.py
+  s_7e19d239afd9c1::t_7778d38d62a480 15-16,19,136-140,160,195
+sdk/python/polar/outpost/client.py
+  s_7e19d239afd9c1::t_e772e04886865d 36-41,198,674,1408,1724,1934
+sdk/python/polar/outpost/vercel.py
+  s_7e19d239afd9c1::t_5c956dd95c7d69 5,46,75
+sdk/python/polar/v2026_04/services/benefit_grants.py
+  s_7e19d239afd9c1::t_cf08478cee3673 51,109,167,225
+sdk/python/polar/v2026_04/services/benefits.py
+  s_7e19d239afd9c1::t_5ba8b528b47148 82,146,263,303,349,474,522,573,626,686,748,812,930,970,1016,1141,1189,1240,1294,1354
+sdk/python/polar/v2026_04/services/checkout_links.py
+  s_7e19d239afd9c1::t_6b5246fd31acee 55,107,175,215,257,300,354,406,475,515,557,600
+sdk/python/polar/v2026_04/services/checkouts.py
+  s_7e19d239afd9c1::t_d0ae1907df1c95 72,136,181,221,264,308,353,404,474,538,584,624,667,711,756,807
+sdk/python/polar/v2026_04/services/custom_fields.py
+  s_7e19d239afd9c1::t_0dbe75de5b6737 64,119,206,246,288,381,437,492,580,620,662,755
+sdk/python/polar/v2026_04/services/customer_meters.py
+  s_7e19d239afd9c1::t_cd6473656e45c9 52,110,154,210,268,313
+sdk/python/polar/v2026_04/services/customer_portal/benefit_grants.py
+  s_7e19d239afd9c1::t_4c3fe8521d0604 73,145,192,315,384,456,504,627
+sdk/python/polar/v2026_04/services/customer_portal/customer_meters.py
+  s_7e19d239afd9c1::t_05715d616214f7 50,106,148,202,258,301
+sdk/python/polar/v2026_04/services/customer_portal/customer_session.py
+  s_7e19d239afd9c1::t_599904c0aac42e 28,60,94,126
+sdk/python/polar/v2026_04/services/customer_portal/customers.py
+  s_7e19d239afd9c1::t_b0db1f7a011a2e 51,82,122,165,201,242,284,325,363,402,446,477,517,560,597,638,680,721,759,798
+sdk/python/polar/v2026_04/services/customer_portal/downloadables.py
+  s_7e19d239afd9c1::t_d592c9b6a322e4 38,84,128,174
+sdk/python/polar/v2026_04/services/customer_portal/license_keys.py
+  s_7e19d239afd9c1::t_4c4770336db8ce 52,100,142,188,236,282,328,374,422,465,511,559,605,651
+sdk/python/polar/v2026_04/services/customer_portal/members.py
+  s_7e19d239afd9c1::t_8457ea0b3b4c83 55,104,148,198,251,305,354,399,449,502
+sdk/python/polar/v2026_04/services/customer_portal/orders.py
+  s_7e19d239afd9c1::t_114c2e6c91d7a5 66,124,166,207,249,289,331,371,412,476,534,577,618,660,700,742,782,823
+sdk/python/polar/v2026_04/services/customer_portal/organizations.py
+  s_7e19d239afd9c1::t_58959a4d7d794e 31,73
+sdk/python/polar/v2026_04/services/customer_portal/seats.py
+  s_7e19d239afd9c1::t_5965b70de2fea2 55,97,141,183,233,280,322,364,408,450,500,547
+sdk/python/polar/v2026_04/services/customer_portal/subscriptions.py
+  s_7e19d239afd9c1::t_3bfe4dec484fde 65,124,167,207,320,384,443,487,527,640
+sdk/python/polar/v2026_04/services/customer_portal/wallets.py
+  s_7e19d239afd9c1::t_6f4ccd55f1a116 42,86,124,170,214,253
+sdk/python/polar/v2026_04/services/customer_seats.py
+  s_7e19d239afd9c1::t_0ccdd3db255107 62,108,156,202,248,291,339,385,433,479,525,568
+sdk/python/polar/v2026_04/services/customer_sessions.py
+  s_7e19d239afd9c1::t_1acfc1e4318994 59,123
+sdk/python/polar/v2026_04/services/customers/__init__.py
+  s_7e19d239afd9c1::t_00fc75ffbdc9a3 74,135,199,239,279,337,382,426,474,519,569,617,663,712,757,806,869,930,995,1035,1075,1133,1178,1222,1270,1315,1365,1413,1459,1508,1554,1603
+sdk/python/polar/v2026_04/services/customers/members.py
+  s_7e19d239afd9c1::t_3418b0146eeba9 56,111,158,212,269,314,364,409,457,504,551,599,656,711,759,813,870,916,966,1011,1059,1106,1153,1201
+sdk/python/polar/v2026_04/services/discounts.py
+  s_7e19d239afd9c1::t_30736f324c86bc 54,106,165,205,247,290,344,396,456,496,538,581
+sdk/python/polar/v2026_04/services/disputes.py
+  s_7e19d239afd9c1::t_2b1a8e9d61f569 52,107,150,195,251,306,350,395
+sdk/python/polar/v2026_04/services/event_types.py
+  s_7e19d239afd9c1::t_cd60abd841ab84 63,132,180,244,313,362
+sdk/python/polar/v2026_04/services/events.py
+  s_7e19d239afd9c1::t_dc7bada4f06d07 80,153,214,259,300,372,445,506,552,593
+sdk/python/polar/v2026_04/services/files.py
+  s_7e19d239afd9c1::t_78dac1527beab5 54,103,179,220,266,311,365,414,491,532,578,623
+sdk/python/polar/v2026_04/services/license_keys.py
+  s_7e19d239afd9c1::t_dc9c4434668a89 64,120,164,209,259,307,351,394,437,489,545,590,635,685,733,777,820,863
+sdk/python/polar/v2026_04/services/meters.py
+  s_7e19d239afd9c1::t_e1ff065e669b79 61,119,162,202,245,305,370,428,472,512,555,615
+sdk/python/polar/v2026_04/services/metrics.py
+  s_7e19d239afd9c1::t_82800939061e72 65,129,175,209,248,288,328,369,431,495,541,575,614,654,694,735
+sdk/python/polar/v2026_04/services/oauth2/__init__.py
+  s_7e19d239afd9c1::t_6892bbe4e72c28 39,71,101,131,161,197,229,259,289,319
+sdk/python/polar/v2026_04/services/oauth2/clients/oauth2.py
+  s_7e19d239afd9c1::t_66e01c619bfbfb 33,71,110,150,189,227,266,306
+sdk/python/polar/v2026_04/services/orders.py
+  s_7e19d239afd9c1::t_ef52612228c925 87,171,226,278,324,367,418,468,510,554,628,712,768,820,866,909,960,1010,1052,1096
+sdk/python/polar/v2026_04/services/organizations.py
+  s_7e19d239afd9c1::t_7add435dfa3413 53,102,142,184,227,283,332,373,415,458
+sdk/python/polar/v2026_04/services/payments.py
+  s_7e19d239afd9c1::t_4cdff9d8e005e6 59,126,173,235,302,350
+sdk/python/polar/v2026_04/services/products.py
+  s_7e19d239afd9c1::t_8e6c68edd94323 71,141,206,246,291,338,385,453,523,589,629,674,721,768
+sdk/python/polar/v2026_04/services/refunds.py
+  s_7e19d239afd9c1::t_e83927e4cbd151 61,128,174,236,303,350
+sdk/python/polar/v2026_04/services/subscriptions.py
+  s_7e19d239afd9c1::t_a4324208a9da3a 97,187,263,319,366,408,545,631,721,798,854,901,943,1080
+sdk/python/polar/v2026_04/services/webhooks.py
+  s_7e19d239afd9c1::t_9f9b2c34a471ee 50,96,135,175,217,260,304,364,430,476,524,570,610,650,692,735,779,839,905,952
+sdk/python/polar/v2026_10/services/benefit_grants.py
+  s_7e19d239afd9c1::t_473a9d0817310e 51,109,167,225
+sdk/python/polar/v2026_10/services/benefits.py
+  s_7e19d239afd9c1::t_292ec427015e26 82,146,263,303,349,474,522,573,626,686,748,812,930,970,1016,1141,1189,1240,1294,1354
+sdk/python/polar/v2026_10/services/checkout_links.py
+  s_7e19d239afd9c1::t_706c2fc6374805 55,107,175,215,257,300,354,406,475,515,557,600
+sdk/python/polar/v2026_10/services/checkouts.py
+  s_7e19d239afd9c1::t_5d01398941d137 72,136,181,221,264,308,353,404,474,538,584,624,667,711,756,807
+sdk/python/polar/v2026_10/services/custom_fields.py
+  s_7e19d239afd9c1::t_56c2786039e71e 64,119,206,246,288,381,437,492,580,620,662,755
+sdk/python/polar/v2026_10/services/customer_meters.py
+  s_7e19d239afd9c1::t_426141ffe60bf4 52,110,154,210,268,313
+sdk/python/polar/v2026_10/services/customer_portal/benefit_grants.py
+  s_7e19d239afd9c1::t_9315ea16fc5e0f 73,145,192,315,384,456,504,627
+sdk/python/polar/v2026_10/services/customer_portal/customer_meters.py
+  s_7e19d239afd9c1::t_7507982a395cbd 50,106,148,202,258,301
+sdk/python/polar/v2026_10/services/customer_portal/customer_session.py
+  s_7e19d239afd9c1::t_f0f8f70e28ddc0 28,60,94,126
+sdk/python/polar/v2026_10/services/customer_portal/customers.py
+  s_7e19d239afd9c1::t_2a4f7bcb2ad083 51,82,122,165,201,242,284,325,363,402,446,477,517,560,597,638,680,721,759,798
+sdk/python/polar/v2026_10/services/customer_portal/downloadables.py
+  s_7e19d239afd9c1::t_2ac419608c1967 38,84,128,174
+sdk/python/polar/v2026_10/services/customer_portal/license_keys.py
+  s_7e19d239afd9c1::t_3437da57252a46 52,100,142,188,236,282,328,374,422,465,511,559,605,651
+sdk/python/polar/v2026_10/services/customer_portal/members.py
+  s_7e19d239afd9c1::t_4b10342179c4f4 55,104,148,198,251,305,354,399,449,502
+sdk/python/polar/v2026_10/services/customer_portal/orders.py
+  s_7e19d239afd9c1::t_2ce0202b8324b6 66,124,166,207,249,289,331,371,412,476,534,577,618,660,700,742,782,823
+sdk/python/polar/v2026_10/services/customer_portal/organizations.py
+  s_7e19d239afd9c1::t_ab602236ee8605 31,73
+sdk/python/polar/v2026_10/services/customer_portal/seats.py
+  s_7e19d239afd9c1::t_50fab0a5d6d1ab 55,97,141,183,233,280,322,364,408,450,500,547
+sdk/python/polar/v2026_10/services/customer_portal/subscriptions.py
+  s_7e19d239afd9c1::t_246d1fdc15d63a 65,124,167,207,320,384,443,487,527,640
+sdk/python/polar/v2026_10/services/customer_portal/wallets.py
+  s_7e19d239afd9c1::t_f566d29fc48306 42,86,124,170,214,253
+sdk/python/polar/v2026_10/services/customer_seats.py
+  s_7e19d239afd9c1::t_2685c683fb02bc 62,108,156,202,248,291,339,385,433,479,525,568
+sdk/python/polar/v2026_10/services/customer_sessions.py
+  s_7e19d239afd9c1::t_adf193e1dc78b0 59,123
+sdk/python/polar/v2026_10/services/customers/__init__.py
+  s_7e19d239afd9c1::t_3a62e30547f972 74,135,199,239,279,337,382,426,474,519,569,617,663,712,757,806,869,930,995,1035,1075,1133,1178,1222,1270,1315,1365,1413,1459,1508,1554,1603
+sdk/python/polar/v2026_10/services/customers/members.py
+  s_7e19d239afd9c1::t_3fa543f36a698f 56,111,158,212,269,314,364,409,457,504,551,599,656,711,759,813,870,916,966,1011,1059,1106,1153,1201
+sdk/python/polar/v2026_10/services/discounts.py
+  s_7e19d239afd9c1::t_e1a0e92eea174e 54,106,165,205,247,290,344,396,456,496,538,581
+sdk/python/polar/v2026_10/services/disputes.py
+  s_7e19d239afd9c1::t_92c0eedfd31748 52,107,150,195,251,306,350,395
+sdk/python/polar/v2026_10/services/event_types.py
+  s_7e19d239afd9c1::t_f554fe181a295a 63,132,180,244,313,362
+sdk/python/polar/v2026_10/services/events.py
+  s_7e19d239afd9c1::t_06be31995c8e5c 80,153,214,259,300,372,445,506,552,593
+sdk/python/polar/v2026_10/services/files.py
+  s_7e19d239afd9c1::t_cfdca5f72743ea 54,103,179,220,266,311,365,414,491,532,578,623
+sdk/python/polar/v2026_10/services/license_keys.py
+  s_7e19d239afd9c1::t_e540036af5338a 64,120,164,209,259,307,351,394,437,489,545,590,635,685,733,777,820,863
+sdk/python/polar/v2026_10/services/meters.py
+  s_7e19d239afd9c1::t_9b970900ae780c 61,119,162,202,245,305,370,428,472,512,555,615
+sdk/python/polar/v2026_10/services/metrics.py
+  s_7e19d239afd9c1::t_13996d65d92468 65,129,175,209,248,288,328,369,431,495,541,575,614,654,694,735
+sdk/python/polar/v2026_10/services/oauth2/__init__.py
+  s_7e19d239afd9c1::t_e532ea10fedd03 39,71,101,131,161,197,229,259,289,319
+sdk/python/polar/v2026_10/services/oauth2/clients/oauth2.py
+  s_7e19d239afd9c1::t_fa6152b9343adb 33,71,110,150,189,227,266,306
+sdk/python/polar/v2026_10/services/orders.py
+  s_7e19d239afd9c1::t_0f4670beb533a3 87,171,226,278,324,367,418,468,510,554,628,712,768,820,866,909,960,1010,1052,1096
+sdk/python/polar/v2026_10/services/organizations.py
+  s_7e19d239afd9c1::t_598bece20e5e95 53,102,142,184,227,283,332,373,415,458
+sdk/python/polar/v2026_10/services/payments.py
+  s_7e19d239afd9c1::t_1e39a562296e60 59,126,173,235,302,350
+sdk/python/polar/v2026_10/services/products.py
+  s_7e19d239afd9c1::t_95de83dc0eb5fe 71,141,206,246,291,338,385,453,523,589,629,674,721,768
+sdk/python/polar/v2026_10/services/refunds.py
+  s_7e19d239afd9c1::t_7ae8042e919fed 61,128,174,236,303,350
+sdk/python/polar/v2026_10/services/subscriptions.py
+  s_7e19d239afd9c1::t_6b8dd123e7acb2 97,187,263,319,366,408,545,631,721,798,854,901,943,1080
+sdk/python/polar/v2026_10/services/webhooks.py
+  s_7e19d239afd9c1::t_de16eb3cad133b 50,96,135,175,217,260,304,364,430,476,524,570,610,650,692,735,779,839,905,952
+sdk/python/polar/v2027_01/services/benefit_grants.py
+  s_7e19d239afd9c1::t_6b17c79e56ea2a 63,130,198,244,306,373,442,488
+sdk/python/polar/v2027_01/services/benefits.py
+  s_7e19d239afd9c1::t_8d2ad4c02cd17c 89,162,282,324,370,495,543,594,647,707,775,848,969,1011,1057,1182,1230,1281,1335,1395
+sdk/python/polar/v2027_01/services/checkout_links.py
+  s_7e19d239afd9c1::t_e09167453f12d9 53,105,146,186,228,271,325,377,419,459,501,544
+sdk/python/polar/v2027_01/services/checkouts.py
+  s_7e19d239afd9c1::t_68b7eeb11b9582 76,143,207,247,290,334,379,450,522,589,654,694,737,781,826,897
+sdk/python/polar/v2027_01/services/custom_fields.py
+  s_7e19d239afd9c1::t_2849cfabf279ad 64,119,206,246,288,381,437,492,580,620,662,755
+sdk/python/polar/v2027_01/services/customer_meters.py
+  s_7e19d239afd9c1::t_312a5236d58889 62,123,168,231,279,341,402,448,511,559
+sdk/python/polar/v2027_01/services/customer_portal/benefit_grants.py
+  s_7e19d239afd9c1::t_e704d674a4f735 73,145,192,315,384,456,504,627
+sdk/python/polar/v2027_01/services/customer_portal/customer_meters.py
+  s_7e19d239afd9c1::t_f9aacfd10885fc 50,106,148,202,258,301
+sdk/python/polar/v2027_01/services/customer_portal/customer_session.py
+  s_7e19d239afd9c1::t_f19e6a30620cfc 28,60,94,126
+sdk/python/polar/v2027_01/services/customer_portal/customers.py
+  s_7e19d239afd9c1::t_8aaa8ca3f1c23a 51,82,122,165,201,242,284,325,363,402,446,477,517,560,597,638,680,721,759,798
+sdk/python/polar/v2027_01/services/customer_portal/downloadables.py
+  s_7e19d239afd9c1::t_c66458c199b895 38,84,128,174
+sdk/python/polar/v2027_01/services/customer_portal/license_keys.py
+  s_7e19d239afd9c1::t_71251021dd528c 52,100,142,188,236,282,328,374,422,465,511,559,605,651
+sdk/python/polar/v2027_01/services/customer_portal/members.py
+  s_7e19d239afd9c1::t_dcd180494d0316 55,104,148,198,251,305,354,399,449,502
+sdk/python/polar/v2027_01/services/customer_portal/orders.py
+  s_7e19d239afd9c1::t_a082c4bb9819ea 66,124,166,207,249,289,331,371,412,476,534,577,618,660,700,742,782,823
+sdk/python/polar/v2027_01/services/customer_portal/organizations.py
+  s_7e19d239afd9c1::t_a16d44ad3ed7ec 31,73
+sdk/python/polar/v2027_01/services/customer_portal/seats.py
+  s_7e19d239afd9c1::t_4156de99713506 55,97,141,183,233,280,322,364,408,450,500,547
+sdk/python/polar/v2027_01/services/customer_portal/subscriptions.py
+  s_7e19d239afd9c1::t_2f0284aeb8629f 65,124,167,207,320,384,443,487,527,640
+sdk/python/polar/v2027_01/services/customer_portal/wallets.py
+  s_7e19d239afd9c1::t_fd19b2693013b4 42,86,124,170,214,253
+sdk/python/polar/v2027_01/services/customer_seats.py
+  s_7e19d239afd9c1::t_15be1e2cdad3f6 62,108,156,202,248,291,339,385,433,479,525,568
+sdk/python/polar/v2027_01/services/customer_sessions.py
+  s_7e19d239afd9c1::t_e6995df2acc284 59,123
+sdk/python/polar/v2027_01/services/customers/__init__.py
+  s_7e19d239afd9c1::t_cb84465b2d90b7 74,135,199,239,279,337,382,426,474,519,569,617,663,712,757,806,869,930,995,1035,1075,1133,1178,1222,1270,1315,1365,1413,1459,1508,1554,1603
+sdk/python/polar/v2027_01/services/customers/members.py
+  s_7e19d239afd9c1::t_415f91c32263b0 56,111,158,212,269,314,364,409,457,504,551,599,656,711,759,813,870,916,966,1011,1059,1106,1153,1201
+sdk/python/polar/v2027_01/services/discounts.py
+  s_7e19d239afd9c1::t_fc331e42a5b932 56,111,171,211,253,296,352,407,468,508,550,593
+sdk/python/polar/v2027_01/services/disputes.py
+  s_7e19d239afd9c1::t_d86cc80e47371d 52,107,150,195,251,306,350,395
+sdk/python/polar/v2027_01/services/event_types.py
+  s_7e19d239afd9c1::t_bf41fdd1ba9ce3 63,132,180,244,313,362
+sdk/python/polar/v2027_01/services/events.py
+  s_7e19d239afd9c1::t_c1098d6fd307d4 81,154,215,260,301,375,448,509,555,596
+sdk/python/polar/v2027_01/services/files.py
+  s_7e19d239afd9c1::t_5913990a0ef4fd 54,103,179,220,266,311,365,414,491,532,578,623
+sdk/python/polar/v2027_01/services/license_keys.py
+  s_7e19d239afd9c1::t_c540ad4292f6e8 64,120,164,209,261,309,353,396,439,491,547,592,637,689,737,781,824,867
+sdk/python/polar/v2027_01/services/meters.py
+  s_7e19d239afd9c1::t_0ac91b97516641 69,136,182,222,266,309,369,440,507,554,594,638,681,741
+sdk/python/polar/v2027_01/services/metrics.py
+  s_7e19d239afd9c1::t_ad3dd1b6b8e9a9 67,134,181,215,254,294,334,375,439,506,553,587,626,666,706,747
+sdk/python/polar/v2027_01/services/oauth2/__init__.py
+  s_7e19d239afd9c1::t_af98c136b083f0 39,71,101,131,161,197,229,259,289,319
+sdk/python/polar/v2027_01/services/oauth2/clients/oauth2.py
+  s_7e19d239afd9c1::t_553c7020aede6f 33,71,110,150,189,227,266,306
+sdk/python/polar/v2027_01/services/orders.py
+  s_7e19d239afd9c1::t_4d21f3cce9ec91 89,176,232,286,333,376,427,477,519,563,639,726,783,837,884,927,978,1028,1070,1114
+sdk/python/polar/v2027_01/services/organizations.py
+  s_7e19d239afd9c1::t_00a65452e49efb 53,102,142,184,227,283,332,373,415,458
+sdk/python/polar/v2027_01/services/payments.py
+  s_7e19d239afd9c1::t_9328ca59eefedd 59,126,173,235,302,350
+sdk/python/polar/v2027_01/services/products.py
+  s_7e19d239afd9c1::t_65e768d9cbab55 78,157,225,267,312,359,406,480,559,628,670,715,762,809
+sdk/python/polar/v2027_01/services/refunds.py
+  s_7e19d239afd9c1::t_ac03097446dfe9 61,128,174,236,303,350
+sdk/python/polar/v2027_01/services/subscriptions.py
+  s_7e19d239afd9c1::t_d1b785a4e538e5 100,193,271,331,379,421,558,646,739,818,878,926,968,1105
+sdk/python/polar/v2027_01/services/webhooks.py
+  s_7e19d239afd9c1::t_a0f39ed4c1e0fe 54,103,143,183,227,269,312,356,416,482,528,578,627,668,708,752,794,837,881,941,1007,1054
+sdk/python/pyproject.toml
+  s_7e19d239afd9c1::t_a3da624bf2e6e3 43
+sdk/python/tests/outpost/test_client.py
+  s_7e19d239afd9c1::t_c15646a7bf1dff 16,2825-2826
+sdk/python/tests/outpost/test_vercel.py
+  s_7e19d239afd9c1::t_aceaa5cd5834ef 1-3,58,61,63,65-67,70,72-73,75-79
+sdk/python/tests/test_base.py
+  s_7e19d239afd9c1::t_67cf8f2cd960fa 6,221,225,231,243-255
+sdk/python/uv.lock
+  s_7e19d239afd9c1::t_22f0d29105f450 198-210,224-238,466,491
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b83bd523699c384035fbb917e456e61e56cf8337",
+  "prompts": {},
+  "sessions": {
+    "s_7e19d239afd9c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-25ad-76e1-b267-0adda152d04c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

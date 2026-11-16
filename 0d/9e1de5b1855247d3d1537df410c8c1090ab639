@@ -1,0 +1,23 @@
+server/pyproject.toml
+  s_13035362736d7f::t_9283a1c9db9d5a 67
+server/tests/test_sdk.py
+  s_13035362736d7f::t_9283a1c9db9d5a 5
+server/uv.lock
+  s_13035362736d7f::t_f103d63490db37 1728,1734,1736,1790,1799,1801,3092,3153,3158,3161,3163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0d9e1de5b1855247d3d1537df410c8c1090ab639",
+  "prompts": {},
+  "sessions": {
+    "s_13035362736d7f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3da-d6f7-76a1-80fe-78aa9ca20a1e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

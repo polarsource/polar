@@ -1,0 +1,22 @@
+sdk/generator/tests/python/test_types.py
+  s_5ee9bde7cfe7bc::t_fb7846746da0be 1-12,14
+  s_5ee9bde7cfe7bc::t_7add37517b2c08 13
+sdk/generator/python/types.py
+  s_5ee9bde7cfe7bc::t_c2066a6cdc78ca 114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59005766b08ca9a2d7b47652e165d6b420465003",
+  "prompts": {},
+  "sessions": {
+    "s_5ee9bde7cfe7bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-dbab-76f3-b706-e92f43f91f2c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

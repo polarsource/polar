@@ -1,0 +1,45 @@
+server/tests/event/test_schemas.py
+  s_db97e84ca05d99::t_3129b24b9a689d 2,192-193
+clients/apps/web/src/components/Events/EventCard/BenefitEventCard.tsx
+  s_db97e84ca05d99::t_8684993e006970 20-22,41-46
+server/polar/event/schemas.py
+  s_db97e84ca05d99::t_54aa5d0813f117 369-401
+  s_db97e84ca05d99::t_3129b24b9a689d 76,81,738-740
+clients/apps/web/src/components/Events/EventDetailFields.tsx
+  s_db97e84ca05d99::t_8684993e006970 176-178
+clients/apps/web/src/components/Events/utils.tsx
+  s_db97e84ca05d99::t_8684993e006970 15-17,37-39
+clients/apps/web/src/components/Timeline/renderers.tsx
+  s_db97e84ca05d99::t_8684993e006970 162-174
+server/polar/event/system.py
+  s_db97e84ca05d99::t_54aa5d0813f117 33-35,74-76,741-747
+  s_db97e84ca05d99::t_164c13eaffd4fe 748-750
+  s_db97e84ca05d99::t_4e5e9959c0e7b7 751-753
+server/polar/benefit/grant/service.py
+  s_db97e84ca05d99::t_54aa5d0813f117 176-178,199-204,239-241,888-907
+  s_db97e84ca05d99::t_c285769ff0f69b 908
+server/tests/benefit/grant/test_endpoints.py
+  s_db97e84ca05d99::t_8684993e006970 329-331,333-356,362,364-368,372-377
+  s_db97e84ca05d99::t_3129b24b9a689d 15-16,20,332,357-361,363,369-371
+  s_db97e84ca05d99::t_fef9dde2eead4c 328
+clients/packages/client/src/v1.ts
+  s_db97e84ca05d99::t_bdcd87c52736ef 13144-13295,14118-14193,40851-40853,73728-73733,73779-73781
+docs/openapi/2027-01.openapi.json
+  s_db97e84ca05d99::t_78c8106977ee83 36592-36877,38365-38507,80944-80952,81058-81059,81061
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "90c9047753f1dcb1df9addd5e6ba33ea4d4612c7",
+  "prompts": {},
+  "sessions": {
+    "s_db97e84ca05d99": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e389-5630-7b81-b3c3-36cccc3283f2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

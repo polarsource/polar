@@ -1,0 +1,27 @@
+events/src/app.rs
+  s_9e29c5984633d1::t_7e31cb523dd3e0 395,411,425,431
+  s_9e29c5984633d1::t_20b6b4ae6bcea8 42
+  s_9e29c5984633d1::t_1f74fc7b7837b9 422-424
+  s_9e29c5984633d1::t_24d2f9d19981a4 74,140
+events/src/reducer/mod.rs
+  s_9e29c5984633d1::t_20b6b4ae6bcea8 84,88,105-112,124,128
+  s_9e29c5984633d1::t_24d2f9d19981a4 6-10,31,81-83,85-86,89-94,100,103,114-115,120-123,125-127,129-134,138,185-197
+  s_9e29c5984633d1::t_77d3dbe37ba0ad 282-306,309,318-325
+  s_9e29c5984633d1::t_7e31cb523dd3e0 32,87,95-99,101-102,104,113,116-119,307-308,310-317
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "90a143997b5f2f4e192487eaa4f53be142dc3921",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,35 @@
+server/scripts/ci_migrate.py
+  s_f83d2c94945117::t_b038e4d5003381 1-31
+server/scripts/ci_migrations.py
+  s_f83d2c94945117::t_a5e914b770794e 7-11,29
+server/tests/fixtures/database.py
+  s_f83d2c94945117::t_fff992b45b9aad 46-48
+server/tests/scripts/test_ci_migrations.py
+  s_f83d2c94945117::t_3f10f8c89764a6 1-43
+.github/workflows/test_server.yaml
+  s_94f2b33009c1e9::t_0f2e8cd675f089 420-422,552,585-593,603-611,617-620,650,653-699,726,729
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3d4d69f3e6483fe3522c0a489668129a7d0fc41",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

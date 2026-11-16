@@ -1,0 +1,21 @@
+.github/ci_startup_probe.py
+  s_94f2b33009c1e9::t_975089f6103c44 32,111,114-134,181
+.github/workflows/test_server.yaml
+  s_94f2b33009c1e9::t_8856dd2774ca23 453-462,551,631
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3dd8226e0379dc6e162f17b04a5541a02b452713",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

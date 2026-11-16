@@ -1,0 +1,394 @@
+server/scripts/tax_filing_imports.py
+  s_13035362736d7f::t_0472c7db8f0a7f 16,61
+server/tests/fixtures/__init__.py
+  s_13035362736d7f::t_f900c77edfd640 7
+server/polar/integrations/linear/client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,37,39,41
+server/tests/event_type/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/subscription/test_endpoints_change_preview.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/user/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/customer_portal/endpoints/test_member.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/polar/organization_review/collectors/website.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,79,403
+server/tests/authz/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/notifications/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/observability/slo_report/test_client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 1,13-14,26-27
+server/tests/backoffice/payout_accounts/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,24,29-30,44,54,74,92,107,115,131,141,159,187,216
+server/tests/catalog/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/polar/checkout/ip_geolocation.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5,40
+server/tests/payment/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/integrations/resend/test_client.py
+  s_13035362736d7f::t_516fc36d400752 12
+  s_13035362736d7f::t_f900c77edfd640 2,4,16-17
+  s_13035362736d7f::t_f8e91b65aabc85 15
+server/polar/kit/http.py
+  s_13035362736d7f::t_0472c7db8f0a7f 10-11,84,93,101-102,111,121,130,142-143,168,181,183,185
+  s_13035362736d7f::t_f900c77edfd640 107-109
+server/tests/customer_portal/endpoints/test_customer.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/polar/benefit/strategies/discord/service.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,92,108,169,185
+server/tests/fixtures/worker.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6,30,36-37,47
+server/tests/customer_portal/endpoints/test_wallet.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/oauth2/endpoints/list/test_list_oauth2_clients.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/notification_recipient/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/e2e/post_purchase/test_benefit_grants.py
+  s_13035362736d7f::t_0472c7db8f0a7f 14
+server/tests/file/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9
+server/tests/backoffice/merchant_migrations/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5,46,52-53,104-105,131,144,164,185,200,221,238,317,341,364,382,402,418,449,465,475,498,529,554,575,602,643,666,699,728,759,788
+server/tests/organization/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/integrations/resend/test_service.py
+  s_13035362736d7f::t_516fc36d400752 27,32,42,69,81,101,110,146,159,205,238,294,329,343,350,385,397,412,418,427,435,471
+  s_13035362736d7f::t_f900c77edfd640 2,5,48-52,56,58-59,61,88-90,92-93,95,118-123,125-126,129,131,133-134,136,168-173,175,181-182,184-187,189,213-216,218,224,246-251,254,256,259,261-262,264,303-306,308-309,311-313,315,334-335,337,357-362,364,368,370-373,375,402,404,440-445,447-448,450-453,455,457-459,461
+  s_13035362736d7f::t_43df6ccf82db00 47,55,60,87,94,117,124,127-128,130,135,137-138,167,174,177-178,180,188,212,217,222-223,245,253,255,260,263,302,310,314,336,356,363,366-367,369,374,376-377,403,439,446,449,456,460,462-463
+server/tests/worker/test_health.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8
+server/polar/integrations/resend/client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,37,46
+server/polar/observability/remote_write.py
+  s_13035362736d7f::t_0472c7db8f0a7f 23,131,178,236
+server/tests/backoffice/payouts/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,24,29-30,43,60,89,121,148,173,201,224,252,276,312,346,372,403,449
+server/polar/organization_review/collectors/setup.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,112,166,229
+server/polar/tax/calculation/numeral.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5,177,253,304,347,393,506
+server/tests/customer_meter/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/observability/observability/test_instrumentation_smoke.py
+  s_13035362736d7f::t_f900c77edfd640 33-35
+  s_13035362736d7f::t_0472c7db8f0a7f 3,9,11,32,74-75
+  s_13035362736d7f::t_ee4a8db82d81df 1-2,90-136
+server/tests/fixtures/http.py
+  s_13035362736d7f::t_f900c77edfd640 15-17,23-25,39-41,45-47
+  s_13035362736d7f::t_52588536e96517 1-13,18-22,26-37,42-44,48
+  s_13035362736d7f::t_8125c3d0a7223f 14,38
+server/tests/e2e/purchase/subscription/test_fixed_price.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8
+server/tests/fixtures/base.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,19,37,67,83
+server/tests/dispute/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/polar/auth/turnstile.py
+  s_13035362736d7f::t_0472c7db8f0a7f 1,6,22
+server/tests/checkout_link/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/e2e/purchase/subscription/test_trial_without_payment_method.py
+  s_13035362736d7f::t_0472c7db8f0a7f 12
+server/tests/email_update/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/test_rate_limit.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/e2e/lifecycle/test_reducer_billing.py
+  s_13035362736d7f::t_0472c7db8f0a7f 14
+server/tests/e2e/post_purchase/test_seat_claim.py
+  s_13035362736d7f::t_0472c7db8f0a7f 10
+server/tests/transaction/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/fixtures/file.py
+  s_13035362736d7f::t_0472c7db8f0a7f 13
+server/tests/customer/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/organization_access_token/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/tax/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/product/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/auth/conftest.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,14,18
+server/tests/outpost/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,60,98,105,120,137,185,262,320,371,431,489,520,532,563,572,601,629,685,751,778,858,871,952,1014,1053,1074,1100,1112,1124,1137,1184,1194,1207
+  s_13035362736d7f::t_f900c77edfd640 547-549,842-844
+server/tests/subscription/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/e2e/purchase/one_time/test_payment_failure.py
+  s_13035362736d7f::t_0472c7db8f0a7f 12
+server/tests/organization_email/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/backoffice/subscriptions/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,27,32-33,47,72,82,107,127,159,198
+server/tests/payout/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/customer_portal/endpoints/test_oauth_accounts.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7
+server/tests/auth/sso/test_flow.py
+  s_13035362736d7f::t_f900c77edfd640 4,246-247
+  s_13035362736d7f::t_0472c7db8f0a7f 8,53-54,59,148,154,163,235,264,314,365,392,424,444-445,500,529,560,585,610
+  s_13035362736d7f::t_516fc36d400752 156,248-251,274-284,286,326-335,337,375-384,402-411,413-415,417-418,453-462,464,509-518,520,542-551,568-577,594-602,621-629
+  s_13035362736d7f::t_7ec5b247550a5f 167,170,187,234,245,263,313,364,391,499,528,559,584,609
+server/tests/integrations/tinybird/test_service.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8,923,927-928,950-951,973,977-978,1002,1005
+  s_13035362736d7f::t_f900c77edfd640 6,909,911,930-932,938,940,953-955,959,961,980-982,988,990,1007-1009,1018,1020,1033-1035,1046,1048,1058-1060
+  s_13035362736d7f::t_516fc36d400752 933,956-957,983,1010-1011,1037-1038,1040-1044,1062-1063
+  s_13035362736d7f::t_dce20326fabc82 910,939,960,989,1019,1047
+server/polar/benefit/strategies/slack_shared_channel/service.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,255,420,483,507,585,600,620,634
+server/tests/organization_domain/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/organization_review/collectors/test_website.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7-8,33-35,37,41,235,248,273,288,300-301,318,332,350,367,373,489,511,513,530,546,548,551,570,572,575,594,631,656,674,694,711,727,740
+server/tests/tax/calculation/test_numeral.py
+  s_13035362736d7f::t_f900c77edfd640 4,78-107,144-147,150-163,165-180,214-227,229-264,339-361,399-401,419-422,514-515,533-535,539-540,560,566-569,591-593,596-598,607-608,610,634,636,694-697,715-716,725-732,734
+  s_13035362736d7f::t_516fc36d400752 71,124,211,331,393,416,512,517,528,554,587,604,628,650,687,713,718,723,740
+  s_13035362736d7f::t_0472c7db8f0a7f 6,387,562-563,675,681
+  s_13035362736d7f::t_5f626d88e9f9ea 77,149,213,338,398,418,513,532,538,558-559,565,580-582,590,595,606,609,635,693,714,724,733
+server/polar/email/sender.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5,99,147,156,164
+server/tests/webhooks/test_tasks.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+  s_13035362736d7f::t_f900c77edfd640 3,76-77,109-111,136-138
+  s_13035362736d7f::t_516fc36d400752 70,90,105,132
+server/tests/e2e/purchase/one_time/test_free_product.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9
+server/tests/backoffice/users/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,20,24-25,39
+server/tests/organization_review/collectors/test_setup.py
+  s_13035362736d7f::t_516fc36d400752 406,426,452,464,475,498,531,560,590,605,632,656,667,683
+  s_13035362736d7f::t_f900c77edfd640 1,3,388-390,403-405,413-415,418-419,422-425,439-440,443-445,448-451,465-466,469-471,474,482-484,494-495,499-502,508-510,523-524,527-530,537-539,552-553,556-559,582-583,586-589,597-599,602-604,629-631,640-642,653-655,664-666,672,674-676,679-682
+  s_13035362736d7f::t_086a76335ff994 436,461,568,613,663,673
+server/polar/organization_review/policy.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,71
+server/polar/integrations/tinybird/client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8,43,52,78,120,123,125,131,134,136,162,168-169,174
+server/scripts/tinybird_test_workspace.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,20,23,28,32-33,113,125,131
+server/tests/license_key/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/customer_session/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/merchant_migration/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7
+server/pyproject.toml
+  s_13035362736d7f::t_0472c7db8f0a7f 28
+  s_13035362736d7f::t_932f4e72ea7fb2 29
+server/tests/oauth2/endpoints/test_well_known.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3
+server/tests/oauth2/endpoints/userinfo/test_userinfo.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/refund/test_service.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/integrations/github_repository_benefit/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/auth/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,7,27,32,57,63,77,92,202,207,227,247,263,286,305
+server/tests/customer_seat/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/e2e/lifecycle/test_full_lifecycle.py
+  s_13035362736d7f::t_0472c7db8f0a7f 12
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/scripts/test_tinybird_test_workspace.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,18
+server/tests/customer_portal/auth/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5,24,28,53,65-66,77,87,95,111,126,139,187,215,240,252,262
+server/tests/e2e/lifecycle/test_renewal.py
+  s_13035362736d7f::t_0472c7db8f0a7f 15
+server/tests/oauth2/grants/test_jwt_bearer.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8
+server/tests/discount/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/feedback/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/test_cache_control.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/organization_review/test_policy.py
+  s_13035362736d7f::t_0472c7db8f0a7f 123
+server/tests/e2e/purchase/one_time/test_fixed_price.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8
+server/tests/member/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/benefit/strategies/test_slack_shared_channel.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5,872,1742,2040
+server/tests/organization_review/test_analyzer.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,479-480
+server/tests/backoffice/email_logs/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,19,24-25,38,59,69,81
+server/benchmarks/test_event.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,254-255
+server/tests/account/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/backoffice/test_versioned_static.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,16-18,26,47,58
+server/polar/worker/_httpx.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2,13,27,37
+server/polar/observability/slo_report/tasks.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,77,83
+server/tests/benefit/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/customer_portal/endpoints/test_downloadables.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/e2e/purchase/conftest.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/checkout/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7
+server/tests/backoffice/auth/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6,26,39-40,105,120,178,199,221,237,254,266
+  s_13035362736d7f::t_516fc36d400752 46
+  s_13035362736d7f::t_f900c77edfd640 2,63-74,76-79,99-101
+server/tests/payout_account/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/sso/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/polar/mcp_event/service.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9,149,153,155
+server/tests/test_openapi.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8
+server/tests/customer_portal/endpoints/test_benefit_grant.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/fixtures/tinybird.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9,98
+server/polar/logfire.py
+  s_13035362736d7f::t_f900c77edfd640 9-12,258
+server/polar/integrations/slack/client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,29
+server/tests/order/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/tests/organization_review/test_appeal_case_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/oauth2/grants/test_claim.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/e2e/lifecycle/test_trial_metered_cancel.py
+  s_13035362736d7f::t_0472c7db8f0a7f 35
+server/tests/auth/oauth2/test_router.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6,46,51,93,122,137,158,181,199-200,204,211,224,242,268
+server/tests/integrations/slack/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9
+server/tests/search/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/customer_portal/endpoints/test_organization.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/metrics/test_dashboard_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/e2e/infra/external_mocks.py
+  s_13035362736d7f::t_0472c7db8f0a7f 12,26,29-30,38
+server/tests/backoffice/customers/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6,28,33-34,48,85,102,112,139,183,207,229,240,258,307,349
+server/tests/e2e/lifecycle/test_meter_cycle.py
+  s_13035362736d7f::t_0472c7db8f0a7f 15
+server/tests/backoffice/test_layout.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,15,19-20,32,54,67
+server/tests/customer_portal/endpoints/test_subscription.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/declarative_config/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/polar/observability/slo_report/client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 11,44,47,60,83,91
+server/tests/support_case/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/backoffice/webhooks/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,19,24-25,38,48,73,98,127,155,183,211
+server/tests/mcp_event/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9,11,204,209,215,218,221,226
+  s_13035362736d7f::t_f900c77edfd640 6,29-30,141-143
+  s_13035362736d7f::t_516fc36d400752 28,34,67,86,107,138,235,239
+server/tests/e2e/purchase/one_time/test_with_discount.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9
+server/tests/observability/observability/test_cpu_starvation.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,36
+  s_13035362736d7f::t_f900c77edfd640 37-39
+server/tests/agent/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7
+server/tests/auth/test_turnstile.py
+  s_13035362736d7f::t_f900c77edfd640 14-16,27-29
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+  s_13035362736d7f::t_516fc36d400752 1,13,20,26
+server/tests/backoffice/orders/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,26,34-35,68,100,132,171,183,211
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6,39,43-44,108,142,161,184,216,244,270,293,306,328,350,375,392,470,503,539,558,574,590,610,633,663,693,716,730,745,760,783,798,819,840,862,888,904,917,950,971
+server/tests/benefit/grant/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/integrations/discord/test_client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+  s_13035362736d7f::t_f900c77edfd640 59,100-101
+  s_13035362736d7f::t_516fc36d400752 1-2,24,26,36,39,41,50,53,56,58,77,83,89,95,98
+server/tests/kit/test_http.py
+  s_13035362736d7f::t_0472c7db8f0a7f 8-9,140,153-154,161,289,291,299,318,332,343
+server/scripts/ingest_test_events.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4,20
+server/tests/refund/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/metrics/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/customer_portal/endpoints/test_order.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7
+server/tests/auth/sso/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/event/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7
+server/tests/customer_portal/endpoints/test_customer_seat.py
+  s_13035362736d7f::t_0472c7db8f0a7f 5
+server/tests/integrations/polar/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 9
+server/tests/e2e/purchase/one_time/test_with_tax.py
+  s_13035362736d7f::t_0472c7db8f0a7f 11
+server/tests/integrations/stripe/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 6
+server/polar/webhook/tasks.py
+  s_13035362736d7f::t_0472c7db8f0a7f 7,177,191,195
+server/tests/backoffice/impersonation/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,21,28-29,40
+server/tests/e2e/lifecycle/test_seat_lifecycle.py
+  s_13035362736d7f::t_0472c7db8f0a7f 19
+server/tests/wallet/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/benefit/strategies/test_slack_shared_channel_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 2
+server/tests/integrations/slack/test_client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,12,14,16,20,22
+server/tests/webhooks/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/meter/test_endpoints.py
+  s_13035362736d7f::t_0472c7db8f0a7f 4
+server/tests/webhooks/test_webhooks.py
+  s_13035362736d7f::t_f900c77edfd640 7,496-497,553-554,606-607,642-643,679-680
+  s_13035362736d7f::t_516fc36d400752 457,460,493,550,602,629,638,665,674,702
+  s_13035362736d7f::t_0472c7db8f0a7f 10,438-439,441,446,453
+server/polar/integrations/discord/client.py
+  s_13035362736d7f::t_0472c7db8f0a7f 3,25,144
+server/uv.lock
+  s_6f7faa431eb9e1::t_b212c48985b144 2985,3083
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a068d06b3aab08bbc99afecad3aacbb6d35503ab",
+  "prompts": {},
+  "sessions": {
+    "s_13035362736d7f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3da-d6f7-76a1-80fe-78aa9ca20a1e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_6f7faa431eb9e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3db-9995-78c0-a2e6-30609d5c8e9b",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

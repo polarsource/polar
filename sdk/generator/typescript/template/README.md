@@ -137,7 +137,8 @@ On long-running servers such as Express, the buffer sends batches by size or int
 Call `await metering.close()` during graceful shutdown to drain events and release resources.
 Closing stops new operations and is idempotent; a closed helper cannot be reused.
 
-In serverless handlers, wait for delivery before returning:
+In serverless handlers, flush before returning so the function does not freeze with events
+in the queue:
 
 ```typescript
 export async function POST() {
@@ -162,17 +163,19 @@ export async function POST() {
 }
 ```
 
-The response can return before delivery is confirmed. Await `flush()` in the handler
-itself when the response needs to confirm Polar accepted the events. The callback
-still counts toward the route's maximum duration.
+The response can return before delivery is confirmed. The callback still counts toward the
+route's maximum duration.
 
-`flush()` waits for events queued before its call. Concurrent requests share HTTP batches;
-calling `flush()` does not close the helper or create a separate buffer. Later events are
-outside that flush's boundary. This is a shared queue barrier, not request-specific delivery.
+`flush()` waits for events queued before its call, unless a newer flush starts whose deadline
+is no earlier than its own: the newer one releases it and waits for its events too. One waiter
+keeps a serverless function alive, so concurrent requests do not each stay open for a round
+trip to Polar. A resolved `flush()` therefore does not prove Polar accepted the request's events
+when other requests flush at the same time. Concurrent requests share HTTP batches; calling
+`flush()` does not close the helper or create a separate buffer. This is a shared queue barrier, not request-specific delivery.
 
 Dropped events are retained for reporting until a completed flush or close acknowledges them.
-Every overlapping flush reports failures within its boundary, including background drops from
-before the flush. After reporting a failure, later flushes can succeed for healthy traffic.
+The newest overlapping flush reports failures within its boundary, including background drops
+from before the flush. After reporting a failure, later flushes can succeed for healthy traffic.
 Long-running applications should periodically flush to observe failures and release their
 retained event records. Callbacks alone do not acknowledge failures.
 

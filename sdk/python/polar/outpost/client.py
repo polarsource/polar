@@ -703,6 +703,7 @@ class Outpost:
         self._pull_interval = PULL_INTERVAL
         self._pulling: anyio.Event | None = None
         self._relaying: anyio.Event | None = None
+        self._flushing: dict[anyio.CancelScope, float] = {}
         self._pull_retry_at = 0.0
         self._read_state: AsyncScript | None = None
         self._redis_available = False
@@ -794,7 +795,7 @@ class Outpost:
             pass
         try:
             try:
-                await self.flush()
+                await self._in_flight()
                 # Their last exports land in the outbox, which the shared Redis takes
                 # before it closes.
                 await self._shutdown_telemetry()
@@ -1034,7 +1035,20 @@ class Outpost:
 
     async def flush(self, *, timeout: float = 30.0) -> None:
         """Wait for the pull and the fetches in flight: a serverless function must not
-        freeze in the middle of them."""
+        freeze in the middle of them. A newer flush that outlasts this one releases it,
+        since it waits for the same work."""
+        deadline = anyio.current_time() + timeout
+        for older, until in self._flushing.items():
+            if until <= deadline:
+                older.cancel()
+        with anyio.CancelScope() as scope:
+            self._flushing[scope] = deadline
+            try:
+                await self._in_flight(timeout)
+            finally:
+                del self._flushing[scope]
+
+    async def _in_flight(self, timeout: float = 30.0) -> None:
         with anyio.fail_after(timeout):
             if self._pulling is not None:
                 await self._pulling.wait()

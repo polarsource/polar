@@ -392,6 +392,7 @@ export class Outpost {
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
   private relaying?: Promise<void>;
+  private releaseFlush?: () => void;
   private pullRetryAt = 0;
   // The configuration's revision in the pull hash, as of the configuration this instance runs.
   private configurationRevision: number | null = null;
@@ -510,7 +511,7 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
     clearInterval(this.pullTimer);
-    await this.flush();
+    await this.inFlight();
     const redis = this.redis;
     if (redis) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
@@ -692,8 +693,17 @@ export class Outpost {
     });
   }
 
-  /** Wait for the pull in flight: a serverless function must not freeze in the middle of it. */
+  /**
+   * Wait for the pull in flight: a serverless function must not freeze in the middle of it.
+   * A newer flush releases this one, since it waits for the same work.
+   */
   async flush(): Promise<void> {
+    this.releaseFlush?.();
+    const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
+    await Promise.race([this.inFlight(), released]);
+  }
+
+  private async inFlight(): Promise<void> {
     await Promise.allSettled([this.pulling, this.messages, ...this.requesting.values()]);
     // The pull that just ended may have started one.
     await this.relaying;

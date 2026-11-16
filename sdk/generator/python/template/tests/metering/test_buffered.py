@@ -68,21 +68,18 @@ async def test_batching_without_explicit_flush(
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("cancel_first", [False, True])
-async def test_overlapping_flushes_have_independent_boundaries(
-    client: AsyncMock, events: list[EventInput], cancel_first: bool
+async def test_the_newest_flush_keeps_its_boundary(
+    client: AsyncMock, events: list[EventInput]
 ) -> None:
     release = [anyio.Event() for _ in range(3)]
     completed = [anyio.Event(), anyio.Event()]
-    scopes = [anyio.CancelScope(), anyio.CancelScope()]
 
     async def send(*, events: list[EventInput]) -> None:
         await release[int(events[0]["name"])].wait()
 
     async def flush(index: int) -> None:
-        with scopes[index]:
-            await strategy.flush()
-            completed[index].set()
+        await strategy.flush()
+        completed[index].set()
 
     client.events.ingest.side_effect = send
     with anyio.fail_after(1):
@@ -95,12 +92,10 @@ async def test_overlapping_flushes_have_independent_boundaries(
                 callers.start_soon(flush, index)
                 await anyio.wait_all_tasks_blocked()
             await strategy.track(events[2])
-            assert not any(done.is_set() for done in completed)
-            if cancel_first:
-                scopes[0].cancel()
+            assert completed[0].is_set()
+            assert not completed[1].is_set()
             release[0].set()
             await anyio.wait_all_tasks_blocked()
-            assert completed[0].is_set() is not cancel_first
             assert not completed[1].is_set()
             release[1].set()
             await completed[1].wait()
@@ -113,7 +108,7 @@ async def test_overlapping_flushes_have_independent_boundaries(
 @pytest.mark.parametrize(
     "batch_size, batches", [(100, [[1, 2, 3]]), (2, [[1, 2], [3]])]
 )
-async def test_pending_flushes_batch_queued_events(
+async def test_released_flushes_batch_queued_events(
     client: AsyncMock,
     events: list[EventInput],
     batch_size: int,
@@ -144,21 +139,16 @@ async def test_pending_flushes_batch_queued_events(
                 callers.start_soon(flush, index)
                 await anyio.wait_all_tasks_blocked()
             assert client.events.ingest.await_count == 1
+            assert [done.is_set() for done in completed] == [True, True, True, False]
             release[0].set()
-            await completed[0].wait()
-            delivered = 1
             for index, batch in enumerate(batches):
                 await anyio.wait_all_tasks_blocked()
                 assert client.events.ingest.await_count == index + 2
                 call = client.events.ingest.await_args_list[index + 1]
                 assert call.kwargs["events"] == [events[i] for i in batch]
-                assert [done.is_set() for done in completed] == [
-                    i < delivered for i in range(4)
-                ]
+                assert not completed[3].is_set()
                 release[index + 1].set()
-                delivered += len(batch)
-                for done in completed[:delivered]:
-                    await done.wait()
+            await completed[3].wait()
             await anyio.wait_all_tasks_blocked()
             assert client.events.ingest.await_count == len(batches) + 1
 
@@ -266,7 +256,7 @@ async def test_flush_waits_for_drop_reporting(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("fail_worker", [False, True])
-async def test_worker_exit_releases_active_and_queued_flushes(
+async def test_worker_exit_releases_the_waiting_flush(
     client: AsyncMock, events: list[EventInput], fail_worker: bool
 ) -> None:
     release = anyio.Event()
@@ -279,9 +269,10 @@ async def test_worker_exit_releases_active_and_queued_flushes(
 
     async def flush() -> None:
         with anyio.CancelScope(shield=True):
-            with pytest.raises(MeteringDeliveryError) as exc_info:
+            try:
                 await strategy.flush()
-            flush_errors.append(exc_info.value)
+            except MeteringDeliveryError as error:
+                flush_errors.append(error)
 
     client.events.ingest.side_effect = send
     on_dropped = AsyncMock()
@@ -300,7 +291,7 @@ async def test_worker_exit_releases_active_and_queued_flushes(
                     if fail_worker:
                         release.set()
                         await anyio.wait_all_tasks_blocked()
-    assert len(flush_errors) == 2
+    assert len(flush_errors) == 1
     if fail_worker:
         assert all(
             isinstance(error, MeteringDeliveryError)
@@ -456,7 +447,7 @@ async def test_a_failing_on_delivered_stays_out_of_the_delivery_retries(
 
 
 @pytest.mark.anyio
-async def test_background_failures_are_retained_for_overlapping_flushes(
+async def test_background_failures_go_to_the_newest_overlapping_flush(
     client: AsyncMock, events: list[EventInput]
 ) -> None:
     reporting = anyio.Event()
@@ -469,9 +460,10 @@ async def test_background_failures_are_retained_for_overlapping_flushes(
         await release.wait()
 
     async def flush() -> None:
-        with pytest.raises(MeteringDeliveryError) as failure:
+        try:
             await strategy.flush()
-        observed.append(failure.value)
+        except MeteringDeliveryError as error:
+            observed.append(error)
 
     client.events.ingest.side_effect = cause
     with anyio.fail_after(1):
@@ -485,14 +477,79 @@ async def test_background_failures_are_retained_for_overlapping_flushes(
                 callers.start_soon(flush)
                 await anyio.wait_all_tasks_blocked()
                 release.set()
-            assert len(observed) == 2
-            for failure in observed:
-                assert failure.events == events[:1]
-                assert failure.failures[0].reason == "permanent_error"
-                assert failure.failures[0].cause is cause
+            assert len(observed) == 1
+            assert observed[0].events == events[:1]
+            assert observed[0].failures[0].reason == "permanent_error"
+            assert observed[0].failures[0].cause is cause
             client.events.ingest.side_effect = None
             await strategy.track(events[1])
             await strategy.flush()
+
+
+@pytest.mark.anyio
+async def test_a_newer_flush_releases_older_ones_and_reports_their_failures(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    release = anyio.Event()
+    released = anyio.Event()
+    observed: list[MeteringDeliveryError] = []
+    cause = PolarClientError(422, "invalid")
+
+    async def send(*, events: list[EventInput]) -> None:
+        await release.wait()
+        raise cause
+
+    async def older() -> None:
+        await strategy.flush()
+        released.set()
+
+    async def newer() -> None:
+        with pytest.raises(MeteringDeliveryError) as failure:
+            await strategy.flush()
+        observed.append(failure.value)
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
+            async with anyio.create_task_group() as callers:
+                await strategy.track(events[0])
+                callers.start_soon(older)
+                await anyio.wait_all_tasks_blocked()
+                await strategy.track(events[1])
+                callers.start_soon(newer)
+                await released.wait()
+                assert client.events.ingest.await_count == 1
+                release.set()
+            assert observed[0].events == events[:2]
+            assert observed[0].failures[0].cause is cause
+
+
+@pytest.mark.anyio
+async def test_a_newer_flush_with_a_shorter_timeout_does_not_release_older_ones(
+    client: AsyncMock, events: list[EventInput]
+) -> None:
+    release = anyio.Event()
+    released = anyio.Event()
+
+    async def send(*, events: list[EventInput]) -> None:
+        await release.wait()
+
+    async def older() -> None:
+        await strategy.flush()
+        released.set()
+
+    client.events.ingest.side_effect = send
+    with anyio.fail_after(1):
+        async with BufferedMeteringStrategy(client, batch_size=1) as strategy:
+            async with anyio.create_task_group() as callers:
+                await strategy.track(events[0])
+                callers.start_soon(older)
+                await anyio.wait_all_tasks_blocked()
+                with pytest.raises(MeteringTimeoutError):
+                    await strategy.flush(timeout=0.01)
+                assert not released.is_set()
+                release.set()
+            assert released.is_set()
 
 
 @pytest.mark.anyio

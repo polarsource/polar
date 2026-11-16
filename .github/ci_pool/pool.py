@@ -9,6 +9,8 @@ import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+_CLOCKS = (time.perf_counter, time.process_time)
+
 
 def write_json(path, value):
     temporary = path.with_name(path.name + ".tmp")
@@ -21,6 +23,9 @@ class ChildPlugin:
         self.worker = worker
         self.collected = []
         self.reports = []
+        self.started = _CLOCKS[0]()
+        self.phases = {}
+        self.fixture_calls = collections.Counter()
 
     def pytest_configure(self, config):
         import pytest
@@ -32,7 +37,15 @@ class ChildPlugin:
                 return worker
         config.pluginmanager.register(Identity(), "ci-pool-worker-identity")
 
+    def pytest_sessionstart(self, session):
+        self.phases["configuration_finished"] = _CLOCKS[0]() - self.started
+
+    def pytest_fixture_setup(self, fixturedef, request):
+        if fixturedef.scope != "function":
+            self.fixture_calls[f"{fixturedef.baseid}::{fixturedef.argname}[{fixturedef.scope}]"] += 1
+
     def pytest_collection_finish(self, session):
+        self.phases["collection_finished"] = _CLOCKS[0]() - self.started
         self.collected = [item.nodeid for item in session.items]
 
     def pytest_runtest_logreport(self, report):
@@ -70,6 +83,7 @@ def child(worker, nodeids, arguments, directory):
     usage = resource.getrusage(resource.RUSAGE_SELF)
     write_json(directory / "result.json", {"worker": worker, "pid": os.getpid(), "exit_code": int(status),
                "assigned": nodeids, "collected": plugin.collected, "reports": plugin.reports,
+               "phases": plugin.phases, "high_scope_fixtures": plugin.fixture_calls,
                "seconds": time.monotonic() - started, "cpu_user_seconds": usage.ru_utime,
                "cpu_system_seconds": usage.ru_stime, "peak_rss_native_units": usage.ru_maxrss})
     raise SystemExit(int(status))
@@ -92,6 +106,12 @@ def assign(nodes, workers, weights):
         owner = min(range(workers), key=lambda index: (loads[index], index))
         bins[owner].extend(unit)
         loads[owner] += sum(estimates[node] for node in unit)
+    positions = {node["nodeid"]: index for index, node in enumerate(nodes)}
+    file_weights = collections.Counter()
+    for nodeid, estimate in estimates.items():
+        file_weights[nodeid.split("::", 1)[0]] += estimate
+    for assignments in bins:
+        assignments.sort(key=lambda nodeid: (-file_weights[nodeid.split("::", 1)[0]], nodeid.split("::", 1)[0], positions[nodeid]))
     return bins, loads
 
 

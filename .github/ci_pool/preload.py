@@ -11,12 +11,18 @@ READY = False
 ERROR = None
 ROOT = None
 MANIFEST = []
+PHASES = {}
+_STARTED = time.monotonic()
 
 
 class Collector:
+    def pytest_sessionstart(self, session):
+        PHASES["configuration_finished"] = time.monotonic() - _STARTED
+
     def pytest_collection_finish(self, session):
         import pytest
 
+        PHASES["collection_finished"] = time.monotonic() - _STARTED
         global ROOT
         ROOT = str(session.config.rootpath)
         for item in session.items:
@@ -59,7 +65,7 @@ def initialize():
         READY = True
         usage = resource.getrusage(resource.RUSAGE_SELF)
         state = {"ready": True, "nodes": MANIFEST, "root": ROOT,
-                 "seconds": time.monotonic() - started,
+                 "seconds": time.monotonic() - started, "phases": PHASES,
                  "cpu_user_seconds": usage.ru_utime, "cpu_system_seconds": usage.ru_stime,
                  "peak_rss_native_units": usage.ru_maxrss,
                  "resources": {"threads": after.threads, "sockets": sorted(after.sockets), "loops": after.loops}}

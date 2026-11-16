@@ -18,7 +18,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
-    runs-on: ubuntu-slim
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
       emails: ${{ steps.filter.outputs.emails }}
@@ -29,6 +29,10 @@ jobs:
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v7.0.1
+        if: github.event_name != 'pull_request'
+        with:
+          sparse-checkout: .github/workflows/test_server.yaml
+          sparse-checkout-cone-mode: false
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
@@ -564,7 +568,6 @@ jobs:
 
       - name: Restore pytest bytecode
         id: pytest-bytecode
-        if: matrix.shard != 'tinybird'
         uses: actions/cache/restore@v6.1.0
         with:
           path: ${{ runner.temp }}/pytest-bytecode
@@ -572,7 +575,6 @@ jobs:
           restore-keys: pytest-bytecode-v1-${{ runner.os }}-${{ hashFiles('server/uv.lock', 'server/pyproject.toml', 'server/scripts/pytest_bytecode.py') }}-${{ matrix.shard }}-
 
       - name: Prepare pytest bytecode
-        if: matrix.shard != 'tinybird'
         working-directory: ./server
         run: uv run python -m scripts.pytest_bytecode restore --cache "$RUNNER_TEMP/pytest-bytecode"
 
@@ -594,7 +596,17 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=40 --junitxml="$RUNNER_TEMP/junit.xml"
+          CI_STARTUP_OUTPUT="$RUNNER_TEMP/tinybird-startup.json" POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run python "$GITHUB_WORKSPACE/.github/ci_startup_probe.py" -m "tinybird and not benchmark" -n 0 --no-cov --durations=40 --junitxml="$RUNNER_TEMP/junit.xml"
+
+      - name: Upload Tinybird startup diagnostics
+        if: always() && matrix.shard == 'tinybird'
+        uses: actions/upload-artifact@v7
+        with:
+          name: tinybird-startup
+          path: ${{ runner.temp }}/tinybird-startup.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 3
 
       - name: Upload shared-startup diagnostics
         if: always() && matrix.shard != 'tinybird'
@@ -625,12 +637,12 @@ jobs:
           cat "$RUNNER_TEMP/migrations.log"
 
       - name: Store pytest bytecode
-        if: matrix.shard != 'tinybird' && steps.pytest-bytecode.outputs.cache-hit != 'true'
+        if: steps.pytest-bytecode.outputs.cache-hit != 'true'
         working-directory: ./server
         run: uv run python -m scripts.pytest_bytecode store --cache "$RUNNER_TEMP/pytest-bytecode"
 
       - name: Save pytest bytecode
-        if: matrix.shard != 'tinybird' && steps.pytest-bytecode.outputs.cache-hit != 'true'
+        if: steps.pytest-bytecode.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6.1.0
         with:
           path: ${{ runner.temp }}/pytest-bytecode

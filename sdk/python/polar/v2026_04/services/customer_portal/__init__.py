@@ -15,7 +15,6 @@ from .orders import OrdersAsync, OrdersSync
 from .organizations import OrganizationsAsync, OrganizationsSync
 from .seats import SeatsAsync, SeatsSync
 from .subscriptions import SubscriptionsAsync, SubscriptionsSync
-from .wallets import WalletsAsync, WalletsSync
 
 
 class CustomerPortalSync(SyncServiceBase):
@@ -30,7 +29,6 @@ class CustomerPortalSync(SyncServiceBase):
     orders: OrdersSync
     organizations: OrganizationsSync
     subscriptions: SubscriptionsSync
-    wallets: WalletsSync
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__(*args, **kwargs)
@@ -45,7 +43,6 @@ class CustomerPortalSync(SyncServiceBase):
         self.orders = OrdersSync.from_service(self)
         self.organizations = OrganizationsSync.from_service(self)
         self.subscriptions = SubscriptionsSync.from_service(self)
-        self.wallets = WalletsSync.from_service(self)
 
 
 class CustomerPortalAsync(AsyncServiceBase):
@@ -60,7 +57,6 @@ class CustomerPortalAsync(AsyncServiceBase):
     orders: OrdersAsync
     organizations: OrganizationsAsync
     subscriptions: SubscriptionsAsync
-    wallets: WalletsAsync
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__(*args, **kwargs)
@@ -75,4 +71,3 @@ class CustomerPortalAsync(AsyncServiceBase):
         self.orders = OrdersAsync.from_service(self)
         self.organizations = OrganizationsAsync.from_service(self)
         self.subscriptions = SubscriptionsAsync.from_service(self)
-        self.wallets = WalletsAsync.from_service(self)

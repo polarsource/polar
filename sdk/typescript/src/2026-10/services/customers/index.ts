@@ -136,43 +136,6 @@ export const createCustomers = (client: ClientBase) => {
     });
   };
 };
-export const exportCustomers = (client: ClientBase) => {
-  /**
-   * Export customers as a CSV file.
-   *
-   * **Scopes**: `customers:read` `customers:write`
-   *
-   * @param query - Query parameters
-   * @param requestOptions - Request options
-   * @returns {string}
-   * @throws {PolarNetworkError} When a network error occurs
-   * @throws {PolarRateLimitError} When the rate limit is exceeded
-   * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {HTTPValidationError} Validation Error
-   */
-  return async (
-    query?: {
-      organization_id?: string | string[] | null;
-    },
-    requestOptions?: RequestOptions,
-  ): Promise<string> => {
-    const pathParams = {};
-    const queryParams = {
-      organization_id: query?.organization_id,
-    };
-    const request = client.buildRequest(
-      "GET",
-      "/v1/customers/export",
-      pathParams,
-      queryParams,
-      undefined,
-    );
-    const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<string>(response, "text", {
-      422: HTTPValidationError,
-    });
-  };
-};
 export const getCustomers = (client: ClientBase) => {
   /**
    * Get a customer by ID.
@@ -688,7 +651,6 @@ export function createCustomersService(client: ClientBase) {
   return {
     list: listCustomers(client),
     create: createCustomers(client),
-    export: exportCustomers(client),
     get: getCustomers(client),
     delete: deleteCustomers(client),
     update: updateCustomers(client),

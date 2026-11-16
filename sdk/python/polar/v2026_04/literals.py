@@ -689,9 +689,6 @@ CustomerSubscriptionSortProperty: typing.TypeAlias = typing.Annotated[
 CustomerType: typing.TypeAlias = typing.Annotated[
     typing.Literal["individual", "team"], _OPEN_ENUM
 ]
-CustomerWalletSortProperty: typing.TypeAlias = typing.Annotated[
-    typing.Literal["created_at", "-created_at", "balance", "-balance"], _OPEN_ENUM
-]
 DiscountDuration: typing.TypeAlias = typing.Literal["once", "forever", "repeating"]
 DiscountSortProperty: typing.TypeAlias = typing.Annotated[
     typing.Literal[
@@ -926,7 +923,6 @@ PaymentTrigger: typing.TypeAlias = typing.Annotated[
 Permission: typing.TypeAlias = typing.Annotated[
     typing.Literal["pull", "triage", "push", "maintain", "admin"], _OPEN_ENUM
 ]
-"""The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role)."""
 PresentmentCurrency: typing.TypeAlias = typing.Annotated[
     typing.Literal[
         "aed",
@@ -1201,33 +1197,6 @@ Status: typing.TypeAlias = typing.Annotated[
 ]
 SubType: typing.TypeAlias = typing.Annotated[
     typing.Literal["user", "organization"], _OPEN_ENUM
-]
-SubscriptionExportColumn: typing.TypeAlias = typing.Annotated[
-    typing.Literal[
-        "email",
-        "started_at",
-        "product",
-        "amount",
-        "currency",
-        "status",
-        "recurring_interval",
-        "customer_name",
-        "billing_name",
-        "billing_country",
-        "net_amount",
-        "discount",
-        "seats",
-        "current_period_start",
-        "current_period_end",
-        "cancel_at_period_end",
-        "canceled_at",
-        "ends_at",
-        "ended_at",
-        "cancellation_reason",
-        "trial_start",
-        "trial_end",
-    ],
-    _OPEN_ENUM,
 ]
 SubscriptionProrationBehavior: typing.TypeAlias = typing.Annotated[
     typing.Literal["invoice", "prorate", "next_period", "reset"], _OPEN_ENUM

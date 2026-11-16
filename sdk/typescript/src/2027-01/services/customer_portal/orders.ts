@@ -1,10 +1,7 @@
 import type { ClientBase, RequestOptions } from "../../../base";
 import type {
   CustomerOrder,
-  CustomerOrderConfirmPayment,
   CustomerOrderInvoice,
-  CustomerOrderPaymentConfirmation,
-  CustomerOrderPaymentStatus,
   CustomerOrderReceipt,
   CustomerOrderSortProperty,
   CustomerOrderUpdate,
@@ -14,11 +11,8 @@ import type {
 
 import {
   HTTPValidationError,
-  ManualRetryLimitExceeded,
   MissingInvoiceBillingDetails,
   OrderNotEligibleForInvoice,
-  OrderNotEligibleForRetry,
-  PaymentAlreadyInProgress,
   ResourceNotFound,
 } from "../../errors";
 
@@ -277,82 +271,6 @@ export const receiptOrders = (client: ClientBase) => {
     });
   };
 };
-export const getPaymentStatusOrders = (client: ClientBase) => {
-  /**
-   * Get the current payment status for an order.
-   *
-   * @param id - The order ID.
-   * @param requestOptions - Request options
-   * @returns {CustomerOrderPaymentStatus}
-   * @throws {PolarNetworkError} When a network error occurs
-   * @throws {PolarRateLimitError} When the rate limit is exceeded
-   * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {ResourceNotFound} Order not found.
-   * @throws {HTTPValidationError} Validation Error
-   */
-  return async (
-    id: string,
-    requestOptions?: RequestOptions,
-  ): Promise<CustomerOrderPaymentStatus> => {
-    const pathParams = {
-      id: id,
-    };
-    const queryParams = {};
-    const request = client.buildRequest(
-      "GET",
-      "/v1/customer-portal/orders/{id}/payment-status",
-      pathParams,
-      queryParams,
-      undefined,
-    );
-    const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<CustomerOrderPaymentStatus>(response, "json", {
-      404: ResourceNotFound,
-      422: HTTPValidationError,
-    });
-  };
-};
-export const confirmRetryPaymentOrders = (client: ClientBase) => {
-  /**
-   * Confirm a retry payment using a Stripe confirmation token.
-   *
-   * @param id - The order ID.
-   * @param body - Request body
-   * @param requestOptions - Request options
-   * @returns {CustomerOrderPaymentConfirmation}
-   * @throws {PolarNetworkError} When a network error occurs
-   * @throws {PolarRateLimitError} When the rate limit is exceeded
-   * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {ResourceNotFound} Order not found.
-   * @throws {PaymentAlreadyInProgress} Payment already in progress.
-   * @throws {OrderNotEligibleForRetry} Order not eligible for retry or payment confirmation failed.
-   * @throws {ManualRetryLimitExceeded} Manual retry limit exceeded.
-   */
-  return async (
-    id: string,
-    body: CustomerOrderConfirmPayment,
-    requestOptions?: RequestOptions,
-  ): Promise<CustomerOrderPaymentConfirmation> => {
-    const pathParams = {
-      id: id,
-    };
-    const queryParams = {};
-    const request = client.buildRequest(
-      "POST",
-      "/v1/customer-portal/orders/{id}/confirm-payment",
-      pathParams,
-      queryParams,
-      body,
-    );
-    const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<CustomerOrderPaymentConfirmation>(response, "json", {
-      404: ResourceNotFound,
-      409: PaymentAlreadyInProgress,
-      422: OrderNotEligibleForRetry,
-      429: ManualRetryLimitExceeded,
-    });
-  };
-};
 
 export function createOrdersService(client: ClientBase) {
   return {
@@ -362,8 +280,6 @@ export function createOrdersService(client: ClientBase) {
     invoice: invoiceOrders(client),
     generateInvoice: generateInvoiceOrders(client),
     receipt: receiptOrders(client),
-    getPaymentStatus: getPaymentStatusOrders(client),
-    confirmRetryPayment: confirmRetryPaymentOrders(client),
     iterList: iterListOrders(client),
   };
 }

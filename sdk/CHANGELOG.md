@@ -10,6 +10,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-16
+
 ### Changed
 
 - Python: use HTTPX2 for HTTP transport and its default TLS verification for SDK-created clients. Custom timeouts support both HTTPX and HTTPX2. Pass an `httpx2.AsyncClient` when supplying a client to Outpost or Vercel warmup.
@@ -65,7 +67,8 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 - Generate next 2027-01 version.
 
-[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.2.0...HEAD
+[Unreleased]: https://github.com/polarsource/polar/compare/sdk%2F1.3.0...HEAD
+[1.3.0]: https://github.com/polarsource/polar/compare/sdk%2F1.2.0...sdk%2F1.3.0
 [1.2.0]: https://github.com/polarsource/polar/compare/sdk%2F1.1.0...sdk%2F1.2.0
 [1.1.0]: https://github.com/polarsource/polar/compare/sdk%2F1.0.2...sdk%2F1.1.0
 [1.0.2]: https://github.com/polarsource/polar/compare/sdk%2F1.0.1...sdk%2F1.0.2

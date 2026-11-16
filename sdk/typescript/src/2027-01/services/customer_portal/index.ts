@@ -11,7 +11,6 @@ import { createOrdersService } from "./orders";
 import { createOrganizationsService } from "./organizations";
 import { createSeatsService } from "./seats";
 import { createSubscriptionsService } from "./subscriptions";
-import { createWalletsService } from "./wallets";
 
 export function createCustomerPortalService(client: ClientBase) {
   return {
@@ -26,7 +25,6 @@ export function createCustomerPortalService(client: ClientBase) {
     orders: createOrdersService(client),
     organizations: createOrganizationsService(client),
     subscriptions: createSubscriptionsService(client),
-    wallets: createWalletsService(client),
   };
 }
 

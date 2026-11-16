@@ -4480,31 +4480,6 @@ class CustomerOrderInvoice:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentConfirmation:
-    """Response after confirming a retry payment."""
-
-    status: str
-    """Payment status after confirmation."""
-
-    client_secret: str | None = None
-    """Client secret for handling additional actions."""
-
-    error: str | None = None
-    """Error message if confirmation failed."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentStatus:
-    """Payment status for an order."""
-
-    status: str
-    """Current payment status."""
-
-    error: str | None = None
-    """Error message if payment failed."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class CustomerOrderProduct:
     id: str
     """The ID of the object."""
@@ -5646,31 +5621,6 @@ class CustomerUpdatedMetadata:
     customer_external_id: str | None
 
     updated_fields: CustomerUpdatedFields
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerWallet:
-    """A wallet represents your balance with an organization.
-
-    You can top-up your wallet and use the balance to pay for usage."""
-
-    id: str
-    """The ID of the object."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    customer_id: str
-    """The ID of the customer that owns the wallet."""
-
-    balance: int
-    """The current balance of the wallet, in cents."""
-
-    currency: str
-    """The currency of the wallet."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7089,13 +7039,6 @@ class ListResourceCustomerSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class ListResourceCustomerWallet:
-    items: list[CustomerWallet]
-
-    pagination: Pagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceDiscount:
     items: list[Discount]
 
@@ -7233,13 +7176,6 @@ class ListResourceWithCursorPaginationEvent:
     items: list[Event]
 
     pagination: CursorPagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class ManualRetryLimitExceeded:
-    error: typing.Literal["ManualRetryLimitExceeded"]
-
-    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7460,29 +7396,6 @@ class Metric:
 
     type: MetricType
     """Type of the metric, useful to know the unit or format of the value."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class MetricDashboardSchema:
-    """A user-defined metrics dashboard."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-    """The ID of the object."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: list[str]
-    """List of metric slugs displayed in this dashboard."""
-
-    organization_id: str
-    """The ID of the organization owning this dashboard."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8155,13 +8068,6 @@ class OrderNotDraft:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrderNotEligibleForInvoice:
     error: typing.Literal["OrderNotEligibleForInvoice"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class OrderNotEligibleForRetry:
-    error: typing.Literal["OrderNotEligibleForRetry"]
 
     detail: str
 
@@ -8847,13 +8753,6 @@ class PauseResumeNotAllowed:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class PaymentActionRequired:
     error: typing.Literal["PaymentActionRequired"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class PaymentAlreadyInProgress:
-    error: typing.Literal["PaymentAlreadyInProgress"]
 
     detail: str
 

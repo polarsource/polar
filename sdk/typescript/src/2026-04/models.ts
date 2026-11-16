@@ -698,10 +698,6 @@ export type CustomerSubscriptionSortProperty =
  */
 export type CustomerType = "individual" | "team";
 /**
- * CustomerWalletSortProperty
- */
-export type CustomerWalletSortProperty = "created_at" | "-created_at" | "balance" | "-balance";
-/**
  * DiscountDuration
  */
 export type DiscountDuration = "once" | "forever" | "repeating";
@@ -945,7 +941,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1228,32 +1224,6 @@ export type Status = "granted" | "disabled";
  * SubType
  */
 export type SubType = "user" | "organization";
-/**
- * SubscriptionExportColumn
- */
-export type SubscriptionExportColumn =
-  | "email"
-  | "started_at"
-  | "product"
-  | "amount"
-  | "currency"
-  | "status"
-  | "recurring_interval"
-  | "customer_name"
-  | "billing_name"
-  | "billing_country"
-  | "net_amount"
-  | "discount"
-  | "seats"
-  | "current_period_start"
-  | "current_period_end"
-  | "cancel_at_period_end"
-  | "canceled_at"
-  | "ends_at"
-  | "ended_at"
-  | "cancellation_reason"
-  | "trial_start"
-  | "trial_end";
 /**
  * SubscriptionProrationBehavior
  */
@@ -10626,24 +10596,6 @@ export interface CustomerOrder {
 }
 
 /**
- * Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
- */
-export interface CustomerOrderConfirmPayment {
-  /**
-   * ID of the Stripe confirmation token for new payment methods.
-   */
-  confirmation_token_id?: string | null;
-  /**
-   * ID of an existing saved payment method.
-   */
-  payment_method_id?: string | null;
-  /**
-   * Payment processor used.
-   */
-  payment_processor?: PaymentProcessor;
-}
-
-/**
  * Order's invoice data.
  */
 export interface CustomerOrderInvoice {
@@ -10651,38 +10603,6 @@ export interface CustomerOrderInvoice {
    * The URL to the invoice.
    */
   url: string;
-}
-
-/**
- * Response after confirming a retry payment.
- */
-export interface CustomerOrderPaymentConfirmation {
-  /**
-   * Payment status after confirmation.
-   */
-  status: string;
-  /**
-   * Client secret for handling additional actions.
-   */
-  client_secret?: string | null;
-  /**
-   * Error message if confirmation failed.
-   */
-  error?: string | null;
-}
-
-/**
- * Payment status for an order.
- */
-export interface CustomerOrderPaymentStatus {
-  /**
-   * Current payment status.
-   */
-  status: string;
-  /**
-   * Error message if payment failed.
-   */
-  error?: string | null;
 }
 
 /**
@@ -12770,38 +12690,6 @@ export interface CustomerUpdatedMetadata {
    * updated_fields
    */
   updated_fields: CustomerUpdatedFields;
-}
-
-/**
- * A wallet represents your balance with an organization.
-
-You can top-up your wallet and use the balance to pay for usage.
- */
-export interface CustomerWallet {
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the customer that owns the wallet.
-   */
-  customer_id: string;
-  /**
-   * The current balance of the wallet, in cents.
-   */
-  balance: number;
-  /**
-   * The currency of the wallet.
-   */
-  currency: string;
 }
 
 /**
@@ -15642,20 +15530,6 @@ export interface ListResourceCustomerSubscription {
 }
 
 /**
- * ListResourceCustomerWallet
- */
-export interface ListResourceCustomerWallet {
-  /**
-   * items
-   */
-  items: CustomerWallet[];
-  /**
-   * pagination
-   */
-  pagination: Pagination;
-}
-
-/**
  * ListResourceDiscount
  */
 export interface ListResourceDiscount {
@@ -15933,20 +15807,6 @@ export interface ListResourceWithCursorPaginationEvent {
    * pagination
    */
   pagination: CursorPagination;
-}
-
-/**
- * ManualRetryLimitExceeded
- */
-export interface ManualRetryLimitExceeded {
-  /**
-   * error
-   */
-  error: "ManualRetryLimitExceeded";
-  /**
-   * detail
-   */
-  detail: string;
 }
 
 /**
@@ -16398,68 +16258,6 @@ export interface Metric {
    * Type of the metric, useful to know the unit or format of the value.
    */
   type: MetricType;
-}
-
-/**
- * Schema for creating a metrics dashboard.
- */
-export interface MetricDashboardCreate {
-  /**
-   * Display name for the dashboard.
-   */
-  name: string;
-  /**
-   * List of metric slugs to display in this dashboard.
-   */
-  metrics?: string[];
-  /**
-   * The ID of the organization owning this dashboard. **Required unless you use an organization token.**
-   */
-  organization_id?: string | null;
-}
-
-/**
- * A user-defined metrics dashboard.
- */
-export interface MetricDashboardSchema {
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Display name for the dashboard.
-   */
-  name: string;
-  /**
-   * List of metric slugs displayed in this dashboard.
-   */
-  metrics: string[];
-  /**
-   * The ID of the organization owning this dashboard.
-   */
-  organization_id: string;
-}
-
-/**
- * Schema for updating a metrics dashboard.
- */
-export interface MetricDashboardUpdate {
-  /**
-   * Display name for the dashboard.
-   */
-  name?: string | null;
-  /**
-   * List of metric slugs to display in this dashboard.
-   */
-  metrics?: string[] | null;
 }
 
 /**
@@ -17816,20 +17614,6 @@ export interface OrderNotEligibleForInvoice {
 }
 
 /**
- * OrderNotEligibleForRetry
- */
-export interface OrderNotEligibleForRetry {
-  /**
-   * error
-   */
-  error: "OrderNotEligibleForRetry";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
  * An event created by Polar when an order is paid.
  */
 export interface OrderPaidEvent {
@@ -19162,20 +18946,6 @@ export interface PaymentActionRequired {
    * error
    */
   error: "PaymentActionRequired";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
- * PaymentAlreadyInProgress
- */
-export interface PaymentAlreadyInProgress {
-  /**
-   * error
-   */
-  error: "PaymentAlreadyInProgress";
   /**
    * detail
    */

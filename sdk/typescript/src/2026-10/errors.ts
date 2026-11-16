@@ -11,17 +11,14 @@ import type {
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
   InactiveSubscription as InactiveSubscriptionModel,
-  ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
   OffSessionChargesNotEnabled as OffSessionChargesNotEnabledModel,
   OrderNotDraft as OrderNotDraftModel,
   OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
-  OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
   OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
   PauseResumeNotAllowed as PauseResumeNotAllowedModel,
   PaymentActionRequired as PaymentActionRequiredModel,
-  PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
   PaymentError as PaymentErrorModel,
   PaymentFailed as PaymentFailedModel,
   PaymentMethodInUseByActiveSubscription as PaymentMethodInUseByActiveSubscriptionModel,
@@ -544,42 +541,6 @@ export class MissingInvoiceBillingDetails extends PolarClientError<MissingInvoic
   ) {
     super(statusCode, error);
     this.name = "MissingInvoiceBillingDetails";
-  }
-}
-/**
- * Payment already in progress.
- */
-export class PaymentAlreadyInProgress extends PolarClientError<PaymentAlreadyInProgressModel> {
-  constructor(
-    public readonly statusCode: 409,
-    public readonly error: PaymentAlreadyInProgressModel,
-  ) {
-    super(statusCode, error);
-    this.name = "PaymentAlreadyInProgress";
-  }
-}
-/**
- * Order not eligible for retry or payment confirmation failed.
- */
-export class OrderNotEligibleForRetry extends PolarClientError<OrderNotEligibleForRetryModel> {
-  constructor(
-    public readonly statusCode: 422,
-    public readonly error: OrderNotEligibleForRetryModel,
-  ) {
-    super(statusCode, error);
-    this.name = "OrderNotEligibleForRetry";
-  }
-}
-/**
- * Manual retry limit exceeded.
- */
-export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitExceededModel> {
-  constructor(
-    public readonly statusCode: 429,
-    public readonly error: ManualRetryLimitExceededModel,
-  ) {
-    super(statusCode, error);
-    this.name = "ManualRetryLimitExceeded";
   }
 }
 /**

@@ -21,7 +21,6 @@ from polar.v2026_04.literals import (
     MemberRole,
     MeterUnit,
     OrganizationSocialPlatforms,
-    PaymentProcessor,
     Permission,
     PresentmentCurrency,
     ProductVisibility,
@@ -1563,19 +1562,6 @@ You can store up to **50 key-value pairs**."""
     """The email address of the customer. This must be unique within the organization."""
 
 
-class CustomerOrderConfirmPayment(typing.TypedDict):
-    """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
-
-    confirmation_token_id: typing.NotRequired[str | None]
-    """ID of the Stripe confirmation token for new payment methods."""
-
-    payment_method_id: typing.NotRequired[str | None]
-    """ID of an existing saved payment method."""
-
-    payment_processor: typing.NotRequired[PaymentProcessor]
-    """Payment processor used."""
-
-
 class CustomerOrderUpdate(typing.TypedDict):
     """Schema to update an order."""
 
@@ -2427,29 +2413,6 @@ You can store up to **50 key-value pairs**."""
 
     is_archived: typing.NotRequired[bool | None]
     """Whether the meter is archived. Archived meters are no longer used for billing."""
-
-
-class MetricDashboardCreate(typing.TypedDict):
-    """Schema for creating a metrics dashboard."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: typing.NotRequired[list[str]]
-    """List of metric slugs to display in this dashboard."""
-
-    organization_id: typing.NotRequired[str | None]
-    """The ID of the organization owning this dashboard. **Required unless you use an organization token.**"""
-
-
-class MetricDashboardUpdate(typing.TypedDict):
-    """Schema for updating a metrics dashboard."""
-
-    name: typing.NotRequired[str | None]
-    """Display name for the dashboard."""
-
-    metrics: typing.NotRequired[list[str] | None]
-    """List of metric slugs to display in this dashboard."""
 
 
 class OAuth2ClientConfiguration(typing.TypedDict):

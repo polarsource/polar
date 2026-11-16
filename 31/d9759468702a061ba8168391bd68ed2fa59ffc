@@ -1,0 +1,22 @@
+server/pyproject.toml
+  s_a3c28b0e096a4a::t_6247b731dd368f 17
+server/uv.lock
+  s_a3c28b0e096a4a::t_bfc9308a49a046 1601-1663,3011,3109,3949-3952
+  s_a3c28b0e096a4a::t_bbd9481232cb3d 1600,3953
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "31d9759468702a061ba8168391bd68ed2fa59ffc",
+  "prompts": {},
+  "sessions": {
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -154,11 +154,27 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   const displayedProducts = filterByExternalId
     ? latestVersions(uniqueProducts.filter(({ external_id }) => external_id))
     : uniqueProducts
-  // An old version is only removed when its product line has no current version left
+  // An old version is only removed when its product line has no current version left.
+  // Look the current versions up directly: search and pagination can leave them out of the list.
+  const { data: currentVersions } = useSelectedProducts({
+    organization_id: organization.id,
+    external_id: [
+      ...new Set(
+        displayedProducts.flatMap((product) =>
+          !product.is_current && product.external_id
+            ? [product.external_id]
+            : [],
+        ),
+      ),
+    ],
+  })
   const liveLines = new Set(
-    displayedProducts
-      .filter((product) => product.is_current && !product.is_archived)
-      .map(productLine),
+    [
+      ...displayedProducts.filter(
+        (product) => product.is_current && !product.is_archived,
+      ),
+      ...(currentVersions ?? []),
+    ].map(productLine),
   )
   const isRemoved = (product: schemas['Product']) =>
     product.is_archived || !liveLines.has(productLine(product))

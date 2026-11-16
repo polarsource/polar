@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 import pytest
@@ -11,9 +10,7 @@ from polar.postgres import AsyncSession
 pytest_plugins = ["pytester"]
 
 
-@pytest.mark.parametrize(
-    "arguments", [[], ["-n", "0"], ["-n", "2"], ["-n", "2", "--dist=loadgroup"]]
-)
+@pytest.mark.parametrize("arguments", [[], ["-n", "0"], ["-n", "2"]])
 def test_fixture_loading_matches_execution_mode(
     pytester: pytest.Pytester,
     monkeypatch: pytest.MonkeyPatch,
@@ -37,14 +34,6 @@ def test_fixture_loading_matches_execution_mode(
     (tests / "tinybird-files.txt").touch()
     (tests / "conftest.py").write_text(
         (Path(__file__).parents[1] / "conftest.py").read_text()
-        + """
-
-def pytest_collection_finish(session):
-    worker = os.environ.get("PYTEST_XDIST_WORKER", "controller")
-    (session.config.rootpath / f"collection-{worker}.json").write_text(
-        json.dumps([item.nodeid for item in session.items])
-    )
-"""
     )
     (fixtures / "__init__.py").write_text(
         """
@@ -68,35 +57,18 @@ def example():
         "def pytest_generate_tests_api_version(metafunc): pass\n"
     )
     (tests / "test_example.py").write_text(
-        "def test_fast(example): assert example == 42\n"
-        "def test_slow(example): assert example == 42\n"
-        "def test_uncached(example): assert example == 42\n"
+        "def test_example(example): assert example == 42\n"
     )
     pytester.makepyfile(
         test_outside="import os\ndef test_outside(): assert 'FIXTURE_ACTIVE' not in os.environ\n"
     )
 
-    (pytester.path / ".test_durations").write_text(
-        json.dumps(
-            {
-                "tests/test_example.py::test_fast": 1.0,
-                "tests/test_example.py::test_slow": 2.0,
-            }
-        )
-    )
-
     result = pytester.runpytest_subprocess("-p", "xdist.plugin", *arguments)
 
-    result.assert_outcomes(passed=4)
+    result.assert_outcomes(passed=2)
     assert {path.name for path in imports.iterdir()} == (
-        {"gw0", "gw1"} if arguments[:2] == ["-n", "2"] else {"controller"}
+        {"gw0", "gw1"} if arguments == ["-n", "2"] else {"controller"}
     )
-    for collection in pytester.path.glob("collection-*.json"):
-        nodes = json.loads(collection.read_text())
-        assert len(nodes) == 4
-        slow = nodes.index("tests/test_example.py::test_slow")
-        fast = nodes.index("tests/test_example.py::test_fast")
-        assert (slow < fast) == ("--dist=loadgroup" in arguments)
 
 
 def test_unit_test_does_not_request_database(request: pytest.FixtureRequest) -> None:

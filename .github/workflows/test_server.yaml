@@ -487,12 +487,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - name: Inspect Tinybird health timing
-        if: matrix.shard == '1'
-        run: |
-          docker inspect --format '{{json .Config.Healthcheck}}' '${{ job.services.tinybird.id }}'
-          docker inspect --format '{{range .State.Health.Log}}{{.Start}} {{.End}} {{.ExitCode}}{{println}}{{end}}' '${{ job.services.tinybird.id }}'
-
       - name: 📬 Restore emails renderer
         id: emails
         uses: actions/cache@v6.1.0
@@ -608,9 +602,8 @@ jobs:
             extra=(--ordinary-files "$RUNNER_TEMP/ordinary-files")
             marker='not benchmark'
           fi
-          PYTHONPATH="$GITHUB_WORKSPACE/.github:$PWD" POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run python -m ci_pool --workers 8 --timeout 840 --output "$RUNNER_TEMP/pytest-pool" "${weights[@]}" "${extra[@]}" -- tests "-m=$marker" --no-cov --durations=40
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run python -m scripts.pytest_pool --workers 8 --timeout 840 --output "$RUNNER_TEMP/pytest-pool" "${weights[@]}" "${extra[@]}" --marker "$marker" tests
           cp "$RUNNER_TEMP/pytest-pool/.test_durations" .test_durations
-          cp "$RUNNER_TEMP/pytest-pool/junit.xml" "$RUNNER_TEMP/junit.xml"
 
       - name: Upload test reports and timings
         if: always()
@@ -688,7 +681,6 @@ jobs:
         with:
           path: ${{ runner.temp }}/pytest-bytecode
           key: pytest-bytecode-v1-${{ runner.os }}-${{ hashFiles('server/uv.lock', 'server/pyproject.toml', 'server/scripts/pytest_bytecode.py') }}-${{ matrix.shard }}-${{ github.sha }}
-
 
   test-status:
     name: "Server: Tests 🐍"

@@ -1,4 +1,3 @@
-import json
 import os
 from pathlib import Path
 
@@ -59,14 +58,7 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
 
 
 @pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
-    durations_path = config.rootpath / ".test_durations"
-    if config.getoption("loadgroup", False) and durations_path.exists():
-        durations: dict[str, float] = json.loads(durations_path.read_text())
-        items.sort(key=lambda item: -durations.get(item.nodeid, 0))
-
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     tinybird_files = set(
         (Path(__file__).parent / "tinybird-files.txt").read_text().splitlines()
     )

@@ -22,6 +22,10 @@ Environment variables:
     See load_tests/config.py for configuration options
 """
 
-from load_tests.scenarios import CheckoutUser, EventIngestionUser
+from load_tests.scenarios import (
+    CheckoutUser,
+    EventIngestionStressUser,
+    EventIngestionUser,
+)
 
-__all__ = ["CheckoutUser", "EventIngestionUser"]
+__all__ = ["CheckoutUser", "EventIngestionStressUser", "EventIngestionUser"]

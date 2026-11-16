@@ -1,0 +1,37 @@
+server/pyproject.toml
+  s_13035362736d7f::t_8b2cf393966286 50,228
+server/polar/backoffice/feedbacks/endpoints.py
+  s_13035362736d7f::t_8b2cf393966286 4,640
+server/tests/integrations/plain/test_service.py
+  s_13035362736d7f::t_ed4195d3ec8d2c 2,6,8,42-47,61-65,68-69,71-75
+  s_6f7faa431eb9e1::t_d396c3e24b7c1b 393-414
+server/polar/integrations/plain/service.py
+  s_13035362736d7f::t_8b2cf393966286 7,1817,1819,1823
+  s_13035362736d7f::t_ed4195d3ec8d2c 1788
+server/uv.lock
+  s_13035362736d7f::t_ee6f94d7405b8b 16,2914,2917,2920,2922,3082
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f2703356f2fe4500981a4c8cf512f321d5ce4fab",
+  "prompts": {},
+  "sessions": {
+    "s_13035362736d7f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3da-d6f7-76a1-80fe-78aa9ca20a1e",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_6f7faa431eb9e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3db-9995-78c0-a2e6-30609d5c8e9b",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

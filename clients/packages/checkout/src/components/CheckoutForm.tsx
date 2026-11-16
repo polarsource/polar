@@ -499,7 +499,16 @@ const BaseCheckoutForm = ({
                       isDisplayedField(
                         checkout.billing_address_fields.city,
                       )) && (
-                      <div className="grid grid-cols-2 gap-x-2">
+                      <div
+                        className={
+                          isDisplayedField(
+                            checkout.billing_address_fields.postal_code,
+                          ) &&
+                          isDisplayedField(checkout.billing_address_fields.city)
+                            ? 'grid grid-cols-2 gap-x-2'
+                            : 'grid grid-cols-1'
+                        }
+                      >
                         {isDisplayedField(
                           checkout.billing_address_fields.postal_code,
                         ) && (

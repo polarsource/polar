@@ -111,6 +111,9 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
 # Payment methods for which the processor requires a full billing address
 # to process the payment, regardless of the customer's country.
 FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
+# Countries where checkout shows the full billing address form. Elsewhere,
+# only the fields the country requires are shown.
+FULL_BILLING_ADDRESS_FORM_COUNTRIES: frozenset[str] = frozenset({"US", "BR"})
 
 
 def _get_billing_address_field_mode(
@@ -492,13 +495,9 @@ class Checkout(
         return address.country if address else None
 
     @property
-    def _is_full_billing_address_required(self) -> bool:
-        return self.is_billing_address_required or self._billing_address_country == "US"
-
-    @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
         country = self._billing_address_country
-        require_billing_address = self._is_full_billing_address_required
+        require_billing_address = self.is_billing_address_required or country == "US"
         return {
             "country": True,
             "state": country in STATE_REQUIRED_COUNTRIES,
@@ -513,10 +512,9 @@ class Checkout(
     def billing_address_fields(self) -> CheckoutBillingAddressFields:
         country = self._billing_address_country
         required_fields = self.customer_billing_address_fields
-        displayed = self._is_full_billing_address_required or country in (
-            STATE_REQUIRED_COUNTRIES
-            | POSTAL_CODE_REQUIRED_COUNTRIES
-            | CITY_REQUIRED_COUNTRIES
+        displayed = (
+            self.is_billing_address_required
+            or country in FULL_BILLING_ADDRESS_FORM_COUNTRIES
         )
         return {
             "country": BillingAddressFieldMode.required,

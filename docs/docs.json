@@ -42,7 +42,7 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction", "migrate"]
+            "pages": ["introduction", "migrate", "migrate-lemon-squeezy"]
           },
           {
             "group": "Products & Pricing",

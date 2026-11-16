@@ -1,0 +1,24 @@
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_00ddef1231e0b9 445-450,531-544,571-581
+  s_f83d2c94945117::t_5ca18169bda357 582
+server/scripts/pytest_bytecode.py
+  s_f83d2c94945117::t_00ddef1231e0b9 1-61
+server/tests/scripts/test_pytest_bytecode.py
+  s_f83d2c94945117::t_00ddef1231e0b9 1-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d98239ab93568779d1f966785c7ab50ab6b4ea40",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

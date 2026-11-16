@@ -13,6 +13,11 @@ import type { CatalogOptions } from '@/services/billing-config/api'
 import { apply } from '@/services/billing-config/apply'
 import { disable } from '@/services/billing-config/disable'
 import {
+  type Generated,
+  type GenerateOptions,
+  write,
+} from '@/services/billing-config/generate/write'
+import {
   init,
   type InitTarget,
   type NameResources,
@@ -37,6 +42,10 @@ export {
   projectRoot,
   projectsAt,
 } from '@/services/billing-config/languages'
+export {
+  GENERATED_LANGUAGES,
+  GENERATORS,
+} from '@/services/billing-config/generate'
 export { output, type Ran, type Run } from '@/utils/run'
 
 export class BillingConfig extends Context.Service<
@@ -83,6 +92,10 @@ export class BillingConfig extends Context.Service<
     disable: (
       organization: ActiveOrganization,
     ) => Effect.Effect<void, AuthError | BillingConfigError>
+    generate: (
+      config: LoadedConfig,
+      options: GenerateOptions,
+    ) => Effect.Effect<Generated, BillingConfigError>
   }
 >()('BillingConfig') {}
 
@@ -105,6 +118,7 @@ const make = Effect.gen(function* () {
     catalogs: catalogs(clients),
     publish: publish(clients),
     disable: disable(clients),
+    generate: write(fs),
   })
 })
 

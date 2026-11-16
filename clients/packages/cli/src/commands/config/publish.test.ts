@@ -63,6 +63,7 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
+          generate: () => Effect.die('unused'),
           load: () =>
             entries === null
               ? Effect.fail(new BillingConfigError({ message: NO_CONFIG_FILE }))

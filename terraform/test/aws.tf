@@ -255,6 +255,13 @@ data "aws_iam_policy_document" "s3_access" {
   }
 }
 
+resource "aws_iam_role_policy" "s3_access" {
+  count  = local.test_enabled ? 1 : 0
+  name   = "polar-test-s3-access"
+  role   = module.secrets_kms[0].role_name
+  policy = data.aws_iam_policy_document.s3_access.json
+}
+
 # =============================================================================
 # Task producer policy (SQS send-only, attached to the Render backend OIDC role)
 # =============================================================================

@@ -6,6 +6,7 @@ sdk/generator/python/template/tests/test_base.py
 sdk/generator/python/template/tests/outpost/test_vercel.py
   s_7e19d239afd9c1::t_eac147bf862f42 1-3,64,67,72,75,77-78,80-81
   s_7e19d239afd9c1::t_ca294f4f5a91df 70
+  s_7e19d239afd9c1::t_04db44905e5ab0 66,68
 sdk/generator/python/template/pyproject.toml
   s_7e19d239afd9c1::t_95d2dcc76abea5 43
 sdk/generator/python/template/polar/outpost/client.py

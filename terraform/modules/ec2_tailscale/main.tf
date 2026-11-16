@@ -78,20 +78,22 @@ resource "aws_instance" "this" {
   vpc_security_group_ids      = [aws_security_group.this.id]
   iam_instance_profile        = aws_iam_instance_profile.this.name
   user_data_replace_on_change = true
-  source_dest_check           = length(var.advertise_routes) == 0
+  source_dest_check           = !var.advertise_connector && length(var.advertise_routes) == 0
 
   user_data = "#cloud-config\n${yamlencode({
     write_files = concat([{
       path        = "/usr/local/sbin/tailscale-init"
       owner       = "root:root"
       permissions = "0700"
-      content     = file("${path.module}/tailscale-init.sh")
-      }], length(var.advertise_routes) == 0 ? [] : [{
+      content = templatefile("${path.module}/tailscale-init.sh.tftpl", {
+        advertise_connector = var.advertise_connector
+      })
+      }], var.advertise_connector || length(var.advertise_routes) > 0 ? [{
       path        = "/etc/sysctl.d/99-tailscale.conf"
       owner       = "root:root"
       permissions = "0644"
       content     = "net.ipv4.ip_forward = 1\nnet.ipv6.conf.all.forwarding = 1\n"
-    }])
+    }] : [])
     runcmd = [[
       "/usr/local/sbin/tailscale-init",
       data.aws_region.current.name,

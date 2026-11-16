@@ -75,6 +75,12 @@ variable "advertise_routes" {
   }
 }
 
+variable "advertise_connector" {
+  description = "Enable Tailscale App Connector routing and IP forwarding."
+  type        = bool
+  default     = false
+}
+
 variable "advertise_tags" {
   description = "Tailscale tags assigned to the router. The OAuth client must have Auth Keys write permission for these tags."
   type        = list(string)

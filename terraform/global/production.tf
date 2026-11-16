@@ -938,6 +938,18 @@ resource "tfe_variable" "ec2_tailscale_oauth_client_secret_production" {
   }
 }
 
+resource "tfe_variable" "mcp_gateway_connector_oauth_client_secret_production" {
+  key             = "mcp_gateway_connector_oauth_client_secret"
+  category        = "terraform"
+  description     = "Tailscale OAuth client secret with Auth Keys write permission for tag:mcp-gateway-connector"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 resource "tfe_variable" "linear_api_key_production" {
   key             = "linear_api_key"
   category        = "terraform"

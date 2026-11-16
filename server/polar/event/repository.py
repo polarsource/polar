@@ -30,10 +30,11 @@ from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.db.postgres import json_serializer
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.kit.utils import generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models import (
     BillingEntry,
     Customer,
@@ -52,6 +53,49 @@ from .system import SystemEvent
 # (A.parent_id → B → A) ever sneaks into the data, instead of spinning until
 # statement_timeout kills the worker.
 _MAX_RESOLVE_DEPTH = 100
+
+_INSERT_STAGED_EVENTS = text(
+    """
+    INSERT INTO staged_events (
+        id, ingested_at, timestamp, name, source, organization_id, customer_id,
+        external_customer_id, member_id, external_member_id, external_id,
+        pending_parent_external_id, event_type_id, user_metadata
+    )
+    SELECT * FROM UNNEST(
+        CAST(:id AS uuid[]),
+        CAST(:ingested_at AS timestamptz[]),
+        CAST(:timestamp AS timestamptz[]),
+        CAST(:name AS varchar[]),
+        CAST(:source AS varchar[]),
+        CAST(:organization_id AS uuid[]),
+        CAST(:customer_id AS uuid[]),
+        CAST(:external_customer_id AS varchar[]),
+        CAST(:member_id AS uuid[]),
+        CAST(:external_member_id AS varchar[]),
+        CAST(:external_id AS varchar[]),
+        CAST(:pending_parent_external_id AS varchar[]),
+        CAST(:event_type_id AS uuid[]),
+        CAST(:user_metadata AS jsonb[])
+    )
+    ON CONFLICT (organization_id, external_id) WHERE external_id IS NOT NULL
+    DO NOTHING
+    RETURNING id, organization_id, external_id
+    """
+)
+_INSERT_STAGED_EVENTS_COLUMNS = frozenset(_INSERT_STAGED_EVENTS._bindparams)
+
+_DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS = text(
+    """
+    DELETE FROM staged_events
+    WHERE organization_id = :organization_id
+    AND external_id IN (
+        SELECT external_id FROM events
+        WHERE organization_id = :organization_id
+        AND external_id = ANY(CAST(:external_ids AS varchar[]))
+    )
+    RETURNING id
+    """
+)
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
@@ -137,26 +181,60 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not events:
             return [], 0
 
+        unknown_columns = set().union(*events) - _INSERT_STAGED_EVENTS_COLUMNS
+        if unknown_columns:
+            raise ValueError(f"Unknown staged event columns: {unknown_columns}")
+        ids: list[UUID] = []
+        ingested_at: list[datetime] = []
+        timestamps: list[datetime] = []
+        names: list[str] = []
+        sources: list[str] = []
+        organization_ids: list[UUID] = []
+        customer_ids: list[UUID | None] = []
+        external_customer_ids: list[str | None] = []
+        member_ids: list[UUID | None] = []
+        external_member_ids: list[str | None] = []
+        event_external_ids: list[str | None] = []
+        pending_parent_external_ids: list[str | None] = []
+        event_type_ids: list[UUID | None] = []
+        user_metadata: list[str] = []
         for event in events:
             if event.get("id") is None:
                 event["id"] = generate_uuid()
-        keys = set().union(*events)
-        for event in events:
-            for key in keys:
-                event.setdefault(key, None)
+            ids.append(event["id"])
+            ingested_at.append(event.get("ingested_at") or utc_now())
+            timestamps.append(event["timestamp"])
+            names.append(event["name"])
+            sources.append(event["source"])
+            organization_ids.append(event["organization_id"])
+            customer_ids.append(event.get("customer_id"))
+            external_customer_ids.append(event.get("external_customer_id"))
+            member_ids.append(event.get("member_id"))
+            external_member_ids.append(event.get("external_member_id"))
+            event_external_ids.append(event.get("external_id"))
+            pending_parent_external_ids.append(event.get("pending_parent_external_id"))
+            event_type_ids.append(event.get("event_type_id"))
+            user_metadata.append(json_serializer(event["user_metadata"]))
 
-        statement = (
-            insert(StagedEvent)
-            .on_conflict_do_nothing(
-                index_elements=["organization_id", "external_id"],
-                index_where=StagedEvent.external_id.is_not(None),
-            )
-            .returning(
-                StagedEvent.id, StagedEvent.organization_id, StagedEvent.external_id
-            )
-            .execution_options(render_nulls=True)
+        result = await self.session.execute(
+            _INSERT_STAGED_EVENTS,
+            {
+                "id": ids,
+                "ingested_at": ingested_at,
+                "timestamp": timestamps,
+                "name": names,
+                "source": sources,
+                "organization_id": organization_ids,
+                "customer_id": customer_ids,
+                "external_customer_id": external_customer_ids,
+                "member_id": member_ids,
+                "external_member_id": external_member_ids,
+                "external_id": event_external_ids,
+                "pending_parent_external_id": pending_parent_external_ids,
+                "event_type_id": event_type_ids,
+                "user_metadata": user_metadata,
+            },
         )
-        result = await self.session.execute(statement, events)
         inserted = result.all()
 
         # Drop the inserted rows whose external ID is already in `events`: the
@@ -173,17 +251,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         duplicate_ids: list[UUID] = []
         for organization_id, external_ids in external_ids_by_organization.items():
             moved = await self.session.execute(
-                delete(StagedEvent)
-                .where(
-                    StagedEvent.organization_id == organization_id,
-                    StagedEvent.external_id.in_(
-                        select(Event.external_id).where(
-                            Event.organization_id == organization_id,
-                            Event.external_id.in_(external_ids),
-                        )
-                    ),
-                )
-                .returning(StagedEvent.id)
+                _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS,
+                {"organization_id": organization_id, "external_ids": external_ids},
             )
             duplicate_ids.extend(moved.scalars())
 

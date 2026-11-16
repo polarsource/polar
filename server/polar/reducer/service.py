@@ -579,13 +579,6 @@ class ReducerService:
                     bucket_count=len(contributions_to_active_buckets),
                     event_count=len(events),
                 )
-            else:
-                log.info(
-                    "Active reducer buckets updated in Redis",
-                    organization_id=organization_id,
-                    bucket_count=len(contributions_to_active_buckets),
-                    event_count=len(events),
-                )
 
         contributions_to_closed_buckets = {
             bucket_id: values

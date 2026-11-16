@@ -78,9 +78,15 @@ impl AppState {
         let db = PgPoolOptions::new()
             .max_connections(config.postgres_pool_size)
             .acquire_timeout(DATABASE_ACQUIRE_TIMEOUT)
-            .connect_with(config.postgres)
+            .connect_with(config.postgres.clone())
             .await
-            .context("connecting to Postgres")?;
+            .with_context(|| {
+                format!(
+                    "connecting to Postgres at {}:{}",
+                    config.postgres.get_host(),
+                    config.postgres.get_port()
+                )
+            })?;
         let redis_client = config::redis_client(&config.redis_url)?;
         let redis = ConnectionManager::new(redis_client.clone())
             .await

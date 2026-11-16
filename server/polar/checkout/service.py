@@ -84,7 +84,10 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import (
+    US_SHORT_BILLING_ADDRESS_EXPERIMENT,
+    CheckoutStatus,
+)
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
@@ -1751,6 +1754,42 @@ class CheckoutService:
             raise NotPermitted()
         return checkout
 
+    async def assign_us_short_billing_address_experiment(
+        self, session: AsyncSession, checkout: Checkout, distinct_id: str
+    ) -> Checkout:
+        address = checkout.customer_billing_address
+        analytics_metadata = checkout.analytics_metadata or {}
+        is_eligible = (
+            checkout.status == CheckoutStatus.open
+            and checkout.is_payment_form_required
+            and not checkout.is_billing_address_required
+            and address is not None
+            and address.country == "US"
+            and address.line1 is None
+            and address.city is None
+            and "opened_at" not in analytics_metadata
+            and "us_short_billing_address_variant" not in analytics_metadata
+        )
+        if not is_eligible:
+            return checkout
+
+        variant = await posthog.get_feature_flag_variant(
+            US_SHORT_BILLING_ADDRESS_EXPERIMENT, distinct_id
+        )
+        if variant not in {"control", "treatment"}:
+            return checkout
+
+        repository = CheckoutRepository.from_session(session)
+        return await repository.update(
+            checkout,
+            update_dict={
+                "analytics_metadata": {
+                    **analytics_metadata,
+                    "us_short_billing_address_variant": variant,
+                }
+            },
+        )
+
     async def mark_opened(
         self, session: AsyncSession, checkout: Checkout, distinct_id: str | None = None
     ) -> Checkout:
@@ -1779,6 +1818,16 @@ class CheckoutService:
         )
 
         try:
+            variant = analytics_metadata.get("us_short_billing_address_variant")
+            if variant is not None:
+                posthog.capture(
+                    distinct_id=resolved_distinct_id,
+                    event="$feature_flag_called",
+                    properties={
+                        "$feature_flag": US_SHORT_BILLING_ADDRESS_EXPERIMENT,
+                        "$feature_flag_response": variant,
+                    },
+                )
             posthog.capture(
                 distinct_id=resolved_distinct_id,
                 event="storefront:subscriptions:checkout:open",

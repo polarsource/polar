@@ -14,6 +14,7 @@ from polar.checkout.schemas import CheckoutProductCreate
 from polar.checkout.service import checkout as checkout_service
 from polar.enums import SubscriptionRecurringInterval, TaxBehavior, TaxProcessor
 from polar.integrations.stripe.service import StripeService
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
@@ -1198,6 +1199,33 @@ class TestClientGet:
         response = await client.get(f"{api_prefix}/client/{checkout.client_secret}")
 
         assert response.status_code == 410
+
+    async def test_us_short_billing_address_experiment(
+        self,
+        api_prefix: str,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        posthog_mock.get_feature_flag_variant = mocker.AsyncMock(
+            return_value="treatment"
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            customer_billing_address=Address(country=CountryAlpha2("US")),
+        )
+
+        response = await client.get(
+            f"{api_prefix}/client/{checkout.client_secret}",
+            headers={"x-polar-distinct-id": "distinct_id"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["billing_address_fields"]["line1"] == "disabled"
 
     async def test_expired_blocked_organization(
         self,

@@ -351,6 +351,10 @@ const BaseCheckoutForm = ({
     return t('checkout.cta.getFree')
   }, [checkout, interval, t])
 
+  const isShortUSBillingAddress =
+    checkout.customer_billing_address?.country === 'US' &&
+    !isDisplayedField(checkout.billing_address_fields.line1)
+
   return (
     <div
       className={cn(
@@ -427,7 +431,14 @@ const BaseCheckoutForm = ({
               {(checkout.is_payment_form_required ||
                 checkout.require_billing_address) && (
                 <>
-                  <FormItem>
+                  <FormItem
+                    className={
+                      // Hacky CSS which will be removed once the experiment (checkout_us_short_billing_address) is concluded
+                      isShortUSBillingAddress
+                        ? 'grid grid-cols-2 gap-x-2 [&>*]:col-span-2 [&>.grid]:col-span-1 [&>.grid+*]:col-span-1'
+                        : undefined
+                    }
+                  >
                     <FormLabel>
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
@@ -588,7 +599,8 @@ const BaseCheckoutForm = ({
                               : false,
                           }}
                           render={({ field }) => (
-                            <>
+                            // Hacky CSS which will be removed once the experiment (checkout_us_short_billing_address) is concluded
+                            <div className="flex flex-col gap-2 [&>div]:mb-0">
                               <CountryStatePicker
                                 name={field.name}
                                 autoComplete="billing address-level1"
@@ -606,7 +618,7 @@ const BaseCheckoutForm = ({
                                 )}
                               />
                               <FormMessage />
-                            </>
+                            </div>
                           )}
                         />
                       </FormControl>

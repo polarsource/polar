@@ -1,0 +1,26 @@
+events/src/app.rs
+  s_4b5eb4ed5edf2a::t_42b32a8cd9bc5f 305-306
+  s_4b5eb4ed5edf2a::t_e2a1b480e1ce36 327
+  s_4b5eb4ed5edf2a::t_aee085d80c25e3 399-401
+  s_4b5eb4ed5edf2a::t_f1e356e569e0c0 39
+events/src/ingest.rs
+  s_4b5eb4ed5edf2a::t_991cba0e177850 41
+  s_4b5eb4ed5edf2a::t_3cd07e7d9ba519 75-85
+  s_4b5eb4ed5edf2a::t_30bfcc3f9f7204 211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "16791589827ae13d84e570990ecb0437be2ae93c",
+  "prompts": {},
+  "sessions": {
+    "s_4b5eb4ed5edf2a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "05bad081-3db0-4f78-89d4-0a6fd2614e96",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

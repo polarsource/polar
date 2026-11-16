@@ -246,7 +246,7 @@ resource "render_web_service" "api_copy" {
 
   runtime_source = {
     image = {
-      image_url              = split("@", var.api_service_config.image_url)[0]
+      image_url              = split("@", coalesce(each.value.image_url, var.api_service_config.image_url))[0]
       registry_credential_id = var.registry_credential_id
       tag                    = "latest"
     }

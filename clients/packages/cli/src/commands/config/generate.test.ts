@@ -45,7 +45,7 @@ const run = async (
           load: () =>
             Effect.succeed({
               file: config,
-              source: '',
+              source: `${JSON.stringify(input, null, 2)}\n`,
               input,
               generated: false,
             }),
@@ -120,7 +120,7 @@ describe('polar config generate', () => {
     expect(await read('billing', 'polar_types.py')).toContain('class Meters:')
   })
 
-  test('takes the language from --language when no project says which', async () => {
+  test('takes the language from --language and leaves the config alone', async () => {
     await rm(at('pyproject.toml'))
 
     const { exit } = await run(['--language', 'py', '--check'])
@@ -128,12 +128,49 @@ describe('polar config generate', () => {
     expect(failure(exit)?.hint).toBe(
       'Run polar config generate --language py and commit the result.',
     )
+    await run(['--language', 'py'])
+    await expect(read('polar.config.json')).rejects.toThrow()
   })
 
   test('writes to --out, creating its directory', async () => {
     await run(['--out', at('src', 'billing', 'names.py')])
 
     expect(await read('src', 'billing', 'names.py')).toContain('class Meters:')
+  })
+
+  test('remembers --out in a JSON config, so the next run needs no flag', async () => {
+    const { output } = await run(['--out', at('src', 'names.py')])
+
+    expect(JSON.parse(await read('polar.config.json'))).toEqual({
+      ...CONFIG,
+      generate: { out: 'src/names.py' },
+    })
+    expect(output).toContain('now remembers where it goes')
+    expect(output).toContain('polar config generate --check')
+    expect(output).not.toContain('--out')
+  })
+
+  test('writes where the config says when --out is not given', async () => {
+    const remembered = { ...CONFIG, generate: { out: 'src/names.py' } }
+
+    await run([], remembered)
+    const { exit } = await run(['--check'], {
+      ...remembered,
+      meters: [{ external_id: 'api_call' }],
+    })
+
+    expect(await read('src', 'names.py')).toContain('class Meters:')
+    await expect(read('polar_types.py')).rejects.toThrow()
+    expect(failure(exit)).toMatchObject({
+      message: `${at('src', 'names.py')} is out of date`,
+      hint: 'Run polar config generate and commit the result.',
+    })
+  })
+
+  test('with --check, leaves the config alone', async () => {
+    await run(['--out', at('src', 'names.py'), '--check'])
+
+    await expect(read('polar.config.json')).rejects.toThrow()
   })
 
   test('refuses an --out that is not a file of the language', async () => {
@@ -190,6 +227,7 @@ describe('polar config generate', () => {
       language: 'py',
       status: 'written',
       command: 'polar config generate',
+      saved: false,
       events: 0,
       meters: 1,
       benefits: 0,

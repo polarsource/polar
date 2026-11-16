@@ -29,7 +29,7 @@ const DEFAULT_FILES = GENERATED_LANGUAGES.map(
 const out = Flag.String('out').pipe(
   Flag.optional,
   Flag.withDescription(
-    `Where to write the file. Defaults to ${DEFAULT_FILES} next to the config. A file this command did not write is never replaced`,
+    `Where to write the file. Defaults to ${DEFAULT_FILES} next to the config. A JSON config remembers it as generate.out, so later runs and --check need no flag. A file this command did not write is never replaced`,
   ),
 )
 
@@ -46,6 +46,7 @@ const GenerateOutput = Schema.Struct({
   language: Schema.Literals(GENERATED_LANGUAGES),
   status: Schema.Literals(['written', 'unchanged', 'outdated', 'missing']),
   command: Schema.String,
+  saved: Schema.Boolean,
   events: Schema.Finite,
   meters: Schema.Finite,
   benefits: Schema.Finite,
@@ -73,7 +74,14 @@ const render = (result: GenerateOutput) => {
     ui.success(
       `${result.file} written from ${result.config}: ${summary(result)}`,
     ),
-    `${ui.INDENT}${ui.INDENT}${ui.dim(`Import its names in your code. In CI, ${result.command} --check fails when it is out of date.`)}`,
+    ...[
+      ...(result.saved
+        ? [
+            `${result.config} now remembers where it goes, so the next run needs no flags.`,
+          ]
+        : []),
+      `Import its names in your code. In CI, ${result.command} --check fails when it is out of date.`,
+    ].map((line) => `${ui.INDENT}${ui.INDENT}${ui.dim(line)}`),
     ui.blank,
   ]
 }
@@ -128,7 +136,7 @@ export const generate = Command.make('generate', {
             'polar config generate',
             ...(given === undefined ? [] : [given]),
             ...(requested === undefined ? [] : ['--language', requested]),
-            ...(path === undefined ? [] : ['--out', path]),
+            ...(path === undefined || result.saved ? [] : ['--out', path]),
           ].join(' '),
         } satisfies GenerateOutput
       }),

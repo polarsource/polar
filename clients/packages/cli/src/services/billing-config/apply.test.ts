@@ -139,6 +139,18 @@ describe('apply', () => {
     expect(await api.requests[0]?.json()).toEqual(named)
   })
 
+  test('keeps what the config remembers for generate to itself', async () => {
+    api.routes[`POST ${applyUrl}`] = Response.json({ changes: [] })
+    const remembering = {
+      ...JSON.parse(source),
+      generate: { out: 'src/polar_types.py' },
+    }
+
+    await run(await write(JSON.stringify(remembering)))
+
+    expect(await api.requests[0]?.json()).toEqual(JSON.parse(source))
+  })
+
   test('maps 422 validation errors onto the file', async () => {
     api.routes[`POST ${applyUrl}`] = Response.json(
       {

@@ -1,0 +1,35 @@
+server/scripts/ci_services.py
+  s_f83d2c94945117::t_c9e1c33816669f 26,30
+  s_f83d2c94945117::t_9fe84928f9a749 1-25,27-29,31-38,49-53,68-71,75-88,92-95,105-124,128-144,153-164,168-177
+  s_f83d2c94945117::t_f5f29dcca1509a 39-48,54-67,72-74,89-91,96-104,125-127,145-152,165-167
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_c9e1c33816669f 23-24,39
+  s_f83d2c94945117::t_63446fc829d28b 45,49,60,70-72,488-489,494-496,498-499,504-506,508-509,514-516,520-526
+  s_f83d2c94945117::t_888d80040c3780 137-142,144-151,154-159,163-194,492,500-503,510-513
+  s_f83d2c94945117::t_51c89047c6438d 143,152-153,160-162
+.github/workflows/test_server_shard.yaml
+  s_f83d2c94945117::t_51c89047c6438d 20
+  s_f83d2c94945117::t_63446fc829d28b 1-19,21-41,43-229
+  s_f83d2c94945117::t_c9e1c33816669f 42
+server/tests/scripts/test_ci_services.py
+  s_f83d2c94945117::t_c9e1c33816669f 1-47
+server/scripts/ci_migrate.py
+  s_f83d2c94945117::t_f5f29dcca1509a 11-13
+  s_f83d2c94945117::t_9fe84928f9a749 7,15-16,31,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "499a7ade399a534fec3d24cf5c46bec21318e828",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,34 @@
+server/load_tests/scenarios/__init__.py
+  s_4978af30dbf5bf::t_e696eed4faa9d3 4-7,9
+server/pyproject.toml
+  s_4978af30dbf5bf::t_88694403bfbf43 118
+server/load_tests/locustfile.py
+  s_4978af30dbf5bf::t_e696eed4faa9d3 25-29,31
+server/load_tests/config.py
+  s_4978af30dbf5bf::t_18fd0cd0b00455 6,43-45
+server/load_tests/scenarios/event_ingestion.py
+  s_4978af30dbf5bf::t_88694403bfbf43 114,117
+  s_4978af30dbf5bf::t_e696eed4faa9d3 10,109-113,115-116,118-119
+  s_4978af30dbf5bf::t_18fd0cd0b00455 48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "33b623bb02ff3fa4afaeb4ba3b77ac10447578ab",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_4978af30dbf5bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ae227ec-f76c-4908-9fb9-2e83c35edb26",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

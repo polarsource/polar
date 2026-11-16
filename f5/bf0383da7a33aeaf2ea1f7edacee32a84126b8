@@ -1,0 +1,50 @@
+server/tests/integrations/polar/test_tasks.py
+  s_f83d2c94945117::t_22610cdb191790 437,459
+server/tests/integrations/stripe/test_tasks.py
+  s_f83d2c94945117::t_22610cdb191790 207,218,376,489,559
+server/tests/fixtures/database.py
+  s_f83d2c94945117::t_22610cdb191790 56
+server/tests/declarative_config/test_concurrency.py
+  s_f83d2c94945117::t_22610cdb191790 82-84
+server/tests/product/test_service.py
+  s_f83d2c94945117::t_22610cdb191790 2521-2523,2619-2621
+server/tests/refund/test_tasks.py
+  s_f83d2c94945117::t_22610cdb191790 49
+server/tests/receipt/test_tasks.py
+  s_f83d2c94945117::t_22610cdb191790 35
+server/tests/customer_seat/test_service.py
+  s_f83d2c94945117::t_22610cdb191790 2799
+server/tests/scripts/test_pytest_fixture_loading.py
+  s_f83d2c94945117::t_22610cdb191790 67-72
+server/tests/order/test_tasks.py
+  s_f83d2c94945117::t_22610cdb191790 998
+server/tests/license_key/test_service.py
+  s_f83d2c94945117::t_22610cdb191790 87-89,178
+server/tests/checkout_link/test_repository.py
+  s_f83d2c94945117::t_22610cdb191790 99
+server/tests/user_organization/test_service.py
+  s_f83d2c94945117::t_22610cdb191790 332,408,576
+server/tests/integrations/stripe/test_payment.py
+  s_f83d2c94945117::t_22610cdb191790 73
+server/tests/scheduler/test_cron.py
+  s_f83d2c94945117::t_22610cdb191790 24
+server/tests/fixtures/worker.py
+  s_f83d2c94945117::t_d641ed7abc1d1c 3,50
+  s_f83d2c94945117::t_22610cdb191790 45,49,51-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5bf0383da7a33aeaf2ea1f7edacee32a84126b8",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

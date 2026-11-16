@@ -1,0 +1,28 @@
+.github/workflows/deploy_events.yml
+  s_9e29c5984633d1::t_505fa75309e7cd 24,75,80,94
+  s_9e29c5984633d1::t_5a204152ff834e 3
+  s_9e29c5984633d1::t_14c10b5b75f95c 1-2,4-23,25-74,76-79,81-93,95-108
+events/src/config.rs
+  s_9e29c5984633d1::t_505fa75309e7cd 7-8,65-69,140-158,187-217
+  s_9e29c5984633d1::t_afbd1edef81107 218-219
+events/Cargo.toml
+  s_9e29c5984633d1::t_93a04d1c560bd0 17
+events/src/app.rs
+  s_9e29c5984633d1::t_77d9901a952369 35,84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "977c384beee91bac580bfb406a1ecc6f02970ea1",
+  "prompts": {},
+  "sessions": {
+    "s_9e29c5984633d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f7f56e25-ac15-47de-bd2e-010b8b2f7102",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

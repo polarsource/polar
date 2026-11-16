@@ -1,0 +1,23 @@
+server/tests/fixtures/auth.py
+  s_f83d2c94945117::t_9a41128d6cdd38 18,102,114-118
+server/tests/scripts/test_pytest_fixture_loading.py
+  s_f83d2c94945117::t_c54710c737b49d 4-8,78-88
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_8f5511d477c330 539
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a21462741d50bf3e8290a11307509e144a478aa0",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

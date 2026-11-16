@@ -1,0 +1,29 @@
+server/polar/event/repository.py
+  s_a3c28b0e096a4a::t_1744b2416a86b1 65,67-77,85
+  s_a3c28b0e096a4a::t_8e7cdf699eee25 184-186,194,198-203,206-207,210-211,214,216
+  s_a3c28b0e096a4a::t_0b0ebd1b1d877a 33,37,57-64,66,78-84,86-98,191-193,195-197,204-205,208-209,212-213,215,217-218,236-237
+  s_a3c28b0e096a4a::t_bacf48d90996c2 99
+server/tests/event/test_repository.py
+  s_a3c28b0e096a4a::t_b0b47a295a091d 509-534
+  s_a3c28b0e096a4a::t_f231e85d3a993a 9
+server/pyproject.toml
+  s_a3c28b0e096a4a::t_6247b731dd368f 17
+server/uv.lock
+  s_a3c28b0e096a4a::t_bfc9308a49a046 1600-1663,3011,3109,3949-3953
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a7401d75d4f06d37fe76a0f5b9327a800324225f",
+  "prompts": {},
+  "sessions": {
+    "s_a3c28b0e096a4a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23765db0-5ed9-4d9b-963a-806f353ad9a7",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

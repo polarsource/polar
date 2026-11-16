@@ -1,0 +1,25 @@
+.github/workflows/benchmark.yaml
+  s_470100ccd212ab::t_febdecdad2005d 75-76,167,252
+sdk/generator/python/emitter.py
+  s_470100ccd212ab::t_221e540b2adef7 145,159
+sdk/generator/typescript/template/src/metering/flush.bench.ts
+  s_470100ccd212ab::t_221e540b2adef7 1-41
+sdk/typescript/src/metering/flush.bench.ts
+  s_470100ccd212ab::t_98dbe42c16e359 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "78ff1e591d5e0dedd7befd754f148ecc2937e42e",
+  "prompts": {},
+  "sessions": {
+    "s_470100ccd212ab": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d5af-d280-74d1-9791-00971ab3b4c2",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

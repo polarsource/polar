@@ -1,0 +1,26 @@
+terraform/test/aws.tf
+  s_d518880e409113::t_71e67d0f4e12ef 97,250-254
+  s_d518880e409113::t_1856a389e644ab 255
+terraform/modules/render_service/main.tf
+  s_d518880e409113::t_34fb48ca723d02 458
+terraform/test/render.tf
+  s_d518880e409113::t_71e67d0f4e12ef 113-117
+terraform/modules/render_service/variables.tf
+  s_d518880e409113::t_71e67d0f4e12ef 275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60e1bbf84c91e043ff80248ebde29746b6115077",
+  "prompts": {},
+  "sessions": {
+    "s_d518880e409113": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "90587f0a-8020-4d25-9fa6-30e4fc3f9d52",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

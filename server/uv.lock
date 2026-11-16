@@ -3064,7 +3064,7 @@ requires-dist = [
     { name = "clickhouse-connect", extras = ["async"], specifier = ">=1.7.1" },
     { name = "cramjam", specifier = ">=2.14.0" },
     { name = "cryptography", specifier = ">=48.0.1" },
-    { name = "dnspython", specifier = ">=2.9.0" },
+    { name = "dnspython", specifier = ">=2.9.2" },
     { name = "dramatiq", extras = ["redis"], specifier = ">=2.2.1" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },

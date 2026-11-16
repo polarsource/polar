@@ -56,7 +56,7 @@
     "@nuxt/schema": "^4.5.2",
     "@nuxt/test-utils": "^4.3.2",
     "@types/node": "catalog:",
-    "nuxt": "^4.6.3",
+    "nuxt": "^4.6.4",
     "typescript": "6.0.3",
     "vitest": "catalog:",
     "vue-tsc": "3.3.11",

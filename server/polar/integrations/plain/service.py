@@ -4,7 +4,7 @@ import contextlib
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 
-import httpx
+import httpx2
 import pycountry
 import pycountry.db
 import structlog
@@ -1785,7 +1785,7 @@ class PlainService:
             return None
 
         async with self._get_plain_client() as plain:
-            customer = await plain.customer_by_id(customer_id=customer_id)
+            customer = await plain.customer(customer_id=customer_id)
         if customer is None:
             return None
         return customer.email.email
@@ -1814,13 +1814,13 @@ class PlainService:
 
     @contextlib.asynccontextmanager
     async def _get_plain_client(self) -> AsyncIterator[Plain]:
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             headers={"Authorization": f"Bearer {settings.PLAIN_TOKEN}"},
-            timeout=httpx.Timeout(10.0, connect=5.0),
+            timeout=httpx2.Timeout(10.0, connect=5.0),
             # Set a MockTransport if not enabled
             # Basically, we disable Plain requests.
             transport=(
-                httpx.MockTransport(lambda _: httpx.Response(200))
+                httpx2.MockTransport(lambda _: httpx2.Response(200))
                 if not self.enabled
                 else None
             ),

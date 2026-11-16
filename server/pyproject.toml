@@ -47,7 +47,7 @@ dependencies = [
   "taskipy>=1.10.3",
   "psycopg[binary]>=3.3.6",
   "apscheduler>=3.11.3",
-  "plain-client>=0.0.3",
+  "plain-client>=0.1.0",
   "tagflow>=0.7.0",
   "exponent-server-sdk>=2.1.0",
   "dramatiq[redis]>=2.2.1",
@@ -225,7 +225,7 @@ override-dependencies = [
   "opentelemetry-instrumentation-sqlalchemy @ git+https://github.com/open-telemetry/opentelemetry-python-contrib@5e23f93d7cdd01498d6521aa1ebcc53d7e9c82c0#subdirectory=instrumentation/opentelemetry-instrumentation-sqlalchemy",
 ]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false, polar-sdk = false, certifi = false, brotli = false, pypdf = false }
+exclude-newer-package = { reauth = false, polar-sdk = false, plain-client = false, certifi = false, brotli = false, pypdf = false }
 
 [tool.vercel]
 entrypoint = "polar.app:app"

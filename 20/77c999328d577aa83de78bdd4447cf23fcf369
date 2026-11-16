@@ -1,0 +1,21 @@
+server/tests/fixtures/base.py
+  s_f83d2c94945117::t_6740a7aba7d172 10,46
+server/tests/oauth2/conftest.py
+  s_f83d2c94945117::t_525d6fe8cb8de8 17,93,95,99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2077c999328d577aa83de78bdd4447cf23fcf369",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -25,9 +25,8 @@ generate language:
 generate-cli:
   uv run -m cli generate openapi/2026-10.openapi.json openapi/2027-01.openapi.json ../cli-commands --language cli
 
-generate-all:
-  uv run -m cli generate openapi/* ../python --language python --clear
-  uv run -m cli generate openapi/* ../typescript --language typescript --clear
+[parallel]
+generate-all: (generate "python") (generate "typescript")
 
 docs-openapi:
   uv run -m cli docs-openapi openapi/*

@@ -184,37 +184,55 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         unknown_columns = set().union(*events) - _INSERT_STAGED_EVENTS_COLUMNS
         if unknown_columns:
             raise ValueError(f"Unknown staged event columns: {unknown_columns}")
+        ids: list[UUID] = []
+        ingested_at: list[datetime] = []
+        timestamps: list[datetime] = []
+        names: list[str] = []
+        sources: list[str] = []
+        organization_ids: list[UUID] = []
+        customer_ids: list[UUID | None] = []
+        external_customer_ids: list[str | None] = []
+        member_ids: list[UUID | None] = []
+        external_member_ids: list[str | None] = []
+        event_external_ids: list[str | None] = []
+        pending_parent_external_ids: list[str | None] = []
+        event_type_ids: list[UUID | None] = []
+        user_metadata: list[str] = []
         for event in events:
             if event.get("id") is None:
                 event["id"] = generate_uuid()
+            ids.append(event["id"])
+            ingested_at.append(event.get("ingested_at") or utc_now())
+            timestamps.append(event["timestamp"])
+            names.append(event["name"])
+            sources.append(event["source"])
+            organization_ids.append(event["organization_id"])
+            customer_ids.append(event.get("customer_id"))
+            external_customer_ids.append(event.get("external_customer_id"))
+            member_ids.append(event.get("member_id"))
+            external_member_ids.append(event.get("external_member_id"))
+            event_external_ids.append(event.get("external_id"))
+            pending_parent_external_ids.append(event.get("pending_parent_external_id"))
+            event_type_ids.append(event.get("event_type_id"))
+            user_metadata.append(json_serializer(event["user_metadata"]))
 
         result = await self.session.execute(
             _INSERT_STAGED_EVENTS,
             {
-                "id": [event["id"] for event in events],
-                "ingested_at": [
-                    event.get("ingested_at") or utc_now() for event in events
-                ],
-                "timestamp": [event["timestamp"] for event in events],
-                "name": [event["name"] for event in events],
-                "source": [event["source"] for event in events],
-                "organization_id": [event["organization_id"] for event in events],
-                "customer_id": [event.get("customer_id") for event in events],
-                "external_customer_id": [
-                    event.get("external_customer_id") for event in events
-                ],
-                "member_id": [event.get("member_id") for event in events],
-                "external_member_id": [
-                    event.get("external_member_id") for event in events
-                ],
-                "external_id": [event.get("external_id") for event in events],
-                "pending_parent_external_id": [
-                    event.get("pending_parent_external_id") for event in events
-                ],
-                "event_type_id": [event.get("event_type_id") for event in events],
-                "user_metadata": [
-                    json_serializer(event["user_metadata"]) for event in events
-                ],
+                "id": ids,
+                "ingested_at": ingested_at,
+                "timestamp": timestamps,
+                "name": names,
+                "source": sources,
+                "organization_id": organization_ids,
+                "customer_id": customer_ids,
+                "external_customer_id": external_customer_ids,
+                "member_id": member_ids,
+                "external_member_id": external_member_ids,
+                "external_id": event_external_ids,
+                "pending_parent_external_id": pending_parent_external_ids,
+                "event_type_id": event_type_ids,
+                "user_metadata": user_metadata,
             },
         )
         inserted = result.all()

@@ -1,4 +1,6 @@
 import collections.abc
+import math
+from time import monotonic
 
 import httpx
 
@@ -15,9 +17,10 @@ _DROPPED_HEADERS = {
     _NEXT_HEADER,
 }
 
-# The next ids this instance warmed. Vercel runs one instance per id, so a shard's next instance
-# gets one warm-up per move, however many instances the middleware runs on.
-_warmed: set[str] = set()
+# After a failed warm-up, wait this long before trying again.
+_WARMUP_RETRY_SECONDS = 1.0
+# Next id -> earliest time to warm it again. Infinity once a warm-up has started.
+_warmups: dict[str, float] = {}
 
 
 def _header(headers: collections.abc.Mapping[str, str], name: str) -> str | None:
@@ -51,9 +54,9 @@ async def warm_next_vercel_instance(
     next_id = _header(headers, _NEXT_HEADER)
     if next_id is None or next_id == _header(headers, _AFFINITY_HEADER):
         return
-    if next_id in _warmed:
+    if _warmups.get(next_id, 0.0) > monotonic():
         return
-    _warmed.add(next_id)
+    _warmups[next_id] = math.inf
     # The request's own headers, so the warm-up passes the merchant's middleware as it did.
     warmup = {
         key: value
@@ -72,5 +75,4 @@ async def warm_next_vercel_instance(
     except httpx.HTTPError:
         warm = False
     if not warm:
-        # The next request in the window tries again.
-        _warmed.discard(next_id)
+        _warmups[next_id] = monotonic() + _WARMUP_RETRY_SECONDS

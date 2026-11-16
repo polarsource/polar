@@ -442,6 +442,12 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - name: Inspect Tinybird health timing
+        if: matrix.shard == 'tinybird'
+        run: |
+          docker inspect --format '{{json .Config.Healthcheck}}' '${{ job.services.tinybird.id }}'
+          docker inspect --format '{{range .State.Health.Log}}{{.Start}} {{.End}} {{.ExitCode}}{{println}}{{end}}' '${{ job.services.tinybird.id }}'
+
       - name: 📬 Restore emails renderer
         id: emails
         uses: actions/cache@v6.1.0
@@ -522,6 +528,20 @@ jobs:
           key: test-durations-71b51c6ac8112d76a09528bb4807715321820f29
           restore-keys: test-durations-
 
+      - name: Restore pytest bytecode
+        id: pytest-bytecode
+        if: matrix.shard != 'tinybird'
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: ${{ runner.temp }}/pytest-bytecode
+          key: pytest-bytecode-v1-${{ runner.os }}-${{ hashFiles('server/uv.lock') }}-${{ matrix.shard }}-${{ github.sha }}
+          restore-keys: pytest-bytecode-v1-${{ runner.os }}-${{ hashFiles('server/uv.lock') }}-${{ matrix.shard }}-
+
+      - name: Prepare pytest bytecode
+        if: matrix.shard != 'tinybird'
+        working-directory: ./server
+        run: uv run python -m scripts.pytest_bytecode restore --cache "$RUNNER_TEMP/pytest-bytecode"
+
       - name: 🐍 Run tests (pytest)
         if: matrix.shard != 'tinybird'
         working-directory: ./server
@@ -547,6 +567,18 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 3
+
+      - name: Store pytest bytecode
+        if: matrix.shard != 'tinybird'
+        working-directory: ./server
+        run: uv run python -m scripts.pytest_bytecode store --cache "$RUNNER_TEMP/pytest-bytecode"
+
+      - name: Save pytest bytecode
+        if: matrix.shard != 'tinybird' && steps.pytest-bytecode.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: ${{ runner.temp }}/pytest-bytecode
+          key: pytest-bytecode-v1-${{ runner.os }}-${{ hashFiles('server/uv.lock') }}-${{ matrix.shard }}-${{ github.sha }}
 
       - name: 📊 Upload shard test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'

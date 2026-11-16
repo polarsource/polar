@@ -187,6 +187,7 @@ jobs:
         if: always() && steps.filter.outputs.server == 'true'
         run: |
           mkdir -p "$RUNNER_TEMP/pytest-pool"
+          if [[ -f "$RUNNER_TEMP/tinybird-token" ]]; then stat --format='%y' "$RUNNER_TEMP/tinybird-token" > "$RUNNER_TEMP/pytest-pool/tinybird-ready-time"; fi
           for log in services migrations tinybird-prepare; do
             if [[ -f "$RUNNER_TEMP/$log.log" ]]; then cp "$RUNNER_TEMP/$log.log" "$RUNNER_TEMP/pytest-pool/$log.log"; fi
           done

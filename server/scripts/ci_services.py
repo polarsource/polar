@@ -12,6 +12,8 @@ class Image(TypedDict):
     id: str
     digests: list[str]
     architecture: str
+    container_started_at: str
+    healthcheck: dict[str, object]
 
 
 IMAGES = {
@@ -32,9 +34,36 @@ def docker(*arguments: str) -> str:
 
 
 def start_service(prefix: str, service: str) -> Image:
-    arguments = ["run", "-d", "--name", f"{prefix}-{service}"]
+    arguments = [
+        "run",
+        "-d",
+        "--name",
+        f"{prefix}-{service}",
+        "-e",
+        "GITHUB_ACTIONS=true",
+        "-e",
+        "CI=true",
+        "--health-interval",
+        "10s",
+        "--health-timeout",
+        "5s",
+        "--health-retries",
+        "5",
+        "--health-start-interval",
+        "500ms",
+    ]
     match service:
         case "postgres":
+            arguments.extend(
+                [
+                    "--health-cmd",
+                    "pg_isready",
+                    "--health-start-period",
+                    "10s",
+                    "-e",
+                    "POSTGRES_PORT=5432",
+                ]
+            )
             arguments.extend(
                 [
                     "-p",
@@ -48,8 +77,14 @@ def start_service(prefix: str, service: str) -> Image:
                 ]
             )
         case "redis":
+            arguments.extend(
+                ["--health-cmd", "redis-cli ping", "--health-start-period", "10s"]
+            )
             arguments.extend(["-p", "6379:6379"])
         case "tinybird":
+            arguments.extend(
+                ["--health-cmd", "curl -s http://127.0.0.1:7181/tokens || exit 1"]
+            )
             arguments.extend(
                 [
                     "-p",
@@ -76,6 +111,19 @@ def start_service(prefix: str, service: str) -> Image:
             IMAGES[service],
         )
     )
+    container = json.loads(
+        docker(
+            "container",
+            "inspect",
+            "--format",
+            '{"id":{{json .Image}},"started_at":{{json .State.StartedAt}},"healthcheck":{{json .Config.Healthcheck}}}',
+            f"{prefix}-{service}",
+        )
+    )
+    if container["id"] != image["id"]:
+        raise RuntimeError(f"Running {service} image differs from its recorded digest")
+    image["container_started_at"] = container["started_at"]
+    image["healthcheck"] = container["healthcheck"]
     for digest in image["digests"]:
         print(f"{service} Digest: {digest.split('@', 1)[1]}", flush=True)
     return image

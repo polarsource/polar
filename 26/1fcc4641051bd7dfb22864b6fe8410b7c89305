@@ -1,0 +1,24 @@
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_42a8a52eb7ef48 529-530
+  s_f83d2c94945117::t_56c378a4f47c1f 439,538-539,582
+server/tests/conftest.py
+  s_f83d2c94945117::t_526a37c5dfc631 1,62-69
+server/tests/scripts/test_pytest_fixture_loading.py
+  s_f83d2c94945117::t_58497b3e2e568d 1,14-16,40-47,71-73,79-87,90,92,94-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "261fcc4641051bd7dfb22864b6fe8410b7c89305",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

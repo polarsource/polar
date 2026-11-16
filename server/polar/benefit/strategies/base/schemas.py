@@ -120,9 +120,7 @@ class BenefitGrantManualTimestamps(Schema):
     manually_revoked_at: Annotated[
         datetime | None,
         Version(starting_from=V2027_01),
-        Field(
-            description="When this grant was permanently revoked manually, if applicable."
-        ),
+        Field(description="When this grant was manually revoked, if applicable."),
     ]
 
 

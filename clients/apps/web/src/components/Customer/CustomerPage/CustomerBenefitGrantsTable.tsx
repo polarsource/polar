@@ -1,19 +1,15 @@
 'use client'
 
+import { BenefitGrantAction } from '@/components/Benefit/BenefitGrantAction'
 import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { benefitsDisplayNames } from '@/components/Benefit/utils'
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { toast } from '@/components/Toast/use-toast'
 import { useHasPermission } from '@/hooks/permissions'
 import { useBenefitGrants } from '@/hooks/queries'
-import { useRevokeBenefitGrant } from '@/hooks/queries/benefits'
-import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button, DataTable, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
-import { useState } from 'react'
 import { GrantBenefitSheet } from './GrantBenefitSheet'
 
 interface CustomerBenefitGrantsTableProps {
@@ -29,8 +25,6 @@ export const CustomerBenefitGrantsTable = ({
     organization.id,
     'customers:manage',
   )
-  const [grantToRevoke, setGrantToRevoke] = useState<schemas['BenefitGrant']>()
-  const revoke = useRevokeBenefitGrant()
   const { data: benefitGrants, isLoading } = useBenefitGrants(
     customer.organization_id,
     {
@@ -129,17 +123,9 @@ export const CustomerBenefitGrantsTable = ({
                       </Button>
                     </Link>
                   )}
-                  {canManageCustomers &&
-                    !original.manually_revoked_at &&
-                    !original.is_revoked && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setGrantToRevoke(original)}
-                      >
-                        Revoke
-                      </Button>
-                    )}
+                  {canManageCustomers && (
+                    <BenefitGrantAction grant={original} />
+                  )}
                 </Box>
               )
             },
@@ -148,30 +134,6 @@ export const CustomerBenefitGrantsTable = ({
         isLoading={isLoading}
         className="text-sm"
       />
-      {grantToRevoke && (
-        <ConfirmModal
-          isShown
-          hide={() => setGrantToRevoke(undefined)}
-          title={`Revoke ${grantToRevoke.benefit.description}?`}
-          description={`This permanently revokes this grant${grantToRevoke.member?.email ? ` for ${grantToRevoke.member.email}` : ''}. Other grants for the same benefit can still provide access.`}
-          destructive
-          destructiveText="Revoke benefit"
-          onConfirm={async () => {
-            const result = await revoke
-              .mutateAsync(grantToRevoke.id)
-              .catch(() => null)
-            if (!result) return
-            if (result.error) {
-              toast({
-                title: 'Benefit grant not revoked',
-                description: extractApiErrorMessage(result.error),
-              })
-              return
-            }
-            toast({ title: 'Benefit grant revoked' })
-          }}
-        />
-      )}
     </Box>
   )
 }

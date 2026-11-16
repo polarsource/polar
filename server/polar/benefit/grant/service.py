@@ -50,7 +50,7 @@ from ..strategies import (
     BenefitProperties,
 )
 from .repository import BenefitGrantRepository
-from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal
+from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal, BenefitGrantUpdate
 from .scope import scope_to_args
 from .sorting import BenefitGrantSortProperty
 
@@ -188,16 +188,7 @@ class BenefitGrantService:
         grant_id: UUID,
     ) -> BenefitGrant:
         repository = BenefitGrantRepository.from_session(session)
-        org_ids = await get_accessible_org_ids(session, auth_subject)
-        grant = await repository.get_readable_for_update(grant_id, org_ids)
-        if grant is None:
-            raise ResourceNotFound()
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            grant.benefit.organization_id,
-            OrganizationPermission.customers_manage,
-        )
+        grant = await self._get_grant_for_update(session, auth_subject, grant_id)
         if grant.manually_revoked_at is None:
             grant = await repository.update(
                 grant, update_dict={"manually_revoked_at": utc_now()}, flush=True
@@ -205,6 +196,43 @@ class BenefitGrantService:
         if not grant.is_revoked:
             enqueue_job(
                 "benefit.revoke",
+                customer_id=grant.customer_id,
+                benefit_id=grant.benefit_id,
+                benefit_grant_id=grant.id,
+            )
+        return grant
+
+    async def update(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        grant_id: UUID,
+        update: BenefitGrantUpdate,
+    ) -> BenefitGrant:
+        grant = await self._get_grant_for_update(session, auth_subject, grant_id)
+        if (
+            "manually_revoked_at" not in update.model_fields_set
+            or grant.manually_revoked_at is None
+        ):
+            return grant
+
+        repository = BenefitGrantRepository.from_session(session)
+        try:
+            async with session.begin_nested():
+                await repository.update(
+                    grant, update_dict={"manually_revoked_at": None}, flush=True
+                )
+        except IntegrityError as e:
+            if "ix_benefit_grants_active_manual_unique" in str(e):
+                raise BenefitGrantAlreadyExists() from e
+            raise
+
+        if grant.is_granted:
+            return grant
+
+        if not grant.scope or await repository.is_scope_active(grant):
+            enqueue_job(
+                "benefit.grant",
                 customer_id=grant.customer_id,
                 benefit_id=grant.benefit_id,
                 benefit_grant_id=grant.id,
@@ -799,6 +827,25 @@ class BenefitGrantService:
             grant,
             event_type=WebhookEventType.benefit_grant_revoked,
             previous_grant_properties=previous_properties,
+        )
+        return grant
+
+    async def _get_grant_for_update(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        grant_id: UUID,
+    ) -> BenefitGrant:
+        repository = BenefitGrantRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        grant = await repository.get_readable_for_update(grant_id, org_ids)
+        if grant is None:
+            raise ResourceNotFound()
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            grant.benefit.organization_id,
+            OrganizationPermission.customers_manage,
         )
         return grant
 

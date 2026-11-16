@@ -300,3 +300,14 @@ export const useRevokeBenefitGrant = () =>
     onSuccess: ({ data }) =>
       data && invalidateBenefitGrantQueries(data.benefit_id),
   })
+
+export const useUnrevokeBenefitGrant = () =>
+  useMutation({
+    mutationFn: (id: string) =>
+      api.PATCH('/v1/benefit-grants/{id}', {
+        params: { path: { id } },
+        body: { manually_revoked_at: null },
+      }),
+    onSuccess: ({ data }) =>
+      data && invalidateBenefitGrantQueries(data.benefit_id),
+  })

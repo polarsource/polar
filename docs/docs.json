@@ -1356,6 +1356,7 @@
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
                       "POST /v1/benefit-grants/",
+                      "PATCH /v1/benefit-grants/{id}",
                       "DELETE /v1/benefit-grants/{id}",
                       "PATCH /v1/benefits/{id}",
                       "DELETE /v1/benefits/{id}",

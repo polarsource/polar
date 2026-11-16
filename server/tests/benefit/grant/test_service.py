@@ -9,7 +9,11 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, is_organization
 from polar.benefit.grant.repository import BenefitGrantRepository
-from polar.benefit.grant.schemas import BenefitGrantCreate, BenefitGrantCreateExternal
+from polar.benefit.grant.schemas import (
+    BenefitGrantCreate,
+    BenefitGrantCreateExternal,
+    BenefitGrantUpdate,
+)
 from polar.benefit.grant.service import BenefitGrantAlreadyExists
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
@@ -34,6 +38,7 @@ from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.catalog import Catalog, CatalogStatus
 from polar.models.member import MemberRole
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -452,6 +457,204 @@ class TestRevoke:
                 await benefit_grant_service.revoke(
                     session, AuthSubject(organization, set(), None), grant_id
                 )
+
+
+@pytest.mark.anyio
+class TestUpdate:
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("source", "revocation_completed"),
+        [("manual", False), ("manual", True), ("subscription", True), ("order", True)],
+    )
+    async def test_restore_grant(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        member_owner: Member,
+        benefit_organization: Benefit,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        revocation_completed: bool,
+        source: str,
+    ) -> None:
+        enqueue_job = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        grant = BenefitGrant(
+            customer=customer,
+            benefit=benefit_organization,
+            member=member_owner,
+        )
+        if source == "subscription":
+            grant.subscription = await create_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                status=SubscriptionStatus.active,
+            )
+        elif source == "order":
+            grant.order = await create_order(
+                save_fixture, product=product, customer=customer
+            )
+        else:
+            grant.manually_granted_at = utc_now()
+        if source != "manual":
+            await set_product_benefits(
+                save_fixture, product=product, benefits=[benefit_organization]
+            )
+        if revocation_completed:
+            grant.set_revoked()
+        else:
+            grant.set_granted()
+        grant.manually_revoked_at = utc_now()
+        await save_fixture(grant)
+
+        update = BenefitGrantUpdate(manually_revoked_at=None)
+        updated = await benefit_grant_service.update(
+            session, auth_subject, grant.id, update
+        )
+        assert updated.manually_revoked_at is None
+        await benefit_grant_service.update(session, auth_subject, grant.id, update)
+
+        if not revocation_completed:
+            enqueue_job.assert_not_called()
+        else:
+            enqueue_job.assert_called_once_with(
+                "benefit.grant",
+                customer_id=grant.customer_id,
+                benefit_id=grant.benefit_id,
+                benefit_grant_id=grant.id,
+            )
+            await benefit_grant(
+                grant.customer_id, grant.benefit_id, benefit_grant_id=grant.id
+            )
+
+        await benefit_revoke(
+            grant.customer_id, grant.benefit_id, benefit_grant_id=grant.id
+        )
+        restored = await session.get_one(BenefitGrant, grant.id)
+        assert restored.is_granted_and_unsuppressed
+        assert restored.revoked_at is None
+
+    @pytest.mark.auth
+    async def test_restore_conflicts_with_replacement_manual_grant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        benefit_organization: Benefit,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        old_grant = BenefitGrant(
+            customer=customer,
+            benefit=benefit_organization,
+            manually_granted_at=utc_now(),
+            manually_revoked_at=utc_now(),
+        )
+        old_grant.set_revoked()
+        await save_fixture(old_grant)
+        await save_fixture(
+            BenefitGrant(
+                customer=customer,
+                benefit=benefit_organization,
+                manually_granted_at=utc_now(),
+            )
+        )
+
+        with pytest.raises(BenefitGrantAlreadyExists):
+            await benefit_grant_service.update(
+                session,
+                auth_subject,
+                old_grant.id,
+                BenefitGrantUpdate(manually_revoked_at=None),
+            )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        "canceled", [True, False], ids=["canceled", "benefit-removed"]
+    )
+    async def test_clear_manual_revocation_without_purchase_access(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        canceled: bool,
+    ) -> None:
+        enqueue_job = mocker.patch("polar.benefit.grant.service.enqueue_job")
+        if canceled:
+            await set_product_benefits(
+                save_fixture,
+                product=subscription.product,
+                benefits=[benefit_organization],
+            )
+        subscription.status = (
+            SubscriptionStatus.canceled if canceled else SubscriptionStatus.active
+        )
+        await save_fixture(subscription)
+        grant = await create_benefit_grant(
+            save_fixture,
+            subscription.customer,
+            benefit_organization,
+            granted=False,
+            subscription=subscription,
+        )
+        grant.manually_revoked_at = utc_now()
+        await save_fixture(grant)
+
+        updated = await benefit_grant_service.update(
+            session,
+            auth_subject,
+            grant.id,
+            BenefitGrantUpdate(manually_revoked_at=None),
+        )
+        assert updated.manually_revoked_at is None
+        assert updated.is_revoked
+        enqueue_job.assert_not_called()
+
+    async def test_queued_regrant_skips_subscription_canceled_after_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        await set_product_benefits(
+            save_fixture, product=subscription.product, benefits=[benefit_organization]
+        )
+        subscription.status = SubscriptionStatus.active
+        grant = await create_benefit_grant(
+            save_fixture,
+            subscription.customer,
+            benefit_organization,
+            granted=False,
+            subscription=subscription,
+        )
+        grant.manually_revoked_at = utc_now()
+        await save_fixture(grant)
+
+        await benefit_grant_service.update(
+            session,
+            AuthSubject(organization, set(), None),
+            grant.id,
+            BenefitGrantUpdate(manually_revoked_at=None),
+        )
+        subscription.status = SubscriptionStatus.canceled
+        await save_fixture(subscription)
+
+        await benefit_grant(
+            grant.customer_id, grant.benefit_id, benefit_grant_id=grant.id
+        )
+
+        assert grant.is_revoked
+        benefit_strategy_mock.grant.assert_not_awaited()
 
 
 @pytest.mark.anyio

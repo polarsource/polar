@@ -4534,18 +4534,29 @@ export interface paths {
     post?: never
     /**
      * Revoke Benefit Grant
-     * @description Permanently revoke a benefit grant, including grants from purchases.
+     * @description Manually revoke a benefit grant, including grants from purchases.
      *
      *     Revocation is asynchronous. Once manually revoked, this grant cannot be
      *     reactivated by renewal or fulfillment retries. Other grants may still
-     *     provide access to the benefit. Repeating this request is safe.
+     *     provide access to the benefit. To undo a manual revocation, update the grant.
+     *     Repeating this request is safe.
      *
      *     **Scopes**: `benefits:write`
      */
     delete: operations['benefit-grants:revoke']
     options?: never
     head?: never
-    patch?: never
+    /**
+     * Update Benefit Grant
+     * @description Undo a manual revocation by setting `manually_revoked_at` to `None`.
+     *
+     *     The grant keeps its original recipient and purchase, if any.
+     *     Fulfillment is asynchronous. Repeating this request is safe.
+     *     A purchase-scoped benefit is re-granted if the purchase still provides access.
+     *
+     *     **Scopes**: `benefits:write`
+     */
+    patch: operations['benefit-grants:update']
     trace?: never
   }
   '/v1/checkout-links/': {
@@ -11765,7 +11776,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -11924,7 +11935,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12022,7 +12033,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12114,7 +12125,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12212,7 +12223,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12315,7 +12326,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12411,7 +12422,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12517,7 +12528,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12619,7 +12630,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -12708,6 +12719,15 @@ export interface components {
       | '-granted_at'
       | 'revoked_at'
       | '-revoked_at'
+    /** BenefitGrantUpdate */
+    BenefitGrantUpdate: {
+      /**
+       * Manually Revoked At
+       * @description Set to None to undo a manual revocation.
+       * @example null
+       */
+      manually_revoked_at?: null
+    }
     BenefitGrantWebhook:
       | components['schemas']['BenefitGrantDiscordWebhook']
       | components['schemas']['BenefitGrantCustomWebhook']
@@ -19289,7 +19309,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19356,7 +19376,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19430,7 +19450,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19497,7 +19517,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19564,7 +19584,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19638,7 +19658,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19718,7 +19738,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -19785,7 +19805,7 @@ export interface components {
       manually_granted_at: string | null
       /**
        * Manually Revoked At
-       * @description When this grant was permanently revoked manually, if applicable.
+       * @description When this grant was manually revoked, if applicable.
        */
       manually_revoked_at: string | null
       /**
@@ -58877,6 +58897,68 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'benefit-grants:update': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['BenefitGrantUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BenefitGrant']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Conflict */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BenefitGrantAlreadyExists']
         }
       }
       /** @description Validation Error */

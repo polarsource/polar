@@ -5,6 +5,14 @@ from polar.kit.schemas import BENEFIT_ID_EXAMPLE, CUSTOMER_ID_EXAMPLE, Schema
 from polar.organization.schemas import OrganizationID
 
 
+class BenefitGrantUpdate(Schema):
+    manually_revoked_at: None = Field(
+        default=None,
+        description="Set to None to undo a manual revocation.",
+        examples=[None],
+    )
+
+
 class BenefitGrantCreate(Schema):
     """Manually grant a benefit using Polar IDs."""
 

@@ -382,3 +382,41 @@ class TestRevoke:
 
         assert response.status_code == 200
         assert response.json()["manually_revoked_at"] is not None
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestUpdate:
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("payload", "status_code", "cleared"),
+        [
+            ({"manually_revoked_at": None}, 200, True),
+            ({"unknown_field": True}, 200, False),
+            ({"manually_revoked_at": "2027-01-01T00:00:00Z"}, 422, False),
+        ],
+        ids=["null", "unknown-field", "timestamp"],
+    )
+    async def test_patch(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        benefit_organization: Benefit,
+        user_organization: UserOrganization,
+        payload: dict[str, str | bool | None],
+        status_code: int,
+        cleared: bool,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture, customer, benefit_organization, granted=True
+        )
+        grant.manually_revoked_at = utc_now()
+        await save_fixture(grant)
+
+        response = await client.patch(f"/v1/benefit-grants/{grant.id}", json=payload)
+
+        assert response.status_code == status_code
+        if status_code == 200:
+            assert response.json()["id"] == str(grant.id)
+            assert (response.json()["manually_revoked_at"] is None) == cleared

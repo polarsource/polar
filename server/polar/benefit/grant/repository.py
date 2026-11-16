@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Unpack
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, SQLColumnExpression, exists, func, or_, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -18,12 +18,16 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    CustomerSeat,
     Member,
+    Order,
     Product,
     ProductBenefit,
+    Subscription,
 )
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
+from polar.models.customer_seat import SeatStatus
 from polar.order.repository import order_benefits_revoked_clause
 
 from .sorting import BenefitGrantSortProperty
@@ -94,6 +98,42 @@ class BenefitGrantRepository(
             .execution_options(populate_existing=True)
         )
         return await self.get_one_or_none(statement)
+
+    async def is_scope_active(self, grant: BenefitGrant) -> bool:
+        purchase: type[Subscription | Order]
+        eligible_purchase: SQLColumnExpression[bool]
+        if grant.subscription_id is not None:
+            purchase = Subscription
+            purchase_id = grant.subscription_id
+            eligible_purchase = Subscription.active
+            seat_scope = CustomerSeat.subscription_id == purchase_id
+        elif grant.order_id is not None:
+            purchase = Order
+            purchase_id = grant.order_id
+            eligible_purchase = Order.paid & ~order_benefits_revoked_clause(purchase_id)
+            seat_scope = CustomerSeat.order_id == purchase_id
+        else:
+            return False
+
+        claimed_seat = exists().where(
+            seat_scope,
+            CustomerSeat.customer_id == grant.customer_id,
+            CustomerSeat.member_id == grant.member_id,
+            CustomerSeat.status == SeatStatus.claimed,
+            ~CustomerSeat.is_deleted,
+        )
+        statement = (
+            select(purchase.id)
+            .join(ProductBenefit, ProductBenefit.product_id == purchase.product_id)
+            .where(
+                purchase.id == purchase_id,
+                ~purchase.is_deleted,
+                eligible_purchase,
+                ProductBenefit.benefit_id == grant.benefit_id,
+                or_(purchase.seats.is_(None), claimed_seat),
+            )
+        )
+        return (await self.session.execute(select(statement.exists()))).scalar_one()
 
     async def list_granted_by_scope(
         self, **scope: Unpack[BenefitGrantScope]

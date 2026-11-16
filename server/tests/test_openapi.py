@@ -142,6 +142,7 @@ DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
 
 NON_DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
     "benefit-grants:create": V2027_01,
+    "benefit-grants:update": V2027_01,
 }
 
 

@@ -1,0 +1,19 @@
+server/polar/backoffice/feedbacks/endpoints.py
+  s_28f9895b9975a7::t_b178085f04ffd6 622,630,636,643,648
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "895829b75cbc103591686f0eab3f1723717e15a4",
+  "prompts": {},
+  "sessions": {
+    "s_28f9895b9975a7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e4ae-ecb2-7552-8f4e-3e92bd595774",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -59,6 +59,14 @@ async def calculate_tax(
     tax_calculation_processor_id: str | None = None
 
     if (
+        not allow_silent_failure
+        and taxable_amount != 0
+        and product.is_tax_applicable
+        and billing_address is None
+    ):
+        raise TaxCalculationLogicalError("Customer has no billing address.")
+
+    if (
         taxable_amount != 0
         and product.is_tax_applicable
         and billing_address is not None

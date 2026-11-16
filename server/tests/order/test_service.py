@@ -7310,6 +7310,17 @@ async def off_session_organization(
 
 @pytest.mark.anyio
 class TestCreateDraftOrder:
+    @pytest.fixture
+    async def customer(
+        self,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        calculate_tax_mock: AsyncMock,
+    ) -> Customer:
+        customer.billing_address = Address(country=CountryAlpha2("US"))
+        await save_fixture(customer)
+        return customer
+
     async def test_feature_flag_disabled(
         self,
         session: AsyncSession,
@@ -7733,6 +7744,27 @@ class TestCreateDraftOrder:
             await order_service.create_draft_order(
                 session, off_session_organization, payload
             )
+
+    async def test_missing_billing_address_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+        tax_service_mock: MagicMock,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=off_session_organization
+        )
+        payload = OrderCreate(
+            customer_id=customer.id,
+            product_id=product_one_time.id,
+        )
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+        tax_service_mock.calculate.assert_not_called()
 
     async def test_unit_based_product_requires_units(
         self,

@@ -8,6 +8,8 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.enums import TaxBehavior, TaxProcessor
+from polar.kit.address import Address, CountryAlpha2
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
@@ -859,6 +861,29 @@ async def off_session_organization(
 
 @pytest.mark.anyio
 class TestCreateOrder:
+    @pytest.fixture
+    async def customer(
+        self, mocker: MockerFixture, save_fixture: SaveFixture, customer: Customer
+    ) -> Customer:
+        mocker.patch(
+            "polar.order.amounts.tax_calculation_service.calculate",
+            new=AsyncMock(
+                return_value=(
+                    {
+                        "processor_id": "TAX_PROCESSOR_ID",
+                        "amount": 0,
+                        "currency": "usd",
+                        "tax_behavior": TaxBehavior.exclusive,
+                        "tax_breakdown": [],
+                    },
+                    TaxProcessor.numeral,
+                )
+            ),
+        )
+        customer.billing_address = Address(country=CountryAlpha2("US"))
+        await save_fixture(customer)
+        return customer
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/orders/", json={})
         assert response.status_code == 401

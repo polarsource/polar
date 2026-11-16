@@ -3,6 +3,7 @@ import collections.abc
 import json
 import pathlib
 import subprocess
+import typing
 
 import httpx
 import pytest
@@ -11,7 +12,11 @@ from pytest_codspeed import BenchmarkFixture
 
 from polar.base import parse_response_json
 from polar.v2027_01 import PolarAsync
-from polar.v2027_01.outputs import CustomerIndividual, ListResourceCustomer
+from polar.v2027_01.outputs import (
+    CustomerIndividual,
+    CustomerTeam,
+    ListResourceCustomer,
+)
 
 pytestmark = pytest.mark.benchmark
 
@@ -19,10 +24,16 @@ DATA_PATH = pathlib.Path(__file__).with_name("customers.json")
 DATA = json.loads(DATA_PATH.read_bytes())
 
 
-def customer_page(count: int) -> bytes:
+def customer_page(
+    count: int,
+    customer_type: typing.Literal["individual", "team", "mixed"] = "individual",
+) -> bytes:
     items = [
         {
             **DATA["customer"],
+            "type": ("individual" if index % 2 else "team")
+            if customer_type == "mixed"
+            else customer_type,
             "id": f"00000000-0000-4000-8000-{index:012d}",
             "external_id": f"customer-{index}",
             "email": f"customer-{index}@example.com",
@@ -69,14 +80,28 @@ async def test_concurrent_customer_requests(
         await to_thread.run_sync(benchmark, from_thread.run, batch)
 
 
-def test_decode_customer_page(benchmark: BenchmarkFixture) -> None:
-    response = httpx.Response(200, content=customer_page(DATA["page_size"]))
+@pytest.mark.parametrize("customer_type", ["individual", "team", "mixed"])
+def test_decode_customer_page(
+    benchmark: BenchmarkFixture,
+    customer_type: typing.Literal["individual", "team", "mixed"],
+) -> None:
+    response = httpx.Response(
+        200, content=customer_page(DATA["page_size"], customer_type)
+    )
 
     def decode() -> ListResourceCustomer:
         return parse_response_json(response, ListResourceCustomer)
 
     page = decode()
     assert len(page.items) == DATA["page_size"]
-    assert isinstance(page.items[-1], CustomerIndividual)
+    for index, item in enumerate(page.items, start=1):
+        expected_type = (
+            ("individual" if index % 2 else "team")
+            if customer_type == "mixed"
+            else customer_type
+        )
+        assert isinstance(
+            item, CustomerIndividual if expected_type == "individual" else CustomerTeam
+        )
     assert page.items[-1].external_id == f"customer-{DATA['page_size']}"
     benchmark(decode)

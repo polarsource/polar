@@ -130,7 +130,7 @@ class TestAnonymizeExpired:
         checkout.customer_ip_address = "1.2.3.4"
         checkout.customer_signals = {
             "ip_address": "1.2.3.4",
-            "ip_address_country": "FR",
+            "ip_country": "FR",
         }
         checkout.customer_billing_name = "John Doe"
         checkout.customer_tax_id = ("FR61954506077", TaxIDFormat.eu_vat)

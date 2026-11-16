@@ -1461,7 +1461,7 @@ class TestClientConfirm:
         assert checkout is not None
         assert checkout.customer_signals == {
             "ip_address": "1.2.3.4",
-            "ip_address_country": None,
+            "ip_country": None,
         }
 
     async def test_confirm_with_discount_code(

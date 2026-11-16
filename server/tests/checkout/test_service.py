@@ -5507,13 +5507,13 @@ class TestConfirm:
             pytest.param(
                 "1.2.3.4",
                 "FR",
-                {"ip_address": "1.2.3.4", "ip_address_country": "FR"},
+                {"ip_address": "1.2.3.4", "ip_country": "FR"},
                 id="resolved country",
             ),
             pytest.param(
                 "1.2.3.4",
                 "",
-                {"ip_address": "1.2.3.4", "ip_address_country": None},
+                {"ip_address": "1.2.3.4", "ip_country": None},
                 id="unresolved country",
             ),
             pytest.param(None, "FR", None, id="no ip address"),

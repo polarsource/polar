@@ -1108,9 +1108,7 @@ class CheckoutService:
             checkout.customer_signals = {
                 **(checkout.customer_signals or {}),
                 "ip_address": ip_address,
-                "ip_address_country": self._get_ip_country(
-                    ip_geolocation_client, ip_address
-                ),
+                "ip_country": self._get_ip_country(ip_geolocation_client, ip_address),
             }
         # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
         if checkout.discount is not None:

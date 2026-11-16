@@ -1,0 +1,21 @@
+.github/workflows/test_server.yaml
+  s_94f2b33009c1e9::t_0991f733498e29 23-24
+server/tests/scripts/test_tinybird_deployment.py
+  s_94f2b33009c1e9::t_137570ce00b14f 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f90aa0150cb86f3186239cf71bd0a09ba2e89830",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

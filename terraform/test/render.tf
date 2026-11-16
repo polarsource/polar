@@ -118,7 +118,7 @@ module "test" {
 
   memory_profile_config = {
     s3_bucket_name = local.diagnostics_bucket_name
-    api_only       = true
+    services       = ["api-events-test"]
   }
 
   depends_on = [render_registry_credential.ghcr]

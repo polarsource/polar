@@ -357,6 +357,8 @@ locals {
   worker_ids      = [for w in render_web_service.worker : w.id]
   cron_job_ids    = [for c in render_cron_job.cron : c.id]
   all_service_ids = concat(local.api_ids, local.worker_ids, local.cron_job_ids, render_private_service.backoffice[*].id)
+
+  web_service_ids_by_name = { for s in concat([render_web_service.api], values(render_web_service.api_copy), values(render_web_service.worker)) : s.name => s.id }
 }
 
 # Env group links
@@ -455,7 +457,11 @@ resource "render_env_group_link" "polar_self" {
 resource "render_env_group_link" "memory_profile" {
   count        = var.memory_profile_config != null ? 1 : 0
   env_group_id = render_env_group.memory_profile[0].id
-  service_ids  = var.memory_profile_config.api_only ? local.api_ids : concat(local.api_ids, local.worker_ids, render_private_service.backoffice[*].id)
+  service_ids = (
+    var.memory_profile_config.services != null
+    ? [for name in var.memory_profile_config.services : local.web_service_ids_by_name[name]]
+    : concat(local.api_ids, local.worker_ids, render_private_service.backoffice[*].id)
+  )
 }
 
 resource "cloudflare_dns_record" "resend_dkim" {

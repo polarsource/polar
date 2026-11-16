@@ -8,11 +8,11 @@ import {
   groupEventsByDay,
 } from '@/components/Events/eventTableUtils'
 import { useEventHierarchyStats } from '@/hooks/queries/events'
-import { fromISODate } from '@/utils/metrics'
+import { fromISODate, parseAsISODateString } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import { endOfDay, subMonths } from 'date-fns'
-import { parseAsString, useQueryState } from 'nuqs'
+import { useQueryState } from 'nuqs'
 import { useEffect, useMemo, useRef } from 'react'
 import { getDefaultEndDate, getDefaultStartDate } from '../utils'
 
@@ -33,11 +33,11 @@ export default function CostsEventsTable({
 }) {
   const [startDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(getDefaultStartDate()),
+    parseAsISODateString.withDefault(getDefaultStartDate()),
   )
   const [endDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(getDefaultEndDate()),
+    parseAsISODateString.withDefault(getDefaultEndDate()),
   )
 
   const [startDate, endDate] = useMemo(() => {

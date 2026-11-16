@@ -5,7 +5,12 @@ import structlog
 
 from polar.config import settings
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
-from polar.kit.address import Address
+from polar.kit.address import (
+    CITY_REQUIRED_COUNTRIES,
+    POSTAL_CODE_REQUIRED_COUNTRIES,
+    STATE_REQUIRED_COUNTRIES,
+    Address,
+)
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.observability import TAX_CALCULATION_TOTAL
@@ -114,10 +119,15 @@ class TaxCalculationService:
                 determine the tax jurisdiction.
             TaxCalculationTechnicalError: If all tax processors fail to calculate tax.
         """
-        if address.country in {"US", "CA"} and not address.has_state():
+        if address.country in STATE_REQUIRED_COUNTRIES and not address.has_state():
             raise InvalidAddressError("State is required.")
-        if address.country == "US" and address.postal_code is None:
+        if (
+            address.country in POSTAL_CODE_REQUIRED_COUNTRIES
+            and address.postal_code is None
+        ):
             raise InvalidAddressError("Postal code is required.")
+        if address.country in CITY_REQUIRED_COUNTRIES and address.city is None:
+            raise InvalidAddressError("City is required.")
 
         for processor in settings.TAX_PROCESSORS:
             log.debug("Attempting tax calculation with processor", processor=processor)

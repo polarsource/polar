@@ -9,6 +9,7 @@ import CountryPicker from './ui/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
 } from './ui/CountryStatePicker'
+import { usesStateLabel } from '@polar-sh/ui/lib/states'
 import { Input } from './ui/Input'
 import { Checkbox } from './ui/Checkbox'
 import {
@@ -498,7 +499,16 @@ const BaseCheckoutForm = ({
                       isDisplayedField(
                         checkout.billing_address_fields.city,
                       )) && (
-                      <div className="grid grid-cols-2 gap-x-2">
+                      <div
+                        className={
+                          isDisplayedField(
+                            checkout.billing_address_fields.postal_code,
+                          ) &&
+                          isDisplayedField(checkout.billing_address_fields.city)
+                            ? 'grid grid-cols-2 gap-x-2'
+                            : 'grid grid-cols-1'
+                        }
+                      >
                         {isDisplayedField(
                           checkout.billing_address_fields.postal_code,
                         ) && (
@@ -587,7 +597,7 @@ const BaseCheckoutForm = ({
                                 value={field.value || ''}
                                 onChange={field.onChange}
                                 placeholder={
-                                  country === 'US'
+                                  usesStateLabel(country)
                                     ? t('checkout.form.billingAddress.state')
                                     : t('checkout.form.billingAddress.province')
                                 }

@@ -12,7 +12,11 @@ import {
   useEventHierarchyStats,
   useInfiniteEvents,
 } from '@/hooks/queries/events'
-import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
+import {
+  fromISODate,
+  getTimestampFormatter,
+  parseAsISODateString,
+} from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button, Grid } from '@polar-sh/orbit'
@@ -44,11 +48,11 @@ export default function SpanDetailPage({
 }: SpanDetailPageProps) {
   const [startDateISOString] = useQueryState(
     'startDate',
-    parseAsString.withDefault(getDefaultStartDate()),
+    parseAsISODateString.withDefault(getDefaultStartDate()),
   )
   const [endDateISOString] = useQueryState(
     'endDate',
-    parseAsString.withDefault(getDefaultEndDate()),
+    parseAsISODateString.withDefault(getDefaultEndDate()),
   )
 
   const [startDate, endDate] = useMemo(() => {

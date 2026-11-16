@@ -60,6 +60,7 @@ const run = async (result: PlanResult, args: string[] = []) => {
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
+          generate: () => Effect.die('unused'),
           load: () => Effect.succeed(config),
           plan: () => Effect.succeed(result),
           apply: () => Effect.die('unused'),

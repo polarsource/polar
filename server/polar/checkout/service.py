@@ -1100,8 +1100,18 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
+        ip_address: str | None = None,
     ) -> Checkout:
         checkout = await self._update_checkout(session, checkout, checkout_confirm)
+        if ip_address is not None:
+            checkout.customer_signals = {
+                **(checkout.customer_signals or {}),
+                "ip_address": ip_address,
+                "ip_address_country": self._get_ip_country(
+                    ip_geolocation_client, ip_address
+                ),
+            }
         # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
         if checkout.discount is not None:
             try:

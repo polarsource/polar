@@ -11,6 +11,7 @@ from polar.authz.service import assert_resource_permission
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import (
     SetSchemaReference,
@@ -361,9 +362,11 @@ async def client_update_v2027_01(
     },
 )
 async def client_confirm(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_confirm: legacy_schemas.CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -376,7 +379,12 @@ async def client_confirm(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session,
+        auth_subject,
+        checkout,
+        checkout_confirm,
+        ip_geolocation_client,
+        get_ip_address(request),
     )
 
 
@@ -396,9 +404,11 @@ async def client_confirm(
 )
 @version(starting_from=V2027_01)
 async def client_confirm_v2027_01(
+    request: Request,
     client_secret: CheckoutClientSecret,
     checkout_confirm: CheckoutConfirm,
     auth_subject: auth.CheckoutWeb,
+    ip_geolocation_client: ip_geolocation.IPGeolocationClient,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """
@@ -411,7 +421,12 @@ async def client_confirm_v2027_01(
     )
 
     return await checkout_service.confirm(
-        session, auth_subject, checkout, checkout_confirm
+        session,
+        auth_subject,
+        checkout,
+        checkout_confirm,
+        ip_geolocation_client,
+        get_ip_address(request),
     )
 
 

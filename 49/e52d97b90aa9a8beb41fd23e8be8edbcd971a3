@@ -1,0 +1,25 @@
+server/tests/scripts/test_generate_openapi.py
+  s_07a305db2c00ce::t_3252ba7fae049b 1-9
+server/scripts/generate_openapi.py
+  s_07a305db2c00ce::t_043895afd44f1c 5,20-37,50-53,61-66,75
+sdk/generator/generator/openapi.py
+  s_07a305db2c00ce::t_de1d9f4ea0b446 35-36
+sdk/generator/tests/test_openapi.py
+  s_07a305db2c00ce::t_de1d9f4ea0b446 16-21,30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "49e52d97b90aa9a8beb41fd23e8be8edbcd971a3",
+  "prompts": {},
+  "sessions": {
+    "s_07a305db2c00ce": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "283b1a25-def5-4145-92e8-8e6831e9a217",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

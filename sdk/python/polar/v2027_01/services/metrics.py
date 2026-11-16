@@ -64,7 +64,7 @@ class MetricsSync(SyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -131,7 +131,7 @@ class MetricsSync(SyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -178,7 +178,7 @@ class MetricsSync(SyncServiceBase):
         **Scopes**: `metrics:read`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -212,7 +212,7 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -251,7 +251,7 @@ class MetricsSync(SyncServiceBase):
         **Scopes**: `metrics:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -291,7 +291,7 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -331,7 +331,7 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -372,7 +372,7 @@ class MetricsSync(SyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -436,7 +436,7 @@ class MetricsAsync(AsyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to focus on. When provided, only the queries needed for these metrics will be executed, improving performance. If not provided, all metrics are returned.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -503,7 +503,7 @@ class MetricsAsync(AsyncServiceBase):
             billing_type: Filter by billing type. `recurring` will filter data corresponding to subscriptions creations or renewals. `one_time` will filter data corresponding to one-time purchases.
             customer_id: Filter by customer ID.
             metrics: List of metric slugs to include in the export. If not provided, all metrics are exported.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -550,7 +550,7 @@ class MetricsAsync(AsyncServiceBase):
         **Scopes**: `metrics:read`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -584,7 +584,7 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -623,7 +623,7 @@ class MetricsAsync(AsyncServiceBase):
         **Scopes**: `metrics:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -663,7 +663,7 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -703,7 +703,7 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -744,7 +744,7 @@ class MetricsAsync(AsyncServiceBase):
 
         Args:
             id: The metric dashboard ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

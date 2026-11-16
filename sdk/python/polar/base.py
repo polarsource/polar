@@ -12,9 +12,11 @@ import httpx2
 import typing_extensions
 from adaptix._internal.provider.loc_stack_filtering import LocStack, LocStackChecker
 
+from polar import _httpx_compat
+
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 _ModelT = typing.TypeVar("_ModelT")
-RequestTimeout: typing.TypeAlias = float | httpx2.Timeout
+RequestTimeout: typing.TypeAlias = _httpx_compat.RequestTimeout
 
 
 class _OpenEnumMarker:
@@ -131,7 +133,11 @@ class BuildRequestMixin:
             else:
                 params[k] = v
 
-        timeout = self._client.timeout if request_timeout is None else request_timeout
+        timeout = (
+            self._client.timeout
+            if request_timeout is None
+            else _httpx_compat.to_httpx2_timeout(request_timeout)
+        )
         headers: dict[str, str] | None = None
         if request_access_token is not None:
             headers = {"Authorization": f"Bearer {request_access_token}"}
@@ -151,7 +157,7 @@ class SyncClientBase(BuildRequestMixin):
     ) -> None:
         self._client = httpx2.Client(
             base_url=base_url,
-            timeout=timeout,
+            timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
             verify=_ssl_context(),
         )
@@ -186,7 +192,7 @@ class AsyncClientBase(BuildRequestMixin):
     ) -> None:
         self._client = httpx2.AsyncClient(
             base_url=base_url,
-            timeout=timeout,
+            timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
             verify=_ssl_context(),
         )

@@ -12,7 +12,6 @@ import typing
 import uuid
 
 import anyio
-import httpx2
 from opentelemetry import context as otel_context
 from opentelemetry import trace
 from opentelemetry.metrics import Counter, Histogram, _Gauge
@@ -34,6 +33,12 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from redis.exceptions import ResponseError as RedisResponseError
 from redis.exceptions import TimeoutError as RedisTimeoutError
 
+from polar._httpx_compat import (
+    HTTP_ERRORS,
+    STATUS_ERRORS,
+    STATUS_OR_TRANSPORT_ERRORS,
+    AsyncClient,
+)
 from polar.base import PolarError
 from polar.metering.client import PolarClient
 from polar.metering.errors import UnknownMeterError
@@ -190,7 +195,7 @@ def _is_connection_error(error: BaseException) -> bool:
     return isinstance(
         error,
         (
-            httpx2.HTTPError,
+            *HTTP_ERRORS,
             OSError,
             RedisConnectionError,
             RedisTimeoutError,
@@ -419,7 +424,7 @@ class Outpost:
         self,
         redis_url: str,
         *,
-        client: httpx2.AsyncClient,
+        client: AsyncClient,
         telemetry: bool = True,
         confirm_timeout: float = CONFIRM_TIMEOUT,
     ) -> None:
@@ -1153,7 +1158,7 @@ class Outpost:
                             "/v1/outpost/meter-usage",
                             json={"identities": requested},
                         )
-                    except (httpx2.HTTPStatusError, httpx2.TransportError) as error:
+                    except STATUS_OR_TRANSPORT_ERRORS as error:
                         response = getattr(error, "response", None)
                         if response is not None and (
                             response.is_client_error and response.status_code != 429
@@ -1463,7 +1468,7 @@ class Outpost:
                     changes: Changes = await self._request(
                         "GET", "/v1/outpost/changes", params=params
                     )
-                except httpx2.HTTPStatusError as error:
+                except STATUS_ERRORS as error:
                     # Only a rate limit clears on its own: any other 4xx would repeat forever.
                     if error.response.is_client_error and error.response.status_code != 429:
                         raise PolarOutpostError("Polar rejected the pull") from error
@@ -1660,7 +1665,7 @@ class Outpost:
                                 "ids": batch,
                             },
                         )
-                except (httpx2.HTTPError, TimeoutError):
+                except (*HTTP_ERRORS, TimeoutError):
                     return confirmation, False
                 confirmation.confirmed.setdefault(bucket_start, []).extend(
                     answer["ids"]

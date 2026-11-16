@@ -1,3 +1,6 @@
+import types
+
+import httpx
 import httpx2
 import pytest
 
@@ -60,21 +63,29 @@ def clock(monkeypatch: pytest.MonkeyPatch) -> list[float]:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize("failure", ["offline", "503"])
+@pytest.mark.parametrize("http", [httpx, httpx2])
 async def test_warms_again_when_a_warm_up_fails_and_never_warms_its_own_instance(
-    failure: str, clock: list[float]
+    failure: str,
+    http: types.ModuleType,
+    clock: list[float],
 ) -> None:
-    attempts: list[httpx2.Request] = []
+    attempts: list[httpx.Request | httpx2.Request] = []
 
-    def answer(request: httpx2.Request) -> httpx2.Response:
+    def answer(
+        request: httpx.Request | httpx2.Request,
+    ) -> httpx.Response | httpx2.Response:
         attempts.append(request)
         if len(attempts) > 1:
-            return httpx2.Response(204)
+            return http.Response(204)
         if failure == "offline":
-            raise httpx2.ConnectError("offline")
-        return httpx2.Response(503)
+            raise http.ConnectError("offline")
+        return http.Response(503)
 
-    async with httpx2.AsyncClient(transport=httpx2.MockTransport(answer)) as client:
-        headers = {**PINNED, "x-polar-affinity-next": f"shard-8-{failure}"}
+    async with http.AsyncClient(transport=http.MockTransport(answer)) as client:
+        headers = {
+            **PINNED,
+            "x-polar-affinity-next": f"shard-8-{http.__name__}-{failure}",
+        }
         for _ in range(2):
             await warm_next_vercel_instance(URL, headers, client=client)
             clock[0] += 1

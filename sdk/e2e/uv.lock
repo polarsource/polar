@@ -368,6 +368,7 @@ provides-extras = ["outpost"]
 dev = [
     { name = "anyio", specifier = ">=4.5.0" },
     { name = "fakeredis", extras = ["lua"], specifier = ">=2.36.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "pytest" },
     { name = "pytest-codspeed", specifier = ">=5.0.3" },
     { name = "ruff" },
@@ -382,7 +383,6 @@ source = { virtual = "." }
 dependencies = [
     { name = "anyio" },
     { name = "httpx" },
-    { name = "httpx2" },
     { name = "polar-sdk", extra = ["outpost"] },
     { name = "pytest-xdist", extra = ["psutil"] },
     { name = "redis" },
@@ -401,7 +401,6 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.0.0" },
     { name = "httpx", specifier = ">=0.28.1" },
-    { name = "httpx2", specifier = ">=2.16.0" },
     { name = "polar-sdk", extras = ["outpost"], editable = "../python" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.8.0" },
     { name = "redis", specifier = ">=5.0.4" },

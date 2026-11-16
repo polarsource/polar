@@ -4,6 +4,7 @@ from time import monotonic
 
 import httpx2
 
+from polar._httpx_compat import HTTP_ERRORS, AsyncClient
 from polar.base import _ssl_context
 
 _AFFINITY_HEADER = "x-vercel-affinity-id"
@@ -47,7 +48,7 @@ async def warm_next_vercel_instance(
     url: str,
     headers: collections.abc.Mapping[str, str],
     *,
-    client: httpx2.AsyncClient | None = None,
+    client: AsyncClient | None = None,
 ) -> None:
     """Start the shard's next instance from the one that holds the shard, in the 30 s
     before the shard moves to it.
@@ -76,7 +77,7 @@ async def warm_next_vercel_instance(
         else:
             response = await client.post(url, headers=warmup)
         warm = response.is_success
-    except httpx2.HTTPError:
+    except HTTP_ERRORS:
         warm = False
     if not warm:
         _warmups[next_id] = monotonic() + _WARMUP_RETRY_SECONDS

@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+import httpx
 import httpx2
 import pytest
 import typing_extensions
@@ -213,15 +214,17 @@ class TestBuildRequest:
         assert request.headers["Authorization"] == "Bearer polar_at_u_override"
 
     @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
+    @pytest.mark.parametrize("timeout_class", [httpx.Timeout, httpx2.Timeout])
     def test_advanced_client_timeout(
         self,
         client_class: type[SyncClientBase] | type[AsyncClientBase],
+        timeout_class: type[httpx.Timeout] | type[httpx2.Timeout],
     ) -> None:
         client = client_class(
             base_url="https://api.polar.sh",
             version="2026-04",
             access_token="polar_at_u_xxx",
-            timeout=httpx2.Timeout(30.0, connect=10.0),
+            timeout=timeout_class(30.0, connect=10.0),
         )
 
         request = client.build_request(method="GET", url="/v1/items/")
@@ -231,6 +234,17 @@ class TestBuildRequest:
             "read": 30.0,
             "write": 30.0,
             "pool": 30.0,
+        }
+
+        override = client.build_request(
+            method="GET", url="/v1/items/", request_timeout=timeout_class(None, pool=2.0)
+        )
+
+        assert override.extensions["timeout"] == {
+            "connect": None,
+            "read": None,
+            "write": None,
+            "pool": 2.0,
         }
 
     @pytest.mark.parametrize(

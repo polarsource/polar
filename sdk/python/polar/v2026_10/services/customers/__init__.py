@@ -71,7 +71,7 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -132,7 +132,7 @@ class CustomersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -196,7 +196,7 @@ class CustomersSync(SyncServiceBase):
         **Scopes**: `customers:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -236,7 +236,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -276,7 +276,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -334,7 +334,7 @@ class CustomersSync(SyncServiceBase):
         Args:
             id: The customer ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -379,7 +379,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -423,7 +423,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -471,7 +471,7 @@ class CustomersSync(SyncServiceBase):
         Args:
             external_id: The customer external ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -516,7 +516,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -566,7 +566,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id: The customer ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -614,7 +614,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             external_id: The customer external ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -660,7 +660,7 @@ class CustomersSync(SyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -709,7 +709,7 @@ class CustomersSync(SyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -754,7 +754,7 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -803,7 +803,7 @@ class CustomersSync(SyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -866,7 +866,7 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -927,7 +927,7 @@ class CustomersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -992,7 +992,7 @@ class CustomersAsync(AsyncServiceBase):
         **Scopes**: `customers:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -1032,7 +1032,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             organization_id: Filter by organization ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1072,7 +1072,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1130,7 +1130,7 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             id: The customer ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance. This replaces email with a hashed version, hashes name and billing name (name preserved for businesses with tax_id), clears billing address, and removes OAuth account data.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1175,7 +1175,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -1219,7 +1219,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1267,7 +1267,7 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             external_id: The customer external ID.
             anonymize: If true, also anonymize the customer's personal data for GDPR compliance.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1312,7 +1312,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -1362,7 +1362,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id: The customer ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1410,7 +1410,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             external_id: The customer external ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1456,7 +1456,7 @@ class CustomersAsync(AsyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1505,7 +1505,7 @@ class CustomersAsync(AsyncServiceBase):
             id: The customer ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -1551,7 +1551,7 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1600,7 +1600,7 @@ class CustomersAsync(AsyncServiceBase):
             external_id: The customer external ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx2.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 

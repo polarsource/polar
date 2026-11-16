@@ -1,0 +1,35 @@
+sdk/generator/python/template/polar/_httpx_compat.py
+  s_7e19d239afd9c1::t_20b8ee9d13fffa 15-23,34-35,38
+sdk/generator/python/template/polar/outpost/client.py
+  s_7e19d239afd9c1::t_20b8ee9d13fffa 40,427
+sdk/generator/python/template/polar/outpost/vercel.py
+  s_7e19d239afd9c1::t_20b8ee9d13fffa 3,45,69,74
+sdk/CHANGELOG.md
+  s_7e19d239afd9c1::t_95abbeccd21e83 15
+sdk/generator/python/template/polar/base.py
+  s_7e19d239afd9c1::t_20b8ee9d13fffa 107,144,162,165,178,196-198,201,310,342,358,366
+sdk/python/polar/_httpx_compat.py
+  s_7e19d239afd9c1::t_15fd21d6d435ec 15-23,34-35,38
+sdk/python/polar/base.py
+  s_7e19d239afd9c1::t_c3f8c939e89041 109,146,164,167,180,198-200,203,310,342,358,366
+sdk/python/polar/outpost/client.py
+  s_7e19d239afd9c1::t_5d06d5f3f5d933 40,674
+sdk/python/polar/outpost/vercel.py
+  s_7e19d239afd9c1::t_ea8fe560f64e74 3,43,67,72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f76e143c3dd9e3dfef590cf5ba83172d3f1ebfaa",
+  "prompts": {},
+  "sessions": {
+    "s_7e19d239afd9c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-25ad-76e1-b267-0adda152d04c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

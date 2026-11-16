@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+import adaptix
 import httpx
 import httpx2
 import pytest
@@ -13,6 +14,8 @@ from polar.base import (
     _OPEN_ENUM,
     AsyncClientBase,
     SyncClientBase,
+    _DiscriminatedUnionProvider,
+    _Discriminator,
     _register_extra_items_typed_dict,
     parse_response_json,
     resolve_base_url,
@@ -38,6 +41,101 @@ class Dog:
 
 
 Animal: typing.TypeAlias = Cat | Dog
+
+TaggedAnimal: typing.TypeAlias = typing.Annotated[
+    Cat | Dog, _Discriminator("type", (("cat", Cat), ("dog", Dog)))
+]
+
+
+@dataclasses.dataclass
+class AnimalGroup:
+    animals: list[TaggedAnimal | None]
+    child: AnimalGroup | None = None
+
+
+def test_discriminator_dispatches_without_trying_other_variants() -> None:
+    def load_cat(data: object) -> Cat:
+        pytest.fail("The cat loader must not run for a dog")
+
+    retort = adaptix.Retort(
+        recipe=[_DiscriminatedUnionProvider(), adaptix.loader(Cat, load_cat)]
+    )
+    assert retort.load({"type": "dog", "breed": "Samoyed"}, TaggedAnimal) == Dog(
+        "dog", "Samoyed"
+    )
+
+
+def test_nested_discriminated_union() -> None:
+    result = deserialize(
+        {
+            "animals": [{"type": "cat", "lives": 9}, None],
+            "child": {"animals": [{"type": "dog", "breed": "Samoyed"}]},
+        },
+        AnimalGroup,
+    )
+    assert result == AnimalGroup(
+        [Cat("cat", 9), None], AnimalGroup([Dog("dog", "Samoyed")])
+    )
+
+
+@pytest.mark.parametrize(
+    "hint",
+    [
+        TaggedAnimal | None,
+        typing.Annotated[
+            Cat | Dog | None, _Discriminator("type", (("cat", Cat), ("dog", Dog)))
+        ],
+    ],
+)
+def test_nullable_discriminated_union(hint: typing.Any) -> None:
+    assert deserialize(None, hint) is None
+    assert deserialize({"type": "cat", "lives": 9}, hint) == Cat("cat", 9)
+
+
+@pytest.mark.parametrize(
+    "data",
+    [None, [], {}, {"type": "unknown"}, {"type": []}, {"type": "dog", "breed": 42}],
+)
+def test_discriminated_union_rejects_invalid_data(data: object) -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize(data, TaggedAnimal)
+
+
+@pytest.mark.parametrize("value", [None, [], {}, b"text"])
+def test_scalar_union_rejects_invalid_data(value: object) -> None:
+    with pytest.raises(PolarDeserializationError):
+        deserialize(value, str | int | float | bool)
+
+
+def test_scalar_union_preserves_fallback_behavior() -> None:
+    class CustomInt(int):
+        pass
+
+    with pytest.raises(PolarDeserializationError):
+        deserialize(CustomInt(42), int | float)
+    assert type(deserialize(7, str | float)) is float
+    assert deserialize(7, str | float) == 7.0
+    with pytest.raises(PolarDeserializationError):
+        deserialize(True, int | float)
+
+
+@dataclasses.dataclass
+class AnimalTree:
+    type: typing.Literal["tree"]
+    children: list[AnimalTreeEntry]
+
+
+AnimalTreeEntry: typing.TypeAlias = typing.Annotated[
+    AnimalTree | Cat,
+    _Discriminator("type", (("tree", AnimalTree), ("cat", Cat))),
+]
+
+
+def test_recursive_discriminated_union() -> None:
+    assert deserialize(
+        {"type": "tree", "children": [{"type": "cat", "lives": 9}]},
+        AnimalTreeEntry,
+    ) == AnimalTree("tree", [Cat("cat", 9)])
 
 
 @dataclasses.dataclass

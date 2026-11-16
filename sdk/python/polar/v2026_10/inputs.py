@@ -4,6 +4,7 @@ import typing
 
 import typing_extensions
 
+from polar.base import _Discriminator
 from polar.v2026_10.literals import (
     ApiVersion,
     BenefitVisibility,
@@ -746,12 +747,25 @@ You can store up to **50 key-value pairs**."""
         dict[
             str,
             list[
-                ProductPriceFixedCreate
-                | ProductPriceCustomCreate
-                | ProductPriceSeatBasedCreate
-                | ProductPriceUnitBasedCreate
-                | ProductPriceMeteredUnitCreate
-                | ProductPriceMeteredTiersCreate
+                typing.Annotated[
+                    ProductPriceFixedCreate
+                    | ProductPriceCustomCreate
+                    | ProductPriceSeatBasedCreate
+                    | ProductPriceUnitBasedCreate
+                    | ProductPriceMeteredUnitCreate
+                    | ProductPriceMeteredTiersCreate,
+                    _Discriminator(
+                        "amount_type",
+                        (
+                            ("custom", ProductPriceCustomCreate),
+                            ("fixed", ProductPriceFixedCreate),
+                            ("metered_tiers", ProductPriceMeteredTiersCreate),
+                            ("metered_unit", ProductPriceMeteredUnitCreate),
+                            ("seat_based", ProductPriceSeatBasedCreate),
+                            ("unit_based", ProductPriceUnitBasedCreate),
+                        ),
+                    ),
+                ]
             ],
         ]
         | None
@@ -2343,7 +2357,20 @@ You can store up to **50 key-value pairs**."""
     filter: Filter
     """The filter to apply on events that'll be used to calculate the meter."""
 
-    aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
+    aggregation: typing.Annotated[
+        CountAggregation | PropertyAggregation | UniqueAggregation,
+        _Discriminator(
+            "func",
+            (
+                ("avg", PropertyAggregation),
+                ("count", CountAggregation),
+                ("max", PropertyAggregation),
+                ("min", PropertyAggregation),
+                ("sum", PropertyAggregation),
+                ("unique", UniqueAggregation),
+            ),
+        ),
+    ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     organization_id: typing.NotRequired[str | None]
@@ -2380,7 +2407,21 @@ You can store up to **50 key-value pairs**."""
     """The filter to apply on events that'll be used to calculate the meter."""
 
     aggregation: typing.NotRequired[
-        CountAggregation | PropertyAggregation | UniqueAggregation | None
+        typing.Annotated[
+            CountAggregation | PropertyAggregation | UniqueAggregation,
+            _Discriminator(
+                "func",
+                (
+                    ("avg", PropertyAggregation),
+                    ("count", CountAggregation),
+                    ("max", PropertyAggregation),
+                    ("min", PropertyAggregation),
+                    ("sum", PropertyAggregation),
+                    ("unique", UniqueAggregation),
+                ),
+            ),
+        ]
+        | None
     ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
@@ -2559,8 +2600,17 @@ class OrganizationCreate(typing.TypedDict):
     avatar_url: typing.NotRequired[str | None]
 
     legal_entity: typing.NotRequired[
-        OrganizationIndividualLegalEntitySchema
-        | OrganizationCompanyLegalEntitySchema
+        typing.Annotated[
+            OrganizationIndividualLegalEntitySchema
+            | OrganizationCompanyLegalEntitySchema,
+            _Discriminator(
+                "type",
+                (
+                    ("company", OrganizationCompanyLegalEntitySchema),
+                    ("individual", OrganizationIndividualLegalEntitySchema),
+                ),
+            ),
+        ]
         | None
     ]
 
@@ -2792,12 +2842,25 @@ You can store up to **50 key-value pairs**."""
     """The visibility of the product."""
 
     prices: list[
-        ProductPriceFixedCreate
-        | ProductPriceCustomCreate
-        | ProductPriceSeatBasedCreate
-        | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate
-        | ProductPriceMeteredTiersCreate
+        typing.Annotated[
+            ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
+            | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate,
+            _Discriminator(
+                "amount_type",
+                (
+                    ("custom", ProductPriceCustomCreate),
+                    ("fixed", ProductPriceFixedCreate),
+                    ("metered_tiers", ProductPriceMeteredTiersCreate),
+                    ("metered_unit", ProductPriceMeteredUnitCreate),
+                    ("seat_based", ProductPriceSeatBasedCreate),
+                    ("unit_based", ProductPriceUnitBasedCreate),
+                ),
+            ),
+        ]
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -2841,12 +2904,25 @@ You can store up to **50 key-value pairs**."""
     """The visibility of the product."""
 
     prices: list[
-        ProductPriceFixedCreate
-        | ProductPriceCustomCreate
-        | ProductPriceSeatBasedCreate
-        | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate
-        | ProductPriceMeteredTiersCreate
+        typing.Annotated[
+            ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
+            | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate,
+            _Discriminator(
+                "amount_type",
+                (
+                    ("custom", ProductPriceCustomCreate),
+                    ("fixed", ProductPriceFixedCreate),
+                    ("metered_tiers", ProductPriceMeteredTiersCreate),
+                    ("metered_unit", ProductPriceMeteredUnitCreate),
+                    ("seat_based", ProductPriceSeatBasedCreate),
+                    ("unit_based", ProductPriceUnitBasedCreate),
+                ),
+            ),
+        ]
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -3482,12 +3558,25 @@ You can store up to **50 key-value pairs**."""
     prices: typing.NotRequired[
         list[
             ExistingProductPrice
-            | ProductPriceFixedCreate
-            | ProductPriceCustomCreate
-            | ProductPriceSeatBasedCreate
-            | ProductPriceUnitBasedCreate
-            | ProductPriceMeteredUnitCreate
-            | ProductPriceMeteredTiersCreate
+            | typing.Annotated[
+                ProductPriceFixedCreate
+                | ProductPriceCustomCreate
+                | ProductPriceSeatBasedCreate
+                | ProductPriceUnitBasedCreate
+                | ProductPriceMeteredUnitCreate
+                | ProductPriceMeteredTiersCreate,
+                _Discriminator(
+                    "amount_type",
+                    (
+                        ("custom", ProductPriceCustomCreate),
+                        ("fixed", ProductPriceFixedCreate),
+                        ("metered_tiers", ProductPriceMeteredTiersCreate),
+                        ("metered_unit", ProductPriceMeteredUnitCreate),
+                        ("seat_based", ProductPriceSeatBasedCreate),
+                        ("unit_based", ProductPriceUnitBasedCreate),
+                    ),
+                ),
+            ]
         ]
         | None
     ]
@@ -3876,7 +3965,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     """Whether the webhook endpoint is enabled."""
 
 
-BenefitCreate: typing.TypeAlias = (
+BenefitCreate: typing.TypeAlias = typing.Annotated[
     BenefitCustomCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
@@ -3884,8 +3973,21 @@ BenefitCreate: typing.TypeAlias = (
     | BenefitLicenseKeysCreate
     | BenefitMeterCreditCreate
     | BenefitFeatureFlagCreate
-    | BenefitSlackSharedChannelCreate
-)
+    | BenefitSlackSharedChannelCreate,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustomCreate),
+            ("discord", BenefitDiscordCreate),
+            ("downloadables", BenefitDownloadablesCreate),
+            ("feature_flag", BenefitFeatureFlagCreate),
+            ("github_repository", BenefitGitHubRepositoryCreate),
+            ("license_keys", BenefitLicenseKeysCreate),
+            ("meter_credit", BenefitMeterCreditCreate),
+            ("slack_shared_channel", BenefitSlackSharedChannelCreate),
+        ),
+    ),
+]
 
 CheckoutLinkCreate: typing.TypeAlias = (
     CheckoutLinkCreateProductPrice
@@ -3893,23 +3995,43 @@ CheckoutLinkCreate: typing.TypeAlias = (
     | CheckoutLinkCreateProducts
 )
 
-CustomFieldCreate: typing.TypeAlias = (
+CustomFieldCreate: typing.TypeAlias = typing.Annotated[
     CustomFieldCreateText
     | CustomFieldCreateNumber
     | CustomFieldCreateDate
     | CustomFieldCreateCheckbox
-    | CustomFieldCreateSelect
-)
+    | CustomFieldCreateSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldCreateCheckbox),
+            ("date", CustomFieldCreateDate),
+            ("number", CustomFieldCreateNumber),
+            ("select", CustomFieldCreateSelect),
+            ("text", CustomFieldCreateText),
+        ),
+    ),
+]
 
-CustomFieldUpdate: typing.TypeAlias = (
+CustomFieldUpdate: typing.TypeAlias = typing.Annotated[
     CustomFieldUpdateText
     | CustomFieldUpdateNumber
     | CustomFieldUpdateDate
     | CustomFieldUpdateCheckbox
-    | CustomFieldUpdateSelect
-)
+    | CustomFieldUpdateSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldUpdateCheckbox),
+            ("date", CustomFieldUpdateDate),
+            ("number", CustomFieldUpdateNumber),
+            ("select", CustomFieldUpdateSelect),
+            ("text", CustomFieldUpdateText),
+        ),
+    ),
+]
 
-CustomerBenefitGrantUpdate: typing.TypeAlias = (
+CustomerBenefitGrantUpdate: typing.TypeAlias = typing.Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
     | CustomerBenefitGrantDownloadablesUpdate
@@ -3917,8 +4039,21 @@ CustomerBenefitGrantUpdate: typing.TypeAlias = (
     | CustomerBenefitGrantCustomUpdate
     | CustomerBenefitGrantMeterCreditUpdate
     | CustomerBenefitGrantFeatureFlagUpdate
-    | CustomerBenefitGrantSlackSharedChannelUpdate
-)
+    | CustomerBenefitGrantSlackSharedChannelUpdate,
+    _Discriminator(
+        "benefit_type",
+        (
+            ("custom", CustomerBenefitGrantCustomUpdate),
+            ("discord", CustomerBenefitGrantDiscordUpdate),
+            ("downloadables", CustomerBenefitGrantDownloadablesUpdate),
+            ("feature_flag", CustomerBenefitGrantFeatureFlagUpdate),
+            ("github_repository", CustomerBenefitGrantGitHubRepositoryUpdate),
+            ("license_keys", CustomerBenefitGrantLicenseKeysUpdate),
+            ("meter_credit", CustomerBenefitGrantMeterCreditUpdate),
+            ("slack_shared_channel", CustomerBenefitGrantSlackSharedChannelUpdate),
+        ),
+    ),
+]
 
 CustomerCreate: typing.TypeAlias = CustomerIndividualCreate | CustomerTeamCreate
 
@@ -3932,14 +4067,32 @@ CustomerSubscriptionUpdate: typing.TypeAlias = (
     | CustomerSubscriptionUpdateClear
 )
 
-DiscountCreate: typing.TypeAlias = DiscountFixedCreate | DiscountPercentageCreate
+DiscountCreate: typing.TypeAlias = typing.Annotated[
+    DiscountFixedCreate | DiscountPercentageCreate,
+    _Discriminator(
+        "type",
+        (
+            ("fixed", DiscountFixedCreate),
+            ("percentage", DiscountPercentageCreate),
+        ),
+    ),
+]
 
-FileCreate: typing.TypeAlias = (
+FileCreate: typing.TypeAlias = typing.Annotated[
     DownloadableFileCreate
     | ProductMediaFileCreate
     | OrganizationAvatarFileCreate
-    | SupportCaseAttachmentFileCreate
-)
+    | SupportCaseAttachmentFileCreate,
+    _Discriminator(
+        "service",
+        (
+            ("downloadable", DownloadableFileCreate),
+            ("organization_avatar", OrganizationAvatarFileCreate),
+            ("product_media", ProductMediaFileCreate),
+            ("support_case_attachment", SupportCaseAttachmentFileCreate),
+        ),
+    ),
+]
 
 MetadataQuery: typing.TypeAlias = (
     dict[str, str | int | bool | list[str] | list[int] | list[bool]] | None

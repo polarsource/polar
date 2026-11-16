@@ -221,3 +221,60 @@ def test_emit_open_string_enums_for_responses(
     assert "status: OrderStatus" in outputs
     assert "kind: OrderKind" in outputs
     assert "type: typing.Literal['order']" in outputs
+    assert (
+        "typing.Annotated[Order, _Discriminator('kind', (('Order', Order),))]"
+        in outputs
+    )
+
+
+def test_emit_discriminators_for_models_and_webhooks(tmp_path: pathlib.Path) -> None:
+    models = [
+        Model(
+            name=name,
+            fields=[
+                Field(
+                    name="type",
+                    type=LiteralType(kind="literal", value=tag),
+                    required=True,
+                )
+            ],
+        )
+        for name, tag in [("Created", "object.created"), ("Deleted", "object.deleted")]
+    ]
+    variants = [ModelRef(kind="model", name=model.name) for model in models]
+    discriminator = UnionDiscriminator(
+        property_name="type",
+        mapping={"object.created": "Created", "object.deleted": "Deleted"},
+    )
+    envelope = Model(
+        name="Envelope",
+        fields=[
+            Field(
+                name="event",
+                type=UnionType(
+                    kind="union", variants=variants, discriminator=discriminator
+                ),
+                required=True,
+            )
+        ],
+    )
+    union = NamedUnion(name="Event", variants=variants, discriminator=discriminator)
+    api = APIVersion(
+        version="2027-01",
+        servers=[],
+        services=[],
+        enums=[],
+        input_models=[*models, envelope],
+        output_models=[*models, envelope],
+        input_unions=[union],
+        output_unions=[union],
+        webhooks=models,
+    )
+    PythonEmitter(APIIR(versions=[api]), "1.2.0").emit(tmp_path)
+    annotation = "typing.Annotated[Created | Deleted, _Discriminator('type', (('object.created', Created),('object.deleted', Deleted),))]"
+    for module in ("inputs", "outputs"):
+        source = (tmp_path / "polar" / "v2027_01" / f"{module}.py").read_text()
+        assert f"Event: typing.TypeAlias = {annotation}" in source
+        assert f"event: {annotation}" in source
+    source = (tmp_path / "polar" / "v2027_01" / "webhooks.py").read_text()
+    assert f"WebhookPayload: typing.TypeAlias = {annotation}" in source

@@ -3,6 +3,8 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+from polar.base import _Discriminator
+
 {% if output_uses_extra_items %}
 import typing_extensions
 
@@ -69,11 +71,7 @@ class {{ model.name }}:
 
 {% for union in api.output_unions %}
 {% if union.variants %}
-{{ union.name }}: typing.TypeAlias = (
-{% for variant in union.variants %}
-    {{ variant | type_annotation }}{% if not loop.last %} |{% endif %}
-{% endfor %}
-)
+{{ union.name }}: typing.TypeAlias = {{ union | type_annotation }}
 {% if union.description %}
 """{{ union.description }}"""
 {% endif %}

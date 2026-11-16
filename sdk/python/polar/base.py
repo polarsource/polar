@@ -1,5 +1,6 @@
 import builtins
 import collections.abc
+import dataclasses
 import types
 import typing
 
@@ -7,7 +8,11 @@ import adaptix
 import adaptix.load_error
 import httpx2
 import typing_extensions
+from adaptix._internal.morphing.provider_template import LoaderProvider
+from adaptix._internal.morphing.request_cls import LoaderRequest
 from adaptix._internal.provider.loc_stack_filtering import LocStack, LocStackChecker
+from adaptix._internal.provider.location import GenericParamLoc
+from adaptix.provider import CannotProvide, Mediator
 
 from polar import _httpx_compat
 
@@ -21,6 +26,77 @@ class _OpenEnumMarker:
 
 
 _OPEN_ENUM = _OpenEnumMarker()
+
+
+@dataclasses.dataclass(frozen=True)
+class _Discriminator:
+    field: str
+    variants: tuple[tuple[str, typing.Any], ...]
+
+
+class _DiscriminatedUnionProvider(LoaderProvider):
+    def provide_loader(
+        self, mediator: Mediator, request: LoaderRequest
+    ) -> collections.abc.Callable[[typing.Any], typing.Any]:
+        hint = request.last_loc.type
+        if typing.get_origin(hint) is not typing.Annotated:
+            raise CannotProvide
+        discriminator = next(
+            (
+                item
+                for item in typing.get_args(hint)[1:]
+                if isinstance(item, _Discriminator)
+            ),
+            None,
+        )
+        if discriminator is None:
+            raise CannotProvide
+        loaders = {
+            tag: mediator.mandatory_provide(
+                request.with_loc_stack(
+                    request.loc_stack.append_with(
+                        GenericParamLoc(type=variant, generic_pos=index)
+                    )
+                )
+            )
+            for index, (tag, variant) in enumerate(discriminator.variants)
+        }
+        field = discriminator.field
+        nullable = type(None) in typing.get_args(typing.get_args(hint)[0])
+
+        def load(data: object) -> typing.Any:
+            if data is None and nullable:
+                return None
+            if not isinstance(data, collections.abc.Mapping):
+                raise adaptix.load_error.TypeLoadError(collections.abc.Mapping, data)
+            if field not in data:
+                raise adaptix.load_error.NoRequiredFieldsLoadError({field}, data)
+            tag = data[field]
+            if not isinstance(tag, str) or tag not in loaders:
+                raise adaptix.load_error.BadVariantLoadError(tuple(loaders), tag)
+            return loaders[tag](data)
+
+        return load
+
+
+class _ScalarUnionProvider(LoaderProvider):
+    def provide_loader(
+        self, mediator: Mediator, request: LoaderRequest
+    ) -> collections.abc.Callable[[typing.Any], typing.Any]:
+        hint = request.last_loc.type
+        if typing.get_origin(hint) not in (typing.Union, types.UnionType):
+            raise CannotProvide
+        scalar_types = frozenset(typing.get_args(hint))
+        if not scalar_types <= {str, int, float, bool, type(None)}:
+            raise CannotProvide
+        fallback = mediator.provide_from_next()
+
+        def load(data: object) -> typing.Any:
+            if type(data) in scalar_types:
+                return data
+            return fallback(data)
+
+        return load
 
 
 class PolarError(Exception):
@@ -247,6 +323,8 @@ def _load_open_enum(data: object) -> str:
 # float fields, which should still coerce JSON ints).
 _retort = adaptix.Retort(
     recipe=[
+        _DiscriminatedUnionProvider(),
+        _ScalarUnionProvider(),
         adaptix.loader(_OpenEnumChecker(), _load_open_enum),
         adaptix.loader(
             adaptix.P[int | float][float]

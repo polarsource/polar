@@ -3,6 +3,9 @@ from __future__ import annotations
 import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase
+{% for import_name in imports.base %}
+from polar.base import {{ import_name }}
+{% endfor %}
 {% if service.methods %}
 from polar.base import RequestTimeout
 {% endif %}

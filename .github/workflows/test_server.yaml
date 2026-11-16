@@ -181,10 +181,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+
       - name: 🐦 Install Tinybird CLI
         run: |
-          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
-          "$HOME/.local/bin/tb" --version
+          uv tool install 'tinybird==5.0.3' --python 3.11 --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          version=$("$HOME/.local/bin/tb" --version)
+          printf '%s\n' "$version"
+          test "$version" = 'tb, version 5.0.3 (rev ef090149)'
 
       - name: 🐦 Validate Tinybird schema
         working-directory: ./server/tinybird
@@ -539,8 +546,11 @@ jobs:
       - name: 🐦 Install Tinybird CLI
         if: matrix.shard == 'tinybird'
         run: |
-          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
-          "$HOME/.local/bin/tb" --version
+          uv tool install 'tinybird==5.0.3' --python 3.11 --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          version=$("$HOME/.local/bin/tb" --version)
+          printf '%s\n' "$version"
+          test "$version" = 'tb, version 5.0.3 (rev ef090149)'
 
       - name: 🐦 Prepare Tinybird workspace
         if: matrix.shard == 'tinybird'
@@ -548,7 +558,7 @@ jobs:
         run: |
           token_file="$RUNNER_TEMP/tinybird-token"
           rm -f "$token_file" "$token_file.error"
-          nohup uv run python -m cProfile -o "$RUNNER_TEMP/tinybird-workspace.prof" -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
+          nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
 
       - name: ⚗️ Start fresh database migrations
         id: migrations

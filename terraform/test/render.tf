@@ -89,9 +89,10 @@ module "test" {
   additional_api_services = {
     api-events-test = {
       web_concurrency = "4"
-      start_command   = "uv run uvicorn polar.event_ingestion_api_app:app --host 0.0.0.0 --port 10000 --limit-max-requests 50000 --limit-max-requests-jitter 10000 --timeout-graceful-shutdown 30"
-      custom_domains  = [{ name = "test-api-events.polar.sh" }]
-      autoscaling     = { min = 3, max = 6 }
+      # Disables the in-process S3 span exporter to measure its CPU cost under load
+      start_command  = "env -u POLAR_S3_LOGS_BUCKET_NAME uv run uvicorn polar.event_ingestion_api_app:app --host 0.0.0.0 --port 10000 --limit-max-requests 50000 --limit-max-requests-jitter 10000 --timeout-graceful-shutdown 30"
+      custom_domains = [{ name = "test-api-events.polar.sh" }]
+      autoscaling    = { min = 3, max = 6 }
     }
     events-test = {
       image_url      = "ghcr.io/polarsource/polar-events"

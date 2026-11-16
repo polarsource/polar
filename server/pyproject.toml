@@ -14,7 +14,7 @@ dependencies = [
   "greenlet>=3.5.5",
   "structlog>=26.1.0",
   "githubkit==0.16.1",
-  "redis>=5.0.4",
+  "redis[hiredis]>=5.0.4",
   "sse-starlette>=3.4.5",
   "stripe>=14.4.2,<15",
   "pyjwt>=2.13.0",

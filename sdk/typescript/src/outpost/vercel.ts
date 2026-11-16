@@ -96,9 +96,10 @@ export const vercelAffinity =
     return headers;
   };
 
-// The next ids this instance warmed. Vercel runs one instance per id, so a shard's next instance
-// gets one warm-up per move, however many instances the middleware runs on.
-const warmed = new Set<string>();
+// After a failed warm-up, wait this long before trying again.
+const WARMUP_RETRY_MS = 1_000;
+// Next id -> earliest time to warm it again. Infinity once a warm-up has started.
+const warmups = new Map<string, number>();
 
 /**
  * Starts the shard's next instance from the one that holds the shard, in the 30 s before the shard
@@ -109,8 +110,9 @@ export const warmNextVercelInstance = (
   waitUntil: (promise: Promise<unknown>) => void,
 ): void => {
   const next = request.headers.get(NEXT_HEADER);
-  if (!next || next === request.headers.get(AFFINITY_HEADER) || warmed.has(next)) return;
-  warmed.add(next);
+  if (!next || next === request.headers.get(AFFINITY_HEADER)) return;
+  if ((warmups.get(next) ?? 0) > Date.now()) return;
+  warmups.set(next, Infinity);
   // The request's own headers, so the warm-up passes the merchant's middleware as it did.
   const headers = new Headers(request.headers);
   for (const name of ["content-length", "transfer-encoding", "connection", "host", NEXT_HEADER])
@@ -125,8 +127,7 @@ export const warmNextVercelInstance = (
       })
       .catch(() => false)
       .then((warm) => {
-        // The next request in the window tries again.
-        if (!warm) warmed.delete(next);
+        if (!warm) warmups.set(next, Date.now() + WARMUP_RETRY_MS);
       }),
   );
 };

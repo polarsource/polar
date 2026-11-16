@@ -170,6 +170,23 @@ describe("warm-up from the pinned route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("waits a second before warming again after a failure", async () => {
+    const pin = vercelAffinity({ maxDurationSeconds: 300 });
+    const [first, second] = await windowOf(pin, "customer-throttled");
+    fetchMock.mockClear();
+    fetchMock.mockResolvedValue(new Response(null, { status: 503 }));
+    waited.length = 0;
+
+    for (const at of [first, first, second]) {
+      warmNextVercelInstance(
+        route(await headersAt(pin, "customer-throttled", at)),
+        event.waitUntil,
+      );
+      await Promise.all(waited);
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("never warms its own instance", () => {
     fetchMock.mockClear();
     const own = { "x-vercel-affinity-id": "shard-3-9", "x-polar-affinity-next": "shard-3-9" };

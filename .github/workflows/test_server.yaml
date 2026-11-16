@@ -522,12 +522,19 @@ jobs:
           key: test-durations-71b51c6ac8112d76a09528bb4807715321820f29
           restore-keys: test-durations-
 
+      - name: Prepare startup profiling
+        run: |
+          mkdir -p "$RUNNER_TEMP/profile"
+          cp .github/ci/ci_runtime_profile.py "$RUNNER_TEMP/profile/"
+          echo "PYTHONPATH=$RUNNER_TEMP/profile${PYTHONPATH:+:$PYTHONPATH}" >> "$GITHUB_ENV"
+          echo "CI_PROFILE_OUTPUT=$RUNNER_TEMP/ci-profile" >> "$GITHUB_ENV"
+
       - name: 🐍 Run tests (pytest)
         if: matrix.shard != 'tinybird'
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n 6 --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations --junitxml="$RUNNER_TEMP/junit.xml"
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -p ci_runtime_profile -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations --junitxml="$RUNNER_TEMP/junit.xml"
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
@@ -536,7 +543,17 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml"
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -p ci_runtime_profile -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml"
+
+      - name: Upload startup profiles
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: startup-profile-${{ matrix.shard }}
+          path: ${{ runner.temp }}/ci-profile
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 3
 
       - name: Upload test results
         if: always()

@@ -12,11 +12,13 @@ from polar.base import (
 from polar.v2027_01.errors import (
     BenefitGrantAlreadyExists,
     HTTPValidationError,
+    NotPermitted,
     ResourceNotFound,
 )
 from polar.v2027_01.inputs import (
     BenefitGrantCreate,
     BenefitGrantCreateExternal,
+    BenefitGrantUpdate,
 )
 from polar.v2027_01.literals import (
     BenefitGrantSortProperty,
@@ -231,11 +233,12 @@ class BenefitGrantsSync(SyncServiceBase):
         request_access_token: str | None = None,
     ) -> BenefitGrant:
         """
-        Permanently revoke a benefit grant, including grants from purchases.
+        Manually revoke a benefit grant, including grants from purchases.
 
         Revocation is asynchronous. Once manually revoked, this grant cannot be
         reactivated by renewal or fulfillment retries. Other grants may still
-        provide access to the benefit. Repeating this request is safe.
+        provide access to the benefit. To undo a manual revocation, update the grant.
+        Repeating this request is safe.
 
         **Scopes**: `benefits:write`
 
@@ -265,6 +268,59 @@ class BenefitGrantsSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, BenefitGrant, method_errors)
+
+    def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[BenefitGrantUpdate],
+    ) -> BenefitGrant:
+        """
+        Undo a manual revocation by setting `manually_revoked_at` to `None`.
+
+        The grant keeps its original recipient and purchase, if any.
+        Fulfillment is asynchronous. Repeating this request is safe.
+        A purchase-scoped benefit is re-granted if the purchase still provides access.
+
+        **Scopes**: `benefits:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: Forbidden
+            ResourceNotFound: Not Found
+            BenefitGrantAlreadyExists: Conflict
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/benefit-grants/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: BenefitGrantAlreadyExists,
             422: HTTPValidationError,
         }
         return parse_response_json(response, BenefitGrant, method_errors)
@@ -475,11 +531,12 @@ class BenefitGrantsAsync(AsyncServiceBase):
         request_access_token: str | None = None,
     ) -> BenefitGrant:
         """
-        Permanently revoke a benefit grant, including grants from purchases.
+        Manually revoke a benefit grant, including grants from purchases.
 
         Revocation is asynchronous. Once manually revoked, this grant cannot be
         reactivated by renewal or fulfillment retries. Other grants may still
-        provide access to the benefit. Repeating this request is safe.
+        provide access to the benefit. To undo a manual revocation, update the grant.
+        Repeating this request is safe.
 
         **Scopes**: `benefits:write`
 
@@ -509,6 +566,59 @@ class BenefitGrantsAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, BenefitGrant, method_errors)
+
+    async def update(
+        self,
+        id: str,
+        *,
+        request_timeout: RequestTimeout | None = None,
+        request_access_token: str | None = None,
+        **kwargs: typing.Unpack[BenefitGrantUpdate],
+    ) -> BenefitGrant:
+        """
+        Undo a manual revocation by setting `manually_revoked_at` to `None`.
+
+        The grant keeps its original recipient and purchase, if any.
+        Fulfillment is asynchronous. Repeating this request is safe.
+        A purchase-scoped benefit is re-granted if the purchase still provides access.
+
+        **Scopes**: `benefits:write`
+
+        Args:
+            id:
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
+            request_access_token: Access token override for this request.
+
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: Forbidden
+            ResourceNotFound: Not Found
+            BenefitGrantAlreadyExists: Conflict
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/benefit-grants/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            request_timeout=request_timeout,
+            request_access_token=request_access_token,
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: BenefitGrantAlreadyExists,
             422: HTTPValidationError,
         }
         return parse_response_json(response, BenefitGrant, method_errors)

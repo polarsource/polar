@@ -4,10 +4,16 @@ import type {
   BenefitGrantCreate,
   BenefitGrantCreateExternal,
   BenefitGrantSortProperty,
+  BenefitGrantUpdate,
   ListResourceBenefitGrant,
 } from "../models";
 
-import { BenefitGrantAlreadyExists, HTTPValidationError, ResourceNotFound } from "../errors";
+import {
+  BenefitGrantAlreadyExists,
+  HTTPValidationError,
+  NotPermitted,
+  ResourceNotFound,
+} from "../errors";
 
 export const listBenefitGrants = (client: ClientBase) => {
   /**
@@ -151,11 +157,12 @@ export const createBenefitGrants = (client: ClientBase) => {
 };
 export const revokeBenefitGrants = (client: ClientBase) => {
   /**
-   * Permanently revoke a benefit grant, including grants from purchases.
+   * Manually revoke a benefit grant, including grants from purchases.
    *
    * Revocation is asynchronous. Once manually revoked, this grant cannot be
    * reactivated by renewal or fulfillment retries. Other grants may still
-   * provide access to the benefit. Repeating this request is safe.
+   * provide access to the benefit. To undo a manual revocation, update the grant.
+   * Repeating this request is safe.
    *
    * **Scopes**: `benefits:write`
    *
@@ -187,12 +194,60 @@ export const revokeBenefitGrants = (client: ClientBase) => {
     });
   };
 };
+export const updateBenefitGrants = (client: ClientBase) => {
+  /**
+   * Undo a manual revocation by setting `manually_revoked_at` to `None`.
+   *
+   * The grant keeps its original recipient and purchase, if any.
+   * Fulfillment is asynchronous. Repeating this request is safe.
+   * A purchase-scoped benefit is re-granted if the purchase still provides access.
+   *
+   * **Scopes**: `benefits:write`
+   *
+   * @param id
+   * @param body - Request body
+   * @param requestOptions - Request options
+   * @returns {BenefitGrant}
+   * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
+   * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {NotPermitted} Forbidden
+   * @throws {ResourceNotFound} Not Found
+   * @throws {BenefitGrantAlreadyExists} Conflict
+   * @throws {HTTPValidationError} Validation Error
+   */
+  return async (
+    id: string,
+    body: BenefitGrantUpdate,
+    requestOptions?: RequestOptions,
+  ): Promise<BenefitGrant> => {
+    const pathParams = {
+      id: id,
+    };
+    const queryParams = {};
+    const request = client.buildRequest(
+      "PATCH",
+      "/v1/benefit-grants/{id}",
+      pathParams,
+      queryParams,
+      body,
+    );
+    const response = await client.sendRequest(request, requestOptions);
+    return client.parseResponse<BenefitGrant>(response, "json", {
+      403: NotPermitted,
+      404: ResourceNotFound,
+      409: BenefitGrantAlreadyExists,
+      422: HTTPValidationError,
+    });
+  };
+};
 
 export function createBenefitGrantsService(client: ClientBase) {
   return {
     list: listBenefitGrants(client),
     create: createBenefitGrants(client),
     revoke: revokeBenefitGrants(client),
+    update: updateBenefitGrants(client),
     iterList: iterListBenefitGrants(client),
   };
 }

@@ -1477,7 +1477,7 @@ class BenefitGrant:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1552,7 +1552,7 @@ class BenefitGrantCustomWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1621,7 +1621,7 @@ class BenefitGrantDiscordWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1684,7 +1684,7 @@ class BenefitGrantDownloadablesWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1755,7 +1755,7 @@ class BenefitGrantFeatureFlagWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1826,7 +1826,7 @@ class BenefitGrantGitHubRepositoryWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1893,7 +1893,7 @@ class BenefitGrantLicenseKeysWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -1971,7 +1971,7 @@ class BenefitGrantMeterCreditWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -2044,7 +2044,7 @@ class BenefitGrantSlackSharedChannelWebhook:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -2285,6 +2285,98 @@ class BenefitLicenseKeysSubscriberProperties:
     activations: BenefitLicenseKeyActivationProperties | None
 
     limit_usage: int | None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitManuallyGrantedEvent:
+    """An event created by Polar when a benefit grant is created manually."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["benefit.manually_granted"]
+    """The name of the event."""
+
+    metadata: BenefitGrantMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitManuallyRevokedEvent:
+    """An event created by Polar when a benefit grant is manually revoked."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["benefit.manually_revoked"]
+    """The name of the event."""
+
+    metadata: BenefitGrantMetadata
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -2642,6 +2734,52 @@ class BenefitSubscriberOrganization:
 
     allow_customer_updates: bool
     """Whether customers can update their subscriptions from the customer portal."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitUnrevokedEvent:
+    """An event created by Polar when a manual revocation is cleared."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["benefit.unrevoked"]
+    """The name of the event."""
+
+    metadata: BenefitGrantMetadata
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -3949,7 +4087,7 @@ class CustomerBenefitGrantCustom:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -3993,7 +4131,7 @@ class CustomerBenefitGrantDiscord:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4039,7 +4177,7 @@ class CustomerBenefitGrantDownloadables:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4083,7 +4221,7 @@ class CustomerBenefitGrantFeatureFlag:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4127,7 +4265,7 @@ class CustomerBenefitGrantGitHubRepository:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4173,7 +4311,7 @@ class CustomerBenefitGrantLicenseKeys:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4225,7 +4363,7 @@ class CustomerBenefitGrantMeterCredit:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4269,7 +4407,7 @@ class CustomerBenefitGrantSlackSharedChannel:
     """When the manual grant was requested, if applicable."""
 
     manually_revoked_at: str | None
-    """When this grant was permanently revoked manually, if applicable."""
+    """When this grant was manually revoked, if applicable."""
 
     created_at: str
     """Creation timestamp of the object."""
@@ -4690,31 +4828,6 @@ class CustomerOrderInvoice:
 
     url: str
     """The URL to the invoice."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentConfirmation:
-    """Response after confirming a retry payment."""
-
-    status: str
-    """Payment status after confirmation."""
-
-    client_secret: str | None = None
-    """Client secret for handling additional actions."""
-
-    error: str | None = None
-    """Error message if confirmation failed."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerOrderPaymentStatus:
-    """Payment status for an order."""
-
-    status: str
-    """Current payment status."""
-
-    error: str | None = None
-    """Error message if payment failed."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -5856,31 +5969,6 @@ class CustomerUpdatedMetadata:
     customer_external_id: str | None
 
     updated_fields: CustomerUpdatedFields
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class CustomerWallet:
-    """A wallet represents your balance with an organization.
-
-    You can top-up your wallet and use the balance to pay for usage."""
-
-    id: str
-    """The ID of the object."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    customer_id: str
-    """The ID of the customer that owns the wallet."""
-
-    balance: int
-    """The current balance of the wallet, in cents."""
-
-    currency: str
-    """The currency of the wallet."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7290,13 +7378,6 @@ class ListResourceCustomerSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class ListResourceCustomerWallet:
-    items: list[CustomerWallet]
-
-    pagination: Pagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceDiscount:
     items: list[Discount]
 
@@ -7434,13 +7515,6 @@ class ListResourceWithCursorPaginationEvent:
     items: list[Event]
 
     pagination: CursorPagination
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class ManualRetryLimitExceeded:
-    error: typing.Literal["ManualRetryLimitExceeded"]
-
-    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7672,29 +7746,6 @@ class Metric:
 
     type: MetricType
     """Type of the metric, useful to know the unit or format of the value."""
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class MetricDashboardSchema:
-    """A user-defined metrics dashboard."""
-
-    created_at: str
-    """Creation timestamp of the object."""
-
-    modified_at: str | None
-    """Last modification timestamp of the object."""
-
-    id: str
-    """The ID of the object."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: list[str]
-    """List of metric slugs displayed in this dashboard."""
-
-    organization_id: str
-    """The ID of the organization owning this dashboard."""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8367,13 +8418,6 @@ class OrderNotDraft:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrderNotEligibleForInvoice:
     error: typing.Literal["OrderNotEligibleForInvoice"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class OrderNotEligibleForRetry:
-    error: typing.Literal["OrderNotEligibleForRetry"]
 
     detail: str
 
@@ -9065,13 +9109,6 @@ class PauseResumeNotAllowed:
 @dataclasses.dataclass(kw_only=True, slots=True)
 class PaymentActionRequired:
     error: typing.Literal["PaymentActionRequired"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
-class PaymentAlreadyInProgress:
-    error: typing.Literal["PaymentAlreadyInProgress"]
 
     detail: str
 
@@ -11698,6 +11735,9 @@ SystemEvent: typing.TypeAlias = typing.Annotated[
     | BenefitCycledEvent
     | BenefitUpdatedEvent
     | BenefitRevokedEvent
+    | BenefitManuallyGrantedEvent
+    | BenefitManuallyRevokedEvent
+    | BenefitUnrevokedEvent
     | SubscriptionCreatedEvent
     | SubscriptionUpdatedEvent
     | SubscriptionCycledEvent
@@ -11740,7 +11780,10 @@ SystemEvent: typing.TypeAlias = typing.Annotated[
             ("balance.refund_reversal", BalanceRefundReversalEvent),
             ("benefit.cycled", BenefitCycledEvent),
             ("benefit.granted", BenefitGrantedEvent),
+            ("benefit.manually_granted", BenefitManuallyGrantedEvent),
+            ("benefit.manually_revoked", BenefitManuallyRevokedEvent),
             ("benefit.revoked", BenefitRevokedEvent),
+            ("benefit.unrevoked", BenefitUnrevokedEvent),
             ("benefit.updated", BenefitUpdatedEvent),
             ("checkout.created", CheckoutCreatedEvent),
             ("customer.created", CustomerCreatedEvent),

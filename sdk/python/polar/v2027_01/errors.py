@@ -59,9 +59,6 @@ from polar.v2027_01.outputs import (
     InactiveSubscription as InactiveSubscriptionModel,
 )
 from polar.v2027_01.outputs import (
-    ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
-)
-from polar.v2027_01.outputs import (
     MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
 )
 from polar.v2027_01.outputs import (
@@ -77,9 +74,6 @@ from polar.v2027_01.outputs import (
     OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
 )
 from polar.v2027_01.outputs import (
-    OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
-)
-from polar.v2027_01.outputs import (
     OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
 )
 from polar.v2027_01.outputs import (
@@ -87,9 +81,6 @@ from polar.v2027_01.outputs import (
 )
 from polar.v2027_01.outputs import (
     PaymentActionRequired as PaymentActionRequiredModel,
-)
-from polar.v2027_01.outputs import (
-    PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
 )
 from polar.v2027_01.outputs import (
     PaymentFailed as PaymentFailedModel,
@@ -527,33 +518,6 @@ class MissingInvoiceBillingDetails(PolarClientError):
     def __init__(
         self, status_code: int, error: MissingInvoiceBillingDetailsModel
     ) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class PaymentAlreadyInProgress(PolarClientError):
-    error_type = PaymentAlreadyInProgressModel
-    error: PaymentAlreadyInProgressModel
-
-    def __init__(self, status_code: int, error: PaymentAlreadyInProgressModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class OrderNotEligibleForRetry(PolarClientError):
-    error_type = OrderNotEligibleForRetryModel
-    error: OrderNotEligibleForRetryModel
-
-    def __init__(self, status_code: int, error: OrderNotEligibleForRetryModel) -> None:
-        self.error = error
-        super().__init__(status_code, error)
-
-
-class ManualRetryLimitExceeded(PolarClientError):
-    error_type = ManualRetryLimitExceededModel
-    error: ManualRetryLimitExceededModel
-
-    def __init__(self, status_code: int, error: ManualRetryLimitExceededModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 

@@ -9,7 +9,6 @@ from polar.base import (
     SyncServiceBase,
     parse_response_json,
     parse_response_none,
-    parse_response_text,
 )
 from polar.v2026_04.errors import (
     HTTPValidationError,
@@ -221,46 +220,6 @@ class CustomersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Customer, method_errors)
-
-    def export(
-        self,
-        *,
-        organization_id: str | builtins.list[str] | None = None,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> str:
-        """
-        Export customers as a CSV file.
-
-        **Scopes**: `customers:read` `customers:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/customers/export",
-            path_params={},
-            query_params={
-                "organization_id": organization_id,
-            },
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_text(response, method_errors)
 
     def get(
         self,
@@ -1017,46 +976,6 @@ class CustomersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, Customer, method_errors)
-
-    async def export(
-        self,
-        *,
-        organization_id: str | builtins.list[str] | None = None,
-        request_timeout: RequestTimeout | None = None,
-        request_access_token: str | None = None,
-    ) -> str:
-        """
-        Export customers as a CSV file.
-
-        **Scopes**: `customers:read` `customers:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
-            request_access_token: Access token override for this request.
-
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/customers/export",
-            path_params={},
-            query_params={
-                "organization_id": organization_id,
-            },
-            request_timeout=request_timeout,
-            request_access_token=request_access_token,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_text(response, method_errors)
 
     async def get(
         self,

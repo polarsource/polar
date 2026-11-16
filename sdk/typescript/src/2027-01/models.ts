@@ -702,10 +702,6 @@ export type CustomerSubscriptionSortProperty =
  */
 export type CustomerType = "individual" | "team";
 /**
- * CustomerWalletSortProperty
- */
-export type CustomerWalletSortProperty = "created_at" | "-created_at" | "balance" | "-balance";
-/**
  * DiscountDuration
  */
 export type DiscountDuration = "once" | "forever" | "repeating";
@@ -949,7 +945,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1228,32 +1224,6 @@ export type Status = "granted" | "disabled";
  * SubType
  */
 export type SubType = "user" | "organization";
-/**
- * SubscriptionExportColumn
- */
-export type SubscriptionExportColumn =
-  | "email"
-  | "started_at"
-  | "product"
-  | "amount"
-  | "currency"
-  | "status"
-  | "recurring_interval"
-  | "customer_name"
-  | "billing_name"
-  | "billing_country"
-  | "net_amount"
-  | "discount"
-  | "seats"
-  | "current_period_start"
-  | "current_period_end"
-  | "cancel_at_period_end"
-  | "canceled_at"
-  | "ends_at"
-  | "ended_at"
-  | "cancellation_reason"
-  | "trial_start"
-  | "trial_end";
 /**
  * SubscriptionProrationBehavior
  */
@@ -4484,7 +4454,7 @@ export interface BenefitGrant {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -4632,7 +4602,7 @@ export interface BenefitGrantCustomWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -4740,7 +4710,7 @@ export interface BenefitGrantDiscordWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -4836,7 +4806,7 @@ export interface BenefitGrantDownloadablesWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -4945,7 +4915,7 @@ export interface BenefitGrantFeatureFlagWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -5057,7 +5027,7 @@ export interface BenefitGrantGitHubRepositoryWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -5161,7 +5131,7 @@ export interface BenefitGrantLicenseKeysWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -5287,7 +5257,7 @@ export interface BenefitGrantMeterCreditWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -5403,7 +5373,7 @@ export interface BenefitGrantSlackSharedChannelWebhook {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -5478,6 +5448,16 @@ export interface BenefitGrantSlackSharedChannelWebhook {
    * previous_properties
    */
   previous_properties?: BenefitGrantSlackSharedChannelProperties | null;
+}
+
+/**
+ * BenefitGrantUpdate
+ */
+export interface BenefitGrantUpdate {
+  /**
+   * Set to None to undo a manual revocation.
+   */
+  manually_revoked_at?: null;
 }
 
 /**
@@ -5894,6 +5874,130 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitLicenseKeysCreateProperties | null;
+}
+
+/**
+ * An event created by Polar when a benefit grant is created manually.
+ */
+export interface BenefitManuallyGrantedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "benefit.manually_granted";
+  /**
+   * metadata
+   */
+  metadata: BenefitGrantMetadata;
+}
+
+/**
+ * An event created by Polar when a benefit grant is manually revoked.
+ */
+export interface BenefitManuallyRevokedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "benefit.manually_revoked";
+  /**
+   * metadata
+   */
+  metadata: BenefitGrantMetadata;
 }
 
 /**
@@ -6623,6 +6727,68 @@ export interface BenefitSubscriberOrganization {
    * Whether customers can update their subscriptions from the customer portal.
    */
   allow_customer_updates: boolean;
+}
+
+/**
+ * An event created by Polar when a manual revocation is cleared.
+ */
+export interface BenefitUnrevokedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "benefit.unrevoked";
+  /**
+   * metadata
+   */
+  metadata: BenefitGrantMetadata;
 }
 
 /**
@@ -9735,7 +9901,7 @@ export interface CustomerBenefitGrantCustom {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -9823,7 +9989,7 @@ export interface CustomerBenefitGrantDiscord {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -9929,7 +10095,7 @@ export interface CustomerBenefitGrantDownloadables {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -10017,7 +10183,7 @@ export interface CustomerBenefitGrantFeatureFlag {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -10105,7 +10271,7 @@ export interface CustomerBenefitGrantGitHubRepository {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -10211,7 +10377,7 @@ export interface CustomerBenefitGrantLicenseKeys {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -10313,7 +10479,7 @@ export interface CustomerBenefitGrantMeterCredit {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -10401,7 +10567,7 @@ export interface CustomerBenefitGrantSlackSharedChannel {
    */
   manually_granted_at: string | null;
   /**
-   * When this grant was permanently revoked manually, if applicable.
+   * When this grant was manually revoked, if applicable.
    */
   manually_revoked_at: string | null;
   /**
@@ -11191,24 +11357,6 @@ export interface CustomerOrder {
 }
 
 /**
- * Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
- */
-export interface CustomerOrderConfirmPayment {
-  /**
-   * ID of the Stripe confirmation token for new payment methods.
-   */
-  confirmation_token_id?: string | null;
-  /**
-   * ID of an existing saved payment method.
-   */
-  payment_method_id?: string | null;
-  /**
-   * Payment processor used.
-   */
-  payment_processor?: PaymentProcessor;
-}
-
-/**
  * Order's invoice data.
  */
 export interface CustomerOrderInvoice {
@@ -11216,38 +11364,6 @@ export interface CustomerOrderInvoice {
    * The URL to the invoice.
    */
   url: string;
-}
-
-/**
- * Response after confirming a retry payment.
- */
-export interface CustomerOrderPaymentConfirmation {
-  /**
-   * Payment status after confirmation.
-   */
-  status: string;
-  /**
-   * Client secret for handling additional actions.
-   */
-  client_secret?: string | null;
-  /**
-   * Error message if confirmation failed.
-   */
-  error?: string | null;
-}
-
-/**
- * Payment status for an order.
- */
-export interface CustomerOrderPaymentStatus {
-  /**
-   * Current payment status.
-   */
-  status: string;
-  /**
-   * Error message if payment failed.
-   */
-  error?: string | null;
 }
 
 /**
@@ -13331,38 +13447,6 @@ export interface CustomerUpdatedMetadata {
    * updated_fields
    */
   updated_fields: CustomerUpdatedFields;
-}
-
-/**
- * A wallet represents your balance with an organization.
-
-You can top-up your wallet and use the balance to pay for usage.
- */
-export interface CustomerWallet {
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the customer that owns the wallet.
-   */
-  customer_id: string;
-  /**
-   * The current balance of the wallet, in cents.
-   */
-  balance: number;
-  /**
-   * The currency of the wallet.
-   */
-  currency: string;
 }
 
 /**
@@ -16181,20 +16265,6 @@ export interface ListResourceCustomerSubscription {
 }
 
 /**
- * ListResourceCustomerWallet
- */
-export interface ListResourceCustomerWallet {
-  /**
-   * items
-   */
-  items: CustomerWallet[];
-  /**
-   * pagination
-   */
-  pagination: Pagination;
-}
-
-/**
  * ListResourceDiscount
  */
 export interface ListResourceDiscount {
@@ -16472,20 +16542,6 @@ export interface ListResourceWithCursorPaginationEvent {
    * pagination
    */
   pagination: CursorPagination;
-}
-
-/**
- * ManualRetryLimitExceeded
- */
-export interface ManualRetryLimitExceeded {
-  /**
-   * error
-   */
-  error: "ManualRetryLimitExceeded";
-  /**
-   * detail
-   */
-  detail: string;
 }
 
 /**
@@ -16961,68 +17017,6 @@ export interface Metric {
    * Type of the metric, useful to know the unit or format of the value.
    */
   type: MetricType;
-}
-
-/**
- * Schema for creating a metrics dashboard.
- */
-export interface MetricDashboardCreate {
-  /**
-   * Display name for the dashboard.
-   */
-  name: string;
-  /**
-   * List of metric slugs to display in this dashboard.
-   */
-  metrics?: string[];
-  /**
-   * The ID of the organization owning this dashboard. **Required unless you use an organization token.**
-   */
-  organization_id?: string | null;
-}
-
-/**
- * A user-defined metrics dashboard.
- */
-export interface MetricDashboardSchema {
-  /**
-   * Creation timestamp of the object.
-   */
-  created_at: string;
-  /**
-   * Last modification timestamp of the object.
-   */
-  modified_at: string | null;
-  /**
-   * The ID of the object.
-   */
-  id: string;
-  /**
-   * Display name for the dashboard.
-   */
-  name: string;
-  /**
-   * List of metric slugs displayed in this dashboard.
-   */
-  metrics: string[];
-  /**
-   * The ID of the organization owning this dashboard.
-   */
-  organization_id: string;
-}
-
-/**
- * Schema for updating a metrics dashboard.
- */
-export interface MetricDashboardUpdate {
-  /**
-   * Display name for the dashboard.
-   */
-  name?: string | null;
-  /**
-   * List of metric slugs to display in this dashboard.
-   */
-  metrics?: string[] | null;
 }
 
 /**
@@ -18379,20 +18373,6 @@ export interface OrderNotEligibleForInvoice {
 }
 
 /**
- * OrderNotEligibleForRetry
- */
-export interface OrderNotEligibleForRetry {
-  /**
-   * error
-   */
-  error: "OrderNotEligibleForRetry";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
  * An event created by Polar when an order is paid.
  */
 export interface OrderPaidEvent {
@@ -19709,20 +19689,6 @@ export interface PaymentActionRequired {
    * error
    */
   error: "PaymentActionRequired";
-  /**
-   * detail
-   */
-  detail: string;
-}
-
-/**
- * PaymentAlreadyInProgress
- */
-export interface PaymentAlreadyInProgress {
-  /**
-   * error
-   */
-  error: "PaymentAlreadyInProgress";
   /**
    * detail
    */
@@ -25079,6 +25045,9 @@ export type SystemEvent =
   | BenefitCycledEvent
   | BenefitUpdatedEvent
   | BenefitRevokedEvent
+  | BenefitManuallyGrantedEvent
+  | BenefitManuallyRevokedEvent
+  | BenefitUnrevokedEvent
   | SubscriptionCreatedEvent
   | SubscriptionUpdatedEvent
   | SubscriptionCycledEvent

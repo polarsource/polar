@@ -15,6 +15,12 @@ runs:
         cache: "pnpm"
         cache-dependency-path: "clients/pnpm-lock.yaml"
 
+    - name: Set up Turborepo Remote Cache
+      uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+      continue-on-error: true
+      with:
+        team: ${{ env.TURBO_TEAM }}
+
     - name: 📦 Install dependencies
       shell: bash
       working-directory: ./clients

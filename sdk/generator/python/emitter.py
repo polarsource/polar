@@ -8,11 +8,13 @@ from generator.ir import (
     ArrayType,
     EnumRef,
     ErrorResponse,
+    LiteralType,
     MapType,
     ModelRef,
     NullableType,
     Service,
     TypeRef,
+    UnionDiscriminator,
     UnionRef,
     UnionType,
 )
@@ -255,6 +257,24 @@ class PythonEmitter(EmitterBase):
                     **self.get_version_context(api),
                     "imports": self._get_webhook_imports(api),
                     "enum_imports": self._get_webhook_enum_imports(api),
+                    "webhook_union": UnionType(
+                        kind="union",
+                        variants=[
+                            ModelRef(kind="model", name=model.name)
+                            for model in api.webhooks
+                        ],
+                        discriminator=UnionDiscriminator(
+                            property_name="type",
+                            mapping={
+                                field.type.value: model.name
+                                for model in api.webhooks
+                                for field in model.fields
+                                if field.name == "type"
+                                and isinstance(field.type, LiteralType)
+                                and isinstance(field.type.value, str)
+                            },
+                        ),
+                    ),
                 },
             )
             errors = self._collect_all_errors(api)
@@ -427,9 +447,20 @@ class PythonEmitter(EmitterBase):
             "output": set(),
             "enum": set(),
             "errors": set(),
+            "base": set(),
         }
 
         for method in service.methods:
+            if any(
+                "_Discriminator(" in convert_type_to_annotation(type_ref)
+                for type_ref in (
+                    method.body,
+                    method.response,
+                    *(param.type for param in method.path_params + method.query_params),
+                    method.pagination.item_schema if method.pagination else None,
+                )
+            ):
+                imports["base"].add("_Discriminator")
             # Collect input imports from body
             if method.body is not None:
                 imports["input"].update(
@@ -467,4 +498,5 @@ class PythonEmitter(EmitterBase):
             "output": sorted(imports["output"]),
             "enum": sorted(imports["enum"]),
             "errors": sorted(imports["errors"]),
+            "base": sorted(imports["base"]),
         }

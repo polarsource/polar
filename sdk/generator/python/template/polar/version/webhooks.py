@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from polar.base import deserialize
+from polar.base import _Discriminator, deserialize
 from polar.webhooks import (
     PolarWebhookError,
     PolarWebhookUnknownTypeError,
@@ -49,11 +49,7 @@ class {{ model.name }}:
 {% endfor %}
 
 {% if api.webhooks %}
-WebhookPayload: typing.TypeAlias = (
-{% for model in api.webhooks %}
-    {{ model.name }}{% if not loop.last %} |{% endif %}
-{% endfor %}
-)
+WebhookPayload: typing.TypeAlias = {{ webhook_union | type_annotation }}
 {% else %}
 WebhookPayload: typing.TypeAlias = typing.Never
 {% endif %}

@@ -102,8 +102,11 @@ async def resolve_checkout(
         return None
 
     repository = CheckoutRepository.from_session(session)
+    # Confirmation can attach a customer while this query waits for the lock.
     return await repository.get_by_id(
-        uuid.UUID(checkout_id), options=repository.get_eager_options(), for_update=True
+        uuid.UUID(checkout_id),
+        options=repository.get_eager_options(selectin_customer=True),
+        for_update=True,
     )
 
 

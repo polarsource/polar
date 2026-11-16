@@ -6694,6 +6694,38 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/catalog-migrations/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Catalog Migrations
+     * @description List catalog migrations.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['catalog-migrations:list']
+    put?: never
+    /**
+     * Create Catalog Migration
+     * @description Move the subscriptions of older versions of a product to its current version.
+     *
+     *     Subscriptions move in the background, each one at its next renewal, without
+     *     notifying customers. Subscriptions that are canceling or already have a
+     *     pending change are left alone.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['catalog-migrations:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/catalog-migrations/{id}': {
     parameters: {
       query?: never
@@ -6710,32 +6742,6 @@ export interface paths {
     get: operations['catalog-migrations:get']
     put?: never
     post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/catalog-migrations/': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Create Catalog Migration
-     * @description Move the subscriptions of older versions of a product to its current version.
-     *
-     *     Subscriptions move in the background, each one at its next renewal, without
-     *     notifying customers. Subscriptions that are canceling or already have a
-     *     pending change are left alone.
-     *
-     *     **Scopes**: `subscriptions:write`
-     */
-    post: operations['catalog-migrations:create']
     delete?: never
     options?: never
     head?: never
@@ -14489,6 +14495,11 @@ export interface components {
        */
       target_product_id: string
     }
+    /**
+     * CatalogMigrationSortProperty
+     * @enum {string}
+     */
+    CatalogMigrationSortProperty: 'created_at' | '-created_at'
     /**
      * CatalogMigrationStatus
      * @enum {string}
@@ -26709,6 +26720,12 @@ export interface components {
     ListResource_Benefit_: {
       /** Items */
       items: components['schemas']['Benefit'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CatalogMigration] */
+    ListResource_CatalogMigration_: {
+      /** Items */
+      items: components['schemas']['CatalogMigration'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Catalog] */
@@ -65357,14 +65374,27 @@ export interface operations {
       }
     }
   }
-  'catalog-migrations:get': {
+  'catalog-migrations:list': {
     parameters: {
-      query?: never
-      header?: never
-      path: {
-        /** @description The catalog migration ID. */
-        id: string
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by product version customers move from or to. */
+        product_id?: string | string[] | null
+        /** @description Filter by status. */
+        status?:
+          | components['schemas']['CatalogMigrationStatus']
+          | components['schemas']['CatalogMigrationStatus'][]
+          | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['CatalogMigrationSortProperty'][] | null
       }
+      header?: never
+      path?: never
       cookie?: never
     }
     requestBody?: never
@@ -65375,16 +65405,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CatalogMigration']
-        }
-      }
-      /** @description Catalog migration not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
+          'application/json': components['schemas']['ListResource_CatalogMigration_']
         }
       }
       /** @description Validation Error */
@@ -65427,6 +65448,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalog-migrations:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The catalog migration ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogMigration']
+        }
+      }
+      /** @description Catalog migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -73695,6 +73757,9 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'link',
   'other',
 ]
+export const catalogMigrationSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CatalogMigrationSortProperty']
+> = ['created_at', '-created_at']
 export const catalogMigrationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CatalogMigrationStatus']
 > = ['running', 'completed']

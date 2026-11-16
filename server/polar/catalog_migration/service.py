@@ -14,6 +14,8 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ValidationError,
 )
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import CatalogMigration, Product, Subscription
@@ -28,6 +30,7 @@ from polar.worker import enqueue_job
 
 from .repository import CatalogMigrationRepository
 from .schemas import CatalogMigrationCreate
+from .sorting import CatalogMigrationSortProperty
 
 log: Logger = structlog.get_logger()
 
@@ -35,6 +38,29 @@ BATCH_SIZE = 100
 
 
 class CatalogMigrationService:
+    async def list(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[uuid.UUID] | None = None,
+        product_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[CatalogMigrationStatus] | None = None,
+        pagination: PaginationParams,
+        sorting: Sequence[Sorting[CatalogMigrationSortProperty]],
+    ) -> tuple[Sequence[CatalogMigration], int]:
+        repository = CatalogMigrationRepository.from_session(session)
+        statement = repository.get_readable_statement(
+            auth_subject,
+            organization_id=organization_id,
+            product_id=product_id,
+            status=status,
+        )
+        statement = repository.apply_sorting(statement, sorting)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+
     async def get(
         self,
         session: AsyncReadSession,

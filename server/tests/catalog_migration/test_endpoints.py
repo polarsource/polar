@@ -217,3 +217,74 @@ class TestGet:
 
         assert response.status_code == 200
         assert response.json()["id"] == str(catalog_migration.id)
+
+
+@pytest.mark.anyio
+@pytest.mark.api_version(V2027_01)
+class TestList:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/catalog-migrations/")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_a_member(
+        self, client: AsyncClient, catalog_migration: CatalogMigration
+    ) -> None:
+        response = await client.get("/v1/catalog-migrations/")
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        catalog_migration: CatalogMigration,
+    ) -> None:
+        response = await client.get("/v1/catalog-migrations/")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(catalog_migration.id)
+
+    @pytest.mark.auth
+    async def test_product_id_filter(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        catalog_migration: CatalogMigration,
+    ) -> None:
+        for product_id, count in (
+            (catalog_migration.source_product_ids[0], 1),
+            (catalog_migration.target_product_id, 1),
+            (uuid.uuid4(), 0),
+        ):
+            response = await client.get(
+                "/v1/catalog-migrations/", params={"product_id": str(product_id)}
+            )
+
+            assert response.status_code == 200
+            assert response.json()["pagination"]["total_count"] == count
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(("status", "count"), [("running", 1), ("completed", 0)])
+    async def test_status_filter(
+        self,
+        status: str,
+        count: int,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        catalog_migration: CatalogMigration,
+    ) -> None:
+        response = await client.get(
+            "/v1/catalog-migrations/", params={"status": status}
+        )
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == count

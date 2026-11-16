@@ -79,7 +79,8 @@ def test_submit_and_wait_for_live(
         check=False,
         timeout=300,
     )
-    assert deployment.call_count == 3 and previous.called
+    assert deployment.call_count == 3
+    assert previous.called
     assert clock.sleeps == [0.2, 0.2]
     for call in respx_mock.calls:
         assert call.request.headers["Authorization"] == f"Bearer {TOKEN}"
@@ -106,7 +107,8 @@ def test_waits_for_first_other_deployment(
         ]
     )
     workspace.deploy_schema(HOST, TOKEN)
-    assert old.call_count == 2 and clock.sleeps == [0.2]
+    assert old.call_count == 2
+    assert clock.sleeps == [0.2]
     submitted.assert_called_once()
 
 

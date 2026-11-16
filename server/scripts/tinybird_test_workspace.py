@@ -143,7 +143,7 @@ def deploy_schema(host: str, workspace_token: str) -> None:
             check=False,
             timeout=300,
         )
-    except (subprocess.TimeoutExpired, OSError):
+    except subprocess.TimeoutExpired, OSError:
         raise RuntimeError("Tinybird deployment submission failed") from None
     deadline = time.monotonic() + 300
     if result.returncode != 0:

@@ -1,0 +1,80 @@
+sdk/generator/python/template/polar/base.py
+  s_5ee9bde7cfe7bc::t_5eaadd4e9863ad 63,66-67
+  s_5ee9bde7cfe7bc::t_f29c92884db62a 3,11-12,14-15,29-42,48-54,58-62,64-65,68-99,318-319
+  s_5ee9bde7cfe7bc::t_741744b67c4d29 43-47,55-57
+sdk/generator/python/template/polar/version/inputs.py
+  s_5ee9bde7cfe7bc::t_49c53b9e44c816 9-10,50
+sdk/generator/python/emitter.py
+  s_5ee9bde7cfe7bc::t_4c0439ebf7fd77 11,17,259-276
+  s_5ee9bde7cfe7bc::t_bf5f04b8e840bb 449,453-462,500
+sdk/generator/python/template/polar/version/services/service.py
+  s_5ee9bde7cfe7bc::t_bf5f04b8e840bb 6-8
+sdk/generator/python/template/polar/version/webhooks.py
+  s_5ee9bde7cfe7bc::t_49c53b9e44c816 6,52
+sdk/generator/python/template/tests/benchmarks/test_requests.py
+  s_5ee9bde7cfe7bc::t_741744b67c4d29 15-19,27-30,34-36,84-90,98-105
+  s_5ee9bde7cfe7bc::t_e085ed9731f002 6,83,97
+sdk/generator/python/types.py
+  s_5ee9bde7cfe7bc::t_fa047a97c619d3 8,61,97,104-109,114-121
+  s_5ee9bde7cfe7bc::t_14566962258b4c 110-113
+sdk/generator/python/template/polar/version/outputs.py
+  s_5ee9bde7cfe7bc::t_49c53b9e44c816 6-7,74
+sdk/generator/python/template/tests/test_base.py
+  s_5ee9bde7cfe7bc::t_e085ed9731f002 44-58,65-68,73-74,78-79,96-110,113-116
+  s_5ee9bde7cfe7bc::t_f20812f10206c9 81-92
+  s_5ee9bde7cfe7bc::t_9b76bafd404d04 14-15
+  s_5ee9bde7cfe7bc::t_741744b67c4d29 6,59-64,69-72,75-77,80,93-95
+  s_5ee9bde7cfe7bc::t_9dd55a102f66d5 111-112,117-135
+  s_5ee9bde7cfe7bc::t_da85af9692d868 136
+sdk/generator/tests/python/test_emitter.py
+  s_5ee9bde7cfe7bc::t_9aa5d7b00be622 225-237,239-256,258-280
+  s_5ee9bde7cfe7bc::t_9dada81e50be82 224,238,257
+sdk/generator/python/template/polar/version/errors.py
+  s_5ee9bde7cfe7bc::t_e298dd6b1be21a 5
+sdk/python/polar/v2026_04/inputs.py
+  s_5ee9bde7cfe7bc::t_28ff8fd8872140 7,750-768,2360-2373,2410-2424,2603-2613,2845-2863,2907-2925,3561-3579,3964,3972-3986,3994,3999-4012,4017-4030,4038-4052,4066-4077,4081-4091
+sdk/python/polar/v2026_04/outputs.py
+  s_5ee9bde7cfe7bc::t_13050faa46b27a 8,7305-7318,11258,11266-11280,11293,11301-11315,11326,11331-11353,11370,11372-11391,11400,11404-11425,11435,11441-11455,11492-11549
+sdk/python/polar/v2026_04/services/oauth2/__init__.py
+  s_5ee9bde7cfe7bc::t_436f3a868bee51 9,37-46,68-78,214-223,245-255
+sdk/python/polar/v2026_04/webhooks.py
+  s_5ee9bde7cfe7bc::t_d60440b4c2bb46 6,753,795-843
+sdk/python/polar/v2026_10/inputs.py
+  s_5ee9bde7cfe7bc::t_574a97bf662f84 7,750-768,2360-2373,2410-2424,2603-2613,2845-2863,2907-2925,3561-3579,3968,3976-3990,3998,4003-4016,4021-4034,4042-4056,4070-4081,4085-4095
+sdk/python/polar/v2026_10/outputs.py
+  s_5ee9bde7cfe7bc::t_2ea28365bd9e59 8,7335-7348,11300,11308-11322,11335,11343-11357,11368,11373-11395,11412,11414-11433,11442,11446-11467,11477,11483-11497,11534-11591
+sdk/python/polar/v2026_10/services/oauth2/__init__.py
+  s_5ee9bde7cfe7bc::t_47fff8412768b5 9,37-46,68-78,214-223,245-255
+sdk/python/polar/v2026_10/webhooks.py
+  s_5ee9bde7cfe7bc::t_da82c1e60feaf0 6,753,795-843
+sdk/python/polar/v2027_01/inputs.py
+  s_5ee9bde7cfe7bc::t_9d957c4bdea6a3 7,977-995,1122-1140,2563-2576,2616-2630,2809-2819,3036-3054,3101-3119,3737-3755,4161,4169-4183,4193,4198-4211,4216-4229,4237-4251,4265-4276,4280-4290
+sdk/python/polar/v2027_01/services/oauth2/__init__.py
+  s_5ee9bde7cfe7bc::t_926e60359615f0 9,37-46,68-78,214-223,245-255
+sdk/python/polar/v2027_01/webhooks.py
+  s_5ee9bde7cfe7bc::t_58eb626e478dff 6,879,921-969
+sdk/python/tests/benchmarks/test_requests.py
+  s_5ee9bde7cfe7bc::t_8a4ab6637d6155 6,15-19,27-30,34-36,83-90,97-105
+sdk/python/tests/test_base.py
+  s_5ee9bde7cfe7bc::t_f23974433c8917 6,16-17,44-138
+sdk/python/polar/base.py
+  s_5ee9bde7cfe7bc::t_39f3350b82f328 3,11-12,14-15,29-99,320-321
+sdk/python/polar/v2027_01/outputs.py
+  s_5ee9bde7cfe7bc::t_32f74a9b3a4e99 8,7509-7522,11506,11514-11528,11541,11549-11563,11576,11581-11603,11620,11622-11641,11650,11654-11664,11674,11680-11694,11731-11788
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "40cd4f8b5231c9a344e7818d966c03a2220cb868",
+  "prompts": {},
+  "sessions": {
+    "s_5ee9bde7cfe7bc": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-dbab-76f3-b706-e92f43f91f2c",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

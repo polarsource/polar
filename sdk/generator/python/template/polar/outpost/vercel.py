@@ -1,6 +1,29 @@
 import collections.abc
 
+import httpx
+
+_AFFINITY_HEADER = "x-vercel-affinity-id"
 _WARMUP_HEADER = "x-polar-affinity-warmup"
+_NEXT_HEADER = "x-polar-affinity-next"
+_DROPPED_HEADERS = {
+    "content-length",
+    "transfer-encoding",
+    "connection",
+    "host",
+    _AFFINITY_HEADER,
+    _WARMUP_HEADER,
+    _NEXT_HEADER,
+}
+
+# The next ids this instance warmed. Vercel runs one instance per id, so a shard's next instance
+# gets one warm-up per move, however many instances the middleware runs on.
+_warmed: set[str] = set()
+
+
+def _header(headers: collections.abc.Mapping[str, str], name: str) -> str | None:
+    return next(
+        (value for key, value in headers.items() if key.lower() == name), None
+    )
 
 
 def is_vercel_affinity_warmup(headers: collections.abc.Mapping[str, str]) -> bool:
@@ -13,3 +36,43 @@ def is_vercel_affinity_warmup(headers: collections.abc.Mapping[str, str]) -> boo
         name.lower() == _WARMUP_HEADER and value == "1"
         for name, value in headers.items()
     )
+
+
+async def warm_next_vercel_instance(
+    url: str,
+    headers: collections.abc.Mapping[str, str],
+    *,
+    client: httpx.AsyncClient | None = None,
+) -> None:
+    """Start the shard's next instance from the one that holds the shard, in the 30 s
+    before the shard moves to it.
+
+    Run it in the pinned route after the response, with the request's URL and headers:
+    in FastAPI, as a background task.
+    """
+    next_id = _header(headers, _NEXT_HEADER)
+    if next_id is None or next_id == _header(headers, _AFFINITY_HEADER):
+        return
+    if next_id in _warmed:
+        return
+    _warmed.add(next_id)
+    # The request's own headers, so the warm-up passes the merchant's middleware as it did.
+    warmup = {
+        key: value
+        for key, value in headers.items()
+        if key.lower() not in _DROPPED_HEADERS
+    }
+    warmup[_AFFINITY_HEADER] = next_id
+    warmup[_WARMUP_HEADER] = "1"
+    try:
+        if client is None:
+            async with httpx.AsyncClient() as owned:
+                response = await owned.post(url, headers=warmup)
+        else:
+            response = await client.post(url, headers=warmup)
+        warm = response.is_success
+    except httpx.HTTPError:
+        warm = False
+    if not warm:
+        # The next request in the window tries again.
+        _warmed.discard(next_id)

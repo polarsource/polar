@@ -102,7 +102,8 @@ class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, S
         Field(description=_trial_payment_setup_required_description),
     ] = None
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
-        description="Payment processor to use. Currently only Stripe is supported."
+        default=PaymentProcessor.stripe,
+        description="Payment processor to use. Currently only Stripe is supported.",
     )
     label: str | None = Field(
         description="Optional label to distinguish links internally", default=None

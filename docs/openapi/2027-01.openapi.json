@@ -40847,7 +40847,8 @@
             "type": "string",
             "const": "stripe",
             "title": "Payment Processor",
-            "description": "Payment processor to use. Currently only Stripe is supported."
+            "description": "Payment processor to use. Currently only Stripe is supported.",
+            "default": "stripe"
           },
           "label": {
             "anyOf": [
@@ -40957,7 +40958,6 @@
         },
         "type": "object",
         "required": [
-          "payment_processor",
           "products"
         ],
         "title": "CheckoutLinkCreateProducts",

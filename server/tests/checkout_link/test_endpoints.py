@@ -178,6 +178,30 @@ class TestCreateCheckoutLink:
         assert json["client_secret"] in json["url"]
         assert "metadata" in json
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_missing_payment_processor(
+        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+    ) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={"products": [str(product.id)]},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
+    async def test_payment_processor_defaults_to_stripe_2027_01(
+        self, client: AsyncClient, product: Product, user_organization: UserOrganization
+    ) -> None:
+        response = await client.post(
+            "/v1/checkout-links/",
+            json={"products": [str(product.id)]},
+        )
+
+        assert response.status_code == 201
+        assert response.json()["payment_processor"] == "stripe"
+
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.checkout_links_write}))
     async def test_valid_trial_payment_setup_not_required(

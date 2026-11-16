@@ -3,7 +3,11 @@ mod closed_buckets;
 mod filter;
 mod redis_store;
 
-use std::{collections::BTreeMap, time::Duration};
+use std::{
+    collections::{BTreeMap, HashSet},
+    sync::{Mutex, PoisonError},
+    time::Duration,
+};
 
 use chrono::{DateTime, Utc};
 use redis::aio::ConnectionManager;
@@ -24,6 +28,8 @@ use crate::{
 };
 
 const BUCKET_SIZE_SECONDS: i64 = 5 * 60;
+const SYNC_REQUEUE_WINDOW_SECONDS: i64 = 30;
+const MAX_QUEUED_SYNCS: usize = 100_000;
 
 #[derive(Debug, Deserialize)]
 struct Reducer {
@@ -72,10 +78,64 @@ impl ActiveBuckets {
     }
 }
 
+pub struct BucketSync {
+    bucket_start: i64,
+    key: String,
+    job: Job,
+}
+
+pub type QueuedBucket = (i64, String);
+
+/// The bucket syncs this instance has queued. A sync runs once its bucket closes, so one
+/// queued job covers every event that reaches the bucket until shortly before then.
+#[derive(Default)]
+pub struct QueuedSyncs(Mutex<BTreeMap<i64, HashSet<String>>>);
+
+impl QueuedSyncs {
+    pub fn pending(
+        &self,
+        syncs: Vec<BucketSync>,
+        now: DateTime<Utc>,
+    ) -> (Vec<Job>, Vec<QueuedBucket>) {
+        let queued = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        // Near the close every event queues a sync again: the debounce then holds the sync
+        // back until a while after the last of them.
+        let requeue_from = now.timestamp() + SYNC_REQUEUE_WINDOW_SECONDS - BUCKET_SIZE_SECONDS;
+        syncs
+            .into_iter()
+            .filter(|sync| {
+                sync.bucket_start <= requeue_from
+                    || !queued
+                        .get(&sync.bucket_start)
+                        .is_some_and(|keys| keys.contains(&sync.key))
+            })
+            .map(|sync| (sync.job, (sync.bucket_start, sync.key)))
+            .unzip()
+    }
+
+    pub fn record(&self, buckets: Vec<QueuedBucket>, now: DateTime<Utc>) {
+        if buckets.is_empty() {
+            return;
+        }
+        let mut queued = self.0.lock().unwrap_or_else(PoisonError::into_inner);
+        let current_bucket_start = bucket_start(now.timestamp());
+        queued.retain(|start, _| *start >= current_bucket_start);
+        let mut count: usize = queued.values().map(HashSet::len).sum();
+        for (bucket_start, key) in buckets {
+            if count >= MAX_QUEUED_SYNCS {
+                break;
+            }
+            if queued.entry(bucket_start).or_default().insert(key) {
+                count += 1;
+            }
+        }
+    }
+}
+
 pub struct Rollup {
     pub bucket_count: usize,
     pub active_buckets: ActiveBuckets,
-    pub sync_jobs: Vec<Job>,
+    pub sync_jobs: Vec<BucketSync>,
     pub outpost_changes: Vec<ReducerBucketChange>,
 }
 
@@ -122,14 +182,19 @@ pub async fn rollup(
             .filter(|bucket| bucket.start >= current_bucket_start)
             .map(|bucket| {
                 let closes_in = bucket.start + BUCKET_SIZE_SECONDS - now.timestamp();
-                Job::sync_reducer_bucket(
-                    reducers[bucket.reducer].id,
-                    &bucket_start_isoformat(bucket.start),
-                    &bucket_key(reducers[bucket.reducer].id, bucket),
-                    bucket.customer_id,
-                    bucket.external_customer_id,
-                    Duration::from_secs(closes_in.max(0) as u64),
-                )
+                let key = bucket_key(reducers[bucket.reducer].id, bucket);
+                BucketSync {
+                    bucket_start: bucket.start,
+                    job: Job::sync_reducer_bucket(
+                        reducers[bucket.reducer].id,
+                        &bucket_start_isoformat(bucket.start),
+                        &key,
+                        bucket.customer_id,
+                        bucket.external_customer_id,
+                        Duration::from_secs(closes_in.max(0) as u64),
+                    ),
+                    key,
+                }
             }),
     );
     Ok(Rollup {
@@ -212,6 +277,50 @@ mod tests {
             },
         };
         (cases, event)
+    }
+
+    fn bucket_sync(bucket_start: i64, key: &str) -> BucketSync {
+        BucketSync {
+            bucket_start,
+            key: key.to_owned(),
+            job: Job::sync_reducer_bucket(
+                Uuid::nil(),
+                &bucket_start_isoformat(bucket_start),
+                key,
+                None,
+                None,
+                Duration::ZERO,
+            ),
+        }
+    }
+
+    #[test]
+    fn queues_a_bucket_sync_once_until_the_bucket_is_about_to_close() {
+        let queued = QueuedSyncs::default();
+        let bucket = 1_700_000_100;
+        let at = |seconds: i64| DateTime::from_timestamp(bucket + seconds, 0).unwrap();
+        let pending = |keys: &[&str], now| {
+            let syncs = Vec::from_iter(keys.iter().map(|key| bucket_sync(bucket, key)));
+            queued.pending(syncs, now)
+        };
+
+        let (_, first) = pending(&["a", "b"], at(0));
+        let unrecorded = pending(&["a"], at(1)).0.len();
+        queued.record(first, at(1));
+        let (_, repeated) = pending(&["a", "b", "c"], at(200));
+        let before_window = pending(&["a"], at(269)).0.len();
+        let closing = pending(&["a"], at(270)).0.len();
+        queued.record(
+            vec![(bucket + BUCKET_SIZE_SECONDS, "a".to_owned())],
+            at(300),
+        );
+        let pruned = !queued.0.lock().unwrap().contains_key(&bucket);
+
+        assert_eq!(unrecorded, 1);
+        assert_eq!(repeated, [(bucket, "c".to_owned())]);
+        assert_eq!(before_window, 0);
+        assert_eq!(closing, 1);
+        assert!(pruned);
     }
 
     #[test]

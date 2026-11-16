@@ -39,7 +39,7 @@ use crate::{
     jobs::{self, SqsQueue, SqsSettings},
     outpost::{self, ReducerBucketChange},
     rate_limit::{self, RateLimiter},
-    reducer::{self, ActiveBuckets},
+    reducer::{self, ActiveBuckets, QueuedSyncs},
     telemetry,
 };
 
@@ -71,6 +71,7 @@ pub struct AppState {
     pub rate_limiter: Arc<RateLimiter>,
     pub trusted_proxies: Arc<TrustedProxies>,
     pub event_types: Arc<EventTypeCache>,
+    pub queued_syncs: Arc<QueuedSyncs>,
 }
 
 impl AppState {
@@ -136,6 +137,7 @@ impl AppState {
             rate_limiter: Arc::new(RateLimiter::new(&config.environment)),
             trusted_proxies: Arc::new(config.trusted_proxies),
             event_types: Arc::default(),
+            queued_syncs: Arc::default(),
             db,
             redis,
             redis_client,
@@ -390,6 +392,7 @@ async fn write_events(
     request_span.record("inserted_events", staged.inserted.len());
     request_span.record("skipped_duplicates", staged.duplicates);
 
+    let now = Utc::now();
     let (active_buckets, sync_jobs, outpost_changes) = if staged.inserted.is_empty() {
         (None, Vec::new(), Vec::new())
     } else {
@@ -405,7 +408,7 @@ async fn write_events(
             &mut state.redis.clone(),
             organization_id,
             &staged.inserted,
-            Utc::now(),
+            now,
         )
         .instrument(span.clone())
         .await?;
@@ -416,11 +419,16 @@ async fn write_events(
             rollup.outpost_changes,
         )
     };
+    // Read again: the rollup may have taken a while, and a stale clock would skip syncs
+    // that are due because the bucket is about to close.
+    let now = Utc::now();
+    let (sync_jobs, queued_buckets) = state.queued_syncs.pending(sync_jobs, now);
     let job_count = sync_jobs.len();
     jobs::enqueue(state.sqs.as_deref(), &mut state.redis.clone(), sync_jobs)
         .instrument(tracing::info_span!("enqueue_bucket_syncs", job_count))
         .await
         .map_err(IngestError::QueueUnavailable)?;
+    state.queued_syncs.record(queued_buckets, now);
     Ok(WrittenEvents {
         response: IngestResponse {
             inserted: staged.inserted.len(),

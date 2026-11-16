@@ -111,7 +111,7 @@ def convert_type_to_annotation(
                 isinstance(variant, (ModelRef, UnionRef))
                 and variant.name not in mapped_models
             ):
-                mapping[variant.name] = variant.name
+                mapping.setdefault(variant.name, variant.name)
         variants = "".join(
             f"({tag!r}, {model}{ref_suffix})," for tag, model in mapping.items()
         )

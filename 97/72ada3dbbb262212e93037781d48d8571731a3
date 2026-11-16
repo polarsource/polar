@@ -1,0 +1,21 @@
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_cb1810ac375bfe 615,620-621,665
+.github/ci_pool/pool.py
+  s_f83d2c94945117::t_cb1810ac375bfe 29-30,44-54,89-90,102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9772ada3dbbb262212e93037781d48d8571731a3",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

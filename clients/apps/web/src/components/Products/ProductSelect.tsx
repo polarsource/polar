@@ -31,9 +31,7 @@ import {
 import React, { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { CatalogVersionLabel } from './CatalogVersionLabel'
-import ProductPriceTypeLabel, {
-  type ProductPriceType,
-} from './ProductPriceTypeLabel'
+import ProductPriceTypeLabel from './ProductPriceTypeLabel'
 
 export interface ProductFilter {
   product_id: string[] | null
@@ -42,9 +40,6 @@ export interface ProductFilter {
 
 const highlightClassName =
   'rounded-lg data-[selected=true]:bg-gray-100 dark:data-[selected=true]:bg-polar-800 data-[selected=true]:text-black dark:data-[selected=true]:text-white'
-
-const productLine = (product: schemas['Product']) =>
-  product.external_id ?? product.id
 
 const ProductItem = ({
   organization,
@@ -154,43 +149,35 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
   const displayedProducts = filterByExternalId
     ? latestVersions(uniqueProducts.filter(({ external_id }) => external_id))
     : uniqueProducts
-  // An old version is only removed when its product line has no current version left.
+  // An old version is only removed when its product has no current version left.
   // Look the current versions up directly: search and pagination can leave them out of the list.
+  const oldVersionExternalIds = displayedProducts
+    .filter((product) => !product.is_current)
+    .flatMap((product) => product.external_id ?? [])
   const { data: currentVersions } = useSelectedProducts({
     organization_id: organization.id,
-    external_id: [
-      ...new Set(
-        displayedProducts.flatMap((product) =>
-          !product.is_current && product.external_id
-            ? [product.external_id]
-            : [],
-        ),
-      ),
-    ],
+    external_id: [...new Set(oldVersionExternalIds)],
   })
-  const liveLines = new Set(
-    [
-      ...displayedProducts.filter(
-        (product) => product.is_current && !product.is_archived,
-      ),
-      ...(currentVersions ?? []),
-    ].map(productLine),
+  const stillSold = new Set(
+    currentVersions?.map((product) => product.external_id),
   )
   const isRemoved = (product: schemas['Product']) =>
-    product.is_archived || !liveLines.has(productLine(product))
+    product.is_archived ||
+    (!product.is_current && !stillSold.has(product.external_id))
   const removedProducts = displayedProducts
     .filter(isRemoved)
     .sort((a, b) => a.name.localeCompare(b.name))
   const currentProducts = displayedProducts.filter(
     (product) => !isRemoved(product),
   )
-  const groupedProducts: Record<ProductPriceType, schemas['Product'][]> = {
-    one_time: currentProducts.filter((product) => !product.is_recurring),
-    recurring: currentProducts.filter((product) => product.is_recurring),
-  }
-  const productTypes = (['one_time', 'recurring'] as const).filter(
-    (type) => groupedProducts[type].length > 0,
-  )
+  const productGroups = (['one_time', 'recurring'] as const)
+    .map((type) => ({
+      type,
+      products: currentProducts.filter(
+        (product) => product.is_recurring === (type === 'recurring'),
+      ),
+    }))
+    .filter(({ products }) => products.length > 0)
   const showRemoved = removedOpen || !!query
 
   const hasSelection = value.length > 0
@@ -216,22 +203,22 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
     if (!productValue) {
       return
     }
-    if (value.includes(productValue)) {
-      onChange(value.filter((v) => v !== productValue))
-    } else {
-      onChange([...value, productValue])
-    }
+    onChange(
+      value.includes(productValue)
+        ? value.filter((v) => v !== productValue)
+        : [...value, productValue],
+    )
   }
 
-  const onSelectProductType = (type: ProductPriceType) => {
-    const typeValues = groupedProducts[type].flatMap(
+  const onSelectAll = (products: schemas['Product'][]) => {
+    const groupValues = products.flatMap(
       (product) => selectionValue(product) ?? [],
     )
-    const allSelected = typeValues.every((v) => value.includes(v))
+    const allSelected = groupValues.every((v) => value.includes(v))
     onChange(
       allSelected
-        ? value.filter((v) => !typeValues.includes(v))
-        : [...new Set([...value, ...typeValues])],
+        ? value.filter((v) => !groupValues.includes(v))
+        : [...new Set([...value, ...groupValues])],
     )
   }
 
@@ -282,28 +269,28 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             {displayedProducts.length === 0 && (
               <CommandEmpty>No products found</CommandEmpty>
             )}
-            {productTypes.map((type, index) => (
+            {productGroups.map(({ type, products }, index) => (
               <React.Fragment key={type}>
                 {index > 0 && <CommandSeparator />}
                 <CommandGroup
                   heading={
-                    productTypes.length > 1 ? (
+                    productGroups.length > 1 ? (
                       <Box justifyContent="between" alignItems="center">
                         <ProductPriceTypeLabel productPriceType={type} />
                         <button
                           type="button"
                           className="cursor-pointer hover:text-black dark:hover:text-white"
-                          onClick={() => onSelectProductType(type)}
+                          onClick={() => onSelectAll(products)}
                         >
-                          {groupedProducts[type].every(isSelected)
+                          {products.every(isSelected)
                             ? 'Deselect all'
-                            : `Select all ${groupedProducts[type].length}`}
+                            : `Select all ${products.length}`}
                         </button>
                       </Box>
                     ) : undefined
                   }
                 >
-                  {groupedProducts[type].map((product) => (
+                  {products.map((product) => (
                     <ProductItem
                       key={product.id}
                       organization={organization}
@@ -327,7 +314,7 @@ const ProductSelect: React.FC<ProductSelectProps> = ({
             )}
             {removedProducts.length > 0 && (
               <>
-                {productTypes.length > 0 && <CommandSeparator />}
+                {productGroups.length > 0 && <CommandSeparator />}
                 <CommandGroup heading={query ? 'Removed' : undefined}>
                   {!query && (
                     <CommandItem

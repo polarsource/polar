@@ -1,0 +1,19 @@
+.github/workflows/test_server.yaml
+  s_94f2b33009c1e9::t_f55779f93af421 646
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a32a749576136a55a9b6e98c666f7c0a413c79a1",
+  "prompts": {},
+  "sessions": {
+    "s_94f2b33009c1e9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e419-3894-7680-b309-2ccd6eeddad0",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

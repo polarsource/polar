@@ -3,13 +3,14 @@ import errno
 import gc
 import os
 import stat
-import threading
 from dataclasses import dataclass
+
+import psutil
 
 
 @dataclass(frozen=True)
 class Resources:
-    threads: tuple[str, ...]
+    threads: int
     sockets: frozenset[int]
     loops: tuple[str, ...]
 
@@ -31,20 +32,16 @@ def inspect_resources() -> Resources:
         if isinstance(value, asyncio.AbstractEventLoop) and not value.is_closed()
     )
     return Resources(
-        tuple(
-            thread.name
-            for thread in threading.enumerate()
-            if thread is not threading.current_thread()
-        ),
+        psutil.Process().num_threads(),
         frozenset(sockets),
         loops,
     )
 
 
 def require_clean(before: Resources, after: Resources) -> None:
-    if before.threads or before.loops:
+    if before.threads != 1 or before.loops:
         raise RuntimeError(f"Unsafe preload baseline: {before}")
-    if after.threads or after.loops or after.sockets - before.sockets:
+    if after.threads != 1 or after.loops or after.sockets - before.sockets:
         raise RuntimeError(
             f"Resources retained after collection: before={before}, after={after}"
         )

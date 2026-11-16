@@ -137,3 +137,5 @@ def initialize() -> Collection:
 
 
 STATE = initialize()
+if not STATE["ready"]:
+    raise SystemExit(1)

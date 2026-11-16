@@ -18,11 +18,11 @@ def test_each_file_runs_once_in_a_deterministic_shard(
         else {}
     )
 
-    groups = split_files(files, durations, 3)
+    groups = split_files(files, durations, [1, 1, 1])
 
     assert all(groups)
     assert sorted(file for group in groups for file in group) == sorted(files)
-    assert groups == split_files(list(reversed(files)), durations, 3)
+    assert groups == split_files(list(reversed(files)), durations, [1, 1, 1])
 
 
 def test_balances_files_by_recorded_test_duration(tmp_path: Path) -> None:
@@ -34,7 +34,7 @@ def test_balances_files_by_recorded_test_duration(tmp_path: Path) -> None:
         for file, duration in zip(files, [8.0, 7.0, 6.0, 5.0], strict=True)
     }
 
-    groups = split_files(files, durations, 2)
+    groups = split_files(files, durations, [1, 1])
 
     assert {frozenset(group) for group in groups} == {
         frozenset([files[0], files[3]]),
@@ -60,3 +60,15 @@ def test_cli_discovers_uncached_files_without_importing_them(
         selected.extend(capsys.readouterr().out.splitlines())
 
     assert sorted(selected) == ["tests/new_test.py", "tests/test_new.py"]
+
+
+def test_balances_files_across_different_worker_counts(tmp_path: Path) -> None:
+    files = [tmp_path / f"test_{index}.py" for index in range(6)]
+    for file in files:
+        file.touch()
+    durations = {f"{file}::test_example": 10.0 for file in files}
+
+    groups = split_files(files, durations, [1, 2, 3])
+
+    assert [len(group) for group in groups] == [1, 2, 3]
+    assert sorted(file for group in groups for file in group) == files

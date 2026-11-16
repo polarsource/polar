@@ -202,9 +202,21 @@ def stop(prefix: str) -> None:
             docker("rm", "-f", name)
 
 
+def statistics(prefix: str, result_file: Path, tinybird: bool) -> None:
+    services = ["postgres", "redis", *(["tinybird"] if tinybird else [])]
+    usage = {}
+    for service in services:
+        text = docker("exec", f"{prefix}-{service}", "cat", "/sys/fs/cgroup/cpu.stat")
+        usage[service] = {
+            key: int(value)
+            for key, value in (line.split() for line in text.splitlines())
+        }
+    result_file.write_text(json.dumps({"observed_at": time.time(), "services": usage}))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", choices=["start", "stop"])
+    parser.add_argument("action", choices=["start", "stop", "stats"])
     parser.add_argument("--prefix", required=True)
     parser.add_argument("--result-file", type=Path)
     parser.add_argument("--tinybird", action="store_true")
@@ -217,6 +229,10 @@ def main() -> None:
         if args.result_file is None:
             parser.error("start requires --result-file")
         start(args.prefix, args.result_file, args.tinybird)
+    elif args.action == "stats":
+        if args.result_file is None:
+            parser.error("stats requires --result-file")
+        statistics(args.prefix, args.result_file, args.tinybird)
     else:
         stop(args.prefix)
 

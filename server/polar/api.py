@@ -9,6 +9,7 @@ from polar.benefit.strategies.slack_shared_channel.endpoints import (
     router as slack_shared_channel_benefit_router,
 )
 from polar.catalog.endpoints import router as catalog_router
+from polar.catalog_migration.endpoints import router as catalog_migration_router
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
@@ -190,6 +191,8 @@ router.include_router(feedback_router)
 router.include_router(email_update_router)
 # /catalogs
 router.include_router(catalog_router)
+# /catalog-migrations
+router.include_router(catalog_migration_router)
 # /config
 router.include_router(declarative_config_router)
 # /agent

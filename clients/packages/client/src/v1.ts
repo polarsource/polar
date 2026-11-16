@@ -6694,6 +6694,54 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/catalog-migrations/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Catalog Migration
+     * @description Get a catalog migration and its progress.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['catalog-migrations:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/catalog-migrations/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create Catalog Migration
+     * @description Move the subscriptions of older versions of a product to its current version.
+     *
+     *     Subscriptions move in the background, each one at its next renewal, without
+     *     notifying customers. Subscriptions that are canceling or already have a
+     *     pending change are left alone.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['catalog-migrations:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/config/': {
     parameters: {
       query?: never
@@ -14362,6 +14410,90 @@ export interface components {
        */
       meter_id: string
     }
+    /**
+     * CatalogMigration
+     * @description A request to move the customers of older versions of a product to its
+     *     current version.
+     *
+     *     Subscriptions move in the background, each one at its next renewal.
+     */
+    CatalogMigration: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       * @example 2026-01-01T00:00:00.000000Z
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization ID.
+       */
+      organization_id: string
+      /**
+       * Source Product Ids
+       * @description IDs of the product versions customers move from.
+       */
+      source_product_ids: string[]
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product version customers move to.
+       */
+      target_product_id: string
+      /** @description `running` while customers are being handled, `completed` once every one of them was. */
+      status: components['schemas']['CatalogMigrationStatus']
+      /**
+       * Moved Count
+       * @description Subscriptions scheduled to move at their next renewal so far.
+       */
+      moved_count: number
+      /**
+       * Skipped Count
+       * @description Subscriptions that couldn't move, for example on a currency mismatch.
+       */
+      skipped_count: number
+      /**
+       * Completed At
+       * @description When every customer was handled. `None` while running.
+       */
+      completed_at: string | null
+    }
+    /** CatalogMigrationCreate */
+    CatalogMigrationCreate: {
+      /**
+       * Source Product Ids
+       * @description IDs of the product versions customers move from. Each one must be another version of the target product.
+       * @example [
+       *       "d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23"
+       *     ]
+       */
+      source_product_ids: string[]
+      /**
+       * Target Product Id
+       * Format: uuid4
+       * @description ID of the product version customers move to. Must be the current version of the product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      target_product_id: string
+    }
+    /**
+     * CatalogMigrationStatus
+     * @enum {string}
+     */
+    CatalogMigrationStatus: 'running' | 'completed'
     /** CatalogNotDraft */
     CatalogNotDraft: {
       /**
@@ -65225,6 +65357,89 @@ export interface operations {
       }
     }
   }
+  'catalog-migrations:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The catalog migration ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogMigration']
+        }
+      }
+      /** @description Catalog migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'catalog-migrations:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CatalogMigrationCreate']
+      }
+    }
+    responses: {
+      /** @description Catalog migration started. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogMigration']
+        }
+      }
+      /** @description You don't have the permission to manage sales, or the organization doesn't use config as code. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'config:export': {
     parameters: {
       query?: {
@@ -73480,6 +73695,9 @@ export const canonicalPaymentMethodTypeValues: ReadonlyArray<
   'link',
   'other',
 ]
+export const catalogMigrationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CatalogMigrationStatus']
+> = ['running', 'completed']
 export const catalogStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CatalogStatus']
 > = ['draft', 'live', 'archived']

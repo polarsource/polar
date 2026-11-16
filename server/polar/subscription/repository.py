@@ -117,6 +117,25 @@ class SubscriptionRepository(
             statement = statement.where(Subscription.id > after_id)
         return statement
 
+    def get_catalog_migration_statement(
+        self, product_ids: Sequence[UUID], *, after_id: UUID | None = None
+    ) -> Select[Subscription]:
+        """Active subscriptions of these product versions that a catalog migration
+        can move: not canceling, and without a pending change."""
+        statement = self.get_base_statement().where(
+            Subscription.product_id.in_(product_ids),
+            Subscription.active,
+            ~Subscription.cancel_at_period_end,
+            ~sa.exists().where(
+                SubscriptionUpdate.subscription_id == Subscription.id,
+                SubscriptionUpdate.applied_at.is_(None),
+                SubscriptionUpdate.deleted_at.is_(None),
+            ),
+        )
+        if after_id is not None:
+            statement = statement.where(Subscription.id > after_id)
+        return statement
+
     async def release_scheduler_lock(self, subscription: Subscription) -> Subscription:
         statement = (
             sa.update(Subscription)

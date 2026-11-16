@@ -1,6 +1,7 @@
 from polar.auth import tasks as auth
 from polar.backoffice.auth import tasks as backoffice_auth
 from polar.benefit import tasks as benefit
+from polar.catalog_migration import tasks as catalog_migration
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
 from polar.customer_email_update import tasks as customer_email_update
@@ -52,6 +53,7 @@ __all__ = [
     "auth",
     "backoffice_auth",
     "benefit",
+    "catalog_migration",
     "chargeback_stop",
     "checkout",
     "customer",

@@ -226,7 +226,7 @@ describe('polar config apply', () => {
       ['--confirm'],
     )
     expect(output).toContain(
-      'Products, benefits and meters are saved to the draft catalog.',
+      'Products, benefits, meters and settings are saved to the draft catalog.',
     )
     expect(output).toContain('Run polar config publish to make it live.')
   })

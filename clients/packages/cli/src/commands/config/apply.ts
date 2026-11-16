@@ -61,7 +61,7 @@ const render = (
         applied(config, organization, result.entries),
         ...(result.draft
           ? next(
-              `${ui.INDENT}Products, benefits and meters are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
+              `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
             )
           : []),
         ui.blank,

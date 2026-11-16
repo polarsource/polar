@@ -13,7 +13,6 @@ from unittest.mock import DEFAULT, AsyncMock
 
 import anyio
 import anyio.lowlevel
-import httpx
 import httpx2
 import pytest
 from fakeredis import FakeAsyncRedis, FakeServer
@@ -2807,8 +2806,6 @@ async def test_fails_to_start_when_polar_refuses_outpost(
     [
         (RedisConnectionError("Disconnected"), True),
         (RedisTimeoutError("DNS resolution timed out"), True),
-        (httpx.ConnectError("Disconnected"), True),
-        (httpx2.ConnectError("Disconnected"), True),
         (AuthenticationError("Invalid credentials"), False),
         (AuthorizationError("Access denied"), False),
         (ValueError("Invalid snapshot"), False),

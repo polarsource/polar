@@ -119,12 +119,12 @@ def auth_subject(
 
     # For User subjects, provide a mock UserSession so is_web_session() returns True.
     # This matches real web session behavior where all User sessions are UserSessions.
-    session: Any = None
+    auth_session: Any = None
     if isinstance(subject, User):
-        session = MagicMock(spec=UserSession)
-        session.created_at = utc_now()
+        auth_session = MagicMock(spec=UserSession)
+        auth_session.created_at = utc_now()
 
-    return AuthSubject(subject, auth_subject_fixture.scopes, session)
+    return AuthSubject(subject, auth_subject_fixture.scopes, auth_session)
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:

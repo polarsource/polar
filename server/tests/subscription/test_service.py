@@ -2974,6 +2974,139 @@ class TestCycle:
         assert stale_update.applied_at is None
         assert stale_update.deleted_at is not None
 
+    async def test_pending_update_product_follows_current_version(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        scheduled_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(2000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=scheduled_version,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        scheduled_version.is_current = False
+        await save_fixture(scheduled_version)
+        current_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(2500, "usd")],
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product_id == current_version.id
+        assert updated_subscription.amount == 2500
+        assert updated_subscription.pending_update is None
+        await session.refresh(subscription_update)
+        assert subscription_update.product_id == current_version.id
+        assert subscription_update.applied_at is not None
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=current_version.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+
+    @pytest.mark.parametrize("current_version_currency", [None, "eur"])
+    async def test_pending_update_product_without_usable_current_version(
+        self,
+        current_version_currency: str | None,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        scheduled_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(2000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=scheduled_version,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        scheduled_version.is_current = False
+        await save_fixture(scheduled_version)
+        if current_version_currency is not None:
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                external_id="pro",
+                prices=[(2500, current_version_currency)],
+            )
+
+        previous_current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.product == product
+        assert updated_subscription.current_period_start == previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+        assert updated_subscription.pending_update is None
+        stale_update = await SubscriptionUpdateRepository.from_session(
+            session
+        ).get_by_id(subscription_update.id, include_deleted=True)
+        assert stale_update is not None
+        assert stale_update.applied_at is None
+        assert stale_update.deleted_at is not None
+        assert not any(
+            c.args and c.args[0] == "benefit.enqueue_benefits_grants"
+            for c in enqueue_job_mock.call_args_list
+        )
+
     async def test_pending_update_seats(
         self,
         session: AsyncSession,

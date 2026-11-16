@@ -433,6 +433,55 @@ class TestCalculateChargePreview:
 
         assert preview.base_amount == 1000
 
+    @pytest.mark.parametrize(
+        ("has_current_version", "base_amount"), [(True, 2500), (False, 1000)]
+    )
+    async def test_pending_update_follows_current_version(
+        self,
+        has_current_version: bool,
+        base_amount: int,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        scheduled_version = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(2000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=scheduled_version,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        scheduled_version.is_current = False
+        await save_fixture(scheduled_version)
+        if has_current_version:
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                external_id="pro",
+                prices=[(2500, "usd")],
+            )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.base_amount == base_amount
+
     async def test_pending_interval_update_keeps_repeating_discount(
         self,
         session: AsyncSession,

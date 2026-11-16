@@ -238,6 +238,17 @@ class SubscriptionLocked(SubscriptionError):
         super().__init__(message, 409)
 
 
+class NoCurrentProductVersion(SubscriptionError):
+    def __init__(self, subscription: Subscription, product: Product) -> None:
+        self.subscription = subscription
+        self.product = product
+        message = (
+            f"Product {product.id} isn't the current version anymore, and "
+            f"subscription {subscription.id} can't change to the current one."
+        )
+        super().__init__(message)
+
+
 class CannotPauseSubscription(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
@@ -1366,14 +1377,32 @@ class SubscriptionService:
                 subscription_update_repository = (
                     SubscriptionUpdateRepository.from_session(session)
                 )
-                # Check before apply_update() changes subscription.product
-                pending_update_resets_cycle = (
-                    pending_update.is_interval_changed()
-                    or pending_update.proration_behavior
-                    == SubscriptionProrationBehavior.reset
-                )
                 try:
+                    if pending_update.product is not None:
+                        pending_update.product = (
+                            await self._get_current_product_version(
+                                session, subscription, pending_update.product
+                            )
+                        )
+                    # Check before apply_update() changes subscription.product
+                    pending_update_resets_cycle = (
+                        pending_update.is_interval_changed()
+                        or pending_update.proration_behavior
+                        == SubscriptionProrationBehavior.reset
+                    )
                     pending_update.apply_update()
+                except NoCurrentProductVersion:
+                    # The target product was replaced or removed after this update
+                    # was scheduled, and the subscription can't change to its
+                    # current version. Discard the update, as below.
+                    log.warning(
+                        "Skipping scheduled subscription update: "
+                        "target product has no current version to change to",
+                        subscription_id=subscription.id,
+                        subscription_update_id=pending_update.id,
+                        product_id=pending_update.product_id,
+                    )
+                    await subscription_update_repository.soft_delete(pending_update)
                 except NoPricesForCurrencies:
                     # The target product's prices in the subscription's currency
                     # were archived after this update was scheduled. Discard the
@@ -2081,6 +2110,37 @@ class SubscriptionService:
             )
 
         return product, currency_prices
+
+    async def _get_current_product_version(
+        self, session: AsyncSession, subscription: Subscription, product: Product
+    ) -> Product:
+        """The current version of the product a scheduled change targets.
+
+        Customers only move to the current version of a product. When a newer
+        version was published after the change was scheduled, the subscription
+        follows it, under the same rules as a new product change.
+        """
+        if product.is_current:
+            return product
+
+        current_version = (
+            await ProductRepository.from_session(
+                session
+            ).get_by_external_id_and_organization(
+                product.external_id, product.organization_id
+            )
+            if product.external_id is not None
+            else None
+        )
+        if current_version is None:
+            raise NoCurrentProductVersion(subscription, product)
+        try:
+            current_version, _ = await self.validate_product_change(
+                session, subscription, product_id=current_version.id
+            )
+        except (AlreadyCanceledSubscription, PolarRequestValidationError) as e:
+            raise NoCurrentProductVersion(subscription, product) from e
+        return current_version
 
     async def validate_units_change(
         self,
@@ -3367,7 +3427,19 @@ class SubscriptionService:
             else:
                 pending_update.discount = None
             try:
+                if pending_update.product is not None:
+                    pending_update.product = await self._get_current_product_version(
+                        session, subscription, pending_update.product
+                    )
                 pending_update.apply_update()
+            except NoCurrentProductVersion:
+                log.warning(
+                    "Skipping scheduled subscription update in charge preview: "
+                    "target product has no current version to change to",
+                    subscription_id=subscription.id,
+                    subscription_update_id=pending_update.id,
+                    product_id=pending_update.product_id,
+                )
             except NoPricesForCurrencies:
                 log.warning(
                     "Skipping scheduled subscription update in charge preview: "

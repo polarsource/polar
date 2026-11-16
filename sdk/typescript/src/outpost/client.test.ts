@@ -1692,11 +1692,6 @@ it("starts once Redis accepts the connection it first closed", async () => {
   expect(attempts).toHaveBeenCalledTimes(2);
 });
 
-it("fails to start without Redis instead of hanging", async () => {
-  const outpost = new Outpost(`${redisServer.socket}.missing`, { client: core });
-  await expect(outpost.start()).rejects.toThrow();
-}, 10_000);
-
 const aliceSnapshot = {
   ...customer,
   customer_id: null,

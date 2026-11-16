@@ -168,7 +168,7 @@ jobs:
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
-          uv run python -m scripts.pytest_shards --shards 3 --workers-per-shard 3,8,8 --shard ${{ inputs.shard }} > "$RUNNER_TEMP/ordinary-files"
+          uv run python -m scripts.pytest_shards --shards 4 --workers-per-shard 3,8,8,8 --shard ${{ inputs.shard }} > "$RUNNER_TEMP/ordinary-files"
           cp "$RUNNER_TEMP/ordinary-files" "$RUNNER_TEMP/test-files"
           weights=()
           extra=()

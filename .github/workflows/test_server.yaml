@@ -140,7 +140,7 @@ jobs:
         with:
           retries: 3
           script: |
-            const number = job => job.name.match(/Server shard ([123])$/)?.[1];
+            const number = job => job.name.match(/Server shard ([1234])$/)?.[1];
             const parameters = {...context.repo, run_id: context.runId};
             const {data: run} = await github.rest.actions.getWorkflowRun(parameters);
             if (run.head_sha !== context.sha || run.run_attempt !== Number(process.env.GITHUB_RUN_ATTEMPT)) {
@@ -157,7 +157,7 @@ jobs:
                 throw new Error('Tests failed; use Re-run failed jobs to retry tests and timing publication');
               }
               const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...parameters, per_page: 100});
-              const available = shards.length === 3 && shards.every(job => {
+              const available = shards.length === 4 && shards.every(job => {
                 const shard = number(job);
                 const matching = artifacts.filter(artifact => artifact.name === `test-results-${shard}` && !artifact.expired);
                 if (matching.length > 1) { throw new Error('Duplicate timing artifacts'); }
@@ -167,7 +167,7 @@ jobs:
               if (available) { return; }
               await new Promise(resolve => setTimeout(resolve, 2000));
             }
-            throw new Error('Timed out waiting for three fresh timing artifacts');
+            throw new Error('Timed out waiting for four fresh timing artifacts');
 
       - name: 📊 Download shard test durations
         if: github.event_name == 'push'
@@ -185,7 +185,7 @@ jobs:
             if [[ "$(basename "$(dirname "$durations")")" = 'test-results-1' ]]; then expected_workers=4; fi
             jq -e --argjson workers "$expected_workers" '.failed == false and .workers == $workers' "$(dirname "$durations")/summary.json" > /dev/null
           done
-          uv run python -m scripts.merge_test_durations --expected-shards 3 --output .test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
+          uv run python -m scripts.merge_test_durations --expected-shards 4 --output .test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
 
       - name: 💾 Save merged test durations
         if: github.event_name == 'push'
@@ -488,7 +488,7 @@ jobs:
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
   test-1:
-    name: "Server: Tests 🐍 (1/3)"
+    name: "Server: Tests 🐍 (1/4)"
     permissions:
       contents: read
       pull-requests: read
@@ -498,7 +498,7 @@ jobs:
       shard: "1"
 
   test-2:
-    name: "Server: Tests 🐍 (2/3)"
+    name: "Server: Tests 🐍 (2/4)"
     permissions:
       contents: read
       pull-requests: read
@@ -508,7 +508,7 @@ jobs:
       shard: "2"
 
   test-3:
-    name: "Server: Tests 🐍 (3/3)"
+    name: "Server: Tests 🐍 (3/4)"
     permissions:
       contents: read
       pull-requests: read
@@ -517,15 +517,26 @@ jobs:
     with:
       shard: "3"
 
+  test-4:
+    name: "Server: Tests 🐍 (4/4)"
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    uses: ./.github/workflows/test_server_shard.yaml
+    with:
+      shard: "4"
+
   test-status:
     name: "Server: Tests 🐍"
-    needs: [changes, test-1, test-2, test-3]
+    needs: [changes, test-1, test-2, test-3, test-4]
     if: >-
       ${{ always() && !(needs.changes.result == 'success' &&
-        needs.test-1.result == 'success' && needs.test-2.result == 'success' && needs.test-3.result == 'success' &&
+        needs.test-1.result == 'success' && needs.test-2.result == 'success' && needs.test-3.result == 'success' && needs.test-4.result == 'success' &&
         needs.test-1.outputs.server_changed == needs.changes.outputs.server &&
         needs.test-2.outputs.server_changed == needs.changes.outputs.server &&
-        needs.test-3.outputs.server_changed == needs.changes.outputs.server) }}
+        needs.test-3.outputs.server_changed == needs.changes.outputs.server &&
+        needs.test-4.outputs.server_changed == needs.changes.outputs.server) }}
     runs-on: ubuntu-slim
     steps:
       - run: exit 1

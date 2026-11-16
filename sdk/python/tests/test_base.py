@@ -4,6 +4,7 @@ import dataclasses
 import typing
 
 import httpx
+import httpx2
 import pytest
 import typing_extensions
 
@@ -217,15 +218,17 @@ class TestBuildRequest:
         assert request.headers["Authorization"] == "Bearer polar_at_u_override"
 
     @pytest.mark.parametrize("client_class", [SyncClientBase, AsyncClientBase])
+    @pytest.mark.parametrize("timeout_class", [httpx.Timeout, httpx2.Timeout])
     def test_advanced_client_timeout(
         self,
         client_class: type[SyncClientBase | AsyncClientBase],
+        timeout_class: type[httpx.Timeout | httpx2.Timeout],
     ) -> None:
         client = client_class(
             base_url="https://api.polar.sh",
             version="2026-04",
             access_token="polar_at_u_xxx",
-            timeout=httpx.Timeout(30.0, connect=10.0),
+            timeout=timeout_class(30.0, connect=10.0),
         )
 
         request = client.build_request(method="GET", url="/v1/items/")
@@ -235,6 +238,19 @@ class TestBuildRequest:
             "read": 30.0,
             "write": 30.0,
             "pool": 30.0,
+        }
+
+        override = client.build_request(
+            method="GET",
+            url="/v1/items/",
+            request_timeout=timeout_class(None, pool=2.0),
+        )
+
+        assert override.extensions["timeout"] == {
+            "connect": None,
+            "read": None,
+            "write": None,
+            "pool": 2.0,
         }
 
     @pytest.mark.parametrize(
@@ -343,7 +359,7 @@ def test_user_agent(client: SyncClientBase | AsyncClientBase) -> None:
 
 
 def test_parse_response_json_empty_body() -> None:
-    response = httpx.Response(202, headers={"Content-Type": "application/json"})
+    response = httpx2.Response(202, headers={"Content-Type": "application/json"})
 
     assert parse_response_json(response) is None
 
@@ -361,7 +377,7 @@ class Order:
 
 def test_parse_response_json_preserves_unknown_enum_value() -> None:
     statuses = ["paid", "requires_review", None]
-    response = httpx.Response(200, json={"type": "order", "statuses": statuses})
+    response = httpx2.Response(200, json={"type": "order", "statuses": statuses})
 
     order = parse_response_json(response, Order)
 
@@ -379,7 +395,7 @@ def test_parse_response_json_open_enum_preserves_other_validation(
     payload: dict[str, object],
 ) -> None:
     with pytest.raises(PolarDeserializationError):
-        parse_response_json(httpx.Response(200, json=payload), Order)
+        parse_response_json(httpx2.Response(200, json=payload), Order)
 
 
 @pytest.mark.parametrize(

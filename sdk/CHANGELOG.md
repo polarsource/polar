@@ -10,6 +10,10 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+### Changed
+
+- Python: use HTTPX2 for HTTP transport and its default TLS verification for SDK-created clients. Custom timeouts support both HTTPX and HTTPX2. Pass an `httpx2.AsyncClient` when supplying a client to Outpost or Vercel warmup.
+
 ## [1.2.0] - 2026-11-13
 
 - Regenerate 2027-01 version.

@@ -25,7 +25,7 @@ class CustomerSessionSync(SyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -57,7 +57,7 @@ class CustomerSessionSync(SyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -91,7 +91,7 @@ class CustomerSessionAsync(AsyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -123,7 +123,7 @@ class CustomerSessionAsync(AsyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 

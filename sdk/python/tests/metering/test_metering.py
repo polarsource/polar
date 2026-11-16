@@ -6,7 +6,7 @@ from unittest.mock import ANY, AsyncMock, Mock
 
 import anyio
 import anyio.lowlevel
-import httpx
+import httpx2
 import pytest
 
 from polar import PolarClientError, PolarError, PolarNetworkError
@@ -287,7 +287,7 @@ async def test_factory_outpost_options_and_startup_failure(
 async def test_metering_enters_and_calls_both_strategies(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async with PolarAsync("token") as polar, httpx.AsyncClient() as client:
+    async with PolarAsync("token") as polar, httpx2.AsyncClient() as client:
         buffered = BufferedMeteringStrategy(polar)
         outpost = Outpost("redis://localhost:6379", client=client)
         mocks: list[tuple[AsyncMock, AsyncMock, AsyncMock]] = []
@@ -378,7 +378,7 @@ async def test_failed_strategy_startup_closes_buffered_strategy(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     event: EventInput = {"name": "usage", "external_customer_id": "customer"}
-    async with PolarAsync("token") as polar, httpx.AsyncClient() as client:
+    async with PolarAsync("token") as polar, httpx2.AsyncClient() as client:
         ingest = AsyncMock()
         monkeypatch.setattr(polar.events, "ingest", ingest)
         buffered = BufferedMeteringStrategy(polar, batch_interval=60)
@@ -517,7 +517,7 @@ async def test_meter_api_fallback(
         "id": "customer-meter",
     }
     send = AsyncMock(
-        return_value=httpx.Response(
+        return_value=httpx2.Response(
             200,
             json={
                 "items": [] if missing else [value],
@@ -593,7 +593,7 @@ async def test_meter_unknown_to_its_strategy_is_read_through_the_api(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     send = AsyncMock(
-        return_value=httpx.Response(
+        return_value=httpx2.Response(
             200,
             json={
                 "items": [
@@ -634,7 +634,7 @@ async def test_meter_api_error_propagates(monkeypatch: pytest.MonkeyPatch) -> No
         monkeypatch.setattr(
             polar._client,
             "send_request",
-            AsyncMock(return_value=httpx.Response(403, text="Forbidden")),
+            AsyncMock(return_value=httpx2.Response(403, text="Forbidden")),
         )
         async with polar.metering() as metering:
             with pytest.raises(PolarClientError):

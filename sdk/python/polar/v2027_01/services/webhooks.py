@@ -51,7 +51,7 @@ class WebhooksSync(SyncServiceBase):
             format: Filter by webhook payload format.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -100,7 +100,7 @@ class WebhooksSync(SyncServiceBase):
             format: Filter by webhook payload format.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -140,7 +140,7 @@ class WebhooksSync(SyncServiceBase):
         **Scopes**: `webhooks:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -180,7 +180,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             external_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -224,7 +224,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -266,7 +266,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -309,7 +309,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -353,7 +353,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -413,7 +413,7 @@ class WebhooksSync(SyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -479,7 +479,7 @@ class WebhooksSync(SyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -525,7 +525,7 @@ class WebhooksSync(SyncServiceBase):
 
         Args:
             id: The webhook event ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -575,7 +575,7 @@ class WebhooksAsync(AsyncServiceBase):
             format: Filter by webhook payload format.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -624,7 +624,7 @@ class WebhooksAsync(AsyncServiceBase):
             format: Filter by webhook payload format.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -665,7 +665,7 @@ class WebhooksAsync(AsyncServiceBase):
         **Scopes**: `webhooks:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -705,7 +705,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             external_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -749,7 +749,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -791,7 +791,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -834,7 +834,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -878,7 +878,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook endpoint ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -938,7 +938,7 @@ class WebhooksAsync(AsyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1004,7 +1004,7 @@ class WebhooksAsync(AsyncServiceBase):
             event_type: Filter by webhook event type.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -1051,7 +1051,7 @@ class WebhooksAsync(AsyncServiceBase):
 
         Args:
             id: The webhook event ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 

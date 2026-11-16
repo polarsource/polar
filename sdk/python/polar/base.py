@@ -5,13 +5,15 @@ import typing
 
 import adaptix
 import adaptix.load_error
-import httpx
+import httpx2
 import typing_extensions
 from adaptix._internal.provider.loc_stack_filtering import LocStack, LocStackChecker
 
+from polar import _httpx_compat
+
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 _ModelT = typing.TypeVar("_ModelT")
-RequestTimeout: typing.TypeAlias = float | httpx.Timeout
+RequestTimeout: typing.TypeAlias = _httpx_compat.RequestTimeout
 
 
 class _OpenEnumMarker:
@@ -105,7 +107,7 @@ class BuildRequestMixin:
         body: typing.Any | None = None,
         request_timeout: RequestTimeout | None = None,
         request_access_token: str | None = None,
-    ) -> httpx.Request:
+    ) -> httpx2.Request:
         url = url.format(**(path_params or {}))
 
         params: dict[str, typing.Any] = {}
@@ -120,7 +122,11 @@ class BuildRequestMixin:
             else:
                 params[k] = v
 
-        timeout = self._client.timeout if request_timeout is None else request_timeout
+        timeout = (
+            self._client.timeout
+            if request_timeout is None
+            else _httpx_compat.to_httpx2_timeout(request_timeout)
+        )
         headers: dict[str, str] | None = None
         if request_access_token is not None:
             headers = {"Authorization": f"Bearer {request_access_token}"}
@@ -138,9 +144,9 @@ class SyncClientBase(BuildRequestMixin):
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
     ) -> None:
-        self._client = httpx.Client(
+        self._client = httpx2.Client(
             base_url=base_url,
-            timeout=timeout,
+            timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
         )
 
@@ -156,10 +162,10 @@ class SyncClientBase(BuildRequestMixin):
     ) -> None:
         self._client.__exit__(exc_type, exc_val, exc_tb)
 
-    def send_request(self, request: httpx.Request) -> httpx.Response:
+    def send_request(self, request: httpx2.Request) -> httpx2.Response:
         try:
             return self._client.send(request)
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise PolarNetworkError(str(e)) from e
 
 
@@ -172,9 +178,9 @@ class AsyncClientBase(BuildRequestMixin):
         timeout: RequestTimeout | None = 5.0,
         organization_id: str | None = None,
     ) -> None:
-        self._client = httpx.AsyncClient(
+        self._client = httpx2.AsyncClient(
             base_url=base_url,
-            timeout=timeout,
+            timeout=_httpx_compat.to_httpx2_timeout(timeout),
             headers=_default_headers(version, access_token, organization_id),
         )
 
@@ -190,10 +196,10 @@ class AsyncClientBase(BuildRequestMixin):
     ) -> None:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
-    async def send_request(self, request: httpx.Request) -> httpx.Response:
+    async def send_request(self, request: httpx2.Request) -> httpx2.Response:
         try:
             return await self._client.send(request)
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise PolarNetworkError(str(e)) from e
 
 
@@ -300,7 +306,7 @@ def deserialize(data: object, model: typing_extensions.TypeForm[_ModelT]) -> _Mo
 
 
 def _handle_errors(
-    response: httpx.Response,
+    response: httpx2.Response,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     status_code = response.status_code
@@ -332,7 +338,7 @@ def _handle_errors(
 
 
 def parse_response_json(
-    response: httpx.Response,
+    response: httpx2.Response,
     response_model: typing.Any | None = None,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> typing.Any:
@@ -348,7 +354,7 @@ def parse_response_json(
 
 
 def parse_response_text(
-    response: httpx.Response,
+    response: httpx2.Response,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> str:
     _handle_errors(response, errors)
@@ -356,7 +362,7 @@ def parse_response_text(
 
 
 def parse_response_none(
-    response: httpx.Response,
+    response: httpx2.Response,
     errors: collections.abc.Mapping[int, type[PolarClientError]] | None = None,
 ) -> None:
     _handle_errors(response, errors)

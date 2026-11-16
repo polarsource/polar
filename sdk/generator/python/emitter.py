@@ -128,6 +128,7 @@ class PythonEmitter(EmitterBase):
                 "SKILL.md",
             ),
             ("polar", "base.py"),
+            ("polar", "_httpx_compat.py"),
             ("polar", "py.typed"),
             ("polar", "webhooks.py"),
             ("polar", "logging.py"),

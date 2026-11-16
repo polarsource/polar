@@ -36,7 +36,7 @@ class Oauth2Sync(SyncServiceBase):
     ) -> AuthorizeResponseUser | AuthorizeResponseOrganization:
         """
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -68,7 +68,7 @@ class Oauth2Sync(SyncServiceBase):
         Request an access token using a valid grant.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -98,7 +98,7 @@ class Oauth2Sync(SyncServiceBase):
         Revoke an access token or a refresh token.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -128,7 +128,7 @@ class Oauth2Sync(SyncServiceBase):
         Get information about an access token.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -158,7 +158,7 @@ class Oauth2Sync(SyncServiceBase):
         Get information about the authenticated user.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -194,7 +194,7 @@ class Oauth2Async(AsyncServiceBase):
     ) -> AuthorizeResponseUser | AuthorizeResponseOrganization:
         """
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -226,7 +226,7 @@ class Oauth2Async(AsyncServiceBase):
         Request an access token using a valid grant.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -256,7 +256,7 @@ class Oauth2Async(AsyncServiceBase):
         Revoke an access token or a refresh token.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -286,7 +286,7 @@ class Oauth2Async(AsyncServiceBase):
         Get information about an access token.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -316,7 +316,7 @@ class Oauth2Async(AsyncServiceBase):
         Get information about the authenticated user.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 

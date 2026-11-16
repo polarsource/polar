@@ -183,7 +183,7 @@ resource "render_web_service" "api" {
     ignore_changes = [runtime_source.image]
   }
 
-  autoscaling = var.environment == "production" ? {
+  autoscaling = contains(["production", "test"], var.environment) ? {
     enabled = true
     min     = 3
     max     = 6

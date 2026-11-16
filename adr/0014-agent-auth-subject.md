@@ -1,15 +1,12 @@
----
-title: "ADR-0014: AI agents are their own auth subject until a human claims them"
-description: "An unclaimed agent authenticates as an Agent subject that endpoints must opt into; after the claim it acts for the user like any OAuth app."
----
+# ADR-0014: AI agents are their own auth subject until a human claims them
 
-<Info>
+An unclaimed agent authenticates as an Agent subject that endpoints must opt into; after the claim it acts for the user like any OAuth app.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-10-16
-</Info>
 
 ## Context
 
@@ -65,7 +62,7 @@ stay as they are.
   nothing moves between users at the claim.
 - The org-access helpers and authz policies resolve an `Agent` to its one org, so it behaves like a
   single-organization credential. Inside that org it has its own role in
-  [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes)'s role layer (`ROLE_PERMISSIONS`):
+  [ADR-0005](0005-auth-subject-and-scopes.md)'s role layer (`ROLE_PERMISSIONS`):
   org settings and build resources, never members or finance. An agent that wants a second org signs
   up again; parallel sessions are separate agents.
 - An org owned by an agent has no human owner until the claim. Code that looks up the owner must
@@ -87,7 +84,7 @@ stay as they are.
 ## References
 
 - Agent sign-up design document: [#15460](https://github.com/polarsource/polar/pull/15460).
-- [ADR-0005](/engineering/decisions/0005-auth-subject-and-scopes): the subject and scope model this
+- [ADR-0005](0005-auth-subject-and-scopes.md): the subject and scope model this
   extends.
 - `server/polar/auth/models.py` (`Subject`), `server/polar/auth/permission.py` (`ROLE_PERMISSIONS`),
   `server/polar/oauth2/sub_type.py` (`SubType`), `server/polar/authz/`.

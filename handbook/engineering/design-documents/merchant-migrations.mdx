@@ -80,7 +80,7 @@ Imported subscriptions are created `paused` (we considered a separate `migration
 
 Only step 4 is irreversible, and every check is read-only, so a subscription that fails one is left billing on the source and paused on Polar, with a reason on its ledger row. A trial carries over as `trialing` until its end date.
 
-**Retries.** One subscription per job, each in its own transaction ([ADR-0003](/engineering/decisions/0003-request-scoped-unit-of-work)). The cancellation is stamped with a marker (Stripe: `cancellation_details.comment`) so a run that dies between cancelling on the source and committing finishes the move on retry instead of reading its own cancellation as the customer having churned. `MerchantMigrationRecord.cutover_status` (`moved`/`skipped`/`failed`, null = not reached) is the ledger; retrying re-opens everything that isn't `moved`.
+**Retries.** One subscription per job, each in its own transaction ([ADR-0003](https://github.com/polarsource/polar/blob/main/adr/0003-request-scoped-unit-of-work.md)). The cancellation is stamped with a marker (Stripe: `cancellation_details.comment`) so a run that dies between cancelling on the source and committing finishes the move on retry instead of reading its own cancellation as the customer having churned. `MerchantMigrationRecord.cutover_status` (`moved`/`skipped`/`failed`, null = not reached) is the ledger; retrying re-opens everything that isn't `moved`.
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
 
@@ -152,7 +152,7 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 
 ## Background jobs: precheck & catalog import
 
-Precheck and catalog import run as **Dramatiq background jobs** (batched self-reenqueue; one task = one transaction, see [ADR-0003](/engineering/decisions/0003-request-scoped-unit-of-work)). Start endpoints return **202**; the client polls the migration.
+Precheck and catalog import run as **Dramatiq background jobs** (batched self-reenqueue; one task = one transaction, see [ADR-0003](https://github.com/polarsource/polar/blob/main/adr/0003-request-scoped-unit-of-work.md)). Start endpoints return **202**; the client polls the migration.
 
 `MerchantMigration` carries a JSONB **operation** (null until the first background run). Starting work advances `step` to that phase; `operation` tracks progress within it:
 

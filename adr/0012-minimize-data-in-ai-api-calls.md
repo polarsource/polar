@@ -1,15 +1,12 @@
----
-title: "ADR-0012: Minimize data in AI API calls"
-description: "AI API requests send only the data the feature needs. Do not send personal data, money data, or secrets just in case."
----
+# ADR-0012: Minimize data in AI API calls
 
-<Info>
+AI API requests send only the data the feature needs. Do not send personal data, money data, or secrets just in case.
+
 **Status**: Accepted
 
 **Area**: Cross-cutting
 
 **Date**: 2026-09-16
-</Info>
 
 ## Context
 

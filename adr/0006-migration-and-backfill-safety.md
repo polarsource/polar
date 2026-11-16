@@ -1,15 +1,12 @@
----
-title: "ADR-0006: Migrations and backfills are deploy-safe by construction"
-description: "Migrations run under a lock timeout sized to what they actually wait for, backfills run as separate batched scripts, and migration PRs stay isolated from code."
----
+# ADR-0006: Migrations and backfills are deploy-safe by construction
 
-<Info>
+Migrations run under a lock timeout sized to what they actually wait for, backfills run as separate batched scripts, and migration PRs stay isolated from code.
+
 **Status**: Accepted
 
 **Area**: Backend
 
 **Date**: 2026-07-02
-</Info>
 
 ## Context
 

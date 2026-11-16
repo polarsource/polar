@@ -1,15 +1,12 @@
----
-title: "ADR-0004: Frontend UI is authored with Orbit Box and design tokens"
-description: "New UI uses the typed Box and Text primitives consuming design tokens; raw div plus Tailwind is deprecated."
----
+# ADR-0004: Frontend UI is authored with Orbit Box and design tokens
 
-<Info>
+New UI uses the typed Box and Text primitives consuming design tokens; raw div plus Tailwind is deprecated.
+
 **Status**: Accepted
 
 **Area**: Frontend
 
 **Date**: 2026-07-02
-</Info>
 
 ## Context
 

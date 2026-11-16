@@ -1,15 +1,12 @@
----
-title: "ADR-NNNN: <short decision title>"
-description: "One-line summary of the decision."
----
+# ADR-NNNN: Short decision title
 
-<Info>
-**Status**: Accepted {/* Accepted | Superseded by [ADR-XXXX](...) */}
+One-line summary of the decision.
 
-**Area**: Backend {/* Backend | Frontend | Infra | Cross-cutting */}
+**Status**: Accepted _(or Superseded by ADR-XXXX)_
+
+**Area**: Backend _(Backend, Frontend, Infra, or Cross-cutting)_
 
 **Date**: YYYY-MM-DD
-</Info>
 
 ## Context
 

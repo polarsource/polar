@@ -1,18 +1,76 @@
+import asyncio
+
 import pytest
+from sqlalchemy import delete
 
 from polar.enums import PaymentProcessor
-from polar.models import Customer, Organization, Product
+from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
+from polar.models import Account, Customer, Organization, Product, User
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.wallet import WalletType
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
-from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_order, create_wallet
+from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
+from tests.fixtures.random_objects import (
+    create_account,
+    create_checkout,
+    create_order,
+    create_organization,
+    create_user,
+    create_wallet,
+)
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
 
 @pytest.mark.anyio
 class TestUpsertFromStripeCharge:
+    async def test_concurrent_upserts_reuse_payment(self, worker_id: str) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id), pool_size=2, pool_recycle=3600
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as setup:
+            save = save_fixture_factory(setup)
+            user = await create_user(save)
+            account = await create_account(save, user)
+            organization = await create_organization(save, account)
+            await setup.commit()
+
+        charge = build_stripe_charge(
+            id=f"ch_{organization.id.hex}",
+            billing_details={"email": "test@example.com"},
+            payment_method_details={"type": "card", "card": {"last4": "4242"}},
+        )
+        try:
+            async with sessionmaker() as first, sessionmaker() as second:
+                first_payment = await payment_service.upsert_from_stripe_charge(
+                    first, charge, organization, None, None, None
+                )
+                second_organization = await second.get(Organization, organization.id)
+                assert second_organization is not None
+
+                async with asyncio.TaskGroup() as tasks:
+                    second_upsert = tasks.create_task(
+                        payment_service.upsert_from_stripe_charge(
+                            second, charge, second_organization, None, None, None
+                        )
+                    )
+                    done, _ = await asyncio.wait({second_upsert}, timeout=0.1)
+                    assert not done
+                    await first.commit()
+
+                assert second_upsert.result().id == first_payment.id
+                await second.commit()
+        finally:
+            async with sessionmaker() as cleanup:
+                await cleanup.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup.execute(delete(Account).where(Account.id == account.id))
+                await cleanup.execute(delete(User).where(User.id == user.id))
+                await cleanup.commit()
+            await engine.dispose()
+
     async def test_new_payment_with_checkout(
         self,
         session: AsyncSession,

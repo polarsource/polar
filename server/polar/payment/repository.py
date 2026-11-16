@@ -6,6 +6,7 @@ from sqlalchemy import Select, func, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -89,6 +90,9 @@ class PaymentRepository(
             .options(*options)
         )
         return await self.get_one_or_none(statement)
+
+    async def lock_stripe_charge(self, charge_id: str) -> None:
+        await pg_advisory_xact_lock(self.session, "payment.stripe_charge", charge_id)
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

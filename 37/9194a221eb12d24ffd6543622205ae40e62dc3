@@ -1,0 +1,47 @@
+sdk/e2e/python_client.py
+  s_7e19d239afd9c1::t_fc98286b5e52a6 8,30
+sdk/generator/python/template/tests/outpost/test_vercel.py
+  s_7e19d239afd9c1::t_fc98286b5e52a6 64,66,69,71-72,74-75
+sdk/e2e/pyproject.toml
+  s_7e19d239afd9c1::t_fc98286b5e52a6 10
+sdk/CHANGELOG.md
+  s_7e19d239afd9c1::t_6546264542425c 15
+sdk/generator/python/template/polar/_httpx_compat.py
+  s_7e19d239afd9c1::t_6546264542425c 15,18-19,22
+sdk/generator/python/template/polar/base.py
+  s_7e19d239afd9c1::t_e4b4f0799b0d7b 197
+  s_7e19d239afd9c1::t_6546264542425c 8
+  s_7e19d239afd9c1::t_fc98286b5e52a6 108,145,163,166,179,200,309,341,357,365
+sdk/generator/python/template/polar/outpost/vercel.py
+  s_7e19d239afd9c1::t_fc98286b5e52a6 5,48,72,77
+sdk/generator/python/template/polar/outpost/client.py
+  s_7e19d239afd9c1::t_fc98286b5e52a6 15,193,422,1156,1466,1663
+sdk/e2e/uv.lock
+  s_7e19d239afd9c1::t_8317756da0977b 386,405
+sdk/python/polar/_httpx_compat.py
+  s_7e19d239afd9c1::t_2a27ad605d1416 15,18-19,22
+sdk/python/polar/base.py
+  s_7e19d239afd9c1::t_d297ba31679229 8,110,147,165,168,181,199,202,309,341,357,365
+sdk/python/polar/outpost/client.py
+  s_7e19d239afd9c1::t_6156fcac58dbf2 15,193,669,1403,1719,1929
+sdk/python/polar/outpost/vercel.py
+  s_7e19d239afd9c1::t_0f1a3d13e76abf 5,46,70,75
+sdk/python/tests/outpost/test_vercel.py
+  s_7e19d239afd9c1::t_4dc35aee79d0c0 66,68,71,73-74,76-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "379194a221eb12d24ffd6543622205ae40e62dc3",
+  "prompts": {},
+  "sessions": {
+    "s_7e19d239afd9c1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e3a7-25ad-76e1-b267-0adda152d04c",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

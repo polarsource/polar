@@ -2,7 +2,7 @@ name: Server
 
 on:
   push:
-    branches: ["main", "yopi/speed-up-ci-measurements"]
+    branches: ["main", "yopi/speed-up-ci-baseline-fixed"]
   pull_request:
     types: [opened, synchronize, edited]
   merge_group:
@@ -136,7 +136,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     services:
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666
         ports:
           - 7181:7181
         env:
@@ -152,7 +152,9 @@ jobs:
       - uses: actions/checkout@v7.0.1
 
       - name: 🐦 Install Tinybird CLI
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: |
+          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/tb" --version
 
       - name: 🐦 Validate Tinybird schema
         working-directory: ./server/tinybird
@@ -425,7 +427,7 @@ jobs:
           - 6379:6379
 
       tinybird:
-        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local:latest' || '' }}
+        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666' || '' }}
         ports:
           - 7181:7181
           - 7182:7182
@@ -441,6 +443,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7.0.1
+
+      - name: Inspect Tinybird health timing
+        if: matrix.shard == 'tinybird'
+        run: |
+          docker inspect --format '{{json .Config.Healthcheck}}' '${{ job.services.tinybird.id }}'
+          docker inspect --format '{{range .State.Health.Log}}{{.Start}} {{.End}} {{.ExitCode}}{{println}}{{end}}' '${{ job.services.tinybird.id }}'
 
       - name: 📬 Restore emails renderer
         id: emails
@@ -495,7 +503,9 @@ jobs:
 
       - name: 🐦 Install Tinybird CLI
         if: matrix.shard == 'tinybird'
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: |
+          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/tb" --version
 
       - name: 🐦 Prepare Tinybird workspace
         if: matrix.shard == 'tinybird'

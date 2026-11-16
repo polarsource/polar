@@ -417,6 +417,9 @@ jobs:
     name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/4', matrix.shard) }})"
     needs: changes
     if: needs.changes.outputs.server == 'true'
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -446,16 +449,6 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
-      redis:
-        image: redis:7.4-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
 
       tinybird:
         image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666' || '' }}
@@ -556,7 +549,7 @@ jobs:
           rm -f "$POLAR_TEST_MIGRATION_RESULT"
           check_args=()
           if [[ "$CHECK_SCHEMA" = "--check" ]]; then check_args=(--check); fi
-          nohup uv run python -m scripts.ci_migrations migrate --result-file "$POLAR_TEST_MIGRATION_RESULT" "${check_args[@]}" > "$RUNNER_TEMP/migrations.log" 2>&1 &
+          nohup uv run python -m scripts.ci_migrate --result-file "$POLAR_TEST_MIGRATION_RESULT" "${check_args[@]}" > "$RUNNER_TEMP/migrations.log" 2>&1 &
 
       - name: 📊 Restore test durations
         if: matrix.shard != 'tinybird'
@@ -589,6 +582,15 @@ jobs:
           cp "$RUNNER_TEMP/pytest-pool/.test_durations" .test_durations
           cp "$RUNNER_TEMP/pytest-pool/junit.xml" "$RUNNER_TEMP/junit.xml"
 
+      - name: Record Tinybird service CPU before tests
+        if: matrix.shard == 'tinybird'
+        env:
+          TINYBIRD_ID: ${{ job.services.tinybird.id }}
+          POSTGRES_ID: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$TINYBIRD_ID" cat /sys/fs/cgroup/cpu.stat > "$RUNNER_TEMP/tinybird-cpu-before"
+          docker exec "$POSTGRES_ID" cat /sys/fs/cgroup/cpu.stat > "$RUNNER_TEMP/postgres-cpu-before"
+
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
         working-directory: ./server
@@ -598,12 +600,24 @@ jobs:
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
           CI_STARTUP_OUTPUT="$RUNNER_TEMP/tinybird-startup.json" POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run python "$GITHUB_WORKSPACE/.github/ci_startup_probe.py" -m "tinybird and not benchmark" -n 0 --no-cov --durations=40 --junitxml="$RUNNER_TEMP/junit.xml"
 
+      - name: Record Tinybird service CPU after tests
+        if: always() && matrix.shard == 'tinybird'
+        env:
+          TINYBIRD_ID: ${{ job.services.tinybird.id }}
+          POSTGRES_ID: ${{ job.services.postgres.id }}
+        run: |
+          docker exec "$TINYBIRD_ID" cat /sys/fs/cgroup/cpu.stat > "$RUNNER_TEMP/tinybird-cpu-after"
+          docker exec "$POSTGRES_ID" cat /sys/fs/cgroup/cpu.stat > "$RUNNER_TEMP/postgres-cpu-after"
+
       - name: Upload Tinybird startup diagnostics
         if: always() && matrix.shard == 'tinybird'
         uses: actions/upload-artifact@v7
         with:
           name: tinybird-startup
-          path: ${{ runner.temp }}/tinybird-startup.json
+          path: |
+            ${{ runner.temp }}/tinybird-startup.json
+            ${{ runner.temp }}/tinybird-cpu-*
+            ${{ runner.temp }}/postgres-cpu-*
           if-no-files-found: error
           overwrite: true
           retention-days: 3
@@ -633,8 +647,55 @@ jobs:
         if: always() && !cancelled() && steps.migrations.outcome == 'success'
         working-directory: ./server
         run: |
-          uv run python -m scripts.ci_migrations wait --result-file "$POLAR_TEST_MIGRATION_RESULT"
+          uv run python -m scripts.ci_migrations --result-file "$POLAR_TEST_MIGRATION_RESULT"
           cat "$RUNNER_TEMP/migrations.log"
+
+      - name: Wait for ordinary timing artifacts
+        if: github.event_name == 'push' && matrix.shard == 'tinybird'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const expected = new Set(Array.from({length: 4}, (_, i) => `Server: Tests 🐍 (${i + 1}/4)`));
+            const parameters = {...context.repo, run_id: context.runId};
+            const {data: run} = await github.rest.actions.getWorkflowRun(parameters);
+            if (run.head_sha !== context.sha || run.run_attempt !== Number(process.env.GITHUB_RUN_ATTEMPT)) {
+              throw new Error('Timing artifacts must belong to this workflow run and attempt');
+            }
+            const deadline = Date.now() + 300_000;
+            while (Date.now() < deadline) {
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {...parameters, filter: 'latest', per_page: 100});
+              const shards = jobs.filter(job => expected.has(job.name));
+              if (new Set(shards.map(job => job.name)).size !== shards.length || shards.some(job => job.head_sha !== context.sha)) {
+                throw new Error('Timing artifact job identities do not match');
+              }
+              if (shards.some(job => job.status === 'completed' && job.conclusion !== 'success')) {
+                throw new Error('Ordinary tests failed; use Re-run failed jobs to retry tests and timing publication');
+              }
+              if (shards.length === expected.size && shards.every(job => job.status === 'completed' && job.conclusion === 'success')) {
+                return;
+              }
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            throw new Error('Timed out waiting for all four ordinary test jobs');
+
+      - name: 📊 Download shard test durations
+        if: github.event_name == 'push' && matrix.shard == 'tinybird'
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: test-durations-*
+          path: ${{ runner.temp }}/test-durations
+
+      - name: 📊 Merge shard test durations
+        if: github.event_name == 'push' && matrix.shard == 'tinybird'
+        working-directory: ./server
+        run: uv run python -m scripts.merge_test_durations --expected-shards 4 --output .test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
+
+      - name: 💾 Save merged test durations
+        if: github.event_name == 'push' && matrix.shard == 'tinybird'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
 
       - name: Store pytest bytecode
         if: steps.pytest-bytecode.outputs.cache-hit != 'true'
@@ -662,44 +723,7 @@ jobs:
   test-status:
     name: "Server: Tests 🐍"
     needs: [changes, test]
-    if: always()
+    if: ${{ always() && !(needs.test.result == 'success' || (needs.test.result == 'skipped' && needs.changes.result == 'success')) }}
     runs-on: ubuntu-slim
     steps:
-      - name: Check shard results
-        env:
-          RESULT: ${{ needs.test.result }}
-          CHANGES_RESULT: ${{ needs.changes.result }}
-        run: |
-          if [ "$RESULT" = "success" ]; then
-            exit 0
-          fi
-          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
-            exit 0
-          fi
-          exit 1
-
-      - uses: actions/checkout@v7.0.1
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        with:
-          sparse-checkout: |
-            server/scripts/merge_test_durations.py
-            server/pyproject.toml
-          sparse-checkout-cone-mode: false
-
-      - name: 📊 Download shard test durations
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        uses: actions/download-artifact@v8.0.2
-        with:
-          pattern: test-durations-*
-          path: ${{ runner.temp }}/test-durations
-
-      - name: 📊 Merge shard test durations
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        run: python3 server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
-
-      - name: 💾 Save merged test durations
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        uses: actions/cache/save@v6.1.0
-        with:
-          path: server/.test_durations
-          key: test-durations-${{ github.sha }}
+      - run: exit 1

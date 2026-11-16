@@ -29,6 +29,7 @@ class StartupProbe:
         self.nodes: list[dict[str, object]] = []
         self.outcomes: dict[str, dict[str, dict[str, object]]] = {}
         self.high_scope_fixtures: dict[str, int] = {}
+        self.fixture_intervals: list[dict[str, object]] = []
 
     def elapsed(self, clocks: tuple[float, float]) -> dict[str, float]:
         return {
@@ -107,14 +108,30 @@ class StartupProbe:
         finally:
             self.stamp("execution_finished")
 
-    @pytest.hookimpl(tryfirst=True)
+    @pytest.hookimpl(hookwrapper=True, tryfirst=True)
     def pytest_fixture_setup(
         self, fixturedef: pytest.FixtureDef, request: pytest.FixtureRequest
-    ) -> None:
-        if fixturedef.scope == "function":
-            return
-        key = f"{fixturedef.baseid}::{fixturedef.argname}[{fixturedef.scope}]"
-        self.high_scope_fixtures[key] = self.high_scope_fixtures.get(key, 0) + 1
+    ) -> Iterator[None]:
+        measured = fixturedef.argname in {
+            "tinybird_workspace", "initialize_test_database", "tinybird_clickhouse_token",
+            "tinybird_client", "metrics_harness", "metrics_module_database_url",
+            "tinybird_metrics_database_url",
+        }
+        before = (_CLOCKS[0](), _CLOCKS[1]()) if measured else None
+        try:
+            yield
+        finally:
+            if fixturedef.scope != "function":
+                key = f"{fixturedef.baseid}::{fixturedef.argname}[{fixturedef.scope}]"
+                self.high_scope_fixtures[key] = self.high_scope_fixtures.get(key, 0) + 1
+            if before is not None:
+                self.fixture_intervals.append({
+                    "fixture": fixturedef.argname, "scope": fixturedef.scope,
+                    "node": request.node.nodeid,
+                    "started": before[0] - _START[0],
+                    "seconds": _CLOCKS[0]() - before[0],
+                    "cpu_seconds": _CLOCKS[1]() - before[1],
+                })
 
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
         result: dict[str, object] = {
@@ -161,6 +178,7 @@ def main() -> int:
             "nodes": probe.nodes,
             "outcomes": probe.outcomes,
             "high_scope_fixtures": probe.high_scope_fixtures,
+            "fixture_intervals": probe.fixture_intervals,
         }
         temporary = output.with_suffix(output.suffix + ".tmp")
         temporary.write_text(json.dumps(payload, sort_keys=True, indent=2))

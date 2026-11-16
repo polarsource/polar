@@ -450,6 +450,16 @@ jobs:
         ports:
           - 5432:5432
 
+      redis:
+        image: ${{ matrix.shard != 'tinybird' && 'redis:7.4-alpine' || '' }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
       tinybird:
         image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666' || '' }}
         ports:
@@ -538,7 +548,7 @@ jobs:
         run: |
           token_file="$RUNNER_TEMP/tinybird-token"
           rm -f "$token_file" "$token_file.error"
-          nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
+          nohup uv run python -m cProfile -o "$RUNNER_TEMP/tinybird-workspace.prof" -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
 
       - name: ⚗️ Start fresh database migrations
         id: migrations
@@ -618,6 +628,7 @@ jobs:
             ${{ runner.temp }}/tinybird-startup.json
             ${{ runner.temp }}/tinybird-cpu-*
             ${{ runner.temp }}/postgres-cpu-*
+            ${{ runner.temp }}/tinybird-workspace.prof
           if-no-files-found: error
           overwrite: true
           retention-days: 3

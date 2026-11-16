@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { jumpHash } from "./jump-hash";
-import { isVercelAffinityWarmup, vercelAffinity } from "./vercel";
+import { isVercelAffinityWarmup, vercelAffinity, warmNextVercelInstance } from "./vercel";
 
 const url = "https://app.test/api/meter";
 const incoming = { "x-vercel-oidc-token": "oidc", authorization: "Basic merchant" };
@@ -134,5 +134,84 @@ describe("warm-up", () => {
 
   it("tells a warm-up apart from the merchant's own requests", () => {
     expect(isVercelAffinityWarmup(new Request(url))).toBe(false);
+  });
+});
+
+describe("warm-up from the pinned route", () => {
+  // The first second the customer's id changes, late enough for a warm-up window before it.
+  const moveOf = async (customer: string) =>
+    (await movesOf(vercelAffinity({ maxDurationSeconds: 300 }), customer, 60, 360))[0];
+  const route = (headers: Headers) => new Request(url, { method: "POST", headers });
+  // The seconds of the customer's first move in which it is still on its current instance and the
+  // middleware names the next one: one window, one next id.
+  const windowOf = async (pin: Pin, customer: string) => {
+    const seconds: number[] = [];
+    for (let second = 60; second < 360; second += 1) {
+      const headers = await headersAt(pin, customer, second);
+      const next = headers.get("x-polar-affinity-next");
+      if (next && next !== headers.get("x-vercel-affinity-id")) seconds.push(second);
+      else if (seconds.length) break;
+    }
+    return seconds;
+  };
+
+  it("names a shard's next instance in the 30 s before the shard moves to it", async () => {
+    const move = await moveOf("customer-next");
+    const pin = vercelAffinity({ maxDurationSeconds: 300 });
+    const next = await idAt(pin, "customer-next", move);
+    fetchMock.mockClear();
+
+    expect((await headersAt(pin, "customer-next", move - 60)).has("x-polar-affinity-next")).toBe(false);
+    expect((await headersAt(pin, "customer-next", move - 15)).get("x-polar-affinity-next")).toBe(next);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("warms the next instance once, from the instance that holds the shard", async () => {
+    const move = await moveOf("customer-route");
+    const pin = vercelAffinity({ maxDurationSeconds: 300 });
+    const next = await idAt(pin, "customer-route", move);
+    fetchMock.mockClear();
+    waited.length = 0;
+
+    for (const second of [move - 20, move - 10]) {
+      warmNextVercelInstance(route(await headersAt(pin, "customer-route", second)), event.waitUntil);
+    }
+    await Promise.all(waited);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [target, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+    const headers = new Headers(init.headers);
+    expect(target).toBe(url);
+    expect(headers.get("x-vercel-affinity-id")).toBe(next);
+    expect(headers.get("x-vercel-trusted-oidc-idp-token")).toBe("oidc");
+    expect(headers.get("authorization")).toBe("Basic merchant");
+    expect(headers.has("x-polar-affinity-next")).toBe(false);
+    expect(isVercelAffinityWarmup({ headers })).toBe(true);
+    const passed = await headersAt(pin, "customer-route", move - 10, headers);
+    expect(passed.get("x-vercel-affinity-id")).toBe(next);
+  });
+
+  it.each([
+    ["is offline", () => fetchMock.mockRejectedValueOnce(new Error("offline"))],
+    ["answers 503", () => fetchMock.mockResolvedValueOnce(new Response(null, { status: 503 }))],
+  ])("warms again when the next instance %s", async (failure, fail) => {
+    const customer = `customer-${failure.replace(/\W/g, "-")}`;
+    const pin = vercelAffinity({ maxDurationSeconds: 300 });
+    const window = await windowOf(pin, customer);
+    fetchMock.mockClear();
+    fail();
+    waited.length = 0;
+
+    for (const second of [window[0], window.at(-1)!]) {
+      warmNextVercelInstance(route(await headersAt(pin, customer, second)), event.waitUntil);
+      await Promise.all(waited);
+    }
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("never warms its own instance", () => {
+    fetchMock.mockClear();
+    const own = { "x-vercel-affinity-id": "shard-3-9", "x-polar-affinity-next": "shard-3-9" };
+    warmNextVercelInstance(route(new Headers({ ...incoming, ...own })), event.waitUntil);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

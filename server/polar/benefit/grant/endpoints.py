@@ -4,7 +4,7 @@ from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.benefit.schemas import BenefitGrantListParams
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.versioning import version
 from polar.models import BenefitGrant as BenefitGrantModel
@@ -15,7 +15,7 @@ from polar.version import V2027_01
 
 from ..auth import BenefitGrantsRead, BenefitGrantsWrite
 from ..schemas import BenefitGrant
-from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal
+from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal, BenefitGrantUpdate
 from .service import BenefitGrantAlreadyExists
 from .service import benefit_grant as benefit_grant_service
 from .sorting import ListSorting
@@ -51,6 +51,35 @@ async def create(
     )
 
 
+@router.patch(
+    "/{id}",
+    response_model=BenefitGrant,
+    summary="Update Benefit Grant",
+    openapi_extra=open_world(),
+    responses={
+        403: {"model": NotPermitted.schema()},
+        404: {"model": ResourceNotFound.schema()},
+        409: {"model": BenefitGrantAlreadyExists.schema()},
+    },
+)
+@version(starting_from=V2027_01)
+async def update(
+    id: UUID4,
+    auth_subject: BenefitGrantsWrite,
+    benefit_grant_update: BenefitGrantUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> BenefitGrantModel:
+    """Undo a manual revocation by setting `manually_revoked_at` to `None`.
+
+    The grant keeps its original recipient and purchase, if any.
+    Fulfillment is asynchronous. Repeating this request is safe.
+    A purchase-scoped benefit is re-granted if the purchase still provides access.
+    """
+    return await benefit_grant_service.update(
+        session, auth_subject, id, benefit_grant_update
+    )
+
+
 @router.delete(
     "/{id}",
     response_model=BenefitGrant,
@@ -64,11 +93,12 @@ async def revoke(
     auth_subject: BenefitGrantsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrantModel:
-    """Permanently revoke a benefit grant, including grants from purchases.
+    """Manually revoke a benefit grant, including grants from purchases.
 
     Revocation is asynchronous. Once manually revoked, this grant cannot be
     reactivated by renewal or fulfillment retries. Other grants may still
-    provide access to the benefit. Repeating this request is safe.
+    provide access to the benefit. To undo a manual revocation, update the grant.
+    Repeating this request is safe.
     """
     return await benefit_grant_service.revoke(session, auth_subject, id)
 

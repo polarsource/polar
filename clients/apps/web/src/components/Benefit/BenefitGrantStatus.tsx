@@ -23,7 +23,7 @@ export const BenefitGrantStatus = ({ grant }: BenefitGrantStatusProps) => {
     Revoked: 'The customer does not have access to this benefit',
     Granted: 'The customer has access to this benefit',
     'Manually granted': 'This benefit was granted manually',
-    'Manually revoked': 'This grant was permanently revoked manually',
+    'Manually revoked': 'This grant was manually revoked',
     Pending: 'The benefit grant is currently being processed',
     Error: grant.error?.message ?? 'An unknown error occurred',
   }

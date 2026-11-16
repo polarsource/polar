@@ -149,6 +149,10 @@ async def benefit_grant(
         selector = await resolve_selector(
             session, scope, customer_id=customer_id, benefit_id=benefit_id
         )
+        if (grant := selector.get("grant")) is not None and grant.scope:
+            repository = BenefitGrantRepository.from_session(session)
+            if not await repository.is_scope_active(grant):
+                return
         member = await resolve_member(
             session,
             customer_id=customer_id,
@@ -220,6 +224,11 @@ async def benefit_revoke(
         selector = await resolve_selector(
             session, scope, customer_id=customer_id, benefit_id=benefit_id
         )
+        # A queued manual revoke can run after the revocation has been undone.
+        if (
+            grant := selector.get("grant")
+        ) is not None and grant.manually_revoked_at is None:
+            return
         member = await resolve_member(
             session,
             customer_id=customer_id,

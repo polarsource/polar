@@ -1,4 +1,5 @@
 from contextlib import AsyncExitStack
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import dramatiq
@@ -11,6 +12,7 @@ from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
 from polar.authz.service import get_accessible_organization
+from polar.config import settings
 from polar.customer_session.service import (
     CUSTOMER_SESSION_TOKEN_PREFIX,
 )
@@ -69,6 +71,16 @@ from .service import auth as auth_service
 
 log: Logger = structlog.get_logger(__name__)
 
+RECORD_USAGE_INTERVAL = timedelta(minutes=1)
+
+
+def _should_record_usage(last_used_at: datetime | None) -> bool:
+    return (
+        not settings.is_test()
+        or last_used_at is None
+        or utc_now() - last_used_at > RECORD_USAGE_INTERVAL
+    )
+
 
 async def get_user_session(
     connection: HTTPConnection, session: AsyncSession
@@ -95,7 +107,7 @@ async def get_personal_access_token(
 ) -> PersonalAccessToken | None:
     token = await personal_access_token_service.get_by_token(session, value)
 
-    if token is not None:
+    if token is not None and _should_record_usage(token.last_used_at):
         enqueue_job(
             "personal_access_token.record_usage",
             personal_access_token_id=token.id,
@@ -110,7 +122,7 @@ async def get_organization_access_token(
 ) -> OrganizationAccessToken | None:
     token = await organization_access_token_service.get_by_token(session, value)
 
-    if token is not None:
+    if token is not None and _should_record_usage(token.last_used_at):
         enqueue_job(
             "organization_access_token.record_usage",
             organization_access_token_id=token.id,

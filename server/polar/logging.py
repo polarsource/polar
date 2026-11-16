@@ -44,6 +44,7 @@ class Logging[RendererType]:
     @classmethod
     def get_processors(cls, *, logfire: bool) -> list[Any]:
         return [
+            structlog.stdlib.filter_by_level,
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,

@@ -172,6 +172,10 @@ class Checkout(
         JSONB, nullable=True, default=None
     )
 
+    customer_signals: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB(none_as_null=True), nullable=True, default=None
+    )
+
     allow_discount_codes: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )

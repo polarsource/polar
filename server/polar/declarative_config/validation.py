@@ -1,7 +1,7 @@
 import json
 import uuid
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from decimal import Decimal
@@ -38,6 +38,7 @@ from polar.models import (
     WebhookEndpoint,
 )
 from polar.models.benefit import BenefitType
+from polar.models.catalog import CatalogStatus
 from polar.models.product_price import ProductPriceSource
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
@@ -152,14 +153,11 @@ class SettingsChange:
 
 
 def diff_settings(
-    organization: Organization, settings: ConfigSettings | None
+    current: Mapping[str, Any], settings: ConfigSettings | None
 ) -> SettingsChange | None:
     if settings is None:
         return None
-    before = {
-        field: getattr(organization, attribute)
-        for field, attribute in SETTINGS_FIELDS.items()
-    }
+    before = {field: current[attribute] for field, attribute in SETTINGS_FIELDS.items()}
     update_dict = {
         field: value
         for field in SETTINGS_FIELDS
@@ -1210,11 +1208,16 @@ async def check(
         *changed_intervals(products),
         *new_meter_cycles(organization, config, products),
     ]
-    settings = diff_settings(organization, config.settings)
+    # Archived snapshots are history, not something to plan against
+    archived = catalog is not None and catalog.status == CatalogStatus.archived
+    current_settings = catalog_service.get_settings(
+        organization, None if archived else catalog
+    )
+    settings = diff_settings(current_settings, config.settings)
     new_currency = (
         None if settings is None else settings.update_dict.get("payments.currency")
     )
-    currency = new_currency or organization.default_presentment_currency
+    currency = new_currency or current_settings["default_presentment_currency"]
     issues.extend(
         missing_product_currencies(
             products, currency, currency_changed=new_currency is not None
@@ -1228,6 +1231,8 @@ async def check(
         )
         issues.append(changed_currency(new_currency))
     return (
-        ConfigChanges(settings, webhooks, meters, benefits, products),
+        ConfigChanges(
+            None if archived else settings, webhooks, meters, benefits, products
+        ),
         issues,
     )

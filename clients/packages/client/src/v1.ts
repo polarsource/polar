@@ -6717,8 +6717,7 @@ export interface paths {
      * Export Config
      * @description Export the organization's current config as a declarative config document.
      *
-     *     With `catalog_id`, products come from that catalog version. Settings, meters
-     *     and benefits aren't versioned, so they're always the current ones.
+     *     With `catalog_id`, the config comes from that catalog version.
      *
      *     `config` has the shape plan and apply accept, without `organization_id`:
      *     planning it for the same organization without edits reports no changes.
@@ -6859,9 +6858,9 @@ export interface paths {
      *     Returns the action for each resource, and every issue: `error` issues make
      *     apply fail, `warning` issues don't.
      *
-     *     With the ID of an archived catalog, products are compared to that version
-     *     instead of the live one. The plan then shows the changes from that version,
-     *     not what apply would do, and the response's `catalog` is None.
+     *     With the ID of an archived catalog, the plan shows the changes from that
+     *     version instead of the live one, without settings, and the response's
+     *     `catalog` is None.
      *
      *     Each section requires the read or write scope for its resource.
      *

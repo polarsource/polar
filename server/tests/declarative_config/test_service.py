@@ -4792,6 +4792,42 @@ class TestCatalogSelector:
             CatalogStatus.archived,
         )
 
+    async def test_settings_of_archived_version(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+        config_as_code_enabled: None,
+    ) -> None:
+        exclusive = Config.model_validate(
+            {"settings": {"payments": {"tax": "exclusive"}}}
+        )
+        await declarative_config_service.apply(session, redis, auth_subject, exclusive)
+        first = await CatalogRepository.from_session(session).get_live(organization.id)
+        assert first is not None
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"settings": {"payments": {"tax": "inclusive"}}}),
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, first.id
+        )
+        against_first = await declarative_config_service.plan(
+            session, auth_subject, exclusive, first.id
+        )
+        against_live = await declarative_config_service.plan(
+            session, auth_subject, exclusive
+        )
+
+        assert exported.config.settings.payments.tax == TaxBehaviorOption.exclusive
+        assert against_first.settings is None
+        assert against_live.settings is not None
+        assert against_live.settings.action == ConfigAction.updated
+
     async def test_export_live(
         self,
         session: AsyncSession,
@@ -5728,6 +5764,10 @@ class TestCatalogDrafts:
         assert result.catalog is not None
         assert draft.settings == {"default_tax_behavior": TaxBehaviorOption.exclusive}
         assert organization.default_tax_behavior == TaxBehaviorOption.location
+        exported = await declarative_config_service.export(
+            session, auth_subject, None, catalog_id=draft.id
+        )
+        assert exported.config.settings.payments.tax == TaxBehaviorOption.exclusive
 
     async def test_reverting_settings_drops_the_draft(
         self,
@@ -5756,6 +5796,29 @@ class TestCatalogDrafts:
             await CatalogRepository.from_session(session).get_draft(organization.id)
             is None
         )
+
+    async def test_plan_against_the_draft_settings(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        exclusive = Config.model_validate(
+            {"settings": {"payments": {"tax": "exclusive"}}}
+        )
+        await declarative_config_service.apply(
+            session, redis, auth_subject, exclusive, publish=False
+        )
+        draft = await CatalogRepository.from_session(session).get_draft(organization.id)
+        assert draft is not None
+
+        plan = await declarative_config_service.plan(
+            session, auth_subject, exclusive, draft.id
+        )
+
+        assert plan.settings is not None
+        assert plan.settings.action == ConfigAction.unchanged
 
     async def test_draft_keeps_settings_changed_outside_config(
         self,

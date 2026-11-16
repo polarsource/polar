@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 import pytest
 from freezegun import freeze_time
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreateProperties,

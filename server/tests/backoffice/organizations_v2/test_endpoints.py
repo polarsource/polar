@@ -3,7 +3,7 @@ import uuid
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
@@ -36,12 +36,12 @@ from tests.fixtures.random_objects import (
 @pytest.fixture
 async def backoffice_client(
     session: AsyncSession, backoffice_user_session: BackofficeUserSession
-) -> AsyncGenerator[httpx.AsyncClient]:
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -105,7 +105,7 @@ class TestDenyDialog:
     )
     async def test_stores_violated_aup_section(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         section: AUPSection,
@@ -139,7 +139,7 @@ class TestDenyDialog:
 
     async def test_missing_aup_section_does_not_deny(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -158,7 +158,7 @@ class TestDenyDialog:
 
     async def test_invalid_aup_section_does_not_deny(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -181,7 +181,7 @@ class TestDenyDialog:
     async def test_disables_stripe_account_when_opted_in(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         stripe_payout_account: PayoutAccount,
@@ -213,7 +213,7 @@ class TestDenyDialog:
 
     async def test_invalid_stripe_reject_reason_does_not_deny(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -241,7 +241,7 @@ class TestBlockDialog:
     async def test_disables_stripe_account_when_opted_in(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         stripe_payout_account: PayoutAccount,
@@ -267,7 +267,7 @@ class TestBlockDialog:
 
     async def test_invalid_stripe_reject_reason_does_not_block(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -290,7 +290,7 @@ class TestBlockDialog:
 class TestResetOnboardingDialog:
     async def test_warns_that_held_payouts_are_canceled(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -303,7 +303,7 @@ class TestResetOnboardingDialog:
 
     async def test_resets_organization(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
         backoffice_user: BackofficeUser,
@@ -325,7 +325,7 @@ class TestResetOnboardingDialog:
 
     async def test_shows_error_when_organization_was_already_reset(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -347,7 +347,7 @@ class TestResetOnboardingDialog:
 class TestOffboardDialog:
     async def test_missing_aup_section_does_not_offboard(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
@@ -372,7 +372,7 @@ class TestOffboardDialog:
 class TestDeletePayoutAccount:
     async def test_soft_deleted_organization_can_open_delete_modal(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         stripe_payout_account: PayoutAccount,
@@ -389,7 +389,7 @@ class TestDeletePayoutAccount:
 
     async def test_shared_account_only_unlinks_this_organization(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
@@ -467,7 +467,7 @@ class TestFlaggedProductNames:
 
     async def test_reviews_section_shows_the_timeline(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -500,7 +500,7 @@ class TestFlaggedProductNames:
     )
     async def test_list_filter(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
         organization_second: Organization,
@@ -536,7 +536,7 @@ class TestDetailRiskSignals:
 
     async def test_reviews_section_shows_signals(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -555,7 +555,7 @@ class TestDetailRiskSignals:
 
     async def test_overview_section_shows_signals(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -571,7 +571,7 @@ class TestDetailRiskSignals:
 
     async def test_reviews_section_without_signals(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -587,7 +587,7 @@ class TestDetailRiskSignals:
 class TestEditFeatures:
     async def test_disabling_sso_lifts_enforcement(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -607,7 +607,7 @@ class TestEditFeatures:
 
     async def test_keeps_enforcement_while_sso_enabled(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -630,7 +630,7 @@ class TestEditOrganization:
     async def test_syncs_customer_slug_when_slug_changes(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -660,7 +660,7 @@ class TestEditOrganization:
     async def test_does_not_sync_customer_slug_when_slug_unchanged(
         self,
         mocker: MockerFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -690,7 +690,7 @@ class TestEditOrganization:
 class TestOverviewLazyCards:
     async def test_overview_defers_slow_cards(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -713,7 +713,7 @@ class TestOverviewLazyCards:
 
     async def test_payment_metrics_fragment(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -727,7 +727,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_fragment(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -742,7 +742,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_support_email_not_verified(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -757,7 +757,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_support_email_verified(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -780,7 +780,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_website_domain_not_verified(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -795,7 +795,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_website_domain_verified(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -816,7 +816,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_website_domain_other_verified(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -837,7 +837,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_website_domain_pending(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -859,7 +859,7 @@ class TestOverviewLazyCards:
 
     async def test_setup_checklist_website_domain_lost(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -885,7 +885,7 @@ class TestOverviewLazyCards:
 class TestListSearch:
     async def test_matches_slug_case_insensitively(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -901,7 +901,7 @@ class TestListSearch:
 
     async def test_search_shorter_than_minimum_matches_nothing(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         organization: Organization,
     ) -> None:
         response = await backoffice_client.get(
@@ -914,7 +914,7 @@ class TestListSearch:
 
     async def test_ranks_exact_then_prefix_then_substring(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         user: User,
     ) -> None:
@@ -947,7 +947,7 @@ class TestListSearch:
 class TestStatusCounts:
     async def test_whitespace_only_search_excludes_deleted(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
@@ -968,7 +968,7 @@ class TestStatusCounts:
 class TestEditCatalogLimits:
     async def test_update(
         self,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
         session: AsyncSession,
         organization: Organization,
     ) -> None:

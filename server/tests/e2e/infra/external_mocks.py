@@ -9,7 +9,7 @@ test in the ``tests/e2e/`` directory automatically.
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
-import httpx
+import httpx2
 import pytest
 from pytest_mock import MockerFixture
 
@@ -23,11 +23,11 @@ def _block_external_http(mocker: MockerFixture) -> None:
     Catches unmocked external integrations with an actionable error message
     instead of letting them silently hit real services.
     """
-    _original_send = httpx.AsyncClient.send
+    _original_send = httpx2.AsyncClient.send
 
     async def _guarded_send(
-        self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any
-    ) -> httpx.Response:
+        self: httpx2.AsyncClient, request: httpx2.Request, **kwargs: Any
+    ) -> httpx2.Response:
         if request.url.host not in ALLOWED_HOSTS:
             raise RuntimeError(
                 f"Unmocked external HTTP call to {request.url.host}{request.url.path} "
@@ -35,7 +35,7 @@ def _block_external_http(mocker: MockerFixture) -> None:
             )
         return await _original_send(self, request, **kwargs)
 
-    mocker.patch.object(httpx.AsyncClient, "send", _guarded_send)
+    mocker.patch.object(httpx2.AsyncClient, "send", _guarded_send)
 
 
 @pytest.fixture(autouse=True)

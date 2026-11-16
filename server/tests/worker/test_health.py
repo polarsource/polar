@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import redis.asyncio as async_redis
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from pytest_mock import MockerFixture
 from redis import RedisError
 from sqlalchemy.exc import SQLAlchemyError

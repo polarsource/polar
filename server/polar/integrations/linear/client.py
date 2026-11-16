@@ -1,6 +1,6 @@
 import typing
 
-import httpx
+import httpx2
 
 from polar.config import settings
 from polar.exceptions import PolarError
@@ -34,11 +34,11 @@ class LinearClient:
     ) -> Issue | None:
         """Create an issue with template overrides; return None when unconfigured."""
         api_key = settings.LINEAR_API_KEY
-        async with httpx.AsyncClient(
+        async with httpx2.AsyncClient(
             headers={"Authorization": api_key} if api_key else {},
-            timeout=httpx.Timeout(10.0, connect=5.0),
+            timeout=httpx2.Timeout(10.0, connect=5.0),
             transport=(
-                httpx.MockTransport(lambda _: httpx.Response(200))
+                httpx2.MockTransport(lambda _: httpx2.Response(200))
                 if not api_key
                 else None
             ),

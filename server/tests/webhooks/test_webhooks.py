@@ -4,12 +4,11 @@ import secrets
 import uuid
 from datetime import timedelta
 from typing import Annotated, cast
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
-import respx
 from dramatiq import Retry
 from pydantic import Field
 from pydantic.json_schema import JsonSchemaMode
@@ -436,29 +435,29 @@ async def test_webhook_send_expired_endpoint(
 @pytest.mark.parametrize(
     ("response", "expected"),
     [
-        (httpx.Response(200, json={"status": "ok"}), '{"status":"ok"}'),
-        (httpx.Response(200), None),
+        (httpx2.Response(200, json={"status": "ok"}), '{"status":"ok"}'),
+        (httpx2.Response(200), None),
         pytest.param(
-            httpx.Response(200, text="a" * 8192),
+            httpx2.Response(200, text="a" * 8192),
             "a" * 2048,
             id="long response that is truncated",
         ),
         pytest.param(
-            httpx.Response(200, content=b"foo\x00bar"),
+            httpx2.Response(200, content=b"foo\x00bar"),
             "foobar",
             id="response with null bytes",
         ),
     ],
 )
 async def test_webhook_delivery_success(
-    response: httpx.Response,
+    response: httpx2.Response,
     expected: str,
     session: AsyncSession,
     save_fixture: SaveFixture,
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
     organization: Organization,
 ) -> None:
-    respx_mock.post("https://example.com/hook").mock(return_value=response)
+    http_mocks["POST", "https://example.com/hook"] = Mock(return_value=response)
 
     endpoint = WebhookEndpoint(
         url="https://example.com/hook",
@@ -491,11 +490,11 @@ async def test_webhook_delivery_success(
 async def test_webhook_delivery_500(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
     organization: Organization,
 ) -> None:
-    respx_mock.post("https://example.com/hook").mock(
-        return_value=httpx.Response(500, text="Internal Error")
+    http_mocks["POST", "https://example.com/hook"] = Mock(
+        return_value=httpx2.Response(500, text="Internal Error")
     )
 
     endpoint = WebhookEndpoint(
@@ -548,11 +547,11 @@ async def test_webhook_delivery_500(
 async def test_webhook_delivery_http_error(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
     organization: Organization,
 ) -> None:
-    respx_mock.post("https://example.com/hook").mock(
-        side_effect=httpx.HTTPError("ERROR")
+    http_mocks["POST", "https://example.com/hook"] = Mock(
+        side_effect=httpx2.HTTPError("ERROR")
     )
 
     endpoint = WebhookEndpoint(
@@ -600,12 +599,12 @@ async def test_webhook_delivery_http_error(
 async def test_webhook_standard_webhooks_compatible(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
     organization: Organization,
 ) -> None:
     secret = "mysecret"
-    route_mock = respx_mock.post("https://example.com/hook").mock(
-        return_value=httpx.Response(200)
+    route_mock = http_mocks["POST", "https://example.com/hook"] = Mock(
+        return_value=httpx2.Response(200)
     )
 
     endpoint = WebhookEndpoint(
@@ -627,7 +626,7 @@ async def test_webhook_standard_webhooks_compatible(
     await _webhook_event_send(session=session, webhook_event_id=event.id)
 
     # Check that the generated signature is correct
-    request = route_mock.calls.last.request
+    request = route_mock.call_args.args[0]
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 
@@ -636,12 +635,12 @@ async def test_webhook_standard_webhooks_compatible(
 async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
     organization: Organization,
 ) -> None:
     secret = "whsec_postColumnButPreSpec"
-    route_mock = respx_mock.post("https://example.com/hook").mock(
-        return_value=httpx.Response(200)
+    route_mock = http_mocks["POST", "https://example.com/hook"] = Mock(
+        return_value=httpx2.Response(200)
     )
 
     endpoint = WebhookEndpoint(
@@ -663,7 +662,7 @@ async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
 
     await _webhook_event_send(session=session, webhook_event_id=event.id)
 
-    request = route_mock.calls.last.request
+    request = route_mock.call_args.args[0]
     w = StandardWebhook(secret.encode("utf-8"))
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 
@@ -672,13 +671,13 @@ async def test_webhook_legacy_signature_when_secret_generated_before_cutoff(
 async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
     session: AsyncSession,
     save_fixture: SaveFixture,
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
     organization: Organization,
 ) -> None:
     key = secrets.token_bytes(WEBHOOK_SECRET_KEY_BYTES)
     secret = f"{WEBHOOK_SECRET_PREFIX}{base64.b64encode(key).decode()}"
-    route_mock = respx_mock.post("https://example.com/hook").mock(
-        return_value=httpx.Response(200)
+    route_mock = http_mocks["POST", "https://example.com/hook"] = Mock(
+        return_value=httpx2.Response(200)
     )
 
     endpoint = WebhookEndpoint(
@@ -700,7 +699,7 @@ async def test_webhook_spec_signature_when_secret_generated_at_cutoff(
 
     await _webhook_event_send(session=session, webhook_event_id=event.id)
 
-    request = route_mock.calls.last.request
+    request = route_mock.call_args.args[0]
     w = StandardWebhook(secret)
     assert w.verify(request.content, cast(dict[str, str], request.headers)) is not None
 

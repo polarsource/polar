@@ -1,6 +1,6 @@
 from collections.abc import AsyncGenerator
 
-import httpx
+import httpx2
 import pytest
 
 from polar.backoffice import app as backoffice_app
@@ -16,13 +16,13 @@ from tests.fixtures.random_objects import create_email_log
 @pytest.fixture
 async def backoffice_client(
     session: AsyncSession, backoffice_user_session: BackofficeUserSession
-) -> AsyncGenerator[httpx.AsyncClient]:
+) -> AsyncGenerator[httpx2.AsyncClient]:
     backoffice_app.dependency_overrides[get_db_session] = lambda: session
     backoffice_app.dependency_overrides[get_db_read_session] = lambda: session
     backoffice_app.dependency_overrides[get_admin] = lambda: backoffice_user_session
     try:
-        async with httpx.AsyncClient(
-            transport=httpx.ASGITransport(app=backoffice_app),
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=backoffice_app),
             base_url="http://test",
         ) as client:
             yield client
@@ -35,7 +35,7 @@ async def backoffice_client(
 @pytest.mark.anyio
 class TestListEmailLogs:
     async def test_lists_every_template_without_logs(
-        self, backoffice_client: httpx.AsyncClient
+        self, backoffice_client: httpx2.AsyncClient
     ) -> None:
         response = await backoffice_client.get("/email-logs/")
 
@@ -56,7 +56,7 @@ class TestListEmailLogs:
         self,
         query: str,
         save_fixture: SaveFixture,
-        backoffice_client: httpx.AsyncClient,
+        backoffice_client: httpx2.AsyncClient,
     ) -> None:
         email_log = await create_email_log(save_fixture, created_at=utc_now())
 
@@ -66,7 +66,7 @@ class TestListEmailLogs:
         assert str(email_log.id) in response.text
 
     async def test_search_by_email_no_match(
-        self, save_fixture: SaveFixture, backoffice_client: httpx.AsyncClient
+        self, save_fixture: SaveFixture, backoffice_client: httpx2.AsyncClient
     ) -> None:
         email_log = await create_email_log(save_fixture, created_at=utc_now())
 
@@ -78,7 +78,7 @@ class TestListEmailLogs:
         assert str(email_log.id) not in response.text
 
     async def test_search_by_subject(
-        self, save_fixture: SaveFixture, backoffice_client: httpx.AsyncClient
+        self, save_fixture: SaveFixture, backoffice_client: httpx2.AsyncClient
     ) -> None:
         email_log = await create_email_log(save_fixture, created_at=utc_now())
 

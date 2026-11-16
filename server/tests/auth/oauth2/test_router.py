@@ -3,7 +3,7 @@ from contextlib import AbstractAsyncContextManager
 from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlsplit
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from pytest_mock import MockerFixture
@@ -43,12 +43,12 @@ async def create_sso_domain(
 
 
 async def google_callback(
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
     mocker: MockerFixture,
     callback_result: OAuth2Enrollment | OAuth2Account,
     *,
     sso_discovery: bool = True,
-) -> httpx.Response:
+) -> httpx2.Response:
     start = await client.post(
         "/v1/auth/start",
         json={"return_to": "/dashboard", "sso_discovery": sso_discovery},
@@ -90,7 +90,7 @@ class TestLoginCallback:
     @pytest.mark.parametrize("error_stage", ["callback", "get_email", "enroll"])
     async def test_unverified_email(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         error_stage: str,
     ) -> None:
@@ -119,7 +119,7 @@ class TestLoginCallback:
 
     async def test_new_user_without_sso(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         session: AsyncSession,
     ) -> None:
@@ -134,7 +134,7 @@ class TestLoginCallback:
 
     async def test_new_user_with_sso(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -155,7 +155,7 @@ class TestLoginCallback:
 
     async def test_existing_user_with_sso(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -178,7 +178,7 @@ class TestLoginCallback:
 
     async def test_sso_discovery_disabled(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -196,19 +196,19 @@ class TestLoginCallback:
 @pytest.fixture
 async def https_client_factory(
     app: FastAPI, session: AsyncSession
-) -> Callable[[], AbstractAsyncContextManager[httpx.AsyncClient]]:
-    def _factory() -> AbstractAsyncContextManager[httpx.AsyncClient]:
+) -> Callable[[], AbstractAsyncContextManager[httpx2.AsyncClient]]:
+    def _factory() -> AbstractAsyncContextManager[httpx2.AsyncClient]:
         return IsolatedSessionTestClient(
             session=session,
             auto_expunge=False,
-            transport=httpx.ASGITransport(app=app),
+            transport=httpx2.ASGITransport(app=app),
             base_url="https://127.0.0.1",
         )
 
     return _factory
 
 
-async def apple_authorize(client: httpx.AsyncClient) -> httpx.Response:
+async def apple_authorize(client: httpx2.AsyncClient) -> httpx2.Response:
     start = await client.post("/v1/auth/start", json={"return_to": "/dashboard"})
     assert start.status_code == 201
     authorize = await client.get("/v1/auth/apple/authorize")
@@ -221,7 +221,7 @@ class TestAppleLoginCallback:
     async def test_state_cookie_is_cross_site(
         self,
         https_client_factory: Callable[
-            [], AbstractAsyncContextManager[httpx.AsyncClient]
+            [], AbstractAsyncContextManager[httpx2.AsyncClient]
         ],
     ) -> None:
         async with https_client_factory() as client:
@@ -239,7 +239,7 @@ class TestAppleLoginCallback:
         self,
         mocker: MockerFixture,
         https_client_factory: Callable[
-            [], AbstractAsyncContextManager[httpx.AsyncClient]
+            [], AbstractAsyncContextManager[httpx2.AsyncClient]
         ],
     ) -> None:
         async with https_client_factory() as client:
@@ -265,7 +265,7 @@ class TestAppleLoginCallback:
         self,
         mocker: MockerFixture,
         https_client_factory: Callable[
-            [], AbstractAsyncContextManager[httpx.AsyncClient]
+            [], AbstractAsyncContextManager[httpx2.AsyncClient]
         ],
     ) -> None:
         async with https_client_factory() as attacker_client:

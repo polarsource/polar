@@ -6,7 +6,7 @@ from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import patch
 
-import httpx
+import httpx2
 import pytest
 
 from polar.config import settings
@@ -95,7 +95,7 @@ def tinybird_clickhouse_token(tinybird_workspace: str) -> str:
     """Create a WORKSPACE:READ_ALL token for ClickHouse interface access."""
     host = settings.TINYBIRD_API_URL
     token_name = f"clickhouse_read_{uuid.uuid4().hex[:8]}"
-    response = httpx.post(
+    response = httpx2.post(
         f"{host}/v0/tokens",
         params={"name": token_name, "scope": "WORKSPACE:READ_ALL"},
         headers={"Authorization": f"Bearer {tinybird_workspace}"},

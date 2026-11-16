@@ -1,10 +1,9 @@
 import json
 import uuid
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
-import httpx
+import httpx2
 import pytest
-import respx
 from pytest_mock import MockerFixture
 
 from polar.config import settings
@@ -68,14 +67,14 @@ class TestWebhookEventSend:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         organization: Organization,
         subscription: Subscription,
         webhook_endpoint_mcp: WebhookEndpoint,
     ) -> None:
         mocker.patch("polar.webhook.service.enqueue_job")
-        route = respx_mock.post(webhook_endpoint_mcp.url).mock(
-            return_value=httpx.Response(200)
+        route = http_mocks["POST", webhook_endpoint_mcp.url] = Mock(
+            return_value=httpx2.Response(200)
         )
         [event] = await webhook_service.send(
             session, organization, WebhookEventType.subscription_created, subscription
@@ -88,7 +87,7 @@ class TestWebhookEventSend:
             expected_data = SubscriptionSchema.model_validate(subscription).model_dump(
                 mode="json"
             )
-        request = route.calls.last.request
+        request = route.call_args.args[0]
         assert json.loads(request.content) == {
             "eventId": str(event_id),
             "name": "subscription.created",
@@ -103,11 +102,13 @@ class TestWebhookEventSend:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         enqueue_job_mock: MagicMock,
         webhook_endpoint_mcp: WebhookEndpoint,
     ) -> None:
-        respx_mock.post(webhook_endpoint_mcp.url).mock(return_value=httpx.Response(410))
+        http_mocks["POST", webhook_endpoint_mcp.url] = Mock(
+            return_value=httpx2.Response(410)
+        )
         event = WebhookEvent(
             webhook_endpoint=webhook_endpoint_mcp,
             type=WebhookEventType.subscription_created,
@@ -128,11 +129,13 @@ class TestWebhookEventSend:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         enqueue_job_mock: MagicMock,
         webhook_endpoint_mcp: WebhookEndpoint,
     ) -> None:
-        respx_mock.post(webhook_endpoint_mcp.url).mock(return_value=httpx.Response(413))
+        http_mocks["POST", webhook_endpoint_mcp.url] = Mock(
+            return_value=httpx2.Response(413)
+        )
         event = WebhookEvent(
             webhook_endpoint=webhook_endpoint_mcp,
             type=WebhookEventType.subscription_created,

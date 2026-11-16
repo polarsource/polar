@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.sso.endpoints import get_sso_connection
 from polar.exceptions import ResourceNotFound

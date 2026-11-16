@@ -1,10 +1,10 @@
 from collections.abc import AsyncIterator
 from unittest.mock import MagicMock
 
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from reauth.amr import AuthenticationMethodReference
 
@@ -24,12 +24,12 @@ from tests.fixtures.database import SaveFixture
 @pytest.fixture
 async def cookie_client(
     app: FastAPI, session: AsyncSession
-) -> AsyncIterator[httpx.AsyncClient]:
+) -> AsyncIterator[httpx2.AsyncClient]:
     # https://test matches the Secure session cookies' domain
     async with IsolatedSessionTestClient(
         session=session,
         auto_expunge=False,
-        transport=httpx.ASGITransport(app=app),
+        transport=httpx2.ASGITransport(app=app),
         base_url="https://test",
     ) as client:
         yield client
@@ -54,13 +54,13 @@ async def create_completable_authentication_session(
 
 @pytest.mark.anyio
 class TestComplete:
-    async def test_anonymous(self, cookie_client: httpx.AsyncClient) -> None:
+    async def test_anonymous(self, cookie_client: httpx2.AsyncClient) -> None:
         response = await cookie_client.get("/v1/auth/complete")
 
         assert response.status_code == 401
         assert response.json()["error"] == "InvalidAuthenticationSession"
 
-    async def test_non_ascii_cookie(self, cookie_client: httpx.AsyncClient) -> None:
+    async def test_non_ascii_cookie(self, cookie_client: httpx2.AsyncClient) -> None:
         non_ascii_cookie = (
             settings.AUTHENTICATION_SESSION_COOKIE_KEY.encode()
             + b"=token-\xe4\xb8\xad\xe6\x96\x87"
@@ -74,7 +74,7 @@ class TestComplete:
 
     async def test_valid(
         self,
-        cookie_client: httpx.AsyncClient,
+        cookie_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         user: User,
     ) -> None:
@@ -89,7 +89,7 @@ class TestComplete:
     @pytest.mark.auth
     async def test_replay_with_user_session(
         self,
-        cookie_client: httpx.AsyncClient,
+        cookie_client: httpx2.AsyncClient,
         save_fixture: SaveFixture,
         user: User,
     ) -> None:
@@ -199,12 +199,12 @@ class TestBackupCodesEnroll:
 
 
 async def request_email_otp(
-    client: httpx.AsyncClient,
+    client: httpx2.AsyncClient,
     mocker: MockerFixture,
     email: str,
     *,
     sso_discovery: bool = True,
-) -> tuple[httpx.Response, MagicMock]:
+) -> tuple[httpx2.Response, MagicMock]:
     mocker.patch("polar.auth.endpoints.verify_turnstile")
     enqueue_email_template = mocker.patch("polar.auth.factors.enqueue_email_template")
 
@@ -224,7 +224,7 @@ async def request_email_otp(
 @pytest.mark.anyio
 class TestEmailOTPRequest:
     async def test_without_sso(
-        self, login_client: httpx.AsyncClient, mocker: MockerFixture
+        self, login_client: httpx2.AsyncClient, mocker: MockerFixture
     ) -> None:
         response, enqueue_email_template = await request_email_otp(
             login_client, mocker, "jane@acme.com"
@@ -244,7 +244,7 @@ class TestEmailOTPRequest:
     async def test_sso_not_enforced_for_domain(
         self,
         setup: dict[str, bool],
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -260,7 +260,7 @@ class TestEmailOTPRequest:
 
     async def test_sso_required(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -283,7 +283,7 @@ class TestEmailOTPRequest:
 
     async def test_sso_discovery_disabled(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -302,7 +302,7 @@ class TestEmailOTPRequest:
 class TestEmailOTPVerify:
     async def test_blocked_user(
         self,
-        login_client: httpx.AsyncClient,
+        login_client: httpx2.AsyncClient,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         user: User,

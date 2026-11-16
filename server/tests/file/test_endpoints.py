@@ -6,7 +6,7 @@ from io import BytesIO
 import pytest
 from botocore.response import StreamingBody
 from botocore.stub import Stubber
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.exceptions import BadRequest

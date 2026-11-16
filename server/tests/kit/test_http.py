@@ -5,8 +5,8 @@ from typing import Any, cast
 from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
 
-import httpcore
-import httpx
+import httpcore2
+import httpx2
 import pytest
 from pydantic import TypeAdapter
 
@@ -137,7 +137,7 @@ class TestResolveAndValidateIp:
                 await resolve_and_validate_ip("nonexistent.invalid")
 
 
-class _RecordingBackend(httpcore.AsyncMockBackend):
+class _RecordingBackend(httpcore2.AsyncMockBackend):
     """Serve canned HTTP responses and record the address of each connection."""
 
     def __init__(self, *responses: bytes) -> None:
@@ -150,15 +150,15 @@ class _RecordingBackend(httpcore.AsyncMockBackend):
         port: int,
         timeout: float | None = None,
         local_address: str | None = None,
-        socket_options: Iterable[httpcore.SOCKET_OPTION] | None = None,
-    ) -> httpcore.AsyncNetworkStream:
+        socket_options: Iterable[httpcore2.SOCKET_OPTION] | None = None,
+    ) -> httpcore2.AsyncNetworkStream:
         self.connected_hosts.append(host)
         return await super().connect_tcp(host, port)
 
 
 @contextmanager
 def _mock_network(backend: _RecordingBackend) -> Iterator[None]:
-    with patch("polar.kit.http.httpcore.AnyIOBackend", return_value=backend):
+    with patch("polar.kit.http.httpcore2.AnyIOBackend", return_value=backend):
         yield
 
 
@@ -286,9 +286,9 @@ class TestSSRFSafeTransport:
     @pytest.mark.anyio
     async def test_keeps_hostname_for_host_header(self) -> None:
         backend = _RecordingBackend(_response(200))
-        captured: list[httpx.Request] = []
+        captured: list[httpx2.Request] = []
 
-        async def capture(request: httpx.Request) -> None:
+        async def capture(request: httpx2.Request) -> None:
             captured.append(request)
 
         with patch(
@@ -296,7 +296,7 @@ class TestSSRFSafeTransport:
             new=AsyncMock(return_value=_fake_getaddrinfo("93.184.216.34")),
         ):
             with _mock_network(backend):
-                async with httpx.AsyncClient(
+                async with httpx2.AsyncClient(
                     transport=SSRFSafeTransport(),
                     event_hooks={"request": [capture]},
                 ) as client:
@@ -315,7 +315,7 @@ class TestSSRFSafeTransport:
             new=AsyncMock(return_value=_fake_getaddrinfo("169.254.169.254")),
         ):
             with _mock_network(backend):
-                async with httpx.AsyncClient(transport=SSRFSafeTransport()) as client:
+                async with httpx2.AsyncClient(transport=SSRFSafeTransport()) as client:
                     with pytest.raises(SSRFBlockedError):
                         await client.post("https://metadata.example.com/webhook")
 
@@ -329,7 +329,7 @@ class TestSSRFSafeTransport:
         async def connect_tcp(host: str, port: int, **kwargs: Any) -> Any:
             stream = await original_connect_tcp(host, port, **kwargs)
             if host == "93.184.216.34":
-                raise httpcore.ConnectError("refused")
+                raise httpcore2.ConnectError("refused")
             return stream
 
         with patch(
@@ -340,7 +340,7 @@ class TestSSRFSafeTransport:
         ):
             with patch.object(backend, "connect_tcp", new=connect_tcp):
                 with _mock_network(backend):
-                    async with httpx.AsyncClient(
+                    async with httpx2.AsyncClient(
                         transport=SSRFSafeTransport()
                     ) as client:
                         response = await client.get("https://example.com")

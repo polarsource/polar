@@ -4,7 +4,7 @@ from typing import Any
 from uuid import uuid4
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.integrations.tinybird.client import TinybirdClient
 from polar.kit.utils import utc_now

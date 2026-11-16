@@ -3,12 +3,12 @@ import json
 import ssl
 from datetime import timedelta
 from typing import Any
+from unittest.mock import Mock
 from uuid import UUID
 
-import httpx
+import httpx2
 import pytest
-import respx
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
 from polar.kit.utils import utc_now
@@ -25,12 +25,13 @@ SECRET = "whsec_" + base64.b64encode(b"a" * 32).decode()
 
 
 @pytest.fixture
-def callback_route(respx_mock: respx.MockRouter) -> respx.Route:
-    return respx_mock.post(CALLBACK_URL).mock(
-        side_effect=lambda request: httpx.Response(
+def callback_route(http_mocks: dict[tuple[str, str], Mock]) -> Mock:
+    http_mocks["POST", CALLBACK_URL] = Mock(
+        side_effect=lambda request: httpx2.Response(
             200, json={"challenge": json.loads(request.content)["challenge"]}
         )
     )
+    return http_mocks["POST", CALLBACK_URL]
 
 
 @pytest.mark.anyio
@@ -63,7 +64,7 @@ class TestSubscribeMCPEvent:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        callback_route: respx.Route,
+        callback_route: Mock,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
@@ -82,7 +83,7 @@ class TestSubscribeMCPEvent:
 
         assert response.status_code == 200
         json_response = response.json()
-        request = callback_route.calls.last.request
+        request = callback_route.call_args.args[0]
         StandardWebhook(SECRET).verify(request.content, dict(request.headers))
         assert request.headers["X-MCP-Subscription-Id"] == json_response["id"]
 
@@ -103,7 +104,7 @@ class TestSubscribeMCPEvent:
         self,
         client: AsyncClient,
         session: AsyncSession,
-        callback_route: respx.Route,
+        callback_route: Mock,
     ) -> None:
         before = utc_now()
 
@@ -134,10 +135,12 @@ class TestSubscribeMCPEvent:
         save_fixture: SaveFixture,
         client: AsyncClient,
         session: AsyncSession,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         organization: Organization,
     ) -> None:
-        route = respx_mock.post(CALLBACK_URL)
+        route = http_mocks["POST", CALLBACK_URL] = Mock(
+            return_value=httpx2.Response(200)
+        )
         expires_at = utc_now() + timedelta(minutes=5)
         endpoint = WebhookEndpoint(
             format=WebhookFormat.mcp,
@@ -198,29 +201,29 @@ class TestSubscribeMCPEvent:
         ("mock", "reason"),
         [
             pytest.param(
-                {"side_effect": httpx.ConnectError("refused")},
+                {"side_effect": httpx2.ConnectError("refused")},
                 "connection_refused",
                 id="connection_refused",
             ),
             pytest.param(
-                {"side_effect": httpx.ConnectTimeout("timeout")},
+                {"side_effect": httpx2.ConnectTimeout("timeout")},
                 "timeout",
                 id="timeout",
             ),
             pytest.param({"side_effect": ssl.SSLError()}, "tls_error", id="tls_error"),
             pytest.param(
-                {"return_value": httpx.Response(404)}, "http_4xx", id="http_4xx"
+                {"return_value": httpx2.Response(404)}, "http_4xx", id="http_4xx"
             ),
             pytest.param(
-                {"return_value": httpx.Response(502)}, "http_5xx", id="http_5xx"
+                {"return_value": httpx2.Response(502)}, "http_5xx", id="http_5xx"
             ),
             pytest.param(
-                {"return_value": httpx.Response(200, json={"challenge": "wrong"})},
+                {"return_value": httpx2.Response(200, json={"challenge": "wrong"})},
                 "challenge_failed",
                 id="challenge_failed",
             ),
             pytest.param(
-                {"return_value": httpx.Response(200, json={"challenge": "é"})},
+                {"return_value": httpx2.Response(200, json={"challenge": "é"})},
                 "challenge_failed",
                 id="challenge_non_ascii",
             ),
@@ -229,11 +232,11 @@ class TestSubscribeMCPEvent:
     async def test_callback_error(
         self,
         client: AsyncClient,
-        respx_mock: respx.MockRouter,
+        http_mocks: dict[tuple[str, str], Mock],
         mock: dict[str, Any],
         reason: str,
     ) -> None:
-        respx_mock.post(CALLBACK_URL).mock(**mock)
+        http_mocks["POST", CALLBACK_URL] = Mock(**mock)
 
         response = await client.post(
             "/v1/mcp/events/subscribe",

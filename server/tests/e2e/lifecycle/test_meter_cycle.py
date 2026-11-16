@@ -12,7 +12,7 @@ from decimal import Decimal
 
 import freezegun
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval

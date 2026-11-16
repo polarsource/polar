@@ -1,5 +1,5 @@
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from pytest_mock import MockerFixture
 from starlette.responses import Response
 from starlette.types import Receive, Scope, Send

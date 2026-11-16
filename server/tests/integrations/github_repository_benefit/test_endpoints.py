@@ -2,7 +2,7 @@ from datetime import timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from httpx_oauth.oauth2 import OAuth2Token
 from pytest_mock import MockerFixture
 from sqlalchemy import select

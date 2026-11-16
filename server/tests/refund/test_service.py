@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 import stripe as stripe_lib
-from httpx import AsyncClient, Response
+from httpx2 import AsyncClient, Response
 from pytest_mock import MockerFixture
 
 from polar.customer_seat.service import SeatService

@@ -2982,6 +2982,7 @@ dependencies = [
     { name = "greenlet" },
     { name = "httpx" },
     { name = "httpx-oauth" },
+    { name = "httpx2" },
     { name = "ipinfo-db" },
     { name = "itsdangerous" },
     { name = "joserfc" },
@@ -3045,7 +3046,6 @@ dev = [
     { name = "pytest-split" },
     { name = "pytest-sugar" },
     { name = "pytest-xdist", extra = ["psutil"] },
-    { name = "respx" },
     { name = "ruff" },
     { name = "types-redis" },
 ]
@@ -3080,6 +3080,7 @@ requires-dist = [
     { name = "greenlet", specifier = ">=3.5.5" },
     { name = "httpx", specifier = ">=0.23.0" },
     { name = "httpx-oauth", specifier = ">=0.17.0" },
+    { name = "httpx2", specifier = ">=2.13.0" },
     { name = "ipinfo-db", specifier = ">=0.0.4" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "joserfc", specifier = ">=1.7.4" },
@@ -3143,7 +3144,6 @@ dev = [
     { name = "pytest-split", specifier = ">=0.11.0" },
     { name = "pytest-sugar", specifier = ">=1.0.0" },
     { name = "pytest-xdist", extras = ["psutil"], specifier = ">=3.8.0" },
-    { name = "respx", specifier = ">=0.23.1" },
     { name = "ruff", specifier = ">=0.15.16" },
     { name = "types-redis", specifier = ">=4.6.0.20240903" },
 ]
@@ -4004,18 +4004,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/ac/c3/e2a2b89f2d3e2179abd6d00ebd70bff6273f37fb3e0cc209f48b39d00cbf/requests-2.34.2.tar.gz", hash = "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed", size = 142856, upload-time = "2026-05-14T19:25:27.735Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl", hash = "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0", size = 73075, upload-time = "2026-05-14T19:25:26.443Z" },
-]
-
-[[package]]
-name = "respx"
-version = "0.23.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "httpx" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/43/98/4e55c9c486404ec12373708d015ebce157966965a5ebe7f28ff2c784d41b/respx-0.23.1.tar.gz", hash = "sha256:242dcc6ce6b5b9bf621f5870c82a63997e8e82bc7c947f9ffe272b8f3dd5a780", size = 29243, upload-time = "2026-04-08T14:37:16.008Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/4a/221da6ca167db45693d8d26c7dc79ccfc978a440251bf6721c9aaf251ac0/respx-0.23.1-py2.py3-none-any.whl", hash = "sha256:b18004b029935384bccfa6d7d9d74b4ec9af73a081cc28600fffc0447f4b8c1a", size = 25557, upload-time = "2026-04-08T14:37:14.613Z" },
 ]
 
 [[package]]

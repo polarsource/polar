@@ -6,7 +6,7 @@ handle_free_success directly (no payment intent, no webhook).
 """
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.models import Organization, Product
 from tests.e2e.conftest import E2E_AUTH

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import anyio
-import httpx
+import httpx2
 import pytest
 from fastapi import FastAPI
 from logfire.testing import CaptureLogfire
@@ -33,8 +33,10 @@ async def test_records_cpu_wait_on_request_span(
     app.add_middleware(cpu_starvation.CPUStarvationMiddleware)
     instrument_fastapi(app)
 
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+    transport = httpx2.ASGITransport(app=app)
+    async with httpx2.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
         response = await client.get("/ping")
 
     assert response.status_code == 200

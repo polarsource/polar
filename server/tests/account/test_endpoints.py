@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.scope import READ_ONLY_SCOPES, Scope
 from polar.models import User

@@ -9,7 +9,7 @@ handle_free_success creates a trialing subscription with no payment method.
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.db.postgres import AsyncSession

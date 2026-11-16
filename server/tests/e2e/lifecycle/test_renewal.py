@@ -12,7 +12,7 @@ exercised with realistic time progression instead of manual date manipulation.
 
 import freezegun
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product

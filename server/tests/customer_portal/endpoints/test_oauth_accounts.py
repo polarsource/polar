@@ -4,7 +4,7 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 

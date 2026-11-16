@@ -1,0 +1,21 @@
+server/polar/worker/_httpx.py
+  s_8c8735cb3ee6f5::t_9fe880c36d0d57 27-29
+server/polar/kit/http.py
+  s_8c8735cb3ee6f5::t_9fe880c36d0d57 139-141,146-147
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1fc2631af3d0548d7f529979bb0c0174d1599959",
+  "prompts": {},
+  "sessions": {
+    "s_8c8735cb3ee6f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5ac-d2ed-7a01-b3a8-6a403836785d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

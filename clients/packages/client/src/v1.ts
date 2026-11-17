@@ -19178,6 +19178,16 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the custom field.
+       */
+      is_current: boolean
       properties: components['schemas']['CustomFieldCheckboxProperties']
     }
     /** CustomFieldCheckboxProperties */
@@ -19461,6 +19471,16 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the custom field.
+       */
+      is_current: boolean
       properties: components['schemas']['CustomFieldDateProperties']
     }
     /** CustomFieldDateProperties */
@@ -19522,6 +19542,16 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the custom field.
+       */
+      is_current: boolean
       properties: components['schemas']['CustomFieldNumberProperties']
     }
     /** CustomFieldNumberProperties */
@@ -19583,6 +19613,16 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the custom field.
+       */
+      is_current: boolean
       properties: components['schemas']['CustomFieldSelectProperties']
     }
     /** CustomFieldSelectOption */
@@ -19662,6 +19702,16 @@ export interface components {
        * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
        */
       organization_id: string
+      /**
+       * Catalog Id
+       * @description ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+       */
+      catalog_id: string | null
+      /**
+       * Is Current
+       * @description Whether this is the current version of the custom field.
+       */
+      is_current: boolean
       properties: components['schemas']['CustomFieldTextProperties']
     }
     /** CustomFieldTextProperties */
@@ -62824,6 +62874,13 @@ export interface operations {
         type?:
           | components['schemas']['CustomFieldType']
           | components['schemas']['CustomFieldType'][]
+          | null
+        /** @description Filter by catalog ID. */
+        catalog_id?: string | string[] | null
+        /** @description Filter by catalog status. */
+        catalog_status?:
+          | components['schemas']['CatalogStatus']
+          | components['schemas']['CatalogStatus'][]
           | null
         /** @description Page number, defaults to 1. */
         page?: number

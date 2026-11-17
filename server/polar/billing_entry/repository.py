@@ -4,6 +4,7 @@ from itertools import batched
 from uuid import UUID
 
 from sqlalchemy import Select, and_, func, or_, select, update
+from sqlalchemy.orm import with_polymorphic
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
@@ -16,7 +17,11 @@ from polar.kit.repository import (
 )
 from polar.models import BillingEntry
 from polar.models.billing_entry import BillingEntryType
-from polar.models.product_price import ProductPrice
+from polar.models.product_price import (
+    ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+)
 
 _LINK_PENDING_BATCH_SIZE = 5_000
 
@@ -143,6 +148,29 @@ class BillingEntryRepository(
                 yield result._tuple()
         finally:
             await results.close()
+
+    async def get_pending_metered_price_ids(
+        self, subscription_id: UUID, meter_id: UUID, *, before: datetime
+    ) -> Sequence[UUID]:
+        """The prices of the subscription's pending entries on the meter that
+        start before `before`, oldest first."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        statement = (
+            select(BillingEntry.product_price_id)
+            .join(price, BillingEntry.product_price_id == price.id)
+            .where(
+                BillingEntry.subscription_id == subscription_id,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                BillingEntry.start_timestamp < before,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
+            )
+            .group_by(BillingEntry.product_price_id)
+            .order_by(func.min(BillingEntry.start_timestamp))
+        )
+        return (await self.session.scalars(statement)).all()
 
     async def link_pending_by_subscription_and_price(
         self,

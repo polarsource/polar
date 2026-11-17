@@ -262,10 +262,21 @@ class BillingEntryService:
                 if meter_ids
                 else ({}, [])
             )
+            legacy_cutoff = utc_now()
+            if period_start is not None:
+                usage = await self._add_legacy_usage(
+                    session,
+                    subscription,
+                    usage,
+                    before=period_start,
+                    cutoff=legacy_cutoff,
+                )
+            items_by_meter = {
+                meter_id: await self._get_reducer_order_items(session, charge)
+                for meter_id, charge in usage.items()
+            }
             metered_items = [
-                item
-                for charge in usage.values()
-                for item in await self._get_reducer_order_items(session, charge)
+                item for items in items_by_meter.values() for item in items
             ]
 
             yield [*static_items, *metered_items]
@@ -283,6 +294,90 @@ class BillingEntryService:
                         subscription_id=subscription.id,
                         order_id=metered_items[0].order_id,
                     )
+
+            repository = BillingEntryRepository.from_session(session)
+            for meter_id, items in items_by_meter.items():
+                if items:
+                    # The reducer bills all usage from here on: no legacy entry
+                    # read above stays pending to be carried over again.
+                    await repository.link_pending_by_subscription_and_meter(
+                        subscription.id, meter_id, items[0].id, cutoff=legacy_cutoff
+                    )
+
+    async def _add_legacy_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        usage: dict[uuid.UUID, MeterCharge],
+        *,
+        before: datetime,
+        cutoff: datetime,
+    ) -> dict[uuid.UUID, MeterCharge]:
+        """Adds the sums and counts legacy billing left pending before `before`
+        to the charges: their billing entries were created after the order that
+        marked their buckets as billed. Only counts entries created by `cutoff`."""
+        repository = BillingEntryRepository.from_session(session)
+        event_repository = EventRepository.from_session(session)
+        price_repository = ProductPriceRepository.from_session(session)
+        charges = dict(usage)
+        for meter_id, charge in usage.items():
+            legacy_units: dict[uuid.UUID, Decimal] = {}
+            for price_id in await repository.get_pending_metered_price_ids(
+                subscription.id, meter_id, before=before
+            ):
+                price = cast(
+                    MeteredPrice,
+                    await price_repository.get_by_id(price_id, include_deleted=True),
+                )
+                if not price.meter.aggregation.is_summable():
+                    break
+                units = Decimal(
+                    str(
+                        await meter_service.get_quantity(
+                            session,
+                            price.meter,
+                            event_repository.get_by_pending_meter_entries_statement(
+                                subscription.id, meter_id
+                            ).where(
+                                BillingEntry.product_price_id == price_id,
+                                BillingEntry.start_timestamp < before,
+                                BillingEntry.created_at <= cutoff,
+                            ),
+                        )
+                    )
+                )
+                if not units:
+                    continue
+                log.info(
+                    "Billing legacy usage with reducer usage",
+                    subscription_id=subscription.id,
+                    meter_id=meter_id,
+                    product_price_id=price_id,
+                    units=str(units),
+                )
+                legacy_units[price_id] = units
+            if not legacy_units:
+                continue
+            units_by_price = {
+                **{
+                    price_id: Decimal(0)
+                    for price_id in legacy_units
+                    if price_id not in charge.units_by_price
+                },
+                **charge.units_by_price,
+            }
+            for price_id, units in legacy_units.items():
+                units_by_price[price_id] += units
+            charges[meter_id] = dataclasses.replace(
+                charge,
+                units=sum(units_by_price.values(), Decimal(0)),
+                units_by_price=units_by_price,
+                period_shares={
+                    **dict.fromkeys(legacy_units, Decimal(1)),
+                    **charge.period_shares,
+                },
+            )
+        return charges
 
     async def _get_reducer_order_items(
         self, session: AsyncSession, charge: MeterCharge

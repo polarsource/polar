@@ -1769,7 +1769,129 @@ class TestCreateOrderItemsFromReducers:
         await session.refresh(static_entry)
         assert static_entry.order_item_id == static_item.id
         await session.refresh(pending_metered_entry)
-        assert pending_metered_entry.order_item_id is None
+        assert pending_metered_entry.order_item_id == metered_item.id
+
+    async def test_bills_legacy_usage_pending_before_the_period_once(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, meter, tokens=20
+        )
+        period_start = REDUCER_CUTOFF - timedelta(hours=1)
+        entries: list[BillingEntry] = []
+        for timestamp, tokens in (
+            (period_start - timedelta(minutes=5), 3),
+            (period_start + timedelta(minutes=10), 99),
+        ):
+            event = await create_event(
+                save_fixture,
+                organization=customer.organization,
+                customer=customer,
+                timestamp=timestamp,
+                metadata={"tokens": tokens},
+            )
+            entry = BillingEntry(
+                start_timestamp=timestamp,
+                end_timestamp=timestamp,
+                type=BillingEntryType.metered,
+                direction=BillingEntryDirection.debit,
+                customer=customer,
+                product_price=price,
+                subscription=metered_subscription,
+                event=event,
+            )
+            await save_fixture(entry)
+            entries.append(entry)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session,
+            metered_subscription,
+            reducer_cutoff=REDUCER_CUTOFF,
+            period_start=period_start,
+        ) as order_items:
+            (metered_item,) = order_items
+            assert metered_item.amount == 23_00
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        for entry in entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == metered_item.id
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session,
+            metered_subscription,
+            reducer_cutoff=REDUCER_CUTOFF + timedelta(hours=1),
+            period_start=REDUCER_CUTOFF,
+        ) as order_items:
+            assert order_items == []
+
+    async def test_charges_legacy_usage_oldest_price_first(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        await enable_reducer_billing(
+            save_fixture, session, metered_subscription, price, meter, tokens=20
+        )
+        period_start = REDUCER_CUTOFF - timedelta(hours=1)
+        legacy_prices = []
+        for minutes, unit_amount in ((10, 200), (5, 300)):
+            legacy_price = await create_product_price_metered_unit(
+                save_fixture,
+                product=product_metered_unit,
+                meter=meter,
+                unit_amount=Decimal(unit_amount),
+            )
+            timestamp = period_start - timedelta(minutes=minutes)
+            event = await create_event(
+                save_fixture,
+                organization=customer.organization,
+                customer=customer,
+                timestamp=timestamp,
+                metadata={"tokens": 1},
+            )
+            await save_fixture(
+                BillingEntry(
+                    start_timestamp=timestamp,
+                    end_timestamp=timestamp,
+                    type=BillingEntryType.metered,
+                    direction=BillingEntryDirection.debit,
+                    customer=customer,
+                    product_price=legacy_price,
+                    subscription=metered_subscription,
+                    event=event,
+                )
+            )
+            legacy_prices.append(legacy_price)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session,
+            metered_subscription,
+            reducer_cutoff=REDUCER_CUTOFF,
+            period_start=period_start,
+        ) as order_items:
+            assert [(item.product_price, item.amount) for item in order_items] == [
+                (legacy_prices[0], 2_00),
+                (legacy_prices[1], 3_00),
+                (price, 20_00),
+            ]
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
 
     async def test_charges_usage_at_the_price_of_its_interval(
         self,

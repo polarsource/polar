@@ -1,0 +1,62 @@
+server/AGENTS.md
+  s_49e9aea7171220::t_eefabd7ca2fef4 105-106
+server/scripts/linters/__main__.py
+  s_f83d2c94945117::t_737b1d3f3c9e5f 14,22
+server/tests/scripts/test_linter_table_column.py
+  s_49e9aea7171220::t_c45db9457e0b48 1-21
+  s_49e9aea7171220::t_5996d0ab0d6361 22-25
+server/scripts/linters/table_column.py
+  s_49e9aea7171220::t_155264fc17320c 2-20,24-30,34-44,50,63-75,77-87
+  s_49e9aea7171220::t_c45db9457e0b48 21-23,31-33,45-49
+  s_49e9aea7171220::t_44e05e2be0a086 1,51-55,62,76
+server/polar/billing_entry/repository.py
+  s_49e9aea7171220::t_903456bb9395ce 7,20-24
+  s_49e9aea7171220::t_8e862526789b3b 130-131,133,136,144,188-190
+  s_49e9aea7171220::t_a913d8c48af0c7 140-142
+  s_49e9aea7171220::t_3f58fd1b6d4bdc 124-126,182-184
+server/polar/meter/repository.py
+  s_49e9aea7171220::t_8e862526789b3b 184-186,221-222,226,235,257,260-261
+  s_49e9aea7171220::t_903456bb9395ce 5,19-20
+  s_49e9aea7171220::t_3f58fd1b6d4bdc 175-177,215-217,250-252
+server/polar/event/repository.py
+  s_49e9aea7171220::t_3f58fd1b6d4bdc 778-780,804-806,852-854
+  s_49e9aea7171220::t_8e862526789b3b 785-786,789,793,810,812,816,858,860,864
+  s_49e9aea7171220::t_903456bb9395ce 30,47-51
+server/polar/meter/service.py
+  s_49e9aea7171220::t_903456bb9395ce 23,57-58
+  s_49e9aea7171220::t_8e862526789b3b 356,360-363
+  s_49e9aea7171220::t_3f58fd1b6d4bdc 351-353
+server/polar/subscription/repository.py
+  s_49e9aea7171220::t_3f58fd1b6d4bdc 163-165,887-889
+  s_49e9aea7171220::t_8e862526789b3b 169-170,176-177,896-897,904-905
+  s_49e9aea7171220::t_903456bb9395ce 9,49-50
+server/polar/product/repository.py
+  s_49e9aea7171220::t_8e862526789b3b 119,122,128-130
+  s_49e9aea7171220::t_903456bb9395ce 6-12
+  s_49e9aea7171220::t_3f58fd1b6d4bdc 116-118
+  s_49e9aea7171220::t_034dccefd5dfbd 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0e9884e8791b6b1e175b2b04691c275541551cdb",
+  "prompts": {},
+  "sessions": {
+    "s_49e9aea7171220": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08304eba-661b-4649-a824-82d4f47eecde",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

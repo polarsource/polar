@@ -1,0 +1,20 @@
+server/polar/app.py
+  s_ff94af9b5a1d84::t_09329f3a316c57 3
+  s_ff94af9b5a1d84::t_f5ed2c9ce7d08d 188-191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fdf98fcb7ee8eb606c81d1c3610760fe0d1b9739",
+  "prompts": {},
+  "sessions": {
+    "s_ff94af9b5a1d84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "201ed949-d364-4d91-9e7f-f5cc7495d5e3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

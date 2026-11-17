@@ -1,0 +1,21 @@
+server/scripts/linters/table_column.py
+  s_49e9aea7171220::t_6e1cb60f7ba1e7 56-61
+server/tests/scripts/test_linter_table_column.py
+  s_49e9aea7171220::t_6e1cb60f7ba1e7 26-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8542f95cd9bee551b3c28b35adacf1cde8da275a",
+  "prompts": {},
+  "sessions": {
+    "s_49e9aea7171220": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08304eba-661b-4649-a824-82d4f47eecde",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

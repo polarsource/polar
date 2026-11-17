@@ -1,0 +1,21 @@
+terraform/production/handbook.tf
+  s_ae1707cb60d5d9::t_04a03c280a3e71 64-67,85,109
+  s_ae1707cb60d5d9::t_eb7e0a6de7e652 6-9,11-62,87-92
+  s_ae1707cb60d5d9::t_d411d00f619271 1-5,10,63,68-84,86,93-108,110-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1ddc306cd04e44a1a395f23cb68f76096dde1474",
+  "prompts": {},
+  "sessions": {
+    "s_ae1707cb60d5d9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf65-c2e5-7390-865f-b1a0c7e433fd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

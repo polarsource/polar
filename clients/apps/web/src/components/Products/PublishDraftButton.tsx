@@ -1,13 +1,21 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
+import { useHasPermission } from '@/hooks/permissions'
 import { usePublishCatalog } from '@/hooks/queries/catalogs'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
 
-export const PublishDraftButton = ({ catalogId }: { catalogId: string }) => {
+export const PublishDraftButton = ({
+  organizationId,
+  catalogId,
+}: {
+  organizationId: string
+  catalogId: string
+}) => {
   const { isShown, show, hide } = useModal()
   const publish = usePublishCatalog()
+  const canManageProducts = useHasPermission(organizationId, 'products:manage')
 
   const onConfirm = async () => {
     const { data, error } = await publish.mutateAsync(catalogId)
@@ -23,6 +31,8 @@ export const PublishDraftButton = ({ catalogId }: { catalogId: string }) => {
       description: 'New checkouts now use this version.',
     })
   }
+
+  if (!canManageProducts) return null
 
   return (
     <>

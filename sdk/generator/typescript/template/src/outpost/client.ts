@@ -37,8 +37,8 @@ import {
   quantity,
 } from "./reducer";
 import {
-  READ_STATE_SCRIPT,
   READ_STATES_SCRIPT,
+  PREPARE_SNAPSHOT_SCRIPT,
   PUSH_TELEMETRY_SCRIPT,
   WRITE_BUCKET_SCRIPT,
   CONFIRM_SCRIPT,
@@ -137,8 +137,13 @@ interface Confirmation {
 // A customer's state for one reducer, or `missing` while Polar does not know the customer.
 type Read = State | "missing";
 interface OutpostRedis extends Redis {
-  outpostReadState(key: string): Promise<string[]>;
   outpostReadStates(numberOfKeys: number, ...args: string[]): Promise<unknown[]>;
+  outpostPrepareSnapshot(
+    key: string,
+    missingKey: string,
+    pulled: string,
+    coldUntil: number,
+  ): Promise<string[] | null>;
   outpostPushTelemetry(
     spansKey: string,
     metricsKey: string,
@@ -152,7 +157,6 @@ interface OutpostRedis extends Redis {
   ): Promise<number>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostReadState(key: string): this;
   outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
   outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): this;
@@ -272,6 +276,16 @@ export const decodeState = (value: string[]): State => {
     else if (field === "reset") state.confirmedAfterResets = number(raw);
   }
   return state;
+};
+// Extends a lock at most once per quarter of its time to live: it stays held, and a page of
+// snapshots does not cost a command each.
+const throttled = (extend: () => Promise<unknown>, ttl: number): (() => Promise<unknown>) => {
+  let extended = Date.now();
+  return async () => {
+    if (Date.now() - extended < ttl / 4) return;
+    extended = Date.now();
+    await extend();
+  };
 };
 // The statistics a reducer's quantity adds up: all a read needs of its state.
 const statisticsOf = ({ aggregation }: Reducer): string =>
@@ -458,8 +472,11 @@ export class Outpost {
         commandTimeout: TIMEOUT,
         retryStrategy: reconnectDelay,
       }) as OutpostRedis;
-      this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
       this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
+      this.redis.defineCommand("outpostPrepareSnapshot", {
+        numberOfKeys: 2,
+        lua: PREPARE_SNAPSHOT_SCRIPT,
+      });
       this.redis.defineCommand("outpostPushTelemetry", {
         numberOfKeys: 2,
         lua: PUSH_TELEMETRY_SCRIPT,
@@ -1004,7 +1021,8 @@ export class Outpost {
       return;
     }
     // The page's snapshots and their confirms would outlast the lock otherwise.
-    const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const extend = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const renew = throttled(extend, PULL_LOCK_TTL);
     let pages = 0;
     let applied = 0;
     let released = false;
@@ -1035,7 +1053,8 @@ export class Outpost {
         await this.serial(() =>
           eachAtMost([...customers.values()], PULL_CONCURRENCY, async (snapshots) => {
             for (const snapshot of snapshots)
-              if (await this.receiveSnapshot(snapshot, true, resets, renew)) {
+              // A confirm waits on Polar: the lock is extended before each one.
+              if (await this.receiveSnapshot(snapshot, true, resets, extend)) {
                 applied += 1;
                 await renew();
               }
@@ -1160,6 +1179,8 @@ export class Outpost {
 
   private async fetchBatch(identities: string[], renew: () => Promise<unknown>): Promise<void> {
     try {
+      // Its clock starts with the batch: a slow fetch does not push back the first extension.
+      const renewed = throttled(renew, TIMEOUT);
       const resets = this.resets;
       const body = {
         identities: identities.map((identity) => {
@@ -1195,7 +1216,7 @@ export class Outpost {
       // Side by side, as a pulled page: one instance applies the snapshots of the fleet.
       await this.serial(() =>
         eachAtMost(snapshots, PULL_CONCURRENCY, async (snapshot) => {
-          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renew();
+          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renewed();
         }),
       );
     } finally {
@@ -1203,16 +1224,6 @@ export class Outpost {
         .del(...identities.map((identity) => `${this.prefix}:fetch:${identity}`))
         .catch(() => {});
     }
-  }
-
-  private async loadState(identity: string): Promise<State> {
-    return decodeState(
-      await this.requireRedis()
-        .outpostReadState(`${this.prefix}:state:${identity}`)
-        .catch((error: unknown) => {
-          throw redisUnavailable(error);
-        }),
-    );
   }
 
   // Includes whatever else the merchant keeps in that Redis.
@@ -1312,24 +1323,30 @@ export class Outpost {
     });
     const identity = `${customer}:${reducer.id}`;
     const key = `${this.prefix}:state:${identity}`;
-    // A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
-    if (pulled && !(await this.requireRedis().exists(key))) return false;
     if (!snapshot.customer_exists) {
+      // A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
+      if (pulled && !(await this.requireRedis().exists(key))) return false;
       // The fleet asks again later, longer after each miss, and forgets the misses past the
       // longest wait.
       await this.backOff(this.missingKey(identity), 2 * MAX_PULL_RETRY_DELAY);
       return false;
     }
-    await this.redis?.del(this.missingKey(identity)).catch(() => {});
     if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
       throw new TypeError("Snapshot timestamps must be safe integer microseconds");
     for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])
       if (value !== null && !Number.isFinite(value))
         throw new TypeError("Snapshot values must be finite");
+    const sealed = await this.requireRedis()
+      .outpostPrepareSnapshot(key, this.missingKey(identity), pulled ? "1" : "", snapshot.cold_until)
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+    if (sealed === null) return false;
     const [confirmation, answered] = await this.askConfirmation(
       identity,
       customer,
       snapshot,
+      sealed.map(Number),
       renew,
     );
     await this.applySnapshot(
@@ -1349,13 +1366,11 @@ export class Outpost {
     identity: string,
     customer: string,
     snapshot: Snapshot,
+    // The buckets the snapshot seals that hold pending events.
+    sealed: number[],
     renew?: () => Promise<unknown>,
   ): Promise<[Confirmation | undefined, boolean]> {
     const started = performance.now();
-    const state = await this.loadState(identity);
-    const sealed = [...state.pending]
-      .filter(([start, statistics]) => start < snapshot.cold_until && statistics.count > 0)
-      .map(([start]) => start);
     if (!sealed.length) return [undefined, false];
     const confirmation: Confirmation = {
       snapshot,

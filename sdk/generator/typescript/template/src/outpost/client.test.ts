@@ -2208,7 +2208,7 @@ describe("Redis cost", () => {
     expect(cost.received).toBeLessThanOrEqual(620);
   });
 
-  it("pulls and applies a snapshot in nine commands", async () => {
+  it("pulls and applies a snapshot in six commands, two of them the snapshot's", async () => {
     await seed();
     const outpost = await quiet();
     await outpost.meter(meter);
@@ -2218,10 +2218,22 @@ describe("Redis cost", () => {
     expect((await redisCost(() => outpost["pull"]())).commands).toEqual({
       hget: 2,
       set: 1,
-      exists: 1,
-      del: 1,
       evalsha: 3,
-      eval: 1,
+    });
+  });
+
+  it("applies each snapshot of a page in two commands", async () => {
+    const customers = ["alice", "bob", "carol"];
+    for (const name of customers)
+      await redis.hset(`outpost:v1:${organization}:state:external:${name}:tokens`, "cold_until", bucket);
+    const outpost = await quiet();
+    changes.push({ ...aliceSnapshot, version: 1791807000000004 });
+    await outpost["pull"]();
+    changes.push(...customers.map((name) => ({ ...aliceSnapshot, external_customer_id: name })));
+    expect((await redisCost(() => outpost["pull"]())).commands).toEqual({
+      hget: 2,
+      set: 1,
+      evalsha: 1 + 2 * customers.length,
     });
   });
 

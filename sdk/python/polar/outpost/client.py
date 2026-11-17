@@ -329,6 +329,29 @@ return reads
 
 READ_STATES_SHA = hashlib.sha1(READ_STATES_SCRIPT.encode()).hexdigest()
 
+PREPARE_SNAPSHOT_SCRIPT = """
+-- What a snapshot needs before it applies, in one command. KEYS are the state and the missing
+-- marker; ARGV[1] is '1' for a pulled snapshot, ARGV[2] its cold_until. A pulled snapshot of a
+-- state Redis does not hold goes no further: false. Otherwise the customer is known again, and
+-- the reply is the start of each bucket the snapshot seals that still holds pending events.
+if ARGV[1] == '1' and redis.call('EXISTS', KEYS[1]) == 0 then
+    return false
+end
+redis.call('DEL', KEYS[2])
+local cold_until = tonumber(ARGV[2])
+local sealed = {}
+local fields = redis.call('HGETALL', KEYS[1])
+for i = 1, #fields, 2 do
+    local start = string.match(fields[i], '^pending:(%-?%d+):count$')
+    if start and tonumber(start) < cold_until and tonumber(fields[i + 1]) > 0 then
+        sealed[#sealed + 1] = start
+    end
+end
+return sealed
+"""
+
+PREPARE_SNAPSHOT_SHA = hashlib.sha1(PREPARE_SNAPSHOT_SCRIPT.encode()).hexdigest()
+
 PUSH_TELEMETRY_SCRIPT = """
 -- An instance's exports in one command. KEYS are the spans and the metrics lists; ARGV[1] is how
 -- many exports each list keeps, the newest; ARGV[2] how many of the values after it are spans,
@@ -668,6 +691,23 @@ def consumed_units(state: ReducerState, func: str) -> int | float:
     return BucketStatistics(count, total, low, high).quantity(func)
 
 
+def _throttled(
+    extend: collections.abc.Callable[[], collections.abc.Awaitable[None]], ttl: float
+) -> collections.abc.Callable[[], collections.abc.Awaitable[None]]:
+    """Extends a lock at most once per quarter of its time to live: it stays held, and a
+    page of snapshots does not cost a command each."""
+    extended = time.perf_counter()
+
+    async def renew() -> None:
+        nonlocal extended
+        if time.perf_counter() - extended < ttl / 4:
+            return
+        extended = time.perf_counter()
+        await extend()
+
+    return renew
+
+
 # The statistics a reducer's quantity adds up: all a read needs of its state.
 def _statistics_of(reducer: Reducer) -> str:
     func = reducer["aggregation"]["func"]
@@ -779,7 +819,6 @@ class Outpost:
         self._relaying: anyio.Event | None = None
         self._flushing: dict[anyio.CancelScope, float] = {}
         self._pull_retry_at = 0.0
-        self._read_state: AsyncScript | None = None
         self._redis_available = False
         self._prefix = KEY_VERSION
         # The configuration's revision in the pull hash, as of the configuration this
@@ -828,7 +867,6 @@ class Outpost:
             self._redis_available = True
             # Keys carry the organization: organizations can share a Redis.
             await self._configure()
-            self._read_state = self._redis.register_script(READ_STATE_SCRIPT)
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
             self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
             self._commit_pull = self._redis.register_script(COMMIT_PULL_SCRIPT)
@@ -854,7 +892,6 @@ class Outpost:
                 self._apply_snapshot = None
                 self._confirm_script = None
                 self._commit_pull = None
-                self._read_state = None
                 await self._shutdown_telemetry()
             raise
         return self
@@ -890,7 +927,6 @@ class Outpost:
             self._apply_snapshot = None
             self._confirm_script = None
             self._commit_pull = None
-            self._read_state = None
             await self._shutdown_telemetry()
 
     @property
@@ -1458,6 +1494,8 @@ class Outpost:
         renew: collections.abc.Callable[[], collections.abc.Awaitable[None]],
     ) -> None:
         redis = self._require_redis()
+        # Its clock starts with the batch: a slow fetch does not push back the first extension.
+        renewed = _throttled(renew, TIMEOUT)
         try:
             requested = []
             for identity in identities:
@@ -1511,7 +1549,7 @@ class Outpost:
                     if await self._receive_snapshot(
                         snapshot, pulled=False, resets=resets, renew=renew
                     ):
-                        await renew()
+                        await renewed()
 
             async with self._applying, anyio.create_task_group() as group:
                 for snapshot in snapshots:
@@ -1521,11 +1559,6 @@ class Outpost:
                 await redis.delete(
                     *(f"{self._prefix}:fetch:{identity}" for identity in identities)
                 )
-
-    async def _load_state(self, identity: str) -> ReducerState:
-        assert self._read_state is not None
-        state = await self._read_state(keys=[f"{self._prefix}:state:{identity}"])
-        return decode_state(state)
 
     async def _report_redis_size(self) -> None:
         """Includes whatever else the merchant keeps in that Redis."""
@@ -1793,6 +1826,7 @@ class Outpost:
                 int(PULL_LOCK_TTL * 1000),
             )
 
+        renewed = _throttled(renew, PULL_LOCK_TTL)
         pages = 0
         applied = 0
         released = False
@@ -1843,11 +1877,13 @@ class Outpost:
                     nonlocal applied
                     async with limiter:
                         for snapshot in snapshots:
+                            # A confirm waits on Polar: the lock is extended before
+                            # each one.
                             if await self._receive_snapshot(
                                 snapshot, pulled=True, resets=resets, renew=renew
                             ):
                                 applied += 1
-                                await renew()
+                                await renewed()
 
                 async with self._applying, anyio.create_task_group() as group:
                     for snapshots in customers.values():
@@ -1929,20 +1965,19 @@ class Outpost:
             snapshot["customer_id"], snapshot["external_customer_id"]
         )
         identity = f"{customer}:{snapshot['reducer_id']}"
-        # A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
-        if pulled and not await self._require_redis().exists(
-            f"{self._prefix}:state:{identity}"
-        ):
-            return False
+        key = f"{self._prefix}:state:{identity}"
+        redis = self._require_redis()
         if not snapshot["customer_exists"]:
+            # A pulled snapshot of a customer nobody here reads or writes has no state in
+            # Redis.
+            if pulled and not await redis.exists(key):
+                return False
             # The fleet asks again later, longer after each miss, and forgets the misses past
             # the longest wait.
             await self._back_off(
                 self._missing_key(identity), int(2 * MAX_PULL_RETRY_DELAY * 1000)
             )
             return False
-        with contextlib.suppress(RedisError):
-            await self._require_redis().delete(self._missing_key(identity))
         statistics = [
             snapshot["count"],
             snapshot["sum"],
@@ -1954,8 +1989,21 @@ class Outpost:
             for value in statistics
         ):
             raise ValueError("Snapshot values must be finite")
+        arguments = (
+            key,
+            self._missing_key(identity),
+            "1" if pulled else "",
+            snapshot["cold_until"],
+        )
+        try:
+            sealed = await redis.evalsha(PREPARE_SNAPSHOT_SHA, 2, *arguments)
+        except NoScriptError:
+            # Redis caches the script with the first EVAL, so this happens once per server.
+            sealed = await redis.eval(PREPARE_SNAPSHOT_SCRIPT, 2, *arguments)
+        if sealed is None:
+            return False
         confirmation, answered = await self._ask_confirmation(
-            identity, customer, snapshot, renew
+            identity, customer, snapshot, [int(start) for start in sealed], renew
         )
         await self._apply_snapshot_now(
             identity,
@@ -1972,18 +2020,14 @@ class Outpost:
         identity: str,
         customer: str,
         snapshot: Snapshot,
+        sealed: list[int],
         renew: collections.abc.Callable[[], collections.abc.Awaitable[None]]
         | None = None,
     ) -> tuple[_Confirmation | None, bool]:
-        """Asks Polar which of the pending events in the buckets the snapshot seals it
-        counts. A request that fails leaves its events pending until a later snapshot."""
+        """Asks Polar which of the pending events in the `sealed` buckets, those the
+        snapshot seals that hold pending events, it counts. A request that fails leaves its
+        events pending until a later snapshot."""
         started = time.perf_counter()
-        state = await self._load_state(identity)
-        sealed = [
-            start
-            for start, statistics in state.pending.items()
-            if start < snapshot["cold_until"] and statistics.count > 0
-        ]
         if not sealed:
             return None, False
         confirmation = _Confirmation(

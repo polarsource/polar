@@ -3682,7 +3682,7 @@ async def test_warms_a_known_customer_over_eleven_reducers_in_one_command(
 
 
 @pytest.mark.anyio
-async def test_pulls_and_applies_a_snapshot_in_nine_commands(
+async def test_pulls_and_applies_a_snapshot_in_six_commands(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     redis_commands: collections.Counter[str],
@@ -3697,10 +3697,37 @@ async def test_pulls_and_applies_a_snapshot_in_nine_commands(
         assert await _cost(redis_commands, outpost._pull) == {
             "hget": 2,
             "set": 1,
-            "exists": 1,
-            "del": 1,
             "evalsha": 3,
-            "eval": 1,
+        }
+
+
+@pytest.mark.anyio
+async def test_applies_each_snapshot_of_a_page_in_two_commands(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+    changes: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    customers = ("alice", "bob", "carol")
+    for customer in customers:
+        await redis.hset(
+            f"outpost:v1:org-1:state:external:{customer}:tokens", "cold_until", BUCKET
+        )
+    async with Outpost(url, client=polar_client, telemetry=False) as outpost:
+        # A first page opens the connections the snapshots apply over side by side.
+        await _deliver(
+            outpost,
+            changes,
+            *(_snapshot(customer, "tokens", BUCKET + 4) for customer in customers),
+        )
+        changes["changes"].extend(
+            _snapshot(customer, "tokens", BUCKET + 5) for customer in customers
+        )
+        assert await _cost(redis_commands, outpost._pull) == {
+            "hget": 2,
+            "set": 1,
+            "evalsha": 1 + 2 * len(customers),
         }
 
 

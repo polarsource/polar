@@ -13,7 +13,7 @@ terraform {
 #
 # One key per generation: KMS rotates symmetric encryption keys only, so
 # rotating this one means publishing another and moving the pointer. See
-# ADR-0010 and handbook/engineering/oncall/rotate-jwks.mdx.
+# ADR-0010 and https://linear.app/polarsh/document/rotate-the-jwks-signing-key-d6aa154dd9a3
 
 variable "environment" {
   description = "Workload environment this runs in."

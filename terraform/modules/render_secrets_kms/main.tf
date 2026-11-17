@@ -11,7 +11,7 @@ terraform {
 
 # KMS key that envelope-encrypts the app's secrets at rest, plus the IAM role
 # the Render backend assumes via OIDC to use it (no long-lived AWS keys).
-# Design: handbook/engineering/design-documents/secrets-encryption.mdx.
+# Design: https://linear.app/polarsh/document/secrets-encryption-e53b64456f92
 
 variable "environment" {
   description = "Workload environment this runs in."

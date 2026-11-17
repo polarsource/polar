@@ -10,7 +10,7 @@ We keep short, durable ADRs for significant, cross-cutting decisions.
 
 ## Context
 
-We write [design documents](../handbook/engineering/design-documents/index.mdx),
+We write [design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b),
 and those are useful to show how a feature will work.
 We have some rules in `AGENTS.md` files and lint scripts.
 But most of the conventions in the code are not written.
@@ -45,4 +45,4 @@ monorepo, and the **Area** field scopes each ADR (Backend, Frontend, Infra, or C
 ## References
 
 - [ADR index and lifecycle](README.md)
-- [Design documents](../handbook/engineering/design-documents/index.mdx)
+- [Design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b)

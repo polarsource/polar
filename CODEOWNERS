@@ -51,8 +51,5 @@ clients/packages/orbit/** @emilwidlund @sebastianekstrom
 # ADR
 adr/** @frankie567
 
-# Design documents
-handbook/engineering/design-documents/** @frankie567
-
 # Other
 **/legal @victoriabolin @birkjernstrom

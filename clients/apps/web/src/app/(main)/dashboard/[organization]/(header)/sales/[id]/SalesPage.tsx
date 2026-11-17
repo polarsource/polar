@@ -16,7 +16,10 @@ import {
   DownloadInvoiceDashboard,
   type EditInvoiceHandle,
 } from '@/components/Orders/DownloadInvoice'
-import { DownloadReceiptDashboard } from '@/components/Orders/DownloadReceipt'
+import {
+  DownloadReceiptDashboard,
+  type DownloadReceiptHandle,
+} from '@/components/Orders/DownloadReceipt'
 import { InvoicePreview } from '@/components/Orders/InvoicePreview'
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
@@ -39,7 +42,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useIsMobile } from '@polar-sh/ui/hooks/use-mobile'
 import React, { useRef } from 'react'
 
 interface ClientPageProps {
@@ -59,8 +61,9 @@ const ClientPage: React.FC<ClientPageProps> = ({
     { order_id: _order.id },
   )
   const { data: refunds } = useRefunds(_order.id)
-  const isMobile = useIsMobile()
   const editInvoiceRef = useRef<EditInvoiceHandle | null>(null)
+  const receiptRef = useRef<DownloadReceiptHandle | null>(null)
+  const hasReceipt = order?.receipt_number != null
 
   const orderPayments = payments?.items ?? []
   const inDunningLifecycle =
@@ -98,21 +101,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
       header={
         <Box alignItems="center" columnGap="l">
+          {/* the invoice and receipt actions live in the menu; these keep their modal and download logic */}
           {order.paid && (
             <>
               <DownloadInvoiceDashboard
                 order={order}
                 organization={organization}
                 onInvoiceGenerated={refetchOrder}
-                hideEditButton={isMobile}
+                headless
                 editInvoiceRef={editInvoiceRef}
               />
-              {order.receipt_number != null && (
+              {hasReceipt && (
                 <DownloadReceiptDashboard
                   organization={organization}
                   order={order}
-                  className="w-auto"
-                  variant="secondary"
+                  headless
+                  receiptRef={receiptRef}
                 />
               )}
             </>
@@ -124,11 +128,25 @@ const ClientPage: React.FC<ClientPageProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {isMobile && order.paid && order.is_invoice_generated && (
+              {order.paid && (
+                <DropdownMenuItem
+                  onClick={() => editInvoiceRef.current?.download()}
+                >
+                  Download Invoice
+                </DropdownMenuItem>
+              )}
+              {order.paid && order.is_invoice_generated && (
                 <DropdownMenuItem
                   onClick={() => editInvoiceRef.current?.show()}
                 >
                   Edit Invoice
+                </DropdownMenuItem>
+              )}
+              {order.paid && hasReceipt && (
+                <DropdownMenuItem
+                  onClick={() => receiptRef.current?.download()}
+                >
+                  Download Receipt
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem

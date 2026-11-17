@@ -24,6 +24,7 @@ module "planetscale" {
       parameters = {
         pgbouncer = {
           default_pool_size      = "12"
+          max_client_conn        = "200"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }
@@ -33,6 +34,7 @@ module "planetscale" {
       parameters = {
         pgbouncer = {
           default_pool_size      = "12"
+          max_client_conn        = "200"
           track_extra_parameters = "IntervalStyle,statement_timeout"
         }
       }

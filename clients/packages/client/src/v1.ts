@@ -17136,7 +17136,7 @@ export interface components {
       products?: components['schemas']['ConfigProduct'][]
       /**
        * Custom Fields
-       * @description Custom fields to create or update, matched by `slug`. A change creates a new version of the field. Earlier versions keep the field as it was. Omitted `metadata` is left untouched. Changing a slug creates a new field. All custom fields are left untouched when `custom_fields` is omitted.
+       * @description Custom fields to create or update, matched by `slug`. A change creates a new version of the field, and of every product in `products` asking for it. Earlier versions keep the field as it was. Omitted `metadata` is left untouched. Changing a slug creates a new field. Existing custom fields that aren't listed leave the catalog, and their answers are kept. Custom fields that pulling the config doesn't export are left untouched. All custom fields are left untouched when `custom_fields` is omitted.
        */
       custom_fields?: components['schemas']['ConfigCustomField'][]
       /**
@@ -18375,7 +18375,7 @@ export interface components {
       resource: components['schemas']['ConfigResource']
       /**
        * External Id
-       * @description The resource's `external_id`.
+       * @description The resource's `external_id`, or `slug` for a custom field.
        */
       external_id: string
       /** @description `missing` when the config doesn't list the resource, `deprecated` when it's marked deprecated. */

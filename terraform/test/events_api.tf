@@ -129,10 +129,25 @@ resource "aws_security_group" "events_api_alb" {
   tags        = local.events_api_tags
 }
 
-resource "aws_vpc_security_group_ingress_rule" "events_api_alb_cloudflare_ipv4" {
-  for_each          = toset(local.test_enabled ? module.cloudflare_ips.ipv4_ranges : [])
+resource "aws_ec2_managed_prefix_list" "cloudflare_ipv4" {
+  count          = local.test_enabled ? 1 : 0
+  name           = "cloudflare-ipv4"
+  address_family = "IPv4"
+  max_entries    = length(module.cloudflare_ips.ipv4_ranges)
+  tags           = local.events_api_tags
+
+  dynamic "entry" {
+    for_each = module.cloudflare_ips.ipv4_ranges
+    content {
+      cidr = entry.value
+    }
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "events_api_alb_cloudflare" {
+  count             = local.test_enabled ? 1 : 0
   security_group_id = aws_security_group.events_api_alb[0].id
-  cidr_ipv4         = each.value
+  prefix_list_id    = aws_ec2_managed_prefix_list.cloudflare_ipv4[0].id
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"

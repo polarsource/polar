@@ -4,6 +4,7 @@ import { enums, type schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker, {
+  COUNTRIES_WITH_FIXED_STATE_OPTIONS,
   getStateLabel,
   hasFixedStateOptions,
 } from '@polar-sh/ui/components/atoms/CountryStatePicker'
@@ -39,6 +40,11 @@ const requiredInCountries = (countries: string[]) => ({
   },
 })
 
+const isFixedStateCode = (state: string) =>
+  COUNTRIES_WITH_FIXED_STATE_OPTIONS.some((country) =>
+    state.startsWith(`${country}-`),
+  )
+
 const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
   const { data: customer, update } = useCustomerPortalCustomer()
 
@@ -66,7 +72,10 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
 
   useEffect(() => {
     const state = getValues('billing_address.state')
-    if (!hasFixedStateOptions(country) || !state?.startsWith(`${country}-`)) {
+    const isValidForCountry = hasFixedStateOptions(country)
+      ? state?.startsWith(`${country}-`)
+      : !isFixedStateCode(state ?? '')
+    if (state && !isValidForCountry) {
       setValue('billing_address.state', null)
     }
     clearErrors([
@@ -111,6 +120,11 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
   if (!customer) {
     return null
   }
+
+  const savedState = customer.billing_address?.state
+  const showState =
+    hasFixedStateOptions(country) ||
+    (!!savedState && !isFixedStateCode(savedState))
 
   return (
     <Form {...form}>
@@ -250,20 +264,18 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               />
             </FormControl>
           </div>
-          {hasFixedStateOptions(country) && (
+          {showState && (
             <FormControl>
               <FormField
                 control={control}
                 name="billing_address.state"
-                rules={{
-                  required: 'This field is required',
-                }}
+                rules={requiredInCountries(COUNTRIES_WITH_FIXED_STATE_OPTIONS)}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <CountryStatePicker
                       autoComplete="billing address-level1"
                       country={country}
-                      value={field.value || undefined}
+                      value={field.value || ''}
                       onChange={field.onChange}
                       placeholder={getStateLabel(country)}
                     />

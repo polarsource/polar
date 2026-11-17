@@ -362,4 +362,4 @@ async def webhook_subscription_revoked(
             session, ExternalEventSource.polar, event_id
         ) as event:
             payload = deserialize(event.data, WebhookSubscriptionRevokedPayload)
-            await polar_self.handle_subscription_revoked_event(payload)
+            await polar_self.handle_subscription_revoked_event(session, payload)

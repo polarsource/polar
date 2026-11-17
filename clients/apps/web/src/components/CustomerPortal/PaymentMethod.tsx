@@ -10,6 +10,7 @@ import { X } from '@polar-sh/orbit/icons'
 import {
   PaymentMethodDisplay,
   getPaymentMethodCardInfo,
+  getPaymentMethodTypeLabel,
 } from '../PaymentMethodDisplay'
 import { PortalListItem } from './PortalPrimitives'
 
@@ -30,6 +31,8 @@ const PaymentMethod = ({
   const deletePaymentMethod = useDeleteCustomerPaymentMethod(api)
   const { update: updateCustomer } = useCustomerPortalCustomer()
   const isDefault = paymentMethod.id === customer.default_payment_method_id
+  const card = getPaymentMethodCardInfo(paymentMethod)
+  const methodLabel = `${getPaymentMethodTypeLabel(card?.brand ?? paymentMethod.type)}${card?.last4 ? ` ending in ${card.last4}` : ''}`
 
   const onDeletePaymentMethod = async () => {
     try {
@@ -73,12 +76,7 @@ const PaymentMethod = ({
 
   return (
     <PortalListItem
-      title={
-        <PaymentMethodDisplay
-          type={paymentMethod.type}
-          card={getPaymentMethodCardInfo(paymentMethod)}
-        />
-      }
+      title={<PaymentMethodDisplay type={paymentMethod.type} card={card} />}
       meta={isDefault ? <Status size="small" status="Default" /> : undefined}
       actions={
         <>
@@ -97,7 +95,7 @@ const PaymentMethod = ({
             <Button
               variant="ghost"
               size="icon"
-              aria-label="Remove payment method"
+              aria-label={`Remove ${methodLabel}`}
               onClick={onDeletePaymentMethod}
               loading={deletePaymentMethod.isPending}
               disabled={deletePaymentMethod.isPending}

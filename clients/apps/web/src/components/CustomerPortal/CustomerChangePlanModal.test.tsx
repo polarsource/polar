@@ -70,19 +70,22 @@ const mockPreview = (
 const immediateCycleNotice =
   /charged immediately|credit on your next invoice|from your balance/
 
+const renderModal = (isShown = true) => (
+  <CustomerChangePlanModal
+    isShown={isShown}
+    api={{} as Client}
+    organization={organization}
+    products={[currentProduct, seatOnlyYearlyProduct]}
+    subscription={subscription}
+    hide={vi.fn()}
+    onUserSubscriptionUpdate={vi.fn()}
+  />
+)
+
 const renderAndSelectSeatPlan = () => {
-  render(
-    <CustomerChangePlanModal
-      isShown
-      api={{} as Client}
-      organization={organization}
-      products={[currentProduct, seatOnlyYearlyProduct]}
-      subscription={subscription}
-      hide={vi.fn()}
-      onUserSubscriptionUpdate={vi.fn()}
-    />,
-  )
+  const result = render(renderModal())
   fireEvent.click(screen.getByText('Team Yearly'))
+  return result
 }
 
 describe('CustomerChangePlanModal', () => {
@@ -153,4 +156,30 @@ describe('CustomerChangePlanModal', () => {
       expect(screen.queryByText(immediateCycleNotice)).toBeNull()
     },
   )
+
+  it('selects a plan with the keyboard', () => {
+    mockPreview(undefined)
+
+    render(renderModal())
+
+    const option = screen.getByRole('radio', { name: /Team Yearly/ })
+    expect(option.tabIndex).toBe(0)
+
+    fireEvent.keyDown(option, { key: ' ' })
+    expect(option.getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('clears the selected plan when the dialog is reopened', () => {
+    mockPreview(undefined)
+
+    const { rerender } = renderAndSelectSeatPlan()
+    rerender(renderModal(false))
+    rerender(renderModal(true))
+
+    expect(
+      screen
+        .getByRole('radio', { name: /Team Yearly/ })
+        .getAttribute('aria-checked'),
+    ).toBe('false')
+  })
 })

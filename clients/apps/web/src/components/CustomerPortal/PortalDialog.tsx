@@ -9,6 +9,7 @@ import {
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from 'react'
@@ -39,6 +40,8 @@ export const PortalDialog = ({
   actions,
 }: PortalDialogProps) => {
   const ref = useRef<HTMLDivElement>(null)
+  const titleId = useId()
+  const descriptionId = useId()
 
   useEffect(() => {
     if (!isShown) return
@@ -72,6 +75,8 @@ export const PortalDialog = ({
         ref={ref}
         role="dialog"
         aria-modal
+        aria-labelledby={titleId}
+        aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
         onKeyDown={onKeyDown}
         className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 focus:outline-none sm:items-center sm:p-6"
@@ -110,13 +115,15 @@ export const PortalDialog = ({
               paddingHorizontal="xl"
             >
               <Box flexDirection="column" rowGap="xs" minWidth={0}>
-                <Text variant="heading-xxs" as="h2">
+                <Text variant="heading-xxs" as="h2" id={titleId}>
                   {title}
                 </Text>
                 {description ? (
-                  <PortalText tone="secondary" className="text-sm">
-                    {description}
-                  </PortalText>
+                  <Box as="span" id={descriptionId}>
+                    <PortalText tone="secondary" className="text-sm">
+                      {description}
+                    </PortalText>
+                  </Box>
                 ) : null}
               </Box>
               <Button

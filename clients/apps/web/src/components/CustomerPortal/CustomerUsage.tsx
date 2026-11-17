@@ -30,9 +30,9 @@ const MeterCard = ({
     credited_units > 0 ? Math.min(consumed_units / credited_units, 1) : null
 
   return (
-    <PortalCard>
+    <PortalCard minWidth={0}>
       <Box flexDirection="column" rowGap="xs">
-        <PortalText tone="secondary" className="truncate text-sm">
+        <PortalText tone="secondary" block className="truncate text-sm">
           {meter.name}
         </PortalText>
         <Text variant="heading-xs" as="p" tabularNums>

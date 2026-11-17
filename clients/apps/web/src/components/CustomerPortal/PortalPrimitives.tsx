@@ -2,7 +2,7 @@ import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import { Text } from '@polar-sh/orbit'
 import { Box, type BoxProps } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type PortalTextTone = 'primary' | 'secondary' | 'tertiary' | 'danger'
@@ -135,62 +135,75 @@ export const PortalListItem = ({
   meta?: ReactNode
   actions?: ReactNode
   onClick?: () => void
-}) => (
-  <Box
-    as="li"
-    display="flex"
-    flexDirection={{ base: 'column', sm: 'row' }}
-    alignItems={{ base: 'stretch', sm: 'center' }}
-    justifyContent="between"
-    rowGap="m"
-    columnGap="l"
-    paddingHorizontal={{ base: 'l', md: 'xl' }}
-    paddingVertical="l"
-    borderRadius="l"
-    borderWidth={1}
-    borderStyle="solid"
-    borderColor="border-primary"
-    backgroundColor={
-      onClick
-        ? { base: 'background-primary', hover: 'background-secondary' }
-        : 'background-primary'
+}) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!onClick || event.target !== event.currentTarget) return
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onClick()
     }
-    cursor={onClick ? 'pointer' : undefined}
-    transitionProperty="colors"
-    transitionDuration="fast"
-    onClick={onClick}
-  >
-    <Box flexDirection="column" rowGap="xs" minWidth={0}>
-      <PortalText block className="truncate">
-        {title}
-      </PortalText>
-      {subtitle ? (
-        <PortalText tone="secondary" block className="text-sm">
-          {subtitle}
-        </PortalText>
-      ) : null}
-    </Box>
-    {meta || actions ? (
+  }
+
+  return (
+    <Box as="li" display="flex" flexDirection="column">
       <Box
-        alignItems="center"
-        justifyContent={{ base: 'between', sm: 'end' }}
+        flexDirection={{ base: 'column', sm: 'row' }}
+        alignItems={{ base: 'stretch', sm: 'center' }}
+        justifyContent="between"
+        rowGap="m"
         columnGap="l"
-        flexShrink={0}
+        paddingHorizontal={{ base: 'l', md: 'xl' }}
+        paddingVertical="l"
+        borderRadius="l"
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        backgroundColor={
+          onClick
+            ? { base: 'background-primary', hover: 'background-secondary' }
+            : 'background-primary'
+        }
+        cursor={onClick ? 'pointer' : undefined}
+        transitionProperty="colors"
+        transitionDuration="fast"
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onClick={onClick}
+        onKeyDown={onClick ? onKeyDown : undefined}
       >
-        {meta}
-        {actions ? (
+        <Box flexDirection="column" rowGap="xs" minWidth={0}>
+          <PortalText block className="truncate">
+            {title}
+          </PortalText>
+          {subtitle ? (
+            <PortalText tone="secondary" block className="text-sm">
+              {subtitle}
+            </PortalText>
+          ) : null}
+        </Box>
+        {meta || actions ? (
           <Box
             alignItems="center"
-            columnGap="s"
-            onClick={(e) => e.stopPropagation()}
+            justifyContent={{ base: 'between', sm: 'end' }}
+            columnGap="l"
+            flexShrink={0}
           >
-            {actions}
+            {meta}
+            {actions ? (
+              <Box
+                alignItems="center"
+                columnGap="s"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {actions}
+              </Box>
+            ) : null}
           </Box>
         ) : null}
       </Box>
-    ) : null}
-  </Box>
-)
+    </Box>
+  )
+}
 
 export const PortalRow = ({
   label,

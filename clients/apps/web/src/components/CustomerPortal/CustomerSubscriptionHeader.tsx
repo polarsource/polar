@@ -29,7 +29,7 @@ export const CustomerSubscriptionHeader = ({
   return (
     <Box flexDirection="column" rowGap="xs" minWidth={0}>
       <Box alignItems="center" columnGap="m" rowGap="xs" flexWrap="wrap">
-        <Text variant="heading-xxs" as="h3">
+        <Text variant="heading-xxs" as="h3" truncate>
           {subscription.product.name}
         </Text>
         <SubscriptionStatusPill subscription={subscription} />

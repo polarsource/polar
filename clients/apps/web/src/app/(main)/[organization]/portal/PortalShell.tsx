@@ -27,7 +27,10 @@ const SidebarHeader = ({
   organization: schemas['CustomerOrganization']
 }) => {
   const token = usePortalToken()
-  const { data: session } = useCustomerPortalSession(createClientSideAPI(token))
+  const { data: session } = useCustomerPortalSession(
+    createClientSideAPI(token),
+    token,
+  )
 
   return (
     <Box

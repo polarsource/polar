@@ -12,6 +12,7 @@ import {
 import { keyByContent } from '@/utils/keys'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo } from 'react'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
@@ -206,9 +207,9 @@ export const CurrentPeriodOverview = ({
       borderColor="border-primary"
     >
       <Box justifyContent="between" alignItems="baseline" columnGap="l">
-        <Box as="span" color="text-primary">
+        <Text variant="body" as="h4">
           {headerTitle}
-        </Box>
+        </Text>
         <PortalText tone="secondary" className="text-sm">
           {chargeDateLabel}
         </PortalText>
@@ -254,7 +255,7 @@ export const CurrentPeriodOverview = ({
                 numeric
                 key={meter.id}
                 label={
-                  <Box as="span" flexDirection="column">
+                  <Box as="span" display="flex" flexDirection="column">
                     <span>{meter.meter.name}</span>
                     {billedUnits && (
                       <PortalText tone="tertiary" className="text-xs">

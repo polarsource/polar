@@ -255,7 +255,7 @@ export const SeatManagementTable = ({
               return (
                 <PortalListItem
                   key={seat.id}
-                  title={memberName ?? memberEmail}
+                  title={memberName || memberEmail}
                   subtitle={memberName ? memberEmail : undefined}
                   meta={<Status size="small" color={color} status={label} />}
                   actions={
@@ -265,7 +265,7 @@ export const SeatManagementTable = ({
                           <Button
                             variant="ghost"
                             size="icon"
-                            aria-label="Seat actions"
+                            aria-label={`Actions for ${memberName || memberEmail}`}
                           >
                             <MoreVertOutlined fontSize="inherit" />
                           </Button>

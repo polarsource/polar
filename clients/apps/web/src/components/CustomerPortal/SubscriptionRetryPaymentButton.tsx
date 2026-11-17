@@ -2,6 +2,7 @@
 
 import revalidate from '@/app/actions'
 import { useCustomerOrders } from '@/hooks/queries/customerPortal'
+import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
@@ -27,9 +28,9 @@ export const SubscriptionRetryPaymentButton = ({
     limit: 10,
     sorting: ['-created_at'],
   })
-  const pendingOrder = orders?.items.find((order) => order.status === 'pending')
+  const retryableOrder = orders?.items.find(canRetryOrderPayment)
 
-  if (!pendingOrder) {
+  if (!retryableOrder) {
     return null
   }
 
@@ -37,7 +38,7 @@ export const SubscriptionRetryPaymentButton = ({
     <>
       <Button onClick={() => setIsOpen(true)}>Retry payment</Button>
       <OrderPaymentRetryModal
-        order={pendingOrder}
+        order={retryableOrder}
         api={api}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}

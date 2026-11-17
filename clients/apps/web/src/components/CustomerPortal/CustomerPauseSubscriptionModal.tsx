@@ -25,13 +25,12 @@ interface CustomerPauseSubscriptionModalProps {
   onPause?: () => void
 }
 
-const CustomerPauseSubscriptionModal = ({
-  isShown,
+const PauseSubscriptionDialog = ({
   hide,
   api,
   subscription,
   onPause,
-}: CustomerPauseSubscriptionModalProps) => {
+}: Omit<CustomerPauseSubscriptionModalProps, 'isShown'>) => {
   const router = useRouter()
   const form = useForm<{ resumes_at?: string }>({
     defaultValues: { resumes_at: undefined },
@@ -66,7 +65,7 @@ const CustomerPauseSubscriptionModal = ({
 
   return (
     <PortalDialog
-      isShown={isShown}
+      isShown
       hide={hide}
       title="Pause subscription"
       description="Your subscription stays active until the end of the current period. While paused you won't be charged and benefits are revoked until it resumes."
@@ -111,5 +110,11 @@ const CustomerPauseSubscriptionModal = ({
     </PortalDialog>
   )
 }
+
+const CustomerPauseSubscriptionModal = ({
+  isShown,
+  ...props
+}: CustomerPauseSubscriptionModalProps) =>
+  isShown ? <PauseSubscriptionDialog {...props} /> : null
 
 export default CustomerPauseSubscriptionModal

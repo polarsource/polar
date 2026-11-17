@@ -10,7 +10,8 @@ import { usePaymentMethodEmbed } from '@/hooks/usePaymentMethodEmbed'
 import { createClientSideAPI } from '@/utils/client'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, SpinnerNoMargin } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
@@ -40,7 +41,12 @@ export const CustomerPortalSettings = ({
   const queryClient = useQueryClient()
 
   const { data: customer } = useCustomerPortalCustomer()
-  const { data: paymentMethods } = useCustomerPaymentMethods(api)
+  const {
+    data: paymentMethods,
+    isPending: isPaymentMethodsPending,
+    isError: isPaymentMethodsError,
+    refetch: refetchPaymentMethods,
+  } = useCustomerPaymentMethods(api)
 
   const [isExporting, setIsExporting] = useState(false)
 
@@ -118,7 +124,30 @@ export const CustomerPortalSettings = ({
           </Button>
         }
       >
-        {hasPaymentMethods ? (
+        {isPaymentMethodsPending ? (
+          <Box
+            justifyContent="center"
+            paddingVertical="3xl"
+            color="text-secondary"
+            aria-busy="true"
+          >
+            <SpinnerNoMargin />
+          </Box>
+        ) : isPaymentMethodsError && !paymentMethods ? (
+          <PortalEmptyState
+            title="Could not load payment methods"
+            description="Something went wrong while loading your payment methods."
+            actions={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => refetchPaymentMethods()}
+              >
+                Try again
+              </Button>
+            }
+          />
+        ) : hasPaymentMethods ? (
           <PortalCardList>
             {paymentMethods?.items.map((pm) => (
               <PaymentMethod

@@ -257,7 +257,7 @@ export const CustomerPortalTeamSection = ({
                         <Button
                           variant="ghost"
                           size="icon"
-                          aria-label="Member actions"
+                          aria-label={`Actions for ${member.name || member.email}`}
                         >
                           <MoreVertOutlined fontSize="inherit" />
                         </Button>

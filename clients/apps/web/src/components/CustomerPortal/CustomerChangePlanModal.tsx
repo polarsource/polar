@@ -15,7 +15,7 @@ import { Client, schemas } from '@polar-sh/client'
 import { Alert, Button, Status } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { type KeyboardEvent, useCallback, useMemo, useState } from 'react'
 import { resolveBenefitIcon } from '../Benefit/utils'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { toast } from '../Toast/use-toast'
@@ -34,17 +34,17 @@ const PlanOption = ({
   currency,
   selected,
   current,
+  focusable,
   onSelect,
 }: {
   product: schemas['CustomerProduct']
   currency: string
   selected: boolean
   current?: boolean
+  focusable?: boolean
   onSelect?: () => void
 }) => (
   <Box
-    as="li"
-    display="flex"
     alignItems="center"
     justifyContent="between"
     columnGap="l"
@@ -65,8 +65,19 @@ const PlanOption = ({
     transitionProperty="colors"
     transitionDuration="fast"
     onClick={current ? undefined : onSelect}
+    onKeyDown={
+      current
+        ? undefined
+        : (event: KeyboardEvent<HTMLDivElement>) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              onSelect?.()
+            }
+          }
+    }
     role={current ? undefined : 'radio'}
     aria-checked={current ? undefined : selected}
+    tabIndex={current ? undefined : focusable ? 0 : -1}
   >
     <Box alignItems="center" columnGap="m" minWidth={0}>
       <Box
@@ -136,15 +147,7 @@ const getNextInvoiceType = (
   return 'charge'
 }
 
-const CustomerChangePlanModal = ({
-  api,
-  organization,
-  products: _products,
-  subscription,
-  isShown,
-  hide,
-  onUserSubscriptionUpdate,
-}: {
+interface CustomerChangePlanModalProps {
   isShown: boolean
   api: Client
   organization: schemas['CustomerOrganization']
@@ -154,7 +157,23 @@ const CustomerChangePlanModal = ({
   onUserSubscriptionUpdate: (
     subscription: schemas['CustomerSubscription'],
   ) => void
-}) => {
+}
+
+const ARROW_KEY_OFFSETS: Record<string, number> = {
+  ArrowDown: 1,
+  ArrowRight: 1,
+  ArrowUp: -1,
+  ArrowLeft: -1,
+}
+
+const ChangePlanDialog = ({
+  api,
+  organization,
+  products: _products,
+  subscription,
+  hide,
+  onUserSubscriptionUpdate,
+}: Omit<CustomerChangePlanModalProps, 'isShown'>) => {
   const router = useRouter()
   const products = useMemo(
     () => _products.filter((p) => p.is_recurring),
@@ -349,9 +368,30 @@ const CustomerChangePlanModal = ({
     [products, subscription],
   )
 
+  const selectedIndex = availableProducts.findIndex(
+    (product) => product.id === selectedProduct?.id,
+  )
+
+  const onPlanKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const offset = ARROW_KEY_OFFSETS[event.key]
+    const count = availableProducts.length
+    if (!offset || count === 0) return
+    event.preventDefault()
+    const nextIndex =
+      selectedIndex === -1
+        ? offset > 0
+          ? 0
+          : count - 1
+        : (selectedIndex + offset + count) % count
+    setSelectedProduct(availableProducts[nextIndex])
+    const radios =
+      event.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')
+    radios[nextIndex]?.focus()
+  }
+
   return (
     <PortalDialog
-      isShown={isShown}
+      isShown
       hide={hide}
       title="Change plan"
       description={`You're currently on ${subscription.product.name}.`}
@@ -372,19 +412,28 @@ const CustomerChangePlanModal = ({
         </>
       }
     >
-      <Box as="ul" flexDirection="column" rowGap="s" role="radiogroup">
+      <Box
+        flexDirection="column"
+        rowGap="s"
+        role="radiogroup"
+        aria-label="Available plans"
+        onKeyDown={onPlanKeyDown}
+      >
         <PlanOption
           product={subscription.product}
           currency={subscription.currency}
           selected={false}
           current
         />
-        {availableProducts.map((product) => (
+        {availableProducts.map((product, index) => (
           <PlanOption
             key={product.id}
             product={product}
             currency={subscription.currency}
-            selected={selectedProduct?.id === product.id}
+            selected={index === selectedIndex}
+            focusable={
+              selectedIndex === -1 ? index === 0 : index === selectedIndex
+            }
             onSelect={() => setSelectedProduct(product)}
           />
         ))}
@@ -423,5 +472,11 @@ const CustomerChangePlanModal = ({
     </PortalDialog>
   )
 }
+
+const CustomerChangePlanModal = ({
+  isShown,
+  ...props
+}: CustomerChangePlanModalProps) =>
+  isShown ? <ChangePlanDialog {...props} /> : null
 
 export default CustomerChangePlanModal

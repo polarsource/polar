@@ -2,7 +2,7 @@
 
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client } from '@polar-sh/client'
-import { Input } from '@polar-sh/orbit'
+import { Input, SpinnerNoMargin } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Search } from '@polar-sh/orbit/icons'
 import { useCallback, useState } from 'react'
@@ -57,6 +57,7 @@ export const CustomerPortalGrantsComplex = ({
   })
 
   const grants = benefitGrants?.items ?? []
+  const isBusy = isLoading || isFetching
   const pagination = benefitGrants?.pagination
 
   return (
@@ -79,28 +80,44 @@ export const CustomerPortalGrantsComplex = ({
         onChange={onSearchChange}
       />
 
-      <Box
-        flexDirection="column"
-        opacity={isLoading || isFetching ? 0.5 : 1}
-        transitionProperty="opacity"
-        transitionDuration="fast"
-      >
-        {grants.length === 0 && !isLoading ? (
-          <PortalEmptyState title="No benefits found" />
-        ) : (
-          <PortalCardList>
-            {grants.map((benefitGrant) => (
-              <Box as="li" display="block" key={benefitGrant.id}>
-                <PortalCard>
-                  <BenefitGrant
-                    api={api}
-                    benefitGrant={benefitGrant}
-                    allowLicenseKeyRotation={true}
-                  />
-                </PortalCard>
-              </Box>
-            ))}
-          </PortalCardList>
+      <Box position="relative" flexDirection="column" aria-busy={isBusy}>
+        <Box
+          flexDirection="column"
+          opacity={isBusy ? 0.5 : 1}
+          pointerEvents={isBusy ? 'none' : 'auto'}
+          transitionProperty="opacity"
+          transitionDuration="fast"
+        >
+          {isLoading && grants.length === 0 ? (
+            <Box paddingVertical="3xl" />
+          ) : grants.length === 0 ? (
+            <PortalEmptyState title="No benefits found" />
+          ) : (
+            <PortalCardList>
+              {grants.map((benefitGrant) => (
+                <Box as="li" display="block" key={benefitGrant.id}>
+                  <PortalCard>
+                    <BenefitGrant
+                      api={api}
+                      benefitGrant={benefitGrant}
+                      allowLicenseKeyRotation={true}
+                    />
+                  </PortalCard>
+                </Box>
+              ))}
+            </PortalCardList>
+          )}
+        </Box>
+        {isBusy && (
+          <Box
+            position="absolute"
+            inset="none"
+            alignItems="center"
+            justifyContent="center"
+            color="text-secondary"
+          >
+            <SpinnerNoMargin />
+          </Box>
         )}
       </Box>
     </PortalSection>

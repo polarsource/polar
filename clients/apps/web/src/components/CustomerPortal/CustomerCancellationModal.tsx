@@ -51,12 +51,12 @@ interface CustomerCancellationModalProps {
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
 }
 
-const CustomerCancellationModal = ({
+const CancellationDialog = ({
   api,
   subscription,
   cancelSubscription,
   ...props
-}: CustomerCancellationModalProps) => {
+}: Omit<CustomerCancellationModalProps, 'isShown'>) => {
   const router = useRouter()
 
   const { data: cancelPreview } = useCustomerSubscriptionCancelPreview(
@@ -143,7 +143,7 @@ const CustomerCancellationModal = ({
 
   return (
     <PortalDialog
-      isShown={props.isShown}
+      isShown
       hide={props.hide}
       title="Cancel subscription"
       description="We're sorry to see you go. Let us know why you're leaving so we can improve."
@@ -237,5 +237,11 @@ const CustomerCancellationModal = ({
     </PortalDialog>
   )
 }
+
+const CustomerCancellationModal = ({
+  isShown,
+  ...props
+}: CustomerCancellationModalProps) =>
+  isShown ? <CancellationDialog {...props} /> : null
 
 export default CustomerCancellationModal

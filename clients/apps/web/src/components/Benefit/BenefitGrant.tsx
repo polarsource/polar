@@ -521,10 +521,10 @@ export const BenefitGrant = ({
           {resolveBenefitIcon(benefit.type, 'h-3.5 w-3.5')}
         </Box>
         <Box flexDirection="column" minWidth={0}>
-          <Box as="span" color="text-primary">
+          <Text variant="body" as="h3">
             {benefit.description}
-          </Box>
-          <PortalText tone="secondary" className="truncate text-sm">
+          </Text>
+          <PortalText tone="secondary" block className="truncate text-sm">
             {t(benefitTypeTranslationKeys[benefit.type])}
           </PortalText>
         </Box>

@@ -6,17 +6,18 @@ import {
   useCustomerCancelSubscription,
 } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { PortalConfirmDialog, PortalDrawerHeader } from './PortalDialog'
-import { PortalCard, PortalRows } from './PortalPrimitives'
+import { PortalCard, PortalRow, PortalRows } from './PortalPrimitives'
 import { SubscriptionRetryPaymentButton } from './SubscriptionRetryPaymentButton'
 import { UpcomingUsageCharge } from './UpcomingUsageCharge'
 import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
@@ -59,6 +60,11 @@ const CustomerSubscriptionDetails = ({
     !!subscription.ends_at
 
   const isPastDue = subscription.status === 'past_due'
+  const isPausingIndefinitely =
+    (subscription.status === 'paused' || subscription.pause_at_period_end) &&
+    !subscription.resumes_at
+  const showMeteredUsage =
+    subscription.meters.length > 0 && (isPastDue || isPausingIndefinitely)
 
   const organization = subscription.product.organization
 
@@ -67,6 +73,7 @@ const CustomerSubscriptionDetails = ({
 
   const clearPendingUpdate = useCustomerClearPendingSubscriptionUpdate(api)
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const pendingUpdate = subscription.pending_update
 
@@ -119,6 +126,34 @@ const CustomerSubscriptionDetails = ({
         </Box>
       )}
 
+      {showMeteredUsage && (
+        <Box
+          flexDirection="column"
+          rowGap="m"
+          paddingTop="l"
+          borderTopWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        >
+          <Box as="span" color="text-primary">
+            Metered usage
+          </Box>
+          <PortalRows>
+            {subscription.meters.map((meter) => (
+              <PortalRow
+                numeric
+                key={meter.id}
+                label={meter.meter.name}
+                value={formatCurrency('compact')(
+                  meter.amount,
+                  subscription.currency,
+                )}
+              />
+            ))}
+          </PortalRows>
+        </Box>
+      )}
+
       <UpcomingUsageCharge subscription={subscription} api={api} />
 
       <CurrentPeriodOverview
@@ -147,7 +182,7 @@ const CustomerSubscriptionDetails = ({
         </Box>
         <Box display={{ base: 'flex', md: 'none' }}>
           <Link
-            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
+            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?${searchParams.toString()}`}
           >
             <Button
               variant={canUncancel || isPastDue ? 'secondary' : 'default'}

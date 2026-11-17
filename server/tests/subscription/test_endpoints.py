@@ -2691,7 +2691,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2712,7 +2712,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2734,7 +2734,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2755,7 +2755,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2763,7 +2763,7 @@ class TestBulkUpdate:
         assert response.status_code == 202
         json = response.json()
         assert json["organization_id"] == str(organization.id)
-        assert json["product_external_id"] == "pro"
+        assert json["external_product_id"] == "pro"
         assert json["target_product_id"] == str(current_product.id)
         assert json["proration_behavior"] == SubscriptionProrationBehavior.next_period
         assert json["completed_at"] is None

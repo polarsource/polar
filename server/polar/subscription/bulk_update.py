@@ -66,7 +66,7 @@ class SubscriptionBulkUpdateService:
         return await self.start(
             session,
             target.organization,
-            source_external_id=bulk_update_create.product_external_id,
+            source_external_id=bulk_update_create.external_product_id,
             target_product=target,
         )
 

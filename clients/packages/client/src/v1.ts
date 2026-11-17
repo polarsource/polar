@@ -38424,10 +38424,10 @@ export interface components {
        */
       organization_id: string
       /**
-       * Product External Id
+       * External Product Id
        * @description `external_id` of the product whose subscriptions move.
        */
-      product_external_id: string
+      external_product_id: string
       /**
        * Target Product Id
        * Format: uuid4
@@ -38455,10 +38455,10 @@ export interface components {
     /** SubscriptionBulkUpdateCreate */
     SubscriptionBulkUpdateCreate: {
       /**
-       * Product External Id
+       * External Product Id
        * @description `external_id` of the product whose subscriptions move, in any version.
        */
-      product_external_id: string
+      external_product_id: string
       /**
        * Target Product Id
        * Format: uuid4

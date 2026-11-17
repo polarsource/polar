@@ -754,7 +754,7 @@ SubscriptionBulkUpdateID = Annotated[
 class SubscriptionBulkUpdateCreate(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    product_external_id: str = Field(
+    external_product_id: str = Field(
         min_length=1,
         description=(
             "`external_id` of the product whose subscriptions move, in any version."
@@ -772,7 +772,7 @@ class SubscriptionBulkUpdateCreate(Schema):
 
 class SubscriptionBulkUpdate(IDSchema, TimestampedSchema):
     organization_id: UUID4 = Field(description="The organization ID.")
-    product_external_id: str = Field(
+    external_product_id: str = Field(
         validation_alias="source_external_id",
         description="`external_id` of the product whose subscriptions move.",
     )

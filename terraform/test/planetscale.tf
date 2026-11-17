@@ -72,7 +72,7 @@ module "planetscale_private_link" {
   vpc_id                    = module.vpc[0].vpc_id
   subnet_ids                = module.vpc[0].secondary_private_subnet_ids
   service_name              = module.planetscale.private_connection_service_name
-  client_security_group_ids = [module.ec2_tailscale[0].security_group_id]
+  client_security_group_ids = [module.ec2_tailscale[0].security_group_id, aws_security_group.events_api[0].id]
 
   tags = {
     Environment = "test"

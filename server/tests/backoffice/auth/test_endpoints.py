@@ -102,8 +102,12 @@ def claims(oauth_http_mocks: dict[tuple[str, str], Mock]) -> dict[str, object]:
     return claims
 
 
-async def start_login(client: httpx2.AsyncClient, claims: dict[str, object]) -> str:
-    response = await client.get("/backoffice/auth/")
+async def start_login(
+    client: httpx2.AsyncClient, claims: dict[str, object], return_to: str | None = None
+) -> str:
+    response = await client.get(
+        "/backoffice/auth/", params={"return_to": return_to} if return_to else None
+    )
     assert response.status_code == 303
     params = parse_qs(urlsplit(response.headers["location"]).query)
     assert params["client_id"] == ["backoffice-client"]
@@ -182,13 +186,25 @@ class TestGoogleLogin:
         )
         client.cookies.set(settings.USER_SESSION_COOKIE_KEY, token)
 
-        response = await client.get("/backoffice/")
+        response = await client.get("/backoffice/orders/?query=a")
         assert response.status_code == 303
-        assert response.headers["location"] == "http://localhost/backoffice/auth/"
+        assert (
+            response.headers["location"]
+            == "http://localhost/backoffice/auth/?return_to=%2Fbackoffice%2Forders%2F%3Fquery%3Da"
+        )
 
-        response = await client.get("/backoffice/", headers={"HX-Request": "true"})
+        response = await client.get(
+            "/backoffice/orders/1/refund",
+            headers={
+                "HX-Request": "true",
+                "HX-Current-URL": "http://localhost/backoffice/orders/1",
+            },
+        )
         assert response.status_code == 401
-        assert response.headers["HX-Redirect"] == "http://localhost/backoffice/auth/"
+        assert (
+            response.headers["HX-Redirect"]
+            == "http://localhost/backoffice/auth/?return_to=%2Fbackoffice%2Forders%2F1"
+        )
 
     @pytest.mark.parametrize(
         ("existing_provider_id", "expected_status"),
@@ -216,6 +232,32 @@ class TestGoogleLogin:
         assert (settings.BACKOFFICE_USER_SESSION_COOKIE_KEY in client.cookies) == (
             expected_status == 303
         )
+
+    @pytest.mark.parametrize(
+        ("return_to", "location"),
+        [
+            (
+                "/backoffice/orders/?query=a",
+                "http://localhost/backoffice/orders/?query=a",
+            ),
+            ("https://evil.test/backoffice/", "http://localhost/backoffice/"),
+            ("//evil.test/backoffice/", "http://localhost/backoffice/"),
+            ("/v1/orders/", "http://localhost/backoffice/"),
+        ],
+    )
+    async def test_callback_redirects_to_return_to(
+        self,
+        client: httpx2.AsyncClient,
+        claims: dict[str, object],
+        return_to: str,
+        location: str,
+    ) -> None:
+        state = await start_login(client, claims, return_to)
+        response = await client.get(
+            "/backoffice/auth/callback", params={"state": state, "code": "google-code"}
+        )
+        assert response.status_code == 303
+        assert response.headers["location"] == location
 
     async def test_callback_rejects_state_from_another_flow(
         self, client: httpx2.AsyncClient, claims: dict[str, object]
@@ -307,9 +349,14 @@ class TestDevelopmentSignIn:
         monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", True)
         monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
 
-        response = await client.get("/backoffice/auth/")
+        response = await client.get(
+            "/backoffice/auth/", params={"return_to": "/backoffice/orders/?query=a"}
+        )
         assert response.status_code == 303
-        assert response.headers["location"] == "http://localhost/backoffice/"
+        assert (
+            response.headers["location"]
+            == "http://localhost/backoffice/orders/?query=a"
+        )
 
         response = await client.get("/backoffice/")
         assert response.status_code == 200

@@ -231,15 +231,15 @@ class AlreadyCanceledSubscription(SubscriptionError):
         super().__init__(message, 403)
 
 
-class MissingBillingAddress(SubscriptionError):
+class BillingAddressRequired(SubscriptionError):
     def __init__(self, subscription: Subscription, missing_fields: list[str]) -> None:
         self.subscription = subscription
         self.missing_fields = missing_fields
-        message = (
-            "The customer's billing address is missing required fields "
-            f"to switch to a paid product: {', '.join(missing_fields)}."
+        super().__init__(
+            "Add a billing address with "
+            f"{', '.join(missing_fields)} before switching to a paid product.",
+            409,
         )
-        super().__init__(message, 409)
 
 
 class SubscriptionLocked(SubscriptionError):
@@ -2206,7 +2206,7 @@ class SubscriptionService:
                 else billing_address.get_missing_required_fields()
             )
             if missing_fields:
-                raise MissingBillingAddress(subscription, missing_fields)
+                raise BillingAddressRequired(subscription, missing_fields)
 
         old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)

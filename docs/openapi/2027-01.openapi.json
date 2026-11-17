@@ -5109,7 +5109,7 @@
                       "$ref": "#/components/schemas/SubscriptionNotScheduledToCancel"
                     },
                     {
-                      "$ref": "#/components/schemas/MissingBillingAddress"
+                      "$ref": "#/components/schemas/BillingAddressRequired"
                     }
                   ],
                   "title": "Response 409 Customer Portal:Subscriptions:Update"
@@ -8518,7 +8518,7 @@
                       "$ref": "#/components/schemas/SubscriptionNotScheduledToCancel"
                     },
                     {
-                      "$ref": "#/components/schemas/MissingBillingAddress"
+                      "$ref": "#/components/schemas/BillingAddressRequired"
                     }
                   ],
                   "title": "Response 409 Subscriptions:Update"
@@ -38672,6 +38672,28 @@
         ],
         "title": "BillingAddressFieldMode"
       },
+      "BillingAddressRequired": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "BillingAddressRequired",
+            "title": "Error",
+            "examples": [
+              "BillingAddressRequired"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "BillingAddressRequired"
+      },
       "CannotCreateOrganizationError": {
         "properties": {
           "error": {
@@ -65985,28 +66007,6 @@
         },
         "type": "object",
         "title": "MetricsTotals"
-      },
-      "MissingBillingAddress": {
-        "properties": {
-          "error": {
-            "type": "string",
-            "const": "MissingBillingAddress",
-            "title": "Error",
-            "examples": [
-              "MissingBillingAddress"
-            ]
-          },
-          "detail": {
-            "type": "string",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "required": [
-          "error",
-          "detail"
-        ],
-        "title": "MissingBillingAddress"
       },
       "MissingInvoiceBillingDetails": {
         "properties": {

@@ -49,8 +49,8 @@ from .schemas import (
 from .service import (
     AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
+    BillingAddressRequired,
     InactiveSubscription,
-    MissingBillingAddress,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
@@ -481,7 +481,7 @@ async def get_bulk_update(
             ),
             "model": SubscriptionLocked.schema()
             | SubscriptionNotScheduledToCancel.schema()
-            | MissingBillingAddress.schema(),
+            | BillingAddressRequired.schema(),
         },
     },
 )

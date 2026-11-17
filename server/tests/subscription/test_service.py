@@ -107,9 +107,9 @@ from polar.subscription.service import (
     AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
+    BillingAddressRequired,
     CannotPauseSubscription,
     CannotReinstateSubscription,
-    MissingBillingAddress,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
@@ -8137,7 +8137,7 @@ class TestUpdateProduct:
             save_fixture, product=product_recurring_free_price, customer=customer
         )
 
-        with pytest.raises(MissingBillingAddress) as exc_info:
+        with pytest.raises(BillingAddressRequired) as exc_info:
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:

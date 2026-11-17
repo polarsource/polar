@@ -20,7 +20,7 @@ from polar.subscription.schemas import (
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
-    MissingBillingAddress,
+    BillingAddressRequired,
     SubscriptionNotScheduledToCancel,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -272,7 +272,7 @@ async def preview_change(
             ),
             "model": PaymentMethodRequired.schema()
             | SubscriptionNotScheduledToCancel.schema()
-            | MissingBillingAddress.schema(),
+            | BillingAddressRequired.schema(),
         },
     },
 )

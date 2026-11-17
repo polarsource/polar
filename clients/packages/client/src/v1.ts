@@ -14277,6 +14277,17 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /** BillingAddressRequired */
+    BillingAddressRequired: {
+      /**
+       * Error
+       * @example BillingAddressRequired
+       * @constant
+       */
+      error: 'BillingAddressRequired'
+      /** Detail */
+      detail: string
+    }
     /**
      * BlockingOrganization
      * @description Organization that is blocking user deletion.
@@ -29132,17 +29143,6 @@ export interface components {
        * @constant
        */
       error: 'MigrationOperationInProgress'
-      /** Detail */
-      detail: string
-    }
-    /** MissingBillingAddress */
-    MissingBillingAddress: {
-      /**
-       * Error
-       * @example MissingBillingAddress
-       * @constant
-       */
-      error: 'MissingBillingAddress'
       /** Detail */
       detail: string
     }
@@ -49302,7 +49302,7 @@ export interface operations {
           'application/json':
             | components['schemas']['PaymentMethodRequired']
             | components['schemas']['SubscriptionNotScheduledToCancel']
-            | components['schemas']['MissingBillingAddress']
+            | components['schemas']['BillingAddressRequired']
         }
       }
       /** @description Validation Error */
@@ -51058,7 +51058,7 @@ export interface operations {
           'application/json':
             | components['schemas']['SubscriptionLocked']
             | components['schemas']['SubscriptionNotScheduledToCancel']
-            | components['schemas']['MissingBillingAddress']
+            | components['schemas']['BillingAddressRequired']
         }
       }
       /** @description Validation Error */

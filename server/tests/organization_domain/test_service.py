@@ -170,3 +170,31 @@ class TestReverify:
         await organization_domain_service.reverify(session, organization)
 
         assert domain.verified_at is None
+
+
+@pytest.mark.anyio
+class TestRegisterPaymentMethodDomains:
+    async def test_verified_domain_without_embed_host(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_domain_service.register_payment_method_domains(
+            session, organization
+        )
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_payment_method_domains",
+            domains=["shop.acme.com", "acme.com"],
+        )

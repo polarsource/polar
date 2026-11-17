@@ -787,6 +787,39 @@ class TestEnqueueBucketSyncs:
             for start in (previous_start, BUCKET_START)
         ]
 
+    async def test_skips_organizations_without_events(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.reducer.service.utc_now",
+            return_value=NEXT_BUCKET_START + timedelta(minutes=1),
+        )
+        mocker.patch("polar.reducer.service.enqueue_job")
+        idle_meter = await create_meter(
+            save_fixture, id=uuid.uuid4(), organization=organization_second
+        )
+        await create_reducer(
+            save_fixture, organization=organization_second, meters=[idle_meter]
+        )
+        await create_tokens_event(save_fixture, organization, 1)
+        get_identities_with_events = mocker.spy(
+            ReducerBucketRepository, "get_identities_with_events"
+        )
+
+        await reducer_service.enqueue_bucket_syncs(session)
+
+        # Only the window with events of the organization with events is scanned
+        assert [
+            (call.args[1].id, call.args[2])
+            for call in get_identities_with_events.call_args_list
+        ] == [(sum_reducer.id, BUCKET_START)]
+
 
 @pytest.mark.anyio
 class TestSealBuckets:

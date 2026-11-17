@@ -606,17 +606,30 @@ class ReducerService:
             )
             if not isinstance(reducer.aggregation, UniqueAggregation)
         ]
+        if not reducers:
+            return
+
         bucket_repository = ReducerBucketRepository.from_session(session)
+        organization_ids = {reducer.organization_id for reducer in reducers}
         for bucket_start in (
             current_bucket_start - 2 * REDUCER_BUCKET_SIZE,
             current_bucket_start - REDUCER_BUCKET_SIZE,
         ):
+            bucket_end = bucket_start + REDUCER_BUCKET_SIZE
+            # One query skips the reducers of organizations without events
+            organizations_with_events = (
+                await bucket_repository.get_organizations_with_events(
+                    organization_ids, bucket_start, bucket_end
+                )
+            )
             for reducer in reducers:
+                if reducer.organization_id not in organizations_with_events:
+                    continue
                 for (
                     customer_id,
                     external_customer_id,
                 ) in await bucket_repository.get_identities_with_events(
-                    reducer, bucket_start, bucket_start + REDUCER_BUCKET_SIZE
+                    reducer, bucket_start, bucket_end
                 ):
                     enqueue_job(
                         "reducer_bucket.sync",

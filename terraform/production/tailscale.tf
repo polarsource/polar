@@ -23,6 +23,7 @@ module "ec2_tailscale" {
   name                       = "polar-production-aws-router"
   subnet_id                  = module.vpc.private_subnet_ids[0]
   advertise_routes           = module.vpc.private_subnet_cidr_blocks
+  advertise_connector        = true
   advertise_tags             = ["tag:router", "tag:production"]
   tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale.arn
   tailscale_version          = var.tailscale_version

@@ -4,7 +4,7 @@ import { withSentryConfig } from '@sentry/nextjs'
 import { themeConfig } from './shiki.config.mjs'
 import { docsCSP, ENVIRONMENT, nonEmbeddedCSP, oauth2CSP } from './src/csp.mjs'
 
-const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1'
+const TYPE_CHECKED_IN_CI = process.env.VERCEL === '1' || Boolean(process.env.CI)
 
 // Vercel services deployments: deployment URLs change with
 // every deployment, so derive base from the deployment's own URL

@@ -346,7 +346,7 @@ class TestVerifyOrganizationDomain:
         ]
         enqueue_job_mock.assert_called_once_with(
             "organization_domain.register_payment_method_domains",
-            domains=["acme.com", "shop.acme.com"],
+            domains=["acme.com", "shop.acme.com", "www.acme.com"],
         )
 
     @pytest.mark.auth

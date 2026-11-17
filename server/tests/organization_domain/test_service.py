@@ -196,5 +196,5 @@ class TestRegisterPaymentMethodDomains:
 
         enqueue_job_mock.assert_called_once_with(
             "organization_domain.register_payment_method_domains",
-            domains=["shop.acme.com", "acme.com"],
+            domains=["shop.acme.com", "acme.com", "www.acme.com"],
         )

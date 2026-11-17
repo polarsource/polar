@@ -50,6 +50,7 @@ from polar.models import (
     BillingEntry,
     BillingInterval,
     Customer,
+    CustomerMeter,
     Discount,
     Event,
     Meter,
@@ -6677,6 +6678,50 @@ class TestUpdateProduct:
             assert updated_call.kwargs == {"previous_product_name": product.name}
         else:
             assert updated_call.kwargs == {}
+
+    async def test_customer_on_previous_meter_version_moves_to_current(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="ai_credits",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        pro_v1, pro_v2 = [
+            await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                external_id="pro",
+                is_current=meter.is_current,
+                is_archived=not meter.is_current,
+                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+            )
+            for meter in (previous, current)
+        ]
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_product(
+                session, ctx, subscription, product_id=pro_v2.id
+            )
+
+        assert updated.product == pro_v2
 
     async def test_not_current_product(
         self,

@@ -20,6 +20,7 @@ from polar.benefit.service import benefit as benefit_service
 from polar.catalog.repository import CatalogRepository
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.declarative_config.guard import (
     DeclarativeConfigManaged,
     assert_catalog_editable,
@@ -35,6 +36,7 @@ from polar.file.service import file as file_service
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
+from polar.kit.repository import Options
 from polar.kit.sorting import Sorting
 from polar.meter.repository import MeterRepository
 from polar.models import (
@@ -230,6 +232,46 @@ class ProductService:
             .options(undefer(Product.external_id), *repository.get_eager_options())
         )
         return await repository.get_all(statement)
+
+    async def resolve_meter_versions(
+        self,
+        session: AsyncReadSession,
+        product: Product,
+        customer_id: uuid.UUID,
+        *,
+        options: Options = (),
+    ) -> Product | None:
+        """The version of `product` on the same meter versions as the customer's
+        customer meters: `product` itself if it is, else the latest published
+        version that is, archived or not. `None` if no version is."""
+        repository = ProductRepository.from_session(session)
+        customer_meter_repository = CustomerMeterRepository.from_session(session)
+
+        async def get_compatible(products: Sequence[Product]) -> Product | None:
+            meters = await repository.get_meters([product.id for product in products])
+            external_ids = {
+                external_id
+                for product_meters in meters.values()
+                for external_id in product_meters
+            }
+            if not external_ids:
+                return products[0] if products else None
+            versions = await customer_meter_repository.get_meter_versions(
+                customer_id, external_ids
+            )
+            for candidate in products:
+                if all(
+                    meter_id in versions.get(external_id, {meter_id})
+                    for external_id, meter_id in meters.get(candidate.id, {}).items()
+                ):
+                    return candidate
+            return None
+
+        if await get_compatible([product]) is not None:
+            return product
+        return await get_compatible(
+            await repository.get_other_published_versions(product, options=options)
+        )
 
     async def report_flagged_name(
         self,

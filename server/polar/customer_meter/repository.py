@@ -1,5 +1,6 @@
 from collections.abc import Collection, Sequence
 from datetime import datetime
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, select, update
@@ -42,6 +43,24 @@ class CustomerMeterRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def get_meter_versions(
+        self, customer_id: UUID, external_ids: Collection[str]
+    ) -> dict[str, set[UUID]]:
+        """The meters the customer has a customer meter on, by `external_id`."""
+        statement = (
+            select(Meter.external_id, Meter.id)
+            .join(CustomerMeter, CustomerMeter.meter_id == Meter.id)
+            .where(
+                CustomerMeter.customer_id == customer_id,
+                ~CustomerMeter.is_deleted,
+                Meter.external_id.in_(external_ids),
+            )
+        )
+        versions: dict[str, set[UUID]] = {}
+        for external_id, meter_id in await self.session.execute(statement):
+            versions.setdefault(cast(str, external_id), set()).add(meter_id)
+        return versions
 
     async def get_by_customer_and_meter(
         self,

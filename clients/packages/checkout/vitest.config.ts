@@ -6,7 +6,7 @@ const sharedTest = {
   setupFiles: ['./vitest.setup.ts'],
   fsModuleCache: true,
   isolate: false,
-  sequence: { shuffle: { files: true, tests: true } },
+  sequence: { shuffle: { tests: true } },
   env: {
     TZ: 'UTC',
   },
@@ -14,6 +14,7 @@ const sharedTest = {
 
 export default defineConfig({
   test: {
+    sequence: { shuffle: { files: true } },
     projects: [
       {
         plugins: [react()],

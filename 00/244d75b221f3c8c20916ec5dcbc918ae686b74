@@ -1,0 +1,21 @@
+.github/ci_gc_profile.py
+  s_f83d2c94945117::t_c72d617a891c00 9-10,21,24-25
+.github/workflows/test_server_shard.yaml
+  s_f83d2c94945117::t_c72d617a891c00 172
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "00244d75b221f3c8c20916ec5dcbc918ae686b74",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

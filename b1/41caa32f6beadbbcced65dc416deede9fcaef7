@@ -1,0 +1,23 @@
+server/polar/auth/middlewares.py
+  s_ff94af9b5a1d84::t_4ec3455372cdb8 110
+  s_ff94af9b5a1d84::t_65656f8a444ddd 74-83
+  s_ff94af9b5a1d84::t_4aa096c42597b7 15
+  s_ff94af9b5a1d84::t_baf3a334c426e4 2
+  s_ff94af9b5a1d84::t_e2b8a84b34a97a 125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b141caa32f6beadbbcced65dc416deede9fcaef7",
+  "prompts": {},
+  "sessions": {
+    "s_ff94af9b5a1d84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "201ed949-d364-4d91-9e7f-f5cc7495d5e3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

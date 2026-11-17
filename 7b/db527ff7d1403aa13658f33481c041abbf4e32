@@ -1,0 +1,109 @@
+server/scripts/ci_migrations.py
+  s_f83d2c94945117::t_aa768d38c78aed 1-6,12-28,30-33
+  s_f83d2c94945117::t_90d45457cd69b0 7-11,29
+server/tests/fixtures/database.py
+  s_f83d2c94945117::t_90d45457cd69b0 46-48
+  s_f83d2c94945117::t_173ac03fd82f31 60
+  s_f83d2c94945117::t_aa768d38c78aed 18
+server/tests/checkout_link/test_repository.py
+  s_f83d2c94945117::t_173ac03fd82f31 99
+server/tests/fixtures/worker.py
+  s_f83d2c94945117::t_173ac03fd82f31 44,48-53
+server/scripts/pytest_pool/types.py
+  s_f83d2c94945117::t_767cca6f7e9721 1-49
+server/tests/scripts/test_pytest_fixture_loading.py
+  s_f83d2c94945117::t_2af02590f86176 72-77
+  s_f83d2c94945117::t_7cc29577a683b8 4-8,78-88
+server/tests/integrations/stripe/test_payment.py
+  s_f83d2c94945117::t_173ac03fd82f31 73
+server/tests/scheduler/test_cron.py
+  s_f83d2c94945117::t_173ac03fd82f31 24
+server/tests/order/test_tasks.py
+  s_f83d2c94945117::t_a7e1bd85afee59 998
+server/tests/product/test_service.py
+  s_f83d2c94945117::t_25261f9d00e4a0 2521-2523,2619-2621
+server/tests/refund/test_tasks.py
+  s_f83d2c94945117::t_a7e1bd85afee59 49
+server/scripts/pytest_bytecode.py
+  s_f83d2c94945117::t_a097901ebff3e7 1-61
+server/scripts/pytest_shards.py
+  s_f83d2c94945117::t_c598a27eb2d378 9,27-28,30-33,35,42,51-63,80
+server/tests/user_organization/test_service.py
+  s_f83d2c94945117::t_173ac03fd82f31 332,408,576
+server/scripts/ci_services.py
+  s_f83d2c94945117::t_c598a27eb2d378 1-241
+server/tests/integrations/polar/test_tasks.py
+  s_f83d2c94945117::t_a7e1bd85afee59 437,459
+server/tests/oauth2/conftest.py
+  s_f83d2c94945117::t_173ac03fd82f31 44
+server/scripts/pytest_pool/resources.py
+  s_f83d2c94945117::t_767cca6f7e9721 1-12,14-34,36-41,43
+  s_f83d2c94945117::t_f5a2f7b03f491c 45-47
+  s_f83d2c94945117::t_43fdca9e0f60ff 13,35,42,44
+server/tests/scripts/test_ci_services.py
+  s_f83d2c94945117::t_c598a27eb2d378 1-47
+.github/workflows/test_server_shard.yaml
+  s_f83d2c94945117::t_c598a27eb2d378 1-232
+server/tests/scripts/test_pytest_shards.py
+  s_f83d2c94945117::t_c598a27eb2d378 21,25,37,63-74
+server/scripts/ci_migrate.py
+  s_f83d2c94945117::t_c598a27eb2d378 7,11-13,15-16,31,33
+  s_f83d2c94945117::t_90d45457cd69b0 1-6,8-10,14,17-30,32,34-37
+server/tests/worker/test_asyncio_watchdog.py
+  s_f83d2c94945117::t_366b6ce9d71044 43
+  s_f83d2c94945117::t_9968a8ce2963bb 25-29,31,35,38-42,67,69,109,111,137,140,162,169,188,190,216,218,237,244,268,275,305,307
+server/tests/fixtures/auth.py
+  s_f83d2c94945117::t_82d3b822ad4282 122,124-125,127
+  s_f83d2c94945117::t_e3eb33d145a517 102,114-118
+  s_f83d2c94945117::t_e2a989ddbbdac6 18
+server/scripts/pytest_pool/__main__.py
+  s_f83d2c94945117::t_767cca6f7e9721 1-49
+server/tests/declarative_config/test_concurrency.py
+  s_f83d2c94945117::t_25261f9d00e4a0 82-84
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_b0dfc536611b3d 33,251-254,256-261
+  s_f83d2c94945117::t_bcf478f624236f 87,95-98,101-117,126-134
+  s_f83d2c94945117::t_46c51c9a644796 236
+  s_f83d2c94945117::t_c598a27eb2d378 39,45,49,60,70-72,136-195,490-528,532-539
+  s_f83d2c94945117::t_9f14880b47a76b 32,34-35,99-100,135,196,540,542
+server/tests/integrations/stripe/test_tasks.py
+  s_f83d2c94945117::t_a7e1bd85afee59 207,218,376,489,559
+server/tests/receipt/test_tasks.py
+  s_f83d2c94945117::t_a7e1bd85afee59 35
+server/tests/scripts/test_pytest_bytecode.py
+  s_f83d2c94945117::t_a097901ebff3e7 1-55
+server/tests/scripts/test_ci_migrations.py
+  s_f83d2c94945117::t_90d45457cd69b0 1-43
+server/tests/customer_seat/test_service.py
+  s_f83d2c94945117::t_173ac03fd82f31 2799
+server/scripts/pytest_pool/preload.py
+  s_f83d2c94945117::t_f5a2f7b03f491c 22-24,32-35,50-54,64-77,86-99,108-124,126-132
+  s_f83d2c94945117::t_767cca6f7e9721 1-21,25-31,36-49,55-63,78-85,100-107,125,133-139
+  s_f83d2c94945117::t_3a68fc3b1f6f80 140-141
+server/tests/license_key/test_service.py
+  s_f83d2c94945117::t_25261f9d00e4a0 87-89,178
+server/tests/scripts/test_pytest_pool.py
+  s_f83d2c94945117::t_16935173b50c5a 1-69,71-87,89-112,114-153
+  s_f83d2c94945117::t_0e30a893c5a4dc 70,88,113,154
+server/scripts/pytest_pool/pool.py
+  s_f83d2c94945117::t_767cca6f7e9721 1-8,11-13,15-39,43-51,61-80,84-91,111-112,129-131,135-137,148-149,155-159,163-164,168-172,174-176,184-186,190-197,201,205-216,220-226,230-238,242-243,249-252,254-257,261-293,297-317,321-323,327-336,343-356,365,385-391
+  s_f83d2c94945117::t_f5a2f7b03f491c 9-10,14,40-42,52-60,81-83,92-110,113-128,132-134,138-140,142-143,150-154,160-162,165-167,177-183,187-189,198-200,202-204,217-219,227-229,239-241,244-248,258-260,294-296,318-320,324-326,337-342,357-364,366-384
+  s_f83d2c94945117::t_b88ec3a51d46cd 144-147
+  s_f83d2c94945117::t_10665a5e80f6e0 141,173,253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7bdb527ff7d1403aa13658f33481c041abbf4e32",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

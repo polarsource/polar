@@ -1,0 +1,33 @@
+server/scripts/pytest_pool/preload.py
+  s_f83d2c94945117::t_b904d23851895f 140-141
+server/tests/scripts/test_pytest_shards.py
+  s_f83d2c94945117::t_b904d23851895f 21,25,37,63-74
+server/scripts/ci_services.py
+  s_f83d2c94945117::t_4338204b6126b7 210-213,215
+  s_f83d2c94945117::t_b904d23851895f 205-209,214,216,219,232-235
+server/tests/scripts/test_pytest_pool.py
+  s_f83d2c94945117::t_b904d23851895f 107-111,113,120-125,154
+server/scripts/pytest_shards.py
+  s_f83d2c94945117::t_b904d23851895f 9,27-28,35,42,51,57,61-63,80
+  s_f83d2c94945117::t_4338204b6126b7 30-33,52-56,58-60
+.github/workflows/test_server_shard.yaml
+  s_f83d2c94945117::t_b904d23851895f 148,195-197
+server/scripts/pytest_pool/resources.py
+  s_f83d2c94945117::t_b904d23851895f 8-9,13,35,42,44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f4e95bc82a6d8baf69d3045318c9ebd40c2e2894",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

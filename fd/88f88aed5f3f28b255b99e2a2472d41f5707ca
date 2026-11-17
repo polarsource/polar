@@ -1,0 +1,9 @@
+.github/actions/setup-clients/action.yml
+  ai_agent 32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "fd88f88aed5f3f28b255b99e2a2472d41f5707ca",
+  "prompts": {}
+}

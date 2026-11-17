@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from polar.event.system import SystemEvent
-from polar.models import Customer, Meter, Organization
+from polar.models import Customer, Meter, Organization, StagedEvent
 from polar.models.event import EventSource
 from polar.models.reducer import ReducerKind
 from polar.postgres import AsyncSession
@@ -12,7 +12,7 @@ from polar.reducer.bucket_repository import ReducerBucketRepository
 from polar.reducer.repository import ReducerRepository
 from polar.reducer.service import reducer as reducer_service
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_event
+from tests.fixtures.random_objects import METER_TEST_EVENT, create_event
 
 BUCKET_START = datetime(2026, 10, 7, 12, 5, tzinfo=UTC)
 BUCKET_END = BUCKET_START + timedelta(minutes=5)
@@ -80,3 +80,59 @@ class TestAggregateEvents:
         ).aggregate_events(reducer, BUCKET_START, BUCKET_END, customer.id, None)
 
         assert count == 1
+
+
+@pytest.mark.anyio
+class TestGetIdentitiesWithEvents:
+    async def test_events_and_staged_events_in_the_range(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        await reducer_service.sync_meter(session, meter)
+        reducer = await ReducerRepository.from_session(session).get_by_meter_and_kind(
+            meter.id, ReducerKind.usage
+        )
+        assert reducer is not None
+        in_range = BUCKET_START + timedelta(minutes=1)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            timestamp=in_range,
+            customer=customer,
+        )
+        for external_customer_id, name, timestamp in (
+            ("external", METER_TEST_EVENT, in_range),
+            ("external", METER_TEST_EVENT, in_range),
+            ("other_event", "other", in_range),
+            ("next_bucket", METER_TEST_EVENT, BUCKET_END),
+        ):
+            await create_event(
+                save_fixture,
+                organization=organization,
+                name=name,
+                timestamp=timestamp,
+                external_customer_id=external_customer_id,
+            )
+        for external_customer_id in ("external", "staged"):
+            await save_fixture(
+                StagedEvent(
+                    name=METER_TEST_EVENT,
+                    source=EventSource.user,
+                    timestamp=in_range,
+                    organization_id=organization.id,
+                    external_customer_id=external_customer_id,
+                    user_metadata={},
+                )
+            )
+
+        identities = await ReducerBucketRepository.from_session(
+            session
+        ).get_identities_with_events(reducer, BUCKET_START, BUCKET_END)
+
+        assert sorted(identities, key=str) == sorted(
+            [(customer.id, None), (None, "external"), (None, "staged")], key=str
+        )

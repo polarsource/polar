@@ -113,7 +113,6 @@ class TestRollup:
 
     async def test_routes_buckets_by_age(
         self,
-        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
@@ -123,7 +122,6 @@ class TestRollup:
         reducer = await create_reducer(
             save_fixture, organization=organization, meters=[meter]
         )
-        enqueue_job = mocker.patch("polar.reducer.service.enqueue_job")
         previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
         outdated_start = BUCKET_START - 2 * REDUCER_BUCKET_SIZE
         events = [
@@ -147,15 +145,6 @@ class TestRollup:
             (outdated_start, previous_start, 1, 1),
             (previous_start, BUCKET_START, 1, 1),
         ]
-        # Only the current bucket waits for a sync, once it closes at 12:10.
-        enqueue_job.assert_called_once_with(
-            "reducer_bucket.sync",
-            reducer.id,
-            BUCKET_START.isoformat(),
-            None,
-            "external",
-            delay=240_000,
-        )
 
     async def test_adds_to_closed_buckets(
         self,
@@ -346,7 +335,6 @@ class TestRollup:
 
     async def test_skips_organizations_without_syncable_reducers(
         self,
-        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         redis: Redis,
@@ -358,13 +346,13 @@ class TestRollup:
             aggregation=UniqueAggregation(property="user_id"),
         )
         await create_reducer(save_fixture, organization=organization, meters=[meter])
-        enqueue_job = mocker.patch("polar.reducer.service.enqueue_job")
 
-        await reducer_service.rollup(
+        bucket_count = await reducer_service.rollup(
             session, redis, organization.id, [build_event(organization)]
         )
 
-        enqueue_job.assert_not_called()
+        assert bucket_count == 0
+        assert await get_buckets(session) == []
 
     @pytest.mark.parametrize(
         ("aggregation", "read", "expected"),
@@ -762,6 +750,42 @@ async def get_intervals(
         for bucket in await get_buckets(session)
         if (bucket.customer_id, bucket.external_customer_id) == (None, "external")
     ]
+
+
+@pytest.mark.anyio
+class TestEnqueueBucketSyncs:
+    async def test_enqueues_the_two_latest_closed_windows(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.reducer.service.utc_now",
+            return_value=NEXT_BUCKET_START + timedelta(minutes=1),
+        )
+        enqueue_job = mocker.patch("polar.reducer.service.enqueue_job")
+        previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
+        older_start = previous_start - REDUCER_BUCKET_SIZE
+        for timestamp in (older_start, previous_start, CLOSED, NEXT_BUCKET_START):
+            await create_tokens_event(
+                save_fixture, organization, 1, timestamp=timestamp
+            )
+
+        await reducer_service.enqueue_bucket_syncs(session)
+
+        assert [call.args for call in enqueue_job.call_args_list] == [
+            (
+                "reducer_bucket.sync",
+                sum_reducer.id,
+                start.isoformat(),
+                None,
+                "external",
+            )
+            for start in (previous_start, BUCKET_START)
+        ]
 
 
 @pytest.mark.anyio

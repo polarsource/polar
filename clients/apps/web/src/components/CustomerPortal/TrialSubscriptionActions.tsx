@@ -21,13 +21,12 @@ const useMissingBillingDetails = () => {
   }
 }
 
-export const useIsMissingBillingDetails = () => {
-  const missing = useMissingBillingDetails()
-  return missing.paymentMethod || missing.billingAddress
-}
-
 export const TrialBillingDetailsAlert = () => {
   const missing = useMissingBillingDetails()
+
+  if (!missing.paymentMethod && !missing.billingAddress) {
+    return null
+  }
 
   const details = [
     missing.paymentMethod && 'a payment method',
@@ -55,7 +54,9 @@ export const TrialSubscriptionActions = ({
   onChangePlan: () => void
 }) => {
   const searchParams = useSearchParams()
-  const isMissingBillingDetails = useIsMissingBillingDetails()
+  const missing = useMissingBillingDetails()
+  const isMissingBillingDetails =
+    missing.paymentMethod || missing.billingAddress
   const cancelSubscription = useCustomerCancelSubscription(api)
   const [showCancelModal, setShowCancelModal] = useState(false)
 

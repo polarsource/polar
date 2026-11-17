@@ -27,7 +27,6 @@ import UncancelSubscriptionButton from './UncancelSubscriptionButton'
 import {
   TrialBillingDetailsAlert,
   TrialSubscriptionActions,
-  useIsMissingBillingDetails,
 } from './TrialSubscriptionActions'
 
 const CustomerSubscriptionDetails = ({
@@ -66,7 +65,6 @@ const CustomerSubscriptionDetails = ({
 
   const isPastDue = subscription.status === 'past_due'
   const isTrialing = subscription.status === 'trialing'
-  const isMissingBillingDetails = useIsMissingBillingDetails()
   const isPausingIndefinitely =
     (subscription.status === 'paused' || subscription.pause_at_period_end) &&
     !subscription.resumes_at
@@ -96,9 +94,7 @@ const CustomerSubscriptionDetails = ({
 
   return (
     <PortalCard rowGap="xl">
-      {isTrialing && !isCanceled && isMissingBillingDetails && (
-        <TrialBillingDetailsAlert />
-      )}
+      {isTrialing && !isCanceled && <TrialBillingDetailsAlert />}
 
       <CustomerSubscriptionHeader subscription={subscription} />
 

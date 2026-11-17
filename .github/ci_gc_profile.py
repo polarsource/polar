@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+_CLOCKS = (time.perf_counter, time.process_time)
+
 started = {}
 wall_seconds = [0.0, 0.0, 0.0]
 cpu_seconds = [0.0, 0.0, 0.0]
@@ -16,11 +18,11 @@ initial_stats = []
 def measure(phase: str, info: dict[str, int]) -> None:
     generation = info["generation"]
     if phase == "start":
-        started[generation] = (time.perf_counter(), time.process_time())
+        started[generation] = (_CLOCKS[0](), _CLOCKS[1]())
     elif generation in started:
         wall, cpu = started.pop(generation)
-        wall_seconds[generation] += time.perf_counter() - wall
-        cpu_seconds[generation] += time.process_time() - cpu
+        wall_seconds[generation] += _CLOCKS[0]() - wall
+        cpu_seconds[generation] += _CLOCKS[1]() - cpu
         collections[generation] += 1
 
 

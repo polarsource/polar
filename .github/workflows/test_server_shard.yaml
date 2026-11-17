@@ -167,9 +167,9 @@ jobs:
         working-directory: ./server
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
-          PYTHONPATH: ${{ github.workspace }}/.github
           PYTEST_ADDOPTS: "-p ci_gc_profile"
         run: |
+          cp "$GITHUB_WORKSPACE/.github/ci_gc_profile.py" "$(uv run python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')/ci_gc_profile.py"
           uv run python -m scripts.pytest_shards --shards 4 --workers-per-shard 3,8,8,8 --shard ${{ inputs.shard }} > "$RUNNER_TEMP/ordinary-files"
           cp "$RUNNER_TEMP/ordinary-files" "$RUNNER_TEMP/test-files"
           weights=()

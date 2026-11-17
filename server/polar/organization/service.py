@@ -500,9 +500,6 @@ class OrganizationService:
             # flag. Drop this once those versions no longer read it.
             "meter_cycling_enabled": True,
         }
-        if is_agent(auth_subject):
-            create_data["feature_settings"]["config_as_code_enabled"] = True
-
         if settings.is_sandbox():
             create_data["status"] = OrganizationStatus.ACTIVE
             create_data["capabilities"] = {

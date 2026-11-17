@@ -110,6 +110,7 @@ class CustomerEmailUpdateService:
             ),
             to_email_addr=record.email,
             subject="Verify your new email address",
+            unsuppress=True,
         )
 
     async def check_token(self, session: AsyncReadSession, token: str) -> bool:

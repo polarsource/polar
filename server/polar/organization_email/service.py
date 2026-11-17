@@ -120,6 +120,7 @@ class OrganizationEmailService:
             ),
             to_email_addr=organization.email,
             subject=f"Your code to verify the support email of {organization.name}",
+            unsuppress=True,
         )
         return current
 

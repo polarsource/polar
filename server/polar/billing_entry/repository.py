@@ -153,6 +153,29 @@ class BillingEntryRepository(
         finally:
             await results.close()
 
+    async def get_pending_metered_price_ids(
+        self, subscription_id: UUID, meter_id: UUID, *, before: datetime
+    ) -> Sequence[UUID]:
+        """The prices of the subscription's pending entries on the meter that
+        start before `before`, oldest first."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        statement = (
+            select(BillingEntry.product_price_id)
+            .join(price, BillingEntry.product_price_id == price.id)
+            .where(
+                BillingEntry.subscription_id == subscription_id,
+                BillingEntry.deleted_at.is_(None),
+                BillingEntry.order_item_id.is_(None),
+                BillingEntry.start_timestamp < before,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
+            )
+            .group_by(BillingEntry.product_price_id)
+            .order_by(func.min(BillingEntry.start_timestamp))
+        )
+        return (await self.session.scalars(statement)).all()
+
     async def link_pending_by_subscription_and_price(
         self,
         subscription_id: UUID,
@@ -160,13 +183,14 @@ class BillingEntryRepository(
         order_item_id: UUID,
         *,
         cutoff: datetime,
+        before: datetime | None = None,
     ) -> None:
         pending_ids = select(BillingEntry.id).where(
             BillingEntry.subscription_id == subscription_id,
             BillingEntry.deleted_at.is_(None),
             BillingEntry.order_item_id.is_(None),
             BillingEntry.product_price_id == product_price_id,
-            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.start_timestamp < (before or cutoff),
             BillingEntry.created_at <= cutoff,
         )
         await self._link_pending(pending_ids, order_item_id)

@@ -10,6 +10,7 @@ from typing import Literal, cast
 import logfire
 import structlog
 from babel.dates import format_date
+from babel.numbers import format_decimal
 
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.billing_interval.types import MeterCharge
@@ -262,10 +263,35 @@ class BillingEntryService:
                 if meter_ids
                 else ({}, [])
             )
+            legacy_cutoff = utc_now()
+            legacy_usage = (
+                await self._get_legacy_usage(
+                    session,
+                    subscription,
+                    usage,
+                    before=period_start,
+                    cutoff=legacy_cutoff,
+                )
+                if period_start is not None
+                else {}
+            )
+            items_by_meter = {
+                meter_id: await self._get_reducer_order_items(session, charge)
+                for meter_id, charge in usage.items()
+            }
+            legacy_items_by_meter = {
+                meter_id: await self._get_legacy_order_items(
+                    session, usage[meter_id], legacy_units
+                )
+                for meter_id, legacy_units in legacy_usage.items()
+            }
             metered_items = [
                 item
-                for charge in usage.values()
-                for item in await self._get_reducer_order_items(session, charge)
+                for meter_id, items in items_by_meter.items()
+                for item in (
+                    *items,
+                    *legacy_items_by_meter.get(meter_id, {}).values(),
+                )
             ]
 
             yield [*static_items, *metered_items]
@@ -283,6 +309,137 @@ class BillingEntryService:
                         subscription_id=subscription.id,
                         order_id=metered_items[0].order_id,
                     )
+
+            repository = BillingEntryRepository.from_session(session)
+            for legacy_items in legacy_items_by_meter.values():
+                for price_id, item in legacy_items.items():
+                    assert period_start is not None
+                    await repository.link_pending_by_subscription_and_price(
+                        subscription.id,
+                        price_id,
+                        item.id,
+                        before=period_start,
+                        cutoff=legacy_cutoff,
+                    )
+            for meter_id, items in items_by_meter.items():
+                if items:
+                    # The reducer bills all usage from here on: no legacy entry
+                    # read above stays pending to be carried over again.
+                    await repository.link_pending_by_subscription_and_meter(
+                        subscription.id, meter_id, items[0].id, cutoff=legacy_cutoff
+                    )
+
+    async def _get_legacy_usage(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        usage: dict[uuid.UUID, MeterCharge],
+        *,
+        before: datetime,
+        cutoff: datetime,
+    ) -> dict[uuid.UUID, dict[uuid.UUID, Decimal]]:
+        """The sums and counts legacy billing left pending before `before`, by
+        meter and by price, oldest price first: their billing entries were created
+        after the order that marked their buckets as billed. Only counts entries
+        created by `cutoff`."""
+        repository = BillingEntryRepository.from_session(session)
+        event_repository = EventRepository.from_session(session)
+        price_repository = ProductPriceRepository.from_session(session)
+        legacy_usage: dict[uuid.UUID, dict[uuid.UUID, Decimal]] = {}
+        for meter_id in usage:
+            legacy_units: dict[uuid.UUID, Decimal] = {}
+            for price_id in await repository.get_pending_metered_price_ids(
+                subscription.id, meter_id, before=before
+            ):
+                price = cast(
+                    MeteredPrice,
+                    await price_repository.get_by_id(price_id, include_deleted=True),
+                )
+                if not price.meter.aggregation.is_summable():
+                    break
+                units = Decimal(
+                    str(
+                        await meter_service.get_quantity(
+                            session,
+                            price.meter,
+                            event_repository.get_by_pending_meter_entries_statement(
+                                subscription.id, meter_id
+                            ).where(
+                                BillingEntry.product_price_id == price_id,
+                                BillingEntry.start_timestamp < before,
+                                BillingEntry.created_at <= cutoff,
+                            ),
+                        )
+                    )
+                )
+                if not units:
+                    continue
+                log.info(
+                    "Billing legacy usage with reducer usage",
+                    subscription_id=subscription.id,
+                    meter_id=meter_id,
+                    product_price_id=price_id,
+                    units=str(units),
+                )
+                legacy_units[price_id] = units
+            if legacy_units:
+                legacy_usage[meter_id] = legacy_units
+        return legacy_usage
+
+    async def _get_legacy_order_items(
+        self,
+        session: AsyncSession,
+        charge: MeterCharge,
+        legacy_units: dict[uuid.UUID, Decimal],
+    ) -> dict[uuid.UUID, OrderItem]:
+        """An item per price of `legacy_units`, for what its usage adds to the
+        meter's charge when billed with it, ahead of the charge's own prices."""
+        repository = ProductPriceRepository.from_session(session)
+        charge = dataclasses.replace(
+            charge,
+            units_by_price={
+                **{
+                    price_id: Decimal(0)
+                    for price_id in legacy_units
+                    if price_id not in charge.units_by_price
+                },
+                **charge.units_by_price,
+            },
+            period_shares={
+                **dict.fromkeys(legacy_units, Decimal(1)),
+                **charge.period_shares,
+            },
+        )
+        amount = await self.get_reducer_charge_amount(session, charge)
+        items: dict[uuid.UUID, OrderItem] = {}
+        for price_id, units in legacy_units.items():
+            charge = dataclasses.replace(
+                charge,
+                units=charge.units + units,
+                units_by_price={
+                    **charge.units_by_price,
+                    price_id: charge.units_by_price[price_id] + units,
+                },
+            )
+            amount_with_legacy = await self.get_reducer_charge_amount(session, charge)
+            price = cast(
+                MeteredPrice, await repository.get_by_id(price_id, include_deleted=True)
+            )
+            legacy_amount = amount_with_legacy - amount
+            items[price_id] = OrderItem(
+                label=(
+                    f"{price.meter.name} — "
+                    f"({format_decimal(units, locale='en_US')} consumed units "
+                    "from the previous period)"
+                ),
+                amount=legacy_amount,
+                net_amount=legacy_amount,
+                tax_amount=0,
+                proration=False,
+                product_price=price,
+            )
+            amount = amount_with_legacy
+        return items
 
     async def _get_reducer_order_items(
         self, session: AsyncSession, charge: MeterCharge

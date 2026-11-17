@@ -1,1 +1,2 @@
 Frontend-only CI path qualification.
+Final four-runner non-server probe, 2026-11-17.

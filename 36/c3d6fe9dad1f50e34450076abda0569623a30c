@@ -1,0 +1,23 @@
+terraform/sandbox/tailscale.tf
+  s_54118267552a9e::t_9b87be70347b19 27
+terraform/production/tailscale.tf
+  s_54118267552a9e::t_9b87be70347b19 28
+terraform/test/tailscale.tf
+  s_54118267552a9e::t_9b87be70347b19 34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "36c3d6fe9dad1f50e34450076abda0569623a30c",
+  "prompts": {},
+  "sessions": {
+    "s_54118267552a9e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ec6e941-f911-43da-9b3f-81f2b058e16b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+terraform/production/domain_verification.tf
+  s_ebbdd25343a32a::t_8e81c561efda97 8-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fbefd5a5e6e4d92ec33b247eb704375cb3266d4a",
+  "prompts": {},
+  "sessions": {
+    "s_ebbdd25343a32a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5c779fa3-643a-4957-9770-b1c261b56ad4",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

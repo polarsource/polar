@@ -1,0 +1,25 @@
+server/polar/backoffice/auth/endpoints.py
+  s_37eb3f5e21e1f7::t_63353ca6144c7f 33,45,52,65,79,155-157,161-164,171
+server/polar/backoffice/auth/service.py
+  s_37eb3f5e21e1f7::t_c525ea72069789 66-72
+server/polar/backoffice/dependencies.py
+  s_37eb3f5e21e1f7::t_f5e767ca2ee110 1-2,21-23
+server/tests/backoffice/auth/test_endpoints.py
+  s_37eb3f5e21e1f7::t_da9faedf4a74e8 105-110,189,191-194,196-202,204-207,236-261,352-354,356-359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1d6029759176458c1012457689f05a88bf5229fe",
+  "prompts": {},
+  "sessions": {
+    "s_37eb3f5e21e1f7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "be26e1e3-8b58-4e23-a6b0-9395daec27fc",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

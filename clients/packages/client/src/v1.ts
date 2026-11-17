@@ -17462,6 +17462,17 @@ export interface components {
       type: 'checkbox'
       properties: components['schemas']['CustomFieldCheckboxProperties']
     }
+    /** ConfigCustomFieldConflict */
+    ConfigCustomFieldConflict: {
+      /**
+       * Error
+       * @example ConfigCustomFieldConflict
+       * @constant
+       */
+      error: 'ConfigCustomFieldConflict'
+      /** Detail */
+      detail: string
+    }
     /** ConfigCustomFieldDate */
     ConfigCustomFieldDate: {
       /**
@@ -66098,6 +66109,7 @@ export interface operations {
             | components['schemas']['ConfigMeterConflict']
             | components['schemas']['ConfigBenefitConflict']
             | components['schemas']['ConfigProductConflict']
+            | components['schemas']['ConfigCustomFieldConflict']
             | components['schemas']['ConfigWebhookConflict']
         }
       }

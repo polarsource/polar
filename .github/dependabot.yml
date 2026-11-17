@@ -134,23 +134,3 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-  - package-ecosystem: "npm"
-    directory: "/handbook"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
-    groups:
-      handbook-production:
-        dependency-type: "production"
-        patterns:
-          - "*"
-      handbook-development:
-        dependency-type: "development"
-        patterns:
-          - "*"
-    ignore:
-      - dependency-name: "@types/node"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "typescript"
-        update-types: ["version-update:semver-major"]

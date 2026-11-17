@@ -176,13 +176,12 @@ directory. Invoke as `/name` in Cursor and Claude Code, or `$name` in Codex.
 
 ## Documentation
 
-- **Handbook**: https://handbook.polar.sh/engineering/
-- **Design docs**: `handbook/engineering/design-documents/` — write one only when
+- **Handbook**: [Engineering Handbook](https://linear.app/polarsh/document/engineering-handbook-438113df8882)
+- **Design docs**: [Design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b) — write one only when
   Polar stores or processes new data, changes login or permissions, adds a
-  new system, or adds a third-party tool that can see Polar data. Not every
-  new API endpoint. Copy `template.mdx`.
-  https://handbook.polar.sh/engineering/design-documents/
-- **API guidelines**: https://handbook.polar.sh/engineering/rest-api-guidelines
+  new system, or adds a third-party tool that can see Polar data. Start from the
+  [design document template](https://linear.app/polarsh/document/design-document-template-02c5d83b61b2).
+- **API guidelines**: [REST API Guidelines](https://linear.app/polarsh/document/rest-api-guidelines-65841b9f4bcc)
 - **User/developer docs**: `docs/` (Mintlify) — `cd docs && pnpm dev` to serve locally.
 
 Mintlify API reference is generated from committed `docs/openapi/{version}.openapi.json`. After

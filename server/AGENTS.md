@@ -166,7 +166,7 @@ default it to `None`; do not duplicate the endpoint just to add a query paramete
 `QuerySchema` hides unavailable fields from OpenAPI and ignores their input before
 validation. Keep parameters with `Query(include_in_schema=False)` outside the model:
 FastAPI currently loses that flag when flattening model fields.
-See the handbook's [API versioning guide](../handbook/engineering/backend-development/api-versioning.mdx#adding-a-query-parameter).
+See the handbook's [API versioning guide](https://linear.app/polarsh/document/api-versioning-875f1388daeb).
 
 ```python
 # polar/{module}/schemas.py

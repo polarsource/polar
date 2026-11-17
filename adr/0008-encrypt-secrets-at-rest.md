@@ -14,7 +14,7 @@ Secrets we persist — OAuth tokens, OAuth2 client secrets, Slack secrets — us
 `String`/`Text` columns, so any database-level leak (a dump, a replica, a backup, a
 SQL-injection read) exposed them directly. We now encrypt them, and this ADR fixes **how a
 secret column is modelled** so every new one is done the same way. The
-[secrets-encryption design](../handbook/engineering/design-documents/secrets-encryption.mdx) covers the threat
+[secrets-encryption design](https://linear.app/polarsh/document/secrets-encryption-e53b64456f92) covers the threat
 model, KMS mechanics, key rotation, and migration; this ADR is the column-shape rule.
 
 ## Decision
@@ -58,7 +58,7 @@ helpers (`encrypt_*`, `hash_secret`, `set_*`), never by hand-rolling crypto at t
 
 ## References
 
-- Design doc: [Encrypting secrets at rest](../handbook/engineering/design-documents/secrets-encryption.mdx).
+- Design doc: [Encrypting secrets at rest](https://linear.app/polarsh/document/secrets-encryption-e53b64456f92).
 - Primitives: `polar/kit/encryption.py` (`EncryptedString`, `EncryptedStringType`),
   `polar/kit/crypto.py` (`get_token_hash`).
 - Applications: `OAuthAccount`, `SlackApp` — `EncryptedString` columns; `OAuth2Client` —

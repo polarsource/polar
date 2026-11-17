@@ -50,4 +50,4 @@ organization. This layer is separate from scopes and is combined with layer 1 at
 ## References
 
 - `server/polar/auth/` (`models.py`, `dependencies.py`, `scope.py`, `permission.py`); per-module `auth.py`.
-- [RBAC design document](../handbook/engineering/design-documents/rbac.mdx).
+- [RBAC design document](https://linear.app/polarsh/document/rbac-6bfb527b7c32).

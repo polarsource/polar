@@ -10,7 +10,7 @@ should understand the load-bearing choices in the codebase in under an hour.
 
 ## ADR vs. design document
 
-We already write [design documents](../handbook/engineering/design-documents/index.mdx): big,
+We already write [design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b): big,
 forward-looking RFCs that explore a *solution*. ADRs are the
 opposite shape:
 
@@ -19,7 +19,7 @@ opposite shape:
 | Answers | "What are we going to build?" | "Why is it this way?" |
 | Size | Pages | One page |
 | Lifespan | Goes stale after ship | Corrected in place; superseded when the decision changes |
-| When | [When a design document is required](../handbook/engineering/design-documents/index.mdx) | A decision we need to remember |
+| When | [When a design document is required](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b) | A decision we need to remember |
 
 A design doc can make several decisions; distil each into an ADR that links back. Reach for
 an ADR when the *decision* outlives the *document*.

@@ -76,7 +76,7 @@ async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) 
     - Revert accidental contract changes affecting the current version.
     - Do not update openapi.*.json files unless releasing a new API version.
 
-    See handbook/engineering/design-documents/api-versioning.mdx.
+    See https://linear.app/polarsh/document/api-versioning-4a4d04dff621
     """.strip()
 
     response = await client.get(f"{version}/openapi.json")

@@ -13,8 +13,8 @@ from enum import StrEnum
 from typing import Any
 
 import httpx2
-from dateutil.relativedelta import relativedelta
 
+from polar.enums import RecurringInterval
 from polar.kit.schemas import Schema
 
 from ..canonical import (
@@ -32,6 +32,7 @@ from ..canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+    parse_datetime,
     polar_discount_code,
 )
 from ..errors import MerchantMigrationError
@@ -43,13 +44,6 @@ PAGE_SIZE = 100
 # `expired` is over; `cancelled` still runs until `ends_at` and is taken over
 # as a pending cancellation.
 SKIPPED_SUBSCRIPTION_STATUSES = frozenset({"expired"})
-
-_INTERVAL_DELTAS = {
-    "day": lambda count: relativedelta(days=count),
-    "week": lambda count: relativedelta(weeks=count),
-    "month": lambda count: relativedelta(months=count),
-    "year": lambda count: relativedelta(years=count),
-}
 
 
 class LemonSqueezyStoreRequired(MerchantMigrationError):
@@ -99,18 +93,15 @@ class LemonSqueezyAdapter:
         self._prices_by_id: dict[str, dict[str, Any]] = {}
         self._discounts_by_order: dict[str, list[dict[str, Any]]] | None = None
 
-    async def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        response = await self._client.get(path, params=params)
-        response.raise_for_status()
-        return response.json()
-
     async def _list(
         self, path: str, page: int, params: dict[str, Any] | None = None
     ) -> tuple[list[dict[str, Any]], bool, list[dict[str, Any]]]:
-        body = await self._get(
+        response = await self._client.get(
             path,
-            {**(params or {}), "page[number]": page, "page[size]": PAGE_SIZE},
+            params={**(params or {}), "page[number]": page, "page[size]": PAGE_SIZE},
         )
+        response.raise_for_status()
+        body = response.json()
         pagination = body.get("meta", {}).get("page", {})
         has_more = pagination.get("currentPage", page) < pagination.get("lastPage", 1)
         return body["data"], has_more, body.get("included", [])
@@ -265,7 +256,7 @@ class LemonSqueezyAdapter:
             amount=self._price_amount(attributes),
             pricing_scheme=self._map_pricing_scheme(attributes),
             is_default=is_default,
-            created_at=_parse_datetime(attributes.get("created_at")),
+            created_at=parse_datetime(attributes.get("created_at")),
             active=is_default,
         )
 
@@ -292,7 +283,7 @@ class LemonSqueezyAdapter:
     async def _extract_discounts(
         self, cursor: LemonSqueezyExtractionCursor
     ) -> tuple[list[CanonicalRecord], bool]:
-        discounts, has_more, included = await self._list(
+        discounts, has_more, _ = await self._list(
             "/discounts",
             cursor.page,
             {**self._store_filter, "include": "variants"},
@@ -317,7 +308,6 @@ class LemonSqueezyAdapter:
             for item in discount.get("relationships", {})
             .get("variants", {})
             .get("data", [])
-            or []
         ]
         return CanonicalDiscount(
             source_id=discount["id"],
@@ -330,7 +320,7 @@ class LemonSqueezyAdapter:
             basis_points=int(attributes["amount"]) * 100 if percent else None,
             amounts={} if percent else {currency: int(attributes["amount"])},
             code=polar_discount_code(attributes.get("code")),
-            ends_at=_parse_datetime(attributes.get("expires_at")),
+            ends_at=parse_datetime(attributes.get("expires_at")),
             # The redemption count isn't on the discount; the cap is the
             # original one until it's read from `/discount-redemptions`.
             max_redemptions=attributes.get("max_redemptions")
@@ -435,7 +425,8 @@ class LemonSqueezyAdapter:
         status = attributes["status"]
         item = attributes.get("first_subscription_item") or {}
         cancelled = bool(attributes.get("cancelled"))
-        current_period_end = _parse_datetime(
+        price_id = self._price_id(item, attributes["variant_id"])
+        current_period_end = parse_datetime(
             attributes.get("ends_at") if cancelled else attributes.get("renews_at")
         )
         redemptions = discounts_by_order.get(str(attributes["order_id"]), [])
@@ -443,19 +434,17 @@ class LemonSqueezyAdapter:
             str(redemption["attributes"]["discount_id"]) for redemption in redemptions
         ]
         discount_started_at = (
-            _parse_datetime(redemptions[0]["attributes"]["created_at"])
+            parse_datetime(redemptions[0]["attributes"]["created_at"])
             if redemptions
             else None
         )
         return CanonicalSubscription(
             source_id=subscription["id"],
             customer_source_id=str(attributes["customer_id"]),
-            price_source_id=self._price_id(item, attributes["variant_id"]),
+            price_source_id=price_id,
             status=self._map_status(status),
             collection_method=CanonicalCollectionMethod.charge_automatically,
-            current_period_start=self._period_start(
-                current_period_end, self._price_id(item, attributes["variant_id"])
-            ),
+            current_period_start=self._period_start(current_period_end, price_id),
             current_period_end=current_period_end,
             trialing=status == "on_trial",
             paused_collection=attributes.get("pause") is not None,
@@ -471,10 +460,7 @@ class LemonSqueezyAdapter:
             if discount_started_at
             else {},
             cancel_at_period_end=cancelled,
-            cancel_at=None,
-            canceled_at=None,
-            trial_end=_parse_datetime(attributes.get("trial_ends_at")),
-            stopped_for_migration=False,
+            trial_end=parse_datetime(attributes.get("trial_ends_at")),
             latest_invoice_unpaid=status in ("past_due", "unpaid"),
             anchor_day=attributes.get("billing_anchor"),
             currency=currency,
@@ -492,18 +478,23 @@ class LemonSqueezyAdapter:
         return latest["id"]
 
     def _period_start(
-        self, period_end: datetime | None, price_id: Any
+        self, period_end: datetime | None, price_id: str
     ) -> datetime | None:
         """Lemon Squeezy only dates the next renewal: the start is one
         interval back."""
-        price = self._prices_by_id.get(str(price_id))
+        price = self._prices_by_id.get(price_id)
         if period_end is None or price is None:
             return None
         attributes = price["attributes"]
-        delta = _INTERVAL_DELTAS.get(attributes.get("renewal_interval_unit") or "")
-        if delta is None:
+        try:
+            interval = RecurringInterval(attributes.get("renewal_interval_unit"))
+        except ValueError:
             return None
-        return period_end - delta(attributes.get("renewal_interval_quantity") or 1)
+        return interval.get_next_period(
+            period_end,
+            period_end.day,
+            -(attributes.get("renewal_interval_quantity") or 1),
+        )
 
     def _map_status(self, status: str) -> CanonicalSubscriptionStatus:
         match status:
@@ -517,8 +508,6 @@ class LemonSqueezyAdapter:
                 return CanonicalSubscriptionStatus.unpaid
             case "paused":
                 return CanonicalSubscriptionStatus.paused
-            case "expired":
-                return CanonicalSubscriptionStatus.canceled
             case _:
                 return CanonicalSubscriptionStatus.other
 
@@ -541,9 +530,3 @@ class LemonSqueezyAdapter:
             last4=attributes.get("card_last_four"),
             brand=brand,
         )
-
-
-def _parse_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    return datetime.fromisoformat(value)

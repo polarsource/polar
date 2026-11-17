@@ -483,7 +483,7 @@ def serialize(record: CanonicalRecord) -> dict[str, Any]:
     return jsonable_encoder(record)
 
 
-def _parse_datetime(value: str | None) -> datetime | None:
+def parse_datetime(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value) if value else None
 
 
@@ -517,7 +517,7 @@ def deserialize(
                         amount=price["amount"],
                         pricing_scheme=CanonicalPricingScheme(price["pricing_scheme"]),
                         is_default=price.get("is_default", False),
-                        created_at=_parse_datetime(price.get("created_at")),
+                        created_at=parse_datetime(price.get("created_at")),
                         active=price.get("active", True),
                     )
                     for price in data["prices"]
@@ -555,8 +555,8 @@ def deserialize(
                 price_source_id=data["price_source_id"],
                 status=CanonicalSubscriptionStatus(data["status"]),
                 collection_method=CanonicalCollectionMethod(data["collection_method"]),
-                current_period_start=_parse_datetime(data["current_period_start"]),
-                current_period_end=_parse_datetime(data["current_period_end"]),
+                current_period_start=parse_datetime(data["current_period_start"]),
+                current_period_end=parse_datetime(data["current_period_end"]),
                 trialing=data["trialing"],
                 paused_collection=data["paused_collection"],
                 line_item_count=data["line_item_count"],
@@ -576,14 +576,14 @@ def deserialize(
                 has_discount=data.get("has_discount", False)
                 or bool(data.get("discount_source_ids")),
                 discount_source_ids=list(data.get("discount_source_ids") or []),
-                discount_started_at=_parse_datetime(data.get("discount_started_at")),
+                discount_started_at=parse_datetime(data.get("discount_started_at")),
                 discount_starts={
                     source_id: started_at
                     for source_id, raw in (data.get("discount_starts") or {}).items()
-                    if (started_at := _parse_datetime(raw)) is not None
+                    if (started_at := parse_datetime(raw)) is not None
                 },
                 customer_discount_source_id=data.get("customer_discount_source_id"),
-                customer_discount_started_at=_parse_datetime(
+                customer_discount_started_at=parse_datetime(
                     data.get("customer_discount_started_at")
                 ),
                 discount_block=data.get("discount_block"),
@@ -591,11 +591,11 @@ def deserialize(
                 cancel_at_period_end_known=data.get(
                     "cancel_at_period_end_known", False
                 ),
-                cancel_at=_parse_datetime(data.get("cancel_at")),
+                cancel_at=parse_datetime(data.get("cancel_at")),
                 has_scheduled_changes=data.get("has_scheduled_changes", False),
-                canceled_at=_parse_datetime(data.get("canceled_at")),
+                canceled_at=parse_datetime(data.get("canceled_at")),
                 cancellation_reason=data.get("cancellation_reason"),
-                trial_end=_parse_datetime(data.get("trial_end")),
+                trial_end=parse_datetime(data.get("trial_end")),
                 stopped_for_migration=data.get("stopped_for_migration", False),
                 latest_invoice_unpaid=data.get("latest_invoice_unpaid", False),
                 anchor_day=data.get("anchor_day"),
@@ -631,7 +631,7 @@ def deserialize(
                 amounts=dict(data["amounts"]),
                 code=data["code"],
                 extra_codes=data["extra_codes"],
-                ends_at=_parse_datetime(data["ends_at"]),
+                ends_at=parse_datetime(data["ends_at"]),
                 max_redemptions=data["max_redemptions"],
                 product_source_ids=list(data["product_source_ids"]),
             )

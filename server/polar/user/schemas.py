@@ -3,9 +3,8 @@ import hmac
 import uuid
 from datetime import date
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Literal
 
-from fastapi import Depends
 from pydantic import UUID4, EmailStr, Field, computed_field
 
 from polar.auth.scope import Scope
@@ -100,14 +99,6 @@ class UserIdentityVerification(Schema):
     client_secret: str
 
 
-class UserSetAccount(Schema):
-    account_id: UUID4
-
-
-class UserStripePortalSession(Schema):
-    url: str
-
-
 class UserScopes(Schema):
     scopes: list[Scope]
 
@@ -143,22 +134,6 @@ class UserSignupAttribution(Schema):
     utm_campaign: str | None = None
 
     campaign: str | None = None
-
-
-UserSignupAttributionQueryJSON = str | None
-
-
-async def get_signup_attribution(
-    attribution: UserSignupAttributionQueryJSON = None,
-) -> UserSignupAttribution | None:
-    if attribution:
-        return UserSignupAttribution.model_validate_json(attribution)
-    return None
-
-
-UserSignupAttributionQuery = Annotated[
-    UserSignupAttribution | None, Depends(get_signup_attribution)
-]
 
 
 class UserDeletionBlockedReason(StrEnum):

@@ -42,6 +42,17 @@ def test_balances_files_by_recorded_test_duration(tmp_path: Path) -> None:
     }
 
 
+def test_first_shard_keeps_grouped_files_without_duplicates(tmp_path: Path) -> None:
+    files = [tmp_path / f"test_{index}.py" for index in range(6)]
+    for file in files:
+        file.write_text("pass\n")
+
+    groups = split_files(files, {}, 2, first_shard_files=files[::2])
+
+    assert set(groups[0]) == set(files[::2])
+    assert sorted(file for group in groups for file in group) == sorted(files)
+
+
 def test_cli_discovers_uncached_files_without_importing_them(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

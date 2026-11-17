@@ -862,7 +862,11 @@ class TestTinybirdDelete:
 
         assert job["status"] == "done"
 
-        stats_after = await _get_source_stats(tinybird_client, org_id)
+        async with asyncio.timeout(10):
+            while (stats_after := await _get_source_stats(tinybird_client, org_id)).get(
+                "delete.test", 0
+            ) == 2:
+                await asyncio.sleep(0.05)
         assert stats_after["delete.test"] == 1
         assert stats_after["keep.test"] == 1
 
@@ -899,7 +903,11 @@ class TestTinybirdDelete:
 
         assert job["status"] == "done"
 
-        stats_after = await _get_source_stats(tinybird_client, org_id)
+        async with asyncio.timeout(10):
+            while "batch.delete" in (
+                stats_after := await _get_source_stats(tinybird_client, org_id)
+            ):
+                await asyncio.sleep(0.05)
         assert "batch.delete" not in stats_after
         assert stats_after["batch.keep"] == 1
 

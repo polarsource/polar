@@ -1,8 +1,9 @@
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 from urllib.parse import parse_qs, urlsplit
 
+import httpx
 import httpx2
 import pytest
 from fastapi import FastAPI
@@ -21,6 +22,19 @@ from polar.postgres import AsyncSession
 from tests.auth.sso.test_endpoints import create_sso_connection
 from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
+
+
+@pytest.fixture(autouse=True)
+def oauth_discovery(oauth_http_mocks: dict[tuple[str, str], Mock]) -> None:
+    for issuer, authorization_endpoint in {
+        "https://accounts.google.com": "https://accounts.google.com/o/oauth2/v2/auth",
+        "https://appleid.apple.com": "https://appleid.apple.com/auth/authorize",
+    }.items():
+        oauth_http_mocks["GET", f"{issuer}/.well-known/openid-configuration"] = Mock(
+            return_value=httpx.Response(
+                200, json={"authorization_endpoint": authorization_endpoint}
+            )
+        )
 
 
 async def create_sso_domain(

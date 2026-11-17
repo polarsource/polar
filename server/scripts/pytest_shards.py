@@ -7,7 +7,11 @@ from pathlib import Path
 
 
 def split_files(
-    files: Sequence[Path], durations: Mapping[str, float], shards: int
+    files: Sequence[Path],
+    durations: Mapping[str, float],
+    shards: int,
+    *,
+    first_shard_files: Sequence[Path] = (),
 ) -> list[list[Path]]:
     file_durations: dict[str, float] = defaultdict(float)
     for node_id, duration in durations.items():
@@ -26,8 +30,17 @@ def split_files(
         for file in files
     }
     groups: list[list[Path]] = [[] for _ in range(shards)]
-    heap = [(0.0, index) for index in range(shards)]
-    for file in sorted(files, key=lambda file: (-weights[file], file.as_posix())):
+    pinned_files = set(first_shard_files)
+    groups[0].extend(sorted(pinned_files))
+    heap = [
+        (sum(weights[file] for file in group), index)
+        for index, group in enumerate(groups)
+    ]
+    heapq.heapify(heap)
+    for file in sorted(
+        (file for file in files if file not in pinned_files),
+        key=lambda file: (-weights[file], file.as_posix()),
+    ):
         duration, index = heapq.heappop(heap)
         groups[index].append(file)
         heapq.heappush(heap, (duration + weights[file], index))
@@ -40,6 +53,7 @@ def main() -> None:
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--shard", type=int)
     selection.add_argument("--tinybird", action="store_true")
+    parser.add_argument("--tinybird-in-first-shard", action="store_true")
     parser.add_argument("--durations-path", type=Path, default=Path(".test_durations"))
     args = parser.parse_args()
     if args.shard is not None and not 1 <= args.shard <= args.shards:
@@ -55,18 +69,25 @@ def main() -> None:
         if args.durations_path.exists()
         else {}
     )
-    selected = (
+    tinybird_files = (
         [
             Path(file)
             for file in Path("tests/tinybird-files.txt").read_text().splitlines()
         ]
+        if args.tinybird or args.tinybird_in_first_shard
+        else []
+    )
+    if missing := set(tinybird_files) - set(files):
+        parser.error(f"unknown test files: {sorted(missing)}")
+    selected = (
+        tinybird_files
         if args.tinybird
-        else split_files(files, durations, args.shards)[args.shard - 1]
+        else split_files(
+            files, durations, args.shards, first_shard_files=tinybird_files
+        )[args.shard - 1]
     )
     if not selected:
         parser.error("shard contains no test files")
-    if missing := set(selected) - set(files):
-        parser.error(f"unknown test files: {sorted(missing)}")
     for file in selected:
         print(file.as_posix())
 

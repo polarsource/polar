@@ -304,6 +304,7 @@ class TestDevelopmentSignIn:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(settings, "ENV", Environment.development)
+        monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", True)
         monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
 
         response = await client.get("/backoffice/auth/")
@@ -323,11 +324,16 @@ class TestDevelopmentSignIn:
         assert user.email == "admin@polar.sh"
 
     @pytest.mark.parametrize(
-        ("env", "url"),
+        ("env", "development_mode", "url"),
         [
-            (Environment.production, "http://localhost/backoffice/auth/"),
-            (Environment.testing, "http://localhost/backoffice/auth/"),
-            (Environment.development, "http://backoffice.polar.sh/backoffice/auth/"),
+            (Environment.production, True, "http://localhost/backoffice/auth/"),
+            (Environment.testing, True, "http://localhost/backoffice/auth/"),
+            (Environment.development, False, "http://localhost/backoffice/auth/"),
+            (
+                Environment.development,
+                True,
+                "http://backoffice.polar.sh/backoffice/auth/",
+            ),
         ],
     )
     async def test_refused_outside_local_development(
@@ -335,9 +341,11 @@ class TestDevelopmentSignIn:
         client: httpx2.AsyncClient,
         monkeypatch: pytest.MonkeyPatch,
         env: Environment,
+        development_mode: bool,
         url: str,
     ) -> None:
         monkeypatch.setattr(settings, "ENV", env)
+        monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", development_mode)
         monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
 
         response = await client.get(url)
@@ -350,5 +358,6 @@ class TestDevelopmentSignIn:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         monkeypatch.setattr(settings, "ENV", Environment.development)
+        monkeypatch.setattr(settings, "BACKOFFICE_DEVELOPMENT_MODE", True)
 
         await start_login(client, claims)

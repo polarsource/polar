@@ -51,6 +51,7 @@ async def index(
 
     if (
         settings.is_development()
+        and settings.BACKOFFICE_DEVELOPMENT_MODE
         and is_localhost(request)
         and not settings.BACKOFFICE_GOOGLE_CLIENT_ID
     ):

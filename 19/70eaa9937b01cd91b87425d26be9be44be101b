@@ -1,0 +1,34 @@
+server/AGENTS.md
+  s_49e9aea7171220::t_eefabd7ca2fef4 105-106
+server/scripts/linters/__main__.py
+  s_f83d2c94945117::t_737b1d3f3c9e5f 14,22
+server/tests/scripts/test_linter_table_column.py
+  s_49e9aea7171220::t_c45db9457e0b48 1-21
+server/scripts/linters/table_column.py
+  s_49e9aea7171220::t_155264fc17320c 1-20,24-30,34-44,50,52-76
+  s_49e9aea7171220::t_c45db9457e0b48 21-23,31-33,45-49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1970eaa9937b01cd91b87425d26be9be44be101b",
+  "prompts": {},
+  "sessions": {
+    "s_49e9aea7171220": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "08304eba-661b-4649-a824-82d4f47eecde",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    },
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -14,7 +14,7 @@
     "test": "vitest run --project uncompiled --coverage && vitest run --project compiled",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:e2e:headed": "E2E_HEADED=1 vitest run --config vitest.e2e.config.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "engines": {
     "node": "=24"

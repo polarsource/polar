@@ -45,6 +45,7 @@ jobs:
               - '.github/workflows/test_client.yaml'
               - '.github/actions/setup-clients/**'
               - '.github/workflows/release_cli.yml'
+              - '.nvmrc'
             unscoped:
               - 'clients/*'
               - 'sdk/cli-commands/**'

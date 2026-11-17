@@ -30,8 +30,9 @@ export function SubscriptionTrialCancellation({
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        trial has been canceled and won&rsquo;t convert to a paid subscription.
-        You still have full access until the trial ends on {endDate}.
+        trial has been canceled and won&rsquo;t convert to a paid subscription,
+        so you won&rsquo;t be charged. You still have full access until the
+        trial ends on {endDate}.
       </Intro>
       {previous_billing_provider && organization.name && (
         <BillingMigrationNotice

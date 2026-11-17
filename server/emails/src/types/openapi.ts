@@ -3412,6 +3412,31 @@ export interface components {
       /** Conversion Date */
       conversion_date: string
     }
+    /** SubscriptionTrialEndedEmail */
+    SubscriptionTrialEndedEmail: {
+      /**
+       * Template
+       * @default subscription_trial_ended
+       * @constant
+       */
+      template: 'subscription_trial_ended'
+      props: components['schemas']['SubscriptionTrialEndedProps']
+    }
+    /** SubscriptionTrialEndedProps */
+    SubscriptionTrialEndedProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
+    }
     /** SubscriptionTrialPaymentMethodRequiredEmail */
     SubscriptionTrialPaymentMethodRequiredEmail: {
       /**

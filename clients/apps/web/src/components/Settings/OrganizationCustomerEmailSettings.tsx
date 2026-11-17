@@ -48,7 +48,7 @@ const customerEmailGroups: { title: string; emails: CustomerEmail[] }[] = [
         key: 'subscription_cycled_after_trial',
         title: 'Trial converted',
         description:
-          'Sent when a trial ends and the subscription becomes paid, or when a customer cancels during their trial',
+          'Sent when a trial converts to a paid subscription, and when a trial is canceled or ends without converting',
       },
     ],
   },

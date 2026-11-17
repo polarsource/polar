@@ -22,6 +22,7 @@ from polar.email.schemas import (
     SubscriptionRevokedEmail,
     SubscriptionTrialCancellationEmail,
     SubscriptionTrialConversionReminderEmail,
+    SubscriptionTrialEndedEmail,
     SubscriptionTrialPaymentMethodRequiredEmail,
 )
 from polar.enums import (
@@ -2545,17 +2546,11 @@ class TestCycle:
         assert_webhook_not_sent(
             webhook_service_send_mock, WebhookEventType.subscription_cycled
         )
-        # The revoked email is sent by the cycle (the cancellation email was
-        # already sent earlier by cancel(), so we check for the revoked one
-        # among the calls rather than asserting it was the only one).
-        revoked_email_calls = [
-            call
-            for call in enqueue_email_mock.call_args_list
-            if isinstance(call.args[0], SubscriptionRevokedEmail)
+        sent_emails = [call.args[0] for call in enqueue_email_mock.call_args_list]
+        assert [type(email) for email in sent_emails] == [
+            SubscriptionTrialCancellationEmail,
+            SubscriptionTrialEndedEmail,
         ]
-        assert len(revoked_email_calls) == 1, (
-            "expected exactly one SubscriptionRevokedEmail from cycle()"
-        )
 
     @freeze_time("2024-04-28 12:00:00")
     async def test_trial_end_rebases_anchor_to_trial_end_day(
@@ -3722,6 +3717,74 @@ class TestRevoke:
 
         subscription_hooks.canceled.assert_called_once()
         subscription_hooks.revoked.assert_called_once()
+
+    async def test_active_sends_revoked_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        sent_emails = [call.args[0] for call in enqueue_email_mock.call_args_list]
+        assert [type(email) for email in sent_emails] == [SubscriptionRevokedEmail]
+
+    async def test_trialing_sends_trial_ended_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        sent_emails = [call.args[0] for call in enqueue_email_mock.call_args_list]
+        assert [type(email) for email in sent_emails] == [SubscriptionTrialEndedEmail]
+        assert enqueue_email_mock.call_args.kwargs["subject"] == (
+            f"Your {product.name} trial has ended"
+        )
+
+    async def test_trialing_disabled_by_trial_converted_setting(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_cycled_after_trial": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+
+        enqueue_email_mock.assert_not_called()
 
 
 @pytest.mark.anyio

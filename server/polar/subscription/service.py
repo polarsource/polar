@@ -4026,6 +4026,7 @@ class SubscriptionService:
                 session,
                 subscription,
                 past_due=became_past_due,
+                was_trialing=previous_status == SubscriptionStatus.trialing,
                 notify_customer=notify_customer,
             )
 
@@ -4289,6 +4290,7 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         past_due: bool,
+        was_trialing: bool,
         notify_customer: bool = True,
     ) -> None:
         await self._send_webhook(
@@ -4314,7 +4316,10 @@ class SubscriptionService:
         # Only send revoked email if the subscription is not past due,
         # as past due has its own email.
         if not past_due and notify_customer:
-            await self.send_revoked_email(session, subscription)
+            if was_trialing:
+                await self.send_trial_ended_email(session, subscription)
+            else:
+                await self.send_revoked_email(session, subscription)
 
         # Void all pending orders for this subscription
         enqueue_job("order.void_pending_orders_for_subscription", subscription.id)
@@ -4618,6 +4623,16 @@ class SubscriptionService:
             template_name="subscription_revoked",
         )
 
+    async def send_trial_ended_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} trial has ended",
+            template_name="subscription_trial_ended",
+        )
+
     async def send_past_due_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -4789,6 +4804,7 @@ class SubscriptionService:
             "subscription_revoked",
             "subscription_trial_cancellation",
             "subscription_trial_conversion_reminder",
+            "subscription_trial_ended",
             "subscription_trial_payment_method_required",
             "subscription_uncanceled",
             "subscription_updated",
@@ -4820,7 +4836,7 @@ class SubscriptionService:
         match template_name:
             case "subscription_trial_payment_method_required":
                 email_setting = "subscription_trial_conversion_reminder"
-            case "subscription_trial_cancellation":
+            case "subscription_trial_cancellation" | "subscription_trial_ended":
                 email_setting = "subscription_cycled_after_trial"
             case _:
                 email_setting = template_name

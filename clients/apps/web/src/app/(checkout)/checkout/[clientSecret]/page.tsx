@@ -29,7 +29,7 @@ export async function generateMetadata(props: {
   const params = await props.params
   const { clientSecret } = params
 
-  const client = await createCheckoutClient()
+  const client = createClient(getServerURL(), undefined, getSSRHeaders())
   const { data: checkout } = await client.GET(
     '/v1/checkouts/client/{client_secret}',
     { params: { path: { client_secret: clientSecret } } },

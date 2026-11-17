@@ -813,6 +813,102 @@ class TestUpdate:
         assert properties["slack_integration_id"] == str(integration.id)
         assert properties["channel_name_template"] == "vip-{customer_name}"
 
+    @pytest.mark.auth
+    async def test_downloadables_update_without_archived_keeps_archived(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+        service_mock = MagicMock(spec=BenefitServiceProtocol)
+        service_mock.validate_properties.side_effect = (
+            lambda auth_subject, organization, properties: properties
+        )
+        mocker.patch(
+            "polar.benefit.service.get_benefit_strategy", return_value=service_mock
+        )
+
+        archived_file_id = uuid.uuid4()
+        active_file_id = uuid.uuid4()
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.downloadables,
+            organization=organization,
+            properties={
+                "files": [str(archived_file_id), str(active_file_id)],
+                "archived": {str(archived_file_id): True},
+            },
+        )
+
+        update_schema = BenefitDownloadablesUpdate(
+            type=BenefitType.downloadables,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[archived_file_id, active_file_id]
+            ),
+        )
+
+        updated_benefit = await benefit_service.update(
+            session, redis, benefit, update_schema, auth_subject
+        )
+
+        assert dict(updated_benefit.properties)["archived"] == {
+            str(archived_file_id): True
+        }
+
+    @pytest.mark.auth
+    async def test_downloadables_update_with_archived_replaces_archived(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            benefit_grant_service,
+            "enqueue_benefit_grant_updates",
+            spec=BenefitGrantService.enqueue_benefit_grant_updates,
+        )
+        service_mock = MagicMock(spec=BenefitServiceProtocol)
+        service_mock.validate_properties.side_effect = (
+            lambda auth_subject, organization, properties: properties
+        )
+        mocker.patch(
+            "polar.benefit.service.get_benefit_strategy", return_value=service_mock
+        )
+
+        file_id = uuid.uuid4()
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.downloadables,
+            organization=organization,
+            properties={"files": [str(file_id)], "archived": {str(file_id): True}},
+        )
+
+        update_schema = BenefitDownloadablesUpdate(
+            type=BenefitType.downloadables,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[file_id], archived={}
+            ),
+        )
+
+        updated_benefit = await benefit_service.update(
+            session, redis, benefit, update_schema, auth_subject
+        )
+
+        assert dict(updated_benefit.properties)["archived"] == {}
+
     @pytest.mark.parametrize(
         "update_schema",
         [

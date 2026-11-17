@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from pydantic import BaseModel
 from sqlalchemy import case, delete
@@ -350,11 +351,18 @@ class BenefitService:
             benefit_update, "properties", None
         )
         if properties_update is not None:
+            properties_dict = properties_update.model_dump(mode="json", by_alias=True)
+            existing_properties: dict[str, Any] = dict(benefit.properties)
+            for field_name, field in type(properties_update).model_fields.items():
+                key = field.alias or field_name
+                if (
+                    field_name not in properties_update.model_fields_set
+                    and key in existing_properties
+                ):
+                    properties_dict[key] = existing_properties[key]
             benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
             update_dict["properties"] = await benefit_strategy.validate_properties(
-                auth_subject,
-                benefit.organization,
-                properties_update.model_dump(mode="json", by_alias=True),
+                auth_subject, benefit.organization, properties_dict
             )
 
         previous_properties = benefit.properties

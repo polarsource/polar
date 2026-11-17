@@ -31,7 +31,7 @@ module "ec2_tailscale" {
   subnet_id                  = module.vpc[0].secondary_private_subnet_ids[0]
   advertise_routes           = module.vpc[0].secondary_private_subnet_cidr_blocks
   advertise_tags             = ["tag:router", "tag:test"]
-  tailscale_oauth_secret_arn = aws_secretsmanager_secret.ec2_tailscale[0].arn
+  tailscale_oauth_secret_arn = aws_secretsmanager_secret_version.ec2_tailscale[0].arn
   tailscale_version          = var.tailscale_version
   permissions_boundary_arn   = data.aws_iam_policy.permission_boundary.arn
 
@@ -39,6 +39,4 @@ module "ec2_tailscale" {
     Environment = "test"
     Service     = "tailscale-router"
   }
-
-  depends_on = [module.vpc, aws_secretsmanager_secret_version.ec2_tailscale]
 }

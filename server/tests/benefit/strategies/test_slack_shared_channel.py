@@ -1830,6 +1830,105 @@ class TestSlackSharedChannelRevoke:
             "channel_id": "C123",
         }
 
+    async def test_revoke_archives_when_sibling_grant_is_revoked(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        grant_properties: dict[str, Any] = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
+        other_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=True, properties=grant_properties
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            other_benefit,
+            granted=False,
+            properties=grant_properties,
+        )
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        await strategy.revoke(benefit, customer, cast(Any, grant_properties))
+
+        client.conversations_archive.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="C123"
+        )
+
+    @pytest.mark.parametrize(
+        ("revoked_granted", "sibling_granted"),
+        [
+            pytest.param(None, True, id="revoking errored grant"),
+            pytest.param(True, None, id="errored sibling grant"),
+        ],
+    )
+    async def test_revoke_skips_archive_when_errored_grant_on_channel(
+        self,
+        revoked_granted: bool | None,
+        sibling_granted: bool | None,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        grant_properties: dict[str, Any] = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "C123",
+        }
+        other_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        for grant_benefit, granted in (
+            (benefit, revoked_granted),
+            (other_benefit, sibling_granted),
+        ):
+            await create_benefit_grant(
+                save_fixture,
+                customer,
+                grant_benefit,
+                granted=granted,
+                properties=grant_properties,
+            )
+        client = _mock_client(mocker)
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.revoke(benefit, customer, cast(Any, grant_properties))
+
+        client.conversations_archive.assert_not_awaited()
+        assert result == grant_properties
+
     async def test_revoke_skips_archive_when_channel_used_by_other_benefit(
         self,
         session: AsyncSession,

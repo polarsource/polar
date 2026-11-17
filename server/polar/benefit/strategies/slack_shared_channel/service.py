@@ -231,7 +231,7 @@ class BenefitSlackSharedChannelService(
 
         grant_repository = BenefitGrantRepository.from_session(self.session)
         total_grants = (
-            await grant_repository.count_granted_by_property_and_organization(
+            await grant_repository.count_unrevoked_by_property_and_organization(
                 benefit.organization_id, "channel_id", channel_id
             )
         )

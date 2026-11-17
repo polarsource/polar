@@ -403,7 +403,7 @@ class BenefitGrantRepository(
             statement = statement.with_for_update(of=BenefitGrant)
         return await self.get_all(statement)
 
-    async def count_granted_by_property_and_organization(
+    async def count_unrevoked_by_property_and_organization(
         self,
         organization_id: UUID,
         key: str,
@@ -415,7 +415,7 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.properties[key].as_string() == value,
                 Benefit.organization_id == organization_id,
-                BenefitGrant.is_granted,
+                ~BenefitGrant.is_revoked,
                 ~BenefitGrant.is_deleted,
             )
         )

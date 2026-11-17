@@ -85,7 +85,9 @@ resource "aws_instance" "this" {
       path        = "/usr/local/sbin/tailscale-init"
       owner       = "root:root"
       permissions = "0700"
-      content     = file("${path.module}/tailscale-init.sh")
+      content = templatefile("${path.module}/tailscale-init.sh.tftpl", {
+        advertise_connector = var.advertise_connector
+      })
       }], length(var.advertise_routes) == 0 ? [] : [{
       path        = "/etc/sysctl.d/99-tailscale.conf"
       owner       = "root:root"

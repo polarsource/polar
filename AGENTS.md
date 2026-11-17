@@ -226,7 +226,7 @@ and the certificate stores shipped by our actual base images and runtimes.
 If upstream fixes cover every affected path, remove the manual mitigations consistently:
 the `sed` root exclusions and `trust extract` blocklists in Dockerfiles under `server/`,
 `dev/docker/` and `infra/`, the EC2 host mitigations in `terraform/modules/`
-(e.g. `ec2_tailscale/tailscale-init.sh` and `planetscale_migration/user-data.sh`).
+(e.g. `ec2_tailscale/tailscale-init.sh.tftpl` and `planetscale_migration/user-data.sh`).
 Keep patched dependency versions and security minimums, including Stripe Python 14.4.2
 or later for the SDK's bundled roots.
 

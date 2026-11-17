@@ -57,7 +57,7 @@ systemctl enable --now dnf-automatic-install.timer
 curl --fail --silent --show-error --location --retry 5 \
   https://pkgs.tailscale.com/stable/amazon-linux/2023/tailscale.repo \
   --output /etc/yum.repos.d/tailscale.repo
-dnf install -y "tailscale-${tailscale_version}"
+dnf install -y "tailscale-$${tailscale_version}"
 systemctl enable --now tailscaled
 
 umask 077
@@ -79,7 +79,8 @@ tailscale up \
   --ssh="$tailscale_ssh" \
   --advertise-routes="$advertise_routes" \
   --advertise-tags="$advertise_tags" \
-  --snat-subnet-routes=true \
+%{ if advertise_connector }  --advertise-connector \
+%{ endif }  --snat-subnet-routes=true \
   --accept-dns=false \
   --timeout=120s
 

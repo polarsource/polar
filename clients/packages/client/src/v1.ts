@@ -29135,6 +29135,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** MissingBillingAddress */
+    MissingBillingAddress: {
+      /**
+       * Error
+       * @example MissingBillingAddress
+       * @constant
+       */
+      error: 'MissingBillingAddress'
+      /** Detail */
+      detail: string
+    }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
       /**
@@ -49282,7 +49293,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The subscription has no payment method to charge, or is not scheduled to be canceled. */
+      /** @description The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product. */
       409: {
         headers: {
           [name: string]: unknown
@@ -49291,6 +49302,7 @@ export interface operations {
           'application/json':
             | components['schemas']['PaymentMethodRequired']
             | components['schemas']['SubscriptionNotScheduledToCancel']
+            | components['schemas']['MissingBillingAddress']
         }
       }
       /** @description Validation Error */
@@ -51037,7 +51049,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Subscription is pending an update, or is not scheduled to be canceled. */
+      /** @description Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product. */
       409: {
         headers: {
           [name: string]: unknown
@@ -51046,6 +51058,7 @@ export interface operations {
           'application/json':
             | components['schemas']['SubscriptionLocked']
             | components['schemas']['SubscriptionNotScheduledToCancel']
+            | components['schemas']['MissingBillingAddress']
         }
       }
       /** @description Validation Error */

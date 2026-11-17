@@ -36,6 +36,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
@@ -108,6 +109,7 @@ from polar.subscription.service import (
     BelowMinimumSeats,
     CannotPauseSubscription,
     CannotReinstateSubscription,
+    MissingBillingAddress,
     MissingCheckoutCustomer,
     NoScheduledPause,
     NotARecurringProduct,
@@ -8109,6 +8111,75 @@ class TestUpdateProduct:
         await nested.rollback()
         await session.refresh(subscription)
         assert subscription.product_id == product.id
+
+    @pytest.mark.parametrize(
+        ("billing_address", "missing_fields"),
+        [
+            (None, ["country"]),
+            (Address(country=CountryAlpha2("US"), state="NY"), ["postal_code"]),
+            (Address(country=CountryAlpha2("BR")), ["state", "city"]),
+        ],
+    )
+    async def test_free_to_paid_incomplete_billing_address(
+        self,
+        billing_address: Address | None,
+        missing_fields: list[str],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_recurring_free_price: Product,
+        product: Product,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, billing_address=billing_address
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_free_price, customer=customer
+        )
+
+        with pytest.raises(MissingBillingAddress) as exc_info:
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=product.id,
+                    proration_behavior=SubscriptionProrationBehavior.prorate,
+                )
+
+        assert exc_info.value.missing_fields == missing_fields
+
+    async def test_free_to_paid_complete_billing_address(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_recurring_free_price: Product,
+        product: Product,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_free_price, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        assert updated_subscription.product_id == product.id
 
 
 @pytest.mark.anyio

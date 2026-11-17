@@ -5087,7 +5087,7 @@
             }
           },
           "409": {
-            "description": "The subscription has no payment method to charge, or is not scheduled to be canceled.",
+            "description": "The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5097,6 +5097,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/SubscriptionNotScheduledToCancel"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MissingBillingAddress"
                     }
                   ],
                   "title": "Response 409 Customer Portal:Subscriptions:Update"
@@ -8427,7 +8430,7 @@
             }
           },
           "409": {
-            "description": "Subscription is pending an update, or is not scheduled to be canceled.",
+            "description": "Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8437,6 +8440,9 @@
                     },
                     {
                       "$ref": "#/components/schemas/SubscriptionNotScheduledToCancel"
+                    },
+                    {
+                      "$ref": "#/components/schemas/MissingBillingAddress"
                     }
                   ],
                   "title": "Response 409 Subscriptions:Update"
@@ -63284,6 +63290,28 @@
         },
         "type": "object",
         "title": "MetricsTotals"
+      },
+      "MissingBillingAddress": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "MissingBillingAddress",
+            "title": "Error",
+            "examples": [
+              "MissingBillingAddress"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "MissingBillingAddress"
       },
       "MissingInvoiceBillingDetails": {
         "properties": {

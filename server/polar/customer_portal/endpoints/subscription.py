@@ -20,6 +20,7 @@ from polar.subscription.schemas import (
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
+    MissingBillingAddress,
     SubscriptionNotScheduledToCancel,
 )
 from polar.subscription.service import subscription as subscription_service
@@ -265,10 +266,13 @@ async def preview_change(
         409: {
             "description": (
                 "The subscription has no payment method to charge, "
-                "or is not scheduled to be canceled."
+                "is not scheduled to be canceled, "
+                "or the billing address is incomplete for a switch from a free "
+                "to a paid product."
             ),
             "model": PaymentMethodRequired.schema()
-            | SubscriptionNotScheduledToCancel.schema(),
+            | SubscriptionNotScheduledToCancel.schema()
+            | MissingBillingAddress.schema(),
         },
     },
 )

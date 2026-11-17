@@ -50,6 +50,7 @@ from .service import (
     AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     InactiveSubscription,
+    MissingBillingAddress,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
@@ -474,10 +475,13 @@ async def get_bulk_update(
         404: SubscriptionNotFound,
         409: {
             "description": (
-                "Subscription is pending an update, or is not scheduled to be canceled."
+                "Subscription is pending an update, is not scheduled to be canceled, "
+                "or the customer's billing address is incomplete for a switch from a "
+                "free to a paid product."
             ),
             "model": SubscriptionLocked.schema()
-            | SubscriptionNotScheduledToCancel.schema(),
+            | SubscriptionNotScheduledToCancel.schema()
+            | MissingBillingAddress.schema(),
         },
     },
 )

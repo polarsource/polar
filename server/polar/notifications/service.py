@@ -1,5 +1,5 @@
-from collections.abc import Sequence
-from typing import Literal
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, TypeAdapter
@@ -77,6 +77,7 @@ class NotificationsService:
         notif: PartialNotification,
         *,
         is_free_product: bool = False,
+        is_trial: bool = False,
     ) -> None:
         _SETTING_KEY: dict[
             NotificationType,
@@ -94,16 +95,17 @@ class NotificationsService:
             if key is not None and not settings[key]:
                 continue
 
-            if notif.type == NotificationType.maintainer_new_trial and not settings.get(
-                "new_trial", settings["new_subscription"]
+            if (
+                notif.type == NotificationType.maintainer_new_trial
+                and not self._trial_notifications_enabled(settings)
             ):
                 continue
 
-            if (
-                notif.type == NotificationType.maintainer_subscription_cancellation
-                and not settings.get("subscription_cancellation", False)
-            ):
-                continue
+            if notif.type == NotificationType.maintainer_subscription_cancellation:
+                if not settings.get("subscription_cancellation", False):
+                    continue
+                if is_trial and not self._trial_notifications_enabled(settings):
+                    continue
 
             if is_free_product and settings.get("exclude_free_products", False):
                 continue
@@ -113,6 +115,10 @@ class NotificationsService:
                 user_id=member.user_id,
                 notif=notif,
             )
+
+    @staticmethod
+    def _trial_notifications_enabled(settings: Mapping[str, Any]) -> bool:
+        return bool(settings.get("new_trial", settings["new_subscription"]))
 
     def parse_payload(self, n: Notification) -> NotificationPayload:
         notification = _notification_type_adapter.validate_python(n)

@@ -4355,6 +4355,8 @@ class SubscriptionService:
             session,
             org_id=organization.id,
             is_free_product=all(price.is_free for price in subscription.prices),
+            is_trial=subscription.trial_end is not None
+            and subscription.trial_end > utc_now(),
             notif=PartialNotification(
                 type=NotificationType.maintainer_subscription_cancellation,
                 payload=MaintainerSubscriptionCancellationNotificationPayload(

@@ -456,7 +456,7 @@ jobs:
     name: "Server: Tests 🐍"
     needs: changes
     if: always() && (needs.changes.result != 'success' || needs.changes.outputs.server == 'true')
-    runs-on: ${{ needs.changes.result == 'success' && 'blacksmith-32vcpu-ubuntu-2404' || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ needs.changes.result == 'success' && 'blacksmith-16vcpu-ubuntu-2404' || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 15
     env:
       POLAR_ENV: testing

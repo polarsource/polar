@@ -1,4 +1,6 @@
+import json
 import os
+from collections import defaultdict
 from pathlib import Path
 
 os.environ["POLAR_ENV"] = "testing"
@@ -75,3 +77,10 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
                 f"Add {item.nodeid.split('::', 1)[0]} to tests/tinybird-files.txt "
                 "so the Tinybird CI job runs it."
             )
+
+    durations_path = Path(".test_durations")
+    if _ci_collection_paths is not None and durations_path.exists():
+        file_durations: dict[str, float] = defaultdict(float)
+        for node_id, duration in json.loads(durations_path.read_text()).items():
+            file_durations[node_id.split("::", 1)[0]] += duration
+        items.sort(key=lambda item: -file_durations[item.nodeid.split("::", 1)[0]])

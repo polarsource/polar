@@ -102,6 +102,8 @@ inline subquery silently bypasses it. Enforced by `uv run task lint_org_scope`.
 
 **Subqueries must project explicit columns.** `select(Model).subquery()` re-materializes every mapped column — `deferred=True` does NOT propagate. For count subqueries, use `count_subquery(statement)` from `polar.kit.pagination`; otherwise narrow with `.with_only_columns(...)` before calling `.subquery()`. Enforced by `uv run task lint_subquery`.
 
+**Columns mapped on subclasses only go through `with_polymorphic`.** With single-table inheritance (`ProductPrice`), `ProductPriceMeteredUnit.meter_id` adds that subclass's discriminator filter and silently drops the sibling types. Don't work around it with `ProductPrice.__table__.c.meter_id`; query `price = with_polymorphic(ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers])` and use `price.ProductPriceMeteredUnit.meter_id`. Enforced by `uv run task lint_ast` (`table-column`).
+
 ## Service Pattern
 
 Services contain business logic and call repositories. Methods that only read take an

@@ -11,7 +11,7 @@ import ast
 import sys
 from pathlib import Path
 
-from . import frontend_url, hash_secret, org_scope, subquery
+from . import frontend_url, hash_secret, org_scope, subquery, table_column
 from .base import Rule, line_has_skip
 
 RULES: tuple[Rule, ...] = (
@@ -19,6 +19,7 @@ RULES: tuple[Rule, ...] = (
     org_scope.RULE,
     frontend_url.RULE,
     hash_secret.RULE,
+    table_column.RULE,
 )
 
 

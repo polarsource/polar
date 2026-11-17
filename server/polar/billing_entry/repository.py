@@ -4,6 +4,7 @@ from itertools import batched
 from uuid import UUID
 
 from sqlalchemy import Select, and_, func, or_, select, update
+from sqlalchemy.orm import with_polymorphic
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
@@ -16,7 +17,11 @@ from polar.kit.repository import (
 )
 from polar.models import BillingEntry
 from polar.models.billing_entry import BillingEntryType
-from polar.models.product_price import ProductPrice
+from polar.models.product_price import (
+    ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+)
 
 _LINK_PENDING_BATCH_SIZE = 5_000
 
@@ -116,23 +121,27 @@ class BillingEntryRepository(
         service layer - the rest are skipped. The active price is determined from
         subscription.subscription_product_prices, not from these tuples.
         """
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(
-                ProductPrice,
-                BillingEntry.product_price_id == ProductPrice.id,
+                price,
+                BillingEntry.product_price_id == price.id,
             )
-            .where(ProductPrice.is_metered, BillingEntry.created_at <= cutoff)
+            .where(price.is_metered, BillingEntry.created_at <= cutoff)
             .with_only_columns(
                 BillingEntry.product_price_id,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id,
+                price.ProductPriceMeteredUnit.meter_id,
                 func.min(BillingEntry.start_timestamp),
                 func.max(BillingEntry.end_timestamp),
             )
-            .group_by(BillingEntry.product_price_id, ProductPrice.__table__.c.meter_id)
+            .group_by(
+                BillingEntry.product_price_id, price.ProductPriceMeteredUnit.meter_id
+            )
             .order_by(None)  # Clear existing ORDER BY from base statement
-            .order_by(ProductPrice.__table__.c.meter_id.asc())
+            .order_by(price.ProductPriceMeteredUnit.meter_id.asc())
         )
         results = await self.session.stream(
             statement,
@@ -170,13 +179,15 @@ class BillingEntryRepository(
         *,
         cutoff: datetime,
     ) -> None:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         # `ix_billing_entry_pending_link` serves the id-ordered scan for one
         # price at a time.
         price_ids = await self.session.scalars(
-            select(ProductPrice.id).where(
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter_id,
+            select(price.id).where(
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
             )
         )
         for product_price_id in price_ids:

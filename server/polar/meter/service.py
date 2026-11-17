@@ -20,7 +20,7 @@ from sqlalchemy import (
     tuple_,
 )
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import aliased, joinedload, with_polymorphic
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, Organization, User
@@ -54,6 +54,8 @@ from polar.models import (
     MeterEvent,
     Product,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     SubscriptionProductPrice,
 )
 from polar.models.catalog import CatalogStatus
@@ -346,17 +348,19 @@ class MeterService:
         return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         # Check if meter is attached to any active metered price
         active_prices = await session.scalar(
-            select(func.count(ProductPrice.id))
+            select(func.count(price.id))
             .join(Product)
             .where(
                 ~Product.is_archived,
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter.id,
-                ~ProductPrice.is_archived,
-                ~ProductPrice.is_deleted,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter.id,
+                ~price.is_archived,
+                ~price.is_deleted,
             )
         )
 

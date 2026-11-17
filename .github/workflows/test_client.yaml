@@ -48,7 +48,7 @@ jobs:
               - '.nvmrc'
       - name: Scope turbo to what the diff can reach
         id: scope
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.filter.outputs.unscoped == 'false'
         run: echo "turbo-scope=--affected" >> "$GITHUB_OUTPUT"
 
   checks:

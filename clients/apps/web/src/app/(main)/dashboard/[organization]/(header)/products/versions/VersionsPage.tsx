@@ -14,7 +14,7 @@ import { RemovedTab } from './RemovedTab'
 import { Overview } from './Overview'
 import { VersionsTab } from './VersionsTab'
 
-const tabs = ['versions', 'deprecated'] as const
+const tabs = ['versions', 'removed'] as const
 const PAGE_SIZE = 20
 
 const HistoryTab = ({
@@ -85,7 +85,7 @@ export const VersionsPage = ({
           {(
             [
               ['versions', 'Overview'],
-              ['deprecated', 'Deprecated'],
+              ['removed', 'Removed'],
             ] as const
           ).map(([value, label]) => (
             <SubnavItem key={value} active={tab === value}>

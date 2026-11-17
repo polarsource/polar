@@ -76,7 +76,7 @@ class EmailSender(ABC):
 
 class LoggingEmailSender(EmailSender):
     async def remove_suppression(self, email: str) -> None:
-        log.info("Removing email suppression", email=to_ascii_email(email))
+        log.info("Removing email suppression")
 
     async def send(
         self,

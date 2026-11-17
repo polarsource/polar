@@ -4,7 +4,9 @@ import { useCustomerUpdateSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Minus as MinusIcon, Plus as PlusIcon } from '@polar-sh/orbit/icons'
+import { PortalText } from './PortalPrimitives'
 import { useCallback, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
@@ -141,58 +143,71 @@ export const CustomerSeatQuantityManager = ({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border p-4">
-      <div className="flex flex-col gap-2 text-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="font-medium">Total seats</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleDecrement}
-              disabled={!canDecrease || updateSubscription.isPending}
-            >
-              <MinusIcon className="h-4 w-4" />
-            </Button>
-
-            <span className="dark:text-polar-200 flex h-8 min-w-8 items-center justify-center px-2 font-medium">
-              {seats}
-            </span>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleIncrement}
-              disabled={updateSubscription.isPending}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+    <Box
+      as="form"
+      onSubmit={handleSubmit(onSubmit)}
+      flexDirection="column"
+      rowGap="l"
+      padding="l"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      borderRadius="l"
+    >
+      <Box alignItems="center" justifyContent="between">
+        <PortalText tone="primary" className="text-sm">
+          Total seats
+        </PortalText>
+        <Box alignItems="center" columnGap="xs">
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleDecrement}
+            disabled={!canDecrease || updateSubscription.isPending}
+            aria-label="Remove a seat"
+          >
+            <MinusIcon className="h-4 w-4" />
+          </Button>
+          <Box
+            as="span"
+            minWidth={40}
+            justifyContent="center"
+            display="inline-flex"
+            color="text-primary"
+          >
+            <span className="tabular-nums">{seats}</span>
+          </Box>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleIncrement}
+            disabled={updateSubscription.isPending}
+            aria-label="Add a seat"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </Button>
+        </Box>
+      </Box>
 
       {hasChanges && (
-        <div className="mt-4 flex flex-col gap-3">
+        <Box flexDirection="column" rowGap="m">
           {invoicingMessage && (
-            <span className="dark:text-polar-500 text-sm text-gray-500">
+            <PortalText tone="secondary" className="text-sm">
               {invoicingMessage}
-            </span>
+            </PortalText>
           )}
-          <div className="flex flex-row-reverse gap-3">
+          <Box justifyContent="end">
             <Button
               loading={updateSubscription.isPending}
               onClick={handleSubmit(onSubmit)}
-              className="w-full"
             >
               Update seats
             </Button>
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </form>
+    </Box>
   )
 }

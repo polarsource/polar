@@ -9,6 +9,8 @@ from reauth.exceptions import ReauthException
 
 from polar.backoffice_user.repository import BackofficeUserRepository
 from polar.config import settings
+from polar.kit.http import is_localhost
+from polar.models import BackofficeUser
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 
@@ -46,6 +48,19 @@ async def index(
 ) -> RedirectResponse:
     if await get_user_session(request, session) is not None:
         return RedirectResponse(settings.generate_backoffice_url("/"), status_code=303)
+
+    if (
+        settings.is_development()
+        and settings.BACKOFFICE_DEVELOPMENT_MODE
+        and is_localhost(request)
+        and not settings.BACKOFFICE_GOOGLE_CLIENT_ID
+    ):
+        user = await BackofficeUserRepository.from_session(session).provision(
+            "development", "admin@polar.sh"
+        )
+        if user is None:
+            raise HTTPException(403, "Backoffice account is disabled")
+        return await _sign_in(request, session, user)
 
     async with google_factor(state_service) as factor:
         authentication = BackofficeAuthenticationSessionService(
@@ -134,6 +149,12 @@ async def callback(
 
     await authentication.advance(auth_session, user.id, factor)
     await authentication.complete(auth_session)
+    return await _sign_in(request, session, user)
+
+
+async def _sign_in(
+    request: Request, session: AsyncSession, user: BackofficeUser
+) -> RedirectResponse:
     old_token = get_user_session_token(request)
     if old_token is not None:
         await BackofficeUserSessionRepository.from_session(session).revoke(old_token)

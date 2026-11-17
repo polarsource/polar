@@ -22,19 +22,25 @@ def event_loop_thread() -> Iterator[tuple[asyncio.AbstractEventLoop, threading.T
         loop.close()
 
 
-def _block(
-    loop: asyncio.AbstractEventLoop, seconds: float, name: str = "block"
-) -> None:
-    """Block the loop from another thread, and wait until it is really blocked."""
+@pytest.fixture
+def blocked_event_loop(
+    event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread],
+) -> Iterator[tuple[asyncio.AbstractEventLoop, threading.Thread]]:
+    loop, thread = event_loop_thread
     started = threading.Event()
+    release = threading.Event()
 
     def obviously_blocking_function() -> None:
         started.set()
-        time.sleep(seconds)
+        release.wait()
 
-    obviously_blocking_function.__name__ = name
     loop.call_soon_threadsafe(obviously_blocking_function)
-    started.wait(timeout=1)
+    try:
+        assert started.wait(timeout=5)
+        yield loop, thread
+    finally:
+        release.set()
+        asyncio.run_coroutine_threadsafe(asyncio.sleep(0), loop).result(timeout=5)
 
 
 class TestEventLoopWatchdog:
@@ -58,10 +64,9 @@ class TestEventLoopWatchdog:
             mock_dump.assert_not_called()
 
     def test_frozen_loop_triggers_dump(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 2)
+        loop, thread = blocked_event_loop
 
         with patch.object(_EventLoopWatchdog, "_dump_stacks") as mock_dump:
             watchdog = _EventLoopWatchdog(
@@ -101,10 +106,9 @@ class TestEventLoopWatchdog:
         assert not watchdog.is_alive()
 
     def test_dump_contains_blocking_function_name(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 2)
+        loop, thread = blocked_event_loop
 
         watchdog = _EventLoopWatchdog(
             loop,
@@ -130,12 +134,11 @@ class TestEventLoopWatchdog:
             assert call_kwargs["consecutive_misses"] >= 1
 
     def test_event_loop_stack_resolves_without_thread_name(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
         """dramatiq never names its loop thread, so the id is the only way in."""
-        loop, thread = event_loop_thread
+        loop, thread = blocked_event_loop
         assert thread.name != "dramatiq-asyncio"
-        _block(loop, 2)
 
         watchdog = _EventLoopWatchdog(
             loop,
@@ -156,15 +159,14 @@ class TestEventLoopWatchdog:
             assert "obviously_blocking_function" in event_loop_stack
 
     def test_dump_does_not_call_faulthandler(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
         """faulthandler.dump_traceback(all_threads=True) can freeze the process.
 
         It hangs when a thread sits in a blocking C call, which is exactly when
         the watchdog runs, so this must stay pure Python.
         """
-        loop, thread = event_loop_thread
-        _block(loop, 2)
+        loop, thread = blocked_event_loop
 
         watchdog = _EventLoopWatchdog(
             loop,
@@ -183,10 +185,9 @@ class TestEventLoopWatchdog:
             mock_faulthandler.assert_not_called()
 
     def test_consecutive_misses_tracked(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread = blocked_event_loop
 
         watchdog = _EventLoopWatchdog(
             loop,
@@ -212,10 +213,9 @@ class TestEventLoopWatchdog:
             assert error_calls[1][1]["consecutive_misses"] == 2
 
     def test_exits_process_after_max_misses(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread = blocked_event_loop
 
         watchdog = _EventLoopWatchdog(
             loop,
@@ -234,15 +234,14 @@ class TestEventLoopWatchdog:
             mock_exit.assert_called_with(1)
 
     def test_exits_even_when_the_dump_fails(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
         """A broken stderr must not stop the restart.
 
         _dump_stacks used to run unguarded, so a write error killed the
         watchdog thread and left the stuck worker alive.
         """
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread = blocked_event_loop
 
         watchdog = _EventLoopWatchdog(
             loop,
@@ -266,15 +265,14 @@ class TestEventLoopWatchdog:
             mock_exit.assert_called_with(1)
 
     def test_exits_when_the_dump_hangs(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
         """A thread stuck holding the logging lock hangs the dump's log call.
 
         The first miss must then exit on its own, since the miss count can
         never reach max_misses.
         """
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread = blocked_event_loop
         release = threading.Event()
 
         watchdog = _EventLoopWatchdog(
@@ -304,10 +302,9 @@ class TestEventLoopWatchdog:
             watchdog.join(timeout=5)
 
     def test_does_not_exit_when_disabled(
-        self, event_loop_thread: tuple[asyncio.AbstractEventLoop, threading.Thread]
+        self, blocked_event_loop: tuple[asyncio.AbstractEventLoop, threading.Thread]
     ) -> None:
-        loop, thread = event_loop_thread
-        _block(loop, 3)
+        loop, thread = blocked_event_loop
 
         watchdog = _EventLoopWatchdog(
             loop,

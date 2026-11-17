@@ -2518,7 +2518,9 @@ class TestUpdate:
 
         assert e.value.errors()[0]["loc"] == ("body", "external_id")
 
-    async def test_concurrent_attached_custom_fields(self, worker_id: str) -> None:
+    async def test_concurrent_attached_custom_fields(
+        self, worker_id: str, initialize_test_database: None
+    ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),
             application_name=f"test_{worker_id}_product_custom_fields",
@@ -2614,7 +2616,9 @@ class TestUpdate:
                     await cleanup_session.commit()
             await engine.dispose()
 
-    async def test_concurrent_medias(self, worker_id: str) -> None:
+    async def test_concurrent_medias(
+        self, worker_id: str, initialize_test_database: None
+    ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),
             application_name=f"test_{worker_id}_product_medias",

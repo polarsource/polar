@@ -202,6 +202,14 @@ class PolarSelfService:
             external_id=str(organization_id),
         )
 
+    def enqueue_revoke_subscription(self, *, organization_id: uuid.UUID) -> None:
+        if not self.is_configured:
+            return
+        enqueue_job(
+            "polar_self.revoke_subscription",
+            external_customer_id=str(organization_id),
+        )
+
     def enqueue_track_organization_review_usage(
         self,
         *,

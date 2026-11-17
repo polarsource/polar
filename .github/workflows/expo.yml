@@ -47,7 +47,7 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: pnpm build
+        run: pnpm turbo run build --filter='@polar-sh/app^...'
 
       - name: Create preview
         uses: expo/expo-github-action/preview@v9

@@ -145,8 +145,8 @@ jobs:
         uses: actions/cache/restore@v6.1.0
         with:
           path: server/.test_durations
-          key: test-durations-22d075aeae3134412e012008cfc9b4cfac78b365
-          restore-keys: test-durations-261fcc4641051bd7dfb22864b6fe8410b7c89305
+          key: test-durations-${{ github.sha }}
+          restore-keys: test-durations-
 
       - name: Restore pytest bytecode
         if: steps.filter.outputs.server == 'true'

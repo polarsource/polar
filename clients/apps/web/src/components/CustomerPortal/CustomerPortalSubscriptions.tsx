@@ -1,19 +1,13 @@
 import revalidate from '@/app/actions'
-import { useCustomerOrders } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { getThemePreset } from '@polar-sh/ui/hooks/theming'
-import { useTheme } from 'next-themes'
-import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import CustomerSubscriptionDetails from './CustomerSubscriptionDetails'
 import CustomerPortalSubscription from './CustomerPortalSubscription'
-import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 import { PortalDrawerHeader } from './PortalDialog'
 import {
   PortalCardList,
@@ -69,10 +63,6 @@ export const InactiveSubscriptionsOverview = ({
   api,
   customerSessionToken,
 }: SubscriptionsOverviewProps) => {
-  const router = useRouter()
-  const theme = useTheme()
-  const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
-
   const [selectedSubscriptionId, setSelectedSubscriptionId] = useState<
     string | null
   >(null)
@@ -80,20 +70,11 @@ export const InactiveSubscriptionsOverview = ({
   // so a cancellation reflects here after the list refetches.
   const selectedSubscription =
     subscriptions.find((s) => s.id === selectedSubscriptionId) ?? null
-  const [retryPaymentSubscription, setRetryPaymentSubscription] = useState<
-    schemas['CustomerSubscription'] | null
-  >(null)
 
   const {
     isShown: isSubscriptionModalOpen,
     hide: _hideSubscriptionModal,
     show: showSubscriptionModal,
-  } = useModal()
-
-  const {
-    isShown: isRetryPaymentModalOpen,
-    hide: _hideRetryPaymentModal,
-    show: showRetryPaymentModal,
   } = useModal()
 
   const openSubscriptionModal = useCallback(
@@ -108,37 +89,6 @@ export const InactiveSubscriptionsOverview = ({
     setSelectedSubscriptionId(null)
     _hideSubscriptionModal()
   }, [_hideSubscriptionModal])
-
-  const openRetryPaymentModal = useCallback(
-    (subscription: schemas['CustomerSubscription']) => {
-      setRetryPaymentSubscription(subscription)
-      showRetryPaymentModal()
-    },
-    [showRetryPaymentModal],
-  )
-
-  const hideRetryPaymentModal = useCallback(() => {
-    setRetryPaymentSubscription(null)
-    _hideRetryPaymentModal()
-  }, [_hideRetryPaymentModal])
-
-  const { data: orders } = useCustomerOrders(api, {
-    subscription_id: retryPaymentSubscription?.id,
-    limit: 10,
-    sorting: ['-created_at'],
-  })
-
-  const orderItems = orders?.items
-  const pastDueOrder = useMemo(() => {
-    if (
-      !retryPaymentSubscription ||
-      retryPaymentSubscription.status !== 'past_due' ||
-      !orderItems
-    ) {
-      return null
-    }
-    return orderItems.find((order) => order.status === 'pending')
-  }, [retryPaymentSubscription, orderItems])
 
   return (
     <PortalSection title="Past subscriptions">
@@ -163,16 +113,6 @@ export const InactiveSubscriptionsOverview = ({
               )
             }
             meta={<SubscriptionStatusPill subscription={subscription} />}
-            actions={
-              subscription.status === 'past_due' ? (
-                <Button
-                  size="sm"
-                  onClick={() => openRetryPaymentModal(subscription)}
-                >
-                  Retry payment
-                </Button>
-              ) : undefined
-            }
           />
         ))}
       </PortalCardList>
@@ -199,21 +139,6 @@ export const InactiveSubscriptionsOverview = ({
           ) : null
         }
       />
-
-      {pastDueOrder && retryPaymentSubscription && (
-        <OrderPaymentRetryModal
-          order={pastDueOrder}
-          api={api}
-          isOpen={isRetryPaymentModalOpen}
-          onClose={hideRetryPaymentModal}
-          onSuccess={async () => {
-            hideRetryPaymentModal()
-            await revalidate(`customer_portal`)
-            router.refresh()
-          }}
-          themingPreset={themingPreset}
-        />
-      )}
     </PortalSection>
   )
 }

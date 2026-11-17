@@ -17,6 +17,7 @@ import { useModal } from '../Modal/useModal'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { PortalConfirmDialog, PortalDrawerHeader } from './PortalDialog'
 import { PortalCard, PortalRows } from './PortalPrimitives'
+import { SubscriptionRetryPaymentButton } from './SubscriptionRetryPaymentButton'
 import { UpcomingUsageCharge } from './UpcomingUsageCharge'
 import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
@@ -56,6 +57,8 @@ const CustomerSubscriptionDetails = ({
     cancelSubscription.isSuccess ||
     !!subscription.ended_at ||
     !!subscription.ends_at
+
+  const isPastDue = subscription.status === 'past_due'
 
   const organization = subscription.product.organization
 
@@ -125,7 +128,7 @@ const CustomerSubscriptionDetails = ({
       />
 
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
-        {showSubscriptionUpdates && !isCanceled && (
+        {showSubscriptionUpdates && !isCanceled && !isPastDue && (
           <Button
             onClick={() => setShowChangePlanModal(true)}
             variant="secondary"
@@ -136,7 +139,7 @@ const CustomerSubscriptionDetails = ({
 
         <Box display={{ base: 'none', md: 'flex' }}>
           <Button
-            variant={canUncancel ? 'secondary' : 'default'}
+            variant={canUncancel || isPastDue ? 'secondary' : 'default'}
             onClick={showBenefitGrantsModal}
           >
             Manage subscription
@@ -146,11 +149,20 @@ const CustomerSubscriptionDetails = ({
           <Link
             href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
           >
-            <Button variant={canUncancel ? 'secondary' : 'default'}>
+            <Button
+              variant={canUncancel || isPastDue ? 'secondary' : 'default'}
+            >
               Manage subscription
             </Button>
           </Link>
         </Box>
+
+        {isPastDue && (
+          <SubscriptionRetryPaymentButton
+            api={api}
+            subscription={subscription}
+          />
+        )}
 
         {canUncancel && (
           <UncancelSubscriptionButton

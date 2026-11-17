@@ -5,6 +5,9 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from polar.base import PolarNetworkError, PolarServerError, deserialize
+from polar.v2026_04.errors import (
+    AlreadyCanceledSubscription as SDKAlreadyCanceledSubscription,
+)
 from polar.v2026_04.errors import HTTPValidationError as SDKHTTPValidationError
 from polar.v2026_04.errors import (
     MissingInvoiceBillingDetails as SDKMissingInvoiceBillingDetails,
@@ -14,6 +17,9 @@ from polar.v2026_04.errors import (
 )
 from polar.v2026_04.errors import (
     ResourceNotFound as SDKResourceNotFound,
+)
+from polar.v2026_04.outputs import (
+    AlreadyCanceledSubscription as AlreadyCanceledSubscriptionData,
 )
 from polar.v2026_04.outputs import (
     MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsData,
@@ -264,6 +270,52 @@ class TestTriggerOrderInvoiceGeneration:
         await client.trigger_order_invoice_generation(order_id="ord_1")
 
         generate_invoice.assert_awaited_once_with("ord_1")
+
+
+@pytest.mark.anyio
+class TestRevokeSubscription:
+    async def test_revokes_subscription(self, mocker: MockerFixture) -> None:
+        client = _client()
+        revoke = mocker.patch.object(
+            client._sdk.subscriptions, "revoke", new=AsyncMock()
+        )
+
+        await client.revoke_subscription(subscription_id="sub_1")
+
+        revoke.assert_awaited_once_with("sub_1")
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            SDKAlreadyCanceledSubscription(
+                403,
+                AlreadyCanceledSubscriptionData(
+                    error="AlreadyCanceledSubscription", detail="Already canceled"
+                ),
+            ),
+            _not_found(),
+        ],
+    )
+    async def test_already_gone_is_noop(
+        self, mocker: MockerFixture, error: Exception
+    ) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.subscriptions, "revoke", new=AsyncMock(side_effect=error)
+        )
+
+        await client.revoke_subscription(subscription_id="sub_1")
+
+    async def test_5xx_raises_operational_error(self, mocker: MockerFixture) -> None:
+        client = _client()
+        mocker.patch.object(
+            client._sdk.subscriptions,
+            "revoke",
+            new=AsyncMock(side_effect=PolarServerError(500, "boom")),
+        )
+
+        with pytest.raises(PolarSelfClientOperationalError):
+            await client.revoke_subscription(subscription_id="sub_1")
 
 
 def _members(*emails: str) -> list[MagicMock]:

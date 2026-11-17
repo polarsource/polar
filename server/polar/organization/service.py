@@ -1607,6 +1607,7 @@ class OrganizationService:
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
+        polar_self_service.enqueue_revoke_subscription(organization_id=organization.id)
         if stripe_reject_reason is not None:
             self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
 

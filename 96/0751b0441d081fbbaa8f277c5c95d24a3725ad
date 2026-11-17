@@ -1,0 +1,23 @@
+server/scripts/pytest_shards.py
+  s_f83d2c94945117::t_cf1d26bdec7152 34
+server/tests/conftest.py
+  s_f83d2c94945117::t_cf1d26bdec7152 1,3,80-86
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_cf1d26bdec7152 543
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "960751b0441d081fbbaa8f277c5c95d24a3725ad",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -762,10 +762,6 @@ class TestEnqueueBucketSyncs:
         sum_reducer: Reducer,
         organization: Organization,
     ) -> None:
-        mocker.patch(
-            "polar.reducer.service.utc_now",
-            return_value=NEXT_BUCKET_START + timedelta(minutes=1),
-        )
         enqueue_job = mocker.patch("polar.reducer.service.enqueue_job")
         previous_start = BUCKET_START - REDUCER_BUCKET_SIZE
         older_start = previous_start - REDUCER_BUCKET_SIZE
@@ -774,7 +770,9 @@ class TestEnqueueBucketSyncs:
                 save_fixture, organization, 1, timestamp=timestamp
             )
 
-        await reducer_service.enqueue_bucket_syncs(session)
+        await reducer_service.enqueue_bucket_syncs(
+            session, at=NEXT_BUCKET_START + timedelta(minutes=1)
+        )
 
         assert [call.args for call in enqueue_job.call_args_list] == [
             (
@@ -796,10 +794,6 @@ class TestEnqueueBucketSyncs:
         organization: Organization,
         organization_second: Organization,
     ) -> None:
-        mocker.patch(
-            "polar.reducer.service.utc_now",
-            return_value=NEXT_BUCKET_START + timedelta(minutes=1),
-        )
         mocker.patch("polar.reducer.service.enqueue_job")
         idle_meter = await create_meter(
             save_fixture, id=uuid.uuid4(), organization=organization_second
@@ -812,7 +806,9 @@ class TestEnqueueBucketSyncs:
             ReducerBucketRepository, "get_identities_with_events"
         )
 
-        await reducer_service.enqueue_bucket_syncs(session)
+        await reducer_service.enqueue_bucket_syncs(
+            session, at=NEXT_BUCKET_START + timedelta(minutes=1)
+        )
 
         # Only the window with events of the organization with events is scanned
         assert [

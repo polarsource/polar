@@ -13,6 +13,7 @@ from polar.worker import (
     RedisMiddleware,
     TaskPriority,
     actor,
+    get_message_timestamp,
 )
 
 from . import cache
@@ -83,4 +84,5 @@ async def sync(
 )
 async def enqueue_syncs() -> None:
     async with AsyncSessionMaker() as session:
-        await reducer_service.enqueue_bucket_syncs(session)
+        # The scheduled time, so a run delayed behind a backlog still syncs its windows
+        await reducer_service.enqueue_bucket_syncs(session, at=get_message_timestamp())

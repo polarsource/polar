@@ -592,11 +592,13 @@ class ReducerService:
         # once they close.
         return len(contributions)
 
-    async def enqueue_bucket_syncs(self, session: AsyncSession) -> None:
-        """Enqueues a sync of every bucket with usage events in the two latest closed
-        windows: each window is synced by two calls, so the second catches events
-        committed after its window closed and covers for a missed call."""
-        current_bucket_start = get_reducer_bucket_start(utc_now())
+    async def enqueue_bucket_syncs(
+        self, session: AsyncSession, *, at: datetime
+    ) -> None:
+        """Enqueues a sync of every bucket with usage events in the two latest windows
+        closed at `at`: each window is synced by two calls, so the second catches
+        events committed after its window closed and covers for a missed call."""
+        current_bucket_start = get_reducer_bucket_start(at)
         reducer_repository = ReducerRepository.from_session(session)
         bucket_repository = ReducerBucketRepository.from_session(session)
         for bucket_start in (

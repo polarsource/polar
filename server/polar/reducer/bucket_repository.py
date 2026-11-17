@@ -1,4 +1,4 @@
-from collections.abc import Collection, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -17,7 +17,6 @@ from sqlalchemy import (
     and_,
     cast,
     column,
-    exists,
     false,
     func,
     literal,
@@ -42,7 +41,6 @@ from polar.models import (
     Customer,
     Event,
     MeterReducer,
-    Organization,
     Reducer,
     ReducerBucket,
     StagedEvent,
@@ -185,30 +183,6 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         ).select_from(events.join(staged_events, true()))
         result = await self.session.execute(statement)
         return result.one()
-
-    async def get_organizations_with_events(
-        self,
-        organization_ids: Collection[UUID],
-        bucket_start: datetime,
-        bucket_end: datetime,
-    ) -> set[UUID]:
-        """The organizations with events in the range, including those still in
-        `staged_events`."""
-        statement = select(Organization.id).where(
-            Organization.id.in_(organization_ids),
-            or_(
-                *(
-                    exists().where(
-                        model.organization_id == Organization.id,
-                        model.timestamp >= bucket_start,
-                        model.timestamp < bucket_end,
-                    )
-                    for model in (Event, StagedEvent)
-                )
-            ),
-        )
-        result = await self.session.execute(statement)
-        return set(result.scalars().all())
 
     async def get_identities_with_events(
         self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime

@@ -597,33 +597,17 @@ class ReducerService:
         windows: each window is synced by two calls, so the second catches events
         committed after its window closed and covers for a missed call."""
         current_bucket_start = get_reducer_bucket_start(utc_now())
-
         reducer_repository = ReducerRepository.from_session(session)
-        reducers = [
-            reducer
-            for reducer in await reducer_repository.get_all(
-                reducer_repository.get_active_statement((ReducerKind.usage,))
-            )
-            if not isinstance(reducer.aggregation, UniqueAggregation)
-        ]
-        if not reducers:
-            return
-
         bucket_repository = ReducerBucketRepository.from_session(session)
-        organization_ids = {reducer.organization_id for reducer in reducers}
         for bucket_start in (
             current_bucket_start - 2 * REDUCER_BUCKET_SIZE,
             current_bucket_start - REDUCER_BUCKET_SIZE,
         ):
             bucket_end = bucket_start + REDUCER_BUCKET_SIZE
-            # One query skips the reducers of organizations without events
-            organizations_with_events = (
-                await bucket_repository.get_organizations_with_events(
-                    organization_ids, bucket_start, bucket_end
-                )
-            )
-            for reducer in reducers:
-                if reducer.organization_id not in organizations_with_events:
+            for reducer in await reducer_repository.get_all_active_with_events(
+                (ReducerKind.usage,), bucket_start, bucket_end
+            ):
+                if isinstance(reducer.aggregation, UniqueAggregation):
                     continue
                 for (
                     customer_id,

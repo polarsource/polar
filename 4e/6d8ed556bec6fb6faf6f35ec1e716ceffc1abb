@@ -1,0 +1,19 @@
+terraform/sandbox/planetscale.tf
+  s_e4b251247c332d::t_f262eaa2629547 27,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e6d8ed556bec6fb6faf6f35ec1e716ceffc1abb",
+  "prompts": {},
+  "sessions": {
+    "s_e4b251247c332d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a48da09c-f701-472f-bc10-b0d183ea7146",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -1,0 +1,21 @@
+terraform/test/aws.tf
+  s_468b7ab8d64c38::t_e4a69979f8cabb 127-131
+terraform/sandbox/aws.tf
+  s_468b7ab8d64c38::t_e4a69979f8cabb 138-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e6f738918fb849e6f2a6fb92d17ea3066faab14f",
+  "prompts": {},
+  "sessions": {
+    "s_468b7ab8d64c38": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7f21e33e-b8aa-44eb-ac4e-ff32dae2c3f5",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

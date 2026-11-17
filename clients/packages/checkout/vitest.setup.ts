@@ -14,16 +14,6 @@ if (!moduleMocker) {
 }
 
 const locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
-const initialWindowKeys = new Set(Object.getOwnPropertyNames(window))
-
-const resetWindow = () => {
-  for (const key of Object.getOwnPropertyNames(window)) {
-    if (!initialWindowKeys.has(key) && !key.startsWith('__vitest')) {
-      delete (window as unknown as Record<string, unknown>)[key]
-    }
-  }
-}
-
 const resetDocument = () => {
   if (locationDescriptor) {
     Object.defineProperty(window, 'location', locationDescriptor)
@@ -55,7 +45,6 @@ afterAll(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
   resetDocument()
-  resetWindow()
   moduleMocker.reset()
   vi.resetModules()
 })

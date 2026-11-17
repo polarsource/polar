@@ -24,6 +24,10 @@ import { PendingUpdateRows, SubscriptionDateRows } from './SubscriptionDateRows'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 import UncancelSubscriptionButton from './UncancelSubscriptionButton'
+import {
+  TrialBillingDetailsAlert,
+  TrialSubscriptionActions,
+} from './TrialSubscriptionActions'
 
 const CustomerSubscriptionDetails = ({
   subscription,
@@ -60,6 +64,7 @@ const CustomerSubscriptionDetails = ({
     !!subscription.ends_at
 
   const isPastDue = subscription.status === 'past_due'
+  const isTrialing = subscription.status === 'trialing'
   const isPausingIndefinitely =
     (subscription.status === 'paused' || subscription.pause_at_period_end) &&
     !subscription.resumes_at
@@ -89,6 +94,8 @@ const CustomerSubscriptionDetails = ({
 
   return (
     <PortalCard rowGap="xl">
+      {isTrialing && !isCanceled && <TrialBillingDetailsAlert />}
+
       <CustomerSubscriptionHeader subscription={subscription} />
 
       <PortalRows>
@@ -163,52 +170,69 @@ const CustomerSubscriptionDetails = ({
       />
 
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
-        {showSubscriptionUpdates && !isCanceled && !isPastDue && (
-          <Button
-            onClick={() => setShowChangePlanModal(true)}
-            variant="secondary"
-          >
-            Change plan
-          </Button>
-        )}
-
-        <Box display={{ base: 'none', md: 'flex' }}>
-          <Button
-            variant={canUncancel || isPastDue ? 'secondary' : 'default'}
-            onClick={showBenefitGrantsModal}
-          >
-            Manage subscription
-          </Button>
-        </Box>
-        <Box display={{ base: 'flex', md: 'none' }}>
-          <Link
-            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?${searchParams.toString()}`}
-          >
-            <Button
-              variant={canUncancel || isPastDue ? 'secondary' : 'default'}
-            >
-              Manage subscription
-            </Button>
-          </Link>
-        </Box>
-
-        {isPastDue && (
-          <SubscriptionRetryPaymentButton
+        {isTrialing && !isCanceled ? (
+          <TrialSubscriptionActions
             api={api}
             subscription={subscription}
+            canChangePlan={showSubscriptionUpdates}
+            onChangePlan={() => setShowChangePlanModal(true)}
           />
-        )}
+        ) : (
+          <>
+            {showSubscriptionUpdates && !isCanceled && !isPastDue && (
+              <Button
+                onClick={() => setShowChangePlanModal(true)}
+                variant="secondary"
+              >
+                Change plan
+              </Button>
+            )}
 
-        {canUncancel && (
-          <UncancelSubscriptionButton
-            api={api}
-            subscription={subscription}
-            customerSessionToken={customerSessionToken}
-            onUncancelled={async () => {
-              await revalidate(`customer_portal`)
-              router.refresh()
-            }}
-          />
+            {!isTrialing && (
+              <>
+                <Box display={{ base: 'none', md: 'flex' }}>
+                  <Button
+                    variant={canUncancel || isPastDue ? 'secondary' : 'default'}
+                    onClick={showBenefitGrantsModal}
+                  >
+                    Manage subscription
+                  </Button>
+                </Box>
+                <Box display={{ base: 'flex', md: 'none' }}>
+                  <Link
+                    href={`/${organization.slug}/portal/subscriptions/${subscription.id}?${searchParams.toString()}`}
+                  >
+                    <Button
+                      variant={
+                        canUncancel || isPastDue ? 'secondary' : 'default'
+                      }
+                    >
+                      Manage subscription
+                    </Button>
+                  </Link>
+                </Box>
+              </>
+            )}
+
+            {isPastDue && (
+              <SubscriptionRetryPaymentButton
+                api={api}
+                subscription={subscription}
+              />
+            )}
+
+            {canUncancel && (
+              <UncancelSubscriptionButton
+                api={api}
+                subscription={subscription}
+                customerSessionToken={customerSessionToken}
+                onUncancelled={async () => {
+                  await revalidate(`customer_portal`)
+                  router.refresh()
+                }}
+              />
+            )}
+          </>
         )}
       </Box>
 

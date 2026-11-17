@@ -491,24 +491,20 @@ class OrderService:
 
         billing_address = order_update.billing_address
         if billing_address is not None and order.billing_address is not None:
-            if str(billing_address.country) != str(order.billing_address.country):
-                errors.append(
-                    {
-                        "loc": ("body", "billing_address", "country"),
-                        "msg": "Country cannot be changed",
-                        "type": "value_error",
-                        "input": billing_address.country,
-                    }
-                )
-            if billing_address.state != order.billing_address.state:
-                errors.append(
-                    {
-                        "loc": ("body", "billing_address", "state"),
-                        "msg": "State cannot be changed",
-                        "type": "value_error",
-                        "input": billing_address.state,
-                    }
-                )
+            for field in order.billing_address.get_tax_fields():
+                value = getattr(billing_address, field)
+                if value != getattr(order.billing_address, field):
+                    errors.append(
+                        {
+                            "loc": ("body", "billing_address", field),
+                            "msg": (
+                                f"{field.replace('_', ' ').capitalize()} "
+                                "cannot be changed"
+                            ),
+                            "type": "value_error",
+                            "input": value,
+                        }
+                    )
 
         if errors:
             raise PolarRequestValidationError(errors)

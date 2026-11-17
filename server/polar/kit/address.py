@@ -1,5 +1,14 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, NotRequired, Self, TypedDict, cast
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Literal,
+    NotRequired,
+    Self,
+    TypedDict,
+    cast,
+)
 
 import pycountry
 from pydantic import BaseModel, BeforeValidator, Field, model_validator
@@ -220,6 +229,8 @@ STATE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "CA", "BR", "IN"})
 POSTAL_CODE_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"US", "ES", "PT"})
 CITY_REQUIRED_COUNTRIES: frozenset[str] = frozenset({"BR"})
 
+TaxAddressField = Literal["country", "state", "postal_code", "city"]
+
 
 class AddressDict(TypedDict):
     line1: NotRequired[str]
@@ -281,6 +292,16 @@ class Address(BaseModel):
             or self.city is not None
             or self.postal_code is not None
         )
+
+    def get_tax_fields(self) -> list[TaxAddressField]:
+        fields: list[TaxAddressField] = ["country"]
+        if self.country in STATE_REQUIRED_COUNTRIES:
+            fields.append("state")
+        if self.country in POSTAL_CODE_REQUIRED_COUNTRIES:
+            fields.append("postal_code")
+        if self.country in CITY_REQUIRED_COUNTRIES:
+            fields.append("city")
+        return fields
 
     def to_text(self) -> str:
         lines = []

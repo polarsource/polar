@@ -215,21 +215,20 @@ class OutpostService:
             organization,
             [identity for identities in requested.values() for identity in identities],
         )
-        snapshots: list[Snapshot] = []
-        for reducer_id, identities in requested.items():
-            snapshots += await self._get_meter_usage(
-                session,
-                reducers[reducer_id],
-                {
+        return await self._get_meter_usage(
+            session,
+            {
+                reducers[reducer_id]: {
                     known: customer
                     for identity in identities
                     for customer in (customers[identity],)
                     for known in (
                         get_customer_identities(customer) if customer else [identity]
                     )
-                },
-            )
-        return snapshots
+                }
+                for reducer_id, identities in requested.items()
+            },
+        )
 
     async def confirm(
         self,
@@ -270,8 +269,7 @@ class OutpostService:
             span.set_attribute("stored", len(stored))
             snapshots = await self._get_meter_usage(
                 session,
-                reducer,
-                await self._get_customers(session, organization, [identity]),
+                {reducer: await self._get_customers(session, organization, [identity])},
             )
             if not snapshots:
                 raise ResourceNotFound()
@@ -323,13 +321,13 @@ class OutpostService:
                     customer,
                 )
             )
-        return [
-            payload
-            for reducer_id, reducer_identities in identities.items()
-            for payload in await self._get_meter_usage(
-                session, reducers[reducer_id], reducer_identities
-            )
-        ]
+        return await self._get_meter_usage(
+            session,
+            {
+                reducers[reducer_id]: reducer_identities
+                for reducer_id, reducer_identities in identities.items()
+            },
+        )
 
     async def _get_customers(
         self,
@@ -362,57 +360,72 @@ class OutpostService:
     async def _get_meter_usage(
         self,
         session: AsyncReadSession,
-        reducer: Reducer,
-        customers: Mapping[Identity, Customer | None],
+        requested: Mapping[Reducer, Mapping[Identity, Customer | None]],
     ) -> list[Snapshot]:
-        if isinstance(reducer.aggregation, UniqueAggregation):
+        """Each reducer's snapshots of its customers, every reducer read at once."""
+        requested = {
+            reducer: customers
+            for reducer, customers in requested.items()
+            if not isinstance(reducer.aggregation, UniqueAggregation)
+        }
+        if not requested:
             return []
 
         version = await reducer_service.get_database_now(session)
         since = get_reducer_bucket_start(version - SYNCED_LOOKBACK)
-        if reducer.kind == ReducerKind.credit:
-            # Credits are the customer's and all in Polar: Outpost never counts any.
-            credits = await reducer_service.get_credits(
-                session,
-                reducer,
-                [
-                    customer.id
-                    for customer in customers.values()
-                    if customer is not None
-                ],
-            )
-            usage = {
-                identity: (
-                    version,
-                    credits[customer.id]
-                    if customer is not None
-                    else (0, 0, None, None),
-                )
-                for identity, customer in customers.items()
-            }
-        else:
-            usage = await reducer_service.get_cold_usage(
-                session, reducer, list(customers), since=since
-            )
+        organization_id = next(iter(requested)).organization_id
+        # Credits are the customer's and all in Polar: Outpost never counts any.
+        credits = await reducer_service.get_credits(
+            session,
+            organization_id,
+            [
+                (reducer.id, customer.id)
+                for reducer, customers in requested.items()
+                if reducer.kind == ReducerKind.credit
+                for customer in customers.values()
+                if customer is not None
+            ],
+        )
+        cold_usage = await reducer_service.get_cold_usage(
+            session,
+            organization_id,
+            [
+                (reducer.id, identity)
+                for reducer, customers in requested.items()
+                if reducer.kind != ReducerKind.credit
+                for identity in customers
+            ],
+            since=since,
+        )
         payloads = []
-        for (customer_id, external_customer_id), customer in customers.items():
-            cold_until, (count, total, minimum, maximum) = usage[
-                (customer_id, external_customer_id)
-            ]
-            payloads.append(
-                Snapshot(
-                    reducer_id=reducer.id,
-                    customer_id=customer_id,
-                    external_customer_id=external_customer_id,
-                    customer_exists=customer is not None,
-                    version=version,
-                    cold_until=cold_until,
-                    count=count,
-                    sum=total,
-                    min=minimum,
-                    max=maximum,
+        for reducer, customers in requested.items():
+            for identity, customer in customers.items():
+                if reducer.kind == ReducerKind.credit:
+                    cold_until, (count, total, minimum, maximum) = (
+                        version,
+                        credits[(reducer.id, customer.id)]
+                        if customer is not None
+                        else (0, 0, None, None),
+                    )
+                else:
+                    cold_until, (count, total, minimum, maximum) = cold_usage[
+                        (reducer.id, identity)
+                    ]
+                customer_id, external_customer_id = identity
+                payloads.append(
+                    Snapshot(
+                        reducer_id=reducer.id,
+                        customer_id=customer_id,
+                        external_customer_id=external_customer_id,
+                        customer_exists=customer is not None,
+                        version=version,
+                        cold_until=cold_until,
+                        count=count,
+                        sum=total,
+                        min=minimum,
+                        max=maximum,
+                    )
                 )
-            )
         return payloads
 
 

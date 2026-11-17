@@ -42,6 +42,7 @@ from polar.worker import enqueue_job
 from . import cache, redis_store
 from .bucket_repository import (
     ReducerBucketRepository,
+    ReducerIdentity,
     Totals,
     get_customer_identities,
 )
@@ -423,8 +424,11 @@ class ReducerService:
             credit_reducer = credit_reducers.get(meter_id)
             credits = Decimal(0)
             if credit_reducer is not None:
-                totals = await self.get_credits(session, credit_reducer, [customer.id])
-                credits = max(Decimal(totals[customer.id][1]), Decimal(0))
+                key = (credit_reducer.id, customer.id)
+                totals = await self.get_credits(
+                    session, credit_reducer.organization_id, [key]
+                )
+                credits = max(Decimal(totals[key][1]), Decimal(0))
             usage[meter_id] = MeterUsage(function, tuple(window_usage), credits)
         return usage
 
@@ -650,18 +654,18 @@ class ReducerService:
     async def get_cold_usage(
         self,
         session: AsyncReadSession,
-        reducer: Reducer,
-        identities: Sequence[tuple[UUID | None, str | None]],
+        organization_id: UUID,
+        identities: Sequence[ReducerIdentity],
         *,
         since: datetime,
-    ) -> dict[tuple[UUID | None, str | None], tuple[datetime, Totals]]:
-        """For each customer identity, the end of its last fully synced slot
-        starting from `since`, or `since`, with the count, sum, min and max of its
-        usage not billed yet before it. Clients count whole slots: a slot a seal
-        split, with only its first part synced, stays theirs."""
+    ) -> dict[ReducerIdentity, tuple[datetime, Totals]]:
+        """For each customer identity on its reducer, the end of its last fully
+        synced slot starting from `since`, or `since`, with the count, sum, min and
+        max of its usage not billed yet before it. Clients count whole slots: a slot
+        a seal split, with only its first part synced, stays theirs."""
         repository = ReducerBucketRepository.from_session(session)
         synced_ends = await repository.get_last_synced_ends(
-            reducer.organization_id, reducer.id, identities, since=since
+            organization_id, identities, since=since
         )
         cold_until = {
             identity: get_reducer_bucket_start(synced_ends[identity])
@@ -670,7 +674,7 @@ class ReducerService:
             for identity in identities
         }
         totals = await repository.get_unsealed_totals_by_identity(
-            reducer.organization_id, reducer.id, cold_until
+            organization_id, cold_until
         )
         return {
             identity: (cold_until[identity], totals[identity])
@@ -678,19 +682,25 @@ class ReducerService:
         }
 
     async def get_credits(
-        self, session: AsyncReadSession, reducer: Reducer, customer_ids: Sequence[UUID]
-    ) -> dict[UUID, Totals]:
-        """count, sum, min and max of each customer's credits since the meter's
-        latest reset: the credit reducer's unsealed buckets."""
+        self,
+        session: AsyncReadSession,
+        organization_id: UUID,
+        customers: Sequence[tuple[UUID, UUID]],
+    ) -> dict[tuple[UUID, UUID], Totals]:
+        """count, sum, min and max of each customer's credits on its credit
+        reducer since the meter's latest reset: the reducer's unsealed buckets."""
         totals = await ReducerBucketRepository.from_session(
             session
         ).get_unsealed_totals_by_identity(
-            reducer.organization_id,
-            reducer.id,
-            {(customer_id, None): None for customer_id in customer_ids},
+            organization_id,
+            {
+                (reducer_id, (customer_id, None)): None
+                for reducer_id, customer_id in customers
+            },
         )
         return {
-            customer_id: totals[(customer_id, None)] for customer_id in customer_ids
+            (reducer_id, customer_id): totals[(reducer_id, (customer_id, None))]
+            for reducer_id, customer_id in customers
         }
 
     async def get_stored_external_ids(

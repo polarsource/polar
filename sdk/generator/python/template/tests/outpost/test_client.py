@@ -3690,7 +3690,7 @@ async def test_pulls_and_applies_a_snapshot_in_nine_commands(
 
 
 @pytest.mark.anyio
-async def test_lets_the_instances_that_lose_the_pull_poll_its_lock(
+async def test_lets_the_instances_that_lose_the_pull_go_on_without_polling_its_lock(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     redis_commands: collections.Counter[str],
@@ -3702,17 +3702,20 @@ async def test_lets_the_instances_that_lose_the_pull_poll_its_lock(
         Outpost(url, client=polar_client, telemetry=False) as second,
         Outpost(url, client=polar_client, telemetry=False) as third,
     ):
-        await redis.hset("outpost:v1:org-1:pull", "pulled_at", 0)
+        # Due, not stale: no read waits for the pull. A stale one still makes the losers wait.
+        await redis.hset("outpost:v1:org-1:pull", "pulled_at", time.time() * 1000 - 31_000)
         changes["delay"] = 0.2
 
         async def refresh() -> None:
             async with anyio.create_task_group() as group:
                 for outpost in (first, second, third):
                     group.start_soon(outpost._refresh)
+            # The pulls run in the background: the winner's ends after Polar answers.
+            await anyio.sleep(0.3)
 
         cost = await _cost(redis_commands, refresh)
     assert cost["set"] == 3
-    assert cost["exists"] <= 2 * (0.2 / 0.025 + 2)
+    assert "exists" not in cost
 
 
 @pytest.mark.anyio

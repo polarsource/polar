@@ -908,10 +908,9 @@ export class Outpost {
     if (!this.pullDue()) return;
     await this.loadPull();
     if (!this.pullDue()) return;
-    const age = Date.now() - this.pulledAt;
-    const pull = this.pull();
-    if (age >= 2 * this.pullInterval && !this.pullRetryAt)
-      await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
+    const stale = Date.now() - this.pulledAt >= 2 * this.pullInterval && !this.pullRetryAt;
+    const pull = this.pull(stale);
+    if (stale) await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
   }
 
   private pullDue(): boolean {
@@ -944,8 +943,9 @@ export class Outpost {
     await this.loadPull();
   }
 
-  private pull(): Promise<void> {
-    this.pulling ??= this.trace("outpost.pull", (span) => this.pullChanges(span))
+  // `wait`: a read needs the pull's snapshots, and waits for another instance's pull to end.
+  private pull(wait = true): Promise<void> {
+    this.pulling ??= this.trace("outpost.pull", (span) => this.pullChanges(span, wait))
       .catch(async (error: unknown) => {
         // Polar or Redis failed: the next pull starts again from the same cursor, later.
         this.pullRetryAt = await this.backOff(this.pullKey);
@@ -971,7 +971,7 @@ export class Outpost {
   }
 
   // One instance of the fleet pulls at a time: the others learn the result through Redis.
-  private async pullChanges(span: Span): Promise<void> {
+  private async pullChanges(span: Span, wait: boolean): Promise<void> {
     const redis = this.requireRedis();
     // A pull another instance failed still holds the fleet back.
     const retryAt = Number(await redis.hget(this.pullKey, "retry_at"));
@@ -982,7 +982,10 @@ export class Outpost {
     const lock = randomUUID();
     if (!(await redis.set(this.pullLockKey, lock, "PX", PULL_LOCK_TTL, "NX"))) {
       span.setAttribute("outpost.pull.locked", true);
-      await this.waitForPull();
+      // Unless a read needs it, this instance does not wait for the other one's pull: it checks
+      // the pull again once a pull check has passed.
+      if (wait) await this.waitForPull();
+      else this.pulledAt = Date.now() - this.pullInterval + PULL_CHECK_INTERVAL;
       return;
     }
     // The page's snapshots and their confirms would outlast the lock otherwise.

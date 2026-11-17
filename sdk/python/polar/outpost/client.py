@@ -1630,9 +1630,12 @@ class Outpost:
         await self._load_pull()
         if not self._pull_due():
             return
-        age = time.time() - self._pulled_at
-        pulling = self._start_pull()
-        if age >= 2 * self._pull_interval and not self._pull_retry_at:
+        stale = (
+            time.time() - self._pulled_at >= 2 * self._pull_interval
+            and not self._pull_retry_at
+        )
+        pulling = self._start_pull(wait=stale)
+        if stale:
             with anyio.move_on_after(SNAPSHOT_TIMEOUT):
                 await pulling.wait()
 
@@ -1684,11 +1687,13 @@ class Outpost:
         self._require_redis()
         await self._start_pull().wait()
 
-    def _start_pull(self) -> anyio.Event:
+    def _start_pull(self, *, wait: bool = True) -> anyio.Event:
+        """`wait`: a read needs the pull's snapshots, and waits for another instance's
+        pull to end."""
         if self._pulling is None:
             assert self._tasks is not None
             self._pulling = anyio.Event()
-            self._tasks.start_soon(self._run_pull, self._pulling)
+            self._tasks.start_soon(self._run_pull, self._pulling, wait)
         return self._pulling
 
     async def _pull_on_time(self) -> None:
@@ -1699,10 +1704,10 @@ class Outpost:
                 with contextlib.suppress(RedisError):
                     await self._refresh()
 
-    async def _run_pull(self, done: anyio.Event) -> None:
+    async def _run_pull(self, done: anyio.Event, wait: bool) -> None:
         try:
             with self._span("outpost.pull") as span:
-                await self._pull_changes(span)
+                await self._pull_changes(span, wait)
         except Exception as error:  # noqa: BLE001
             # Polar or Redis failed: the next pull starts again from the same cursor, later.
             self._pull_retry_at = await self._back_off(self._pull_key)
@@ -1731,7 +1736,7 @@ class Outpost:
     def _missing_key(self, identity: str) -> str:
         return f"{self._prefix}:missing:{identity}"
 
-    async def _pull_changes(self, span: Span) -> None:
+    async def _pull_changes(self, span: Span, wait: bool) -> None:
         """One instance of the fleet pulls at a time: the others learn the result through
         Redis."""
         redis = self._require_redis()
@@ -1746,7 +1751,14 @@ class Outpost:
             self._pull_lock_key, lock, px=int(PULL_LOCK_TTL * 1000), nx=True
         ):
             span.set_attribute("outpost.pull.locked", True)
-            await self._wait_for_pull()
+            # Unless a read needs it, this instance does not wait for the other one's pull:
+            # it checks the pull again once a pull check has passed.
+            if wait:
+                await self._wait_for_pull()
+            else:
+                self._pulled_at = (
+                    time.time() - self._pull_interval + PULL_CHECK_INTERVAL
+                )
             return
 
         async def renew() -> None:

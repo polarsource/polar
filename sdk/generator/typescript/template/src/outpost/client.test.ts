@@ -2225,13 +2225,14 @@ describe("Redis cost", () => {
     });
   });
 
-  it("lets the instances that lose the pull poll its lock", async () => {
+  it("lets the instances that lose the pull go on without polling its lock", async () => {
     const fleet = await Promise.all([quiet(), quiet(), quiet()]);
-    await redis.hset(`outpost:v1:${organization}:pull`, "pulled_at", 0);
+    // Due, not stale: no read waits for the pull. A stale one still makes the losers wait.
+    await redis.hset(`outpost:v1:${organization}:pull`, "pulled_at", Date.now() - 31_000);
     changesDelay = 200;
     const cost = await redisCost(() => Promise.all(fleet.map((outpost) => outpost["refresh"]())));
     expect(cost.commands.set).toBe(3);
-    expect(cost.commands.exists).toBeLessThanOrEqual(2 * (200 / 25 + 2));
+    expect(cost.commands.exists).toBeUndefined();
   });
 
   it("reports the size of Redis from every instance", async () => {

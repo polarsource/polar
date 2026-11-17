@@ -1,0 +1,25 @@
+clients/apps/web/src/components/Meter/MeterFormAggregation.tsx
+  s_8d0d0bd3dc25c6::t_723f5e4b3137a6 3,21,49-53,75
+server/tests/meter/test_service.py
+  s_8d0d0bd3dc25c6::t_544e6f70513b1b 247-274,474-502
+  s_8d0d0bd3dc25c6::t_bd57fd0181b72e 503
+server/polar/meter/service.py
+  s_8d0d0bd3dc25c6::t_544e6f70513b1b 62,86,246-260,342-354,356
+  s_8d0d0bd3dc25c6::t_633d62af0fd455 355,357
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7ae8bfa5c0b7fc0abf22ab4c6130e7f118735c09",
+  "prompts": {},
+  "sessions": {
+    "s_8d0d0bd3dc25c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4953bb3-5844-4aef-a842-cb7affe092ce",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

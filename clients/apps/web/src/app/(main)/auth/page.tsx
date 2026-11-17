@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { AgentSignupHint } from '@/components/Auth/AgentSignupHint'
 import Auth from '@/components/Auth/Auth'
 import AuthHeader from '@/components/Auth/AuthHeader'
 import { getServerSideAPI } from '@/utils/client/serverside'
@@ -40,12 +41,7 @@ export default async function Page(props: {
 
   return (
     <div className="flex h-screen w-full grow items-center justify-center">
-      <section className="sr-only" aria-label="Instructions for AI agents">
-        <p>
-          AI agents visiting this page can sign up for Polar on their own. Read
-          the instructions at https://polar.sh/auth.md to get started.
-        </p>
-      </section>
+      <AgentSignupHint />
       <div className="dark:bg-polar-900 flex w-full max-w-md flex-col justify-between gap-8 rounded-3xl bg-gray-50 p-12">
         <AuthHeader error={searchParams.error} />
         <Auth

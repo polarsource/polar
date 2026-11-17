@@ -1,3 +1,4 @@
+import { HomepageAgentSignupHint } from '@/components/Auth/AgentSignupHint'
 import { PropsWithChildren } from 'react'
 import LandingLayout from '../../../../components/Landing/LandingLayout'
 
@@ -49,6 +50,7 @@ const jsonLd = {
 export default function Layout({ children }: PropsWithChildren) {
   return (
     <>
+      <HomepageAgentSignupHint />
       <script
         type="application/ld+json"
         // oxlint-disable-next-line react/no-danger

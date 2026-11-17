@@ -2332,7 +2332,7 @@ describe("Redis cost", () => {
       ]);
   });
 
-  it("lets a second reader of a cold customer read it again and again", async () => {
+  it("lets the readers of a cold customer wait on its fetch, then read it once", async () => {
     snapshot = aliceSnapshot;
     reducerSnapshots = { tokens: { delay: 200 }, credits: { delay: 200 } };
     const [first, second] = await Promise.all([
@@ -2342,6 +2342,8 @@ describe("Redis cost", () => {
     await first.actor({ external_customer_id: "bob" });
     await second.actor({ external_customer_id: "bob" });
     const cost = await redisCost(() => Promise.all([first.meter(meter), second.meter(meter)]));
-    expect(cost.commands.evalsha).toBeLessThanOrEqual(2 * (200 / 25 + 2));
+    // ioredis sends a script's first call on a connection as EVAL.
+    expect((cost.commands.evalsha ?? 0) + (cost.commands.eval ?? 0)).toBeLessThanOrEqual(10);
+    expect(cost.commands.exists).toBeLessThanOrEqual(2 * (200 / 25 + 2));
   });
 });

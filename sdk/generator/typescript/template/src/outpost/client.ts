@@ -804,7 +804,7 @@ export class Outpost {
   }
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
-  // then read again until it lands.
+  // then read again once the fleet's fetch of it ends.
   private async read(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
     let reads = await this.load(customer, reducers, statistics);
@@ -820,9 +820,19 @@ export class Outpost {
     );
     if (reads.every(isReady)) return reads;
     await waitAtMost(fetched, deadline - Date.now());
+    const markers = reducers
+      .filter((_, index) => !isReady(reads[index]))
+      .map((reducer) => this.fetchKey(`${customer}:${reducer.id}`));
     for (;;) {
-      reads = await this.load(customer, reducers, statistics);
-      if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      const fetching = await this.requireRedis()
+        .exists(...markers)
+        .catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+      if (!fetching || Date.now() >= deadline) {
+        reads = await this.load(customer, reducers, statistics);
+        if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      }
       await sleep(Math.min(POLL_INTERVAL, deadline - Date.now()));
     }
   }
@@ -1002,6 +1012,10 @@ export class Outpost {
     return `${this.prefix}:missing:${identity}`;
   }
 
+  private fetchKey(identity: string): string {
+    return `${this.prefix}:fetch:${identity}`;
+  }
+
   // One instance of the fleet pulls at a time: the others learn the result through Redis.
   private async pullChanges(span: Span, wait: boolean): Promise<void> {
     const redis = this.requireRedis();
@@ -1123,7 +1137,7 @@ export class Outpost {
       // A customer already queued or asked for stays out of the queue until Polar answers.
       const marking = redis.pipeline();
       for (const { identity } of queued)
-        marking.set(`${this.prefix}:fetch:${identity}`, "1", "PX", TIMEOUT, "NX");
+        marking.set(this.fetchKey(identity), "1", "PX", TIMEOUT, "NX");
       const marked = await marking.exec().catch((error: unknown) => {
         throw redisUnavailable(error);
       });
@@ -1221,7 +1235,7 @@ export class Outpost {
       );
     } finally {
       await this.requireRedis()
-        .del(...identities.map((identity) => `${this.prefix}:fetch:${identity}`))
+        .del(...identities.map((identity) => this.fetchKey(identity)))
         .catch(() => {});
     }
   }

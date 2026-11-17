@@ -3819,7 +3819,7 @@ async def test_pushes_an_instances_telemetry_in_one_command(
 
 
 @pytest.mark.anyio
-async def test_lets_a_second_reader_of_a_cold_customer_read_it_again_and_again(
+async def test_lets_the_readers_of_a_cold_customer_wait_on_its_fetch_then_read_it_once(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     redis_commands: collections.Counter[str],
@@ -3848,4 +3848,5 @@ async def test_lets_a_second_reader_of_a_cold_customer_read_it_again_and_again(
                     )
 
         cost = await _cost(redis_commands, read)
-    assert cost["evalsha"] <= 2 * (0.08 / 0.025 + 6)
+    assert cost["evalsha"] + cost.get("eval", 0) <= 15
+    assert cost["exists"] <= 2 * (0.08 / 0.025 + 6)

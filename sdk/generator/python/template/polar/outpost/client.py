@@ -926,7 +926,7 @@ class Outpost:
         self, customer: str, reducers: list[Reducer], statistics: list[str]
     ) -> list[ReducerState | None]:
         """Reads the customer's states from Redis. One Polar has no snapshot of yet is
-        asked for once, then read again until it lands."""
+        asked for once, then read again once the fleet's fetch of it ends."""
         deadline = anyio.current_time() + SNAPSHOT_TIMEOUT
         states = await self._load(customer, reducers, statistics)
         # Polar sends no snapshot without a connection.
@@ -944,10 +944,18 @@ class Outpost:
         with anyio.move_on_after(deadline - anyio.current_time()):
             for fetched in fetches:
                 await fetched.wait()
+        markers = [
+            self._fetch_key(f"{customer}:{reducer['id']}")
+            for reducer, state in zip(reducers, states, strict=True)
+            if not _is_ready(state)
+        ]
+        redis = self._require_redis()
         while True:
-            states = await self._load(customer, reducers, statistics)
-            if all(map(_is_ready, states)) or anyio.current_time() >= deadline:
-                return states
+            fetching = await redis.exists(*markers)
+            if not fetching or anyio.current_time() >= deadline:
+                states = await self._load(customer, reducers, statistics)
+                if all(map(_is_ready, states)) or anyio.current_time() >= deadline:
+                    return states
             await anyio.sleep(min(POLL_INTERVAL, deadline - anyio.current_time()))
 
     async def _load(
@@ -1091,7 +1099,7 @@ class Outpost:
             async with redis.pipeline(transaction=False) as pipeline:
                 for identity in queued:
                     pipeline.set(
-                        f"{self._prefix}:fetch:{identity}",
+                        self._fetch_key(identity),
                         1,
                         px=int(TIMEOUT * 1000),
                         nx=True,
@@ -1228,7 +1236,7 @@ class Outpost:
         finally:
             with contextlib.suppress(RedisError):
                 await redis.delete(
-                    *(f"{self._prefix}:fetch:{identity}" for identity in identities)
+                    *(self._fetch_key(identity) for identity in identities)
                 )
 
     async def _report_redis_size(self) -> None:
@@ -1452,6 +1460,9 @@ class Outpost:
                     *forget,
                 )
         return retry_at / 1000
+
+    def _fetch_key(self, identity: str) -> str:
+        return f"{self._prefix}:fetch:{identity}"
 
     def _missing_key(self, identity: str) -> str:
         return f"{self._prefix}:missing:{identity}"

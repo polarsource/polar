@@ -139,10 +139,28 @@ def delete_workspace(host: str, workspace_id: str, user_token: str) -> None:
 def main(token_file: Path | None = None) -> None:
     host = settings.TINYBIRD_API_URL
     try:
+        started = time.perf_counter()
+        print(f"CI_TINYBIRD_PHASE start epoch={time.time():.6f}", flush=True)
         tokens = request("GET", f"{host}/tokens", timeout=2).json()
+        print(
+            f"CI_TINYBIRD_PHASE tokens elapsed={time.perf_counter() - started:.6f}",
+            flush=True,
+        )
         _, workspace_token = create_workspace(host, tokens)
+        print(
+            f"CI_TINYBIRD_PHASE workspace elapsed={time.perf_counter() - started:.6f}",
+            flush=True,
+        )
         deploy_schema(host, workspace_token)
+        print(
+            f"CI_TINYBIRD_PHASE schema elapsed={time.perf_counter() - started:.6f}",
+            flush=True,
+        )
         wait_for_ingestion(host, workspace_token)
+        print(
+            f"CI_TINYBIRD_PHASE ingestion elapsed={time.perf_counter() - started:.6f}",
+            flush=True,
+        )
 
         if token_file is None:
             print(workspace_token)

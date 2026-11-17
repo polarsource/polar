@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import ColumnElement, Select, case, exists, func, or_, select
-from sqlalchemy.orm import undefer
+from sqlalchemy.orm import undefer, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -16,6 +16,8 @@ from polar.models import (
     CustomerSeat,
     Meter,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionProductPrice,
 )
@@ -170,16 +172,18 @@ class MeterRepository(
     ) -> Meter | None:
         """The version of the meter the customer's subscription, or the one they
         hold a claimed seat on, bills; or the current version when it bills none."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         claimed_seat_subscriptions = select(CustomerSeat.subscription_id).where(
             CustomerSeat.customer_id == customer_id,
             CustomerSeat.status == SeatStatus.claimed,
         )
         billed = exists().where(
             SubscriptionProductPrice.subscription_id == Subscription.id,
-            ProductPrice.id == SubscriptionProductPrice.product_price_id,
-            ProductPrice.is_metered,
-            # The subclass attribute would add a polymorphic filter and drop tiered prices.
-            ProductPrice.__table__.c.meter_id == Meter.id,
+            price.id == SubscriptionProductPrice.product_price_id,
+            price.is_metered,
+            price.ProductPriceMeteredUnit.meter_id == Meter.id,
             or_(
                 Subscription.customer_id == customer_id,
                 Subscription.id.in_(claimed_seat_subscriptions),
@@ -208,16 +212,18 @@ class MeterRepository(
         of each external ID."""
         if not external_ids:
             return {}
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             select(Meter.external_id, func.count(Subscription.customer_id.distinct()))
             .join(
-                ProductPrice,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == Meter.id,
+                price,
+                price.ProductPriceMeteredUnit.meter_id == Meter.id,
             )
             .join(
                 SubscriptionProductPrice,
-                SubscriptionProductPrice.product_price_id == ProductPrice.id,
+                SubscriptionProductPrice.product_price_id == price.id,
             )
             .join(
                 Subscription,
@@ -226,7 +232,7 @@ class MeterRepository(
             .where(
                 Meter.organization_id == organization_id,
                 Meter.external_id.in_(external_ids),
-                ProductPrice.is_metered,
+                price.is_metered,
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 ~Subscription.is_deleted,
                 ~SubscriptionProductPrice.is_deleted,
@@ -241,16 +247,18 @@ class MeterRepository(
         }
 
     async def has_billable_subscriptions(self, meter_id: UUID) -> bool:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = select(
             exists()
             .where(
                 SubscriptionProductPrice.subscription_id == Subscription.id,
-                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+                price.id == SubscriptionProductPrice.product_price_id,
             )
             .where(
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter_id,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
                 Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 ~Subscription.is_deleted,
                 ~SubscriptionProductPrice.is_deleted,

@@ -3,7 +3,13 @@ from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, case, func, or_, select, union
-from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
+from sqlalchemy.orm import (
+    contains_eager,
+    joinedload,
+    selectinload,
+    undefer,
+    with_polymorphic,
+)
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
@@ -27,6 +33,8 @@ from polar.models import (
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionUpdate,
 )
@@ -105,19 +113,21 @@ class ProductRepository(
     ) -> Sequence[tuple[Product, UUID]]:
         """Current products with a metered price on one of the meters, with
         that meter."""
-        # The subclass attribute would add a polymorphic filter and drop tiered prices.
-        meter_id = ProductPrice.__table__.c.meter_id
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        meter_id = price.ProductPriceMeteredUnit.meter_id
         statement = (
             select(Product, meter_id)
-            .join(ProductPrice, ProductPrice.product_id == Product.id)
+            .join(price, price.product_id == Product.id)
             .where(
                 Product.organization_id == organization_id,
                 Product.is_current,
                 ~Product.is_archived,
                 Product.deleted_at.is_(None),
-                ProductPrice.is_metered,
-                ~ProductPrice.is_archived,
-                ~ProductPrice.is_deleted,
+                price.is_metered,
+                ~price.is_archived,
+                ~price.is_deleted,
                 meter_id.in_(meter_ids),
             )
             .options(undefer(Product.external_id))

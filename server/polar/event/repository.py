@@ -27,7 +27,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.db.postgres import json_serializer
@@ -44,7 +44,11 @@ from polar.models import (
     StagedEvent,
 )
 from polar.models.event import EventSource
-from polar.models.product_price import ProductPrice
+from polar.models.product_price import (
+    ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+)
 
 from .system import SystemEvent
 
@@ -771,20 +775,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         Used for non-summable aggregations where we need to compute across all events
         in the period, regardless of which price was active when the event occurred.
         """
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .join(
-                ProductPrice,
-                BillingEntry.product_price_id == ProductPrice.id,
+                price,
+                BillingEntry.product_price_id == price.id,
             )
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 BillingEntry.start_timestamp < cutoff,
                 BillingEntry.created_at <= cutoff,
             )
@@ -795,17 +801,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     def get_by_pending_meter_entries_statement(
         self, subscription: UUID, meter: UUID
     ) -> Select[Event]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         return (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
-            .join(ProductPrice, BillingEntry.product_price_id == ProductPrice.id)
+            .join(price, BillingEntry.product_price_id == price.id)
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 Event.source == EventSource.user,
             )
         )
@@ -841,17 +849,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         since: datetime | None,
         until: datetime,
     ) -> Sequence[Event]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
-            .join(ProductPrice, BillingEntry.product_price_id == ProductPrice.id)
+            .join(price, BillingEntry.product_price_id == price.id)
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 BillingEntry.start_timestamp < until,
                 Event.source == EventSource.system,
                 Event.name == SystemEvent.meter_credited,

@@ -22,7 +22,7 @@ locals {
 
   # A secret may reference one JSON key ("<arn>:<key>::"); IAM matches the bare secret ARN.
   secret_arns = concat(
-    distinct([for arn in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[^:]+:secret:[^:]+", arn)]),
+    [for arn in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[^:]+:secret:[^:]+", arn)],
     var.logfire == null ? [] : [aws_secretsmanager_secret.logfire_header[0].arn],
   )
 

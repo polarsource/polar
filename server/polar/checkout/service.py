@@ -84,7 +84,10 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import (
+    US_SHORT_BILLING_ADDRESS_EXPERIMENT,
+    CheckoutStatus,
+)
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
@@ -1787,6 +1790,12 @@ class CheckoutService:
         )
 
         try:
+            variant = checkout.us_short_billing_address_variant
+            experiment_properties = (
+                {f"$feature/{US_SHORT_BILLING_ADDRESS_EXPERIMENT}": variant}
+                if variant is not None and checkout.is_payment_form_required
+                else {}
+            )
             posthog.capture(
                 distinct_id=resolved_distinct_id,
                 event="storefront:subscriptions:checkout:open",
@@ -1811,6 +1820,7 @@ class CheckoutService:
                     if checkout.customer_billing_address
                     else None,
                     "is_returning_customer": checkout.customer_id is not None,
+                    **experiment_properties,
                 },
             )
         except Exception as e:

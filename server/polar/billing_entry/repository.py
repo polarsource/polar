@@ -179,13 +179,14 @@ class BillingEntryRepository(
         order_item_id: UUID,
         *,
         cutoff: datetime,
+        before: datetime | None = None,
     ) -> None:
         pending_ids = select(BillingEntry.id).where(
             BillingEntry.subscription_id == subscription_id,
             BillingEntry.deleted_at.is_(None),
             BillingEntry.order_item_id.is_(None),
             BillingEntry.product_price_id == product_price_id,
-            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.start_timestamp < (before or cutoff),
             BillingEntry.created_at <= cutoff,
         )
         await self._link_pending(pending_ids, order_item_id)

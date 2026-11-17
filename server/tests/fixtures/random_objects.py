@@ -2955,10 +2955,12 @@ async def create_email_log(
     *,
     created_at: datetime,
     status: EmailLogStatus = EmailLogStatus.sent,
+    error: str | None = None,
 ) -> EmailLog:
     email_log = EmailLog(
         created_at=created_at,
         status=status,
+        error=error,
         processor=EmailSender.resend,
         to_email_addr="customer@example.com",
         from_email_addr="acme@polar.sh",

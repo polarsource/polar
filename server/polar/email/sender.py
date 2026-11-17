@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, TypedDict
+from urllib.parse import quote
 
 import httpx2
 import structlog
@@ -68,8 +69,15 @@ class EmailSender(ABC):
     ) -> str | None:
         pass
 
+    @abstractmethod
+    async def remove_suppression(self, email: str) -> None:
+        pass
+
 
 class LoggingEmailSender(EmailSender):
+    async def remove_suppression(self, email: str) -> None:
+        log.info("Removing email suppression")
+
     async def send(
         self,
         *,
@@ -175,6 +183,21 @@ class ResendEmailSender(EmailSender):
         )
 
         return email["id"]
+
+    async def remove_suppression(self, email: str) -> None:
+        path = f"/suppressions/{quote(to_ascii_email(email), safe='')}"
+        try:
+            response = await self.client.delete(path)
+        except httpx2.RequestError as e:
+            raise EmailSenderOperationalError(str(e)) from e
+
+        # 404 means the address isn't suppressed
+        if response.status_code != 404 and not response.is_success:
+            raise EmailSenderError(
+                f"Resend suppression removal failed with status {response.status_code}"
+            )
+
+        log.info("resend.remove_suppression", removed=response.is_success)
 
 
 class EmailFromReply(TypedDict):

@@ -441,7 +441,13 @@ jobs:
           TB_LOCAL_CSV_WORKERS: 1
           TB_LOCAL_MCP: false
           TB_LOCAL_KAFKA: false
-        options: --no-healthcheck
+        options: >-
+          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
+          --health-interval 10s
+          --health-start-period 30s
+          --health-start-interval 500ms
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v7.0.1

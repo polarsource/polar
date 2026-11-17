@@ -106,6 +106,10 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
     opened_at: str
     distinct_id: str | None
     agent_channel: CheckoutAgentChannel
+    us_short_billing_address_variant: str
+
+
+US_SHORT_BILLING_ADDRESS_EXPERIMENT = "checkout_us_short_billing_address"
 
 
 # Payment methods for which the processor requires a full billing address
@@ -499,9 +503,25 @@ class Checkout(
         return address.country if address else None
 
     @property
+    def _has_short_us_billing_address(self) -> bool:
+        variant = (self.analytics_metadata or {}).get(
+            "us_short_billing_address_variant"
+        )
+        return (
+            self._billing_address_country == "US"
+            and not self.is_billing_address_required
+            and variant == "treatment"
+        )
+
+    @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
         country = self._billing_address_country
-        require_billing_address = self.is_billing_address_required or country == "US"
+        is_us_with_full_address = (
+            country == "US" and not self._has_short_us_billing_address
+        )
+        require_billing_address = (
+            self.is_billing_address_required or is_us_with_full_address
+        )
         return {
             "country": True,
             "state": country in STATE_REQUIRED_COUNTRIES,
@@ -516,10 +536,11 @@ class Checkout(
     def billing_address_fields(self) -> CheckoutBillingAddressFields:
         country = self._billing_address_country
         required_fields = self.customer_billing_address_fields
-        displayed = (
-            self.is_billing_address_required
-            or country in FULL_BILLING_ADDRESS_FORM_COUNTRIES
+        is_full_form_country = (
+            country in FULL_BILLING_ADDRESS_FORM_COUNTRIES
+            and not self._has_short_us_billing_address
         )
+        displayed = self.is_billing_address_required or is_full_form_country
         return {
             "country": BillingAddressFieldMode.required,
             "state": _get_billing_address_field_mode(

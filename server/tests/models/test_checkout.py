@@ -178,6 +178,40 @@ async def test_billing_address_fields_country_requirements(
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
+    ("country", "variant", "require_billing_address", "expected_line1_mode"),
+    [
+        ("US", "treatment", False, BillingAddressFieldMode.disabled),
+        ("US", "control", False, BillingAddressFieldMode.required),
+        ("US", "treatment", True, BillingAddressFieldMode.required),
+        ("BR", "treatment", False, BillingAddressFieldMode.optional),
+    ],
+)
+async def test_billing_address_fields_us_short_experiment(
+    country: CountryAlpha2,
+    variant: str,
+    require_billing_address: bool,
+    expected_line1_mode: BillingAddressFieldMode,
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        customer_billing_address=Address(country=country),
+        require_billing_address=require_billing_address,
+        analytics_metadata={"us_short_billing_address_variant": variant},
+    )
+
+    fields = checkout.billing_address_fields
+    assert fields["line1"] == expected_line1_mode
+    if country == "US":
+        assert fields["city"] == expected_line1_mode
+        assert fields["state"] == BillingAddressFieldMode.required
+        assert fields["postal_code"] == BillingAddressFieldMode.required
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
     ("success_url_input", "expected_factory"),
     [
         pytest.param(

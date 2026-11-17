@@ -9,6 +9,7 @@ from dramatiq.middleware.current_message import CurrentMessage
 from pytest_mock import MockerFixture
 
 from polar.config import settings
+from polar.kit.db.postgres import AsyncSession
 from polar.redis import Redis
 from polar.worker import JobQueueManager, RedisMiddleware
 from polar.worker._enqueue import _job_queue_manager
@@ -41,16 +42,11 @@ async def httpx_client(
 @pytest.fixture(autouse=True)
 def patch_middlewares(
     mocker: MockerFixture,
-    request: pytest.FixtureRequest,
+    session: AsyncSession,
     redis: Redis,
     httpx_client: httpx.AsyncClient,
 ) -> None:
-    if "session" in request.fixturenames:
-        mocker.patch.object(
-            SQLAlchemyMiddleware,
-            "get_async_session",
-            return_value=request.getfixturevalue("session"),
-        )
+    mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", return_value=session)
     mocker.patch.object(RedisMiddleware, "get", return_value=redis)
     mocker.patch.object(HTTPXMiddleware, "get", return_value=httpx_client)
 

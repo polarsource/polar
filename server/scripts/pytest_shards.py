@@ -31,7 +31,7 @@ def split_files(
         duration, index = heapq.heappop(heap)
         groups[index].append(file)
         heapq.heappush(heap, (duration + weights[file], index))
-    return [sorted(group) for group in groups]
+    return groups
 
 
 def main() -> None:

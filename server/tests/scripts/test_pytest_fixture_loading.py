@@ -1,11 +1,6 @@
 from pathlib import Path
 
 import pytest
-from sqlalchemy import func, select
-
-from polar.auth.models import AuthSubject
-from polar.models import Customer, Organization, User
-from polar.postgres import AsyncSession
 
 pytest_plugins = ["pytester"]
 
@@ -69,20 +64,3 @@ def example():
     assert {path.name for path in imports.iterdir()} == (
         {"gw0", "gw1"} if arguments == ["-n", "2"] else {"controller"}
     )
-
-
-def test_unit_test_does_not_request_database(request: pytest.FixtureRequest) -> None:
-    assert {"initialize_test_database", "database_engine", "session"}.isdisjoint(
-        request.fixturenames
-    )
-
-
-@pytest.mark.anyio
-@pytest.mark.auth
-async def test_auth_subject_does_not_seed_other_subjects(
-    auth_subject: AuthSubject[User], session: AsyncSession
-) -> None:
-    assert isinstance(auth_subject.subject, User)
-    assert await session.scalar(select(func.count()).select_from(User)) == 1
-    assert await session.scalar(select(func.count()).select_from(Organization)) == 0
-    assert await session.scalar(select(func.count()).select_from(Customer)) == 0

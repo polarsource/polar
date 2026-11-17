@@ -156,14 +156,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: astral-sh/setup-uv@v10.3.2
-        with:
-          enable-cache: true
-
       - name: 🐦 Install Tinybird CLI
         run: |
-          uv tool install 'tinybird==5.0.3' --python 3.11
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
           "$HOME/.local/bin/tb" --version
 
       - name: 🐦 Validate Tinybird schema
@@ -512,8 +507,7 @@ jobs:
       - name: 🐦 Install Tinybird CLI
         if: matrix.shard == 'tinybird'
         run: |
-          uv tool install 'tinybird==5.0.3' --python 3.11
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
           "$HOME/.local/bin/tb" --version
 
       - name: 🐦 Prepare Tinybird workspace
@@ -546,7 +540,8 @@ jobs:
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations --junitxml="$RUNNER_TEMP/junit.xml"
+          mapfile -t test_files < "$RUNNER_TEMP/test-files"
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest "${test_files[@]}" -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations --junitxml="$RUNNER_TEMP/junit.xml"
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'

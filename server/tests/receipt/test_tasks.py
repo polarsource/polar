@@ -32,7 +32,6 @@ def _patch_locker(mocker: MockerFixture, *, raises_timeout: bool = False) -> Non
 
 @pytest.mark.anyio
 class TestReceiptRender:
-    @pytest.mark.usefixtures("session")
     async def test_raises_when_order_missing(self, mocker: MockerFixture) -> None:
         _patch_locker(mocker)
 

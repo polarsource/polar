@@ -124,11 +124,11 @@ locals {
   }
 
   lambda_worker_queues = {
-    "high-priority"         = {}
-    "medium-priority"       = { max_parallel_tasks = 8 }
-    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660 }
-    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250 } # Must stay above webhook_event.send's max_retries.
-    "tinybird"              = { max_parallel_tasks = 128 }
+    "high-priority"         = { memory_mb = 1024 }
+    "medium-priority"       = { max_parallel_tasks = 8, memory_mb = 1024 }
+    "low-priority"          = { max_parallel_tasks = 16, task_time_limit_seconds = 660, memory_mb = 1024 }
+    "webhooks"              = { max_parallel_tasks = 16, max_retries = 250, memory_mb = 1024 } # Must stay above webhook_event.send's max_retries.
+    "tinybird"              = { max_parallel_tasks = 128, memory_mb = 1024 }
     "invoices-and-receipts" = { max_parallel_tasks = 3, task_time_limit_seconds = 240 }
   }
 }

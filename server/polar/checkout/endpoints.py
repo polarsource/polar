@@ -284,16 +284,10 @@ async def update_v2027_01(
 )
 async def client_get(
     client_secret: CheckoutClientSecret,
-    x_polar_distinct_id: Annotated[str | None, Header(include_in_schema=False)] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> Checkout:
     """Get a checkout session by client secret."""
-    checkout = await checkout_service.get_by_client_secret(session, client_secret)
-    if x_polar_distinct_id:
-        checkout = await checkout_service.assign_us_short_billing_address_experiment(
-            session, checkout, x_polar_distinct_id
-        )
-    return checkout
+    return await checkout_service.get_by_client_secret(session, client_secret)
 
 
 @inner_router.patch(

@@ -1,15 +1,11 @@
-import asyncio
 from typing import Any, Literal
 
-import structlog
 from posthog import Posthog
 
 from polar.auth.models import AuthSubject, Subject, is_organization, is_user
 from polar.config import settings
-from polar.logging import ClientContext, Logger
+from polar.logging import ClientContext
 from polar.models import Agent, Organization, User
-
-log: Logger = structlog.get_logger()
 
 ORGANIZATION_EVENT_DISTINCT_ID = "organization_event"
 
@@ -60,11 +56,7 @@ class Service:
             self.client = None
             return
 
-        self.client = Posthog(
-            settings.POSTHOG_PROJECT_API_KEY,
-            feature_flags_request_timeout_seconds=1,
-            feature_flags_request_max_retries=0,
-        )
+        self.client = Posthog(settings.POSTHOG_PROJECT_API_KEY)
         self.client.disabled = settings.is_testing()
         self.client.debug = settings.POSTHOG_DEBUG
 
@@ -81,21 +73,6 @@ class Service:
             )
 
         return False
-
-    async def get_feature_flag_variant(self, flag: str, distinct_id: str) -> str | None:
-        if not self.client:
-            return None
-
-        try:
-            flags = await asyncio.to_thread(
-                self.client.get_all_flags, distinct_id, flag_keys_to_evaluate=[flag]
-            )
-        except Exception as e:
-            log.warning("Failed to evaluate PostHog feature flag", error=str(e))
-            return None
-
-        variant = (flags or {}).get(flag)
-        return variant if isinstance(variant, str) else None
 
     def capture(
         self,

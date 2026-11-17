@@ -16,6 +16,8 @@ async def register_payment_method_domains(
     domains: Annotated[list[str], LoggableField],
 ) -> None:
     for domain in domains:
+        if await stripe_service.get_payment_method_domain(domain) is not None:
+            continue
         try:
             await stripe_service.create_payment_method_domain(domain)
         except stripe_lib.InvalidRequestError as e:

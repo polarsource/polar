@@ -82,6 +82,9 @@ from polar.organization.service import (
 from polar.organization.service import organization as organization_service
 from polar.organization_domain.repository import OrganizationDomainRepository
 from polar.organization_email.repository import OrganizationEmailRepository
+from polar.organization_email.service import (
+    organization_email as organization_email_service,
+)
 from polar.organization_review.appeal_case import (
     AppealCaseError,
 )
@@ -1498,6 +1501,31 @@ async def run_review_agent(
         organization_id=organization.id,
         context=ReviewContext.MANUAL,
     )
+
+    return HXRedirectResponse(
+        request,
+        str(request.url_for("organizations:detail", organization_id=organization_id))
+        + "?section=overview",
+        303,
+    )
+
+
+@router.post(
+    "/{organization_id}/support-email/verify",
+    name="organizations:verify_support_email",
+)
+async def verify_support_email(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> HXRedirectResponse:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if not organization:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    await organization_email_service.mark_verified(session, organization)
+    await add_toast(request, "Support email verified.", "success")
 
     return HXRedirectResponse(
         request,

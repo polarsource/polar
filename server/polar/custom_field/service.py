@@ -24,7 +24,7 @@ from polar.authz.service import (
     assert_resource_permission,
 )
 from polar.custom_field.sorting import CustomFieldSortProperty
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -37,6 +37,15 @@ from .attachment import attached_custom_fields_models
 from .data import custom_field_data_models
 from .repository import CustomFieldRepository
 from .schemas import CustomFieldCreate, CustomFieldUpdate
+
+
+class CustomFieldVersionLocked(PolarError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This custom field has other versions. Only its current version "
+            "can be updated or deleted, and its slug can't change.",
+            409,
+        )
 
 
 class CustomFieldService(ResourceServiceReader[CustomField]):
@@ -153,6 +162,13 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        repository = CustomFieldRepository.from_session(session)
+        if not custom_field.is_current or (
+            custom_field_update.slug is not None
+            and custom_field.slug != custom_field_update.slug
+            and await repository.has_versions(custom_field)
+        ):
+            raise CustomFieldVersionLocked()
 
         if custom_field.type != custom_field_update.type:
             raise PolarRequestValidationError(
@@ -170,7 +186,6 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field_update.slug is not None
             and custom_field.slug != custom_field_update.slug
         ):
-            repository = CustomFieldRepository.from_session(session)
             existing_field = await repository.get_by_organization_and_slug(
                 custom_field.organization_id, custom_field_update.slug
             )
@@ -229,6 +244,8 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        if not custom_field.is_current:
+            raise CustomFieldVersionLocked()
         custom_field.set_deleted_at()
         session.add(custom_field)
 

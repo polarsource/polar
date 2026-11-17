@@ -1058,6 +1058,9 @@ importers:
       react-dropzone:
         specifier: ^14.4.1
         version: 14.4.1(react@19.3.0)
+      react-focus-lock:
+        specifier: 'catalog:'
+        version: 2.13.7(@types/react@19.3.0)(react@19.3.0)
       react-hook-form:
         specifier: 'catalog:'
         version: 7.91.0(@types/react@19.3.0)(react@19.3.0)

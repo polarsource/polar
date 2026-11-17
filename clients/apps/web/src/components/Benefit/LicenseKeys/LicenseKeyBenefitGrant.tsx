@@ -1,6 +1,6 @@
 'use client'
 
-import { ConfirmModal } from '@/components/Modal/ConfirmModal'
+import { PortalConfirmDialog } from '@/components/CustomerPortal/PortalDialog'
 import { toast } from '@/components/Toast/use-toast'
 import {
   useCustomerLicenseKey,
@@ -44,14 +44,14 @@ const LicenseKey = ({
     const { error } = await rotateLicenseKey.mutateAsync()
     if (error) {
       toast({
-        title: 'License Key Rotation Failed',
+        title: 'License key rotation failed',
         description: extractApiErrorMessage(error),
       })
       return
     }
 
     toast({
-      title: 'License Key Rotated',
+      title: 'License key rotated',
       description:
         'The previous key no longer validates. Copy your new key below.',
     })
@@ -90,13 +90,13 @@ const LicenseKey = ({
         licenseKey={licenseKey}
         locale={locale}
       />
-      <ConfirmModal
+      <PortalConfirmDialog
         isShown={showRotateConfirm}
         hide={() => setShowRotateConfirm(false)}
         title="Rotate this license key?"
         description="A new key will be generated. The previous key stops validating immediately. Copy the new key after rotating."
         destructive
-        destructiveText="Rotate"
+        confirmText="Rotate key"
         onConfirm={handleRotate}
       />
     </>

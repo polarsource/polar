@@ -30,15 +30,20 @@ jobs:
       # Deliberately not pinned to workflow_run.head_sha: checking out a SHA taken
       # from the triggering event runs that code with this workflow's secrets
       # (CodeQL: untrusted checkout). SOURCE_SHA is only used for the source link.
-      - name: Check out code
-        uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: pnpm/action-setup@v6.1.0
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: clients/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: "pnpm"
@@ -73,7 +78,7 @@ jobs:
       - name: Upload artifacts
         id: artifacts
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-artifacts
           path: clients/apps/web/e2e/artifacts/
@@ -124,7 +129,7 @@ jobs:
       - name: Notify Slack on failure
         id: slack
         if: failure()
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -134,7 +139,7 @@ jobs:
       - name: Attach the last screenshot
         if: failure() && steps.failure.outputs.screenshot != ''
         continue-on-error: true
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: files.uploadV2
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -149,7 +154,7 @@ jobs:
       - name: Attach the trace
         if: failure() && steps.failure.outputs.trace != ''
         continue-on-error: true
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: files.uploadV2
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -164,7 +169,7 @@ jobs:
       - name: Suggest a re-run
         if: failure()
         continue-on-error: true
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -196,7 +201,7 @@ jobs:
       - name: Post provider status
         if: failure()
         continue-on-error: true
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

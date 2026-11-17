@@ -159,6 +159,7 @@ class Settings(BaseSettings):
     BACKOFFICE_GOOGLE_CLIENT_ID: str = ""
     BACKOFFICE_GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
     BACKOFFICE_GOOGLE_HOSTED_DOMAIN: str = ""
+    BACKOFFICE_DEVELOPMENT_MODE: bool = False
     BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_backoffice_auth_session"
     BACKOFFICE_AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
     BACKOFFICE_USER_SESSION_COOKIE_KEY: str = "polar_backoffice_session"

@@ -3,9 +3,11 @@
 import { useCustomerEmailUpdateVerify } from '@/hooks/queries/customerPortal'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
+import { Box } from '@polar-sh/orbit/Box'
+import { PortalText } from '@/components/CustomerPortal/PortalPrimitives'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
+import { PortalAuthHeader, PortalAuthShell } from '../PortalShell'
 
 const VerifyEmailPage = ({
   organization,
@@ -30,66 +32,56 @@ const VerifyEmailPage = ({
 
   if (!token || !tokenValid) {
     return (
-      <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-        <div className="flex w-full flex-col items-center gap-y-4 md:max-w-sm">
-          <h2 className="text-2xl text-black dark:text-white">Invalid link</h2>
-          <p className="dark:text-polar-500 text-center text-gray-500">
-            This verification link is invalid or has expired.
-          </p>
-        </div>
-      </ShadowBox>
+      <PortalAuthShell organization={organization}>
+        <PortalAuthHeader
+          title="Invalid link"
+          description="This verification link is invalid or has expired."
+        />
+      </PortalAuthShell>
     )
   }
 
   if (verify.isSuccess) {
     return (
-      <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-        <div className="flex w-full flex-col items-center gap-y-4 md:max-w-sm">
-          <h2 className="text-2xl text-black dark:text-white">Email updated</h2>
-          <p className="dark:text-polar-500 text-center text-gray-500">
-            Your email has been updated. Redirecting you to the Customer Portal…
-          </p>
-        </div>
-      </ShadowBox>
+      <PortalAuthShell organization={organization}>
+        <PortalAuthHeader
+          title="Email updated"
+          description="Your email has been updated. Redirecting you to the customer portal…"
+        />
+      </PortalAuthShell>
     )
   }
 
   return (
-    <ShadowBox className="flex w-full max-w-7xl flex-col items-center gap-12 md:px-32 md:py-24">
-      <div className="flex w-full flex-col items-center gap-y-6 md:max-w-sm">
-        <div className="flex flex-col items-center gap-4">
-          <h2 className="text-2xl text-black dark:text-white">
-            Verify new email
-          </h2>
-          <p className="dark:text-polar-500 text-center text-gray-500">
-            You&rsquo;re updating your email address for{' '}
-            <span className="font-medium">{organization.name}</span>. Once
-            confirmed, you&rsquo;ll use this new email to access your purchases.
-          </p>
-        </div>
+    <PortalAuthShell organization={organization}>
+      <Box flexDirection="column" rowGap="xl">
+        <PortalAuthHeader
+          title="Verify new email"
+          description={`You're updating your email address for ${organization.name}. Once confirmed, you'll use this new email to access your purchases.`}
+        />
 
         {verify.error && (
-          <p className="text-sm font-medium text-red-500 dark:text-red-400">
+          <PortalText tone="danger" className="text-sm">
             {verify.error.message}
-          </p>
+          </PortalText>
         )}
 
         <Button
           size="lg"
-          className="w-full"
+          fullWidth
           onClick={onConfirm}
           loading={verify.isPending}
           disabled={verify.isPending}
         >
-          Confirm Email Change
+          Confirm email change
         </Button>
 
-        <p className="dark:text-polar-500 text-center text-sm text-gray-500">
+        <PortalText tone="tertiary" className="text-sm">
           Changed your mind? You can safely ignore this and your current email
           will remain active.
-        </p>
-      </div>
-    </ShadowBox>
+        </PortalText>
+      </Box>
+    </PortalAuthShell>
   )
 }
 

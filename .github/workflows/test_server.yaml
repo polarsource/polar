@@ -2,7 +2,7 @@ name: Server
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "yopi/speed-up-ci-xdist-current"]
   pull_request:
     types: [opened, synchronize, edited]
   merge_group:
@@ -37,6 +37,7 @@ jobs:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
+          base: ${{ github.event_name == 'push' && github.event.before || '' }}
           list-files: json
           filters: |
             server:
@@ -476,6 +477,8 @@ jobs:
         options: >-
           --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
           --health-interval 10s
+          --health-start-period 30s
+          --health-start-interval 500ms
           --health-timeout 5s
           --health-retries 5
 
@@ -572,7 +575,7 @@ jobs:
         working-directory: ./server
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations --junitxml="$RUNNER_TEMP/junit.xml"
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
@@ -581,7 +584,17 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 0 --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml"
+
+      - name: Upload verification test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: ${{ runner.temp }}/junit.xml
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 3
 
       - name: 📊 Upload shard test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'
@@ -620,16 +633,14 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: github.event_name == 'push' && needs.test.result == 'success'
+        with:
+          sparse-checkout: server/scripts/merge_test_durations.py
+          sparse-checkout-cone-mode: false
 
       - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         if: github.event_name == 'push' && needs.test.result == 'success'
         with:
           enable-cache: false
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        with:
-          python-version-file: server/pyproject.toml
 
       - name: 📊 Download shard test durations
         if: github.event_name == 'push' && needs.test.result == 'success'
@@ -640,7 +651,7 @@ jobs:
 
       - name: 📊 Merge shard test durations
         if: github.event_name == 'push' && needs.test.result == 'success'
-        run: uv run --no-project --python 3.14 server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
+        run: uv run --no-project --python "$(command -v python3)" server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
 
       - name: 💾 Save merged test durations
         if: github.event_name == 'push' && needs.test.result == 'success'

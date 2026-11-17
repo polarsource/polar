@@ -1,0 +1,19 @@
+server/polar/tax/calculation/numeral.py
+  s_8c8735cb3ee6f5::t_2d71dd786ea511 179-183
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c1a67026cbf80a459a0fc355a2184148a44ffbff",
+  "prompts": {},
+  "sessions": {
+    "s_8c8735cb3ee6f5": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5ac-d2ed-7a01-b3a8-6a403836785d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

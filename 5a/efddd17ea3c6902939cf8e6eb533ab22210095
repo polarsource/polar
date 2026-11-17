@@ -1,0 +1,21 @@
+server/polar/worker/_sqs.py
+  s_70d59a76d1d803::t_a85d8e1d5f380f 9,300,326,328
+server/tests/worker/test_sqs_client.py
+  s_70d59a76d1d803::t_8f32e0de77d8d4 3,59-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5aefddd17ea3c6902939cf8e6eb533ab22210095",
+  "prompts": {},
+  "sessions": {
+    "s_70d59a76d1d803": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e5d2-1fd9-7ad3-9abe-06137d120f25",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

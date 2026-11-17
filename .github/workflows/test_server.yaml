@@ -64,6 +64,33 @@ jobs:
               - 'server/**'
               - 'clients/**'
 
+      - name: Cache frozen timing input
+        id: timing_input
+        if: steps.filter.outputs.server == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: &frozen_timing_input
+          path: server/.test_durations
+          key: ci-db-frozen-input-v1-44060618383
+
+      - name: Install uv for frozen input
+        if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+
+      - name: Download frozen timing input
+        if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          run-id: 44060618383
+          github-token: ${{ github.token }}
+          pattern: test-durations-*
+          path: ${{ runner.temp }}/frozen-durations
+
+      - name: Merge frozen timing input
+        if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
+        run: uv run --no-project --python "$(command -v python3)" server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/frozen-durations/*/.test_durations
+
   linters:
     name: "Server: Linters 📝"
     needs: changes
@@ -601,26 +628,16 @@ jobs:
         working-directory: ./server
         run: uv run task db_migrate
 
-      - name: Download frozen timing input
+      - name: Restore frozen timing input
         if: matrix.shard != 'tinybird'
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          run-id: 44060618383
-          github-token: ${{ github.token }}
-          pattern: test-durations-*
-          path: ${{ runner.temp }}/frozen-durations
-
-      - name: Merge frozen timing input
-        if: matrix.shard != 'tinybird'
-        working-directory: ./server
-        run: |
-          uv run --no-project --python 3.14 scripts/merge_test_durations.py --expected-shards 4 --output .test_durations "$RUNNER_TEMP"/frozen-durations/*/.test_durations
-          sha256sum .test_durations
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: *frozen_timing_input
 
       - name: 🐍 Run tests (pytest)
         if: matrix.shard != 'tinybird'
         working-directory: ./server
         run: |
+          sha256sum .test_durations
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
           POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/junit.xml" --store-durations --clean-durations
 

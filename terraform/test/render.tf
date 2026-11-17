@@ -118,11 +118,6 @@ module "test" {
   environment_groups = module.backend_environment[0].environment_groups
   email_from_domain  = local.backend_config.email_from_domain
 
-  memory_profile_config = {
-    s3_bucket_name = local.diagnostics_bucket_name
-    services       = ["api-events-test"]
-  }
-
   depends_on = [render_registry_credential.ghcr]
 }
 

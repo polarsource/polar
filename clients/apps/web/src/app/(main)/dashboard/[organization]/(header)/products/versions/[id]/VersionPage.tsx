@@ -6,6 +6,7 @@ import { useCatalog, useCatalogConfig } from '@/hooks/queries/catalogs'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ArrowBackOutlined } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Fragment } from 'react'
@@ -186,22 +187,24 @@ export default function VersionPage({
       title={null}
       header={
         <>
-          <Box flexDirection="column" rowGap="xs" minWidth={0}>
-            <Link href={versionsPath}>
+          <Box alignItems="center" columnGap="l" minWidth={0}>
+            <Link
+              href={versionsPath}
+              aria-label="Back to versions"
+              title="Back to versions"
+              className="shrink-0"
+            >
               <Box
                 as="span"
+                display="flex"
                 color={{ base: 'text-secondary', hover: 'text-primary' }}
                 transitionProperty="colors"
                 transitionDuration="fast"
               >
-                <Text as="span" color="inherit">
-                  ← Versions
-                </Text>
+                <ArrowBackOutlined fontSize="small" />
               </Box>
             </Link>
-            <Box alignItems="center" columnGap="l" minWidth={0}>
-              <VersionTitle catalog={catalog} />
-            </Box>
+            <VersionTitle catalog={catalog} />
           </Box>
           {catalog.status === 'draft' ? (
             <PublishDraftButton

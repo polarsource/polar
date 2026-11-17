@@ -4594,6 +4594,13 @@ class SubscriptionService:
     async def send_cancellation_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        if subscription.trialing:
+            return await self._send_customer_email(
+                session,
+                subscription,
+                subject_template="Your {product.name} trial has been canceled",
+                template_name="subscription_trial_cancellation",
+            )
         return await self._send_customer_email(
             session,
             subscription,
@@ -4780,6 +4787,7 @@ class SubscriptionService:
             "subscription_resumed",
             "subscription_renewal_reminder",
             "subscription_revoked",
+            "subscription_trial_cancellation",
             "subscription_trial_conversion_reminder",
             "subscription_trial_payment_method_required",
             "subscription_uncanceled",
@@ -4808,11 +4816,14 @@ class SubscriptionService:
         # Read-default to enabled: the key is absent from the stored settings of
         # organizations created before this template existed, and is materialized
         # only when an admin next edits their notification settings.
-        email_setting = (
-            "subscription_trial_conversion_reminder"
-            if template_name == "subscription_trial_payment_method_required"
-            else template_name
-        )
+        email_setting: str
+        match template_name:
+            case "subscription_trial_payment_method_required":
+                email_setting = "subscription_trial_conversion_reminder"
+            case "subscription_trial_cancellation":
+                email_setting = "subscription_cycled_after_trial"
+            case _:
+                email_setting = template_name
         if not organization.customer_email_settings.get(email_setting, True):
             return
 

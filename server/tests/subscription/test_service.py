@@ -17,8 +17,10 @@ from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer_seat.repository import CustomerSeatRepository
 from polar.email.schemas import (
+    SubscriptionCancellationEmail,
     SubscriptionRenewalReminderEmail,
     SubscriptionRevokedEmail,
+    SubscriptionTrialCancellationEmail,
     SubscriptionTrialConversionReminderEmail,
     SubscriptionTrialPaymentMethodRequiredEmail,
 )
@@ -8824,6 +8826,109 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
         send_customer_email_mock.call_args.kwargs["deduplication_key"]
         == f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
     )
+
+
+@pytest.mark.anyio
+class TestSendCancellationEmail:
+    async def test_active(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.cancel_at_period_end = True
+        subscription.ends_at = subscription.current_period_end
+        await save_fixture(subscription)
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionCancellationEmail)
+        assert enqueue_email_mock.call_args.kwargs["subject"] == (
+            f"Your {product.name} subscription cancellation"
+        )
+
+    async def test_trialing(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.cancel_at_period_end = True
+        subscription.ends_at = subscription.trial_end
+        await save_fixture(subscription)
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialCancellationEmail)
+        assert enqueue_email_mock.call_args.kwargs["subject"] == (
+            f"Your {product.name} trial has been canceled"
+        )
+
+    async def test_trialing_disabled_by_trial_converted_setting(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_cycled_after_trial": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.cancel_at_period_end = True
+        subscription.ends_at = subscription.trial_end
+        await save_fixture(subscription)
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_trialing_ignores_subscription_cancellation_setting(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "subscription_cancellation": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.cancel_at_period_end = True
+        subscription.ends_at = subscription.trial_end
+        await save_fixture(subscription)
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialCancellationEmail)
 
 
 @pytest.mark.anyio

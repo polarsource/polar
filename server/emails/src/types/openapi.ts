@@ -3360,6 +3360,31 @@ export interface components {
       | 'canceled'
       | 'unpaid'
       | 'paused'
+    /** SubscriptionTrialCancellationEmail */
+    SubscriptionTrialCancellationEmail: {
+      /**
+       * Template
+       * @default subscription_trial_cancellation
+       * @constant
+       */
+      template: 'subscription_trial_cancellation'
+      props: components['schemas']['SubscriptionTrialCancellationProps']
+    }
+    /** SubscriptionTrialCancellationProps */
+    SubscriptionTrialCancellationProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+      /**
+       * Previous Billing Provider
+       * @default null
+       */
+      previous_billing_provider: string | null
+    }
     /** SubscriptionTrialConversionReminderEmail */
     SubscriptionTrialConversionReminderEmail: {
       /**

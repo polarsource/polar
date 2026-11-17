@@ -6,7 +6,7 @@ from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy import ColumnElement, Select, and_, case, func, or_, select
-from sqlalchemy.orm import contains_eager, undefer
+from sqlalchemy.orm import contains_eager, undefer, with_polymorphic
 from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
 
@@ -46,6 +46,8 @@ from polar.models import (
     Discount,
     Product,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionBulkUpdate,
     SubscriptionMeter,
@@ -158,19 +160,21 @@ class SubscriptionRepository(
     ) -> bool:
         """Whether another live subscription that started before `subscription`
         bills or credits the customer's meter."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         bills_meter = (
             select(SubscriptionProductPrice.id)
             .join(
-                ProductPrice,
-                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+                price,
+                price.id == SubscriptionProductPrice.product_price_id,
             )
             .where(
                 SubscriptionProductPrice.subscription_id == Subscription.id,
                 ~SubscriptionProductPrice.is_deleted,
                 Subscription.customer_id == customer_id,
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter_id,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
             )
             .exists()
         )
@@ -880,23 +884,25 @@ class SubscriptionProductPriceRepository(
     async def _get_direct_subscription_prices(
         self, customer_ids: Sequence[UUID], meter_id: UUID
     ) -> dict[UUID, CustomerSubscriptionProductPrice]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         customer_ids_parameter = sa.bindparam(
             "customer_ids", customer_ids, type_=sa.ARRAY(sa.Uuid())
         )
         statement = (
             self.get_base_statement()
             .join(
-                ProductPrice,
-                SubscriptionProductPrice.product_price_id == ProductPrice.id,
+                price,
+                SubscriptionProductPrice.product_price_id == price.id,
             )
             .join(
                 Subscription,
                 Subscription.id == SubscriptionProductPrice.subscription_id,
             )
             .where(
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter_id,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter_id,
                 Subscription.billable,
                 Subscription.customer_id == sa.any_(customer_ids_parameter),
             )

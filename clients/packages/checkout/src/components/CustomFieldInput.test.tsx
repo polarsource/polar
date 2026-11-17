@@ -27,6 +27,8 @@ const baseProps = {
   slug: 'test_field',
   name: 'Test Field',
   organization_id: 'org_1',
+  catalog_id: null,
+  is_current: true,
 } as const
 
 function makeTextField(

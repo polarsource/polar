@@ -1,0 +1,47 @@
+server/tests/fixtures/database.py
+  s_f83d2c94945117::t_74a5c9b441d121 56
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_74a5c9b441d121 161,510,543-544
+server/tests/product/test_service.py
+  s_f83d2c94945117::t_74a5c9b441d121 2521,2617
+server/tests/fixtures/worker.py
+  s_f83d2c94945117::t_74a5c9b441d121 12,45,49
+server/tests/scheduler/test_cron.py
+  s_f83d2c94945117::t_74a5c9b441d121 24
+server/tests/declarative_config/test_concurrency.py
+  s_f83d2c94945117::t_74a5c9b441d121 82
+server/tests/worker/test_asyncio_watchdog.py
+  s_f83d2c94945117::t_74a5c9b441d121 25-28,33,35,37,61,63-64,104,106-107,133,136,138,159,166-167,186,188-189,215,217-218,237,244-245,269,276-277,307,309-310
+server/tests/customer_seat/test_service.py
+  s_f83d2c94945117::t_74a5c9b441d121 2799
+server/tests/integrations/stripe/test_payment.py
+  s_f83d2c94945117::t_74a5c9b441d121 73
+server/scripts/pytest_shards.py
+  s_f83d2c94945117::t_74a5c9b441d121 34
+server/tests/license_key/test_service.py
+  s_f83d2c94945117::t_74a5c9b441d121 87
+server/tests/user_organization/test_service.py
+  s_f83d2c94945117::t_74a5c9b441d121 332,408,576
+server/tests/oauth2/conftest.py
+  s_f83d2c94945117::t_74a5c9b441d121 44
+server/tests/checkout_link/test_repository.py
+  s_f83d2c94945117::t_74a5c9b441d121 99
+server/tests/fixtures/auth.py
+  s_f83d2c94945117::t_74a5c9b441d121 13,16-18,105-109,121-151,155,157-158,160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2e13020eded90cd2cbc46280f6a2dc3985befd9a",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

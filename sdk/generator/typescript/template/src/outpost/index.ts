@@ -1,12 +1,11 @@
-export { outpost } from "./factory";
-export type { OutpostFactoryOptions } from "./factory";
 export {
   MissingExternalIdError,
   Outpost,
+  outpost,
   PolarOutpostError,
   UnavailableRedisError,
 } from "./client";
-export type { OutpostOptions } from "./client";
+export type { OutpostFactoryOptions, OutpostOptions } from "./client";
 export type { CustomerMeter } from "../metering/meter";
 export type { EventInput } from "../metering/event";
 export { getBucketStart, getMatcher, reduce, withMatchers } from "./reducer";

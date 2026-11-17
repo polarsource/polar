@@ -14,12 +14,12 @@ import {
   decodeState,
   MissingExternalIdError,
   Outpost,
+  outpost,
   type OutpostOptions,
   PolarOutpostError,
   UnavailableRedisError,
   isSampled,
 } from "./client";
-import { outpost } from "./factory";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";

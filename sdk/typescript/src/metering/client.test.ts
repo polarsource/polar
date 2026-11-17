@@ -7,7 +7,7 @@ import type { CustomerMeter } from "./meter";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase, PolarError, PolarNetworkError } from "../base";
-import { outpost, type OutpostFactoryOptions } from "../outpost/factory";
+import { outpost, type OutpostFactoryOptions } from "../outpost/client";
 import { BufferedMeteringStrategy } from "./buffered";
 import {
   Metering,

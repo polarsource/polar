@@ -231,12 +231,6 @@ class TestExtract:
         assert subscription.payment_method.type == CanonicalPaymentMethodType.card
         assert subscription.payment_method.last4 == "4242"
 
-    async def test_several_stores_require_a_choice(self) -> None:
-        adapter, _ = _adapter({"/v1/stores": _page([STORE, {**STORE, "id": "2"}])})
-
-        with pytest.raises(LemonSqueezyStoreRequired):
-            await adapter.get_source_account()
-
     async def test_usage_price_is_metered(self) -> None:
         adapter, _ = _adapter(
             {
@@ -258,6 +252,23 @@ class TestExtract:
 
         [product] = [r for r in records if isinstance(r, CanonicalProduct)]
         assert product.prices[0].pricing_scheme == CanonicalPricingScheme.metered
+
+
+@pytest.mark.anyio
+class TestGetSourceAccount:
+    async def test_maps_store(self) -> None:
+        adapter, _ = _adapter()
+
+        account = await adapter.get_source_account()
+
+        assert account.country == "US"
+        assert account.has_connected_accounts is False
+
+    async def test_several_stores_require_a_choice(self) -> None:
+        adapter, _ = _adapter({"/v1/stores": _page([STORE, {**STORE, "id": "2"}])})
+
+        with pytest.raises(LemonSqueezyStoreRequired):
+            await adapter.get_source_account()
 
 
 @pytest.mark.anyio

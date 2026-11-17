@@ -11597,7 +11597,7 @@ export interface CustomerOrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
    */
   billing_address?: AddressInput | null;
 }
@@ -18887,7 +18887,7 @@ export interface OrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
    */
   billing_address?: AddressInput | null;
 }

@@ -21367,7 +21367,7 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
       billing_address?: components['schemas']['AddressInput'] | null
     }
     /** CustomerOrganization */
@@ -30657,7 +30657,7 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Country and state fields cannot be updated. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
       billing_address?: components['schemas']['AddressInput'] | null
     }
     /**

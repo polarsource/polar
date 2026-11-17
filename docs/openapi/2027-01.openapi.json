@@ -50889,7 +50889,7 @@
                 "type": "null"
               }
             ],
-            "description": "The address of the customer that should appear on the invoice. Country and state fields cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
           }
         },
         "type": "object",
@@ -68705,7 +68705,7 @@
                 "type": "null"
               }
             ],
-            "description": "The address of the customer that should appear on the invoice. Country and state fields cannot be updated."
+            "description": "The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."
           }
         },
         "type": "object",

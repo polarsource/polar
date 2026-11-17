@@ -5,7 +5,7 @@ readme = "README.md"
 requires-python = ">=3.13.0"
 dependencies = [
 "certifi>=2026.10.19",
-"pillow>=12.3.0",
+"pillow>=13.0.0",
 "boto3>=1.43.64",
 ]
 

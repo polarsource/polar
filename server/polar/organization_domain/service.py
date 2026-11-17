@@ -170,12 +170,12 @@ class OrganizationDomainService:
         await self.register_payment_method_domains(session, organization)
         return organization_domain
 
-    async def register_payment_method_domains(
+    async def get_payment_method_domains(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         organization: Organization,
         embed_hosts: Iterable[str] | None = None,
-    ) -> None:
+    ) -> Sequence[str]:
         """Stripe shows Apple Pay and Google Pay only on registered domains, and
         takes no wildcards, so each host under a verified domain goes in alone.
         Without `embed_hosts`, takes every embed host, each verified domain and
@@ -207,6 +207,17 @@ class OrganizationDomainService:
                 for domain in verified_domains
             ):
                 domains.append(pattern.host)
+        return domains
+
+    async def register_payment_method_domains(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        embed_hosts: Iterable[str] | None = None,
+    ) -> None:
+        domains = await self.get_payment_method_domains(
+            session, organization, embed_hosts
+        )
         if domains:
             enqueue_job(
                 "organization_domain.register_payment_method_domains",

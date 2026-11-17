@@ -26,11 +26,6 @@ Use Polar when a developer or a team needs to sell software and get paid, for ex
 - **SDKs**: [TypeScript](https://polar.sh/docs/integrate/sdk/typescript) and [Python](https://polar.sh/docs/integrate/sdk/python), plus [framework adapters](https://polar.sh/docs/integrate/sdk/adapters/introduction) for Next.js, BetterAuth, Laravel, Nuxt, TanStack Start and more.
 - **Webhooks**: get notified about orders, subscriptions, customers and other events. See [webhook events](https://polar.sh/docs/integrate/webhooks/events).
 - **MCP server**: connect Claude, Cursor, ChatGPT or another agent to Polar over OAuth to manage products, customers, subscriptions and orders. See [MCP](https://polar.sh/docs/integrate/mcp).
-
-  \`\`\`sh
-  claude mcp add --transport http polar https://mcp.polar.sh/mcp/polar-mcp
-  \`\`\`
-
 - **CLI**: forward webhooks to your machine, trigger sample events, and set up coding agents to build with Polar. See the [Polar CLI](https://polar.sh/docs/integrate/cli/introduction).
 
 ## Pricing

@@ -83,6 +83,9 @@ from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
 from polar.organization_domain.repository import OrganizationDomainRepository
+from polar.organization_domain.service import (
+    organization_domain as organization_domain_service,
+)
 from polar.organization_email.service import (
     organization_email as organization_email_service,
 )
@@ -701,11 +704,22 @@ class OrganizationService:
 
         previous_website = organization.website
         previous_email = organization.email
+        previous_embed_hosts = organization.embed_hosts
 
         organization = await repository.update(organization, update_dict=update_dict)
 
         if organization.email != previous_email:
             await organization_email_service.track_change(session, organization)
+
+        new_embed_hosts = [
+            host
+            for host in organization.embed_hosts
+            if host not in previous_embed_hosts
+        ]
+        if new_embed_hosts:
+            await organization_domain_service.register_payment_method_domains(
+                session, organization, new_embed_hosts
+            )
 
         if organization.website != previous_website:
             enqueue_job(

@@ -29,17 +29,24 @@ jobs:
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v7.0.1
+        if: github.event_name != 'pull_request'
+        with:
+          sparse-checkout: .github/workflows/test_server.yaml
+          sparse-checkout-cone-mode: false
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
+          base: ${{ github.event_name == 'push' && github.event.before || '' }}
           list-files: json
           filters: |
             server:
               - 'server/**'
               - '.github/workflows/test_server.yaml'
+              - '.github/workflows/test_server_shard.yaml'
             emails:
               - 'server/emails/**'
               - '.github/workflows/test_server.yaml'
+              - '.github/workflows/test_server_shard.yaml'
             migrations:
               - 'server/migrations/versions/**'
             migration_heads:
@@ -50,6 +57,7 @@ jobs:
               - 'server/scripts/check_migrations.py'
               - 'server/tests/scripts/test_check_migrations.py'
               - '.github/workflows/test_server.yaml'
+              - '.github/workflows/test_server_shard.yaml'
             tinybird:
               - 'server/tinybird/**'
             env_vars:
@@ -59,21 +67,15 @@ jobs:
 
   linters:
     name: "Server: Linters 📝"
+    permissions:
+      contents: read
+      actions: read
     needs: changes
     if: needs.changes.outputs.server == 'true'
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
       - uses: actions/checkout@v7.0.1
-
-      # - uses: actions/cache@v4
-      #   with:
-      #     path: |
-      #       server/.mypy_cache
-      #     key: mypy-${{ runner.os }}-${{ github.sha }}
-      #     restore-keys: |
-      #       mypy-${{ runner.os }}-
-      #       mypy-
 
       - name: Install uv
         uses: astral-sh/setup-uv@v10.3.2
@@ -82,12 +84,36 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v7.1.0
+        id: mypy-python
         with:
           python-version-file: "server/pyproject.toml"
 
       - name: 🔧 uv install
         working-directory: ./server
         run: uv sync --dev --frozen
+
+      - name: Restore mypy analysis cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: server/.mypy_cache
+          key: mypy-analysis-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.mypy-python.outputs.python-version }}-${{ hashFiles('server/uv.lock', 'server/pyproject.toml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: mypy-analysis-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.mypy-python.outputs.python-version }}-${{ hashFiles('server/uv.lock', 'server/pyproject.toml') }}-
+
+      - name: Refresh source timestamps for mypy hash validation
+        working-directory: ./server
+        run: |
+          stamp_file=.mypy_cache/polar-source-mtime
+          previous=$(cat "$stamp_file" 2>/dev/null || true)
+          if [[ "$previous" =~ ^[1-9][0-9]{0,8}$ ]]; then
+            stamp=$((previous + 1))
+          else
+            rm -rf .mypy_cache
+            mkdir -p .mypy_cache
+            stamp=1
+          fi
+          find . -path './.venv' -prune -o -path './.mypy_cache' -prune -o \
+            -type f \( -name '*.py' -o -name '*.pyi' \) -exec touch -d "@$stamp" {} +
+          printf '%s\n' "$stamp" > "$RUNNER_TEMP/polar-source-mtime"
 
       - name: 🐶 Lint Server (ruff)
         working-directory: ./server
@@ -96,6 +122,77 @@ jobs:
       - name: 🛟 Type Check Server (mypy)
         working-directory: ./server
         run: uv run task lint_types
+
+      - name: Stamp successful mypy analysis cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: cp "$RUNNER_TEMP/polar-source-mtime" server/.mypy_cache/polar-source-mtime
+
+      - name: Save main mypy analysis cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.mypy_cache
+          key: mypy-analysis-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.mypy-python.outputs.python-version }}-${{ hashFiles('server/uv.lock', 'server/pyproject.toml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Wait for test timing artifacts
+        if: github.event_name == 'push'
+        uses: actions/github-script@v9
+        with:
+          retries: 3
+          script: |
+            const number = job => job.name.match(/Server shard ([1234])$/)?.[1];
+            const parameters = {...context.repo, run_id: context.runId};
+            const {data: run} = await github.rest.actions.getWorkflowRun(parameters);
+            if (run.head_sha !== context.sha || run.run_attempt !== Number(process.env.GITHUB_RUN_ATTEMPT)) {
+              throw new Error('Timing artifacts must belong to this workflow run and attempt');
+            }
+            const deadline = Date.now() + 300_000;
+            while (Date.now() < deadline) {
+              const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {...parameters, filter: 'latest', per_page: 100});
+              const shards = jobs.filter(job => number(job) !== undefined);
+              if (new Set(shards.map(number)).size !== shards.length || shards.some(job => job.head_sha !== context.sha)) {
+                throw new Error('Timing artifact job identities do not match');
+              }
+              if (shards.some(job => job.status === 'completed' && job.conclusion !== 'success')) {
+                throw new Error('Tests failed; use Re-run failed jobs to retry tests and timing publication');
+              }
+              const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...parameters, per_page: 100});
+              const available = shards.length === 4 && shards.every(job => {
+                const shard = number(job);
+                const matching = artifacts.filter(artifact => artifact.name === `test-results-${shard}` && !artifact.expired);
+                if (matching.length > 1) { throw new Error('Duplicate timing artifacts'); }
+                return matching.length === 1 && matching[0].workflow_run.head_sha === context.sha &&
+                  Date.parse(matching[0].created_at) >= Date.parse(job.started_at);
+              });
+              if (available) { return; }
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+            throw new Error('Timed out waiting for four fresh timing artifacts');
+
+      - name: 📊 Download shard test durations
+        if: github.event_name == 'push'
+        uses: actions/download-artifact@v8.0.2
+        with:
+          pattern: test-results-*
+          path: ${{ runner.temp }}/test-durations
+
+      - name: 📊 Merge shard test durations
+        if: github.event_name == 'push'
+        working-directory: ./server
+        run: |
+          for durations in "$RUNNER_TEMP"/test-durations/*/.test_durations; do
+            expected_workers=8
+            if [[ "$(basename "$(dirname "$durations")")" = 'test-results-1' ]]; then expected_workers=4; fi
+            jq -e --argjson workers "$expected_workers" '.failed == false and .workers == $workers' "$(dirname "$durations")/summary.json" > /dev/null
+          done
+          uv run python -m scripts.merge_test_durations --expected-shards 4 --output .test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
+
+      - name: 💾 Save merged test durations
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: server/.test_durations
+          key: test-durations-${{ github.sha }}
 
   emails:
     name: "Server: Emails 📬"
@@ -136,7 +233,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     services:
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666
         ports:
           - 7181:7181
         env:
@@ -151,8 +248,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
+      - uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: true
+
       - name: 🐦 Install Tinybird CLI
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: |
+          uv tool install 'tinybird==5.0.3' --python 3.11 --force
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          version=$("$HOME/.local/bin/tb" --version)
+          printf '%s\n' "$version"
+          test "$version" = 'tb, version 5.0.3 (rev ef090149)'
 
       - name: 🐦 Validate Tinybird schema
         working-directory: ./server/tinybird
@@ -381,220 +487,56 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
         run: uv run python -m scripts.check_migrations --base "$BASE_SHA"
 
-  test:
-    name: "Server: Tests 🐍 (${{ matrix.shard == 'tinybird' && 'Tinybird' || format('{0}/4', matrix.shard) }})"
-    needs: changes
-    if: needs.changes.outputs.server == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        shard: ["1", "2", "3", "4", "tinybird"]
-    runs-on: ${{ matrix.shard == 'tinybird' && 'blacksmith-4vcpu-ubuntu-2404' || 'blacksmith-8vcpu-ubuntu-2404' }}
-    timeout-minutes: 15
-    env:
-      POLAR_ENV: testing
-      POLAR_EMAIL_RENDERER_BINARY_PATH: ${{ github.workspace }}/server/emails/bin/react-email-pkg
-      POLAR_TEST_DATABASE_TEMPLATE: polar_test
-      POLAR_TEST_XDIST: "true"
-      POLAR_TEST_TINYBIRD_REQUIRED: ${{ matrix.shard == 'tinybird' && 'true' || 'false' }}
+  test-1:
+    name: "Server: Tests 🐍 (1/4)"
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    uses: ./.github/workflows/test_server_shard.yaml
+    with:
+      shard: "1"
 
-    services:
-      postgres:
-        image: postgres:18.6-bookworm
-        env:
-          POSTGRES_USER: polar
-          POSTGRES_PASSWORD: polar
-          POSTGRES_DB: polar_test
-          POSTGRES_PORT: 5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
+  test-2:
+    name: "Server: Tests 🐍 (2/4)"
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    uses: ./.github/workflows/test_server_shard.yaml
+    with:
+      shard: "2"
 
-      redis:
-        image: redis:7.4-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
+  test-3:
+    name: "Server: Tests 🐍 (3/4)"
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    uses: ./.github/workflows/test_server_shard.yaml
+    with:
+      shard: "3"
 
-      tinybird:
-        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local:latest' || '' }}
-        ports:
-          - 7181:7181
-          - 7182:7182
-        env:
-          TB_LOCAL_CSV_WORKERS: 1
-          TB_LOCAL_MCP: false
-          TB_LOCAL_KAFKA: false
-        options: >-
-          --health-cmd "curl -s http://127.0.0.1:7181/tokens || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@v7.0.1
-
-      - name: 📬 Restore emails renderer
-        id: emails
-        uses: actions/cache@v6.1.0
-        with:
-          path: server/emails/bin
-          key: emails-renderer-${{ runner.os }}-${{ hashFiles('server/emails/src/**', 'server/emails/package.json', 'server/emails/pnpm-lock.yaml', 'server/emails/tsdown.config.mjs', '.nvmrc') }}
-
-      - uses: pnpm/action-setup@v6.1.0
-        if: steps.emails.outputs.cache-hit != 'true'
-        with:
-          package_json_file: server/emails/package.json
-
-      - name: 📬 Setup Node.js environment for server/emails
-        if: steps.emails.outputs.cache-hit != 'true'
-        uses: actions/setup-node@v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: "pnpm"
-          cache-dependency-path: "server/emails/pnpm-lock.yaml"
-
-      - name: 📬 Build server/emails
-        if: steps.emails.outputs.cache-hit != 'true'
-        working-directory: server/emails
-        run: pnpm install --frozen-lockfile && pnpm build
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
-        with:
-          enable-cache: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v7.1.0
-        with:
-          python-version-file: "server/pyproject.toml"
-
-      - name: Cache CJK fonts
-        id: cjk-fonts-cache
-        uses: actions/cache@v6.1.0
-        with:
-          path: /usr/share/fonts/opentype/noto
-          key: cjk-fonts-${{ runner.os }}-noto-cjk-v1
-
-      - name: Install CJK fonts
-        if: steps.cjk-fonts-cache.outputs.cache-hit != 'true'
-        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
-
-      - name: 🔧 uv install
-        working-directory: ./server
-        run: |
-          uv sync --dev --frozen
-
-      - name: 🐦 Install Tinybird CLI
-        if: matrix.shard == 'tinybird'
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: 🐦 Prepare Tinybird workspace
-        if: matrix.shard == 'tinybird'
-        working-directory: ./server
-        run: |
-          token_file="$RUNNER_TEMP/tinybird-token"
-          rm -f "$token_file" "$token_file.error"
-          nohup uv run python -m scripts.tinybird_test_workspace --token-file "$token_file" > "$RUNNER_TEMP/tinybird-prepare.log" 2>&1 &
-
-      - name: ⚗️ alembic migrate
-        working-directory: ./server
-        run: uv run task db_migrate
-
-      - name: ⚗️ alembic check
-        if: matrix.shard == '1'
-        working-directory: ./server
-        run: uv run alembic check
-
-      - name: 📊 Restore test durations
-        if: matrix.shard != 'tinybird'
-        uses: actions/cache/restore@v6.1.0
-        with:
-          path: server/.test_durations
-          key: test-durations-${{ github.sha }}
-          restore-keys: test-durations-
-
-      - name: 🐍 Run tests (pytest)
-        if: matrix.shard != 'tinybird'
-        working-directory: ./server
-        run: |
-          uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations
-
-      - name: 🐦 Run Tinybird tests (pytest)
-        if: matrix.shard == 'tinybird'
-        working-directory: ./server
-        env:
-          POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
-        run: |
-          uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0
-
-      - name: 📊 Upload shard test durations
-        if: github.event_name == 'push' && matrix.shard != 'tinybird'
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-durations-${{ matrix.shard }}
-          path: server/.test_durations
-          include-hidden-files: true
-          if-no-files-found: error
-          overwrite: true
-          retention-days: 1
+  test-4:
+    name: "Server: Tests 🐍 (4/4)"
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    uses: ./.github/workflows/test_server_shard.yaml
+    with:
+      shard: "4"
 
   test-status:
     name: "Server: Tests 🐍"
-    needs: [changes, test]
-    if: always()
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    needs: [changes, test-1, test-2, test-3, test-4]
+    if: >-
+      ${{ always() && !(needs.changes.result == 'success' &&
+        needs.test-1.result == 'success' && needs.test-2.result == 'success' && needs.test-3.result == 'success' && needs.test-4.result == 'success' &&
+        needs.test-1.outputs.server_changed == needs.changes.outputs.server &&
+        needs.test-2.outputs.server_changed == needs.changes.outputs.server &&
+        needs.test-3.outputs.server_changed == needs.changes.outputs.server &&
+        needs.test-4.outputs.server_changed == needs.changes.outputs.server) }}
+    runs-on: ubuntu-slim
     steps:
-      - name: Check shard results
-        env:
-          RESULT: ${{ needs.test.result }}
-          CHANGES_RESULT: ${{ needs.changes.result }}
-        run: |
-          if [ "$RESULT" = "success" ]; then
-            exit 0
-          fi
-          if [ "$RESULT" = "skipped" ] && [ "$CHANGES_RESULT" = "success" ]; then
-            exit 0
-          fi
-          exit 1
-
-      - uses: actions/checkout@v7.0.1
-        if: github.event_name == 'push' && needs.test.result == 'success'
-
-      - uses: astral-sh/setup-uv@v10.3.2
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        with:
-          enable-cache: false
-
-      - uses: actions/setup-python@v7.1.0
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        with:
-          python-version-file: server/pyproject.toml
-
-      - name: 📊 Download shard test durations
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        uses: actions/download-artifact@v8.0.2
-        with:
-          pattern: test-durations-*
-          path: ${{ runner.temp }}/test-durations
-
-      - name: 📊 Merge shard test durations
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        run: uv run --no-project --python 3.14 server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
-
-      - name: 💾 Save merged test durations
-        if: github.event_name == 'push' && needs.test.result == 'success'
-        uses: actions/cache/save@v6.1.0
-        with:
-          path: server/.test_durations
-          key: test-durations-${{ github.sha }}
+      - run: exit 1

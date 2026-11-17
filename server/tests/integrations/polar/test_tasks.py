@@ -434,6 +434,7 @@ class TestFlushEventIngestion:
 
         get_client.assert_not_called()
 
+    @pytest.mark.usefixtures("session")
     async def test_noop_when_no_counts(self, mocker: MockerFixture) -> None:
         self._patch_settings(mocker)
         repository = MagicMock()
@@ -455,6 +456,7 @@ class TestFlushEventIngestion:
 
         client.track_event_ingestion.assert_not_called()
 
+    @pytest.mark.usefixtures("session")
     async def test_calls_client_with_counts_and_cutoff(
         self, mocker: MockerFixture
     ) -> None:

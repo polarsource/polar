@@ -15,6 +15,7 @@ from sqlalchemy_utils import create_database, database_exists, drop_database
 from polar.config import settings
 from polar.kit.db.postgres import create_async_engine
 from polar.models import Model
+from scripts.ci_migrations import wait_for_migrations
 
 
 def get_database_url(worker_id: str, driver: str = "asyncpg") -> str:
@@ -42,6 +43,9 @@ def apply_migrations(asyncpg_database_url: str) -> None:
 
 
 def clone_template_database(sync_database_url: str) -> None:
+    if result_file := os.environ.get("POLAR_TEST_MIGRATION_RESULT"):
+        wait_for_migrations(pathlib.Path(result_file))
+
     for _ in range(150):
         try:
             create_database(sync_database_url, template=TEMPLATE_DATABASE)
@@ -53,7 +57,7 @@ def clone_template_database(sync_database_url: str) -> None:
     raise RuntimeError(f"Template database {TEMPLATE_DATABASE} never became free")
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def initialize_test_database(worker_id: str) -> Iterator[None]:
     sync_database_url = get_database_url(worker_id, "psycopg")
 

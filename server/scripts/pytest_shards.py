@@ -1,5 +1,4 @@
 import argparse
-import heapq
 import json
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
@@ -7,7 +6,7 @@ from pathlib import Path
 
 
 def split_files(
-    files: Sequence[Path], durations: Mapping[str, float], shards: int
+    files: Sequence[Path], durations: Mapping[str, float], workers: Sequence[int]
 ) -> list[list[Path]]:
     file_durations: dict[str, float] = defaultdict(float)
     for node_id, duration in durations.items():
@@ -25,18 +24,22 @@ def split_files(
         file: file_durations.get(file.as_posix(), sizes[file] * seconds_per_byte)
         for file in files
     }
-    groups: list[list[Path]] = [[] for _ in range(shards)]
-    heap = [(0.0, index) for index in range(shards)]
+    groups: list[list[Path]] = [[] for _ in workers]
+    loads = [0.0 for _ in workers]
     for file in sorted(files, key=lambda file: (-weights[file], file.as_posix())):
-        duration, index = heapq.heappop(heap)
+        index = min(
+            range(len(workers)),
+            key=lambda index: ((loads[index] + weights[file]) / workers[index], index),
+        )
         groups[index].append(file)
-        heapq.heappush(heap, (duration + weights[file], index))
+        loads[index] += weights[file]
     return [sorted(group) for group in groups]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--shards", type=int, default=4)
+    parser.add_argument("--workers-per-shard")
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--shard", type=int)
     selection.add_argument("--tinybird", action="store_true")
@@ -44,6 +47,19 @@ def main() -> None:
     args = parser.parse_args()
     if args.shard is not None and not 1 <= args.shard <= args.shards:
         parser.error("--shard must be between 1 and --shards")
+
+    try:
+        workers = (
+            [int(value) for value in args.workers_per_shard.split(",")]
+            if args.workers_per_shard
+            else [1] * args.shards
+        )
+    except ValueError:
+        parser.error(
+            "--workers-per-shard must contain comma-separated positive integers"
+        )
+    if len(workers) != args.shards or any(value < 1 for value in workers):
+        parser.error("--workers-per-shard must provide one positive count per shard")
 
     files = sorted(
         file
@@ -61,7 +77,7 @@ def main() -> None:
             for file in Path("tests/tinybird-files.txt").read_text().splitlines()
         ]
         if args.tinybird
-        else split_files(files, durations, args.shards)[args.shard - 1]
+        else split_files(files, durations, workers)[args.shard - 1]
     )
     if not selected:
         parser.error("shard contains no test files")

@@ -329,7 +329,7 @@ async def _attempt_role_change(
 @pytest.mark.anyio
 class TestConcurrentRemoval:
     async def test_admin_capability_invariant_under_concurrency(
-        self, worker_id: str
+        self, worker_id: str, initialize_test_database: None
     ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),
@@ -405,7 +405,7 @@ class TestConcurrentRemoval:
 @pytest.mark.anyio
 class TestConcurrentDemotion:
     async def test_admin_capability_invariant_under_concurrency(
-        self, worker_id: str
+        self, worker_id: str, initialize_test_database: None
     ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),
@@ -573,7 +573,7 @@ async def _owner_count(session: Any, organization_id: UUID) -> int:
 @pytest.mark.anyio
 class TestSetRoleTransferOwnershipRace:
     async def test_set_role_aborts_when_concurrent_transfer_promotes_target(
-        self, worker_id: str, mocker: MockerFixture
+        self, worker_id: str, mocker: MockerFixture, initialize_test_database: None
     ) -> None:
         engine = create_async_engine(
             dsn=get_database_url(worker_id),

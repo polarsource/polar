@@ -66,12 +66,6 @@ async def email_send(
     deduplication_key: str | None = None,
     unsuppress: bool = False,
 ) -> None:
-    if unsuppress:
-        try:
-            await _remove_suppression_after_failure(to_email_addr)
-        except Exception:
-            log.warning("email.remove_suppression_failed", exc_info=True)
-
     if html_content is None:
         assert template is not None
         assert props_json is not None
@@ -79,6 +73,12 @@ async def email_send(
 
     email_props = json.loads(props_json) if props_json else {}
     tags = _build_tags(template, email_props)
+
+    if unsuppress:
+        try:
+            await _remove_suppression_after_failure(to_email_addr)
+        except Exception:
+            log.warning("email.remove_suppression_failed", exc_info=True)
 
     processor_id: str | None = None
     status = EmailLogStatus.sent

@@ -12,7 +12,7 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ### Fixed
 
-- TypeScript: bundling an API version entry point, such as `@polar-sh/sdk/2026-10`, no longer requires Outpost's optional `ioredis` and `@opentelemetry/*` peer dependencies. This fixes `Module not found` errors in Next.js (Turbopack) and Vite builds since 1.1.0. Enable Outpost with `polar.metering({ outpost: outpost() })`, importing `outpost` from `@polar-sh/sdk/outpost`.
+- Fix bundler related outpost errors
 
 ## [1.3.0] - 2026-11-16
 

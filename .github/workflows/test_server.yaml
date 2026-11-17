@@ -31,7 +31,8 @@ jobs:
       - name: Inject change detection outcome
         id: filter
         run: |
-          echo "server=false" >> "$GITHUB_OUTPUT"
+          echo "server=true" >> "$GITHUB_OUTPUT"
+          exit 1
 
   linters:
     name: "Server: Linters 📝"

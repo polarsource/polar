@@ -19,7 +19,7 @@ export const Sheet = ({
   /** Sets the title one step larger, for sheets that are products rather than parts of a figure. */
   large?: boolean
 }) => (
-  <div className="dark:bg-polar-900 flex min-h-0 w-full flex-col rounded-xl bg-white">
+  <div className="dark:bg-polar-900 flex min-h-0 w-full min-w-0 flex-col rounded-xl bg-white">
     <Box flexDirection="column" rowGap="l" padding="xl" height="100%">
       <Box justifyContent="between" alignItems="baseline" columnGap="l">
         <Box alignItems="baseline" columnGap="m" flexWrap="wrap">

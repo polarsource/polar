@@ -18,7 +18,7 @@ permissions:
 jobs:
   changes:
     name: "Detect changes"
-    runs-on: ubuntu-slim
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
       emails: ${{ steps.filter.outputs.emails }}
@@ -29,10 +29,6 @@ jobs:
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v7.0.1
-        if: github.event_name != 'pull_request'
-        with:
-          sparse-checkout: .github/workflows/test_server.yaml
-          sparse-checkout-cone-mode: false
       - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
@@ -450,8 +446,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7.0.1
-        with:
-          sparse-checkout: server
 
       - name: 📬 Restore emails renderer
         id: emails
@@ -532,7 +526,7 @@ jobs:
         uses: actions/cache/restore@v6.1.0
         with:
           path: server/.test_durations
-          key: test-durations-${{ github.sha }}
+          key: test-durations-71b51c6ac8112d76a09528bb4807715321820f29
           restore-keys: test-durations-
 
       - name: 🐍 Run tests (pytest)
@@ -592,11 +586,10 @@ jobs:
           exit 1
 
       - uses: actions/checkout@v7.0.1
-        with:
-          sparse-checkout: |
-            server/scripts/merge_test_durations.py
-          sparse-checkout-cone-mode: false
         if: github.event_name == 'push' && needs.test.result == 'success'
+        with:
+          sparse-checkout: server/scripts/merge_test_durations.py
+          sparse-checkout-cone-mode: false
 
       - uses: astral-sh/setup-uv@v10.3.2
         if: github.event_name == 'push' && needs.test.result == 'success'

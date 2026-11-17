@@ -8113,17 +8113,16 @@ class TestUpdateProduct:
         assert subscription.product_id == product.id
 
     @pytest.mark.parametrize(
-        ("billing_address", "missing_fields"),
+        "billing_address",
         [
-            (None, ["country"]),
-            (Address(country=CountryAlpha2("US"), state="NY"), ["postal_code"]),
-            (Address(country=CountryAlpha2("BR")), ["state", "city"]),
+            None,
+            Address(country=CountryAlpha2("US"), state="NY"),
+            Address(country=CountryAlpha2("BR")),
         ],
     )
     async def test_free_to_paid_incomplete_billing_address(
         self,
         billing_address: Address | None,
-        missing_fields: list[str],
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -8137,7 +8136,7 @@ class TestUpdateProduct:
             save_fixture, product=product_recurring_free_price, customer=customer
         )
 
-        with pytest.raises(BillingAddressRequired) as exc_info:
+        with pytest.raises(BillingAddressRequired):
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
             ) as ctx:
@@ -8148,8 +8147,6 @@ class TestUpdateProduct:
                     product_id=product.id,
                     proration_behavior=SubscriptionProrationBehavior.prorate,
                 )
-
-        assert exc_info.value.missing_fields == missing_fields
 
     async def test_free_to_paid_complete_billing_address(
         self,

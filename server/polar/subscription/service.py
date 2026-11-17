@@ -232,13 +232,9 @@ class AlreadyCanceledSubscription(SubscriptionError):
 
 
 class BillingAddressRequired(SubscriptionError):
-    def __init__(self, subscription: Subscription, missing_fields: list[str]) -> None:
-        self.subscription = subscription
-        self.missing_fields = missing_fields
+    def __init__(self) -> None:
         super().__init__(
-            "Add a billing address with "
-            f"{', '.join(missing_fields)} before switching to a paid product.",
-            409,
+            "Add a billing address before switching to a paid product.", 409
         )
 
 
@@ -2200,13 +2196,8 @@ class SubscriptionService:
             not price.is_free for price in currency_prices
         ):
             billing_address = subscription.customer.billing_address
-            missing_fields = (
-                ["country"]
-                if billing_address is None
-                else billing_address.get_missing_required_fields()
-            )
-            if missing_fields:
-                raise BillingAddressRequired(subscription, missing_fields)
+            if billing_address is None or not billing_address.has_required_fields():
+                raise BillingAddressRequired()
 
         old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)

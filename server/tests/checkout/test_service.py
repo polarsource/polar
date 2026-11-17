@@ -53,7 +53,7 @@ from polar.enums import (
 from polar.event.system import SystemEvent
 from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import AddressInput
+from polar.kit.address import Address, AddressInput, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -8268,6 +8268,97 @@ class TestCheckoutCreatedEvent:
         assert event.user_metadata["checkout_id"] == str(checkout.id)
         assert event.user_metadata["checkout_status"] == checkout.status
         assert event.user_metadata["product_id"] == str(checkout.product_id)
+
+
+@pytest.mark.anyio
+class TestAssignUSShortBillingAddressExperiment:
+    @pytest.mark.parametrize(
+        ("attributes", "variant", "expected_variant"),
+        [
+            pytest.param({}, "treatment", "treatment", id="eligible"),
+            pytest.param(
+                {"customer_billing_address": Address(country=CountryAlpha2("FR"))},
+                "treatment",
+                None,
+                id="not US",
+            ),
+            pytest.param(
+                {
+                    "customer_billing_address": Address(
+                        country=CountryAlpha2("US"), line1="123 Main St"
+                    )
+                },
+                "treatment",
+                None,
+                id="prefilled street",
+            ),
+            pytest.param(
+                {"is_business_customer": True},
+                "treatment",
+                None,
+                id="business customer",
+            ),
+            pytest.param(
+                {"analytics_metadata": {"opened_at": "2026-01-01T00:00:00+00:00"}},
+                "treatment",
+                None,
+                id="already opened",
+            ),
+            pytest.param({}, "test", None, id="unknown variant"),
+            pytest.param({}, None, None, id="no variant"),
+        ],
+    )
+    async def test_assignment(
+        self,
+        attributes: dict[str, Any],
+        variant: str | None,
+        expected_variant: str | None,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        posthog_mock.get_feature_flag_variant = mocker.AsyncMock(return_value=variant)
+        checkout_one_time_fixed.customer_billing_address = Address(
+            country=CountryAlpha2("US")
+        )
+        for attribute, value in attributes.items():
+            setattr(checkout_one_time_fixed, attribute, value)
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.assign_us_short_billing_address_experiment(
+            session, checkout_one_time_fixed, "distinct_id"
+        )
+
+        assert (checkout.analytics_metadata or {}).get(
+            "us_short_billing_address_variant"
+        ) == expected_variant
+
+    async def test_exposure_sent_on_open(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        checkout_one_time_fixed.analytics_metadata = {
+            "us_short_billing_address_variant": "treatment"
+        }
+        await save_fixture(checkout_one_time_fixed)
+
+        await checkout_service.mark_opened(
+            session, checkout_one_time_fixed, "distinct_id"
+        )
+
+        exposure = posthog_mock.capture.call_args_list[0].kwargs
+        assert exposure["distinct_id"] == "distinct_id"
+        assert exposure["event"] == "$feature_flag_called"
+        assert exposure["properties"] == {
+            "$feature_flag": "checkout_us_short_billing_address",
+            "$feature_flag_response": "treatment",
+        }
 
 
 @pytest.mark.anyio

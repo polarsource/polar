@@ -1,0 +1,31 @@
+server/polar/billing_entry/service.py
+  s_8400e431c93fe4::t_db6bd0d7c1d691 323-324,358-379
+  s_8400e431c93fe4::t_ac0e242f089234 349-350
+  s_8400e431c93fe4::t_be59666c1c7f65 381
+  s_8400e431c93fe4::t_df1c23d7bf5406 265,268-272,302,304,314,318,344
+  s_8400e431c93fe4::t_be818454d43685 266-267,273-277,298-301,303,305-313,315-317,319-322,325-343,345-348,351-357,380
+  s_8400e431c93fe4::t_ff684e126bfb54 279
+server/tests/billing_entry/test_service.py
+  s_8400e431c93fe4::t_31f4cd149b6229 1772-1835
+  s_8400e431c93fe4::t_db6bd0d7c1d691 1837-1894
+  s_8400e431c93fe4::t_64a2136febcb43 1836
+server/polar/billing_entry/repository.py
+  s_8400e431c93fe4::t_be818454d43685 152-156,160-161,163-167,169-174
+  s_8400e431c93fe4::t_72f2284b0eed28 7,20-24,157-159,162,168
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d46de63d02aa0a7e52c338a94d06b83d653464a",
+  "prompts": {},
+  "sessions": {
+    "s_8400e431c93fe4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ac43031-38f3-4d15-bbc2-2b13225354e3",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

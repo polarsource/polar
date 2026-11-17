@@ -627,6 +627,68 @@ class TestUpdate:
         assert updated_order.billing_address.country == "FR"
         assert updated_order.billing_address.line1 == "Rue de la Paix"
 
+    async def test_draft_country_change_recalculates_tax(
+        self,
+        calculate_tax_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product_one_time: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time,
+            status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_address=AddressInput(
+                    country=CountryAlpha2Input("US"),
+                    state="NY",
+                    postal_code="10001",
+                ),
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_order)
+
+        assert updated_order.billing_address is not None
+        assert updated_order.billing_address.country == "US"
+        assert updated_order.tax_amount == 200
+        assert updated_order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
+        assert calculate_tax_mock.call_args.args[5].country == "US"
+
+    async def test_draft_incomplete_billing_address_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product_one_time: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time,
+            status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(
+                    billing_address=AddressInput(
+                        country=CountryAlpha2Input("US"), state="NY"
+                    ),
+                ),
+            )
+
 
 @pytest.mark.anyio
 class TestCreateOrderFromCheckout:

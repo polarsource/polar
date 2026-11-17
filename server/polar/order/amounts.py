@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import structlog
 
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
+from polar.kit.address import Address
 from polar.logging import Logger
 from polar.models import Customer, Discount, OrderItem, Product, Subscription
 from polar.tax.calculation import (
@@ -41,6 +42,7 @@ async def calculate_tax(
     product: Product,
     tax_exempted: bool,
     allow_silent_failure: bool = True,
+    billing_address: Address | None = None,
 ) -> tuple[
     TaxProcessor | None,
     TaxBehavior | None,
@@ -48,7 +50,7 @@ async def calculate_tax(
     int,
     Sequence[TaxBreakdownItem],
 ]:
-    billing_address = customer.billing_address
+    billing_address = billing_address or customer.billing_address
     tax_id = customer.tax_id
 
     tax_processor: TaxProcessor | None = None

@@ -1,0 +1,19 @@
+terraform/test/events_api.tf
+  s_54118267552a9e::t_8a300c84df8d30 132-148,150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "57660657798aa0870122fb114459c0d52a483915",
+  "prompts": {},
+  "sessions": {
+    "s_54118267552a9e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8ec6e941-f911-43da-9b3f-81f2b058e16b",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

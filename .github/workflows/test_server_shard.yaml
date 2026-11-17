@@ -145,7 +145,7 @@ jobs:
         uses: actions/cache/restore@v6.1.0
         with:
           path: server/.test_durations
-          key: test-durations-${{ github.sha }}
+          key: test-durations-2a11c84cc42ada599b3e7e3b015a49eab0c56cc9
           restore-keys: test-durations-
 
       - name: Restore pytest bytecode
@@ -167,6 +167,8 @@ jobs:
         working-directory: ./server
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
+          PYTHONPATH: ${{ github.workspace }}/.github
+          PYTEST_ADDOPTS: "-p ci_gc_profile"
         run: |
           uv run python -m scripts.pytest_shards --shards 4 --workers-per-shard 3,8,8,8 --shard ${{ inputs.shard }} > "$RUNNER_TEMP/ordinary-files"
           cp "$RUNNER_TEMP/ordinary-files" "$RUNNER_TEMP/test-files"

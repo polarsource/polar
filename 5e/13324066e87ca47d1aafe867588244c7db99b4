@@ -1,0 +1,24 @@
+server/polar/billing_entry/service.py
+  s_8400e431c93fe4::t_12f3ebe3b54f43 13,267-268,275-277,282-287,289-294,314-323,332,340-344,348-349,385-400,407-416,418-421,424-442
+server/tests/billing_entry/test_service.py
+  s_8400e431c93fe4::t_b993887f9ef3a1 1913-1947,1955-1956,1961-1990,1995-1996,1998-2007
+  s_8400e431c93fe4::t_28508496509e88 1721-1750,1818-1880,1882,1884-1889,1891-1910,1912,2031,2034-2037,2048
+server/polar/billing_entry/repository.py
+  s_8400e431c93fe4::t_12f3ebe3b54f43 182,189
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5e13324066e87ca47d1aafe867588244c7db99b4",
+  "prompts": {},
+  "sessions": {
+    "s_8400e431c93fe4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ac43031-38f3-4d15-bbc2-2b13225354e3",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -242,6 +242,16 @@ class TestApply:
                 },
                 id="missing_count",
             ),
+            pytest.param(
+                {
+                    "external_id": "pro",
+                    "name": "Pro",
+                    "recurring_interval": "month",
+                    "trial_payment_setup_required": False,
+                    "prices": [{"amount_type": "fixed", "price_amount": 2000}],
+                },
+                id="payment_setup_without_trial",
+            ),
         ],
     )
     @pytest.mark.auth

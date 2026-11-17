@@ -183,6 +183,8 @@ def _product_entry(
             "recurring_interval_count": product.recurring_interval_count,
             "trial_interval": product.trial_interval,
             "trial_interval_count": product.trial_interval_count,
+            "trial_payment_setup_required": product.trial_interval is None
+            or product.trial_payment_setup_required,
             "meter_interval": product.meter_interval,
             "meter_interval_count": product.meter_interval_count,
             "prices": prices,
@@ -191,7 +193,13 @@ def _product_entry(
         }
     )
     return ConfigProductRead.model_validate(
-        {**_dump(config), "deprecated": True if deprecated else None}
+        {
+            **_dump(config),
+            "trial_payment_setup_required": (
+                None if config.trial_payment_setup_required else False
+            ),
+            "deprecated": True if deprecated else None,
+        }
     )
 
 

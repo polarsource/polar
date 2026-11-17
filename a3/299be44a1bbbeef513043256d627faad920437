@@ -1,0 +1,27 @@
+terraform/modules/ec2_tailscale/tailscale-init.sh.tftpl
+  s_341afaa23dbe07::t_f6e09980b1c4aa 60,82-83
+AGENTS.md
+  s_341afaa23dbe07::t_f6e09980b1c4aa 229
+terraform/production/tailscale.tf
+  s_341afaa23dbe07::t_f6e09980b1c4aa 26
+terraform/modules/ec2_tailscale/main.tf
+  s_341afaa23dbe07::t_f6e09980b1c4aa 88-90
+terraform/modules/ec2_tailscale/variables.tf
+  s_341afaa23dbe07::t_f6e09980b1c4aa 78-83
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3299be44a1bbbeef513043256d627faad920437",
+  "prompts": {},
+  "sessions": {
+    "s_341afaa23dbe07": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e4f0-da64-7952-878d-ff798d0b01c7",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

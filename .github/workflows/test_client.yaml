@@ -24,6 +24,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       clients: ${{ steps.filter.outputs.clients }}
+      turbo-scope: ${{ steps.scope.outputs.turbo-scope }}
     steps:
       - uses: actions/checkout@v7.0.1
       - uses: dorny/paths-filter@v4.0.3
@@ -39,6 +40,16 @@ jobs:
               - '.github/workflows/test_client.yaml'
               - '.github/actions/setup-clients/**'
               - '.github/workflows/release_cli.yml'
+            unscoped:
+              - 'clients/*'
+              - 'sdk/cli-commands/**'
+              - 'docs/**'
+              - '.github/**'
+              - '.nvmrc'
+      - name: Scope turbo to what the diff can reach
+        id: scope
+        if: github.event_name == 'pull_request' && steps.filter.outputs.unscoped == 'false'
+        run: echo "turbo-scope=--affected" >> "$GITHUB_OUTPUT"
 
   checks:
     name: "Client: Checks 💅"
@@ -53,11 +64,15 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
@@ -71,7 +86,7 @@ jobs:
         run: pnpm --filter @polar-sh/i18n validate
 
       - name: 👀 Typecheck
-        run: pnpm run typecheck
+        run: pnpm turbo run typecheck $TURBO_SCOPE
 
   test-web:
     name: "Client: Test Web 🧪"
@@ -86,16 +101,20 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: Web"
-        run: pnpm turbo run test --filter=web
+        run: pnpm turbo run test --filter=web $TURBO_SCOPE
 
   test-checkout:
     name: "Client: Test Checkout 🧪"
@@ -110,16 +129,20 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: @polar-sh/checkout"
-        run: pnpm turbo run test --filter=@polar-sh/checkout
+        run: pnpm turbo run test --filter=@polar-sh/checkout $TURBO_SCOPE
 
   test-packages:
     name: "Client: Test Packages 🧪"
@@ -134,11 +157,15 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
@@ -147,7 +174,7 @@ jobs:
           bun-version-file: clients/packages/cli/package.json
 
       - name: "🧪 Test: Packages"
-        run: pnpm turbo run test --filter='!web' --filter='!@polar-sh/checkout'
+        run: pnpm turbo run test --filter='!web' --filter='!@polar-sh/checkout' $TURBO_SCOPE
 
       - name: "📚 CLI docs are up to date"
         run: pnpm --filter @polar-sh/cli docs:check
@@ -165,16 +192,20 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
       - name: Check out code
         uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
       - name: 🛠️ Build
-        run: pnpm build
+        run: pnpm turbo run build $TURBO_SCOPE
 
   cli-binary:
     name: "Client: CLI Binary 📦"

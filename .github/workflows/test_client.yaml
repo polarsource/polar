@@ -95,7 +95,31 @@ jobs:
       - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: Web"
-        run: pnpm --filter web test
+        run: pnpm turbo run test --filter=web
+
+  test-checkout:
+    name: "Client: Test Checkout 🧪"
+    needs: changes
+    if: needs.changes.outputs.clients == 'true'
+    timeout-minutes: 15
+    runs-on: blacksmith-8vcpu-ubuntu-2404
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ENV: "testing"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v7.0.1
+
+      - uses: ./.github/actions/setup-clients
+
+      - name: "🧪 Test: @polar-sh/checkout"
+        run: pnpm turbo run test --filter=@polar-sh/checkout
 
   test-packages:
     name: "Client: Test Packages 🧪"
@@ -118,30 +142,12 @@ jobs:
 
       - uses: ./.github/actions/setup-clients
 
-      - name: "🧪 Test: App"
-        run: pnpm --filter @polar-sh/app test
-
-      - name: "🧪 Test: @polar-sh/currency"
-        run: pnpm --filter @polar-sh/currency test
-
-      - name: "🧪 Test: @polar-sh/checkout"
-        run: pnpm --filter @polar-sh/checkout test
-
-      - name: "🧪 Test: @polar-sh/orbit"
-        run: pnpm --filter @polar-sh/orbit test
-
-      - name: "🧪 Test: MCP"
-        run: pnpm --filter mcp test
-
-      - name: "🧪 Test: Adapters"
-        run: pnpm turbo run test --filter='./adapters/*'
-
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version-file: clients/packages/cli/package.json
 
-      - name: "🧪 Test: CLI"
-        run: pnpm --filter @polar-sh/cli test
+      - name: "🧪 Test: Packages"
+        run: pnpm turbo run test --filter='!web' --filter='!@polar-sh/checkout'
 
       - name: "📚 CLI docs are up to date"
         run: pnpm --filter @polar-sh/cli docs:check
@@ -214,7 +220,7 @@ jobs:
 
   status:
     name: "Client: Tests 🎨"
-    needs: [changes, checks, test-web, test-packages, build, cli-binary]
+    needs: [changes, checks, test-web, test-checkout, test-packages, build, cli-binary]
     if: always()
     runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:

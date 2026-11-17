@@ -8,27 +8,14 @@ declare global {
   var __vitest_mocker__: { reset: () => void } | undefined
 }
 
-const resetModuleMocks = () => {
-  const mocker = globalThis.__vitest_mocker__
-  if (!mocker) {
-    throw new Error(
-      'vitest no longer exposes __vitest_mocker__: vi.mock() registrations would leak between test files under isolate: false',
-    )
-  }
-  mocker.reset()
+const moduleMocker = globalThis.__vitest_mocker__
+if (!moduleMocker) {
+  throw new Error(
+    'vitest no longer exposes __vitest_mocker__: vi.mock() registrations would leak between test files under isolate: false',
+  )
 }
 
 const locationDescriptor = Object.getOwnPropertyDescriptor(window, 'location')
-const initialWindowKeys = new Set(Object.getOwnPropertyNames(window))
-
-const resetWindow = () => {
-  for (const key of Object.getOwnPropertyNames(window)) {
-    if (!initialWindowKeys.has(key) && !key.startsWith('__vitest')) {
-      delete (window as unknown as Record<string, unknown>)[key]
-    }
-  }
-}
-
 const resetDocument = () => {
   if (locationDescriptor) {
     Object.defineProperty(window, 'location', locationDescriptor)
@@ -67,7 +54,6 @@ afterAll(() => {
   vi.unstubAllGlobals()
   vi.unstubAllEnvs()
   resetDocument()
-  resetWindow()
-  resetModuleMocks()
+  moduleMocker.reset()
   vi.resetModules()
 })

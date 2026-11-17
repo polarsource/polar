@@ -20,17 +20,32 @@ const CHECKOUT_FILES = [
   'src/utils/checkout.ts',
 ]
 
+const SERVER_TESTS = ['src/proxy.test.ts']
+
+const env = {
+  NEXT_PUBLIC_API_URL: 'http://api.polar.test',
+  NEXT_PUBLIC_FRONTEND_BASE_URL: 'https://polar.sh',
+  NEXT_PUBLIC_SANDBOX_FRONTEND_BASE_URL: 'https://sandbox.polar.sh',
+}
+
 const sharedTest = {
   environment: 'jsdom',
   setupFiles: ['./vitest.setup.ts'],
   fsModuleCache: true,
   isolate: false,
-  sequence: { shuffle: { files: true, tests: true } },
-  exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
-  env: {
-    NEXT_PUBLIC_API_URL: 'http://api.polar.test',
-    NEXT_PUBLIC_FRONTEND_BASE_URL: 'https://polar.sh',
-    NEXT_PUBLIC_SANDBOX_FRONTEND_BASE_URL: 'https://sandbox.polar.sh',
+  sequence: { shuffle: { tests: true } },
+  exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**', ...SERVER_TESTS],
+  env,
+}
+
+const serverProject = {
+  plugins: [tsconfigPaths({ projects: ['tsconfig.json'] })],
+  test: {
+    name: 'server',
+    environment: 'node',
+    include: SERVER_TESTS,
+    sequence: { shuffle: { tests: true } },
+    env,
   },
 }
 
@@ -56,7 +71,12 @@ const project = (name: string, compiled: boolean) => ({
 
 export default defineConfig({
   test: {
-    projects: [project('uncompiled', false), project('compiled', true)],
+    sequence: { shuffle: { files: true } },
+    projects: [
+      project('uncompiled', false),
+      project('compiled', true),
+      serverProject,
+    ],
     coverage: {
       provider: 'v8',
       include: CHECKOUT_FILES,

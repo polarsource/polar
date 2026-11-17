@@ -14,7 +14,7 @@ from starlette.applications import Starlette
 from polar.auth.service import auth as auth_service
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.auth.factor import GOOGLE_DISCOVERY_ENDPOINT
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.kit.utils import utc_now
 from polar.models import BackofficeUser, BackofficeUserSession, User
 from polar.postgres import AsyncSession, get_db_session
@@ -293,3 +293,62 @@ class TestGoogleLogin:
             .one()
             .token_hash.startswith("v2$")
         )
+
+
+@pytest.mark.anyio
+class TestDevelopmentSignIn:
+    async def test_signs_in_without_google(
+        self,
+        client: httpx2.AsyncClient,
+        session: AsyncSession,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", Environment.development)
+        monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
+
+        response = await client.get("/backoffice/auth/")
+        assert response.status_code == 303
+        assert response.headers["location"] == "http://localhost/backoffice/"
+
+        response = await client.get("/backoffice/")
+        assert response.status_code == 200
+
+        user = (
+            await session.scalars(
+                select(BackofficeUser).where(
+                    BackofficeUser.provider_id == "development"
+                )
+            )
+        ).one()
+        assert user.email == "admin@polar.sh"
+
+    @pytest.mark.parametrize(
+        ("env", "url"),
+        [
+            (Environment.production, "http://localhost/backoffice/auth/"),
+            (Environment.testing, "http://localhost/backoffice/auth/"),
+            (Environment.development, "http://backoffice.polar.sh/backoffice/auth/"),
+        ],
+    )
+    async def test_refused_outside_local_development(
+        self,
+        client: httpx2.AsyncClient,
+        monkeypatch: pytest.MonkeyPatch,
+        env: Environment,
+        url: str,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", env)
+        monkeypatch.setattr(settings, "BACKOFFICE_GOOGLE_CLIENT_ID", "")
+
+        response = await client.get(url)
+        assert response.status_code == 404
+
+    async def test_google_wins_when_configured(
+        self,
+        client: httpx2.AsyncClient,
+        claims: dict[str, object],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", Environment.development)
+
+        await start_login(client, claims)

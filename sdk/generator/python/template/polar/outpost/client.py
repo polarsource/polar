@@ -257,7 +257,10 @@ EXTEND_LOCK_SCRIPT = """
 READ_STATE_SCRIPT = """
 {{ outpost_scripts.read_state }}"""
 
-READ_STATE_SHA = hashlib.sha1(READ_STATE_SCRIPT.encode()).hexdigest()
+READ_STATES_SCRIPT = """
+{{ outpost_scripts.read_states }}"""
+
+READ_STATES_SHA = hashlib.sha1(READ_STATES_SCRIPT.encode()).hexdigest()
 
 WRITE_BUCKET_SCRIPT = """
 {{ outpost_scripts.write_bucket }}"""
@@ -351,6 +354,12 @@ def consumed_units(state: ReducerState, func: str) -> int | float:
     if isinstance(total, float) and not math.isfinite(total):
         raise ValueError("Aggregation values must be finite")
     return BucketStatistics(count, total, low, high).quantity(func)
+
+
+# The statistics a reducer's quantity adds up: all a read needs of its state.
+def _statistics_of(reducer: Reducer) -> str:
+    func = reducer["aggregation"]["func"]
+    return "sum,count" if func == "avg" else func
 
 
 # A customer's state for one reducer is None while Polar does not know the customer.
@@ -738,8 +747,9 @@ class Outpost:
                 read.outcome = "unknown_meter"
                 raise UnknownMeterError(f"Outpost reduces no meter {meter_id}")
             credit = self._find_reducer("credit", meter_id)
+            reducers = [usage] if credit is None else [usage, credit]
             states = await self._read(
-                customer, [usage] if credit is None else [usage, credit]
+                customer, reducers, [_statistics_of(reducer) for reducer in reducers]
             )
             state = states[0]
             credit_state = states[1] if credit is not None else None
@@ -778,7 +788,10 @@ class Outpost:
             customer = self._customer_key(customer_id, external_customer_id)
             self._require_redis()
             await self._refresh()
-            states = await self._read(customer, self._reducers)
+            # Readiness alone: no statistic of any state.
+            states = await self._read(
+                customer, self._reducers, ["" for _ in self._reducers]
+            )
             if not all(map(_is_ready, states)):
                 read.outcome = "not_ready"
             elif None in states:
@@ -882,12 +895,12 @@ class Outpost:
                 await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock, token)
 
     async def _read(
-        self, customer: str, reducers: list[Reducer]
+        self, customer: str, reducers: list[Reducer], statistics: list[str]
     ) -> list[ReducerState | None]:
         """Reads the customer's states from Redis. One Polar has no snapshot of yet is
         asked for once, then read again until it lands."""
         deadline = anyio.current_time() + SNAPSHOT_TIMEOUT
-        states = await self._load(customer, reducers)
+        states = await self._load(customer, reducers, statistics)
         # Polar sends no snapshot without a connection.
         if not self.connected:
             return states
@@ -904,44 +917,36 @@ class Outpost:
             for fetched in fetches:
                 await fetched.wait()
         while True:
-            states = await self._load(customer, reducers)
+            states = await self._load(customer, reducers, statistics)
             if all(map(_is_ready, states)) or anyio.current_time() >= deadline:
                 return states
             await anyio.sleep(min(POLL_INTERVAL, deadline - anyio.current_time()))
 
     async def _load(
-        self, customer: str, reducers: list[Reducer]
+        self, customer: str, reducers: list[Reducer], statistics: list[str]
     ) -> list[ReducerState | None]:
-        """One round trip: each reducer's state, unless Polar does not know the customer."""
+        """One command: each reducer's state, with only the statistics the read adds
+        up, unless Polar does not know the customer."""
         redis = self._require_redis()
-        keys = [
-            f"{self._prefix}:state:{customer}:{reducer['id']}" for reducer in reducers
-        ]
-        async with redis.pipeline(transaction=False) as pipeline:
-            for key, reducer in zip(keys, reducers, strict=True):
-                pipeline.evalsha(READ_STATE_SHA, 1, key)
-                pipeline.hget(
-                    self._missing_key(f"{customer}:{reducer['id']}"), "retry_at"
-                )
-            pipeline.hget(self._pull_key, "reset")
-            results = await pipeline.execute(raise_on_error=False)
+        keys = [self._pull_key]
+        for reducer in reducers:
+            identity = f"{customer}:{reducer['id']}"
+            keys[-1:-1] = [
+                f"{self._prefix}:state:{identity}",
+                self._missing_key(identity),
+            ]
+        try:
+            results = await redis.evalsha(READ_STATES_SHA, len(keys), *keys, *statistics)
+        except NoScriptError:
+            # Redis caches the script with the first EVAL, so this happens once per server.
+            results = await redis.eval(READ_STATES_SCRIPT, len(keys), *keys, *statistics)
         resets = results.pop()
-        if isinstance(resets, Exception):
-            raise resets
         self._resets = None if resets is None else int(resets)
         now = time.time() * 1000
-        states: list[ReducerState | None] = []
-        for key, state, retry_at in zip(keys, results[::2], results[1::2], strict=True):
-            # Redis caches the script with the first EVAL, so this happens once per server.
-            if isinstance(state, NoScriptError):
-                state = await redis.eval(READ_STATE_SCRIPT, 1, key)
-            for result in (state, retry_at):
-                if isinstance(result, Exception):
-                    raise result
-            states.append(
-                None if retry_at and float(retry_at) > now else decode_state(state)
-            )
-        return states
+        return [
+            None if retry_at and float(retry_at) > now else decode_state(state)
+            for retry_at, state in results
+        ]
 
     def _is_stale(self, state: ReducerState | None) -> bool:
         return state is not None and state.confirmed_after_resets != self._resets

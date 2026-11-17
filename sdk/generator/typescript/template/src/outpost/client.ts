@@ -38,6 +38,7 @@ import {
 } from "./reducer";
 import {
   READ_STATE_SCRIPT,
+  READ_STATES_SCRIPT,
   WRITE_BUCKET_SCRIPT,
   CONFIRM_SCRIPT,
   APPLY_SNAPSHOT_SCRIPT,
@@ -136,6 +137,7 @@ interface Confirmation {
 type Read = State | "missing";
 interface OutpostRedis extends Redis {
   outpostReadState(key: string): Promise<string[]>;
+  outpostReadStates(numberOfKeys: number, ...args: string[]): Promise<unknown[]>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
   outpostCommitPull(
     key: string,
@@ -265,6 +267,9 @@ export const decodeState = (value: string[]): State => {
   }
   return state;
 };
+// The statistics a reducer's quantity adds up: all a read needs of its state.
+const statisticsOf = ({ aggregation }: Reducer): string =>
+  aggregation.func === "avg" ? "sum,count" : aggregation.func;
 // Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
 // them, and every local event in the buckets Polar has not sealed yet.
 export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
@@ -448,6 +453,7 @@ export class Outpost {
         retryStrategy: reconnectDelay,
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
+      this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
       this.redis.defineCommand("outpostWriteBucket", {
         numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
@@ -656,10 +662,8 @@ export class Outpost {
         throw new UnknownMeterError(`Outpost reduces no meter ${input.meter_id}`);
       }
       const creditReducer = this.findReducer("credit", input.meter_id);
-      const [state, creditState] = await this.read(
-        customer,
-        creditReducer ? [reducer, creditReducer] : [reducer],
-      );
+      const reducers = creditReducer ? [reducer, creditReducer] : [reducer];
+      const [state, creditState] = await this.read(customer, reducers, reducers.map(statisticsOf));
       if (state === "missing" || creditState === "missing") {
         read.outcome = "unknown_customer";
         return null;
@@ -684,7 +688,12 @@ export class Outpost {
     return this.measureRead("actor", async (read) => {
       this.requireRedis();
       await this.refresh();
-      const reads = await this.read(customerKey(input), this.reducers);
+      // Readiness alone: no statistic of any state.
+      const reads = await this.read(
+        customerKey(input),
+        this.reducers,
+        this.reducers.map(() => ""),
+      );
       read.outcome = !reads.every(isReady)
         ? "not_ready"
         : reads.includes("missing")
@@ -770,9 +779,9 @@ export class Outpost {
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
   // then read again until it lands.
-  private async read(customer: string, reducers: Reducer[]): Promise<Read[]> {
+  private async read(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
-    let reads = await this.load(customer, reducers);
+    let reads = await this.load(customer, reducers, statistics);
     // Polar sends no snapshot without a connection.
     if (!this.connected) return reads;
     // A state confirmed before the last reset serves the read while Polar confirms it again.
@@ -786,34 +795,30 @@ export class Outpost {
     if (reads.every(isReady)) return reads;
     await waitAtMost(fetched, deadline - Date.now());
     for (;;) {
-      reads = await this.load(customer, reducers);
+      reads = await this.load(customer, reducers, statistics);
       if (reads.every(isReady) || Date.now() >= deadline) return reads;
       await sleep(Math.min(POLL_INTERVAL, deadline - Date.now()));
     }
   }
 
-  // One round trip: each reducer's state, unless Polar does not know the customer.
-  private async load(customer: string, reducers: Reducer[]): Promise<Read[]> {
-    const pipeline = this.requireRedis().pipeline() as OutpostPipeline;
-    for (const reducer of reducers) {
+  // One command: each reducer's state, with only the statistics the read adds up, unless Polar
+  // does not know the customer.
+  private async load(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
+    const keys = reducers.flatMap((reducer) => {
       const identity = `${customer}:${reducer.id}`;
-      pipeline.outpostReadState(`${this.prefix}:state:${identity}`);
-      pipeline.hget(this.missingKey(identity), "retry_at");
-    }
-    pipeline.hget(this.pullKey, "reset");
-    const results = await pipeline.exec().catch((error: unknown) => {
-      throw redisUnavailable(error);
+      return [`${this.prefix}:state:${identity}`, this.missingKey(identity)];
     });
-    if (results === null) throw new UnavailableRedisError();
-    const failed = results.find(([error]) => error)?.[0];
-    if (failed) throw redisUnavailable(failed);
-    const resets = results[2 * reducers.length][1] as string | null;
+    const results = await this.requireRedis()
+      .outpostReadStates(keys.length + 1, ...keys, this.pullKey, ...statistics)
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+    const resets = results[reducers.length] as string | null;
     this.resets = resets === null ? null : Number(resets);
-    return reducers.map((_, index) =>
-      Number(results[2 * index + 1][1]) > Date.now()
-        ? "missing"
-        : decodeState(results[2 * index][1] as string[]),
-    );
+    return reducers.map((_, index) => {
+      const [retryAt, state] = results[index] as [string | null, string[]];
+      return Number(retryAt) > Date.now() ? "missing" : decodeState(state);
+    });
   }
 
   private isStale(read: Read): boolean {

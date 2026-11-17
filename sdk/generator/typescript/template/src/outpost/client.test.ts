@@ -1228,6 +1228,12 @@ it("counts a late write into a cold bucket", async () => {
   expect((await outpost.meter(meter))?.consumed_units).toBe(5);
 });
 
+it("counts an event from before 1970", async () => {
+  const outpost = await warm();
+  await outpost.track({ ...usage("old", 5), timestamp: "1969-12-31T23:59:59Z" });
+  expect((await outpost.meter(meter))?.consumed_units).toBe(5);
+});
+
 it("confirms the events Polar ingested and keeps the rest pending", async () => {
   const outpost = await warm();
   const events = Array.from({ length: 10 }, (_, i) => usage(`event-${i}`, 10));
@@ -1999,6 +2005,7 @@ it("raises Outpost errors when Redis fails", async () => {
   const pipeline = outpost["redis"]!.pipeline();
   vi.spyOn(outpost["redis"]!, "pipeline").mockReturnValue(pipeline);
   const write = vi.spyOn(pipeline, "exec").mockRejectedValue(redisError);
+  vi.spyOn(outpost["redis"]!, "outpostReadStates").mockRejectedValue(redisError);
   const readError = outpost.meter(meter);
   await expect(readError).rejects.toBeInstanceOf(UnavailableRedisError);
   await expect(readError).rejects.toMatchObject({ cause: redisError });
@@ -2135,13 +2142,30 @@ describe("Redis cost", () => {
     metadata: { tokens: 1 },
   });
 
-  it("reads a meter in five commands, each reducer's whole state", async () => {
+  it("reads a meter in one command, only the statistics it adds up", async () => {
     await seed();
     const outpost = await quiet();
     await outpost.meter(meter);
     const cost = await redisCost(() => outpost.meter(meter));
-    expect(cost.commands).toEqual({ evalsha: 2, hget: 3 });
-    expect(cost.received).toBeLessThanOrEqual(260);
+    expect(cost.commands).toEqual({ evalsha: 1 });
+    expect(cost.received).toBeLessThanOrEqual(170);
+  });
+
+  it("reads none of the statistics the meter's total leaves out", async () => {
+    await seed();
+    // Five cold buckets Polar has counted, two of them with events it has not confirmed yet, and
+    // a hot one: the read takes the sums of the hot bucket and of the unconfirmed events.
+    for (let index = 1; index <= 5; index += 1) {
+      const start = bucket - index * BUCKET_SIZE;
+      await redis.hset(key, { [`bucket:${start}:count`]: 1, [`bucket:${start}:sum`]: 1, [`bucket:${start}:min`]: 1, [`bucket:${start}:max`]: 1 });
+      if (index <= 2)
+        await redis.hset(key, { [`pending:${start}:count`]: 1, [`pending:${start}:sum`]: 2, [`pending:${start}:min`]: 2, [`pending:${start}:max`]: 2 });
+    }
+    await redis.hset(key, { [`bucket:${bucket}:count`]: 1, [`bucket:${bucket}:sum`]: 5, [`bucket:${bucket}:min`]: 5, [`bucket:${bucket}:max`]: 5 });
+    const outpost = await quiet();
+    expect((await outpost.meter(meter))?.consumed_units).toBe(10 + 2 * 2 + 5);
+    const cost = await redisCost(() => outpost.meter(meter));
+    expect(cost.received).toBeLessThanOrEqual(330);
   });
 
   it("tracks an event in one command", async () => {
@@ -2163,7 +2187,7 @@ describe("Redis cost", () => {
     });
   });
 
-  it("warms a known customer over eleven reducers in 23 commands, each reducer's whole state", async () => {
+  it("warms a known customer over eleven reducers in one command, readiness alone", async () => {
     reducers = [
       ...Array.from(
         { length: 10 },
@@ -2180,8 +2204,8 @@ describe("Redis cost", () => {
     await outpost.actor({ external_customer_id: "bob" });
     await outpost.actor(customer);
     const cost = await redisCost(() => outpost.actor(customer));
-    expect(cost.commands).toEqual({ evalsha: 11, hget: 12 });
-    expect(cost.received).toBeLessThanOrEqual(2_100);
+    expect(cost.commands).toEqual({ evalsha: 1 });
+    expect(cost.received).toBeLessThanOrEqual(620);
   });
 
   it("pulls and applies a snapshot in nine commands", async () => {
@@ -2228,6 +2252,6 @@ describe("Redis cost", () => {
     await first.actor({ external_customer_id: "bob" });
     await second.actor({ external_customer_id: "bob" });
     const cost = await redisCost(() => Promise.all([first.meter(meter), second.meter(meter)]));
-    expect(cost.commands.hget).toBeLessThanOrEqual(3 * (200 / 25 + 6));
+    expect(cost.commands.evalsha).toBeLessThanOrEqual(2 * (200 / 25 + 2));
   });
 });

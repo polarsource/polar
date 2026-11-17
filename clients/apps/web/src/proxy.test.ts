@@ -665,6 +665,20 @@ describe('payment method embed policy', () => {
     )
   })
 
+  it('lets Polar embed itself when the Host header differs from the URL host', async () => {
+    const response = await proxy(
+      framedRequest(
+        'http://localhost:3000/embed/payment-method?session_token=polar_cst_123&embed_origin=http%3A%2F%2F127.0.0.1%3A3000',
+        { Host: '127.0.0.1:3000' },
+      ),
+    )
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(response.headers.get('Content-Security-Policy')).toContain(
+      "frame-ancestors 'self';",
+    )
+  })
+
   it('refuses framing without a session token', async () => {
     const response = await proxy(
       framedRequest('https://polar.sh/embed/payment-method'),

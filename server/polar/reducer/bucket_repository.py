@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import (
     BigInteger,
     ColumnElement,
+    ColumnExpressionArgument,
     Numeric,
     Row,
     ScalarSelect,
@@ -24,6 +25,7 @@ from sqlalchemy import (
     or_,
     select,
     true,
+    union,
     union_all,
     update,
     values,
@@ -73,6 +75,32 @@ def _is_any_customer(
             _is_customer(ReducerBucket, customer_id, external_customer_id)
             for customer_id, external_customer_id in identities
         )
+    )
+
+
+def _event_clauses(
+    model: type[Event | StagedEvent],
+    reducer: Reducer,
+    bucket_start: datetime,
+    bucket_end: datetime,
+) -> tuple[ColumnExpressionArgument[bool], ...]:
+    """The reducer's events in the range: system events for a credit reducer, user
+    events otherwise."""
+    return (
+        model.organization_id == reducer.organization_id,
+        model.source
+        == (
+            EventSource.system
+            if reducer.kind == ReducerKind.credit
+            else EventSource.user
+        ),
+        model.timestamp >= bucket_start,
+        model.timestamp < bucket_end,
+        # Events are never ingested before their timestamp, beyond clock skew:
+        # this bound lets the identity indexes skip the customer's history.
+        model.ingested_at >= bucket_start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
+        reducer.filter.get_sql_clause(model),
+        reducer.aggregation.get_sql_clause(model),
     )
 
 
@@ -156,6 +184,25 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         result = await self.session.execute(statement)
         return result.one()
 
+    async def get_identities_with_events(
+        self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime
+    ) -> Sequence[tuple[UUID | None, str | None]]:
+        """The customer identities with events for the reducer in the range, like
+        `aggregate_events` counts them, including those still in `staged_events`."""
+        statement = union(
+            *(
+                select(model.customer_id, model.external_customer_id).where(
+                    *_event_clauses(model, reducer, bucket_start, bucket_end)
+                )
+                for model in (Event, StagedEvent)
+            )
+        )
+        result = await self.session.execute(statement)
+        return [
+            (customer_id, external_customer_id)
+            for customer_id, external_customer_id in result.all()
+        ]
+
     def _aggregate_statement(
         self,
         model: type[Event | StagedEvent],
@@ -192,21 +239,8 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             statistics[1].label("min"),
             statistics[2].label("max"),
         ).where(
-            model.organization_id == reducer.organization_id,
-            model.source
-            == (
-                EventSource.system
-                if reducer.kind == ReducerKind.credit
-                else EventSource.user
-            ),
-            model.timestamp >= bucket_start,
-            model.timestamp < bucket_end,
-            # Events are never ingested before their timestamp, beyond clock skew:
-            # this bound lets the identity indexes skip the customer's history.
-            model.ingested_at >= bucket_start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
+            *_event_clauses(model, reducer, bucket_start, bucket_end),
             _is_customer(model, customer_id, external_customer_id),
-            reducer.filter.get_sql_clause(model),
-            aggregation.get_sql_clause(model),
             or_(sealed_at.is_(None), model.ingested_at > sealed_at),
         )
 

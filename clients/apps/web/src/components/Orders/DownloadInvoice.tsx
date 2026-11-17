@@ -52,6 +52,7 @@ type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
 
 export type EditInvoiceHandle = {
   show: () => void
+  download: () => void
 }
 
 const INVOICE_GENERATED_EVENT = 'order.invoice_generated'
@@ -98,6 +99,7 @@ const DownloadInvoice = ({
   orderURL,
   dropdown = false,
   hideEditButton = false,
+  headless = false,
   editInvoiceRef,
   variant,
   size,
@@ -116,19 +118,14 @@ const DownloadInvoice = ({
   className?: string
   dropdown?: boolean
   hideEditButton?: boolean
+  /** Render no buttons of its own; it is driven through `editInvoiceRef`, e.g. from a menu. */
+  headless?: boolean
   editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const [loading, setLoading] = useState(false)
   const inFlightRef = useRef(false)
   const { isShown, hide, show } = useModal()
 
-  useEffect(() => {
-    if (!editInvoiceRef) return
-    editInvoiceRef.current = { show }
-    return () => {
-      editInvoiceRef.current = null
-    }
-  }, [editInvoiceRef, show])
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
       defaultValues: {
@@ -168,6 +165,14 @@ const DownloadInvoice = ({
       inFlightRef.current = false
     }
   }, [order.is_invoice_generated, show, fetchInvoiceUrl])
+
+  useEffect(() => {
+    if (!editInvoiceRef) return
+    editInvoiceRef.current = { show, download: onDownload }
+    return () => {
+      editInvoiceRef.current = null
+    }
+  }, [editInvoiceRef, show, onDownload])
 
   const onModalSubmit = useCallback(
     async (data: schemas['OrderUpdate']) => {
@@ -272,7 +277,7 @@ const DownloadInvoice = ({
 
   const action = useMemo(
     () =>
-      dropdown ? (
+      headless ? null : dropdown ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon">
@@ -319,6 +324,7 @@ const DownloadInvoice = ({
         </div>
       ),
     [
+      headless,
       dropdown,
       order,
       loading,
@@ -542,6 +548,7 @@ export const DownloadInvoiceDashboard = ({
   className,
   dropdown = false,
   hideEditButton = false,
+  headless = false,
   editInvoiceRef,
 }: {
   organization: schemas['Organization']
@@ -552,6 +559,7 @@ export const DownloadInvoiceDashboard = ({
   className?: string
   dropdown?: boolean
   hideEditButton?: boolean
+  headless?: boolean
   editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const eventEmitter = useOrganizationSSE(organization.id)
@@ -568,6 +576,7 @@ export const DownloadInvoiceDashboard = ({
       className={className}
       dropdown={dropdown}
       hideEditButton={hideEditButton}
+      headless={headless}
       editInvoiceRef={editInvoiceRef}
     />
   )

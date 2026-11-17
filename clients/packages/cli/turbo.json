@@ -1,0 +1,15 @@
+{
+  "$schema": "https://v2-9-4.turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/../sdk/cli-commands/**"]
+    },
+    "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/../sdk/cli-commands/**"]
+    },
+    "test": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/../sdk/cli-commands/**"]
+    }
+  }
+}

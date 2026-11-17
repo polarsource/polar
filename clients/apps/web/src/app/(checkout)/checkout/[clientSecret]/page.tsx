@@ -1,3 +1,5 @@
+import { DISTINCT_ID_HEADER } from '@/experiments/constants'
+import { getDistinctId } from '@/experiments/distinct-id'
 import { getPublicServerURL, getServerURL } from '@/utils/api'
 import { getSSRHeaders } from '@/utils/client'
 import { resolveLocale } from '@/utils/i18n'
@@ -15,13 +17,19 @@ import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import CheckoutPage from './CheckoutPage'
 
+const createCheckoutClient = async () =>
+  createClient(getServerURL(), undefined, {
+    ...getSSRHeaders(),
+    [DISTINCT_ID_HEADER]: await getDistinctId(),
+  })
+
 export async function generateMetadata(props: {
   params: Promise<{ clientSecret: string }>
 }): Promise<Metadata> {
   const params = await props.params
   const { clientSecret } = params
 
-  const client = createClient(getServerURL(), undefined, getSSRHeaders())
+  const client = await createCheckoutClient()
   const { data: checkout } = await client.GET(
     '/v1/checkouts/client/{client_secret}',
     { params: { path: { client_secret: clientSecret } } },
@@ -53,7 +61,7 @@ export default async function Page(props: {
   const { clientSecret } = params
 
   const embed = _embed === 'true'
-  const client = createClient(getServerURL(), undefined, getSSRHeaders())
+  const client = await createCheckoutClient()
 
   let checkout
   try {

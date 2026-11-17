@@ -136,14 +136,15 @@ class SSRFSafeTransport(httpx2.AsyncHTTPTransport):
     the proxy's address.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self, *, max_keepalive_connections: int = 20, keepalive_expiry: float = 5.0
+    ) -> None:
         super().__init__()
-        # Same limits as HTTPX's defaults
         self._pool = httpcore2.AsyncConnectionPool(
             ssl_context=httpx2.create_ssl_context(),
             max_connections=100,
-            max_keepalive_connections=20,
-            keepalive_expiry=5.0,
+            max_keepalive_connections=max_keepalive_connections,
+            keepalive_expiry=keepalive_expiry,
             network_backend=_SSRFSafeNetworkBackend(),
         )
 

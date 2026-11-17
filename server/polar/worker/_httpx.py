@@ -24,7 +24,9 @@ async def _close_client() -> None:
 def setup_httpx() -> None:
     global _httpx
     instrument_httpx()
-    _httpx = httpx2.AsyncClient(transport=SSRFSafeTransport())
+    _httpx = httpx2.AsyncClient(
+        transport=SSRFSafeTransport(max_keepalive_connections=40, keepalive_expiry=30.0)
+    )
     log.info("Created HTTPX client")
 
 

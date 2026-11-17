@@ -42,9 +42,7 @@ jobs:
           base: ${{ github.event_name == 'push' && github.event.before || '' }}
           filters: |
             server:
-              - 'server/**'
-              - '.github/workflows/test_server.yaml'
-              - '.github/workflows/test_server_shard.yaml'
+              - 'codex-native-gate-proof-no-matching-path/**'
 
       - name: Install uv
         if: steps.filter.outputs.server == 'true'

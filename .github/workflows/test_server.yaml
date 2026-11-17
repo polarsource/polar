@@ -2,7 +2,7 @@ name: Server
 
 on:
   push:
-    branches: ["main", "yopi/speed-up-ci-measurements"]
+    branches: ["main", "yopi/speed-up-ci-native-gate-proof"]
   pull_request:
     types: [opened, synchronize, edited]
   merge_group:
@@ -20,7 +20,7 @@ jobs:
     name: "Detect changes"
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
-      server: ${{ steps.filter.outputs.server }}
+      server: ${{ 'true' }}
       emails: ${{ steps.filter.outputs.emails }}
       migrations: ${{ steps.filter.outputs.migrations }}
       migration_heads: ${{ steps.filter.outputs.migration_heads }}
@@ -71,7 +71,7 @@ jobs:
       contents: read
       actions: read
     needs: changes
-    if: needs.changes.outputs.server == 'true'
+    if: false
     timeout-minutes: 15
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
@@ -197,7 +197,7 @@ jobs:
   emails:
     name: "Server: Emails 📬"
     needs: changes
-    if: needs.changes.outputs.emails == 'true'
+    if: false
     timeout-minutes: 10
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:

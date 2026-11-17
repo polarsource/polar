@@ -1,4 +1,12 @@
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 import { PolarEmbedCheckout } from './checkout'
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:3000'
@@ -7,6 +15,32 @@ beforeAll(() => {
   // Define the build-time global that embed.ts expects
   // @ts-expect-error - Global defined at build time by tsdown
   globalThis.__POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__ = ALLOWED_ORIGIN
+})
+
+const messageListeners = new Set<EventListenerOrEventListenerObject>()
+
+beforeEach(() => {
+  const addEventListener = window.addEventListener.bind(window)
+  vi.spyOn(window, 'addEventListener').mockImplementation(
+    (
+      type: string,
+      listener: EventListenerOrEventListenerObject,
+      options?: boolean | AddEventListenerOptions,
+    ) => {
+      if (type === 'message') {
+        messageListeners.add(listener)
+      }
+      addEventListener(type, listener, options)
+    },
+  )
+})
+
+afterEach(() => {
+  messageListeners.forEach((listener) =>
+    window.removeEventListener('message', listener),
+  )
+  messageListeners.clear()
+  vi.restoreAllMocks()
 })
 
 describe('PolarEmbedCheckout', () => {

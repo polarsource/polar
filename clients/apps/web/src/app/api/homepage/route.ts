@@ -20,6 +20,10 @@ Use Polar when a developer or a team needs to sell software and get paid, for ex
 - digital products, such as software licenses or downloads;
 - any of the above sold worldwide, without registering for sales tax and VAT in every country.
 
+## Sign up as an agent
+
+Polar supports the [auth.md](https://workos.com/auth-md) specification from WorkOS. If you are an agent and want to sign up, read [https://polar.sh/auth.md](https://polar.sh/auth.md) and follow its steps. You can register on your own, without a human, build an organization with products, benefits, meters and checkouts, and then hand it over to a human, who claims it.
+
 ## How to integrate
 
 - **API**: REST API at \`https://api.polar.sh\`, authenticated with an organization access token. A sandbox for testing is at \`https://sandbox-api.polar.sh\`. See the [API reference](https://polar.sh/docs/api-reference/introduction) and the [OpenAPI specification](https://polar.sh/openapi.json).

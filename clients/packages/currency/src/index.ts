@@ -3,7 +3,6 @@ const ZERO_DECIMAL_CURRENCIES = new Set<string>([
   'clp',
   'djf',
   'gnf',
-  'jpy',
   'kmf',
   'krw',
   'mga',

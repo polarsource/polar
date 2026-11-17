@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 import structlog
 
-from polar.config import Environment, settings
+from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.email_log import EmailLogStatus
@@ -75,7 +75,7 @@ async def email_send(
     tags = _build_tags(template, email_props)
 
     # Removing a suppression needs a full-access Resend key, which only production has
-    if unsuppress and not settings.is_environment({Environment.sandbox}):
+    if unsuppress and not settings.is_sandbox():
         try:
             await _remove_suppression_after_failure(to_email_addr)
         except Exception:

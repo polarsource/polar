@@ -5,6 +5,8 @@ const sharedTest = {
   environment: 'jsdom',
   setupFiles: ['./vitest.setup.ts'],
   fsModuleCache: true,
+  isolate: false,
+  sequence: { shuffle: { files: true, tests: true } },
   env: {
     TZ: 'UTC',
   },

@@ -186,7 +186,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PaymentFailed} Payment required to apply the subscription update.
    * @throws {CustomerPortalSubscriptionsUpdate403Error} Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
    * @throws {ResourceNotFound} Customer subscription was not found.
-   * @throws {CustomerPortalSubscriptionsUpdate409Error} The subscription has no payment method to charge, or is not scheduled to be canceled.
+   * @throws {CustomerPortalSubscriptionsUpdate409Error} The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (

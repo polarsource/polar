@@ -23,6 +23,9 @@ from polar.v2027_01.outputs import (
     BenefitGrantAlreadyExists as BenefitGrantAlreadyExistsModel,
 )
 from polar.v2027_01.outputs import (
+    BillingAddressRequired as BillingAddressRequiredModel,
+)
+from polar.v2027_01.outputs import (
     CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
 )
 from polar.v2027_01.outputs import (
@@ -572,13 +575,23 @@ class CustomerPortalSubscriptionsUpdate403Error(PolarClientError):
 
 
 class CustomerPortalSubscriptionsUpdate409Error(PolarClientError):
-    error_type = PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
-    error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+    error_type = (
+        PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | BillingAddressRequiredModel
+    )
+    error: (
+        PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | BillingAddressRequiredModel
+    )
 
     def __init__(
         self,
         status_code: int,
-        error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+        error: PaymentMethodRequiredModel
+        | SubscriptionNotScheduledToCancelModel
+        | BillingAddressRequiredModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)
@@ -706,13 +719,23 @@ class SubscriptionsUpdate403Error(PolarClientError):
 
 
 class SubscriptionsUpdate409Error(PolarClientError):
-    error_type = SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
-    error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+    error_type = (
+        SubscriptionLockedModel
+        | SubscriptionNotScheduledToCancelModel
+        | BillingAddressRequiredModel
+    )
+    error: (
+        SubscriptionLockedModel
+        | SubscriptionNotScheduledToCancelModel
+        | BillingAddressRequiredModel
+    )
 
     def __init__(
         self,
         status_code: int,
-        error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
+        error: SubscriptionLockedModel
+        | SubscriptionNotScheduledToCancelModel
+        | BillingAddressRequiredModel,
     ) -> None:
         self.error = error
         super().__init__(status_code, error)
@@ -723,6 +746,15 @@ class ProductNotDeletable(PolarClientError):
     error: ProductNotDeletableModel
 
     def __init__(self, status_code: int, error: ProductNotDeletableModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class BillingAddressRequired(PolarClientError):
+    error_type = BillingAddressRequiredModel
+    error: BillingAddressRequiredModel
+
+    def __init__(self, status_code: int, error: BillingAddressRequiredModel) -> None:
         self.error = error
         super().__init__(status_code, error)
 

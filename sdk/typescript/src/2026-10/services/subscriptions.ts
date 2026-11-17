@@ -275,7 +275,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {SubscriptionsUpdate402Error} The charge failed, or requires customer authentication that can't be completed off-session.
    * @throws {SubscriptionsUpdate403Error} Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
    * @throws {ResourceNotFound} Subscription not found.
-   * @throws {SubscriptionsUpdate409Error} Subscription is pending an update, or is not scheduled to be canceled.
+   * @throws {SubscriptionsUpdate409Error} Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (

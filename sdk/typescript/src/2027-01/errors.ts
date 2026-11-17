@@ -6,6 +6,7 @@ import type {
   AmbiguousExternalWebhookEndpointID as AmbiguousExternalWebhookEndpointIDModel,
   BadRequest as BadRequestModel,
   BenefitGrantAlreadyExists as BenefitGrantAlreadyExistsModel,
+  BillingAddressRequired as BillingAddressRequiredModel,
   CannotCreateOrganizationError as CannotCreateOrganizationErrorModel,
   CheckoutForbiddenError as CheckoutForbiddenErrorModel,
   CheckoutLocked as CheckoutLockedModel,
@@ -599,14 +600,17 @@ export class CustomerPortalSubscriptionsUpdate403Error extends PolarClientError<
   }
 }
 /**
- * The subscription has no payment method to charge, or is not scheduled to be canceled.
+ * The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product.
  */
 export class CustomerPortalSubscriptionsUpdate409Error extends PolarClientError<
-  PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel
+  PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel | BillingAddressRequiredModel
 > {
   constructor(
     public readonly statusCode: 409,
-    public readonly error: PaymentMethodRequiredModel | SubscriptionNotScheduledToCancelModel,
+    public readonly error:
+      | PaymentMethodRequiredModel
+      | SubscriptionNotScheduledToCancelModel
+      | BillingAddressRequiredModel,
   ) {
     super(statusCode, error);
     this.name = "CustomerPortalSubscriptionsUpdate409Error";
@@ -754,14 +758,17 @@ export class SubscriptionsUpdate403Error extends PolarClientError<
   }
 }
 /**
- * Subscription is pending an update, or is not scheduled to be canceled.
+ * Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product.
  */
 export class SubscriptionsUpdate409Error extends PolarClientError<
-  SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel
+  SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel | BillingAddressRequiredModel
 > {
   constructor(
     public readonly statusCode: 409,
-    public readonly error: SubscriptionLockedModel | SubscriptionNotScheduledToCancelModel,
+    public readonly error:
+      | SubscriptionLockedModel
+      | SubscriptionNotScheduledToCancelModel
+      | BillingAddressRequiredModel,
   ) {
     super(statusCode, error);
     this.name = "SubscriptionsUpdate409Error";
@@ -777,6 +784,18 @@ export class ProductNotDeletable extends PolarClientError<ProductNotDeletableMod
   ) {
     super(statusCode, error);
     this.name = "ProductNotDeletable";
+  }
+}
+/**
+ * The order has a price, but the customer's billing address is missing or incomplete.
+ */
+export class BillingAddressRequired extends PolarClientError<BillingAddressRequiredModel> {
+  constructor(
+    public readonly statusCode: 409,
+    public readonly error: BillingAddressRequiredModel,
+  ) {
+    super(statusCode, error);
+    this.name = "BillingAddressRequired";
   }
 }
 /**

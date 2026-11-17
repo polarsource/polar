@@ -6330,6 +6330,20 @@ export interface BenefitUpdatedEvent {
 }
 
 /**
+ * BillingAddressRequired
+ */
+export interface BillingAddressRequired {
+  /**
+   * error
+   */
+  error: "BillingAddressRequired";
+  /**
+   * detail
+   */
+  detail: string;
+}
+
+/**
  * CannotCreateOrganizationError
  */
 export interface CannotCreateOrganizationError {
@@ -10836,7 +10850,7 @@ export interface CustomerOrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be changed on draft orders, which recalculates their tax.
    */
   billing_address?: AddressInput | null;
 }
@@ -18120,7 +18134,7 @@ export interface OrderUpdate {
    */
   billing_name?: string | null;
   /**
-   * The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated.
+   * The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be changed on draft orders, which recalculates their tax.
    */
   billing_address?: AddressInput | null;
 }

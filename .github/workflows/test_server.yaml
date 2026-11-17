@@ -2,7 +2,7 @@ name: Server
 
 on:
   push:
-    branches: ["main", "yopi/ci-consolidation-candidate"]
+    branches: ["main", "yopi/ci-consolidation-n16"]
   pull_request:
     types: [opened, synchronize, edited]
   merge_group:
@@ -622,7 +622,7 @@ jobs:
         working-directory: ./server
         env:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
-        run: uv run pytest -p ci_measurement_probe -m "not benchmark" -n 32 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/ci-measurement/junit.xml"
+        run: uv run pytest -p ci_measurement_probe -m "not benchmark" -n 16 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/ci-measurement/junit.xml"
 
       - name: Upload test results
         if: always()

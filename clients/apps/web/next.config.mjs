@@ -118,6 +118,19 @@ const nextConfig = {
           destination: 'https://us.i.posthog.com/decide',
         },
       ],
+      fallback: [
+        {
+          source: '/:path*',
+          destination: '/api/not-found',
+          has: [
+            {
+              type: 'header',
+              key: 'accept',
+              value: '.*text/markdown.*',
+            },
+          ],
+        },
+      ],
     }
   },
 

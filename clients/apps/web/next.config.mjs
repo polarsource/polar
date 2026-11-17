@@ -92,6 +92,17 @@ const nextConfig = {
     return {
       beforeFiles: [
         {
+          source: '/',
+          destination: '/api/homepage',
+          has: [
+            {
+              type: 'header',
+              key: 'accept',
+              value: '.*text/markdown.*',
+            },
+          ],
+        },
+        {
           source: '/perspectives',
           destination: 'https://polar.shadowdocument.com/perspectives',
         },

@@ -30,6 +30,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.models import CustomField, Organization, User
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
@@ -58,6 +59,8 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         organization_id: Sequence[uuid.UUID] | None = None,
         query: str | None = None,
         type: Sequence[CustomFieldType] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         pagination: PaginationParams,
         sorting: Sequence[Sorting[CustomFieldSortProperty]] = (
             (CustomFieldSortProperty.slug, False),
@@ -80,6 +83,11 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
 
         if type is not None:
             statement = statement.where(CustomField.type.in_(type))
+
+        if catalog_id is not None or catalog_status is not None:
+            statement = CustomFieldRepository.from_session(
+                session
+            ).apply_catalog_filter(statement, catalog_id, catalog_status)
 
         order_by_clauses: list[OrderByList | UnaryExpression[Any]] = []
         for criterion, is_desc in sorting:

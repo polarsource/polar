@@ -1,0 +1,19 @@
+.github/ci-benchmark-input.txt
+  s_3d57d3c2d68209::t_0d48a131d0c5b7 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "430e5a5f6ca94acba77cbf77d58ca4392ec8e9fb",
+  "prompts": {},
+  "sessions": {
+    "s_3d57d3c2d68209": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e847-a3d8-7660-8600-03ce15614ad7",
+        "model": "unknown"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -589,6 +589,7 @@ class ConfigIssueType(StrEnum):
     currency_changed = "currency_changed"
     deprecated_reference = "deprecated_reference"
     duplicate_external_id = "duplicate_external_id"
+    duplicate_slug = "duplicate_slug"
     interval_changed = "interval_changed"
     invalid_prices = "invalid_prices"
     limit_exceeded = "limit_exceeded"
@@ -940,7 +941,11 @@ class ConfigProductRead(_ConfigRead):
     meter_interval_count: int | None
     prices: list[ConfigProductPriceRead]
     benefits: list[str]
-    custom_fields: list[ConfigProductCustomFieldRead]
+    custom_fields: list[ConfigProductCustomFieldRead] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Omitted when the token can't read custom fields.",
+    )
     metadata: MetadataOutputType
     deprecated: Literal[True] | None = Field(
         description=(
@@ -963,7 +968,9 @@ class ConfigExportDocument(_ConfigRead):
     settings: ConfigSettingsRead
     meters: list[ConfigMeterRead]
     custom_fields: list[ConfigCustomFieldRead] | None = Field(
-        description="None when the token can't read custom fields."
+        default=None,
+        exclude_if=lambda value: value is None,
+        description="Omitted when the token can't read custom fields.",
     )
     benefits: list[ConfigBenefitRead]
     products: list[ConfigProductRead]

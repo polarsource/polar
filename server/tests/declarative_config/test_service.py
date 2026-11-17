@@ -9,6 +9,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.auth.scope import Scope
 from polar.benefit.repository import BenefitRepository
 from polar.benefit.strategies.meter_credit.properties import (
@@ -74,6 +75,7 @@ from polar.models import (
     Meter,
     Organization,
     Product,
+    ProductCustomField,
     ProductPriceFixed,
     ProductPriceMeteredTiers,
     ProductPriceMeteredUnit,
@@ -2413,6 +2415,156 @@ class TestPlan:
             )
 
     @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_unchanged_custom_field(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            name="Company",
+            properties={"form_label": "Company name"},
+            organization=organization,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+        )
+
+        assert plan.issues == []
+        assert [
+            (change.resource, change.external_id, change.action)
+            for change in plan.changes
+        ] == [(ConfigResource.custom_field, "company", ConfigAction.unchanged)]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_custom_field_type_changed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {"custom_fields": [{**COMPANY_FIELD, "type": "number"}]}
+            ),
+        )
+
+        assert [
+            issue.loc
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.type_changed
+        ] == [["body", "custom_fields", 0, "type"]]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_custom_field_references(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [COMPANY_FIELD],
+                    "products": [
+                        {
+                            **PACK_PRODUCT,
+                            "custom_fields": [
+                                {"field": "company"},
+                                {"field": "company"},
+                                {"field": "vat"},
+                            ],
+                        }
+                    ],
+                }
+            ),
+        )
+
+        assert [
+            (issue.type, issue.loc, issue.input, issue.msg)
+            for issue in plan.issues
+            if issue.type
+            in {ConfigIssueType.duplicate_slug, ConfigIssueType.unknown_reference}
+        ] == [
+            (
+                ConfigIssueType.duplicate_slug,
+                ["body", "products", 0, "custom_fields", 1, "field"],
+                "company",
+                "This custom field is already listed on the product.",
+            ),
+            (
+                ConfigIssueType.unknown_reference,
+                ["body", "products", 0, "custom_fields", 2, "field"],
+                "vat",
+                "No custom field in this config has this slug.",
+            ),
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_new_custom_field_not_supported(
+        self, session: AsyncSession, auth_subject: AuthSubject[Organization]
+    ) -> None:
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate({"custom_fields": [COMPANY_FIELD]}),
+        )
+
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (ConfigIssueType.not_supported, ["body", "custom_fields", 0])
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_product_custom_fields_not_supported(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            name="Company",
+            properties={"form_label": "Company name"},
+            organization=organization,
+        )
+
+        plan = await declarative_config_service.plan(
+            session,
+            auth_subject,
+            Config.model_validate(
+                {
+                    "custom_fields": [COMPANY_FIELD],
+                    "products": [
+                        {**PACK_PRODUCT, "custom_fields": [{"field": "company"}]}
+                    ],
+                }
+            ),
+        )
+
+        assert [(issue.type, issue.loc) for issue in plan.issues] == [
+            (ConfigIssueType.not_supported, ["body", "products", 0, "custom_fields"])
+        ]
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
     async def test_webhook_events_order_ignored(
         self,
         save_fixture: SaveFixture,
@@ -3444,8 +3596,17 @@ class TestPlan:
             if issue.type == ConfigIssueType.duplicate_external_id
         ] == [
             ["body", "webhooks", 1, "external_id"],
-            ["body", "custom_fields", 1, "slug"],
             ["body", "benefits", 1, "external_id"],
+        ]
+        assert [
+            (issue.loc, issue.msg)
+            for issue in plan.issues
+            if issue.type == ConfigIssueType.duplicate_slug
+        ] == [
+            (
+                ["body", "custom_fields", 1, "slug"],
+                "Another custom field in this config has the same slug.",
+            )
         ]
 
 
@@ -5057,6 +5218,120 @@ class TestExport:
         exported = await declarative_config_service.export(session, auth_subject, None)
 
         assert exported.config.custom_fields is None
+
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_skips_custom_fields_without_permission(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate(
+                {"organization_id": str(organization.id), "products": [PACK_PRODUCT]}
+            ),
+        )
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pack"])
+        custom_field = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            organization=organization,
+        )
+        await save_fixture(
+            ProductCustomField(product=product, custom_field=custom_field, order=0)
+        )
+        session.expunge_all()
+        mocker.patch.dict(
+            ROLE_PERMISSIONS,
+            {
+                user_organization.role: ROLE_PERMISSIONS[user_organization.role]
+                - {OrganizationPermission.custom_fields_read}
+            },
+        )
+
+        exported = await declarative_config_service.export(
+            session, auth_subject, organization.id
+        )
+
+        document = exported.config.model_dump(mode="json")
+        assert "custom_fields" not in document
+        [exported_product] = document["products"]
+        assert exported_product["external_id"] == "pack"
+        assert "custom_fields" not in exported_product
+
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_round_trips_custom_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        await declarative_config_service.apply(
+            session,
+            redis,
+            auth_subject,
+            Config.model_validate({"products": [PACK_PRODUCT]}),
+        )
+        [product] = await ProductRepository.from_session(
+            session
+        ).get_all_by_external_ids(organization.id, ["pack"])
+        company = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.text,
+            slug="company",
+            name="Company",
+            properties={"form_label": "Company name"},
+            organization=organization,
+        )
+        industry = await create_custom_field(
+            save_fixture,
+            type=CustomFieldType.select,
+            slug="industry",
+            name="Industry",
+            properties={"options": [{"value": "saas", "label": "SaaS"}]},
+            organization=organization,
+        )
+        await save_fixture(
+            ProductCustomField(
+                product=product, custom_field=company, order=0, required=True
+            )
+        )
+        await save_fixture(
+            ProductCustomField(product=product, custom_field=industry, order=1)
+        )
+        session.expunge_all()
+
+        exported = await declarative_config_service.export(session, auth_subject, None)
+        config = Config.model_validate(exported.config.model_dump(mode="json"))
+        plan = await declarative_config_service.plan(session, auth_subject, config)
+        again = await declarative_config_service.export(session, auth_subject, None)
+
+        assert [custom_field.slug for custom_field in config.custom_fields] == [
+            "company",
+            "industry",
+        ]
+        [config_product] = config.products
+        assert [
+            (attached.field, attached.required)
+            for attached in config_product.custom_fields
+        ] == [("company", True), ("industry", False)]
+        assert exported.skipped == []
+        assert plan.issues == []
+        assert {change.action for change in plan.changes} == {ConfigAction.unchanged}
+        assert again.config == exported.config
 
     @pytest.mark.usefixtures("config_as_code_enabled", "meter_cycling_enabled")
     async def test_round_trips_through_apply(

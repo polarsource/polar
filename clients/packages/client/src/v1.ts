@@ -6731,7 +6731,7 @@ export interface paths {
      *
      *     Requires the read or write scope of every exported section.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     get: operations['config:export']
     put?: never
@@ -6833,7 +6833,7 @@ export interface paths {
      *
      *     Each section requires the write scope for its resource.
      *
-     *     **Scopes**: `benefits:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
+     *     **Scopes**: `benefits:write` `custom_fields:write` `meters:write` `organizations:write` `products:write` `webhooks:write`
      */
     post: operations['config:apply']
     delete?: never
@@ -6864,7 +6864,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:plan']
     delete?: never
@@ -6891,7 +6891,7 @@ export interface paths {
      *
      *     Each section requires the read or write scope for its resource.
      *
-     *     **Scopes**: `benefits:read` `benefits:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
+     *     **Scopes**: `benefits:read` `benefits:write` `custom_fields:read` `custom_fields:write` `meters:read` `meters:write` `organizations:read` `organizations:write` `products:read` `products:write` `webhooks:read` `webhooks:write`
      */
     post: operations['config:prune']
     delete?: never
@@ -17135,6 +17135,11 @@ export interface components {
        */
       products?: components['schemas']['ConfigProduct'][]
       /**
+       * Custom Fields
+       * @description Custom fields to create or update, matched by `slug`. A change creates a new version of the field. Earlier versions keep the field as it was. Omitted `metadata` is left untouched. Changing a slug creates a new field. All custom fields are left untouched when `custom_fields` is omitted.
+       */
+      custom_fields?: components['schemas']['ConfigCustomField'][]
+      /**
        * Webhooks
        * @description Webhook endpoints to create or update, matched by `external_id`. Existing endpoints that aren't listed are left untouched.
        */
@@ -17390,7 +17395,7 @@ export interface components {
       resource: components['schemas']['ConfigResource']
       /**
        * External Id
-       * @description The resource's `external_id`.
+       * @description The resource's `external_id`, or `slug` for a custom field.
        */
       external_id: string
       /** @description What applying the config does. */
@@ -17400,6 +17405,268 @@ export interface components {
        * @description Fields that applying the config changes. On create, fields left empty are omitted.
        */
       diff: components['schemas']['ConfigFieldChange'][]
+    }
+    ConfigCustomField:
+      | components['schemas']['ConfigCustomFieldText']
+      | components['schemas']['ConfigCustomFieldNumber']
+      | components['schemas']['ConfigCustomFieldDate']
+      | components['schemas']['ConfigCustomFieldCheckbox']
+      | components['schemas']['ConfigCustomFieldSelect']
+    /** ConfigCustomFieldCheckbox */
+    ConfigCustomFieldCheckbox: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug: string
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'checkbox'
+      properties: components['schemas']['CustomFieldCheckboxProperties']
+    }
+    /** ConfigCustomFieldCheckboxRead */
+    ConfigCustomFieldCheckboxRead: {
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'checkbox'
+      properties: components['schemas']['CustomFieldCheckboxProperties']
+    }
+    /** ConfigCustomFieldDate */
+    ConfigCustomFieldDate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug: string
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'date'
+      properties: components['schemas']['CustomFieldDateProperties']
+    }
+    /** ConfigCustomFieldDateRead */
+    ConfigCustomFieldDateRead: {
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'date'
+      properties: components['schemas']['CustomFieldDateProperties']
+    }
+    /** ConfigCustomFieldNumber */
+    ConfigCustomFieldNumber: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug: string
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'number'
+      properties: components['schemas']['CustomFieldNumberProperties']
+    }
+    /** ConfigCustomFieldNumberRead */
+    ConfigCustomFieldNumberRead: {
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'number'
+      properties: components['schemas']['CustomFieldNumberProperties']
+    }
+    ConfigCustomFieldRead:
+      | components['schemas']['ConfigCustomFieldTextRead']
+      | components['schemas']['ConfigCustomFieldNumberRead']
+      | components['schemas']['ConfigCustomFieldDateRead']
+      | components['schemas']['ConfigCustomFieldCheckboxRead']
+      | components['schemas']['ConfigCustomFieldSelectRead']
+    /** ConfigCustomFieldSelect */
+    ConfigCustomFieldSelect: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug: string
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'select'
+      properties: components['schemas']['CustomFieldSelectProperties']
+    }
+    /** ConfigCustomFieldSelectRead */
+    ConfigCustomFieldSelectRead: {
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'select'
+      properties: components['schemas']['CustomFieldSelectProperties']
+    }
+    /** ConfigCustomFieldText */
+    ConfigCustomFieldText: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Slug
+       * @description Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+       */
+      slug: string
+      /**
+       * Name
+       * @description Name of the custom field.
+       */
+      name: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'text'
+      properties: components['schemas']['CustomFieldTextProperties']
+    }
+    /** ConfigCustomFieldTextRead */
+    ConfigCustomFieldTextRead: {
+      /** Slug */
+      slug: string
+      /** Name */
+      name: string
+      metadata: components['schemas']['MetadataOutputType']
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'text'
+      properties: components['schemas']['CustomFieldTextProperties']
     }
     /** ConfigDisable */
     ConfigDisable: {
@@ -17447,6 +17714,11 @@ export interface components {
       settings: components['schemas']['ConfigSettingsRead']
       /** Meters */
       meters: components['schemas']['ConfigMeterRead'][]
+      /**
+       * Custom Fields
+       * @description Omitted when the token can't read custom fields.
+       */
+      custom_fields?: components['schemas']['ConfigCustomFieldRead'][] | null
       /** Benefits */
       benefits: components['schemas']['ConfigBenefitRead'][]
       /** Products */
@@ -17549,6 +17821,7 @@ export interface components {
       | 'currency_changed'
       | 'deprecated_reference'
       | 'duplicate_external_id'
+      | 'duplicate_slug'
       | 'interval_changed'
       | 'invalid_prices'
       | 'limit_exceeded'
@@ -17750,6 +18023,11 @@ export interface components {
        * @description The benefits granted by the product.
        */
       benefits?: string[]
+      /**
+       * Custom Fields
+       * @description Custom fields asked at checkout, in this order. Leaving it empty removes them from the product. Ignored when the config omits `custom_fields`: the product keeps its custom fields.
+       */
+      custom_fields?: components['schemas']['ConfigProductCustomField'][]
     }
     /** ConfigProductConflict */
     ConfigProductConflict: {
@@ -17761,6 +18039,27 @@ export interface components {
       error: 'ConfigProductConflict'
       /** Detail */
       detail: string
+    }
+    /** ConfigProductCustomField */
+    ConfigProductCustomField: {
+      /**
+       * Field
+       * @description The `slug` of a custom field declared in the same config.
+       */
+      field: string
+      /**
+       * Required
+       * @description Whether customers must fill in the field at checkout.
+       * @default false
+       */
+      required: boolean
+    }
+    /** ConfigProductCustomFieldRead */
+    ConfigProductCustomFieldRead: {
+      /** Field */
+      field: string
+      /** Required */
+      required: boolean
     }
     ConfigProductPrice:
       | components['schemas']['ConfigProductPriceFixed']
@@ -18007,6 +18306,13 @@ export interface components {
       prices: components['schemas']['ConfigProductPriceRead'][]
       /** Benefits */
       benefits: string[]
+      /**
+       * Custom Fields
+       * @description Omitted when the token can't read custom fields.
+       */
+      custom_fields?:
+        | components['schemas']['ConfigProductCustomFieldRead'][]
+        | null
       metadata: components['schemas']['MetadataOutputType']
       /**
        * Deprecated
@@ -18073,14 +18379,14 @@ export interface components {
      * ConfigResource
      * @enum {string}
      */
-    ConfigResource: 'meter' | 'benefit' | 'product' | 'webhook'
+    ConfigResource: 'custom_field' | 'meter' | 'benefit' | 'product' | 'webhook'
     /** ConfigResult */
     ConfigResult: {
       /** @description The type of resource. */
       resource: components['schemas']['ConfigResource']
       /**
        * External Id
-       * @description The resource's `external_id`.
+       * @description The resource's `external_id`, or `slug` for a custom field.
        */
       external_id: string
       /** @description What applying the config does. */
@@ -73872,6 +74178,36 @@ export const configBenefitMeterCreditTypeValues: ReadonlyArray<
 export const configBenefitMeterCreditReadTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigBenefitMeterCreditRead']['type']
 > = ['meter_credit']
+export const configCustomFieldCheckboxTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldCheckbox']['type']
+> = ['checkbox']
+export const configCustomFieldCheckboxReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldCheckboxRead']['type']
+> = ['checkbox']
+export const configCustomFieldDateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldDate']['type']
+> = ['date']
+export const configCustomFieldDateReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldDateRead']['type']
+> = ['date']
+export const configCustomFieldNumberTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldNumber']['type']
+> = ['number']
+export const configCustomFieldNumberReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldNumberRead']['type']
+> = ['number']
+export const configCustomFieldSelectTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldSelect']['type']
+> = ['select']
+export const configCustomFieldSelectReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldSelectRead']['type']
+> = ['select']
+export const configCustomFieldTextTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldText']['type']
+> = ['text']
+export const configCustomFieldTextReadTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfigCustomFieldTextRead']['type']
+> = ['text']
 export const configExternalIDAssignmentResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigExternalIDAssignment']['resource']
 > = ['meter', 'benefit', 'product']
@@ -73884,6 +74220,7 @@ export const configIssueTypeValues: ReadonlyArray<
   'currency_changed',
   'deprecated_reference',
   'duplicate_external_id',
+  'duplicate_slug',
   'interval_changed',
   'invalid_prices',
   'limit_exceeded',
@@ -73931,7 +74268,7 @@ export const configRemovalReasonValues: ReadonlyArray<
 > = ['missing', 'deprecated']
 export const configResourceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigResource']
-> = ['meter', 'benefit', 'product', 'webhook']
+> = ['custom_field', 'meter', 'benefit', 'product', 'webhook']
 export const configSkippedReasonValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfigSkippedReason']
 > = ['missing_external_id', 'archived', 'invalid', 'over_limit']

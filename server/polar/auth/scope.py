@@ -168,7 +168,6 @@ UNCLAIMED_AGENT_SCOPES: set[Scope] = {
     Scope.meters_read,
     Scope.meters_write,
     Scope.custom_fields_read,
-    Scope.custom_fields_write,
 }
 
 SCOPES_SUPPORTED = [

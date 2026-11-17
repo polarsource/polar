@@ -222,9 +222,12 @@ def _product_entry(
             "metadata": product.user_metadata,
         }
     )
+    entry = _dump(config)
+    if custom_field_slugs is None:
+        del entry["custom_fields"]
     return ConfigProductRead.model_validate(
         {
-            **_dump(config),
+            **entry,
             "trial_payment_setup_required": (
                 None if config.trial_payment_setup_required else False
             ),

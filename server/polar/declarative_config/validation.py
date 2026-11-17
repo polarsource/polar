@@ -194,6 +194,10 @@ def _meter_loc(index: int, *path: str | int) -> Loc:
     return _loc(ConfigResource.meter, index, *path)
 
 
+def _resource_name(resource: ConfigResource) -> str:
+    return resource.replace("_", " ")
+
+
 def unique_external_ids(
     resource: ConfigResource, external_ids: Sequence[str], key: str = "external_id"
 ) -> list[ConfigIssue]:
@@ -204,9 +208,12 @@ def unique_external_ids(
             issues.append(
                 ConfigIssue(
                     severity=ConfigIssueSeverity.error,
-                    type=ConfigIssueType.duplicate_external_id,
+                    type=ConfigIssueType.duplicate_slug
+                    if key == "slug"
+                    else ConfigIssueType.duplicate_external_id,
                     loc=_loc(resource, index, key),
-                    msg=f"Another {resource} in this config has the same {key}.",
+                    msg=f"Another {_resource_name(resource)} in this config "
+                    f"has the same {key}.",
                     input=external_id,
                 )
             )
@@ -221,7 +228,7 @@ def _unknown_reference(
         severity=ConfigIssueSeverity.error,
         type=ConfigIssueType.unknown_reference,
         loc=loc,
-        msg=f"No {resource} in this config has this {key}.",
+        msg=f"No {_resource_name(resource)} in this config has this {key}.",
         input=external_id,
     )
 
@@ -337,7 +344,7 @@ def invalid_references(config: Config) -> list[ConfigIssue]:
                 issues.append(
                     ConfigIssue(
                         severity=ConfigIssueSeverity.error,
-                        type=ConfigIssueType.duplicate_external_id,
+                        type=ConfigIssueType.duplicate_slug,
                         loc=loc,
                         msg="This custom field is already listed on the product.",
                         input=attached.field,

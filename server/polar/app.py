@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import gc
 from collections.abc import AsyncIterator
 from typing import TypedDict
 
@@ -183,6 +184,10 @@ async def lifespan(
         ip_geolocation_client = None
 
     log.info("Polar API started")
+
+    if settings.is_test():
+        gc.collect()
+        gc.freeze()
 
     yield {
         "async_engine": async_engine,

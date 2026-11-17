@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
@@ -106,6 +107,9 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
     opened_at: str
     distinct_id: str | None
     agent_channel: CheckoutAgentChannel
+
+
+US_SHORT_BILLING_ADDRESS_EXPERIMENT = "checkout_us_short_billing_address"
 
 
 # Payment methods for which the processor requires a full billing address
@@ -499,9 +503,36 @@ class Checkout(
         return address.country if address else None
 
     @property
+    def us_short_billing_address_variant(
+        self,
+    ) -> Literal["control", "treatment"] | None:
+        address = self.customer_billing_address
+        is_eligible = (
+            settings.is_production()
+            and address is not None
+            and address.country == "US"
+            and address.line1 is None
+            and address.city is None
+            and not self.is_billing_address_required
+        )
+        if not is_eligible:
+            return None
+        key = f"{US_SHORT_BILLING_ADDRESS_EXPERIMENT}:{self.id}".encode()
+        return "treatment" if hashlib.sha256(key).digest()[0] % 2 else "control"
+
+    @property
+    def _has_short_us_billing_address(self) -> bool:
+        return self.us_short_billing_address_variant == "treatment"
+
+    @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
         country = self._billing_address_country
-        require_billing_address = self.is_billing_address_required or country == "US"
+        is_us_with_full_address = (
+            country == "US" and not self._has_short_us_billing_address
+        )
+        require_billing_address = (
+            self.is_billing_address_required or is_us_with_full_address
+        )
         return {
             "country": True,
             "state": country in STATE_REQUIRED_COUNTRIES,
@@ -516,10 +547,11 @@ class Checkout(
     def billing_address_fields(self) -> CheckoutBillingAddressFields:
         country = self._billing_address_country
         required_fields = self.customer_billing_address_fields
-        displayed = (
-            self.is_billing_address_required
-            or country in FULL_BILLING_ADDRESS_FORM_COUNTRIES
+        is_full_form_country = (
+            country in FULL_BILLING_ADDRESS_FORM_COUNTRIES
+            and not self._has_short_us_billing_address
         )
+        displayed = self.is_billing_address_required or is_full_form_country
         return {
             "country": BillingAddressFieldMode.required,
             "state": _get_billing_address_field_mode(

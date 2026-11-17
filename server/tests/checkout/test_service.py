@@ -39,7 +39,7 @@ from polar.checkout.service import (
     TrialAlreadyRedeemed,
 )
 from polar.checkout.service import checkout as checkout_service
-from polar.config import Environment
+from polar.config import Environment, settings
 from polar.customer_seat.service import SeatService
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.discount.repository import DiscountRedemptionRepository
@@ -53,7 +53,7 @@ from polar.enums import (
 from polar.event.system import SystemEvent
 from polar.exceptions import NotPermitted, PaymentNotReady, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
-from polar.kit.address import AddressInput
+from polar.kit.address import Address, AddressInput, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
@@ -8268,6 +8268,48 @@ class TestCheckoutCreatedEvent:
         assert event.user_metadata["checkout_id"] == str(checkout.id)
         assert event.user_metadata["checkout_status"] == checkout.status
         assert event.user_metadata["product_id"] == str(checkout.product_id)
+
+
+@pytest.mark.anyio
+class TestUSShortBillingAddressExposure:
+    @pytest.mark.parametrize(("country", "exposed"), [("US", True), ("FR", False)])
+    async def test_exposure_on_open(
+        self,
+        country: str,
+        exposed: bool,
+        mocker: MockerFixture,
+        monkeypatch: pytest.MonkeyPatch,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        monkeypatch.setattr(settings, "ENV", Environment.production)
+        posthog_mock = mocker.patch("polar.checkout.service.posthog")
+        checkout_one_time_fixed.customer_billing_address = Address(
+            country=CountryAlpha2(country)
+        )
+        await save_fixture(checkout_one_time_fixed)
+
+        await checkout_service.mark_opened(
+            session, checkout_one_time_fixed, "distinct_id"
+        )
+
+        events = {
+            call.kwargs["event"]: call.kwargs["properties"]
+            for call in posthog_mock.capture.call_args_list
+        }
+        assert "$feature_flag_called" not in events
+        open_properties = events["storefront:subscriptions:checkout:open"]
+        assert open_properties.get("$feature/checkout_us_short_billing_address") == (
+            checkout_one_time_fixed.us_short_billing_address_variant
+            if exposed
+            else None
+        )
+        if exposed:
+            assert checkout_one_time_fixed.us_short_billing_address_variant in {
+                "control",
+                "treatment",
+            }
 
 
 @pytest.mark.anyio

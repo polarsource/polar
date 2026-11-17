@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Annotated, Literal
 
@@ -5,6 +6,7 @@ from annotated_types import MaxLen
 from fastapi import Path
 from pydantic import (
     UUID4,
+    AfterValidator,
     Discriminator,
     Field,
     Tag,
@@ -60,17 +62,30 @@ _email_example = "customer@example.com"
 _name_description = "The name of the customer."
 _name_example = "John Doe"
 
+_URL_SCHEME_PATTERN = re.compile(r"https?://", re.IGNORECASE)
+
+
+def _reject_url_in_name(value: str | None) -> str | None:
+    if value is not None and _URL_SCHEME_PATTERN.search(value):
+        raise ValueError("The name can't contain URLs.")
+    return value
+
+
+NoURLValidator = AfterValidator(_reject_url_in_name)
+
 CustomerNameInput = Annotated[
     str,
     MaxLen(256),
     Field(description=_name_description, examples=[_name_example]),
     EmptyStrToNoneValidator,
+    NoURLValidator,
 ]
 
 CustomerBillingNameInput = Annotated[
     str,
     MaxLen(256),
     EmptyStrToNoneValidator,
+    NoURLValidator,
 ]
 
 

@@ -2,9 +2,13 @@ import json
 from typing import Any
 
 import pytest
-from pydantic import TypeAdapter
+from pydantic import TypeAdapter, ValidationError
 
 from polar.customer.repository import CustomerRepository
+from polar.customer.schemas.customer import (
+    CustomerBillingNameInput,
+    CustomerNameInput,
+)
 from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.customer.schemas.state import CustomerState
 from polar.models import Organization
@@ -92,3 +96,24 @@ async def test_avatar_url_serializes_null_without_email(
 
     serialized = json.loads(customer_schema.model_dump_json())
     assert serialized["avatar_url"] is None
+
+
+@pytest.mark.parametrize("annotation", [CustomerNameInput, CustomerBillingNameInput])
+class TestCustomerNameURL:
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "http://example.com",
+            "Claim your prize at https://example.com",
+            "HTTPS://EXAMPLE.COM",
+        ],
+    )
+    def test_rejects_url(self, annotation: Any, value: str) -> None:
+        with pytest.raises(ValidationError):
+            TypeAdapter(annotation).validate_python(value)
+
+    @pytest.mark.parametrize(
+        "value", ["John Doe", "example.com", "Acme https Ltd", "http: Inc"]
+    )
+    def test_accepts_name(self, annotation: Any, value: str) -> None:
+        assert TypeAdapter(annotation).validate_python(value) == value

@@ -192,8 +192,33 @@ jobs:
 
       - uses: ./.github/actions/setup-clients
 
+      - name: Restore the Next.js build cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: clients/apps/web/.next/cache
+          key: next-build-web-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            next-build-web-${{ hashFiles('clients/pnpm-lock.yaml') }}-
+
       - name: 🛠️ Build
-        run: pnpm build
+        run: |
+          touch "$RUNNER_TEMP/build-started"
+          pnpm build
+
+      - name: Check whether the build wrote to the Next.js build cache
+        id: next-cache
+        if: github.event_name == 'push'
+        run: |
+          if [ -n "$(find apps/web/.next/cache -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
+            echo "written=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the Next.js build cache
+        if: steps.next-cache.outputs.written == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: clients/apps/web/.next/cache
+          key: next-build-web-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
 
   cli-binary:
     name: "Client: CLI Binary 📦"

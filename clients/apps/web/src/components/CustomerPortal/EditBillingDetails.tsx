@@ -180,7 +180,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
             </FormItem>
           )}
         />
-        <FormItem className="flex flex-col gap-y-3">
+        <FormItem>
           <FormLabel>Billing address</FormLabel>
           <FormControl>
             <FormField

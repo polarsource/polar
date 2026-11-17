@@ -45,7 +45,12 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.exceptions import (
+    BillingAddressRequired,
+    PolarError,
+    PolarRequestValidationError,
+    ValidationError,
+)
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
@@ -1158,6 +1163,12 @@ class OrderService:
             )
         discount_amount = 0
 
+        if subtotal_amount > 0 and (
+            customer.billing_address is None
+            or not customer.billing_address.has_required_fields()
+        ):
+            raise BillingAddressRequired("creating a paid order")
+
         order_id = uuid.uuid4()
         # Unlike the subscription flow, a draft order persists its tax and never
         # recomputes it at finalize — so a tax we can't compute now (e.g. the
@@ -1271,6 +1282,12 @@ class OrderService:
         # which the None-handling below can only report as a generic failure.
         if not organization.can_accept_payments:
             raise OrganizationNotReadyForPayments(organization.id)
+
+        if order.subtotal_amount > 0 and (
+            order.billing_address is None
+            or not order.billing_address.has_required_fields()
+        ):
+            raise BillingAddressRequired("charging this order")
 
         customer = order.customer
         payment_method = await self._resolve_payment_method(

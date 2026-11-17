@@ -3,7 +3,7 @@ from typing import Annotated
 import structlog
 from fastapi import Depends, Query
 
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import BillingAddressRequired, NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
@@ -20,7 +20,6 @@ from polar.subscription.schemas import (
 )
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
-    BillingAddressRequired,
     SubscriptionNotScheduledToCancel,
 )
 from polar.subscription.service import subscription as subscription_service

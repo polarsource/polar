@@ -6,7 +6,12 @@ from fastapi import Depends, Query
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
-from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
+from polar.exceptions import (
+    BillingAddressRequired,
+    NotPermitted,
+    PaymentNotReady,
+    ResourceNotFound,
+)
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -49,7 +54,6 @@ from .schemas import (
 from .service import (
     AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
-    BillingAddressRequired,
     InactiveSubscription,
     SubscriptionLocked,
     SubscriptionNotScheduledToCancel,

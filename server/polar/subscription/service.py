@@ -70,6 +70,7 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.exceptions import (
+    BillingAddressRequired,
     PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
@@ -229,13 +230,6 @@ class AlreadyCanceledSubscription(SubscriptionError):
             "This subscription is already canceled or will be at the end of the period."
         )
         super().__init__(message, 403)
-
-
-class BillingAddressRequired(SubscriptionError):
-    def __init__(self) -> None:
-        super().__init__(
-            "Add a billing address before switching to a paid product.", 409
-        )
 
 
 class SubscriptionLocked(SubscriptionError):
@@ -2197,7 +2191,7 @@ class SubscriptionService:
         ):
             billing_address = subscription.customer.billing_address
             if billing_address is None or not billing_address.has_required_fields():
-                raise BillingAddressRequired()
+                raise BillingAddressRequired("switching to a paid product")
 
         old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)

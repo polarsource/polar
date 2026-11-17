@@ -9,7 +9,7 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import BillingAddressRequired, ResourceNotFound
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -175,6 +175,15 @@ async def get(
     status_code=201,
     summary="Create Order",
     response_model=OrderSchema,
+    responses={
+        409: {
+            "description": (
+                "The order has a price, but the customer's billing address is "
+                "missing or incomplete."
+            ),
+            "model": BillingAddressRequired.schema(),
+        },
+    },
 )
 async def create(
     order_create: OrderCreate,
@@ -234,6 +243,13 @@ async def update(
             | OrganizationNotReadyForPayments.schema(),
         },
         404: OrderNotFound,
+        409: {
+            "description": (
+                "The order has a price, but its billing address is missing or "
+                "incomplete."
+            ),
+            "model": BillingAddressRequired.schema(),
+        },
         412: {
             "description": "The order is not in `draft` status.",
             "model": OrderNotDraft.schema(),

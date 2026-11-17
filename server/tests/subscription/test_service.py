@@ -32,6 +32,7 @@ from polar.enums import (
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.exceptions import (
+    BillingAddressRequired,
     PaymentNotReady,
     PolarRequestValidationError,
     ResourceUnavailable,
@@ -107,7 +108,6 @@ from polar.subscription.service import (
     AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
-    BillingAddressRequired,
     CannotPauseSubscription,
     CannotReinstateSubscription,
     MissingCheckoutCustomer,

@@ -52482,6 +52482,15 @@ export interface operations {
           'application/json': components['schemas']['Order']
         }
       }
+      /** @description The order has a price, but the customer's billing address is missing or incomplete. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BillingAddressRequired']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -52685,6 +52694,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The order has a price, but its billing address is missing or incomplete. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BillingAddressRequired']
         }
       }
       /** @description The order is not in `draft` status. */

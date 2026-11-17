@@ -10953,6 +10953,16 @@
               }
             }
           },
+          "409": {
+            "description": "The order has a price, but the customer's billing address is missing or incomplete.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAddressRequired"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Validation Error",
             "content": {
@@ -11515,6 +11525,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ResourceNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The order has a price, but its billing address is missing or incomplete.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAddressRequired"
                 }
               }
             }

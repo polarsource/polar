@@ -839,6 +839,88 @@ class TestRequests:
         }
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_queries_do_not_grow_with_the_reducers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        meters = [meter] + [
+            await create_meter(
+                save_fixture, organization=organization, id=uuid.uuid4(), name=name
+            )
+            for name in ("Requests", "Images")
+        ]
+        usage_reducers = [
+            await create_reducer(save_fixture, organization=organization, meters=[m])
+            for m in meters
+        ]
+        credit_reducer = await create_reducer(
+            save_fixture,
+            organization=organization,
+            meters=[meter],
+            kind=ReducerKind.credit,
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="alice",
+            email="alice@example.com",
+        )
+        for value, reducer in enumerate(usage_reducers, start=1):
+            await _save_synced_bucket(
+                save_fixture, organization, reducer, "alice", value
+            )
+        queries = 0
+
+        def count_query(*args: typing.Any) -> None:
+            nonlocal queries
+            queries += 1
+
+        bind = session.sync_session.bind
+        assert bind is not None
+        answers = []
+        for reducers in (
+            usage_reducers[:1] + [credit_reducer],
+            usage_reducers + [credit_reducer],
+        ):
+            queries = 0
+            sqlalchemy_event.listen(bind, "before_cursor_execute", count_query)
+            try:
+                response = await client.post(
+                    "/v1/outpost/meter-usage",
+                    json={
+                        "identities": [
+                            {
+                                "reducer_id": str(reducer.id),
+                                "external_customer_id": "alice",
+                            }
+                            for reducer in reducers
+                        ]
+                    },
+                )
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", count_query)
+            assert response.status_code == 200
+            answers.append((response.json(), queries))
+
+        [(_, two), (snapshots, four)] = answers
+        assert four == two
+        assert {
+            snapshot["reducer_id"]: snapshot["sum"]
+            for snapshot in snapshots
+            if snapshot["customer_id"] is None
+        } == {
+            **{
+                str(reducer.id): float(value)
+                for value, reducer in enumerate(usage_reducers, start=1)
+            },
+            str(credit_reducer.id): 0.0,
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_meter_usage_unknown_reducer(
         self, client: httpx2.AsyncClient
     ) -> None:

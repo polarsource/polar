@@ -2665,9 +2665,9 @@ class TestSyncCredits:
             totals = await ReducerBucketRepository.from_session(
                 session
             ).get_unsealed_totals_by_identity(
-                organization.id, credit.id, {(customer.id, None): None}
+                organization.id, {(credit.id, (customer.id, None)): None}
             )
-            count, total, _, _ = totals[(customer.id, None)]
+            count, total, _, _ = totals[(credit.id, (customer.id, None))]
             assert (count, total) == (2, 10)
 
 

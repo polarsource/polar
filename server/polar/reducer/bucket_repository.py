@@ -54,6 +54,9 @@ INGESTED_BEFORE_TIMESTAMP_MARGIN = timedelta(seconds=5)
 
 # count, sum, min and max.
 type Totals = tuple[Any, Any, Any, Any]
+type CustomerIdentity = tuple[UUID | None, str | None]
+# A customer identity's buckets on one reducer.
+type ReducerIdentity = tuple[UUID, CustomerIdentity]
 
 
 def _is_customer(
@@ -295,15 +298,22 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     async def get_unsealed_totals_by_identity(
         self,
         organization_id: UUID,
-        reducer_id: UUID,
-        before: Mapping[tuple[UUID | None, str | None], datetime | None],
-    ) -> dict[tuple[UUID | None, str | None], Totals]:
-        """count, sum, min and max of each identity's unsealed buckets, starting
-        before the identity's datetime if given."""
+        before: Mapping[ReducerIdentity, datetime | None],
+    ) -> dict[ReducerIdentity, Totals]:
+        """count, sum, min and max of each identity's unsealed buckets on its
+        reducer, starting before the identity's datetime if given."""
         if not before:
             return {}
+        # Pairs that share an identity and a bound share one condition: a cold
+        # customer's reducers mostly do, so the conditions do not grow with them.
+        reducers_by_bound: dict[
+            tuple[CustomerIdentity, datetime | None], set[UUID]
+        ] = {}
+        for (reducer_id, identity), end in before.items():
+            reducers_by_bound.setdefault((identity, end), set()).add(reducer_id)
         statement = (
             select(
+                ReducerBucket.reducer_id,
                 ReducerBucket.customer_id,
                 ReducerBucket.external_customer_id,
                 func.coalesce(func.sum(ReducerBucket.count), 0),
@@ -313,11 +323,11 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .where(
                 ReducerBucket.organization_id == organization_id,
-                ReducerBucket.reducer_id == reducer_id,
                 ReducerBucket.sealed_at.is_(None),
                 or_(
                     *(
                         and_(
+                            ReducerBucket.reducer_id.in_(reducer_ids),
                             _is_customer(
                                 ReducerBucket, customer_id, external_customer_id
                             ),
@@ -325,16 +335,36 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                             if end is not None
                             else true(),
                         )
-                        for (customer_id, external_customer_id), end in before.items()
+                        for (
+                            (customer_id, external_customer_id),
+                            end,
+                        ), reducer_ids in reducers_by_bound.items()
                     )
                 ),
             )
-            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
+            .group_by(
+                ReducerBucket.reducer_id,
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+            )
         )
         result = await self.session.execute(statement)
         totals = {
-            (customer_id, external_customer_id): (count, total, minimum, maximum)
-            for customer_id, external_customer_id, count, total, minimum, maximum in result
+            (reducer_id, (customer_id, external_customer_id)): (
+                count,
+                total,
+                minimum,
+                maximum,
+            )
+            for (
+                reducer_id,
+                customer_id,
+                external_customer_id,
+                count,
+                total,
+                minimum,
+                maximum,
+            ) in result
         }
         return {
             identity: totals.get(identity, (0, 0, None, None)) for identity in before
@@ -438,34 +468,44 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     async def get_last_synced_ends(
         self,
         organization_id: UUID,
-        reducer_id: UUID,
-        identities: Sequence[tuple[UUID | None, str | None]],
+        identities: Sequence[ReducerIdentity],
         *,
         since: datetime,
-    ) -> dict[tuple[UUID | None, str | None], datetime]:
-        """End of each customer identity's latest bucket recomputed by sync, among
-        those starting from `since`. Identities without one are left out."""
+    ) -> dict[ReducerIdentity, datetime]:
+        """End of each customer identity's latest bucket recomputed by sync on its
+        reducer, among those starting from `since`. Identities without one are left
+        out."""
         if not identities:
             return {}
         statement = (
             select(
+                ReducerBucket.reducer_id,
                 ReducerBucket.customer_id,
                 ReducerBucket.external_customer_id,
                 func.max(ReducerBucket.bucket_end),
             )
             .where(
                 ReducerBucket.organization_id == organization_id,
-                ReducerBucket.reducer_id == reducer_id,
-                _is_any_customer(identities),
+                ReducerBucket.reducer_id.in_(
+                    {reducer_id for reducer_id, _ in identities}
+                ),
+                _is_any_customer(list({identity for _, identity in identities})),
                 ReducerBucket.bucket_start >= since,
                 ReducerBucket.synced_at.is_not(None),
             )
-            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
+            .group_by(
+                ReducerBucket.reducer_id,
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+            )
         )
         result = await self.session.execute(statement)
+        requested = set(identities)
         return {
-            (customer_id, external_customer_id): synced_end
-            for customer_id, external_customer_id, synced_end in result
+            key: synced_end
+            for reducer_id, customer_id, external_customer_id, synced_end in result
+            for key in ((reducer_id, (customer_id, external_customer_id)),)
+            if key in requested
         }
 
     async def get_synced_end_within(

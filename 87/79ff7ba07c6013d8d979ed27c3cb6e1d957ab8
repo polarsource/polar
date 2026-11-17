@@ -1,0 +1,21 @@
+server/emails/pnpm-lock.yaml
+  s_ea5f865d82a588::t_c91f4156b0ac66 169,616-617,619-620,625-626,631-632,638-639,645-646,652-653,659-660,665-666,1760-1761,2580,2582,2585,2588,2591,2594,2597,2600,2603,2739,3438,3440,3449-3456
+server/emails/pnpm-workspace.yaml
+  s_ea5f865d82a588::t_c8b37f889ec0d1 9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8779ff7ba07c6013d8d979ed27c3cb6e1d957ab8",
+  "prompts": {},
+  "sessions": {
+    "s_ea5f865d82a588": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e9bf-a0ba-7372-b23e-af3bbcf0b5bd",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

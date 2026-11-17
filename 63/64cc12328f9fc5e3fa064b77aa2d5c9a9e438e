@@ -1,0 +1,21 @@
+server/polar/oauth2/schemas.py
+  s_8a5e0fa25f93e7::t_f21a2c1adba257 30
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_8a5e0fa25f93e7::t_0414a61bc5805e 154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6364cc12328f9fc5e3fa064b77aa2d5c9a9e438e",
+  "prompts": {},
+  "sessions": {
+    "s_8a5e0fa25f93e7": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1eae5-7b5e-7ea1-8015-13aaf38c091e",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

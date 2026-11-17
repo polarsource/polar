@@ -4,6 +4,7 @@ from uuid import uuid4
 from polar.benefit.repository import BenefitRepository
 from polar.catalog.repository import (
     CatalogBenefitRepository,
+    CatalogCustomFieldRepository,
     CatalogMeterRepository,
     CatalogProductRepository,
 )
@@ -33,7 +34,7 @@ def _keeps_intervals(change: ProductChange, draft_product: Product) -> bool:
     expected = (
         change.existing
         if change.existing is not None
-        else products.product_create(change.config, None, defaultdict(uuid4))
+        else products.product_create(change.config, None, defaultdict(uuid4), None)
     )
     return all(
         getattr(draft_product, name) == getattr(expected, name, None)
@@ -62,6 +63,7 @@ async def rows(
         options=ProductRepository.from_session(session).get_eager_options(),
     )
     meter_external_ids = {change.config.external_id for change in changes.meters}
+    custom_field_slugs = {change.config.slug for change in changes.custom_fields}
     return CatalogMembers(
         products={
             product.external_id: product
@@ -82,5 +84,13 @@ async def rows(
             ).get_all_by_catalog(draft.id)
             if member.external_id in meter_external_ids
             and member.meter.catalog_id == draft.id
+        },
+        custom_fields={
+            member.slug: member.custom_field
+            for member in await CatalogCustomFieldRepository.from_session(
+                session
+            ).get_all_by_catalog(draft.id)
+            if member.slug in custom_field_slugs
+            and member.custom_field.catalog_id == draft.id
         },
     )

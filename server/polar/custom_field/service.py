@@ -24,6 +24,7 @@ from polar.authz.service import (
     assert_resource_permission,
 )
 from polar.custom_field.sorting import CustomFieldSortProperty
+from polar.declarative_config.guard import assert_catalog_editable
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
@@ -122,6 +123,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             organization.id,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, organization.id)
 
         repository = CustomFieldRepository.from_session(session)
         existing_field = await repository.get_by_organization_and_slug(
@@ -162,6 +164,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, custom_field.organization_id)
         repository = CustomFieldRepository.from_session(session)
         if not custom_field.is_current or (
             custom_field_update.slug is not None
@@ -244,6 +247,7 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field,
             OrganizationPermission.custom_fields_manage,
         )
+        await assert_catalog_editable(session, custom_field.organization_id)
         if not custom_field.is_current:
             raise CustomFieldVersionLocked()
         custom_field.set_deleted_at()

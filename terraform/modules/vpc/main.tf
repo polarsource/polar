@@ -13,7 +13,7 @@ resource "aws_internet_gateway" "this" {
 }
 
 resource "aws_subnet" "public" {
-  count = var.multi_az_public_subnets_enabled ? length(var.availability_zones) : 1
+  count = length(var.availability_zones)
 
   vpc_id = aws_vpc.this.id
   # Netnum 0 is the original public subnet; 1..n belong to the primary private subnets.

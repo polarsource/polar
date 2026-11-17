@@ -21,12 +21,6 @@ variable "primary_private_subnets_enabled" {
   default     = true
 }
 
-variable "multi_az_public_subnets_enabled" {
-  description = "Create a public subnet in every availability zone instead of only the first, as load balancers need two or more."
-  type        = bool
-  default     = false
-}
-
 variable "availability_zones" {
   description = "Availability zones for the public and private subnets. The first hosts the NAT gateway."
   type        = list(string)

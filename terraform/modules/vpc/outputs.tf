@@ -14,7 +14,7 @@ output "private_subnet_cidr_blocks" {
 }
 
 output "public_subnet_ids" {
-  description = "IDs of the public subnets, one per availability zone when multi_az_public_subnets_enabled."
+  description = "IDs of the public subnets, one per availability zone."
   value       = aws_subnet.public[*].id
 }
 

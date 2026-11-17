@@ -22,7 +22,7 @@ variable "primary_private_subnets_enabled" {
 }
 
 variable "availability_zones" {
-  description = "Availability zones for the private subnets. The first also hosts the NAT gateway's public subnet."
+  description = "Availability zones for the public and private subnets. The first hosts the NAT gateway."
   type        = list(string)
 
   validation {

@@ -44,6 +44,9 @@ locals {
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
   render_proxy_cidr   = "10.0.0.0/8"
   forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
+
+  api_allowed_hosts = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
+  api_cors_origins  = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
 }
 
 module "test" {
@@ -73,8 +76,8 @@ module "test" {
   }
 
   api_service_config = {
-    allowed_hosts          = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
-    cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    allowed_hosts          = local.api_allowed_hosts
+    cors_origins           = local.api_cors_origins
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
@@ -87,14 +90,6 @@ module "test" {
   }
 
   additional_api_services = {
-    api-events-test = {
-      plan            = "pro_ultra"
-      web_concurrency = "8"
-      # Disables the in-process S3 span exporter to measure its CPU cost under load
-      start_command  = "env -u POLAR_S3_LOGS_BUCKET_NAME uv run uvicorn polar.event_ingestion_api_app:app --host 0.0.0.0 --port 10000 --limit-max-requests 50000 --limit-max-requests-jitter 10000 --timeout-graceful-shutdown 30"
-      custom_domains = [{ name = "test-api-events.polar.sh" }]
-      autoscaling    = { min = 3, max = 6 }
-    }
     events-test = {
       image_url      = "ghcr.io/polarsource/polar-events"
       plan           = "standard"
@@ -138,9 +133,9 @@ resource "cloudflare_dns_record" "test_api" {
 resource "cloudflare_dns_record" "test_api_events" {
   count   = local.test_enabled ? 1 : 0
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "test-api-events.polar.sh"
+  name    = local.events_api_hostname
   type    = "CNAME"
-  content = replace(module.test[0].additional_api_service_urls["api-events-test"], "https://", "")
+  content = aws_lb.events_api[0].dns_name
   proxied = true
   ttl     = 1
 }

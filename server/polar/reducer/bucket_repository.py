@@ -311,6 +311,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         ] = {}
         for (reducer_id, identity), end in before.items():
             reducers_by_bound.setdefault((identity, end), set()).add(reducer_id)
+        all_reducers = {reducer_id for reducer_id, _ in before}
         statement = (
             select(
                 ReducerBucket.reducer_id,
@@ -323,11 +324,19 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .where(
                 ReducerBucket.organization_id == organization_id,
+                # A request on a single reducer filters it here, once: repeated in
+                # each customer's condition below, it slows requests for many
+                # customers.
+                ReducerBucket.reducer_id.in_(all_reducers)
+                if len(all_reducers) == 1
+                else true(),
                 ReducerBucket.sealed_at.is_(None),
                 or_(
                     *(
                         and_(
-                            ReducerBucket.reducer_id.in_(reducer_ids),
+                            ReducerBucket.reducer_id.in_(reducer_ids)
+                            if len(all_reducers) > 1
+                            else true(),
                             _is_customer(
                                 ReducerBucket, customer_id, external_customer_id
                             ),

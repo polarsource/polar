@@ -79,6 +79,7 @@ const CancellationDialog = ({
   const previewPending = subscription.status === 'past_due' && !cancelPreview
 
   const isPending = cancelSubscription.isPending || revokeSubscription.isPending
+  const noun = subscription.status === 'trialing' ? 'trial' : 'subscription'
 
   const handleCancel = useCallback(() => {
     props.hide()
@@ -120,8 +121,8 @@ const CancellationDialog = ({
         return
       }
       toast({
-        title: 'Subscription canceled',
-        description: 'Your subscription has been canceled.',
+        title: noun === 'trial' ? 'Trial canceled' : 'Subscription canceled',
+        description: `Your ${noun} has been canceled.`,
       })
       router.refresh()
       props.hide()
@@ -134,6 +135,7 @@ const CancellationDialog = ({
       setError,
       props,
       router,
+      noun,
     ],
   )
 
@@ -145,12 +147,12 @@ const CancellationDialog = ({
     <PortalDialog
       isShown
       hide={props.hide}
-      title="Cancel subscription"
+      title={`Cancel ${noun}`}
       description="We're sorry to see you go. Let us know why you're leaving so we can improve."
       actions={
         <>
           <Button variant="ghost" onClick={handleCancel}>
-            Keep subscription
+            Keep {noun}
           </Button>
           <Button
             variant="destructive"
@@ -158,7 +160,7 @@ const CancellationDialog = ({
             loading={isPending}
             disabled={isPending || previewPending}
           >
-            {stopsCollection ? 'Cancel now' : 'Cancel subscription'}
+            {stopsCollection ? 'Cancel now' : `Cancel ${noun}`}
           </Button>
         </>
       }

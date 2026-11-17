@@ -1,3 +1,5 @@
+export { outpost } from "./factory";
+export type { OutpostFactoryOptions } from "./factory";
 export {
   MissingExternalIdError,
   Outpost,

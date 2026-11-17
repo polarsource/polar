@@ -217,10 +217,20 @@ if (meter !== null) console.log(meter.consumed_units, meter.credited_units, mete
 
 ### Local reduction with Outpost
 
-Pass `outpost: true` to `polar.metering()` to enable Redis-backed local reduction, using
-`REDIS_URL`. Pass an object to configure it. This provides low-latency meter reads across
-clients. Every Outpost event requires an `external_id`; `track()` rejects events without one.
-An event counts locally until Polar confirms storage or the buffer gives it up.
+Pass `outpost()` from `@polar-sh/sdk/outpost` to `polar.metering()` to enable Redis-backed
+local reduction. This provides low-latency meter reads across clients. Outpost requires the
+optional `ioredis` and `@opentelemetry/*` peer dependencies; the rest of the SDK does not.
+
+```typescript
+import { outpost } from "@polar-sh/sdk/outpost";
+
+const metering = polar.metering({ outpost: outpost() });
+```
+
+`outpost()` uses `REDIS_URL` and throws if it is unset. Pass options to configure it, such as
+`outpost({ redisUrl: "redis://localhost:6379" })`. Every Outpost event requires an
+`external_id`; `track()` rejects events without one. An event counts locally until Polar confirms
+storage or the buffer gives it up.
 
 ### Options
 

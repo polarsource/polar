@@ -10,6 +10,14 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+### Changed
+
+- TypeScript: **Breaking.** Enable Outpost with `polar.metering({ outpost: outpost() })`, importing `outpost` from `@polar-sh/sdk/outpost`, instead of `outpost: true` or an options object. `outpost()` takes the same options and throws if neither `redisUrl` nor `REDIS_URL` is set. `MeteringOutpostOptions` is replaced by `OutpostFactoryOptions`.
+
+### Fixed
+
+- TypeScript: bundling an API version entry point, such as `@polar-sh/sdk/2026-10`, no longer requires Outpost's optional `ioredis` and `@opentelemetry/*` peer dependencies. This fixes `Module not found` errors in Next.js (Turbopack) and Vite builds since 1.1.0.
+
 ## [1.3.0] - 2026-11-16
 
 ### Changed

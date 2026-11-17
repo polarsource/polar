@@ -19,6 +19,7 @@ import {
   UnavailableRedisError,
   isSampled,
 } from "./client";
+import { outpost } from "./factory";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
@@ -2083,7 +2084,7 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
   const reader = await start();
   {
-    const metering = polar.metering({ outpost: { redisUrl: redisServer.socket } });
+    const metering = polar.metering({ outpost: outpost({ redisUrl: redisServer.socket }) });
     try {
       await metering.track({
         ...customer,

@@ -219,6 +219,7 @@ def enqueue_email_template(
     reply_to_email_addr: str | None = DEFAULT_REPLY_TO_EMAIL_ADDRESS,
     attachments: Iterable[Attachment] | None = None,
     deduplication_key: str | None = None,
+    unsuppress: bool = False,
 ) -> None:
     enqueue_job(
         "email.send",
@@ -234,6 +235,7 @@ def enqueue_email_template(
         reply_to_email_addr=reply_to_email_addr,
         attachments=attachments,
         deduplication_key=deduplication_key,
+        unsuppress=unsuppress,
     )
 
 

@@ -24,6 +24,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       clients: ${{ steps.filter.outputs.clients }}
+      turbo-scope: ${{ steps.scope.outputs.turbo-scope }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
@@ -44,6 +45,17 @@ jobs:
               - '.github/workflows/test_client.yaml'
               - '.github/actions/setup-clients/**'
               - '.github/workflows/release_cli.yml'
+              - '.nvmrc'
+            unscoped:
+              - 'clients/*'
+              - 'sdk/cli-commands/**'
+              - 'docs/**'
+              - '.github/**'
+              - '.nvmrc'
+      - name: Scope turbo to what the diff can reach
+        id: scope
+        if: github.event_name == 'pull_request' && steps.filter.outputs.unscoped == 'false'
+        run: echo "turbo-scope=--affected" >> "$GITHUB_OUTPUT"
 
   checks:
     name: "Client: Checks 💅"
@@ -58,6 +70,8 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
@@ -68,6 +82,8 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
@@ -81,7 +97,7 @@ jobs:
         run: pnpm --filter @polar-sh/i18n validate
 
       - name: 👀 Typecheck
-        run: pnpm run typecheck
+        run: pnpm turbo run typecheck $TURBO_SCOPE
 
   test-web:
     name: "Client: Test Web 🧪"
@@ -96,6 +112,8 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
@@ -106,11 +124,13 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: Web"
-        run: pnpm turbo run test --filter=web
+        run: pnpm turbo run test --filter=web $TURBO_SCOPE
 
   test-checkout:
     name: "Client: Test Checkout 🧪"
@@ -125,6 +145,8 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
@@ -135,11 +157,13 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
       - name: "🧪 Test: @polar-sh/checkout"
-        run: pnpm turbo run test --filter=@polar-sh/checkout
+        run: pnpm turbo run test --filter=@polar-sh/checkout $TURBO_SCOPE
 
   test-packages:
     name: "Client: Test Packages 🧪"
@@ -154,6 +178,8 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
@@ -164,6 +190,8 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
@@ -172,7 +200,7 @@ jobs:
           bun-version-file: clients/packages/cli/package.json
 
       - name: "🧪 Test: Packages"
-        run: pnpm turbo run test --filter='!web' --filter='!@polar-sh/checkout'
+        run: pnpm turbo run test --filter='!web' --filter='!@polar-sh/checkout' $TURBO_SCOPE
 
       - name: "📚 CLI docs are up to date"
         run: pnpm --filter @polar-sh/cli docs:check
@@ -190,6 +218,8 @@ jobs:
 
     env:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_SCM_BASE: HEAD^1
+      TURBO_SCOPE: ${{ needs.changes.outputs.turbo-scope }}
       VERCEL_ENV: "testing"
 
     steps:
@@ -200,6 +230,8 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
 
       - uses: ./.github/actions/setup-clients
 
@@ -216,7 +248,7 @@ jobs:
       - name: 🛠️ Build
         run: |
           touch "$RUNNER_TEMP/build-started"
-          pnpm build
+          pnpm turbo run build $TURBO_SCOPE
 
       - name: Check whether the build wrote to the Next.js build cache
         id: next-cache

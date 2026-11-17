@@ -16,10 +16,10 @@
   },
   "packageManager": "pnpm@12.8.0",
   "dependencies": {
-    "commander": "^15.0.0",
+    "commander": "^15.1.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-email": "^6.11.6"
+    "react-email": "^6.11.10"
   },
   "devDependencies": {
     "@react-email/ui": "^6.11.3",

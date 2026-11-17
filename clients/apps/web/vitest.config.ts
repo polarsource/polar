@@ -24,6 +24,8 @@ const sharedTest = {
   environment: 'jsdom',
   setupFiles: ['./vitest.setup.ts'],
   fsModuleCache: true,
+  isolate: false,
+  sequence: { shuffle: { files: true, tests: true } },
   exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
   env: {
     NEXT_PUBLIC_API_URL: 'http://api.polar.test',

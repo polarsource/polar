@@ -3,7 +3,6 @@ import {
   formatProperty,
   OPERATOR_DISPLAY_NAMES,
 } from '@/components/Meter/MeterFilterReadOnlyConfiguration'
-import { taxBehaviorOptionDisplayNames } from '@/components/Settings/OrganizationPaymentSettings'
 import { getUnitLabels } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -15,9 +14,6 @@ type Price = schemas['ConfigProductPriceRead']
 type Tiers = schemas['ConfigTiersRead']
 type Meter = schemas['ConfigMeterRead']
 type Filter = schemas['Filter']
-type Settings = {
-  payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
-}
 
 export const plural = (count: number, noun: string) =>
   `${count} ${count === 1 ? noun : `${noun}s`}`
@@ -88,11 +84,6 @@ export const meterFields = ({
       ? AGGREGATION_DISPLAY_NAMES.count
       : `${AGGREGATION_DISPLAY_NAMES[aggregation.func]} of ${formatProperty(aggregation.property)}`,
   ...meter,
-})
-
-export const settingsFields = ({ payments }: Settings) => ({
-  default_payment_currency: payments.currency.toUpperCase(),
-  default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
 })
 
 export const fieldLabel = (field: string) =>

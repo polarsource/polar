@@ -1,6 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { expect, it } from 'vitest'
-import { meterFields, settingsFields, valueFormatter } from './format'
+import { meterFields, valueFormatter } from './format'
 
 it('lists every tier of a tiered price', () => {
   expect(
@@ -68,14 +68,5 @@ it('reads a meter filter and aggregation as one line each', () => {
     filter:
       'Name equals completion and (model contains gpt or model contains claude)',
     aggregation: 'Sum of tokens',
-  })
-})
-
-it('names settings like the payment settings page', () => {
-  expect(
-    settingsFields({ payments: { currency: 'eur', tax: 'location' } }),
-  ).toEqual({
-    default_payment_currency: 'EUR',
-    default_tax_behavior: 'Location based',
   })
 })

@@ -302,6 +302,7 @@ class TestEmailSend:
                 status=status,
                 error=error,
             )
+        mocker.patch.object(settings, "ENV", Environment.production)
         mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
         remove_suppression = mocker.patch(
             "polar.email.tasks.email_sender.remove_suppression"
@@ -329,6 +330,7 @@ class TestEmailSend:
         await create_email_log(
             save_fixture, created_at=utc_now(), status=EmailLogStatus.failed
         )
+        mocker.patch.object(settings, "ENV", Environment.production)
         send = mocker.patch("polar.email.tasks.email_sender.send", return_value=None)
         mocker.patch(
             "polar.email.tasks.email_sender.remove_suppression",

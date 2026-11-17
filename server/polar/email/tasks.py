@@ -75,7 +75,7 @@ async def email_send(
     tags = _build_tags(template, email_props)
 
     # Removing a suppression needs a full-access Resend key, which only production has
-    if unsuppress and not settings.is_sandbox():
+    if unsuppress and settings.is_production():
         try:
             await _remove_suppression_after_failure(to_email_addr)
         except Exception:

@@ -5,7 +5,7 @@ import { Pipeline, Redis } from "ioredis";
 import { once } from "node:events";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { createRequire } from "node:module";
-import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createPolar } from "../2026-10/client";
 import { ClientBase, PolarError } from "../base";
@@ -106,6 +106,7 @@ let telemetryAnswered = 0;
 let configurationDelay = 0;
 const changeRequests: (string | null)[] = [];
 let changesStatus = 200;
+let changesDelay = 0;
 let cursor = 0;
 // Each reducer's snapshot: `snapshot` for a usage reducer, the credits granted at its version for a
 // credit reducer, with the reducer's override on top.
@@ -293,7 +294,8 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
       };
       resetChanges = false;
       configurationChanged = false;
-      return respond(response, page);
+      setTimeout(() => respond(response, page), changesDelay);
+      return;
     }
   }
   respond(response, {}, 404);
@@ -326,6 +328,7 @@ beforeEach(async () => {
   configurationDelay = 0;
   changeRequests.length = 0;
   changesStatus = 200;
+  changesDelay = 0;
   meterUsageRequests.length = 0;
   meterUsageBatches.length = 0;
   meterUsageMostInFlight = 0;
@@ -2130,4 +2133,145 @@ it("stores values that parse the same with and without JSON", async () => {
     for (const [field, value] of Object.entries(stored))
       expect([field, Number(value)]).toEqual([field, JSON.parse(value)]);
   }
+});
+
+describe("Redis cost", () => {
+  // What Outpost cost Redis while `run` ran: the commands its connections sent, as Redis Cloud
+  // counts its ops (a script once, whatever it runs), and the bytes each way.
+  const redisCost = async (run: () => Promise<unknown>) => {
+    const self = String(await redis.client("ID"));
+    const traffic = async () => {
+      let sent = 0;
+      let received = 0;
+      for (const line of ((await redis.client("LIST")) as string).trim().split("\n")) {
+        const fields = Object.fromEntries(
+          line
+            .split(" ")
+            .map((pair) => [pair.slice(0, pair.indexOf("=")), pair.slice(pair.indexOf("=") + 1)]),
+        );
+        if (fields.id === self || fields.flags.includes("O")) continue;
+        sent += Number(fields["tot-net-in"]);
+        received += Number(fields["tot-net-out"]);
+      }
+      return { sent, received };
+    };
+    const monitor = await redis.monitor();
+    const commands: Record<string, number> = {};
+    monitor.on("monitor", (_time: string, args: string[], source: string) => {
+      const command = args[0].toLowerCase();
+      if (source !== "lua" && command !== "client")
+        commands[command] = (commands[command] ?? 0) + 1;
+    });
+    const before = await traffic();
+    await run();
+    const after = await traffic();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    monitor.disconnect();
+    return { commands, sent: after.sent - before.sent, received: after.received - before.received };
+  };
+  // Telemetry relays its exports through Redis after a pull: only its own test counts them.
+  const quiet = (options: Partial<OutpostOptions> = {}) => start({ telemetry: false, ...options });
+  const event = () => ({
+    ...customer,
+    name: "api_call",
+    external_id: eventId(),
+    timestamp,
+    metadata: { tokens: 1 },
+  });
+
+  it("reads a meter in five commands, each reducer's whole state", async () => {
+    await seed();
+    const outpost = await quiet();
+    await outpost.meter(meter);
+    const cost = await redisCost(() => outpost.meter(meter));
+    expect(cost.commands).toEqual({ evalsha: 2, hget: 3 });
+    expect(cost.received).toBeLessThanOrEqual(260);
+  });
+
+  it("tracks an event in one command", async () => {
+    await seed();
+    const outpost = await quiet();
+    await outpost.track(event());
+    expect((await redisCost(() => outpost.track(event()))).commands).toEqual({ evalsha: 1 });
+  });
+
+  it("acknowledges an event in one command", async () => {
+    await seed();
+    const outpost = await quiet();
+    const [warm, measured] = [event(), event()];
+    await outpost.track(warm);
+    await outpost.track(measured);
+    await outpost.acknowledge([warm]);
+    expect((await redisCost(() => outpost.acknowledge([measured]))).commands).toEqual({
+      evalsha: 1,
+    });
+  });
+
+  it("warms a known customer over eleven reducers in 23 commands, each reducer's whole state", async () => {
+    reducers = [
+      ...Array.from(
+        { length: 10 },
+        (_, index): Reducer => ({
+          ...reducers[0],
+          id: `tokens-${index}`,
+          meter_ids: [`meter-${index}`],
+        }),
+      ),
+      reducers[1],
+    ];
+    snapshot = aliceSnapshot;
+    const outpost = await quiet();
+    await outpost.actor({ external_customer_id: "bob" });
+    await outpost.actor(customer);
+    const cost = await redisCost(() => outpost.actor(customer));
+    expect(cost.commands).toEqual({ evalsha: 11, hget: 12 });
+    expect(cost.received).toBeLessThanOrEqual(2_100);
+  });
+
+  it("pulls and applies a snapshot in nine commands", async () => {
+    await seed();
+    const outpost = await quiet();
+    await outpost.meter(meter);
+    changes.push({ ...aliceSnapshot, version: 1791807000000004 });
+    await outpost["pull"]();
+    changes.push(aliceSnapshot);
+    expect((await redisCost(() => outpost["pull"]())).commands).toEqual({
+      hget: 2,
+      set: 1,
+      exists: 1,
+      del: 1,
+      evalsha: 3,
+      eval: 1,
+    });
+  });
+
+  it("lets the instances that lose the pull poll its lock", async () => {
+    const fleet = await Promise.all([quiet(), quiet(), quiet()]);
+    await redis.hset(`outpost:v1:${organization}:pull`, "pulled_at", 0);
+    changesDelay = 200;
+    const cost = await redisCost(() => Promise.all(fleet.map((outpost) => outpost["refresh"]())));
+    expect(cost.commands.set).toBe(3);
+    expect(cost.commands.exists).toBeLessThanOrEqual(2 * (200 / 25 + 2));
+  });
+
+  it("reports the size of Redis from every instance", async () => {
+    const fleet = await Promise.all([start(), start(), start()]);
+    const cost = await redisCost(() =>
+      Promise.all(fleet.map((outpost) => outpost["reportRedisSize"]())),
+    );
+    expect(cost.commands).toEqual({ info: 3, dbsize: 3 });
+  });
+
+  it("lets a second reader of a cold customer read it again and again", async () => {
+    snapshot = aliceSnapshot;
+    reducerSnapshots = { tokens: { delay: 200 }, credits: { delay: 200 } };
+    const [first, second] = await Promise.all([
+      quiet({ snapshotTimeout: 1_000 }),
+      quiet({ snapshotTimeout: 1_000 }),
+    ]);
+    await first.actor({ external_customer_id: "bob" });
+    await second.actor({ external_customer_id: "bob" });
+    const cost = await redisCost(() => Promise.all([first.meter(meter), second.meter(meter)]));
+    expect(cost.commands.hget).toBeLessThanOrEqual(3 * (200 / 25 + 6));
+  });
 });

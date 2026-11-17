@@ -281,28 +281,17 @@ const DownloadInvoice = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onDownload} disabled={loading}>
-              Download Invoice
+              Download invoice
             </DropdownMenuItem>
             {order.is_invoice_generated && (
               <DropdownMenuItem onClick={() => show()}>
-                Edit Invoice
+                Edit invoice
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <Button
-            type="button"
-            onClick={onDownload}
-            loading={loading}
-            disabled={loading}
-            variant={variant}
-            size={size}
-            className={twMerge('w-full', className)}
-          >
-            Download Invoice
-          </Button>
+        <div className="flex flex-col-reverse gap-2 lg:flex-row">
           {order.is_invoice_generated && !hideEditButton && (
             <Button
               type="button"
@@ -313,9 +302,20 @@ const DownloadInvoice = ({
               onClick={() => show()}
               className={twMerge('w-full', className)}
             >
-              Edit Invoice
+              Edit invoice
             </Button>
           )}
+          <Button
+            type="button"
+            onClick={onDownload}
+            loading={loading}
+            disabled={loading}
+            variant={variant}
+            size={size}
+            className={twMerge('w-full', className)}
+          >
+            Download invoice
+          </Button>
         </div>
       ),
     [
@@ -342,8 +342,8 @@ const DownloadInvoice = ({
             <InlineModalHeader hide={hide}>
               <h2 className="text-xl">
                 {order.is_invoice_generated
-                  ? 'Edit Invoice'
-                  : 'Generate Invoice'}
+                  ? 'Edit invoice'
+                  : 'Generate invoice'}
               </h2>
             </InlineModalHeader>
             <Form {...form}>

@@ -14,10 +14,10 @@ export async function generateMetadata(props: {
   )
 
   return {
-    title: `Customer Portal | ${organization.name}`, // " | Polar is added by the template"
+    title: `Customer portal | ${organization.name}`, // " | Polar is added by the template"
     openGraph: {
-      title: `Customer Portal | ${organization.name} on Polar`,
-      description: `Customer Portal | ${organization.name} on Polar`,
+      title: `Customer portal | ${organization.name} on Polar`,
+      description: `Customer portal | ${organization.name} on Polar`,
       siteName: 'Polar',
       type: 'website',
       images: [
@@ -38,8 +38,8 @@ export async function generateMetadata(props: {
         },
       ],
       card: 'summary_large_image',
-      title: `Customer Portal | ${organization.name} on Polar`,
-      description: `Customer Portal | ${organization.name} on Polar`,
+      title: `Customer portal | ${organization.name} on Polar`,
+      description: `Customer portal | ${organization.name} on Polar`,
     },
   }
 }

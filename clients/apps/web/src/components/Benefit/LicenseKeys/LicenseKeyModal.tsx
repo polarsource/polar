@@ -45,13 +45,13 @@ export const LicenseKeyModal = ({
         .then(({ error }) => {
           if (error) {
             toast({
-              title: 'License Key Status Update Failed',
+              title: 'License key status update failed',
               description: `Error updating license key status to ${status}: ${extractApiErrorMessage(error)}`,
             })
             return
           }
           toast({
-            title: 'License Key Status Updated',
+            title: 'License key status updated',
             description: `License key ending in ${licenseKey.display_key} updated to ${status}`,
           })
         })
@@ -63,7 +63,7 @@ export const LicenseKeyModal = ({
     <Box flexDirection="column" overflowY="auto">
       <InlineModalHeader hide={onClose}>
         <Text variant="heading-xxs" as="h1">
-          License Key
+          License key
         </Text>
       </InlineModalHeader>
       <Box
@@ -87,7 +87,7 @@ export const LicenseKeyModal = ({
             value={licenseKey.key}
             onCopy={() => {
               toast({
-                title: 'Copied To Clipboard',
+                title: 'Copied to clipboard',
                 description: `License Key was copied to clipboard`,
               })
             }}

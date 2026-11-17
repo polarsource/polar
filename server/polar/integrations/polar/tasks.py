@@ -187,6 +187,22 @@ async def delete_customer(external_id: Annotated[str, LoggableField]) -> None:
 
 
 @actor(
+    actor_name="polar_self.revoke_subscription",
+    priority=TaskPriority.LOW,
+)
+async def revoke_subscription(
+    external_customer_id: Annotated[str, LoggableField],
+) -> None:
+    client = get_client()
+    subscription = await client.get_active_subscription(
+        external_customer_id=external_customer_id
+    )
+    if subscription is None:
+        return
+    await client.revoke_subscription(subscription_id=subscription.id)
+
+
+@actor(
     actor_name="polar_self.track_event_ingestion_v2",
     cron_trigger=CronTrigger.from_crontab("*/5 * * * *"),
     priority=TaskPriority.LOW,
@@ -346,4 +362,4 @@ async def webhook_subscription_revoked(
             session, ExternalEventSource.polar, event_id
         ) as event:
             payload = deserialize(event.data, WebhookSubscriptionRevokedPayload)
-            await polar_self.handle_subscription_revoked_event(payload)
+            await polar_self.handle_subscription_revoked_event(session, payload)

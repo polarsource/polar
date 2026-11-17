@@ -1541,6 +1541,21 @@ class TestDenyOrganization:
             for call in enqueue_job_mock.call_args_list
         )
 
+    async def test_enqueues_polar_self_subscription_revocation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_revoke_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_revoke_subscription"
+        )
+
+        await organization_service.deny_organization(session, organization)
+
+        enqueue_revoke_mock.assert_called_once_with(organization_id=organization.id)
+
 
 @pytest.mark.anyio
 class TestBlockOrganization:

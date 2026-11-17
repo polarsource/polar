@@ -328,7 +328,7 @@ dev = [
 requires-dist = [
     { name = "boto3", specifier = ">=1.43.64" },
     { name = "certifi", specifier = ">=2026.10.19" },
-    { name = "pillow", specifier = ">=12.3.0" },
+    { name = "pillow", specifier = ">=13.0.0" },
 ]
 
 [package.metadata.requires-dev]

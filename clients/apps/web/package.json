@@ -79,6 +79,7 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-dropzone": "^14.4.1",
+    "react-focus-lock": "catalog:",
     "react-hook-form": "catalog:",
     "react-qr-code": "^2.2.0",
     "recharts": "catalog:",

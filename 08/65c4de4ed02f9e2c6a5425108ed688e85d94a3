@@ -1,0 +1,53 @@
+terraform/production/handbook.tf
+  s_ae1707cb60d5d9::t_04a03c280a3e71 64-67,85,109
+  s_ae1707cb60d5d9::t_eb7e0a6de7e652 6-9,11-62,87-92
+  s_ae1707cb60d5d9::t_d411d00f619271 1-5,10,63,68-84,86,93-108,110-151
+adr/0001-record-architecture-decisions.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 13,48
+server/tests/test_openapi.py
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 79
+adr/README.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 13,22
+adr/0008-encrypt-secrets-at-rest.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 17,61
+.claude/commands/create-changelog.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 46
+server/polar/kit/encryption.py
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 10
+terraform/modules/render_secrets_kms/main.tf
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 14
+server/polar/kit/hash_secrets.py
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 33
+.github/workflows/docs_links.yaml
+  s_ae1707cb60d5d9::t_73561a7c2dfdb5 18,23,36,43
+terraform/modules/jwks_signing_key/main.tf
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 16
+server/AGENTS.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 167
+adr/0005-auth-subject-and-scopes.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 53
+terraform/modules/hash_secret/main.tf
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 16
+DEVELOPMENT.md
+  s_ae1707cb60d5d9::t_5b93d5f0320f45 144
+AGENTS.md
+  s_ae1707cb60d5d9::t_73561a7c2dfdb5 179-180,182-184
+.agents/skills/api-surface-review/SKILL.md
+  s_ae1707cb60d5d9::t_2052b4b0cc5c9d 113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0865c4de4ed02f9e2c6a5425108ed688e85d94a3",
+  "prompts": {},
+  "sessions": {
+    "s_ae1707cb60d5d9": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cf65-c2e5-7390-865f-b1a0c7e433fd",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

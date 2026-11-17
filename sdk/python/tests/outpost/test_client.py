@@ -3736,7 +3736,7 @@ async def test_lets_the_instances_that_lose_the_pull_go_on_without_polling_its_l
 
 
 @pytest.mark.anyio
-async def test_reports_the_size_of_redis_from_every_instance(
+async def test_measures_the_size_of_redis_from_the_instance_that_pulled_alone(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     redis_commands: collections.Counter[str],
@@ -3757,11 +3757,38 @@ async def test_reports_the_size_of_redis_from_every_instance(
         Outpost(url, client=polar_client) as third,
     ):
 
-        async def report() -> None:
-            for outpost in (first, second, third):
-                await outpost._report_redis_size()
+        async def pull() -> None:
+            async with anyio.create_task_group() as group:
+                for outpost in (first, second, third):
+                    group.start_soon(outpost._pull)
+            # The instance that pulled measures Redis in the background.
+            await anyio.sleep(0.1)
 
-        assert await _cost(redis_commands, report) == {"info": 3, "dbsize": 3}
+        cost = await _cost(redis_commands, pull)
+    assert (cost["info"], cost["dbsize"]) == (1, 1)
+
+
+@pytest.mark.anyio
+async def test_pushes_an_instances_telemetry_in_one_command(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    redis_commands: collections.Counter[str],
+) -> None:
+    url, redis = redis_connection
+    async with Outpost(url, client=polar_client) as outpost:
+
+        async def push(name: str) -> None:
+            outpost._outbox.add("spans", f"{name}-span;".encode())
+            outpost._outbox.add("metrics", f"{name}-metric;".encode())
+            await outpost._push_telemetry()
+
+        await push("first")
+        assert await _cost(redis_commands, lambda: push("second")) == {"evalsha": 1}
+        for kind in ("span", "metric"):
+            assert await redis.lrange(f"outpost:v1:org-1:telemetry:{kind}s", 0, -1) == [
+                f"first-{kind};".encode(),
+                f"second-{kind};".encode(),
+            ]
 
 
 @pytest.mark.anyio

@@ -39,6 +39,7 @@ import {
 import {
   READ_STATE_SCRIPT,
   READ_STATES_SCRIPT,
+  PUSH_TELEMETRY_SCRIPT,
   WRITE_BUCKET_SCRIPT,
   CONFIRM_SCRIPT,
   APPLY_SNAPSHOT_SCRIPT,
@@ -138,6 +139,11 @@ type Read = State | "missing";
 interface OutpostRedis extends Redis {
   outpostReadState(key: string): Promise<string[]>;
   outpostReadStates(numberOfKeys: number, ...args: string[]): Promise<unknown[]>;
+  outpostPushTelemetry(
+    spansKey: string,
+    metricsKey: string,
+    ...args: (string | number | Buffer)[]
+  ): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
   outpostCommitPull(key: string, lockKey: string, ...args: (string | number)[]): Promise<number>;
 }
@@ -446,6 +452,10 @@ export class Outpost {
       }) as OutpostRedis;
       this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
       this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
+      this.redis.defineCommand("outpostPushTelemetry", {
+        numberOfKeys: 2,
+        lua: PUSH_TELEMETRY_SCRIPT,
+      });
       this.redis.defineCommand("outpostWriteBucket", {
         numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
@@ -494,10 +504,7 @@ export class Outpost {
       this.pullTimer = setInterval(() => {
         if (!this.failure) void this.refresh().catch(() => {});
       }, PULL_CHECK_INTERVAL);
-      this.refreshTimer = setInterval(() => {
-        void this.reportRedisSize();
-        void this.flushTelemetry();
-      }, REPORT_INTERVAL);
+      this.refreshTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
       this.requireRedis();
       return this;
     } catch (error) {
@@ -720,18 +727,20 @@ export class Outpost {
     const spans = this.outbox.spans.splice(0);
     const metrics = this.outbox.metrics.splice(0);
     if (!this.redis || (!spans.length && !metrics.length)) return;
-    const pipeline = this.redis.pipeline();
-    for (const [key, exports] of [
-      [this.telemetryKey("spans"), spans],
-      [this.telemetryKey("metrics"), metrics],
-    ] as const) {
-      if (!exports.length) continue;
-      pipeline.rpush(key, ...exports.map((body) => Buffer.from(body)));
-      // A fleet that stops pulling keeps its newest exports only.
-      pipeline.ltrim(key, -TELEMETRY_CAP, -1);
-    }
-    const results = await pipeline.exec().catch(() => null);
-    if (results !== null && !results.some(([error]) => error)) return;
+    // A fleet that stops pulling keeps its newest exports only.
+    const pushed = await this.redis
+      .outpostPushTelemetry(
+        this.telemetryKey("spans"),
+        this.telemetryKey("metrics"),
+        TELEMETRY_CAP,
+        spans.length,
+        ...[...spans, ...metrics].map((body) => Buffer.from(body)),
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    if (pushed) return;
     // Redis lost the write: the exports wait for the next flush, the newest at most.
     this.outbox.spans = [...spans, ...this.outbox.spans].slice(-TELEMETRY_CAP);
     this.outbox.metrics = [...metrics, ...this.outbox.metrics].slice(-TELEMETRY_CAP);
@@ -1050,6 +1059,8 @@ export class Outpost {
       if (!released)
         await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.pullLockKey, lock).catch(() => {});
     }
+    // The instance that pulled measures the shared Redis for the fleet.
+    void this.reportRedisSize();
     // In the background: a read that waits for the pull does not wait for telemetry.
     this.relaying ??= this.relayTelemetry()
       .catch(() => {})

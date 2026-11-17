@@ -2294,12 +2294,26 @@ describe("Redis cost", () => {
     expect(cost.commands.exists).toBeUndefined();
   });
 
-  it("reports the size of Redis from every instance", async () => {
+  it("measures the size of Redis from the instance that pulled alone", async () => {
     const fleet = await Promise.all([start(), start(), start()]);
-    const cost = await redisCost(() =>
-      Promise.all(fleet.map((outpost) => outpost["reportRedisSize"]())),
-    );
-    expect(cost.commands).toEqual({ info: 3, dbsize: 3 });
+    const cost = await redisCost(() => Promise.all(fleet.map((outpost) => outpost["pull"]())));
+    expect([cost.commands.info, cost.commands.dbsize]).toEqual([1, 1]);
+  });
+
+  it("pushes an instance's telemetry in one command", async () => {
+    const outpost = await start();
+    const push = (name: string) => {
+      outpost["outbox"].spans.push(Buffer.from(`${name}-span;`));
+      outpost["outbox"].metrics.push(Buffer.from(`${name}-metric;`));
+      return outpost["pushTelemetry"]();
+    };
+    await push("first");
+    expect((await redisCost(() => push("second"))).commands).toEqual({ evalsha: 1 });
+    for (const kind of ["span", "metric"])
+      expect(await redis.lrange(`outpost:v1:${organization}:telemetry:${kind}s`, 0, -1)).toEqual([
+        `first-${kind};`,
+        `second-${kind};`,
+      ]);
   });
 
   it("lets a second reader of a cold customer read it again and again", async () => {

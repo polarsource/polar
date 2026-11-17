@@ -329,6 +329,24 @@ return reads
 
 READ_STATES_SHA = hashlib.sha1(READ_STATES_SCRIPT.encode()).hexdigest()
 
+PUSH_TELEMETRY_SCRIPT = """
+-- An instance's exports in one command. KEYS are the spans and the metrics lists; ARGV[1] is how
+-- many exports each list keeps, the newest; ARGV[2] how many of the values after it are spans,
+-- the rest being metrics.
+local spans = tonumber(ARGV[2])
+local ranges = {{3, 2 + spans}, {3 + spans, #ARGV}}
+for i, key in ipairs(KEYS) do
+    local first, last = ranges[i][1], ranges[i][2]
+    if last >= first then
+        redis.call('RPUSH', key, unpack(ARGV, first, last))
+        redis.call('LTRIM', key, -tonumber(ARGV[1]), -1)
+    end
+end
+return 1
+"""
+
+PUSH_TELEMETRY_SHA = hashlib.sha1(PUSH_TELEMETRY_SCRIPT.encode()).hexdigest()
+
 WRITE_BUCKET_SCRIPT = """
 local bucket = 'bucket:' .. ARGV[1] .. ':'
 local pending = 'pending:' .. ARGV[1] .. ':'
@@ -1135,16 +1153,21 @@ class Outpost:
         spans, metrics = self._outbox.take()
         if self._redis is None or not (spans or metrics):
             return
+        # A fleet that stops pulling keeps its newest exports only.
+        arguments = [
+            self._telemetry_key("spans"),
+            self._telemetry_key("metrics"),
+            TELEMETRY_CAP,
+            len(spans),
+            *spans,
+            *metrics,
+        ]
         try:
-            async with self._redis.pipeline(transaction=False) as pipeline:
-                for kind, exports in (("spans", spans), ("metrics", metrics)):
-                    if not exports:
-                        continue
-                    key = self._telemetry_key(kind)
-                    pipeline.rpush(key, *exports)
-                    # A fleet that stops pulling keeps its newest exports only.
-                    pipeline.ltrim(key, -TELEMETRY_CAP, -1)
-                await pipeline.execute()
+            try:
+                await self._redis.evalsha(PUSH_TELEMETRY_SHA, 2, *arguments)
+            except NoScriptError:
+                # Redis caches the script with the first EVAL, so this happens once per server.
+                await self._redis.eval(PUSH_TELEMETRY_SCRIPT, 2, *arguments)
         except RedisError:
             self._outbox.put_back(spans, metrics, TELEMETRY_CAP)
 
@@ -1525,7 +1548,6 @@ class Outpost:
     async def _report_on_time(self) -> None:
         while True:
             await anyio.sleep(REPORT_INTERVAL)
-            await self._report_redis_size()
             await self.flush_telemetry()
 
     def _lose_redis(self, error: Exception) -> None:
@@ -1863,8 +1885,10 @@ class Outpost:
 
     async def _relay_in_background(self, done: anyio.Event) -> None:
         try:
-            # Telemetry is best effort: no failure of it stops Outpost.
+            # Telemetry is best effort: no failure of it stops Outpost. The instance that
+            # pulled measures the shared Redis for the fleet.
             with contextlib.suppress(Exception):
+                await self._report_redis_size()
                 await self._relay_telemetry()
         finally:
             self._relaying = None

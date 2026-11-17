@@ -4,6 +4,9 @@ export const READ_STATE_SCRIPT = `
 export const READ_STATES_SCRIPT = `
 {{ outpost_scripts.read_states }}`;
 
+export const PUSH_TELEMETRY_SCRIPT = `
+{{ outpost_scripts.push_telemetry }}`;
+
 export const WRITE_BUCKET_SCRIPT = `
 {{ outpost_scripts.write_bucket }}`;
 

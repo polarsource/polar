@@ -21,6 +21,24 @@ import { useForm, useWatch, useFormState } from 'react-hook-form'
 
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
+// Mirrors the checkout requirements in server/polar/models/checkout.py
+const LINE1_REQUIRED_COUNTRIES = ['US']
+const CITY_REQUIRED_COUNTRIES = ['US', 'BR']
+const POSTAL_CODE_REQUIRED_COUNTRIES = ['US', 'ES', 'PT']
+
+const requiredInCountries = (countries: string[]) => ({
+  validate: (
+    value: string | null | undefined,
+    values: CustomerPortalCustomerUpdate,
+  ) => {
+    const country = values.billing_address?.country
+    if (country && countries.includes(country) && !value) {
+      return 'This field is required'
+    }
+    return true
+  },
+})
+
 const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
   const { data: customer, update } = useCustomerPortalCustomer()
 
@@ -32,7 +50,15 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     },
   })
 
-  const { control, handleSubmit, setError, setValue, getValues, reset } = form
+  const {
+    control,
+    handleSubmit,
+    setError,
+    setValue,
+    getValues,
+    reset,
+    clearErrors,
+  } = form
   const { errors, isDirty } = useFormState({ control })
 
   // oxlint-disable-next-line react-hooks/incompatible-library
@@ -43,7 +69,13 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     if (!hasFixedStateOptions(country) || !state?.startsWith(`${country}-`)) {
       setValue('billing_address.state', null)
     }
-  }, [country, getValues, setValue])
+    clearErrors([
+      'billing_address.line1',
+      'billing_address.postal_code',
+      'billing_address.city',
+      'billing_address.state',
+    ])
+  }, [country, getValues, setValue, clearErrors])
 
   const onSubmit = useCallback(
     async (data: CustomerPortalCustomerUpdate) => {
@@ -115,15 +147,32 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
             </FormItem>
           )}
         />
+        <FormField
+          control={control}
+          name="tax_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tax ID</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  autoComplete="off"
+                  {...field}
+                  value={field.value || ''}
+                  className="bg-white shadow-xs"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormItem className="flex flex-col gap-y-3">
           <FormLabel>Billing address</FormLabel>
           <FormControl>
             <FormField
               control={control}
               name="billing_address.line1"
-              rules={{
-                required: 'This field is required',
-              }}
+              rules={requiredInCountries(LINE1_REQUIRED_COUNTRIES)}
               render={({ field }) => (
                 <div className="flex flex-col gap-y-2">
                   <Input
@@ -164,9 +213,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.postal_code"
-                rules={{
-                  required: 'This field is required',
-                }}
+                rules={requiredInCountries(POSTAL_CODE_REQUIRED_COUNTRIES)}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
@@ -186,9 +233,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.city"
-                rules={{
-                  required: 'This field is required',
-                }}
+                rules={requiredInCountries(CITY_REQUIRED_COUNTRIES)}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
@@ -205,26 +250,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               />
             </FormControl>
           </div>
-          <FormControl>
-            <FormField
-              control={control}
-              name="billing_address.country"
-              rules={{
-                required: 'This field is required',
-              }}
-              render={({ field }) => (
-                <div className="flex flex-col gap-y-2">
-                  <CountryPicker
-                    autoComplete="billing country"
-                    value={field.value || undefined}
-                    onChange={field.onChange}
-                    allowedCountries={enums.addressInputCountryValues}
-                  />
-                  <FormMessage />
-                </div>
-              )}
-            />
-          </FormControl>
           {hasFixedStateOptions(country) && (
             <FormControl>
               <FormField
@@ -248,6 +273,26 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               />
             </FormControl>
           )}
+          <FormControl>
+            <FormField
+              control={control}
+              name="billing_address.country"
+              rules={{
+                required: 'This field is required',
+              }}
+              render={({ field }) => (
+                <div className="flex flex-col gap-y-2">
+                  <CountryPicker
+                    autoComplete="billing country"
+                    value={field.value || undefined}
+                    onChange={field.onChange}
+                    allowedCountries={enums.addressInputCountryValues}
+                  />
+                  <FormMessage />
+                </div>
+              )}
+            />
+          </FormControl>
 
           {errors.billing_address?.message && (
             <p className="text-destructive-foreground text-sm">
@@ -255,25 +300,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
             </p>
           )}
         </FormItem>
-        <FormField
-          control={control}
-          name="tax_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tax ID</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  autoComplete="off"
-                  {...field}
-                  value={field.value || ''}
-                  className="bg-white shadow-xs"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <Button
           type="submit"
           loading={update.isPending}

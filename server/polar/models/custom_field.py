@@ -5,7 +5,7 @@ from uuid import UUID
 
 from annotated_types import Ge, Len, MinLen
 from pydantic import AfterValidator, Field, ValidationInfo
-from sqlalchemy import ForeignKey, Index, String, Uuid, text
+from sqlalchemy import Boolean, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -14,7 +14,7 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.schemas import Int32
 
 if TYPE_CHECKING:
-    from polar.models import Organization
+    from polar.models import Catalog, Organization
 
 INT32_MIN = -(2**31)
 INT32_MAX = 2**31 - 1
@@ -94,13 +94,14 @@ class CustomFieldSelectProperties(CustomFieldProperties):
 class CustomField(MetadataMixin, RecordModel):
     __tablename__ = "custom_fields"
     __table_args__ = (
-        # Partial unique index: slugs of soft-deleted fields can be reused
+        # Partial unique index: slugs of soft-deleted fields can be reused,
+        # and earlier versions of a field share its slug
         Index(
             "custom_fields_slug_organization_id_active_key",
             "slug",
             "organization_id",
             unique=True,
-            postgresql_where=text("deleted_at IS NULL"),
+            postgresql_where=text("deleted_at IS NULL AND is_current"),
         ),
     )
 
@@ -123,10 +124,24 @@ class CustomField(MetadataMixin, RecordModel):
         nullable=False,
         index=True,
     )
+    catalog_id: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("catalogs.id", ondelete="restrict"),
+        nullable=True,
+        default=None,
+    )
+    # Nullable during the expand phase (ADR-0006); NOT NULL is enforced later.
+    is_current: Mapped[bool] = mapped_column(
+        Boolean, nullable=True, default=True, server_default=text("true")
+    )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @declared_attr
+    def catalog(cls) -> Mapped["Catalog | None"]:
+        return relationship("Catalog", lazy="raise")
 
     def get_field_definition(self, required: bool) -> tuple[Any, Any]:
         raise NotImplementedError()

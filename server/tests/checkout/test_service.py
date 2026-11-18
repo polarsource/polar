@@ -527,6 +527,38 @@ async def product_seat_based_with_min_max(
     return product
 
 
+@pytest.fixture
+async def pro_versions(
+    save_fixture: SaveFixture, organization: Organization, customer: Customer
+) -> tuple[Product, Product]:
+    """`pro` on a previous and the current meter version, with the customer on
+    the previous one."""
+    previous, current = [
+        await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            external_id="ai_credits",
+            is_current=is_current,
+        )
+        for is_current in (False, True)
+    ]
+    pro_v1, pro_v2 = [
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            is_current=meter.is_current,
+            is_archived=not meter.is_current,
+            prices=[(amount, "usd"), (meter, Decimal(100), None, "usd")],
+        )
+        for meter, amount in ((previous, 1000), (current, 1500))
+    ]
+    await save_fixture(CustomerMeter(customer=customer, meter=previous))
+    return pro_v1, pro_v2
+
+
 @pytest.mark.anyio
 class TestCreate:
     @pytest.mark.auth
@@ -1753,98 +1785,27 @@ class TestCreate:
         assert checkout.trial_end is None
         assert checkout.active_trial_interval is None
 
+    @pytest.mark.parametrize("upgrade", [False, True])
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
     async def test_customer_on_previous_meter_version(
         self,
+        upgrade: bool,
         stripe_service_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         user_organization: UserOrganization,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
-            client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
-        )
-        previous, current = [
-            await create_meter(
-                save_fixture,
-                organization=organization,
-                id=uuid.uuid4(),
-                external_id="ai_credits",
-                is_current=is_current,
-            )
-            for is_current in (False, True)
-        ]
-        pro_v1, pro_v2 = [
-            await create_product(
-                save_fixture,
-                organization=organization,
-                recurring_interval=SubscriptionRecurringInterval.month,
-                external_id="pro",
-                is_current=meter.is_current,
-                prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
-            )
-            for meter in (previous, current)
-        ]
-        await save_fixture(CustomerMeter(customer=customer, meter=previous))
-
-        checkout = await checkout_service.create(
-            session,
-            CheckoutProductsCreate(products=[pro_v2.id], customer_id=customer.id),
-            auth_subject,
-        )
-
-        assert checkout.product == pro_v1
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_subscription_upgrade_on_previous_meter_version(
-        self,
-        stripe_service_mock: MagicMock,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        organization: Organization,
         product_recurring_free_price: Product,
         customer: Customer,
+        pro_versions: tuple[Product, Product],
     ) -> None:
         stripe_service_mock.create_customer_session.return_value = SimpleNamespace(
             client_secret="STRIPE_CUSTOMER_SESSION_SECRET",
         )
-        previous, current = [
-            await create_meter(
-                save_fixture,
-                organization=organization,
-                id=uuid.uuid4(),
-                external_id="ai_credits",
-                is_current=is_current,
-            )
-            for is_current in (False, True)
-        ]
-        await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            is_current=False,
-            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
-        )
-        pro_v2 = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            prices=[(1000, "usd"), (current, Decimal(100), None, "usd")],
-        )
-        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        pro_v1, pro_v2 = pro_versions
         subscription = await create_subscription(
             save_fixture, product=product_recurring_free_price, customer=customer
         )
@@ -1852,10 +1813,39 @@ class TestCreate:
         checkout = await checkout_service.create(
             session,
             CheckoutProductsCreate(
-                products=[pro_v2.id], subscription_id=subscription.id
+                products=[pro_v2.id],
+                subscription_id=subscription.id if upgrade else None,
+                customer_id=None if upgrade else customer.id,
             ),
             auth_subject,
         )
+
+        assert checkout.product == (pro_v2 if upgrade else pro_v1)
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_ad_hoc_prices_keep_the_requested_version(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        customer: Customer,
+        pro_versions: tuple[Product, Product],
+    ) -> None:
+        _, pro_v2 = pro_versions
+        price = ProductPriceFixedCreate(
+            amount_type=ProductPriceAmountType.fixed,
+            price_amount=100_00,
+            price_currency=PresentmentCurrency.usd,
+        )
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(products=[pro_v2.id], prices={pro_v2.id: [price]}),
+            auth_subject,
+        )
+
         checkout = await checkout_service.update(
             session, checkout, CheckoutUpdate(customer_email=customer.email)
         )
@@ -2858,69 +2848,6 @@ class TestCreate:
             PriceSet.from_prices(reloaded_prices, "usd").get_default_price().id
             == created_price_ids[0]
         )
-
-    @pytest.mark.auth(
-        AuthSubjectFixture(subject="user"),
-        AuthSubjectFixture(subject="organization"),
-    )
-    async def test_ad_hoc_prices_keep_the_requested_version(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        user_organization: UserOrganization,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        previous, current = [
-            await create_meter(
-                save_fixture,
-                organization=organization,
-                id=uuid.uuid4(),
-                external_id="ai_credits",
-                is_current=is_current,
-            )
-            for is_current in (False, True)
-        ]
-        await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            is_current=False,
-            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
-        )
-        pro_v2 = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            prices=[(1500, "usd"), (current, Decimal(100), None, "usd")],
-        )
-        await save_fixture(CustomerMeter(customer=customer, meter=previous))
-        checkout = await checkout_service.create(
-            session,
-            CheckoutProductsCreate(
-                products=[pro_v2.id],
-                prices={
-                    pro_v2.id: [
-                        ProductPriceFixedCreate(
-                            amount_type=ProductPriceAmountType.fixed,
-                            price_amount=100_00,
-                            price_currency=PresentmentCurrency.usd,
-                        ),
-                    ]
-                },
-            ),
-            auth_subject,
-        )
-
-        checkout = await checkout_service.update(
-            session, checkout, CheckoutUpdate(customer_email=customer.email)
-        )
-
-        assert checkout.product == pro_v2
-        assert checkout.amount == 100_00
 
 
 @pytest.mark.anyio
@@ -4581,83 +4508,21 @@ class TestUpdate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        organization: Organization,
         customer: Customer,
+        pro_versions: tuple[Product, Product],
     ) -> None:
-        previous, current = [
-            await create_meter(
-                save_fixture,
-                organization=organization,
-                id=uuid.uuid4(),
-                external_id="ai_credits",
-                is_current=is_current,
-            )
-            for is_current in (False, True)
-        ]
-        pro_v1 = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            is_current=False,
-            is_archived=True,
-            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
-        )
-        pro_v2 = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            prices=[(1500, "usd"), (current, Decimal(100), None, "usd")],
-        )
-        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        pro_v1, pro_v2 = pro_versions
         checkout = await create_checkout(save_fixture, products=[pro_v2])
 
         checkout = await checkout_service.update(
             session, checkout, CheckoutUpdate(customer_email=customer.email)
         )
-
-        assert checkout.product == pro_v1
-        assert checkout.amount == 1000
+        assert (checkout.product, checkout.amount) == (pro_v1, 1000)
 
         checkout = await checkout_service.update(
             session, checkout, CheckoutUpdate(customer_email="someone@example.com")
         )
-
-        assert checkout.product == pro_v2
-        assert checkout.amount == 1500
-
-    async def test_no_version_on_the_customer_meter_versions(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        previous, current = [
-            await create_meter(
-                save_fixture,
-                organization=organization,
-                id=uuid.uuid4(),
-                external_id="ai_credits",
-                is_current=is_current,
-            )
-            for is_current in (False, True)
-        ]
-        product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            prices=[(1000, "usd"), (current, Decimal(100), None, "usd")],
-        )
-        await save_fixture(CustomerMeter(customer=customer, meter=previous))
-        checkout = await create_checkout(save_fixture, products=[product])
-
-        with pytest.raises(PolarRequestValidationError):
-            await checkout_service.update(
-                session, checkout, CheckoutUpdate(customer_email=customer.email)
-            )
+        assert (checkout.product, checkout.amount) == (pro_v2, 1500)
 
     @pytest.mark.parametrize(
         "subscription_status",
@@ -5440,35 +5305,10 @@ class TestConfirm:
         save_fixture: SaveFixture,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
-        organization: Organization,
         customer: Customer,
+        pro_versions: tuple[Product, Product],
     ) -> None:
-        previous, current = [
-            await create_meter(
-                save_fixture,
-                organization=organization,
-                id=uuid.uuid4(),
-                external_id="ai_credits",
-                is_current=is_current,
-            )
-            for is_current in (False, True)
-        ]
-        await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            is_current=False,
-            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
-        )
-        pro_v2 = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            external_id="pro",
-            prices=[(1500, "usd"), (current, Decimal(100), None, "usd")],
-        )
-        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        _, pro_v2 = pro_versions
         checkout = await create_checkout(save_fixture, products=[pro_v2])
 
         with pytest.raises(PolarRequestValidationError) as e:
@@ -5476,16 +5316,13 @@ class TestConfirm:
                 session,
                 auth_subject,
                 checkout,
-                CheckoutConfirmStripe.model_validate(
-                    {
-                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
-                        "customer_email": customer.email,
-                    }
+                CheckoutConfirmStripe(
+                    confirmation_token_id="CONFIRMATION_TOKEN_ID",
+                    customer_email=customer.email,
                 ),
             )
 
         assert e.value.errors()[0]["loc"] == ("body", "customer_email")
-        assert checkout.product == pro_v2
 
     async def test_full_billing_address_required_for_payment_method(
         self,

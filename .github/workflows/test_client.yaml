@@ -252,7 +252,7 @@ jobs:
           pnpm turbo run build $TURBO_SCOPE
 
       - name: Seed the Next.js build cache
-        if: github.event_name == 'push' && steps.next-cache-restore.outputs.cache-matched-key == ''
+        if: steps.next-cache-restore.outputs.cache-matched-key == ''
         run: |
           if [ -z "$(find apps/web/.next/cache apps/orbit/.next/cache -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
             pnpm --filter web build
@@ -261,7 +261,6 @@ jobs:
 
       - name: Check whether the build wrote to the Next.js build cache
         id: next-cache
-        if: github.event_name == 'push'
         run: |
           if [ -n "$(find apps/web/.next/cache apps/orbit/.next/cache -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
             echo "written=true" >> "$GITHUB_OUTPUT"

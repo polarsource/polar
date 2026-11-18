@@ -1,44 +1,38 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
-import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
-import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
+import { GanttLegend } from '@/components/Subscriptions/Gantt/GanttLegend'
+import {
+  DEFAULT_GANTT_ZOOM,
+  ganttZoomValues,
+} from '@/components/Subscriptions/Gantt/scale'
+import { SubscriptionsGantt } from '@/components/Subscriptions/Gantt/SubscriptionsGantt'
+import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
 import {
   DEFAULT_SUBSCRIPTION_STATUS,
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
 import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
-import { useSubscriptions } from '@/hooks/queries'
+import { useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
-import { useDateRange } from '@/utils/date'
-import { formatMetadataValue } from '@/utils/formatters'
+import { sortingStateToQueryParam } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
+import { Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Avatar } from '@polar-sh/orbit'
 import {
-  DataTable,
-  DataTableColumnDef,
-  DataTableColumnHeader,
-} from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Status } from '@polar-sh/orbit'
-import { Text } from '@polar-sh/orbit'
-import { functionalUpdate, OnChangeFn } from '@tanstack/react-table'
-import { useRouter } from 'next/navigation'
-import {
-  parseAsArrayOf,
   parseAsBoolean,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
 import React from 'react'
-import SubscriptionFilters from './SubscriptionFilters'
+import { SubscriptionsSidebar } from './SubscriptionsSidebar'
+
+const PAGE_SIZE = 50
+const DEFAULT_SORTING = [{ id: 'started_at', desc: true }]
 
 const filterParsers = {
   product_id: parseAsString,
@@ -47,22 +41,8 @@ const filterParsers = {
     DEFAULT_SUBSCRIPTION_STATUS,
   ),
   cancel_at_period_end: parseAsBoolean,
-  metadata: parseAsArrayOf(parseAsString),
-}
-
-// Secondary sort on ends_at when sorting by status
-const withEndsAtSecondarySort = (
-  sorting: DataTableSortingState,
-): DataTableSortingState => {
-  const statusSort = sorting.find((s) => s.id === 'status')
-  if (!statusSort || sorting.some((s) => s.id === 'ends_at')) {
-    return sorting
-  }
-  return [
-    statusSort,
-    { id: 'ends_at', desc: statusSort.desc },
-    ...sorting.filter((s) => s.id !== 'status'),
-  ]
+  zoom: parseAsStringLiteral(ganttZoomValues).withDefault(DEFAULT_GANTT_ZOOM),
+  subscription: parseAsString,
 }
 
 interface ClientPageProps {
@@ -70,17 +50,9 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
-  const router = useRouter()
-
-  const {
-    pagination,
-    setPagination,
-    sorting,
-    setSorting: setSortingState,
-    resetPage,
-  } = useDataTableQueryState({
-    defaultSorting: [{ id: 'started_at', desc: true }],
-    defaultPageSize: 50,
+  const { sorting, setSorting } = useDataTableQueryState({
+    defaultSorting: DEFAULT_SORTING,
+    defaultPageSize: PAGE_SIZE,
   })
 
   const [
@@ -89,24 +61,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: externalProductId,
       status,
       cancel_at_period_end: cancelAtPeriodEnd,
-      metadata,
+      zoom,
+      subscription: selectedId,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
-
-  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
 
   const {
     isShown: isExportModalShown,
     show: showExportModal,
     hide: hideExportModal,
   } = useModal()
-
-  const setSorting: OnChangeFn<DataTableSortingState> = (updater) => {
-    setSortingState((old) =>
-      withEndsAtSecondarySort(functionalUpdate(updater, old)),
-    )
-  }
 
   const product: ProductFilter = {
     product_id: productId,
@@ -115,7 +80,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const onProductSelect = (value: ProductFilter) => {
     setFilters(value)
-    resetPage()
   }
 
   const onStatusSelect = (value: SubscriptionStatusFilter) => {
@@ -123,193 +87,118 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       status: value,
       cancel_at_period_end: value === 'active' ? cancelAtPeriodEnd : null,
     })
-    resetPage()
   }
 
   const onCancelAtPeriodEndSelect = (value: boolean | null) => {
     setFilters({ cancel_at_period_end: value })
-    resetPage()
   }
 
-  const onDateChange = (range: DateRange) => {
-    setStartDate(range.from)
-    setEndDate(range.to)
-    resetPage()
+  const [sort] = sorting
+  const hasActiveFilters =
+    productId !== null ||
+    externalProductId !== null ||
+    status !== DEFAULT_SUBSCRIPTION_STATUS ||
+    cancelAtPeriodEnd !== null ||
+    sort?.id !== DEFAULT_SORTING[0].id ||
+    sort.desc !== DEFAULT_SORTING[0].desc
+
+  const resetFilters = () => {
+    setFilters({
+      product_id: null,
+      external_product_id: null,
+      status: null,
+      cancel_at_period_end: null,
+    })
+    setSorting(DEFAULT_SORTING)
   }
 
-  const subscriptionsHook = useSubscriptions(organization.id, {
-    ...getAPIParams(pagination, sorting),
-    product_id: productId ?? undefined,
-    external_product_id: externalProductId ?? undefined,
-    status: status === 'any' ? undefined : [status],
-    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-    started_after: startDate.toISOString(),
-    started_before: endDate.toISOString(),
-  })
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useInfiniteSubscriptions(organization.id, {
+      limit: PAGE_SIZE,
+      sorting: sortingStateToQueryParam(sorting),
+      product_id: productId ?? undefined,
+      external_product_id: externalProductId ?? undefined,
+      status: status === 'any' ? undefined : [status],
+      cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    })
 
-  const subscriptions = subscriptionsHook.data?.items || []
-  const rowCount = subscriptionsHook.data?.pagination.total_count ?? 0
-  const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
-
-  const columns: DataTableColumnDef<schemas['Subscription']>[] = [
-    {
-      id: 'customer',
-      accessorKey: 'customer',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Customer" />
-      ),
-      cell: ({ row: { original: subscription } }) => {
-        const customer = subscription.customer
-        const showBillingName =
-          !!customer.billing_name &&
-          customer.name?.toLocaleLowerCase() !==
-            customer.billing_name.toLocaleLowerCase()
-        return (
-          <div className="flex flex-row items-center gap-2 overflow-hidden">
-            <Avatar
-              avatar_url={customer.avatar_url}
-              name={customer.email ?? customer.name ?? '—'}
-            />
-            <div className="overflow-hidden text-ellipsis">
-              {customer.name || customer.email || '—'}
-              {showBillingName && (
-                <Box as="span" ml="s">
-                  <Text as="span" color="muted">
-                    {customer.billing_name}
-                  </Text>
-                </Box>
-              )}
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'status',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
-      ),
-      cell: ({ row: { original: subscription } }) => {
-        return <SubscriptionStatusComponent subscription={subscription} />
-      },
-    },
-    {
-      accessorKey: 'started_at',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Subscription Date" />
-      ),
-      cell: (props) => (
-        <Text as="span" tabularNums>
-          <FormattedDateTime datetime={props.getValue() as string} />
-        </Text>
-      ),
-    },
-    {
-      accessorKey: 'current_period_end',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Renewal Date" />
-      ),
-      cell: ({
-        getValue,
-        row: {
-          original: { status, cancel_at_period_end },
-        },
-      }) => {
-        const datetime = getValue() as string | null
-        const willRenew =
-          (status === 'active' || status === 'trialing') &&
-          !cancel_at_period_end
-        return datetime && willRenew ? (
-          <Text as="span" tabularNums>
-            <FormattedDateTime datetime={datetime} />
-          </Text>
-        ) : (
-          '—'
-        )
-      },
-    },
-    {
-      accessorKey: 'product',
-      id: 'product',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Product" />
-      ),
-      cell: ({ getValue }) => {
-        const tier = getValue() as schemas['Product']
-        return (
-          <div className="flex flex-row items-center gap-2">
-            {tier.name}
-            <CatalogVersionLabel organization={organization} version={tier} />
-            {tier.is_archived && (
-              <Status status="Archived" color="red" size="small" />
-            )}
-          </div>
-        )
-      },
-    },
-    ...(metadata
-      ? metadata.map<DataTableColumnDef<schemas['Subscription']>>((key) => ({
-          accessorKey: `metadata.${key}`,
-          enableSorting: false,
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title={key} />
-          ),
-          cell: (props) => (
-            <Text as="span" monospace>
-              {formatMetadataValue(
-                props.getValue() as
-                  | string
-                  | number
-                  | boolean
-                  | null
-                  | undefined,
-              )}
-            </Text>
-          ),
-        }))
-      : []),
-  ]
+  const subscriptions = data?.pages.flatMap((page) => page.items)
+  const rowCount = data?.pages[0]?.pagination.total_count
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }
+  const selectedIndex =
+    subscriptions?.findIndex(({ id }) => id === selectedId) ?? -1
+  const selected = subscriptions?.[selectedIndex]
+  const previous = subscriptions?.[selectedIndex - 1]
+  const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
+  const select = (id: string | null) => setFilters({ subscription: id })
 
   return (
-    <DashboardBody wide>
-      <div className="flex flex-col gap-8">
-        <SubscriptionFilters
+    <DashboardBody
+      title={null}
+      wrapperClassName="gap-4 pt-4 md:gap-0 md:pt-0"
+      className="min-h-0 flex-1 md:pb-4"
+      contextViewPlacement="left"
+      contextViewTitle="Filters"
+      contextViewClassName="w-full lg:max-w-[300px] xl:max-w-[300px] h-full overflow-y-hidden"
+      contextView={
+        <SubscriptionsSidebar
           organization={organization}
+          count={rowCount}
           product={product}
           onProductSelect={onProductSelect}
           status={status}
           onStatusSelect={onStatusSelect}
           cancelAtPeriodEnd={cancelAtPeriodEnd}
           onCancelAtPeriodEndSelect={onCancelAtPeriodEndSelect}
-          dateRange={{ from: startDate, to: endDate }}
-          onDateChange={onDateChange}
+          sorting={sorting}
+          onSortingChange={setSorting}
+          zoom={zoom}
+          onZoomChange={(value) => setFilters({ zoom: value })}
+          hasActiveFilters={hasActiveFilters}
+          onReset={resetFilters}
           onExport={showExportModal}
         />
-        {subscriptions && pageCount !== undefined ? (
-          <DataTable
-            columns={columns}
-            data={subscriptions}
-            rowCount={rowCount}
-            pageCount={pageCount}
-            pagination={pagination}
-            onPaginationChange={setPagination}
-            sorting={sorting}
-            onSortingChange={setSorting}
-            isLoading={subscriptionsHook}
-            onRowClick={(row) =>
-              router.push(
-                `/dashboard/${organization.slug}/sales/subscriptions/${row.original.id}`,
-              )
-            }
-            getRowId={(row) => row.id.toString()}
+      }
+      detailView={
+        selected ? (
+          <SubscriptionDetailPanel
+            key={selected.id}
+            subscription={selected}
+            organization={organization}
+            onPrevious={previous ? () => select(previous.id) : undefined}
+            onNext={next ? () => select(next.id) : undefined}
+            onClose={() => select(null)}
           />
-        ) : null}
-      </div>
+        ) : undefined
+      }
+      wide
+    >
+      <Box flexDirection="column" rowGap="l" flexGrow={1} minHeight={0}>
+        {!subscriptions ? (
+          <Box justifyContent="center" py="3xl">
+            <Spinner />
+          </Box>
+        ) : subscriptions.length === 0 ? (
+          <Box justifyContent="center" py="3xl">
+            <Text color="muted">No subscriptions found</Text>
+          </Box>
+        ) : (
+          <SubscriptionsGantt
+            subscriptions={subscriptions}
+            earliest={new Date(organization.created_at).getTime()}
+            zoom={zoom}
+            selectedId={selectedId}
+            onSelect={select}
+            isLoadingMore={isFetchingNextPage}
+            onEndReached={loadMore}
+          />
+        )}
+        <GanttLegend />
+      </Box>
       <ExportSubscriptionsModal
         organization={organization}
         product={product}

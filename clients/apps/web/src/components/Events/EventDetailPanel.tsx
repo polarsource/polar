@@ -24,7 +24,7 @@ import {
 } from './EventLogRow'
 import { EventTimestamp } from './EventTimestamp'
 
-const IconButton = ({
+export const IconButton = ({
   label,
   onClick,
   disabled,
@@ -48,7 +48,7 @@ const IconButton = ({
   </Button>
 )
 
-const Section = ({
+export const Section = ({
   title,
   action,
   children,

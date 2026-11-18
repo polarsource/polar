@@ -250,7 +250,7 @@ export const withDefaultCurrency = (
     )
   })
 
-// Settings, benefits, products and webhooks sections need their own scope on top of the meters one
+// Settings, custom fields, benefits, products and webhooks sections need their own scope on top of the meters one
 export const requiredScopes = (
   config: LoadedConfig,
   access: 'read' | 'write',
@@ -259,7 +259,14 @@ export const requiredScopes = (
     typeof config.input === 'object' && config.input !== null
       ? config.input
       : {}
-  return ['meters', 'benefits', 'products', 'settings', 'webhooks']
+  return [
+    'meters',
+    'custom_fields',
+    'benefits',
+    'products',
+    'settings',
+    'webhooks',
+  ]
     .filter((section) => section === 'meters' || section in input)
     .map(
       (section) =>

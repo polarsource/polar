@@ -2,7 +2,7 @@ name: Server
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "yopi/ci-startup-profile"]
   pull_request:
     types: [opened, synchronize, edited]
   merge_group:
@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
 
@@ -37,6 +38,7 @@ jobs:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
+          base: ${{ github.event_name == 'push' && github.event.before || '' }}
           list-files: json
           filters: |
             server:
@@ -61,6 +63,33 @@ jobs:
               - 'terraform/**'
               - 'server/**'
               - 'clients/**'
+
+      - name: Cache frozen timing input
+        id: timing_input
+        if: steps.filter.outputs.server == 'true'
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with: &frozen_timing_input
+          path: server/.test_durations
+          key: ci-db-frozen-input-v1-44060618383
+
+      - name: Install uv for frozen input
+        if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        with:
+          enable-cache: false
+
+      - name: Download frozen timing input
+        if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          run-id: 44060618383
+          github-token: ${{ github.token }}
+          pattern: test-durations-*
+          path: ${{ runner.temp }}/frozen-durations
+
+      - name: Merge frozen timing input
+        if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
+        run: uv run --no-project --python "$(command -v python3)" server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/frozen-durations/*/.test_durations
 
   linters:
     name: "Server: Linters 📝"
@@ -93,7 +122,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version-file: "server/pyproject.toml"
+          python-version: "3.14.7"
 
       - name: 🔧 uv install
         working-directory: ./server
@@ -151,7 +180,7 @@ jobs:
     runs-on: blacksmith-4vcpu-ubuntu-2404
     services:
       tinybird:
-        image: tinybirdco/tinybird-local:latest
+        image: tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666
         ports:
           - 7181:7181
         env:
@@ -172,7 +201,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🐦 Install Tinybird CLI
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: |
+          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/tb" --version
 
       - name: 🐦 Validate Tinybird schema
         working-directory: ./server/tinybird
@@ -409,7 +440,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version-file: "server/pyproject.toml"
+          python-version: "3.14.7"
 
       - name: 🔧 uv install
         working-directory: ./server
@@ -440,7 +471,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:18.6-bookworm
+        image: postgres@sha256:f1ea2a1a4fb7b68d4836be1fdcb8a6466a89b072158bf9d97663600538c294c5
         env:
           POSTGRES_USER: polar
           POSTGRES_PASSWORD: polar
@@ -455,7 +486,7 @@ jobs:
           - 5432:5432
 
       redis:
-        image: redis:7.4-alpine
+        image: redis@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -465,7 +496,7 @@ jobs:
           - 6379:6379
 
       tinybird:
-        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local:latest' || '' }}
+        image: ${{ matrix.shard == 'tinybird' && 'tinybirdco/tinybird-local@sha256:f7358a3a289f5a9b2622b84cff4c69032e013306b6b107395580661fa7777666' || '' }}
         ports:
           - 7181:7181
           - 7182:7182
@@ -520,7 +551,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          python-version-file: "server/pyproject.toml"
+          python-version: "3.14.7"
 
       - name: Cache CJK fonts
         id: cjk-fonts-cache
@@ -540,7 +571,9 @@ jobs:
 
       - name: 🐦 Install Tinybird CLI
         if: matrix.shard == 'tinybird'
-        run: curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: |
+          curl -sSL https://tinybird.co/install.sh | bash && echo "$HOME/.local/bin" >> $GITHUB_PATH
+          "$HOME/.local/bin/tb" --version
 
       - name: 🐦 Prepare Tinybird workspace
         if: matrix.shard == 'tinybird'
@@ -559,20 +592,111 @@ jobs:
         working-directory: ./server
         run: uv run alembic check
 
-      - name: 📊 Restore test durations
+      - name: Restore frozen timing input
         if: matrix.shard != 'tinybird'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: server/.test_durations
-          key: test-durations-${{ github.sha }}
-          restore-keys: test-durations-
+        with: *frozen_timing_input
+
+      - name: Record test hardware and worker identity
+        working-directory: ./server
+        run: |
+          mkdir -p "$RUNNER_TEMP/ci-measurement"
+          uv run python - <<'PY'
+          import json
+          import os
+          import platform
+          from pathlib import Path
+          import psutil
+          hardware = {
+              "logical_cpus": psutil.cpu_count(),
+              "physical_cpus": psutil.cpu_count(logical=False),
+              "affinity_cpus": len(os.sched_getaffinity(0)),
+              "ram_bytes": psutil.virtual_memory().total,
+              "machine": platform.machine(),
+              "python": platform.python_version(),
+          }
+          Path(os.environ["RUNNER_TEMP"], "ci-measurement", "hardware.json").write_text(json.dumps(hardware))
+          print(json.dumps(hardware))
+          PY
+          cat > "$RUNNER_TEMP/ci_measurement_probe.py" <<'PY'
+          import collections
+          import cProfile
+          import json
+          import os
+          import resource
+          import sys
+          import time
+          from pathlib import Path
+
+          import pytest
+
+          worker = os.environ.get('PYTEST_XDIST_WORKER', 'controller')
+          started = time.perf_counter()
+          events = []
+          fixture_counts = collections.Counter()
+          profile = cProfile.Profile() if worker == 'gw0' else None
+          destination = Path(os.environ['RUNNER_TEMP']) / 'ci-measurement'
+
+
+          def record(phase):
+              events.append(dict(phase=phase, since_probe=time.perf_counter() - started,
+                  utc_ns=time.time_ns(), cpu= time.process_time(),
+                  app_imported='polar.app' in sys.modules,
+                  plain_fragments='plain_client.fragments' in sys.modules,
+                  max_rss=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss))
+
+
+          @pytest.hookimpl(specname='pytest_configure', tryfirst=True)
+          def pytest_configure_start(config):
+              record('configure_start')
+              if profile:
+                  profile.enable()
+
+
+          @pytest.hookimpl(specname='pytest_configure', trylast=True)
+          def pytest_configure_end(config):
+              if profile:
+                  profile.disable()
+                  profile.dump_stats(str(destination / (worker + '-configure.prof')))
+                  profile.clear()
+                  profile.enable()
+              record('configure_end')
+
+
+          @pytest.hookimpl(trylast=True)
+          def pytest_collection_finish(session):
+              if profile:
+                  profile.disable()
+                  profile.dump_stats(str(destination / (worker + '-collection.prof')))
+              record('collection_finish')
+
+
+          def pytest_runtest_setup(item):
+              if not any(event['phase'] == 'first_test' for event in events):
+                  record('first_test')
+              item.user_properties.append(('ci_worker', worker))
+
+
+          def pytest_fixture_setup(fixturedef, request):
+              if fixturedef.argname in ('session', 'app', 'initialize_test_database'):
+                  fixture_counts[fixturedef.argname] += 1
+
+
+          def pytest_sessionfinish(session):
+              record('session_finish')
+              (destination / (worker + '-startup.json')).write_text(json.dumps(
+                  dict(worker=worker, events=events, fixtures=fixture_counts,
+                       profiled=profile is not None, exit_code=int(session.exitstatus)), indent=2))
+          PY
+          echo "PYTHONPATH=$RUNNER_TEMP" >> "$GITHUB_ENV"
 
       - name: 🐍 Run tests (pytest)
         if: matrix.shard != 'tinybird'
         working-directory: ./server
         run: |
+          sha256sum .test_durations
           uv run python -m scripts.pytest_shards --shards 4 --shard ${{ matrix.shard }} > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --store-durations --clean-durations
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -p ci_measurement_probe -m "not tinybird and not benchmark" -n auto --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/ci-measurement/junit.xml" --store-durations --clean-durations
 
       - name: 🐦 Run Tinybird tests (pytest)
         if: matrix.shard == 'tinybird'
@@ -581,7 +705,17 @@ jobs:
           POLAR_TEST_TINYBIRD_TOKEN_FILE: ${{ runner.temp }}/tinybird-token
         run: |
           uv run python -m scripts.pytest_shards --tinybird > "$RUNNER_TEMP/test-files"
-          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0
+          POLAR_TEST_FILES="$RUNNER_TEMP/test-files" uv run pytest -p ci_measurement_probe -m "tinybird and not benchmark" -n 1 --dist=loadgroup --no-cov --durations=0 --junitxml="$RUNNER_TEMP/ci-measurement/junit.xml"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results-${{ matrix.shard }}
+          path: ${{ runner.temp }}/ci-measurement
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 1
 
       - name: 📊 Upload shard test durations
         if: github.event_name == 'push' && matrix.shard != 'tinybird'
@@ -629,7 +763,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         if: github.event_name == 'push' && needs.test.result == 'success'
         with:
-          python-version-file: server/pyproject.toml
+          python-version: "3.14.7"
 
       - name: 📊 Download shard test durations
         if: github.event_name == 'push' && needs.test.result == 'success'

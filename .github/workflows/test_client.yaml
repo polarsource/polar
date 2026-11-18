@@ -242,9 +242,9 @@ jobs:
           path: |
             clients/apps/web/.next/cache
             clients/apps/orbit/.next/cache
-          key: next-build-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
+          key: next-build-proof2-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
-            next-build-${{ hashFiles('clients/pnpm-lock.yaml') }}-
+            next-build-proof2-${{ hashFiles('clients/pnpm-lock.yaml') }}-
 
       - name: 🛠️ Build
         run: |
@@ -274,7 +274,7 @@ jobs:
           path: |
             clients/apps/web/.next/cache
             clients/apps/orbit/.next/cache
-          key: next-build-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
+          key: next-build-proof2-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
 
   cli-binary:
     name: "Client: CLI Binary 📦"

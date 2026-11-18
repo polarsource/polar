@@ -1,0 +1,19 @@
+docs/migrate-away.mdx
+  s_c232d873d760e7::t_c598d43816ec3f 30,67,111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b8ed03cb46283d54bd1b01a8d2cfc93b8c9591e0",
+  "prompts": {},
+  "sessions": {
+    "s_c232d873d760e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_c232d873d760e7",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

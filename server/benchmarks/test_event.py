@@ -25,7 +25,7 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.logfire import instrument_sqlalchemy
 from polar.middlewares import TransactionalMiddleware
-from polar.models import Organization, OrganizationAccessToken
+from polar.models import CustomerMeter, Organization, OrganizationAccessToken
 from polar.models.event import EventSource
 from polar.observability.http_middleware import HttpMetricsMiddleware
 from polar.organization_access_token.service import TOKEN_PREFIX
@@ -35,7 +35,12 @@ from polar.organization_access_token.service import (
 from polar.redis import Redis
 from polar.reducer.service import REDUCER_BUCKET_SIZE, get_reducer_bucket_start
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import METER_TEST_EVENT, create_meter, create_reducer
+from tests.fixtures.random_objects import (
+    METER_TEST_EVENT,
+    create_customer,
+    create_meter,
+    create_reducer,
+)
 
 from .conftest import Run, analyze, create_metered_reducer
 
@@ -314,3 +319,52 @@ def test_resolve_pending_parents_next_to_1000_orphans(
     analyze(run, session)
     assert run(repository.resolve_pending_parents(batch_ids)) == []
     benchmark(lambda: run(repository.resolve_pending_parents(batch_ids)))
+
+
+# Customers whose meters their events never match: their customer meters stay unactivated, and
+# every batch checks them all again.
+def test_ingested_50_customers_with_4_unactivated_meters(
+    benchmark: BenchmarkFixture,
+    run: Run[typing.Any],
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    organization: Organization,
+) -> None:
+    repository = EventRepository.from_session(session)
+
+    async def seed() -> Sequence[uuid.UUID]:
+        meters = [
+            await create_meter(save_fixture, organization=organization, id=uuid.uuid4())
+            for _ in range(4)
+        ]
+        rows: list[dict[str, typing.Any]] = []
+        for index in range(50):
+            customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"customer-{index}@example.com",
+                stripe_customer_id=None,
+            )
+            for meter in meters:
+                await save_fixture(
+                    CustomerMeter(customer=customer, meter=meter, activated_at=None)
+                )
+            event_id = uuid.uuid4()
+            rows.append(
+                {
+                    "id": event_id,
+                    "name": "benchmark.unmetered",
+                    "source": EventSource.user,
+                    "organization_id": organization.id,
+                    "customer_id": customer.id,
+                    "root_id": event_id,
+                }
+            )
+        event_ids, _ = await repository.insert_batch(rows)
+        return event_ids
+
+    event_ids = run(seed())
+    analyze(run, session)
+    benchmark.pedantic(
+        lambda: run(event_service.ingested(session, event_ids)), rounds=5
+    )

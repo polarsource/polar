@@ -1,0 +1,27 @@
+server/polar/app.py
+  s_4978af30dbf5bf::t_84b9c3b57dc078 173-175
+terraform/test/events_api.tf
+  s_4978af30dbf5bf::t_84b9c3b57dc078 27
+  s_4978af30dbf5bf::t_423f1216fb8704 20-26
+server/polar/config.py
+  s_4978af30dbf5bf::t_4d903072bb399f 411
+  s_4978af30dbf5bf::t_84b9c3b57dc078 412
+server/polar/logfire.py
+  s_4978af30dbf5bf::t_84b9c3b57dc078 228-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "03174c0bab33abb51325d04eacc247c6441f4a76",
+  "prompts": {},
+  "sessions": {
+    "s_4978af30dbf5bf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ae227ec-f76c-4908-9fb9-2e83c35edb26",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

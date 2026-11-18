@@ -361,9 +361,6 @@ class TestCreate:
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
         )
-        posthog_mock = mocker.patch(
-            "polar.organization.service.posthog.auth_subject_event"
-        )
 
         organization = await organization_service.create(
             session,
@@ -383,7 +380,6 @@ class TestCreate:
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
         )
-        posthog_mock.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(

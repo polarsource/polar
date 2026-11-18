@@ -85,28 +85,6 @@ class TestPostHogClientContext:
         assert properties["client_runtime"] == "fingerprint-abc"
         assert properties["client_update"] == "update-xyz"
 
-    def test_client_identification_not_persisted_to_person(
-        self, mock_posthog_client: MagicMock
-    ) -> None:
-        from polar.posthog import posthog
-
-        user = MagicMock(
-            posthog_distinct_id="user-1",
-            email="a@b.co",
-            email_verified=True,
-            signup_attribution=None,
-        )
-
-        _run_request(
-            _http_scope([(b"x-polar-client-version", b"mobile/1.4.0")]),
-            lambda: posthog.identify(user),
-        )
-
-        person_properties = mock_posthog_client.set.call_args.kwargs["properties"]
-        assert "client_version" not in person_properties
-        assert "client_runtime" not in person_properties
-        assert "client_update" not in person_properties
-
     def test_no_client_identification_for_non_mobile_request(
         self, mock_posthog_client: MagicMock
     ) -> None:

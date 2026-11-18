@@ -77,7 +77,7 @@ async def unregister_organization_payment_method_domains(
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
-        organization = await repository.get_by_id(organization_id)
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
         await organization_domain_service.unregister_payment_method_domains(

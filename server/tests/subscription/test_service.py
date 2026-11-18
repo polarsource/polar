@@ -3722,6 +3722,36 @@ class TestRevoke:
         subscription_hooks.canceled.assert_called_once()
         subscription_hooks.revoked.assert_called_once()
 
+    async def test_trial_ended_resets_meters(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.revoke(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at == frozen_time
+        event_repository = EventRepository.from_session(session)
+        meter_reset = await event_repository.get_latest_meter_reset(customer, meter.id)
+        assert meter_reset is not None
+        assert meter_reset.timestamp == frozen_time
+
 
 @pytest.mark.anyio
 class TestCancel:

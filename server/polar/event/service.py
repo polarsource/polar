@@ -1435,25 +1435,31 @@ class EventService:
         )
         unactivated_meters = await customer_meter_repository.get_all(statement)
 
+        customer_meters_by_meter: dict[uuid.UUID, list[CustomerMeter]] = {}
         for cm in unactivated_meters:
-            customer_clause = or_(
-                Event.customer_id == cm.customer_id,
-                Event.external_customer_id == cm.customer.external_id,
-            )
+            customer_meters_by_meter.setdefault(cm.meter_id, []).append(cm)
 
-            matching_statement = (
-                event_repository.get_base_statement()
-                .where(
-                    Event.id.in_(event_ids),
-                    Event.organization_id == cm.meter.organization_id,
-                    customer_clause,
-                    event_repository.get_meter_clause(cm.meter),
-                )
-                .limit(1)
+        for customer_meters in customer_meters_by_meter.values():
+            (
+                matched_customer_ids,
+                matched_external_ids,
+            ) = await event_repository.get_meter_matching_customers(
+                event_ids,
+                customer_meters[0].meter,
+                {cm.customer_id for cm in customer_meters},
+                {
+                    cm.customer.external_id
+                    for cm in customer_meters
+                    if cm.customer.external_id is not None
+                },
             )
-            if await event_repository.get_one_or_none(matching_statement) is not None:
-                cm.activated_at = utc_now()
-                session.add(cm)
+            for cm in customer_meters:
+                if (
+                    cm.customer_id in matched_customer_ids
+                    or cm.customer.external_id in matched_external_ids
+                ):
+                    cm.activated_at = utc_now()
+                    session.add(cm)
         await session.flush()
 
     async def _get_org_ids_with_feature(

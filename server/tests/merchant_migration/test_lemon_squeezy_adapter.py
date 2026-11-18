@@ -40,7 +40,11 @@ def _page(
 
 
 def _price(
-    price_id: str, variant_id: int, unit_price: int, created_at: str, **overrides: Any
+    price_id: str,
+    variant_id: int,
+    unit_price: int | None,
+    created_at: str,
+    **overrides: Any,
 ) -> dict[str, Any]:
     return {
         "type": "prices",
@@ -79,6 +83,7 @@ def _subscription(**overrides: Any) -> dict[str, Any]:
             "renews_at": "2026-12-15T00:00:00.000000Z",
             "ends_at": None,
             "first_subscription_item": {"id": 1, "price_id": 21, "quantity": 1},
+            "created_at": "2026-11-01T00:00:00.000000Z",
             **overrides,
         },
     }
@@ -110,7 +115,7 @@ ROUTES: dict[str, dict[str, Any]] = {
             {
                 "type": "products",
                 "id": "5",
-                "attributes": {"store_id": 1, "name": "App"},
+                "attributes": {"store_id": 1, "name": "App", "status": "published"},
             },
             {
                 "type": "products",
@@ -138,11 +143,16 @@ ROUTES: dict[str, dict[str, Any]] = {
                     "status": "published",
                 },
                 "relationships": {
-                    "variants": {"data": [{"type": "variants", "id": "10"}]}
+                    "variants": {
+                        "links": {
+                            "related": f"{API_BASE_URL}/discounts/30/variants",
+                        }
+                    }
                 },
             }
         ]
     ),
+    "/v1/discounts/30/variants": _page([{"type": "variants", "id": "10"}]),
     "/v1/customers": _page(
         [
             {
@@ -182,6 +192,8 @@ def _adapter(
     def handler(request: httpx2.Request) -> httpx2.Response:
         requests.append(request)
         body = table.get(request.url.path)
+        if isinstance(body, list):
+            return body.pop(0)
         if body is None:
             return httpx2.Response(404, json={"errors": []})
         return httpx2.Response(200, json=body)
@@ -233,18 +245,28 @@ class TestExtract:
         assert subscription.payment_method.type == CanonicalPaymentMethodType.card
         assert subscription.payment_method.last4 == "4242"
 
-    async def test_usage_price_is_metered(self) -> None:
+    async def test_usage_price_reads_decimal_cents(self) -> None:
+        usage = {"usage_aggregation": "sum"}
         adapter, _ = _adapter(
             {
                 "/v1/prices": _page(
                     [
                         _price(
+                            "20",
+                            10,
+                            None,
+                            "2025-01-01T00:00:00Z",
+                            **usage,
+                            unit_price_decimal="0.5000000000",
+                        ),
+                        _price(
                             "21",
                             10,
-                            10,
+                            None,
                             "2026-01-01T00:00:00Z",
-                            usage_aggregation="sum",
-                        )
+                            **usage,
+                            unit_price_decimal="10.0000000000",
+                        ),
                     ]
                 )
             }
@@ -253,7 +275,59 @@ class TestExtract:
         records = [record async for record in adapter.extract()]
 
         [product] = [r for r in records if isinstance(r, CanonicalProduct)]
-        assert product.prices[0].pricing_scheme == CanonicalPricingScheme.metered
+        assert [(p.amount, p.pricing_scheme) for p in product.prices] == [
+            (None, CanonicalPricingScheme.metered),
+            (10, CanonicalPricingScheme.metered),
+        ]
+
+    async def test_tiered_price_has_no_single_amount(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [_price("21", 10, 1200, "2026-01-01T00:00:00Z", scheme="volume")]
+                )
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [product] = [r for r in records if isinstance(r, CanonicalProduct)]
+        assert product.prices[0].amount is None
+        assert product.prices[0].pricing_scheme == CanonicalPricingScheme.tiered
+
+    async def test_default_variant_is_sold_under_the_product_name(self) -> None:
+        variants = ROUTES["/v1/variants"]
+        adapter, _ = _adapter(
+            {
+                "/v1/variants": {
+                    **variants,
+                    "data": [
+                        {
+                            "type": "variants",
+                            "id": "10",
+                            "attributes": {
+                                "product_id": 5,
+                                "name": "Default",
+                                "status": "pending",
+                            },
+                        }
+                    ],
+                }
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [product] = [r for r in records if isinstance(r, CanonicalProduct)]
+        assert product.name == "App"
+        assert product.archived is False
+
+    async def test_limited_discount_without_variants_is_left_out(self) -> None:
+        adapter, _ = _adapter({"/v1/discounts/30/variants": _page([])})
+
+        records = [record async for record in adapter.extract()]
+
+        assert not [r for r in records if isinstance(r, CanonicalDiscount)]
 
 
 @pytest.mark.anyio
@@ -277,6 +351,21 @@ class TestGetSourceAccount:
 
         with pytest.raises(LemonSqueezyStoreNotFound):
             await adapter.get_source_account()
+
+    async def test_retries_when_rate_limited(self) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/stores": [
+                    httpx2.Response(429, headers={"Retry-After": "0"}),
+                    httpx2.Response(200, json=_page([STORE])),
+                ]
+            }
+        )
+
+        account = await adapter.get_source_account()
+
+        assert account.country == "US"
+        assert len(requests) == 2
 
 
 @pytest.mark.anyio
@@ -335,12 +424,15 @@ class TestGetSubscription:
         assert subscription is not None
         assert subscription.trialing is True
         assert subscription.price_source_id == "21"
+        assert subscription.current_period_start == datetime(2026, 11, 1, tzinfo=UTC)
 
     async def test_paypal_must_be_reentered(self) -> None:
         adapter, _ = _adapter(
             {
                 "/v1/subscriptions/100": {
-                    "data": _subscription(payment_processor="paypal", card_brand=None)
+                    "data": _subscription(
+                        payment_processor="paypal", card_brand="", card_last_four=""
+                    )
                 }
             }
         )
@@ -350,6 +442,7 @@ class TestGetSubscription:
         assert subscription is not None
         assert subscription.payment_method is not None
         assert subscription.payment_method.type == CanonicalPaymentMethodType.other
+        assert subscription.payment_method.last4 is None
 
     async def test_missing(self) -> None:
         adapter, _ = _adapter()
@@ -370,3 +463,16 @@ class TestStopSourceSubscription:
             "DELETE",
             "/v1/subscriptions/100",
         )
+
+    async def test_already_cancelled_is_left_alone(self) -> None:
+        adapter, requests = _adapter(
+            {
+                "/v1/subscriptions/100": {
+                    "data": _subscription(status="cancelled", cancelled=True)
+                }
+            }
+        )
+
+        await adapter.stop_source_subscription("100", reference="mig")
+
+        assert [request.method for request in requests] == ["GET"]

@@ -280,6 +280,25 @@ class TestExtract:
             (10, CanonicalPricingScheme.metered),
         ]
 
+    async def test_one_time_price_is_not_recurring(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/prices": _page(
+                    [
+                        _price(
+                            "21", 10, 1200, "2026-01-01T00:00:00Z", category="one_time"
+                        )
+                    ]
+                )
+            }
+        )
+
+        records = [record async for record in adapter.extract()]
+
+        [product] = [r for r in records if isinstance(r, CanonicalProduct)]
+        assert product.recurring_interval is None
+        assert product.recurring_interval_count == 1
+
     async def test_tiered_price_has_no_single_amount(self) -> None:
         adapter, _ = _adapter(
             {

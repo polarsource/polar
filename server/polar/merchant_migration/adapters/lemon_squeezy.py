@@ -252,7 +252,12 @@ class LemonSqueezyAdapter:
             return None
         latest = prices[-1]
         latest_attributes = latest["attributes"]
-        recurring_interval = latest_attributes.get("renewal_interval_unit")
+        # One-time prices carry a renewal interval too; only the category says
+        # whether the price renews.
+        recurring = latest_attributes.get("category") == "subscription"
+        recurring_interval = (
+            latest_attributes.get("renewal_interval_unit") if recurring else None
+        )
         product_name = product["attributes"]["name"]
         # A product sold without variants has one, `pending`: the default.
         is_default_variant = attributes.get("status") == "pending"
@@ -266,7 +271,11 @@ class LemonSqueezyAdapter:
             product_source_id=variant["id"],
             name=name,
             recurring_interval=recurring_interval,
-            recurring_interval_count=latest_attributes.get("renewal_interval_quantity")
+            recurring_interval_count=(
+                latest_attributes.get("renewal_interval_quantity")
+                if recurring
+                else None
+            )
             or 1,
             prices=[
                 self._map_price(price, currency, is_default=price is latest)

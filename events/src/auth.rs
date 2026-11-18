@@ -34,6 +34,7 @@ const REQUIRED_SCOPE: &str = "events:write";
 const ORGANIZATION_HEADER: &str = "polar-organization";
 const REALM: &str = "polar";
 const HASH_SEPARATOR: char = '$';
+const RECORD_USAGE_INTERVAL_SECONDS: u64 = 60;
 const INVALID_TOKEN_DESCRIPTION: &str =
     "The access token provided is expired, revoked, malformed, or invalid for other reasons.";
 const INSUFFICIENT_SCOPE_DESCRIPTION: &str =
@@ -303,8 +304,30 @@ pub fn record_token_usage(state: &AppState, token_id: Uuid) {
     };
     let usage = Job::record_organization_access_token_usage(token_id, SystemTime::now());
     let (sqs, mut redis) = (state.sqs.clone(), state.redis.clone());
+    let capped = state.cap_token_usage_records;
     state.tasks.spawn(
         async move {
+            if capped {
+                let first_in_interval = redis::cmd("SET")
+                    .arg(format!("organization_access_token.record_usage:{token_id}"))
+                    .arg(1)
+                    .arg("NX")
+                    .arg("EX")
+                    .arg(RECORD_USAGE_INTERVAL_SECONDS)
+                    .query_async::<Option<String>>(&mut redis)
+                    .await;
+                match first_in_interval {
+                    Ok(Some(_)) => {}
+                    Ok(None) => return,
+                    Err(error) => {
+                        tracing::warn!(
+                            %error,
+                            "failed to check the organization access token usage interval"
+                        );
+                        return;
+                    }
+                }
+            }
             if let Err(error) = jobs::enqueue(sqs.as_deref(), &mut redis, vec![usage]).await {
                 tracing::warn!(
                     error = format!("{error:#}"),

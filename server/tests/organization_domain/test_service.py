@@ -174,7 +174,7 @@ class TestReverify:
 
 @pytest.mark.anyio
 class TestRegisterPaymentMethodDomains:
-    async def test_verified_domain_without_embed_host(
+    async def test_only_embed_hosts_under_verified_domain(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -196,5 +196,5 @@ class TestRegisterPaymentMethodDomains:
 
         enqueue_job_mock.assert_called_once_with(
             "organization_domain.register_payment_method_domains",
-            domains=["shop.acme.com", "acme.com", "www.acme.com"],
+            domains=["shop.acme.com"],
         )

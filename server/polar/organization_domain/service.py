@@ -8,7 +8,6 @@ import dns.exception
 import dns.resolver
 import structlog
 from sqlalchemy.exc import IntegrityError
-from tld import get_fld
 
 from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.config import settings
@@ -177,9 +176,8 @@ class OrganizationDomainService:
         embed_hosts: Iterable[str] | None = None,
     ) -> Sequence[str]:
         """Stripe shows Apple Pay and Google Pay only on registered domains, and
-        takes no wildcards, so each host under a verified domain goes in alone.
-        Without `embed_hosts`, takes every embed host, each verified domain and
-        the `www` of each verified apex domain."""
+        takes no wildcards, so each embed host under a verified domain goes in
+        alone. Without `embed_hosts`, takes every embed host."""
         repository = OrganizationDomainRepository.from_session(session)
         verified_domains = [
             organization_domain.domain
@@ -188,15 +186,7 @@ class OrganizationDomainService:
             )
         ]
         if embed_hosts is None:
-            embed_hosts = [
-                *organization.embed_hosts,
-                *verified_domains,
-                *(
-                    f"www.{domain}"
-                    for domain in verified_domains
-                    if get_fld(domain, fix_protocol=True, fail_silently=True) == domain
-                ),
-            ]
+            embed_hosts = organization.embed_hosts
         domains: list[str] = []
         for entry in embed_hosts:
             pattern = parse_host_pattern(entry)

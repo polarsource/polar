@@ -1,5 +1,7 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
+import { optional, Slug } from './customField'
+import type { OptionalField } from './customField'
 import { ExternalId } from './external-id'
 import { deprecatedKey, withDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
@@ -147,6 +149,14 @@ export const ProductConfig = Schema.Struct({
   ),
   prices: Schema.Array(PriceConfig).check(Schema.isMinLength(1)),
   benefits: Schema.Array(Schema.String),
+  custom_fields: Schema.optionalKey(
+    Schema.Array(
+      Schema.Struct({
+        field: Slug,
+        required: Schema.optionalKey(Schema.Boolean),
+      }),
+    ),
+  ),
   metadata: Schema.optionalKey(Metadata),
   description: Schema.optionalKey(Schema.String),
   visibility: Schema.optionalKey(Visibility),
@@ -213,6 +223,10 @@ type Prices<Meter extends string> = readonly [
 // `undefined` until `.prices()` is called, then the meters the prices charge by.
 type PriceList<Priced> = [Priced] extends [string] ? Prices<Priced> : undefined
 
+type AskedFields<Asked extends string> = ReadonlyArray<
+  Asked | OptionalField<Asked>
+>
+
 class ProductBuilder<
   Meter extends string,
   Benefit extends string,
@@ -220,11 +234,16 @@ class ProductBuilder<
   Billing extends Recurring | OneTime | undefined,
   Granted extends Benefit = never,
   Deprecated extends boolean = boolean,
+  Field extends string = string,
 > extends withDeprecation(withMetadata(withVisibility(Builder))) {
   declare readonly [deprecatedKey]: Deprecated
   readonly trialPeriod: Trial | undefined = undefined
   readonly meterPeriod: MeterCycle | undefined = undefined
   readonly benefits: ReadonlyArray<Granted> = []
+  readonly fieldList: ReadonlyArray<{
+    readonly field: string
+    readonly required: boolean
+  }> = []
   readonly descriptionText: string | undefined = undefined
 
   constructor(
@@ -245,7 +264,8 @@ class ProductBuilder<
     Charged,
     Billing,
     Granted,
-    this[typeof deprecatedKey]
+    this[typeof deprecatedKey],
+    Field
   > {
     return this.with({ priceList: [price, ...prices] })
   }
@@ -259,7 +279,8 @@ class ProductBuilder<
     Priced,
     Recurring,
     Granted,
-    this[typeof deprecatedKey]
+    this[typeof deprecatedKey],
+    Field
   >
   /** Bills every `count` intervals, like `.recurring(3, 'months')`. */
   recurring(
@@ -271,7 +292,8 @@ class ProductBuilder<
     Priced,
     Recurring,
     Granted,
-    this[typeof deprecatedKey]
+    this[typeof deprecatedKey],
+    Field
   >
   recurring(
     ...args: Cycle
@@ -281,7 +303,8 @@ class ProductBuilder<
     Priced,
     Recurring,
     Granted,
-    this[typeof deprecatedKey]
+    this[typeof deprecatedKey],
+    Field
   > {
     const [interval, count] = cycleOf(args)
     const billing: Recurring = {
@@ -298,7 +321,8 @@ class ProductBuilder<
     Priced,
     OneTime,
     Granted,
-    this[typeof deprecatedKey]
+    this[typeof deprecatedKey],
+    Field
   > {
     const billing: OneTime = {
       recurring_interval: null,
@@ -368,9 +392,31 @@ class ProductBuilder<
     Priced,
     Billing,
     Grant,
-    this[typeof deprecatedKey]
+    this[typeof deprecatedKey],
+    Field
   > {
     return this.with({ benefits })
+  }
+
+  /**
+   * The custom fields checkout asks for, in this order. They're required
+   * unless marked optional: `(optional) => ['terms', optional('company')]`.
+   */
+  customFields<const Asked extends Field>(
+    fields:
+      | AskedFields<Asked>
+      | ((
+          optional: <const Skippable extends Field>(
+            field: Skippable,
+          ) => OptionalField<Skippable>,
+        ) => AskedFields<Asked>),
+  ): this {
+    return this.with({
+      fieldList: (typeof fields === 'function' ? fields(optional) : fields).map(
+        (field) =>
+          typeof field === 'string' ? { field, required: true } : field,
+      ),
+    })
   }
 
   /** Shown on the checkout page. Supports Markdown. */
@@ -384,20 +430,42 @@ export type ProductDefinition<
   Meter extends string = string,
   Benefit extends string = string,
   Granted extends Benefit = Benefit,
-> = ProductBuilder<Meter, Benefit, Meter, Recurring | OneTime, Granted>
+  Field extends string = string,
+> = ProductBuilder<
+  Meter,
+  Benefit,
+  Meter,
+  Recurring | OneTime,
+  Granted,
+  boolean,
+  Field
+>
 
 /** A product customers can buy. The name defaults to its key in `products`. */
 export const product = <
   Meter extends string = string,
   Benefit extends string = string,
+  Field extends string = string,
 >(
   name?: string,
-): ProductBuilder<Meter, Benefit, undefined, undefined> =>
-  new ProductBuilder<Meter, Benefit, undefined, undefined>(
-    name,
+): ProductBuilder<
+  Meter,
+  Benefit,
+  undefined,
+  undefined,
+  never,
+  boolean,
+  Field
+> =>
+  new ProductBuilder<
+    Meter,
+    Benefit,
     undefined,
     undefined,
-  )
+    never,
+    boolean,
+    Field
+  >(name, undefined, undefined)
 
 /**
  * Every price in a product must be set in the same currencies, so each
@@ -435,11 +503,23 @@ export const productPrices = (
   )
 }
 
-export type ProductHelpers<Meter extends string, Benefit extends string> = {
+export type ProductHelpers<
+  Meter extends string,
+  Benefit extends string,
+  Field extends string = string,
+> = {
   /** A product customers can buy. The name defaults to its key in `products`. */
   readonly product: (
     name?: string,
-  ) => ProductBuilder<Meter, Benefit, undefined, undefined>
+  ) => ProductBuilder<
+    Meter,
+    Benefit,
+    undefined,
+    undefined,
+    never,
+    boolean,
+    Field
+  >
   /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
   readonly free: typeof free
   /** Charges one set amount. */

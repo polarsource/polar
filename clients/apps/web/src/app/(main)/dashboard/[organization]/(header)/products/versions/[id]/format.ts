@@ -15,6 +15,10 @@ type Price = schemas['ConfigProductPriceRead']
 type Tiers = schemas['ConfigTiersRead']
 type Meter = schemas['ConfigMeterRead']
 type Filter = schemas['Filter']
+type CustomField = schemas['ConfigCustomFieldRead']
+type CustomFieldReference = schemas['ConfigProductCustomFieldRead']
+type SelectOption = schemas['CustomFieldSelectOption']
+type Bounds = { ge?: number; le?: number }
 type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
 }
@@ -91,6 +95,31 @@ export const meterFields = ({
   ...meter,
 })
 
+const isoDate = (seconds: number) =>
+  new Date(seconds * 1000).toISOString().slice(0, 10)
+
+// Fields are matched by slug; the bounds read as minimum and maximum, as dates on a date field
+export const customFieldFields = ({
+  slug,
+  name,
+  type,
+  properties,
+  ...field
+}: CustomField) => {
+  const { ge, le, ...rest } = properties as Bounds
+  const isDate = type === 'date'
+  return {
+    external_id: slug,
+    name,
+    slug,
+    type,
+    ...rest,
+    minimum: isDate && ge ? isoDate(ge) : ge,
+    maximum: isDate && le ? isoDate(le) : le,
+    ...field,
+  }
+}
+
 export const settingsFields = ({ payments }: Settings) => ({
   default_payment_currency: payments.currency.toUpperCase(),
   default_tax_behavior: taxBehaviorOptionDisplayNames[payments.tax],
@@ -110,6 +139,11 @@ export const valueFormatter = (configs: Config[]) => {
   const meters = new Map(
     configs.flatMap(({ meters }) =>
       meters.map((meter) => [meter.external_id, meter]),
+    ),
+  )
+  const customFields = new Map(
+    configs.flatMap(({ custom_fields }) =>
+      (custom_fields ?? []).map((field) => [field.slug, field.name]),
     ),
   )
   const meterName = (externalId: string) =>
@@ -176,6 +210,16 @@ export const valueFormatter = (configs: Config[]) => {
       return benefits.get(value as string) ?? String(value)
     }
     if (field === 'meter') return meterName(value as string)
+    if (field === 'custom_fields') {
+      const { field: slug, required } = value as CustomFieldReference
+      return `${customFields.get(slug) ?? slug}${required ? '' : ', optional'}`
+    }
+    if (field === 'options') {
+      const option = value as SelectOption
+      return option.label === option.value
+        ? option.label
+        : `${option.label} (${option.value})`
+    }
     if (enumFields.has(field)) return humanize(String(value))
     if (typeof value === 'number') return value.toLocaleString('en-US')
     if (typeof value === 'boolean') return value ? 'On' : 'Off'

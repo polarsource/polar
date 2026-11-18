@@ -46,7 +46,8 @@ use crate::{
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const WRITE_TIMEOUT: Duration = Duration::from_secs(25);
 const BEGIN_WITH_STATEMENT_TIMEOUT: &str = "BEGIN; SET LOCAL statement_timeout = 10000";
-const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(1);
+const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
+const INGEST_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(1);
 const MAX_BACKGROUND_TASKS: usize = 256;
 const TRUE_CLIENT_IP: &str = "true-client-ip";
 const X_FORWARDED_FOR: &str = "x-forwarded-for";
@@ -376,11 +377,10 @@ async fn write_events(
     )
     .instrument(tracing::info_span!("load_active_reducers"))
     .await?;
-    let connection = state
-        .db
-        .acquire()
+    let connection = tokio::time::timeout(INGEST_ACQUIRE_TIMEOUT, state.db.acquire())
         .instrument(tracing::info_span!("acquire_connection"))
-        .await?;
+        .await
+        .map_err(|_| IngestError::Overloaded)??;
     let mut transaction = Transaction::begin(
         connection,
         Some(BEGIN_WITH_STATEMENT_TIMEOUT.into_sql_str()),

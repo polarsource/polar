@@ -3130,14 +3130,16 @@ class SubscriptionService:
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID
     ) -> None:
-        """Immediately cancel all billable subscriptions of a customer.
+        """Immediately cancel all cancelable subscriptions of a customer.
 
         Used when a customer is deleted. This includes ``past_due`` subscriptions,
         whose pending orders would otherwise keep being retried by dunning. Revoking
-        them voids any pending order through ``_on_subscription_revoked``.
+        them voids any pending order through ``_on_subscription_revoked``. It also
+        includes ``paused`` subscriptions, which would otherwise resume and charge
+        the deleted customer.
         """
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_billable_by_customer(
+        subscriptions = await subscription_repository.list_cancelable_by_customer(
             customer_id, options=subscription_repository.get_eager_options()
         )
         for subscription in subscriptions:
@@ -3158,8 +3160,8 @@ class SubscriptionService:
         *,
         batch_size: int = SUBSCRIPTION_CANCELLATION_BATCH_SIZE,
     ) -> bool:
-        """Immediately cancel a batch of an organization's billable
-        subscriptions, without notifying its customers (the cancellation follows
+        """Immediately cancel a batch of an organization's cancelable (billable
+        or paused) subscriptions, without notifying its customers (the cancellation follows
         the merchant being shut down, not a customer or merchant action).
 
         Returns ``True`` when more subscriptions may remain and the caller should
@@ -3169,7 +3171,7 @@ class SubscriptionService:
         completes across several short jobs instead of one long one: the worker
         enforces a 60s time limit, and a single transaction exceeding it is
         rolled back wholesale, making no progress on retry. Each cancelled
-        subscription leaves the billable set, so the next call naturally resumes
+        subscription leaves the cancelable set, so the next call naturally resumes
         where this one stopped; the work is idempotent and resumable.
 
         Locks the org row (``for_update``) before re-checking its status, since
@@ -3193,7 +3195,7 @@ class SubscriptionService:
 
         subscription_repository = SubscriptionRepository.from_session(session)
         statement = (
-            subscription_repository.get_billable_by_organization_statement(
+            subscription_repository.get_cancelable_by_organization_statement(
                 organization_id, options=subscription_repository.get_eager_options()
             )
             .order_by(Subscription.created_at)

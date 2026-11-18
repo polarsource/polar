@@ -1950,10 +1950,7 @@ class SubscriptionService:
         product_id: uuid.UUID,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> tuple[Product, PriceSet]:
-        if (
-            SubscriptionStatus.is_terminal(subscription.status)
-            or subscription.cancel_at_period_end
-        ):
+        if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
         if subscription.status == SubscriptionStatus.trial_ended:
@@ -2095,10 +2092,7 @@ class SubscriptionService:
         *,
         units: int,
     ) -> None:
-        if (
-            SubscriptionStatus.is_terminal(subscription.status)
-            or subscription.cancel_at_period_end
-        ):
+        if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
         if subscription.status == SubscriptionStatus.trial_ended:
@@ -2154,10 +2148,7 @@ class SubscriptionService:
         *,
         seats: int,
     ) -> None:
-        if (
-            SubscriptionStatus.is_terminal(subscription.status)
-            or subscription.cancel_at_period_end
-        ):
+        if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
         if subscription.status == SubscriptionStatus.trial_ended:
@@ -2885,7 +2876,7 @@ class SubscriptionService:
         *,
         new_period_end: datetime,
     ) -> Subscription:
-        if SubscriptionStatus.is_terminal(subscription.status):
+        if subscription.revoked:
             raise AlreadyCanceledSubscription(subscription)
 
         if not subscription.active:
@@ -4001,9 +3992,9 @@ class SubscriptionService:
         )
         became_canceled = subscription.canceled and not previous_is_canceled
         became_uncanceled = not subscription.canceled and previous_is_canceled
-        became_revoked = SubscriptionStatus.is_terminal(
-            subscription.status
-        ) and not SubscriptionStatus.is_terminal(previous_status)
+        became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
+            previous_status
+        )
 
         if became_activated:
             await self._on_subscription_activated(

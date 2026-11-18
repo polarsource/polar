@@ -197,7 +197,7 @@ class SubscriptionRepository(
                 Subscription.id != subscription.id,
                 Subscription.status.in_(
                     SubscriptionStatus.billable_statuses()
-                    | {SubscriptionStatus.paused, SubscriptionStatus.trial_ended}
+                    | SubscriptionStatus.paused_statuses()
                 ),
                 Subscription.ended_at.is_(None),
                 or_(
@@ -309,7 +309,7 @@ class SubscriptionRepository(
     ) -> bool:
         # "Live" = could still bill: not canceled/unpaid/incomplete, not ended.
         dead_statuses = (
-            SubscriptionStatus.terminal_statuses()
+            SubscriptionStatus.revoked_statuses()
             | SubscriptionStatus.incomplete_statuses()
         )
         statement = (

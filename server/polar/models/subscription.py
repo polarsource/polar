@@ -82,11 +82,11 @@ class SubscriptionStatus(StrEnum):
 
     @classmethod
     def revoked_statuses(cls) -> set[Self]:
-        return cls.terminal_statuses() | {cls.trial_ended}  # pyright: ignore
+        return {cls.canceled, cls.unpaid}  # pyright: ignore
 
     @classmethod
-    def terminal_statuses(cls) -> set[Self]:
-        return {cls.canceled, cls.unpaid}  # pyright: ignore
+    def paused_statuses(cls) -> set[Self]:
+        return {cls.paused, cls.trial_ended}  # pyright: ignore
 
     @classmethod
     def billable_statuses(cls) -> set[Self]:
@@ -103,10 +103,6 @@ class SubscriptionStatus(StrEnum):
     @classmethod
     def is_revoked(cls, status: Self) -> bool:
         return status in cls.revoked_statuses()
-
-    @classmethod
-    def is_terminal(cls, status: Self) -> bool:
-        return status in cls.terminal_statuses()
 
     @classmethod
     def is_billable(cls, status: Self) -> bool:
@@ -558,10 +554,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def can_cancel(self, immediately: bool = False) -> bool:
         # A paused or trial-ended subscription isn't billable, but can still be
         # revoked immediately instead of having to be resumed first.
-        if immediately and self.status in {
-            SubscriptionStatus.paused,
-            SubscriptionStatus.trial_ended,
-        }:
+        if immediately and self.status in SubscriptionStatus.paused_statuses():
             return self.ended_at is None
 
         if not SubscriptionStatus.is_billable(self.status):

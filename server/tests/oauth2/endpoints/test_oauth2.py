@@ -151,6 +151,7 @@ class TestOAuth2Register:
         "redirect_uri",
         [
             "http://example.com",
+            "http://192.0.2.1/callback",
             "foobar",
             f"http://{'a' * 54773}slocalhost/callback",
             "http://localhost.evil/callback",

@@ -17,13 +17,14 @@ locals {
       module.backend_environment[0].environment_variables,
       module.backend_environment[0].secret_environment_variables,
       {
-        SERVICE_NAME             = local.events_api_name
-        WEB_CONCURRENCY          = "4"
-        FORWARDED_ALLOW_IPS      = local.forwarded_allow_ips
-        POLAR_BACKOFFICE_ENABLED = "false"
-        POLAR_ALLOWED_HOSTS      = local.api_allowed_hosts
-        POLAR_CORS_ORIGINS       = local.api_cors_origins
-        POLAR_DATABASE_POOL_SIZE = "20"
+        SERVICE_NAME                  = local.events_api_name
+        WEB_CONCURRENCY               = "4"
+        FORWARDED_ALLOW_IPS           = local.forwarded_allow_ips
+        POLAR_BACKOFFICE_ENABLED      = "false"
+        POLAR_ALLOWED_HOSTS           = local.api_allowed_hosts
+        POLAR_CORS_ORIGINS            = local.api_cors_origins
+        POLAR_DATABASE_POOL_SIZE      = "20"
+        POLAR_LOGFIRE_ROOT_SPANS_ONLY = "true"
 
         POLAR_POSTGRES_DATABASE      = module.planetscale.database_name
         POLAR_POSTGRES_HOST          = local.planetscale_postgres_config.host

@@ -408,6 +408,8 @@ class Settings(BaseSettings):
 
     # Logfire
     LOGFIRE_TOKEN: str | None = None
+    # Records only root spans, like request spans, without database or Redis spans
+    LOGFIRE_ROOT_SPANS_ONLY: bool = False
     LOGFIRE_IGNORED_ACTORS: set[str] = {
         "organization_access_token.record_usage",
         "personal_access_token.record_usage",

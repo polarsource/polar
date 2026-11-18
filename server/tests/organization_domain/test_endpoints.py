@@ -202,6 +202,33 @@ class TestDeleteOrganizationDomain:
         response = await client.get(f"/v1/organizations/{organization.id}/domains/")
         assert response.json()["pagination"]["total_count"] == 0
 
+    @pytest.mark.auth
+    async def test_unregisters_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.embed_hosts = ["acme.com", "*.acme.com"]
+        await save_fixture(organization)
+        domain = OrganizationDomain(
+            organization=organization, domain="acme.com", verified_at=utc_now()
+        )
+        await save_fixture(domain)
+
+        response = await client.delete(
+            f"/v1/organizations/{organization.id}/domains/{domain.id}"
+        )
+
+        assert response.status_code == 204
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["acme.com"],
+        )
+
 
 @pytest.mark.anyio
 class TestVerifyOrganizationDomain:

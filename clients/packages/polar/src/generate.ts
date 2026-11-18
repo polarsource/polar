@@ -27,7 +27,6 @@ const key = (value: string): string =>
       ? value
       : literal(value)
 
-// Objects list integer-like keys first, so those need `[key, value]` entries.
 const keepsOrder = (keys: ReadonlyArray<string>): boolean => {
   const objectKeys = Object.keys(
     Object.fromEntries(keys.map((name) => [name, null])),
@@ -134,45 +133,49 @@ const renderBenefit = (
   ].join('\n')
 }
 
-const FIELD_METHODS = [
-  ['form_label', 'label'],
-  ['form_help_text', 'help'],
-  ['form_placeholder', 'placeholder'],
-  ['min_length', 'minLength'],
-  ['max_length', 'maxLength'],
-  ['ge', 'min'],
-  ['le', 'max'],
-] as const
+const dateText = (seconds: number | undefined): string | undefined =>
+  seconds === undefined
+    ? undefined
+    : new Date(seconds * 1000).toISOString().slice(0, 10)
 
-// Bounds are Unix seconds, checked as the UTC calendar day they fall on.
-const dateText = (seconds: number): string =>
-  new Date(seconds * 1000).toISOString().slice(0, 10)
+const call = (method: string, value: string | number | undefined): string[] =>
+  value === undefined ? [] : [`.${method}(${literal(value)})`]
 
 const renderCustomField = (
   field: CustomFieldConfig,
   helpers: Set<string>,
 ): string => {
   helpers.add(field.type)
-  const properties: Record<string, unknown> = field.properties
   return [
     field.type === 'select'
       ? `select(${literal(field.name)}, ${renderPairs(
           field.properties.options.map(({ value, label }) => [value, label]),
         )})`
       : `${field.type}(${literal(field.name)})`,
-    ...FIELD_METHODS.flatMap(([property, method]) => {
-      const value = properties[property]
-      if (property === 'form_placeholder' && field.type === 'checkbox') {
-        return []
-      }
-      if (typeof value === 'number' && field.type === 'date') {
-        return [`.${method}(${literal(dateText(value))})`]
-      }
-      return typeof value === 'string' || typeof value === 'number'
-        ? [`.${method}(${literal(value)})`]
-        : []
-    }),
-    ...(properties['textarea'] === true ? ['.textarea()'] : []),
+    ...call('label', field.properties.form_label),
+    ...call('help', field.properties.form_help_text),
+    ...(field.type === 'checkbox'
+      ? []
+      : call('placeholder', field.properties.form_placeholder)),
+    ...(field.type === 'text'
+      ? [
+          ...call('minLength', field.properties.min_length),
+          ...call('maxLength', field.properties.max_length),
+          ...(field.properties.textarea === true ? ['.textarea()'] : []),
+        ]
+      : []),
+    ...(field.type === 'number'
+      ? [
+          ...call('min', field.properties.ge),
+          ...call('max', field.properties.le),
+        ]
+      : []),
+    ...(field.type === 'date'
+      ? [
+          ...call('min', dateText(field.properties.ge)),
+          ...call('max', dateText(field.properties.le)),
+        ]
+      : []),
     ...renderMetadata(field.metadata),
   ].join('\n')
 }
@@ -527,10 +530,10 @@ export const generateConfig = Effect.fnUntraced(function* (input: unknown) {
       : renderEntries(
           'customFields',
           config.custom_fields.map((field) => ({
+            ...field,
             external_id: field.slug,
-            field,
           })),
-          ({ field }, helpers) => renderCustomField(field, helpers),
+          renderCustomField,
         )
   const benefits =
     config.benefits === undefined

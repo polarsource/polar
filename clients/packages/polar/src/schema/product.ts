@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
-import { SLUG } from './customField'
+import { Slug } from './customField'
 import type { RequiredField } from './customField'
 import { ExternalId } from './external-id'
 import { deprecatedKey, withDeprecation } from './deprecation'
@@ -152,7 +152,7 @@ export const ProductConfig = Schema.Struct({
   custom_fields: Schema.optionalKey(
     Schema.Array(
       Schema.Struct({
-        field: Schema.String.check(Schema.isPattern(SLUG)),
+        field: Slug,
         required: Schema.optionalKey(Schema.Boolean),
       }),
     ),
@@ -336,15 +336,7 @@ class ProductBuilder<
    * `{ requirePaymentMethod: false }` to let customers start it without one.
    */
   trial(
-    this: ProductBuilder<
-      Meter,
-      Benefit,
-      Priced,
-      Recurring,
-      Granted,
-      boolean,
-      Field
-    >,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     count: number,
     interval: Interval,
     options: { readonly requirePaymentMethod?: boolean } = {},
@@ -365,15 +357,7 @@ class ProductBuilder<
    * year, separately from billing. Must divide the billing interval evenly.
    */
   meterCycle(
-    this: ProductBuilder<
-      Meter,
-      Benefit,
-      Priced,
-      Recurring,
-      Granted,
-      boolean,
-      Field
-    >,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     cadence: keyof typeof cadences,
   ): this
   /**
@@ -381,28 +365,12 @@ class ProductBuilder<
    * separately from billing. Must divide the billing interval evenly.
    */
   meterCycle(
-    this: ProductBuilder<
-      Meter,
-      Benefit,
-      Priced,
-      Recurring,
-      Granted,
-      boolean,
-      Field
-    >,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     count: number,
     interval: Interval,
   ): this
   meterCycle(
-    this: ProductBuilder<
-      Meter,
-      Benefit,
-      Priced,
-      Recurring,
-      Granted,
-      boolean,
-      Field
-    >,
+    this: ProductBuilder<Meter, Benefit, Priced, Recurring, Granted>,
     ...args: Cycle
   ): this {
     const [interval, count] = cycleOf(args)

@@ -1034,11 +1034,8 @@ test('custom field helpers catch mistakes early', () => {
         teamSize: text(),
       }),
     }),
-  ).toThrow(
-    'Custom field key "teamSize" can only use lowercase letters, numbers, - and _.',
-  )
+  ).toThrow('Use only lowercase letters, digits, "-" and "_"')
 
-  // Only typechecked: neither method exists at runtime.
   void (() =>
     defineConfig({
       meters: () => ({}),
@@ -1055,7 +1052,7 @@ test('custom field helpers catch mistakes early', () => {
       meters: () => ({}),
       customFields: ({ number }) => ({ seats: number().min(10).max(5) }),
     }),
-  ).toThrow('Custom field "seats" has a min that is after its max.')
+  ).toThrow('The max must not be before the min')
   expect(() =>
     defineConfig({
       meters: () => ({}),
@@ -1063,7 +1060,7 @@ test('custom field helpers catch mistakes early', () => {
         start: date().min('2026-12-31').max('2026-01-01'),
       }),
     }),
-  ).toThrow('Custom field "start" has a min that is after its max.')
+  ).toThrow('The max must not be before the min')
 
   for (const invalid of ['soon', '2026-02-30', '2026-1-1']) {
     expect(() =>

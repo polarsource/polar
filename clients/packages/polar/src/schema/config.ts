@@ -8,10 +8,13 @@ import {
 } from './metadata'
 import type { BenefitDefinition, BenefitHelpers } from './benefit'
 import {
+  checkbox,
   CustomFieldConfig,
-  customFieldHelpers,
+  date,
+  number,
   required,
-  SLUG,
+  select,
+  text,
 } from './customField'
 import type { CustomFieldDefinition, CustomFieldHelpers } from './customField'
 import { deprecatedKey } from './deprecation'
@@ -487,28 +490,17 @@ export const defineConfig = <
       definition[deprecatedKey] ? [external_id] : [],
     ),
   )
-  const customFields = input.customFields?.(customFieldHelpers)
+  const customFields = input.customFields?.({
+    text,
+    number,
+    date,
+    checkbox,
+    select,
+  })
   const customFieldEntries =
     customFields === undefined
       ? []
       : toEntries<CustomFieldDefinition>(customFields)
-  const invalidSlug = customFieldEntries.find(([slug]) => !SLUG.test(slug))
-  if (invalidSlug !== undefined) {
-    throw new Error(
-      `Custom field key "${invalidSlug[0]}" can only use lowercase letters, numbers, - and _.`,
-    )
-  }
-  const invalidRange = customFieldEntries.find(
-    ([, { properties }]) =>
-      typeof properties.ge === 'number' &&
-      typeof properties.le === 'number' &&
-      properties.ge > properties.le,
-  )
-  if (invalidRange !== undefined) {
-    throw new Error(
-      `Custom field "${invalidRange[0]}" has a min that is after its max.`,
-    )
-  }
   const customFieldSlugs = new Set(customFieldEntries.map(([slug]) => slug))
   const products = input.products?.({
     product,

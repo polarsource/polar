@@ -2,8 +2,6 @@ import { Schema } from 'effect'
 import { Builder } from './builder'
 import { Metadata, withMetadata, type HasMetadata } from './metadata'
 
-export const SLUG = /^[a-z0-9-_]+$/
-
 const NonEmpty = Schema.String.check(Schema.isMinLength(1))
 const Int32 = Schema.Int.check(
   Schema.isGreaterThanOrEqualTo(-2147483648),
@@ -11,13 +9,30 @@ const Int32 = Schema.Int.check(
 )
 const Length = Int32.check(Schema.isGreaterThanOrEqualTo(0))
 
+export const Slug = Schema.String.check(
+  Schema.isPattern(/^[a-z0-9-_]+$/, {
+    message: 'Use only lowercase letters, digits, "-" and "_"',
+  }),
+)
+
 const formFields = {
   form_label: Schema.optionalKey(NonEmpty),
   form_help_text: Schema.optionalKey(NonEmpty),
   form_placeholder: Schema.optionalKey(NonEmpty),
 }
+const FormProperties = Schema.Struct(formFields)
 
-const range = { ge: Schema.optionalKey(Int32), le: Schema.optionalKey(Int32) }
+const RangeProperties = Schema.Struct({
+  ...formFields,
+  ge: Schema.optionalKey(Int32),
+  le: Schema.optionalKey(Int32),
+}).check(
+  Schema.makeFilter(({ ge, le }) =>
+    ge === undefined || le === undefined || ge <= le
+      ? undefined
+      : { path: ['le'], issue: 'The max must not be before the min' },
+  ),
+)
 
 const fieldOf = <const Type extends string, Properties extends Schema.Top>(
   type: Type,
@@ -25,7 +40,7 @@ const fieldOf = <const Type extends string, Properties extends Schema.Top>(
 ) =>
   Schema.Struct({
     type: Schema.Literal(type),
-    slug: Schema.String.check(Schema.isPattern(SLUG)),
+    slug: Slug,
     name: NonEmpty,
     properties,
     metadata: Schema.optionalKey(Metadata),
@@ -41,9 +56,9 @@ export const CustomFieldConfig = Schema.Union([
       max_length: Schema.optionalKey(Length),
     }),
   ),
-  fieldOf('number', Schema.Struct({ ...formFields, ...range })),
-  fieldOf('date', Schema.Struct({ ...formFields, ...range })),
-  fieldOf('checkbox', Schema.Struct(formFields)),
+  fieldOf('number', RangeProperties),
+  fieldOf('date', RangeProperties),
+  fieldOf('checkbox', FormProperties),
   fieldOf(
     'select',
     Schema.Struct({
@@ -58,13 +73,18 @@ export const CustomFieldConfig = Schema.Union([
 export type CustomFieldConfig = typeof CustomFieldConfig.Type
 
 type CustomFieldType = CustomFieldConfig['type']
-type Properties = Record<string, unknown>
+type PropertiesOf<Type extends CustomFieldType> = Extract<
+  CustomFieldConfig,
+  { readonly type: Type }
+>['properties']
 
 export type CustomFieldDefinition = {
-  readonly name: string | undefined
-  readonly type: CustomFieldType
-  readonly properties: Properties
-} & HasMetadata
+  [Type in CustomFieldType]: {
+    readonly name: string | undefined
+    readonly type: Type
+    readonly properties: PropertiesOf<Type>
+  } & HasMetadata
+}[CustomFieldType]
 
 class CustomFieldBuilder<Type extends CustomFieldType> extends withMetadata(
   Builder,
@@ -72,12 +92,14 @@ class CustomFieldBuilder<Type extends CustomFieldType> extends withMetadata(
   constructor(
     readonly name: string | undefined,
     readonly type: Type,
-    readonly properties: Properties = {},
+    readonly properties: PropertiesOf<Type>,
   ) {
     super()
   }
 
-  protected set(properties: Properties): this {
+  protected set(
+    properties: typeof FormProperties.Type | Partial<PropertiesOf<Type>>,
+  ): this {
     return this.with({ properties: { ...this.properties, ...properties } })
   }
 
@@ -130,14 +152,12 @@ type CalendarDate = `${number}-${number}-${number}`
 
 // Checkout compares calendar days in UTC, so a day is stored as its UTC midnight.
 const timestamp = (date: CalendarDate): number => {
-  const time = /^\d{4}-\d{2}-\d{2}$/.test(date)
-    ? Date.parse(`${date}T00:00:00Z`)
-    : Number.NaN
+  const time = Date.parse(`${date}T00:00:00Z`)
   if (
     Number.isNaN(time) ||
     new Date(time).toISOString().slice(0, 10) !== date
   ) {
-    throw new Error(`Invalid date "${String(date)}", use YYYY-MM-DD.`)
+    throw new Error(`Invalid date "${date}", use YYYY-MM-DD.`)
   }
   return time / 1000
 }
@@ -154,8 +174,6 @@ class DateField extends InputField<'date'> {
   }
 }
 
-class SelectField extends InputField<'select'> {}
-
 type SelectOptions =
   | Readonly<Record<string, string>>
   | ReadonlyArray<readonly [value: string, label: string]>
@@ -165,28 +183,45 @@ type SelectOptions =
  * in the order they're shown. Use entries when a value looks like an integer:
  * objects list those keys first.
  */
-function select(options: SelectOptions): SelectField
-function select(name: string, options: SelectOptions): SelectField
-function select(
-  ...args: [SelectOptions] | [string, SelectOptions]
-): SelectField {
+export const select = (
+  ...args: [options: SelectOptions] | [name: string, options: SelectOptions]
+): InputField<'select'> => {
   const [name, options] = args.length === 1 ? [undefined, args[0]] : args
-  return new SelectField(name, 'select', {
+  return new InputField(name, 'select', {
     options: (Array.isArray(options) ? options : Object.entries(options)).map(
       ([value, label]) => ({ value, label }),
     ),
   })
 }
 
-export const customFieldHelpers = {
-  text: (name?: string) => new TextField(name, 'text'),
-  number: (name?: string) => new NumberField(name, 'number'),
-  date: (name?: string) => new DateField(name, 'date'),
-  checkbox: (name?: string) => new CustomFieldBuilder(name, 'checkbox'),
-  select,
-}
+/** Asks for text. The name defaults to its key in `customFields`. */
+export const text = (name?: string): TextField =>
+  new TextField(name, 'text', {})
 
-export type CustomFieldHelpers = typeof customFieldHelpers
+/** Asks for a number. The name defaults to its key in `customFields`. */
+export const number = (name?: string): NumberField =>
+  new NumberField(name, 'number', {})
+
+/** Asks for a calendar day. The name defaults to its key in `customFields`. */
+export const date = (name?: string): DateField =>
+  new DateField(name, 'date', {})
+
+/** A checkbox, like accepting terms. The name defaults to its key in `customFields`. */
+export const checkbox = (name?: string): CustomFieldBuilder<'checkbox'> =>
+  new CustomFieldBuilder(name, 'checkbox', {})
+
+export type CustomFieldHelpers = {
+  /** Asks for text. The name defaults to its key in `customFields`. */
+  readonly text: typeof text
+  /** Asks for a number. The name defaults to its key in `customFields`. */
+  readonly number: typeof number
+  /** Asks for a calendar day. The name defaults to its key in `customFields`. */
+  readonly date: typeof date
+  /** A checkbox, like accepting terms. The name defaults to its key in `customFields`. */
+  readonly checkbox: typeof checkbox
+  /** A dropdown of `{ value: label }` or `[value, label]` choices, in the order they're shown. */
+  readonly select: typeof select
+}
 
 export type RequiredField<Slug extends string = string> = {
   readonly field: Slug

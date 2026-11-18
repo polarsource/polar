@@ -1,7 +1,7 @@
 import { Schema } from 'effect'
 import { Builder } from './builder'
-import { Slug } from './customField'
-import type { RequiredField } from './customField'
+import { optional, Slug } from './customField'
+import type { OptionalField } from './customField'
 import { ExternalId } from './external-id'
 import { deprecatedKey, withDeprecation } from './deprecation'
 import { Metadata, withMetadata } from './metadata'
@@ -223,6 +223,10 @@ type Prices<Meter extends string> = readonly [
 // `undefined` until `.prices()` is called, then the meters the prices charge by.
 type PriceList<Priced> = [Priced] extends [string] ? Prices<Priced> : undefined
 
+type AskedFields<Asked extends string> = ReadonlyArray<
+  Asked | OptionalField<Asked>
+>
+
 class ProductBuilder<
   Meter extends string,
   Benefit extends string,
@@ -395,15 +399,22 @@ class ProductBuilder<
   }
 
   /**
-   * The custom fields checkout asks for, in this order. They're optional
-   * unless wrapped in `required()`: `[required('terms'), 'company']`.
+   * The custom fields checkout asks for, in this order. They're required
+   * unless marked optional: `(optional) => ['terms', optional('company')]`.
    */
   customFields<const Asked extends Field>(
-    fields: ReadonlyArray<Asked | RequiredField<Asked>>,
+    fields:
+      | AskedFields<Asked>
+      | ((
+          optional: <const Skippable extends Field>(
+            field: Skippable,
+          ) => OptionalField<Skippable>,
+        ) => AskedFields<Asked>),
   ): this {
     return this.with({
-      fieldList: fields.map((field) =>
-        typeof field === 'string' ? { field, required: false } : field,
+      fieldList: (typeof fields === 'function' ? fields(optional) : fields).map(
+        (field) =>
+          typeof field === 'string' ? { field, required: true } : field,
       ),
     })
   }
@@ -523,8 +534,4 @@ export type ProductHelpers<
   readonly meter: <const Priced extends Meter>(
     meter: Priced,
   ) => ReturnType<typeof metered<Priced>>
-  /** Marks a custom field in `.customFields([...])` as required at checkout. */
-  readonly required: <const Asked extends Field>(
-    field: Asked,
-  ) => RequiredField<Asked>
 }

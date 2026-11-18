@@ -985,11 +985,11 @@ test('products ask for declared custom fields in order', () => {
       company: text(),
       terms: checkbox('Terms'),
     }),
-    products: ({ product, fixed, required }) => ({
+    products: ({ product, fixed }) => ({
       pro: product('Pro')
         .prices(fixed().amount(usd(10)))
         .once()
-        .customFields([required('terms'), 'company']),
+        .customFields((optional) => ['terms', optional('company')]),
       plain: product('Plain')
         .prices(fixed().amount(usd(5)))
         .once(),
@@ -1010,16 +1010,18 @@ test('products ask for declared custom fields in order', () => {
     defineConfig({
       meters: () => ({}),
       customFields: ({ text }) => ({ company: text() }),
-      products: ({ product, free, required }) => ({
+      products: ({ product, free }) => ({
         pro: product()
           .prices(free())
           .once()
-          .customFields([
+          .customFields((optional) => [
             // @ts-expect-error undeclared custom field
-            required('vat'),
-            // @ts-expect-error undeclared custom field
-            'vat',
+            optional('vat'),
           ]),
+        plain: product().prices(free()).once().customFields([
+          // @ts-expect-error undeclared custom field
+          'vat',
+        ]),
       }),
     }),
   ).toThrow('Product "pro" references unknown custom field "vat".')

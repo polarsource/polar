@@ -12,7 +12,6 @@ import {
   CustomFieldConfig,
   date,
   number,
-  required,
   select,
   text,
 } from './customField'
@@ -510,7 +509,6 @@ export const defineConfig = <
     units,
     tier,
     meter: metered,
-    required,
   })
   const productEntries =
     products === undefined ? [] : toEntries<ProductDefinition>(products)

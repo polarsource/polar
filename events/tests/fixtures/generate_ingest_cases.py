@@ -359,4 +359,8 @@ def expected(body: Any) -> dict[str, Any]:
 
 cases = [{"name": name, "body": body, **expected(body)} for name, body in CASES.items()]
 output = Path(__file__).parent / "ingest_cases.json"
-output.write_text(json.dumps(cases, indent=2, default=dump_default) + "\n")
+output.write_text(
+    "[\n"
+    + ",\n".join(json.dumps(case, default=dump_default) for case in cases)
+    + "\n]\n"
+)

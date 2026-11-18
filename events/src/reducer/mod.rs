@@ -196,15 +196,36 @@ mod tests {
     #[test]
     fn filters_match_like_python() {
         let (cases, event) = fixture();
-        let failures: Vec<String> = cases["filters"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter_map(|case| {
-                let filter: Filter = serde_json::from_value(case["filter"].clone()).unwrap();
+        let list = |key: &str| cases[key].as_array().unwrap();
+        let (properties, operators, values) =
+            (list("properties"), list("operators"), list("values"));
+        let rows = list("matches");
+        assert_eq!(rows.len(), properties.len());
+        let mut expectations = Vec::from_iter(
+            list("groups")
+                .iter()
+                .map(|case| (case["filter"].clone(), case["matches"] == true)),
+        );
+        for (property, row) in properties.iter().zip(rows) {
+            let row = row.as_str().unwrap();
+            assert_eq!(row.len(), operators.len() * values.len());
+            let clauses = operators
+                .iter()
+                .flat_map(|operator| values.iter().map(move |value| (operator, value)));
+            for ((operator, value), matched) in clauses.zip(row.chars()) {
+                let filter = json!({
+                    "conjunction": "and",
+                    "clauses": [{ "property": property, "operator": operator, "value": value }],
+                });
+                expectations.push((filter, matched == '1'));
+            }
+        }
+        let failures: Vec<String> = expectations
+            .into_iter()
+            .filter_map(|(case, expected)| {
+                let filter: Filter = serde_json::from_value(case.clone()).unwrap();
                 let matches = filter.matches(&event);
-                (Value::Bool(matches) != case["matches"])
-                    .then(|| format!("{} matched {matches}", case["filter"]))
+                (matches != expected).then(|| format!("{case} matched {matches}"))
             })
             .collect();
 

@@ -116,32 +116,60 @@ event = Event(
     timestamp=datetime.fromisoformat(EVENT["timestamp"]).astimezone(UTC),
     user_metadata=EVENT["metadata"],
 )
-filters = [
-    {
-        "conjunction": "and",
-        "clauses": [{"property": property, "operator": operator, "value": value}],
-    }
-    for property in PROPERTIES
-    for operator in OPERATORS
-    for value in VALUES
-] + GROUPS
+
+
+def matches(filter: dict[str, Any]) -> bool:
+    return Filter.model_validate(filter).matches(event)
+
+
+def lines(items: list[Any]) -> str:
+    return "[\n" + ",\n".join("  " + json.dumps(item) for item in items) + "\n ]"
+
+
 output = {
-    "event": EVENT,
-    "filters": [
-        {"filter": filter, "matches": Filter.model_validate(filter).matches(event)}
-        for filter in filters
-    ],
-    "aggregations": [
-        {
-            "aggregation": aggregation,
-            "value": getattr(
-                AggregationTypeAdapter.validate_python(aggregation),
-                "get_value",
-                lambda event: None,
-            )(event),
-        }
-        for aggregation in AGGREGATIONS
-    ],
+    "event": json.dumps(EVENT),
+    "properties": json.dumps(PROPERTIES),
+    "operators": json.dumps(OPERATORS),
+    "values": json.dumps(VALUES),
+    # One row per property, with one character per operator and value pair, in
+    # order: 1 when the event matches the clause.
+    "matches": lines(
+        [
+            "".join(
+                "1"
+                if matches(
+                    {
+                        "conjunction": "and",
+                        "clauses": [
+                            {"property": property, "operator": operator, "value": value}
+                        ],
+                    }
+                )
+                else "0"
+                for operator in OPERATORS
+                for value in VALUES
+            )
+            for property in PROPERTIES
+        ]
+    ),
+    "groups": lines([{"filter": group, "matches": matches(group)} for group in GROUPS]),
+    "aggregations": lines(
+        [
+            {
+                "aggregation": aggregation,
+                "value": getattr(
+                    AggregationTypeAdapter.validate_python(aggregation),
+                    "get_value",
+                    lambda event: None,
+                )(event),
+            }
+            for aggregation in AGGREGATIONS
+        ]
+    ),
 }
 path = Path(__file__).parent / "reducer_cases.json"
-path.write_text(json.dumps(output, indent=1) + "\n")
+path.write_text(
+    "{\n"
+    + ",\n".join(f" {json.dumps(key)}: {value}" for key, value in output.items())
+    + "\n}\n"
+)

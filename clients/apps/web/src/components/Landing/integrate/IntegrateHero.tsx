@@ -2,7 +2,6 @@ import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { BackdropPanel } from './Backdrop'
-import { SurfaceCards } from './SurfaceCards'
 import { McpSession } from './McpSession'
 
 const DOCS_HREF = '/docs/integrate/sdk/introduction'
@@ -14,7 +13,6 @@ export const IntegrateHero = () => (
     paddingTop={{ base: 'm', md: '3xl' }}
     paddingBottom={{ base: '3xl', md: '5xl' }}
     flexDirection="column"
-    rowGap={{ base: '4xl', md: '5xl' }}
   >
     <Grid
       templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
@@ -50,6 +48,5 @@ export const IntegrateHero = () => (
         <McpSession />
       </BackdropPanel>
     </Grid>
-    <SurfaceCards />
   </Box>
 )

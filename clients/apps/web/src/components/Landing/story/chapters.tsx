@@ -1,5 +1,6 @@
 import { Chapter } from '../Chapter'
-import { AgentsFigure } from './AgentsFigure'
+import { DocsLink } from '../integrate/DocsLink'
+import { QuickstartFigure } from '../integrate/Quickstart'
 import { ChargeFigure } from './ChargeFigure'
 import { UnderstandFigure } from './UnderstandFigure'
 
@@ -36,10 +37,11 @@ export const Agents = () => (
   <Chapter
     id="agents"
     name="05 Agents"
-    title="Run billing from your agent"
-    subtitle="Polar in Claude, Cursor and ChatGPT over MCP"
-    description="Connect the Polar MCP server and ask your agent about customers, usage and revenue, or have it create products, discounts and refunds. Signed in with OAuth, no API keys to paste."
+    title="Billing, set up by your agent"
+    subtitle="Three commands from install to checkout"
+    description="Install the Polar CLI, let it give your coding agent the Polar MCP server and skills, then ask for billing. The agent signs you up, creates the products and wires checkout and webhooks with the SDK."
+    cta={<DocsLink href="/integrate" label="Explore integrations" />}
   >
-    <AgentsFigure />
+    <QuickstartFigure base="/integrate" />
   </Chapter>
 )

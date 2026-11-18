@@ -126,7 +126,7 @@ jobs:
 
       - name: Test SDK E2E scenarios
         working-directory: ./sdk/e2e
-        run: just test
+        run: just test-prebuilt
 
       - name: Verify bundled Python SDK skill
         working-directory: ./sdk/python
@@ -142,7 +142,7 @@ jobs:
         working-directory: ./sdk/typescript
         run: |
           mkdir -p packed
-          pnpm pack --pack-destination packed
+          pnpm pack --ignore-scripts --pack-destination packed
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/SKILL.md'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/agents/openai.yaml'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/migration-from-v0.md'

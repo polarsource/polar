@@ -5,6 +5,7 @@ from sqlalchemy import exists, select
 from polar import tasks  # noqa: F401
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization, OrganizationDomain
+from polar.models.organization import OrganizationStatus
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
@@ -31,6 +32,7 @@ async def backfill_payment_method_domains(
         select(Organization)
         .where(
             Organization.deleted_at.is_(None),
+            Organization.status == OrganizationStatus.ACTIVE,
             exists().where(
                 OrganizationDomain.organization_id == Organization.id,
                 OrganizationDomain.verified_at.is_not(None),

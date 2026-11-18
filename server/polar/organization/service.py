@@ -779,6 +779,14 @@ class OrganizationService:
         resend_service.on_organization_status_changed(
             organization.id, previous_status, status
         )
+        if (
+            status == OrganizationStatus.ACTIVE
+            and previous_status != OrganizationStatus.ACTIVE
+        ):
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=organization.id,
+            )
 
     async def reset_onboarding_for_review(
         self,

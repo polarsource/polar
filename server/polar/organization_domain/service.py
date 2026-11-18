@@ -18,6 +18,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
+from polar.models.organization import OrganizationStatus
 from polar.organization.embed_hosts import (
     WILDCARD_PREFIX,
     is_shared_host,
@@ -177,7 +178,10 @@ class OrganizationDomainService:
     ) -> Sequence[str]:
         """Stripe shows Apple Pay and Google Pay only on registered domains, and
         takes no wildcards, so each embed host under a verified domain goes in
-        alone. Without `embed_hosts`, takes every embed host."""
+        alone. Without `embed_hosts`, takes every embed host. Only approved
+        organizations register."""
+        if organization.status != OrganizationStatus.ACTIVE:
+            return []
         repository = OrganizationDomainRepository.from_session(session)
         verified_domains = [
             organization_domain.domain

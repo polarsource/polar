@@ -6413,3 +6413,16 @@ class TestSetStatus:
         on_status_changed.assert_called_once_with(
             organization.id, OrganizationStatus.ACTIVE, OrganizationStatus.DENIED
         )
+
+    async def test_approval_registers_payment_method_domains(
+        self, mocker: MockerFixture, organization: Organization
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+
+        organization_service.set_status(organization, OrganizationStatus.ACTIVE)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.register_organization_payment_method_domains",
+            organization_id=organization.id,
+        )

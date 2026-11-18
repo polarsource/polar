@@ -529,7 +529,8 @@ jobs:
   deploy-ecs-test:
     name: "Deploy ECS Services to Test 🧰"
     needs: [changes, build, deploy-test]
-    if: always() && !failure() && !cancelled() && needs.build.result == 'success' && needs.deploy-test.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    # Main only: `build` pushes :latest and the CI role trusts only main.
+    if: always() && !failure() && !cancelled() && github.ref == 'refs/heads/main' && needs.build.result == 'success' && needs.deploy-test.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: read

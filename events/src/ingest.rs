@@ -10,7 +10,7 @@ use axum::{
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::json;
-use sqlx::{PgConnection, types::Json};
+use sqlx::{PgConnection, PgPool, types::Json};
 use uuid::Uuid;
 
 use crate::{
@@ -28,6 +28,12 @@ pub struct IngestResponse {
     pub duplicates: usize,
 }
 
+pub struct StagingRequest<'a> {
+    pub organization_id: Uuid,
+    pub events: &'a [EventCreate],
+    pub event_types: &'a HashMap<String, Uuid>,
+}
+
 pub struct StagedEvents<'a> {
     pub inserted: Vec<&'a EventCreate>,
     pub duplicates: usize,
@@ -39,6 +45,7 @@ pub enum IngestError {
     InvalidReferences(Vec<ValidationError>),
     EventTypeUnavailable,
     Overloaded,
+    WriteFailed,
     Database(sqlx::Error),
     Interrupted(tokio::task::JoinError),
     TimedOut,
@@ -95,6 +102,7 @@ impl IntoResponse for IngestError {
                     "Storing the events took too long. None of them were stored.",
                 )
             }
+            Self::WriteFailed => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             Self::Interrupted(error) => {
                 tracing::error!(%error, "event ingestion task failed");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -108,7 +116,7 @@ impl IntoResponse for IngestError {
 }
 
 pub async fn validate_references(
-    connection: &mut PgConnection,
+    db: &PgPool,
     organization_id: Uuid,
     events: &[EventCreate],
 ) -> Result<(), IngestError> {
@@ -126,7 +134,7 @@ pub async fn validate_references(
     }
 
     let customers = existing_ids(
-        connection,
+        db,
         "SELECT id FROM customers \
          WHERE deleted_at IS NULL AND id = ANY($1) AND organization_id = $2",
         customer_ids,
@@ -134,7 +142,7 @@ pub async fn validate_references(
     )
     .await?;
     let members = existing_ids(
-        connection,
+        db,
         "SELECT id FROM members \
          WHERE deleted_at IS NULL AND id = ANY($1) AND organization_id = $2",
         member_ids,
@@ -219,25 +227,31 @@ pub async fn resolve_event_types(
 
 pub async fn insert_staged_events<'a>(
     connection: &mut PgConnection,
-    organization_id: Uuid,
-    events: &'a [EventCreate],
-    event_types: &HashMap<String, Uuid>,
-) -> Result<StagedEvents<'a>, IngestError> {
-    if events.is_empty() {
-        return Ok(StagedEvents {
+    requests: &[StagingRequest<'a>],
+) -> Result<Vec<StagedEvents<'a>>, IngestError> {
+    let rows = Vec::from_iter(
+        requests
+            .iter()
+            .flat_map(|request| request.events.iter().map(move |event| (request, event))),
+    );
+    if rows.is_empty() {
+        return Ok(Vec::from_iter(requests.iter().map(|_| StagedEvents {
             inserted: Vec::new(),
             duplicates: 0,
-        });
+        })));
     }
 
-    let ids = Vec::from_iter(events.iter().map(|_| Uuid::new_v4()));
-    let mut event_type_ids = Vec::with_capacity(events.len());
-    let mut customer_ids = Vec::with_capacity(events.len());
-    let mut external_customer_ids = Vec::with_capacity(events.len());
-    let mut member_ids = Vec::with_capacity(events.len());
-    let mut external_member_ids = Vec::with_capacity(events.len());
-    for event in events {
-        let event_type_id = event_types
+    let ids = Vec::from_iter(rows.iter().map(|_| Uuid::new_v4()));
+    let mut organization_ids = Vec::with_capacity(rows.len());
+    let mut event_type_ids = Vec::with_capacity(rows.len());
+    let mut customer_ids = Vec::with_capacity(rows.len());
+    let mut external_customer_ids = Vec::with_capacity(rows.len());
+    let mut member_ids = Vec::with_capacity(rows.len());
+    let mut external_member_ids = Vec::with_capacity(rows.len());
+    for (request, event) in &rows {
+        organization_ids.push(request.organization_id);
+        let event_type_id = request
+            .event_types
             .get(&event.name)
             .ok_or(IngestError::EventTypeUnavailable)?;
         event_type_ids.push(*event_type_id);
@@ -269,42 +283,45 @@ pub async fn insert_staged_events<'a>(
              external_customer_id, member_id, external_member_id, external_id, \
              pending_parent_external_id, event_type_id, user_metadata\
          ) \
-         SELECT new.id, new.ingested_at, new.timestamp, new.name, 'user', $1, new.customer_id, \
-             new.external_customer_id, new.member_id, new.external_member_id, new.external_id, \
-             new.pending_parent_external_id, new.event_type_id, new.user_metadata \
+         SELECT new.id, new.ingested_at, new.timestamp, new.name, 'user', new.organization_id, \
+             new.customer_id, new.external_customer_id, new.member_id, new.external_member_id, \
+             new.external_id, new.pending_parent_external_id, new.event_type_id, \
+             new.user_metadata \
          FROM UNNEST(\
-             $2::uuid[], $3::timestamptz[], $4::text[], $5::uuid[], $6::text[], $7::uuid[], \
-             $8::text[], $9::text[], $10::text[], $11::uuid[], $12::jsonb[], \
+             $1::uuid[], $2::uuid[], $3::timestamptz[], $4::text[], $5::uuid[], $6::text[], \
+             $7::uuid[], $8::text[], $9::text[], $10::text[], $11::uuid[], $12::jsonb[], \
              $13::timestamptz[]\
          ) AS new (\
-             id, timestamp, name, customer_id, external_customer_id, member_id, \
+             organization_id, id, timestamp, name, customer_id, external_customer_id, member_id, \
              external_member_id, external_id, pending_parent_external_id, event_type_id, \
              user_metadata, ingested_at\
          ) \
          ON CONFLICT (organization_id, external_id) WHERE external_id IS NOT NULL DO NOTHING \
          RETURNING id, external_id",
     )
-    .bind(organization_id)
+    .bind(organization_ids)
     .bind(&ids)
-    .bind(Vec::from_iter(events.iter().map(|event| event.timestamp)))
     .bind(Vec::from_iter(
-        events.iter().map(|event| event.name.as_str()),
+        rows.iter().map(|(_, event)| event.timestamp),
+    ))
+    .bind(Vec::from_iter(
+        rows.iter().map(|(_, event)| event.name.as_str()),
     ))
     .bind(customer_ids)
     .bind(external_customer_ids)
     .bind(member_ids)
     .bind(external_member_ids)
     .bind(Vec::from_iter(
-        events.iter().map(|event| event.external_id.as_deref()),
+        rows.iter().map(|(_, event)| event.external_id.as_deref()),
     ))
     .bind(Vec::from_iter(
-        events.iter().map(|event| event.parent_id.as_deref()),
+        rows.iter().map(|(_, event)| event.parent_id.as_deref()),
     ))
     .bind(event_type_ids)
     .bind(Vec::from_iter(
-        events.iter().map(|event| Json(&event.metadata)),
+        rows.iter().map(|(_, event)| Json(&event.metadata)),
     ))
-    .bind(Vec::from_iter(events.iter().map(|_| Utc::now())))
+    .bind(Vec::from_iter(rows.iter().map(|_| Utc::now())))
     .fetch_all(&mut *connection)
     .await?;
 
@@ -331,16 +348,21 @@ pub async fn insert_staged_events<'a>(
         }
     }
 
-    let inserted = Vec::from_iter(
-        ids.iter()
-            .zip(events)
-            .filter(|(id, _)| inserted_ids.contains(*id))
-            .map(|(_, event)| event),
-    );
-    Ok(StagedEvents {
-        duplicates: events.len() - inserted.len(),
-        inserted,
-    })
+    let mut ids = ids.iter();
+    let mut staged = Vec::with_capacity(requests.len());
+    for request in requests {
+        let mut inserted = Vec::new();
+        for (event, id) in request.events.iter().zip(&mut ids) {
+            if inserted_ids.contains(id) {
+                inserted.push(event);
+            }
+        }
+        staged.push(StagedEvents {
+            duplicates: request.events.len() - inserted.len(),
+            inserted,
+        });
+    }
+    Ok(staged)
 }
 
 async fn select_event_types(
@@ -360,7 +382,7 @@ async fn select_event_types(
 }
 
 async fn existing_ids(
-    connection: &mut PgConnection,
+    db: &PgPool,
     query: &'static str,
     ids: HashSet<Uuid>,
     organization_id: Uuid,
@@ -371,7 +393,7 @@ async fn existing_ids(
     sqlx::query_scalar(query)
         .bind(Vec::from_iter(ids))
         .bind(organization_id)
-        .fetch_all(connection)
+        .fetch_all(db)
         .await
         .map(HashSet::from_iter)
 }
@@ -560,19 +582,34 @@ mod tests {
         .await
         .unwrap();
 
-        let staged = insert_staged_events(&mut transaction, organization_id, &events, &event_types)
+        let request = |events| StagingRequest {
+            organization_id,
+            events,
+            event_types: &event_types,
+        };
+        let staged = insert_staged_events(&mut transaction, &[request(&events)])
             .await
             .ok()
-            .unwrap();
-        let again = insert_staged_events(
+            .unwrap()
+            .remove(0);
+        let batch = [
+            external(Some("events-test-batch"), None),
+            external(None, None),
+            external(Some("events-test-batch"), None),
+        ];
+        let batched = insert_staged_events(
             &mut transaction,
-            organization_id,
-            &events[..1],
-            &event_types,
+            &[
+                request(&events[..1]),
+                request(&batch[..2]),
+                request(&[]),
+                request(&batch[2..]),
+            ],
         )
         .await
         .ok()
         .unwrap();
+        let again = &batched[0];
         let row: (String, Option<String>, Option<String>, Uuid, Value, String) = sqlx::query_as(
             "SELECT source, pending_parent_external_id, external_member_id, event_type_id, \
                  user_metadata, external_customer_id \
@@ -586,6 +623,14 @@ mod tests {
 
         assert_eq!((staged.inserted.len(), staged.duplicates), (2, 2));
         assert_eq!((again.inserted.len(), again.duplicates), (0, 1));
+        assert_eq!(
+            Vec::from_iter(
+                batched[1..]
+                    .iter()
+                    .map(|staged| (staged.inserted.len(), staged.duplicates))
+            ),
+            [(2, 0), (0, 0), (0, 1)]
+        );
         assert_eq!(
             row,
             (
@@ -603,10 +648,12 @@ mod tests {
     #[tokio::test]
     #[ignore = "needs the local development database"]
     async fn rejects_references_outside_the_organization() {
-        let (mut connection, organization_id) = local_database().await;
+        let (_, organization_id) = local_database().await;
+        let config = crate::config::Config::from_env().unwrap();
+        let db = PgPool::connect_with(config.postgres).await.unwrap();
         let events = [event(None, polar(UNKNOWN, Some(UNKNOWN)))];
 
-        let result = validate_references(&mut connection, organization_id, &events).await;
+        let result = validate_references(&db, organization_id, &events).await;
 
         assert!(
             matches!(result, Err(IngestError::InvalidReferences(errors)) if errors[0].kind == "customer_id")

@@ -1,6 +1,7 @@
 pub mod app;
 mod auth;
 mod aws;
+mod batch;
 mod client_ip;
 pub mod config;
 mod event;

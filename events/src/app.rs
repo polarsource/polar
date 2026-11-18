@@ -18,36 +18,34 @@ use chrono::Utc;
 use redis::aio::ConnectionManager;
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::{PgPool, Postgres, SqlSafeStr, Transaction, postgres::PgPoolOptions};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use tokio::{
     sync::Semaphore,
     time::{Instant, MissedTickBehavior},
 };
 use tokio_util::task::TaskTracker;
 use tower_http::{timeout::TimeoutLayer, trace::TraceLayer};
-use tracing::{Instrument, field::Empty};
+use tracing::Instrument;
 use uuid::Uuid;
 
 use crate::{
     auth::{self, AuthSettings, OrganizationAuth},
     aws,
+    batch::{Batcher, Submission, Writer},
     client_ip::{self, TrustedProxies},
     config::{self, Config},
     event::{self, EventCreate},
     hash_secrets::{self, HashSecrets},
     ingest::{self, EventTypeCache, IngestError, IngestResponse},
     jobs::{self, SqsQueue, SqsSettings},
-    outpost::{self, ReducerBucketChange},
     rate_limit::{self, RateLimiter},
-    reducer::{self, ActiveBuckets},
+    reducer::{self, ActiveReducers},
     telemetry,
 };
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const WRITE_TIMEOUT: Duration = Duration::from_secs(25);
-const BEGIN_WITH_STATEMENT_TIMEOUT: &str = "BEGIN; SET LOCAL statement_timeout = 10000";
 const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
-const INGEST_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(1);
 const MAX_BACKGROUND_TASKS: usize = 256;
 const TRUE_CLIENT_IP: &str = "true-client-ip";
 const X_FORWARDED_FOR: &str = "x-forwarded-for";
@@ -73,6 +71,7 @@ pub struct AppState {
     pub cap_token_usage_records: bool,
     pub trusted_proxies: Arc<TrustedProxies>,
     pub event_types: Arc<EventTypeCache>,
+    pub batcher: Batcher,
 }
 
 impl AppState {
@@ -133,9 +132,21 @@ impl AppState {
                 config.secret,
             ));
         }
+        let tasks = TaskTracker::new();
+        let background = Arc::new(Semaphore::new(MAX_BACKGROUND_TASKS));
+        let batcher = Batcher::start(
+            config.postgres_pool_size,
+            Writer {
+                db: db.clone(),
+                redis: redis.clone(),
+                tasks: tasks.clone(),
+                background: background.clone(),
+            },
+        );
         Ok(Self {
             sqs,
-            background: Arc::new(Semaphore::new(MAX_BACKGROUND_TASKS)),
+            background,
+            batcher,
             rate_limiter: Arc::new(RateLimiter::new(&config.environment)),
             cap_token_usage_records: config.environment == "test",
             trusted_proxies: Arc::new(config.trusted_proxies),
@@ -144,7 +155,7 @@ impl AppState {
             redis,
             redis_client,
             auth,
-            tasks: TaskTracker::new(),
+            tasks,
         })
     }
 }
@@ -284,8 +295,8 @@ async fn ingest(
         return Err(IngestError::StagedIngestDisabled);
     }
 
-    // A dropped connection or the request timeout cancels this handler: the write runs in its
-    // own task so it never stops between the commit and updating the Redis buckets.
+    // A dropped connection or the request timeout cancels this handler: the request carries on
+    // in its own task so its token usage is still recorded once the write commits.
     let response = state
         .tasks
         .clone()
@@ -312,62 +323,34 @@ async fn store_events(
     WriteDeadline(deadline): WriteDeadline,
 ) -> Result<IngestResponse, IngestError> {
     // The deadline counts from the request's arrival and leaves the commit a margin before
-    // the request times out. The Redis buckets only learn about events Postgres has committed.
-    let written = tokio::time::timeout_at(deadline, write_events(&state, organization_id, &events))
-        .await
-        .map_err(|_| IngestError::TimedOut)??;
-    written
-        .transaction
-        .commit()
-        .instrument(tracing::info_span!("commit"))
+    // the request times out.
+    let (reducers, event_types) =
+        tokio::time::timeout_at(deadline, prepare(&state, organization_id, &events))
+            .await
+            .map_err(|_| IngestError::TimedOut)??;
+    let response = state
+        .batcher
+        .submit(Submission {
+            organization_id,
+            events,
+            event_types,
+            reducers,
+            deadline,
+        })
+        .instrument(tracing::info_span!("write"))
         .await?;
-    if let Some(event_types) = written.resolved_event_types {
-        state.event_types.store(organization_id, event_types);
-    }
     auth::record_token_usage(&state, token_id);
-
-    let mut redis = state.redis.clone();
-    if let Some(active_buckets) = written.active_buckets {
-        active_buckets
-            .apply(&mut redis, organization_id)
-            .instrument(tracing::info_span!("update_active_buckets"))
-            .await;
-    }
-    let (tasks, background) = (state.tasks.clone(), state.background.clone());
-    let response = written.response;
-    let notify = async move {
-        outpost::publish(&mut redis, organization_id, &written.outpost_changes).await;
-    }
-    .instrument(telemetry::background_span("notify_reducer_changes"));
-    // Sent in the background unless too much already is: then the request waits, and a slow
-    // Redis slows ingestion down instead of piling work up in memory.
-    match background.try_acquire_owned() {
-        Ok(permit) => {
-            tasks.spawn(async move {
-                notify.await;
-                drop(permit);
-            });
-        }
-        Err(_) => notify.await,
-    }
+    let request_span = tracing::Span::current();
+    request_span.record("inserted_events", response.inserted);
+    request_span.record("skipped_duplicates", response.duplicates);
     Ok(response)
 }
 
-struct WrittenEvents {
-    transaction: Transaction<'static, Postgres>,
-    response: IngestResponse,
-    resolved_event_types: Option<HashMap<String, Uuid>>,
-    active_buckets: Option<ActiveBuckets>,
-    outpost_changes: Vec<ReducerBucketChange>,
-}
-
-async fn write_events(
+async fn prepare(
     state: &AppState,
     organization_id: Uuid,
     events: &[EventCreate],
-) -> Result<WrittenEvents, IngestError> {
-    // A statement stuck behind a bucket lock must not pin a pooled connection for long after
-    // the write is abandoned.
+) -> Result<(ActiveReducers, HashMap<String, Uuid>), IngestError> {
     let reducers = reducer::load_active_reducers(
         &state.db,
         &state.redis_client,
@@ -376,68 +359,23 @@ async fn write_events(
     )
     .instrument(tracing::info_span!("load_active_reducers"))
     .await?;
-    let connection = tokio::time::timeout(INGEST_ACQUIRE_TIMEOUT, state.db.acquire())
-        .instrument(tracing::info_span!("acquire_connection"))
-        .await
-        .map_err(|_| IngestError::Overloaded)??;
-    let mut transaction = Transaction::begin(
-        connection,
-        Some(BEGIN_WITH_STATEMENT_TIMEOUT.into_sql_str()),
-    )
-    .instrument(tracing::info_span!("begin"))
-    .await?;
-    ingest::validate_references(&mut transaction, organization_id, events)
+    ingest::validate_references(&state.db, organization_id, events)
         .instrument(tracing::info_span!("validate_references"))
         .await?;
-    let (event_types, resolved_event_types) =
-        match state.event_types.lookup(organization_id, events) {
-            Some(event_types) => (event_types, None),
-            None => {
-                let event_types =
-                    ingest::resolve_event_types(&mut transaction, organization_id, events).await?;
-                (event_types.clone(), Some(event_types))
-            }
-        };
-    let staged =
-        ingest::insert_staged_events(&mut transaction, organization_id, events, &event_types)
-            .instrument(tracing::info_span!("insert_staged_events"))
-            .await?;
-    let request_span = tracing::Span::current();
-    request_span.record("inserted_events", staged.inserted.len());
-    request_span.record("skipped_duplicates", staged.duplicates);
-
-    let now = Utc::now();
-    let (active_buckets, outpost_changes) = if staged.inserted.is_empty() {
-        (None, Vec::new())
-    } else {
-        let span = tracing::info_span!(
-            "rollup_reducer_buckets",
-            organization_count = 1,
-            event_count = staged.inserted.len(),
-            rolled_up_buckets = Empty,
-        );
-        let rollup = reducer::rollup(
-            &mut transaction,
-            organization_id,
-            &reducers,
-            &staged.inserted,
-            now,
-        )
-        .instrument(span.clone())
-        .await?;
-        span.record("rolled_up_buckets", rollup.bucket_count);
-        (Some(rollup.active_buckets), rollup.outpost_changes)
+    let event_types = match state.event_types.lookup(organization_id, events) {
+        Some(event_types) => event_types,
+        None => {
+            let mut connection = state.db.acquire().await?;
+            let event_types = ingest::resolve_event_types(&mut connection, organization_id, events)
+                .instrument(tracing::info_span!("resolve_event_types"))
+                .await?;
+            state
+                .event_types
+                .store(organization_id, event_types.clone());
+            event_types
+        }
     };
-    Ok(WrittenEvents {
-        response: IngestResponse {
-            inserted: staged.inserted.len(),
-            duplicates: staged.duplicates,
-        },
-        transaction,
-        resolved_event_types,
-        active_buckets,
-        outpost_changes,
-    })
+    Ok((reducers, event_types))
 }
 
 fn is_json(headers: &HeaderMap) -> bool {

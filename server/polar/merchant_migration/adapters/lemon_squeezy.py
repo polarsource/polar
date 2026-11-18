@@ -504,7 +504,10 @@ class LemonSqueezyAdapter:
         cancelled = bool(attributes.get("cancelled"))
         price_id = self._price_id(item, attributes["variant_id"])
         current_period_end = parse_datetime(
-            attributes.get("ends_at") if cancelled else attributes.get("renews_at")
+            attributes.get("ends_at")
+            if cancelled
+            else (status == "on_trial" and attributes.get("trial_ends_at"))
+            or attributes.get("renews_at")
         )
         redemptions = discounts_by_order.get(str(attributes["order_id"]), [])
         discount_ids = [

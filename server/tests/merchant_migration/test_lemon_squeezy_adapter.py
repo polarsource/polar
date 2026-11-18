@@ -425,6 +425,7 @@ class TestGetSubscription:
         assert subscription.trialing is True
         assert subscription.price_source_id == "21"
         assert subscription.current_period_start == datetime(2026, 11, 1, tzinfo=UTC)
+        assert subscription.current_period_end == datetime(2026, 12, 1, tzinfo=UTC)
 
     async def test_paypal_must_be_reentered(self) -> None:
         adapter, _ = _adapter(

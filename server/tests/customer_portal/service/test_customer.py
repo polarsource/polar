@@ -588,3 +588,112 @@ class TestUpdate:
         assert not mock_validate.called
         assert updated_customer.tax_id is not None
         assert updated_customer.tax_id[0] == "FR61954506077"
+
+    @pytest.mark.parametrize(
+        ("billing_country", "ip_country", "default_payment_method", "expected_event"),
+        [
+            pytest.param("SE", "UG", None, None, id="country unchanged"),
+            pytest.param(
+                "UG", "UG", ("card", {"country": "SE"}), None, id="ip confirms"
+            ),
+            pytest.param(
+                "UG", "SE", ("card", {"country": "UG"}), None, id="card confirms"
+            ),
+            pytest.param(
+                "BE",
+                "SE",
+                ("bancontact", {}),
+                None,
+                id="implied payment method country confirms",
+            ),
+            pytest.param("GP", "FR", None, None, id="territory seen as parent"),
+            pytest.param(
+                "UG",
+                "SE",
+                ("card", {"country": "SE"}),
+                "customer_portal.billing_country_mismatch",
+                id="no match",
+            ),
+            pytest.param(
+                "UG",
+                None,
+                None,
+                "customer_portal.billing_country_unverified",
+                id="no known country",
+            ),
+        ],
+    )
+    async def test_billing_country_mismatch_is_only_logged(
+        self,
+        billing_country: str,
+        ip_country: str | None,
+        default_payment_method: tuple[str, dict[str, str]] | None,
+        expected_event: str | None,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        log_mock = mocker.patch("polar.customer_portal.service.customer.log")
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("SE")),
+        )
+        if default_payment_method is not None:
+            type, method_metadata = default_payment_method
+            customer.default_payment_method = await create_payment_method(
+                save_fixture, customer, type=type, method_metadata=method_metadata
+            )
+            await save_fixture(customer)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerPortalCustomerUpdate(
+                billing_address=AddressInput(
+                    country=CountryAlpha2Input(billing_country)
+                )
+            ),
+            ip_country=ip_country,
+        )
+
+        assert updated_customer.billing_address is not None
+        assert updated_customer.billing_address.country == billing_country
+        if expected_event is None:
+            log_mock.info.assert_not_called()
+        else:
+            log_mock.info.assert_called_once_with(
+                expected_event,
+                customer_id=str(customer.id),
+                organization_id=str(organization.id),
+            )
+
+    async def test_billing_country_confirmed_by_new_default_payment_method(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        log_mock = mocker.patch("polar.customer_portal.service.customer.log")
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("SE")),
+        )
+        payment_method = await create_payment_method(
+            save_fixture, customer, method_metadata={"country": "UG"}
+        )
+
+        await customer_service.update(
+            session,
+            customer,
+            CustomerPortalCustomerUpdate(
+                billing_address=AddressInput(country=CountryAlpha2Input("UG")),
+                default_payment_method_id=payment_method.id,
+            ),
+            ip_country="SE",
+        )
+
+        log_mock.info.assert_not_called()

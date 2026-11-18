@@ -142,6 +142,10 @@ BILLING_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 
+def get_billing_countries(billing_country: str) -> set[str]:
+    return {billing_country, *BILLING_COUNTRY_ALIASES.get(billing_country, ())}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Download the IP to Country ASN database."
@@ -155,6 +159,7 @@ if __name__ == "__main__":
 __all__ = [
     "BILLING_COUNTRY_ALIASES",
     "IPGeolocationClient",
+    "get_billing_countries",
     "get_client",
     "get_ip_country",
 ]

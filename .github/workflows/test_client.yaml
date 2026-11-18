@@ -236,6 +236,7 @@ jobs:
       - uses: ./.github/actions/setup-clients
 
       - name: Restore the Next.js build cache
+        id: next-cache-restore
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
@@ -249,6 +250,14 @@ jobs:
         run: |
           touch "$RUNNER_TEMP/build-started"
           pnpm turbo run build $TURBO_SCOPE
+
+      - name: Seed the Next.js build cache
+        if: github.event_name == 'push' && steps.next-cache-restore.outputs.cache-matched-key == ''
+        run: |
+          if [ -z "$(find apps/web/.next/cache apps/orbit/.next/cache -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
+            pnpm --filter web build
+            pnpm --filter orbit-playground build
+          fi
 
       - name: Check whether the build wrote to the Next.js build cache
         id: next-cache

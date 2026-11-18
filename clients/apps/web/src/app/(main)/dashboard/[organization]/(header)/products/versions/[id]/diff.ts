@@ -26,12 +26,13 @@ const isEmpty = (value: unknown) =>
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
-// Prices of the same type, currency and meter read as one price that changed, and so does a product's custom field
+// Prices of the same type, currency and meter read as one price that changed
+// A product's custom field reads as one that changed when only `required` differs
 const pairKey = (value: unknown) =>
   JSON.stringify(
     isObject(value) && 'amount_type' in value
       ? [value.amount_type, value.price_currency, value.meter]
-      : isObject(value) && 'required' in value
+      : isObject(value) && 'field' in value
         ? value.field
         : value,
   )

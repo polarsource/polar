@@ -149,7 +149,7 @@ const UnchangedItems = <T extends { external_id: string }>({
   items: T[]
   noun: string
   nameField: keyof T & string
-  href: (externalId: string) => string | undefined
+  href?: (externalId: string) => string | undefined
   bordered: boolean
 }) => {
   const [expanded, setExpanded] = useState(false)
@@ -208,7 +208,7 @@ const UnchangedItems = <T extends { external_id: string }>({
               borderStyle="solid"
               borderColor="border-primary"
             >
-              <ItemRow href={href(item.external_id)}>
+              <ItemRow href={href?.(item.external_id)}>
                 <ItemName name={String(item[nameField])} muted />
               </ItemRow>
             </Box>
@@ -233,7 +233,7 @@ const DiffSection = <T extends { external_id: string }>({
   before: T[]
   after: T[]
   nameField: keyof T & string
-  href: (externalId: string) => string | undefined
+  href?: (externalId: string) => string | undefined
   format: Format
 }) => {
   const { entries, unchanged } = diffItems(before, after, nameField)
@@ -260,7 +260,7 @@ const DiffSection = <T extends { external_id: string }>({
             borderStyle="solid"
             borderColor="border-primary"
           >
-            <ItemRow href={href(key)}>
+            <ItemRow href={href?.(key)}>
               <ItemName
                 name={String(item[nameField])}
                 removed={change === 'removed'}
@@ -353,7 +353,6 @@ export const VersionDiff = ({
           before={parentConfig?.custom_fields?.map(customFieldFields) ?? []}
           after={config.custom_fields?.map(customFieldFields) ?? []}
           nameField="name"
-          href={() => undefined}
           format={format}
         />
       </Box>

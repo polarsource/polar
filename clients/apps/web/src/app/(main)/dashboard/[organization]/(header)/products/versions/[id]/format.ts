@@ -18,6 +18,7 @@ type Filter = schemas['Filter']
 type CustomField = schemas['ConfigCustomFieldRead']
 type CustomFieldReference = schemas['ConfigProductCustomFieldRead']
 type SelectOption = schemas['CustomFieldSelectOption']
+type Bounds = { ge?: number; le?: number }
 type Settings = {
   payments: { currency: string; tax: schemas['TaxBehaviorOption'] }
 }
@@ -94,7 +95,10 @@ export const meterFields = ({
   ...meter,
 })
 
-// Fields are matched by slug; the bounds read as minimum and maximum
+const isoDate = (seconds: number) =>
+  new Date(seconds * 1000).toISOString().slice(0, 10)
+
+// Fields are matched by slug; the bounds read as minimum and maximum, as dates on a date field
 export const customFieldFields = ({
   slug,
   name,
@@ -102,15 +106,16 @@ export const customFieldFields = ({
   properties,
   ...field
 }: CustomField) => {
-  const { ge, le, ...rest } = properties as { ge?: number; le?: number }
+  const { ge, le, ...rest } = properties as Bounds
+  const isDate = type === 'date'
   return {
     external_id: slug,
     name,
     slug,
     type,
     ...rest,
-    minimum: ge,
-    maximum: le,
+    minimum: isDate && ge ? isoDate(ge) : ge,
+    maximum: isDate && le ? isoDate(le) : le,
     ...field,
   }
 }

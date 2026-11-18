@@ -114,3 +114,15 @@ it('reads a custom field by slug, with its bounds as minimum and maximum', () =>
     'Pro plan (pro)',
   )
 })
+
+it('reads the bounds of a date custom field as dates', () => {
+  expect(
+    customFieldFields({
+      slug: 'go_live',
+      name: 'Go-live date',
+      type: 'date',
+      properties: { ge: 1793491200, le: 1830211200 },
+      metadata: {},
+    }),
+  ).toMatchObject({ minimum: '2026-11-01', maximum: '2027-12-31' })
+})

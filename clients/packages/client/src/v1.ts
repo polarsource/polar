@@ -23526,6 +23526,15 @@ export interface components {
       medias: components['schemas']['ProductMediaFileRead'][]
       organization: components['schemas']['CustomerOrganization']
     }
+    /** CustomerSubscriptionReactivate */
+    CustomerSubscriptionReactivate: {
+      /**
+       * Reactivate
+       * @description Reactivate a subscription whose trial ended.
+       * @constant
+       */
+      reactivate: true
+    }
     /** CustomerSubscriptionResume */
     CustomerSubscriptionResume: {
       /**
@@ -23569,6 +23578,7 @@ export interface components {
       | components['schemas']['CustomerSubscriptionCancel']
       | components['schemas']['CustomerSubscriptionPause']
       | components['schemas']['CustomerSubscriptionResume']
+      | components['schemas']['CustomerSubscriptionReactivate']
       | components['schemas']['CustomerSubscriptionUpdateClear']
     /** CustomerSubscriptionUpdateClear */
     CustomerSubscriptionUpdateClear: {
@@ -29560,6 +29570,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** MissingBillingDetails */
+    MissingBillingDetails: {
+      /**
+       * Error
+       * @example MissingBillingDetails
+       * @constant
+       */
+      error: 'MissingBillingDetails'
+      /** Detail */
+      detail: string
+    }
     /** MissingInvoiceBillingDetails */
     MissingInvoiceBillingDetails: {
       /**
@@ -29612,6 +29633,17 @@ export interface components {
        * @constant
        */
       error: 'NotPermitted'
+      /** Detail */
+      detail: string
+    }
+    /** NotTrialEndedSubscription */
+    NotTrialEndedSubscription: {
+      /**
+       * Error
+       * @example NotTrialEndedSubscription
+       * @constant
+       */
+      error: 'NotTrialEndedSubscription'
       /** Detail */
       detail: string
     }
@@ -49770,7 +49802,7 @@ export interface operations {
           'application/json': components['schemas']['PaymentFailed']
         }
       }
-      /** @description Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization. */
+      /** @description Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, pausing/resuming is not enabled for the organization, or the organization can't renew subscriptions. */
       403: {
         headers: {
           [name: string]: unknown
@@ -49782,6 +49814,7 @@ export interface operations {
             | components['schemas']['UpdateSubscriptionPlanNotAllowed']
             | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
             | components['schemas']['UpdateSubscriptionUnitsNotAllowed']
+            | components['schemas']['PaymentNotReady']
         }
       }
       /** @description Customer subscription was not found. */
@@ -49793,7 +49826,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The subscription has no payment method to charge, or is not scheduled to be canceled. */
+      /** @description The subscription has no payment method to charge, is not scheduled to be canceled, or can't be reactivated: its trial hasn't ended without converting, or the customer has no payment method or complete billing address. */
       409: {
         headers: {
           [name: string]: unknown
@@ -49802,6 +49835,8 @@ export interface operations {
           'application/json':
             | components['schemas']['PaymentMethodRequired']
             | components['schemas']['SubscriptionNotScheduledToCancel']
+            | components['schemas']['NotTrialEndedSubscription']
+            | components['schemas']['MissingBillingDetails']
         }
       }
       /** @description Validation Error */

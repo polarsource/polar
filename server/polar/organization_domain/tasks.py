@@ -50,3 +50,22 @@ async def register_organization_payment_method_domains(
         await organization_domain_service.register_payment_method_domains(
             session, organization
         )
+
+
+@actor(actor_name="organization_domain.unregister_payment_method_domains")
+async def unregister_payment_method_domains(
+    domains: Annotated[list[str], LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        for domain in domains:
+            if await organization_domain_service.is_payment_method_domain_vouched_for(
+                session, domain
+            ):
+                continue
+            payment_method_domain = await stripe_service.get_payment_method_domain(
+                domain
+            )
+            if payment_method_domain is not None and payment_method_domain.enabled:
+                await stripe_service.update_payment_method_domain(
+                    payment_method_domain.id, enabled=False
+                )

@@ -218,6 +218,22 @@ class OrganizationDomainService:
                 domains=domains,
             )
 
+    async def is_payment_method_domain_vouched_for(
+        self, session: AsyncReadSession, domain: str
+    ) -> bool:
+        labels = domain.split(".")
+        parents = [".".join(labels[i:]) for i in range(len(labels))]
+        repository = OrganizationDomainRepository.from_session(session)
+        organization_domains = (
+            await repository.get_all_verified_for_active_organizations(parents)
+        )
+        for organization_domain in organization_domains:
+            if domain in await self.get_payment_method_domains(
+                session, organization_domain.organization
+            ):
+                return True
+        return False
+
     async def reverify(
         self, session: AsyncSession, organization: Organization
     ) -> Sequence[OrganizationDomain]:

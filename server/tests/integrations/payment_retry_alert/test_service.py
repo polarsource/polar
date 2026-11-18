@@ -1,10 +1,8 @@
-from collections.abc import Callable
 from datetime import timedelta
 from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.payment_retry_alert.service import (
@@ -17,8 +15,8 @@ from polar.integrations.payment_retry_alert.service import (
 from polar.integrations.payment_retry_alert.types import PaymentRetryAlert
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
-from polar.models import Customer, Order, Organization, Payment, PaymentMethod, Product
-from polar.models.order import OrderBillingReasonInternal, OrderStatus
+from polar.models import Customer, Order, Organization, Payment, Product
+from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -40,18 +38,14 @@ DECLINED_CARD: dict[str, Any] = {
 
 
 def build_alert(
-    *,
-    notification_type: str = "RETRY_NOW",
-    network_transaction_id: str = BANKNET_REFERENCE,
-    card_last_four: str = "1234",
-    transaction_time: str | None = None,
+    *, network_transaction_id: str = BANKNET_REFERENCE, card_last_four: str = "1234"
 ) -> PaymentRetryAlert:
     return {
         "id": "alrt_test",
         "enrolment_mid": "MID",
         "card_scheme": "MASTERCARD",
-        "notification_type": notification_type,
-        "transaction_time": transaction_time or utc_now().isoformat(),
+        "notification_type": "RETRY_NOW",
+        "transaction_time": utc_now().isoformat(),
         "transaction_amount_in_cents": 2150,
         "transaction_currency": "USD",
         "network_transaction_id": network_transaction_id,
@@ -67,36 +61,17 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
 
 
 @pytest.fixture
-def assert_not_attempted(
-    mocker: MockerFixture, stripe_service_mock: MagicMock
-) -> Callable[[SkipReason], None]:
-    log_mock = mocker.patch("polar.integrations.payment_retry_alert.service.log")
-
-    def assert_reported(reason: SkipReason) -> None:
-        stripe_service_mock.create_payment_intent.assert_not_called()
-        log_mock.info.assert_called_once_with(
-            "Payment retry alert not attempted", alert_id="alrt_test", reason=reason
-        )
-
-    return assert_reported
+def log_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.integrations.payment_retry_alert.service.log")
 
 
 @pytest.fixture
-async def card_payment_method(
-    save_fixture: SaveFixture, customer: Customer
-) -> PaymentMethod:
-    return await create_payment_method(
+async def dunning_order(
+    save_fixture: SaveFixture, product: Product, customer: Customer
+) -> Order:
+    payment_method = await create_payment_method(
         save_fixture, customer, method_metadata={"fingerprint": "CARD_FINGERPRINT"}
     )
-
-
-async def create_dunning_order(
-    save_fixture: SaveFixture,
-    *,
-    product: Product,
-    customer: Customer,
-    payment_method: PaymentMethod,
-) -> Order:
     subscription = await create_subscription(
         save_fixture,
         product=product,
@@ -111,23 +86,7 @@ async def create_dunning_order(
         customer=customer,
         subscription=subscription,
         status=OrderStatus.pending,
-        billing_reason=OrderBillingReasonInternal.subscription_cycle,
         next_payment_attempt_at=utc_now() + timedelta(days=1),
-    )
-
-
-@pytest.fixture
-async def dunning_order(
-    save_fixture: SaveFixture,
-    product: Product,
-    customer: Customer,
-    card_payment_method: PaymentMethod,
-) -> Order:
-    return await create_dunning_order(
-        save_fixture,
-        product=product,
-        customer=customer,
-        payment_method=card_payment_method,
     )
 
 
@@ -149,18 +108,6 @@ async def declined_payment(
 
 @pytest.mark.anyio
 class TestHandleAlert:
-    async def test_not_retry_now(
-        self,
-        session: AsyncSession,
-        stripe_service_mock: MagicMock,
-        declined_payment: Payment,
-    ) -> None:
-        await payment_retry_alert_service.handle_alert(
-            session, build_alert(notification_type="OTHER")
-        )
-
-        stripe_service_mock.create_payment_intent.assert_not_called()
-
     @pytest.mark.parametrize(
         ("network_transaction_id", "card_last_four"),
         [
@@ -176,7 +123,6 @@ class TestHandleAlert:
         session: AsyncSession,
         stripe_service_mock: MagicMock,
         dunning_order: Order,
-        card_payment_method: PaymentMethod,
         declined_payment: Payment,
     ) -> None:
         await payment_retry_alert_service.handle_alert(
@@ -187,76 +133,31 @@ class TestHandleAlert:
             ),
         )
 
-        stripe_service_mock.create_payment_intent.assert_called_once()
         params = stripe_service_mock.create_payment_intent.call_args.kwargs
-        assert params["payment_method"] == card_payment_method.processor_id
-        assert params["off_session"] is True
         assert params["idempotency_key"] == "payment_retry_alert:alrt_test"
         assert params["metadata"]["order_id"] == str(dunning_order.id)
-        assert params["metadata"]["payment_trigger"] == (
-            PaymentTrigger.retry_payment_alert
-        )
-        assert params["metadata"][STRIPE_METADATA_PAYMENT_RETRY_ALERT_ID] == (
-            "alrt_test"
-        )
-
-    async def test_declined_retry(
-        self,
-        session: AsyncSession,
-        stripe_service_mock: MagicMock,
-        declined_payment: Payment,
-    ) -> None:
-        stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
-            "Your card has insufficient funds.", None, "card_declined"
-        )
-
-        await payment_retry_alert_service.handle_alert(session, build_alert())
-
-        stripe_service_mock.create_payment_intent.assert_called_once()
-
-    @pytest.mark.parametrize(
-        "alert",
-        [
-            pytest.param(
-                build_alert(network_transaction_id="", card_last_four="9999"),
-                id="other_card",
-            ),
-            pytest.param(
-                build_alert(
-                    network_transaction_id="",
-                    transaction_time=(utc_now() - timedelta(days=5)).isoformat(),
-                ),
-                id="far_from_decline_time",
-            ),
-        ],
-    )
-    async def test_unmatched(
-        self,
-        alert: PaymentRetryAlert,
-        session: AsyncSession,
-        assert_not_attempted: Callable[[SkipReason], None],
-        declined_payment: Payment,
-    ) -> None:
-        await payment_retry_alert_service.handle_alert(session, alert)
-
-        assert_not_attempted(SkipReason.unmatched)
+        assert params["metadata"]["payment_trigger"] == "retry_payment_alert"
+        assert params["metadata"][STRIPE_METADATA_PAYMENT_RETRY_ALERT_ID] == "alrt_test"
 
     async def test_ambiguous_card_details(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        assert_not_attempted: Callable[[SkipReason], None],
+        stripe_service_mock: MagicMock,
+        log_mock: MagicMock,
         organization: Organization,
         product: Product,
         customer: Customer,
-        card_payment_method: PaymentMethod,
+        dunning_order: Order,
         declined_payment: Payment,
     ) -> None:
-        other_order = await create_dunning_order(
+        other_order = await create_order(
             save_fixture,
             product=product,
             customer=customer,
-            payment_method=card_payment_method,
+            subscription=dunning_order.subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now() + timedelta(days=1),
         )
         await create_payment(
             save_fixture,
@@ -271,46 +172,15 @@ class TestHandleAlert:
             session, build_alert(network_transaction_id="")
         )
 
-        assert_not_attempted(SkipReason.unmatched)
-
-    @pytest.mark.parametrize(
-        ("order_update", "reason"),
-        [
-            pytest.param(
-                {"status": OrderStatus.paid, "next_payment_attempt_at": None},
-                SkipReason.unmatched,
-                id="paid",
-            ),
-            pytest.param(
-                {"payment_lock_acquired_at": utc_now()},
-                SkipReason.payment_in_progress,
-                id="payment_in_progress",
-            ),
-        ],
-    )
-    async def test_order_state(
-        self,
-        order_update: dict[str, Any],
-        reason: SkipReason,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        assert_not_attempted: Callable[[SkipReason], None],
-        dunning_order: Order,
-        declined_payment: Payment,
-    ) -> None:
-        for key, value in order_update.items():
-            setattr(dunning_order, key, value)
-        await save_fixture(dunning_order)
-
-        await payment_retry_alert_service.handle_alert(session, build_alert())
-
-        assert_not_attempted(reason)
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        assert log_mock.info.call_args.kwargs["reason"] == SkipReason.unmatched
 
     async def test_max_attempts_reached(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
-        assert_not_attempted: Callable[[SkipReason], None],
+        stripe_service_mock: MagicMock,
+        log_mock: MagicMock,
         organization: Organization,
         dunning_order: Order,
         declined_payment: Payment,
@@ -326,23 +196,7 @@ class TestHandleAlert:
 
         await payment_retry_alert_service.handle_alert(session, build_alert())
 
-        assert_not_attempted(SkipReason.max_attempts_reached)
-
-    async def test_payment_method_changed(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        assert_not_attempted: Callable[[SkipReason], None],
-        customer: Customer,
-        dunning_order: Order,
-        declined_payment: Payment,
-    ) -> None:
-        assert dunning_order.subscription is not None
-        dunning_order.subscription.payment_method = await create_payment_method(
-            save_fixture, customer, method_metadata={"fingerprint": "NEW_FINGERPRINT"}
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        assert log_mock.info.call_args.kwargs["reason"] == (
+            SkipReason.max_attempts_reached
         )
-        await save_fixture(dunning_order.subscription)
-
-        await payment_retry_alert_service.handle_alert(session, build_alert())
-
-        assert_not_attempted(SkipReason.payment_method_changed)

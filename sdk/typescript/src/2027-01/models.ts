@@ -945,7 +945,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -9203,6 +9203,14 @@ export interface CustomFieldCheckbox {
    */
   organization_id: string;
   /**
+   * ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * Whether this is the current version of the custom field.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: CustomFieldCheckboxProperties;
@@ -9463,6 +9471,14 @@ export interface CustomFieldDate {
    */
   organization_id: string;
   /**
+   * ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * Whether this is the current version of the custom field.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: CustomFieldDateProperties;
@@ -9531,6 +9547,14 @@ export interface CustomFieldNumber {
    */
   organization_id: string;
   /**
+   * ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * Whether this is the current version of the custom field.
+   */
+  is_current: boolean;
+  /**
    * properties
    */
   properties: CustomFieldNumberProperties;
@@ -9598,6 +9622,14 @@ export interface CustomFieldSelect {
    * The ID of the organization owning the custom field.
    */
   organization_id: string;
+  /**
+   * ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * Whether this is the current version of the custom field.
+   */
+  is_current: boolean;
   /**
    * properties
    */
@@ -9676,6 +9708,14 @@ export interface CustomFieldText {
    * The ID of the organization owning the custom field.
    */
   organization_id: string;
+  /**
+   * ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config.
+   */
+  catalog_id: string | null;
+  /**
+   * Whether this is the current version of the custom field.
+   */
+  is_current: boolean;
   /**
    * properties
    */

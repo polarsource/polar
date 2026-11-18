@@ -23173,6 +23173,56 @@
             "description": "Filter by custom field type."
           },
           {
+            "name": "catalog_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid4"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid4"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CatalogID Filter",
+              "description": "Filter by catalog ID."
+            },
+            "description": "Filter by catalog ID."
+          },
+          {
+            "name": "catalog_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/CatalogStatus"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CatalogStatus"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "CatalogStatus Filter",
+              "description": "Filter by catalog status."
+            },
+            "description": "Filter by catalog status."
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -45300,6 +45350,24 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the custom field."
+          },
           "properties": {
             "$ref": "#/components/schemas/CustomFieldCheckboxProperties"
           }
@@ -45314,6 +45382,8 @@
           "slug",
           "name",
           "organization_id",
+          "catalog_id",
+          "is_current",
           "properties"
         ],
         "title": "CustomFieldCheckbox",
@@ -45824,6 +45894,24 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the custom field."
+          },
           "properties": {
             "$ref": "#/components/schemas/CustomFieldDateProperties"
           }
@@ -45838,6 +45926,8 @@
           "slug",
           "name",
           "organization_id",
+          "catalog_id",
+          "is_current",
           "properties"
         ],
         "title": "CustomFieldDate",
@@ -45936,6 +46026,24 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the custom field."
+          },
           "properties": {
             "$ref": "#/components/schemas/CustomFieldNumberProperties"
           }
@@ -45950,6 +46058,8 @@
           "slug",
           "name",
           "organization_id",
+          "catalog_id",
+          "is_current",
           "properties"
         ],
         "title": "CustomFieldNumber",
@@ -46048,6 +46158,24 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the custom field."
+          },
           "properties": {
             "$ref": "#/components/schemas/CustomFieldSelectProperties"
           }
@@ -46062,6 +46190,8 @@
           "slug",
           "name",
           "organization_id",
+          "catalog_id",
+          "is_current",
           "properties"
         ],
         "title": "CustomFieldSelect",
@@ -46193,6 +46323,24 @@
               "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
             ]
           },
+          "catalog_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Id",
+            "description": "ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."
+          },
+          "is_current": {
+            "type": "boolean",
+            "title": "Is Current",
+            "description": "Whether this is the current version of the custom field."
+          },
           "properties": {
             "$ref": "#/components/schemas/CustomFieldTextProperties"
           }
@@ -46207,6 +46355,8 @@
           "slug",
           "name",
           "organization_id",
+          "catalog_id",
+          "is_current",
           "properties"
         ],
         "title": "CustomFieldText",

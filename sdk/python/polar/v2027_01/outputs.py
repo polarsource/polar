@@ -3894,6 +3894,12 @@ class CustomFieldCheckbox:
     organization_id: str
     """The ID of the organization owning the custom field."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
+
     properties: CustomFieldCheckboxProperties
 
 
@@ -3931,6 +3937,12 @@ class CustomFieldDate:
 
     organization_id: str
     """The ID of the organization owning the custom field."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
 
     properties: CustomFieldDateProperties
 
@@ -3974,6 +3986,12 @@ class CustomFieldNumber:
     organization_id: str
     """The ID of the organization owning the custom field."""
 
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
+
     properties: CustomFieldNumberProperties
 
 
@@ -4015,6 +4033,12 @@ class CustomFieldSelect:
 
     organization_id: str
     """The ID of the organization owning the custom field."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
 
     properties: CustomFieldSelectProperties
 
@@ -4062,6 +4086,12 @@ class CustomFieldText:
 
     organization_id: str
     """The ID of the organization owning the custom field."""
+
+    catalog_id: str | None
+    """ID of the catalog that introduced this version of the custom field. None for custom fields not managed by declarative config."""
+
+    is_current: bool
+    """Whether this is the current version of the custom field."""
 
     properties: CustomFieldTextProperties
 

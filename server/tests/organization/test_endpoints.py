@@ -1204,6 +1204,58 @@ class TestGetEmbedStatus:
         json = response.json()
         assert json["embed_hosts"] == ["example.com"]
 
+    @pytest.mark.auth
+    async def test_wallet_hosts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.embed_hosts = [
+            "acme.com",
+            "shop.acme.com:8443",
+            "*.acme.com",
+            "other.com",
+        ]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["wallet_hosts"] == ["acme.com", "shop.acme.com:8443"]
+        assert json["pending_wallet_hosts"] == []
+
+    @pytest.mark.auth
+    async def test_pending_wallet_hosts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        organization.embed_hosts = ["shop.acme.com", "*.acme.com", "other.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["wallet_hosts"] == []
+        assert json["pending_wallet_hosts"] == ["shop.acme.com"]
+
 
 @pytest.mark.anyio
 class TestGetPaymentStatus:

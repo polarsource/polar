@@ -67,7 +67,7 @@ const RESOURCES: Resource[] = [
 export const Api = () => (
   <Chapter
     id="api"
-    name="04 API"
+    name="05 API"
     title="One REST API"
     subtitle="Everything the dashboard can do"
     description="Every resource the dashboard touches, behind versioned endpoints and organization tokens."

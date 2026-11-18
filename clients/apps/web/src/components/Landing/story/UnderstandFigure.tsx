@@ -76,22 +76,6 @@ export const UnderstandFigure = () => {
               </Box>
             ))}
           </Box>
-          <Box
-            marginTop="auto"
-            paddingTop="l"
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-            flexDirection="column"
-            rowGap="s"
-          >
-            <Text variant="caption" color="muted">
-              Attach the cost to the events you already send
-            </Text>
-            <pre className="m-0 overflow-x-auto font-mono text-[13px] leading-6 text-white">
-              {"_cost: { amount: 0.0021, currency: 'usd' }"}
-            </pre>
-          </Box>
         </Sheet>
       </Grid>
     </Window>

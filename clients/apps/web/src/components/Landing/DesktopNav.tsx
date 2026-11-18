@@ -11,7 +11,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { m } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { NavLink } from './NavLink'
 import { NavMenu, NavMenuLink, navMenus } from './desktopNavigation'
 
@@ -37,7 +37,7 @@ export const LandingPageDesktopNavigation = () => {
       width="100%"
       flexDirection="column"
       alignItems="center"
-      paddingVertical="xl"
+      paddingVertical="l"
       paddingHorizontal="3xl"
       backgroundColor="background-primary"
       onMouseLeave={closeMenu}
@@ -59,25 +59,19 @@ export const LandingPageDesktopNavigation = () => {
         alignItems="center"
         justifyContent="between"
       >
-        <Box alignItems="center" columnGap="2xl">
-          <PolarLogotype logoVariant="icon" size={28} href="/" />
-          <Box as="ul" alignItems="center" columnGap="l">
+        <PolarLogotype logoVariant="logotype" size={84} href="/" />
+        {/* the links sit at the true centre, whatever the widths either side */}
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <Box as="ul" alignItems="center" columnGap="2xl">
             {navMenus.map((menu) => (
-              <Fragment key={menu.id}>
-                <Box as="li">
-                  <NavMenuTrigger
-                    menu={menu}
-                    isOpen={openMenuId === menu.id}
-                    onOpen={() => setOpenMenuId(menu.id)}
-                    pathname={pathname}
-                  />
-                </Box>
-                {menu.id === 'features' ? (
-                  <Box as="li" onMouseEnter={closeMenu}>
-                    <NavLink href="/integrate">Integrate</NavLink>
-                  </Box>
-                ) : null}
-              </Fragment>
+              <Box as="li" key={menu.id}>
+                <NavMenuTrigger
+                  menu={menu}
+                  isOpen={openMenuId === menu.id}
+                  onOpen={() => setOpenMenuId(menu.id)}
+                  pathname={pathname}
+                />
+              </Box>
             ))}
             <Box as="li" onMouseEnter={closeMenu}>
               <NavLink href="/blog">Blog</NavLink>
@@ -86,7 +80,7 @@ export const LandingPageDesktopNavigation = () => {
               <NavLink href="/company">Company</NavLink>
             </Box>
           </Box>
-        </Box>
+        </div>
 
         <Box alignItems="center" columnGap="l">
           <Button
@@ -96,7 +90,7 @@ export const LandingPageDesktopNavigation = () => {
           >
             Sign in
           </Button>
-          <GetStartedButton size="default" />
+          <GetStartedButton size="default" condensed />
         </Box>
       </Box>
 

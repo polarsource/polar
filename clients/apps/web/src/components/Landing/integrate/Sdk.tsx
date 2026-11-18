@@ -75,7 +75,7 @@ const Lead = ({
 export const Sdk = () => (
   <Chapter
     id="sdk"
-    name="02 SDK"
+    name="03 SDK"
     title="Built for your framework"
     subtitle="Typed clients underneath"
     description="Start with an adapter for your framework. Underneath sit the typed TypeScript and Python clients for everything else."

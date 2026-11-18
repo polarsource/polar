@@ -48,9 +48,11 @@ export const navMenus: NavMenu[] = [
   {
     id: 'docs',
     title: 'Docs',
+    isActive: (pathname) => pathname.startsWith('/integrate'),
     featured: {
       title: 'Explore Docs',
       items: [
+        { label: 'Integrate', href: '/integrate' },
         {
           label: 'Documentation',
           href: 'https://polar.sh/docs',

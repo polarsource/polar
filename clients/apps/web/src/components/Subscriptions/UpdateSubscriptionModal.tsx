@@ -20,8 +20,8 @@ const UpdateSubscriptionModal = ({
   organization: schemas['Organization']
   hide: () => void
 }) => {
-  const isActive =
-    subscription.status === 'active' || subscription.status === 'trialing'
+  const isActive = subscription.status === 'active'
+  const isTrialing = subscription.status === 'trialing'
   const isSeatBased = !!subscription.seats && subscription.seats > 0
 
   return (
@@ -34,11 +34,11 @@ const UpdateSubscriptionModal = ({
           <TabsList className="mb-8">
             <TabsTrigger value="product">Product</TabsTrigger>
             <TabsTrigger value="discount">Discount</TabsTrigger>
-            {isActive && <TabsTrigger value="trial">Trial</TabsTrigger>}
+            {isTrialing && <TabsTrigger value="trial">Trial</TabsTrigger>}
             {isActive && (
               <TabsTrigger value="billing-period">Billing Period</TabsTrigger>
             )}
-            {isActive && isSeatBased && (
+            {(isActive || isTrialing) && isSeatBased && (
               <TabsTrigger value="seats">Seats</TabsTrigger>
             )}
           </TabsList>

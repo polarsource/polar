@@ -4,6 +4,7 @@ import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import {
   Form,
@@ -14,7 +15,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useFormState } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import { toast } from '../Toast/use-toast'
@@ -35,21 +36,12 @@ export const UpdateSubscriptionTrialForm = ({
     isShown: isConfirmModalShown,
   } = useModal()
 
-  const minDate = useMemo<Date | undefined>(() => {
-    if (subscription.status === 'trialing') {
-      const tomorrow = new Date()
-      tomorrow.setHours(0, 0, 0, 0)
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      return tomorrow
-    }
-    if (subscription.current_period_end) {
-      const next = new Date(subscription.current_period_end)
-      next.setHours(0, 0, 0, 0)
-      next.setDate(next.getDate() + 1)
-      return next
-    }
-    return undefined
-  }, [subscription])
+  const minDate = useMemo<Date>(() => {
+    const tomorrow = new Date()
+    tomorrow.setHours(0, 0, 0, 0)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow
+  }, [])
 
   const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
@@ -57,6 +49,7 @@ export const UpdateSubscriptionTrialForm = ({
     },
   })
   const { control, handleSubmit, setError, reset } = form
+  const { isDirty } = useFormState({ control })
 
   const handleEndTrialNow = useCallback(async () => {
     setIsEndingTrial(true)
@@ -133,89 +126,58 @@ export const UpdateSubscriptionTrialForm = ({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <div className="dark:bg-polar-800 flex flex-col gap-y-4 rounded-2xl bg-gray-50 p-6">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-lg font-medium">
-              {subscription.status === 'trialing'
-                ? 'Update Trial'
-                : 'Add Trial Period'}
-            </h3>
-            <p className="dark:text-polar-500 mt-1 text-sm text-gray-500">
-              {subscription.status === 'trialing'
-                ? 'Set a new trial end date to extend or reduce the current trial period.'
-                : 'Add a trial period by setting a trial end date in the future.'}
-            </p>
-          </div>
+      <Form {...form}>
+        <form className="flex flex-col gap-6" onSubmit={handleSubmit(onSubmit)}>
+          <FormField
+            control={control}
+            name="trial_end"
+            rules={{ required: 'Please select a trial end date' }}
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Trial End Date</FormLabel>
 
-          <Form {...form}>
-            <form
-              className="flex flex-col gap-6"
-              onSubmit={handleSubmit(onSubmit)}
+                  <DateTimePicker
+                    value={
+                      field.value === 'now'
+                        ? undefined
+                        : field.value || undefined
+                    }
+                    onChange={field.onChange}
+                    disabled={{ before: minDate }}
+                  />
+
+                  <FormMessage />
+                  {field.value && field.value !== 'now' && (
+                    <FormDescription>
+                      The trial will end on the selected date and the customer
+                      will be charged for the next billing period.
+                    </FormDescription>
+                  )}
+                </FormItem>
+              )
+            }}
+          />
+
+          <Box columnGap="s">
+            <Button
+              type="submit"
+              loading={updateSubscription.isPending}
+              disabled={!isDirty || updateSubscription.isPending}
             >
-              <FormField
-                control={control}
-                name="trial_end"
-                rules={{ required: 'Please select a trial end date' }}
-                render={({ field }) => {
-                  return (
-                    <FormItem className="flex flex-col gap-y-2">
-                      <FormLabel>Trial End Date</FormLabel>
-
-                      <DateTimePicker
-                        value={
-                          field.value === 'now'
-                            ? undefined
-                            : field.value || undefined
-                        }
-                        onChange={field.onChange}
-                        disabled={minDate ? { before: minDate } : undefined}
-                      />
-
-                      <FormMessage />
-                      {field.value && field.value !== 'now' && (
-                        <FormDescription>
-                          The trial will end on the selected date and the
-                          customer will be charged for the next billing period.
-                        </FormDescription>
-                      )}
-                    </FormItem>
-                  )
-                }}
-              />
-
-              <Button
-                type="submit"
-                loading={updateSubscription.isPending}
-                disabled={updateSubscription.isPending}
-                className="w-fit"
-              >
-                Update Trial
-              </Button>
-            </form>
-          </Form>
-        </div>
-
-        {subscription.status === 'trialing' && (
-          <div className="dark:bg-polar-800 flex flex-col items-start gap-y-4 rounded-2xl bg-gray-50 p-6">
-            <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-medium">End Trial</h3>
-              <p className="dark:text-polar-500 text-sm text-gray-500">
-                This will immediately end the trial period and charge the
-                customer for a new billing cycle.
-              </p>
-            </div>
+              Update trial end date
+            </Button>
             <Button
               variant="destructive"
               onClick={showConfirmModal}
               disabled={isEndingTrial}
               loading={isEndingTrial}
             >
-              End Trial
+              End trial now
             </Button>
-          </div>
-        )}
-      </div>
+          </Box>
+        </form>
+      </Form>
 
       <ConfirmModal
         isShown={isConfirmModalShown}

@@ -88,6 +88,10 @@ class SubscriptionStatus(StrEnum):
         return cls.active_statuses() | {cls.past_due}  # pyright: ignore
 
     @classmethod
+    def cancelable_statuses(cls) -> set[Self]:
+        return cls.billable_statuses() | {cls.paused}  # pyright: ignore
+
+    @classmethod
     def is_incomplete(cls, status: Self) -> bool:
         return status in cls.incomplete_statuses()
 

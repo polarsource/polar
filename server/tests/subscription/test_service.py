@@ -11910,6 +11910,31 @@ class TestCancelCustomer:
             f"but found {len(void_calls)} void call(s)"
         )
 
+    async def test_paused_subscription_is_canceled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            started_at=utc_now(),
+        )
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+
+        await subscription_service.cancel_customer(session, customer.id)
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.ended_at is not None
+        assert subscription.resumes_at is None
+
 
 @pytest.mark.anyio
 class TestCancelForOrganization:
@@ -11951,6 +11976,38 @@ class TestCancelForOrganization:
         enqueue_job_mock.assert_any_call(
             "customer.state_changed", subscription.customer_id
         )
+
+    async def test_cancels_paused_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            started_at=utc_now(),
+        )
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.ended_at is not None
+        assert subscription.resumes_at is None
+        enqueue_email_mock.assert_not_called()
 
     async def test_skips_already_ended_subscriptions(
         self,

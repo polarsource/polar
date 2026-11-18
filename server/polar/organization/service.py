@@ -1781,7 +1781,7 @@ class OrganizationService:
     ) -> Sequence[Organization]:
         """Enqueue a per-org cancellation job for each organization denied,
         blocked, or offboarded past the cancellation delay that still has
-        billable subscriptions. Returns the organizations enqueued.
+        billable or paused subscriptions. Returns the organizations enqueued.
         """
         repository = OrganizationRepository.from_session(session)
         cutoff = (

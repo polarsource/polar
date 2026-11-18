@@ -115,7 +115,7 @@ async def subscription_cycle(
 async def subscription_cancel_for_organization(
     organization_id: Annotated[uuid.UUID, LoggableField],
 ) -> None:
-    """Cancel all billable subscriptions of a denied/blocked/offboarded org,
+    """Cancel all billable and paused subscriptions of a denied/blocked/offboarded org,
     enqueued per-organization by ``organization.cancel_expired_subscriptions``.
 
     Cancels one batch per run and re-enqueues itself while subscriptions remain,

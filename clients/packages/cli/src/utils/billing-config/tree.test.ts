@@ -939,12 +939,12 @@ describe('formatTree', () => {
         '',
         '  products',
         '  ~ pro',
-        '      ├ ~ custom field company required',
-        '      ├ + custom field size',
-        '      └ - custom field vat',
+        '      ├ ~ custom field company',
+        '      ├ + custom field size optional',
+        '      └ - custom field vat optional',
         '  ~ team',
-        '      ├ ~ custom field start required',
-        '      └ ~ custom field size',
+        '      ├ ~ custom field start',
+        '      └ ~ custom field size optional',
       ].join('\n'),
     )
   })

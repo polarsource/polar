@@ -221,7 +221,7 @@ const reference =
       REFERENCE_MARKS[status],
       ui.dim(kind),
       status === 'kept' ? ui.dim(id) : ui.bold(id),
-      ...(required ? [ui.dim('required')] : []),
+      ...(required === false ? [ui.dim('optional')] : []),
     ].join(' '),
     body: [],
   })

@@ -37,8 +37,7 @@ Payment data moves through Stripe's own migration tools, so it inherits their li
 ### Payment methods that can't be moved
 
 - **Link**: Payment details saved with [Stripe Link](https://link.com) belong to the customer's Link account, not to Polar. They aren't included in a Stripe-to-Stripe copy, and Stripe excludes them from PAN exports to other processors.
-- **Other wallets and local payment methods**: Only cards (and some bank debits) are copied. Payment methods such as Cash App Pay, Amazon Pay and Korean payment methods (Korean cards, Kakao Pay, Naver Pay) don't move.
-- **Bank debits (SEPA, ACH)**: Mandates were collected by Polar, as Merchant of Record, under Polar's creditor details. Stripe only copies SEPA Direct Debit when both accounts share the same creditor ID, and ACH needs a valid authorization held by the receiving business. In practice, expect these customers to set up their bank debit again.
+- **Other wallets and local payment methods**: Only cards are copied. Payment methods such as Cash App Pay, Amazon Pay and Korean payment methods (Korean cards, Kakao Pay, Naver Pay) don't move.
 - **Apple Pay and Google Pay**: These cards are saved as device-specific tokens instead of the real card number. They may not work on a processor other than Stripe, so ask your new provider whether they can accept them.
 
 Customers on any of these payment methods need to enter new payment details with your new provider before their first renewal there. We recommend contacting them ahead of time with a link to update their details.
@@ -55,7 +54,7 @@ Customers on any of these payment methods need to enter new payment details with
 ### Moving to a provider other than Stripe (PAN export)
 
 - **Your new processor must be PCI DSS Level 1 compliant.** Stripe requires their current Attestation of Compliance (or Visa Global Registry listing) and a 4096-bit PGP public key hosted on their domain. Not every billing tool qualifies on its own. Many receive card data through their underlying processor.
-- **Only card data is exported.** The file contains card numbers, expiry dates, cardholder name, billing address, customer email and metadata. It never includes the CVC. It doesn't include Link credentials, bank debits, subscriptions or payment history.
+- **Only card data is exported.** The file contains card numbers, expiry dates, cardholder name, billing address, customer email and metadata. It never includes the CVC. It doesn't include Link credentials, other wallets, subscriptions or payment history.
 - **It takes longer.** The export is coordinated between Polar, Stripe and your new processor, and usually takes several weeks. Plan to keep your Polar subscriptions running until the import is confirmed on the other side.
 
 
@@ -123,7 +122,7 @@ After the 120-day holding period ends, your remaining balance is released and yo
   No. Polar does not charge a fee to migrate your customers or saved payment methods to another provider.
 </Accordion>
 <Accordion title="Will my customers notice the migration?">
-    Most shouldn't experience an interruption. Subscriptions keep renewing on Polar until you cancel them, and we transfer saved cards so those customers don't need to re-enter card details. Customers who paid with Link, a bank debit or another payment method that can't be moved need to add a new payment method on your new provider. See [Limitations to be aware of](#limitations-to-be-aware-of). The main visible change for everyone else is who appears on their statement once you start billing from your new provider.
+    Most shouldn't experience an interruption. Subscriptions keep renewing on Polar until you cancel them, and we transfer saved cards so those customers don't need to re-enter card details. Customers who paid with Link or another payment method that can't be moved need to add a new payment method on your new provider. See [Limitations to be aware of](#limitations-to-be-aware-of). The main visible change for everyone else is who appears on their statement once you start billing from your new provider.
   </Accordion>
   <Accordion title="Can I move to a provider other than Stripe?">
     Yes. Stripe-to-Stripe is the easiest path, but we can also move your saved payment methods to another provider through Stripe's secure PAN export, as long as your new processor is PCI-compliant and able to receive the data.

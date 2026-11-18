@@ -23,7 +23,7 @@ import {
 /* ---------- a meter, as a watershed: the head of the page ---------- */
 
 /** A name set reversed on a block, as the springs and the steps are. */
-function Tag({
+export function Tag({
   x,
   y,
   t,

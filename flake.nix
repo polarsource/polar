@@ -85,10 +85,7 @@
               # dev/create-test-db and dev/create-worktree
               postgresql_18
 
-              # Webhooks; dev up's GitHub App setup tunnels through ngrok
               stripe-cli
-              ngrok
-
               polar-dev
             ];
 

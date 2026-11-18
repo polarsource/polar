@@ -54,7 +54,18 @@ export const CustomFieldConfig = Schema.Union([
       textarea: Schema.optionalKey(Schema.Boolean),
       min_length: Schema.optionalKey(Length),
       max_length: Schema.optionalKey(Length),
-    }),
+    }).check(
+      Schema.makeFilter(({ min_length, max_length }) =>
+        min_length === undefined ||
+        max_length === undefined ||
+        min_length <= max_length
+          ? undefined
+          : {
+              path: ['max_length'],
+              issue: 'The max length must not be less than the min length',
+            },
+      ),
+    ),
   ),
   fieldOf('number', RangeProperties),
   fieldOf('date', RangeProperties),

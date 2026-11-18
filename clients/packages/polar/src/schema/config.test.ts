@@ -1050,6 +1050,14 @@ test('custom field helpers catch mistakes early', () => {
   expect(() =>
     defineConfig({
       meters: () => ({}),
+      customFields: ({ text }) => ({
+        company: text().minLength(10).maxLength(5),
+      }),
+    }),
+  ).toThrow('The max length must not be less than the min length')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
       customFields: ({ number }) => ({ seats: number().min(10).max(5) }),
     }),
   ).toThrow('The max must not be before the min')

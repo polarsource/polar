@@ -1,0 +1,24 @@
+.github/workflows/deploy.yml
+  s_7a60aadba05ac9::t_78e072214dbc30 517,529-562
+  s_7a60aadba05ac9::t_af2aac44ace154 563
+terraform/test/aws.tf
+  s_7a60aadba05ac9::t_0cb90c5394d4ea 332-339
+terraform/test/events_api.tf
+  s_7a60aadba05ac9::t_3f27c458507bce 304
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "67708ae71da5f38990a00b235321a973c5333f35",
+  "prompts": {},
+  "sessions": {
+    "s_7a60aadba05ac9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "844feab4-89a2-4787-bc0c-e762d3680173",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

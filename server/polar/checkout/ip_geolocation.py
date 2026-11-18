@@ -8,7 +8,6 @@ import ipinfo_db.reader
 from fastapi import Depends, Request
 
 from polar.config import settings
-from polar.tax.tax_id import TaxID, TaxIDFormat
 
 DOWNLOAD_PATH = "https://ipinfo.io/data/free/country_asn.mmdb?token={token}"
 DATABASE_PATH = (
@@ -143,18 +142,6 @@ BILLING_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 
-# EU VAT numbers carry their country as a prefix, with a few non-ISO ones.
-EU_VAT_PREFIX_COUNTRIES: dict[str, str] = {"EL": "GR", "XI": "GB"}
-
-
-def get_tax_id_country(tax_id: TaxID) -> str:
-    number, tax_id_format = tax_id
-    if tax_id_format == TaxIDFormat.eu_vat:
-        prefix = number[:2]
-        return EU_VAT_PREFIX_COUNTRIES.get(prefix, prefix)
-    return tax_id_format.split("_", 1)[0].upper()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Download the IP to Country ASN database."
@@ -170,5 +157,4 @@ __all__ = [
     "IPGeolocationClient",
     "get_client",
     "get_ip_country",
-    "get_tax_id_country",
 ]

@@ -1197,51 +1197,62 @@ class CheckoutService:
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
         ):
-            try:
-                confirmation_token = await stripe_service.get_confirmation_token(
-                    checkout_confirm.confirmation_token_id
-                )
-            except stripe_lib.StripeError:
-                confirmation_token = None
-
-            payment_method_country = get_payment_method_country(
-                confirmation_token.payment_method_preview
-                if confirmation_token is not None
-                else None
-            )
-            checkout.customer_signals = {
-                **(checkout.customer_signals or {}),
-                "payment_method_country": payment_method_country,
-            }
-            ip_country = checkout.customer_signals.get("ip_country")
-            tax_id_country = (
-                ip_geolocation.get_tax_id_country(checkout.customer_tax_id)
-                if checkout.customer_tax_id is not None
-                else None
-            )
-            known_countries = {ip_country, payment_method_country, tax_id_country} - {
-                None
-            }
             billing_address = checkout.customer_billing_address
+            billing_countries = (
+                {
+                    billing_address.country,
+                    *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
+                        billing_address.country, ()
+                    ),
+                }
+                if billing_address is not None
+                else set()
+            )
+            ip_country = (checkout.customer_signals or {}).get("ip_country")
+            # The payment method country costs a Stripe round trip:
+            # only ask for it when the IP country doesn't confirm the billing country.
+            is_billing_country_unconfirmed = (
+                billing_address is not None and ip_country not in billing_countries
+            )
             if (
-                billing_address is not None
-                and known_countries
-                and known_countries.isdisjoint(
-                    {
-                        billing_address.country,
-                        *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
-                            billing_address.country, ()
-                        ),
-                    }
+                is_billing_country_unconfirmed
+                or checkout.customer_name is None
+                or (
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
+                )
+                or (
+                    checkout.trial_end is not None
+                    and checkout.organization.prevent_trial_abuse
                 )
             ):
-                # Shadow mode: measure how often this triggers before blocking on it.
-                # The countries stay on the checkout, out of telemetry (ADR-0013).
-                log.info(
-                    "checkout.billing_country_mismatch",
-                    checkout_id=str(checkout.id),
-                    organization_id=str(checkout.organization_id),
+                try:
+                    confirmation_token = await stripe_service.get_confirmation_token(
+                        checkout_confirm.confirmation_token_id
+                    )
+                except stripe_lib.StripeError:
+                    confirmation_token = None
+
+            if is_billing_country_unconfirmed:
+                payment_method_country = get_payment_method_country(
+                    confirmation_token.payment_method_preview
+                    if confirmation_token is not None
+                    else None
                 )
+                checkout.customer_signals = {
+                    **(checkout.customer_signals or {}),
+                    "payment_method_country": payment_method_country,
+                }
+                if (
+                    ip_country is not None or payment_method_country is not None
+                ) and payment_method_country not in billing_countries:
+                    # Shadow mode: measure how often this triggers before blocking on it.
+                    # The countries stay on the checkout, out of telemetry (ADR-0013).
+                    log.info(
+                        "checkout.billing_country_mismatch",
+                        checkout_id=str(checkout.id),
+                        organization_id=str(checkout.organization_id),
+                    )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
         # field for better UX and instead extract the name from Stripe's confirmation token.

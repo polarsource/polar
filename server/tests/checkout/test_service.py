@@ -5520,11 +5520,7 @@ class TestConfirm:
                 "1.2.3.4",
                 "FR",
                 None,
-                {
-                    "ip_address": "1.2.3.4",
-                    "ip_country": "FR",
-                    "payment_method_country": None,
-                },
+                {"ip_address": "1.2.3.4", "ip_country": "FR"},
                 id="resolved country",
             ),
             pytest.param(
@@ -5545,12 +5541,8 @@ class TestConfirm:
                 "1.2.3.4",
                 "FR",
                 "US",
-                {
-                    "ip_address": "1.2.3.4",
-                    "ip_country": "FR",
-                    "payment_method_country": "US",
-                },
-                id="only ip country matches",
+                {"ip_address": "1.2.3.4", "ip_country": "FR"},
+                id="ip country matches, card country not fetched",
             ),
             pytest.param(
                 "1.2.3.4",
@@ -5607,6 +5599,9 @@ class TestConfirm:
         )
 
         assert checkout.customer_signals == expected_customer_signals
+        assert stripe_service_mock.get_confirmation_token.called is (
+            "payment_method_country" in expected_customer_signals
+        )
 
     @pytest.mark.parametrize(
         (
@@ -5670,16 +5665,8 @@ class TestConfirm:
                 "US",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="US")),
                 "DE136695976",
-                False,
-                id="tax id country matches",
-            ),
-            pytest.param(
-                "DE",
-                "US",
-                SimpleNamespace(type="card", card=SimpleNamespace(country="US")),
-                "FR61954506077",
                 True,
-                id="tax id from another country",
+                id="matching tax id does not confirm the billing country",
             ),
         ],
     )

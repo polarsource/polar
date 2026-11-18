@@ -5539,13 +5539,6 @@ class TestConfirm:
             ),
             pytest.param(
                 "1.2.3.4",
-                "FR",
-                "US",
-                {"ip_address": "1.2.3.4", "ip_country": "FR"},
-                id="ip country matches, card country not fetched",
-            ),
-            pytest.param(
-                "1.2.3.4",
                 "US",
                 "FR",
                 {
@@ -5608,16 +5601,14 @@ class TestConfirm:
             "billing_country",
             "ip_country",
             "payment_method_preview",
-            "customer_tax_id",
-            "expected_mismatch",
+            "expected_event",
         ),
         [
             pytest.param(
                 "UG",
                 "SE",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="SE")),
-                None,
-                True,
+                "checkout.billing_country_mismatch",
                 id="no match",
             ),
             pytest.param(
@@ -5625,7 +5616,6 @@ class TestConfirm:
                 "FR",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="US")),
                 None,
-                False,
                 id="territory seen as parent",
             ),
             pytest.param(
@@ -5633,15 +5623,13 @@ class TestConfirm:
                 "US",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="ES")),
                 None,
-                False,
                 id="territory with two parents",
             ),
             pytest.param(
                 "FR",
                 "GP",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="GP")),
-                None,
-                True,
+                "checkout.billing_country_mismatch",
                 id="parent seen as territory",
             ),
             pytest.param(
@@ -5649,24 +5637,28 @@ class TestConfirm:
                 "SE",
                 SimpleNamespace(type="bancontact", bancontact=SimpleNamespace()),
                 None,
-                False,
                 id="implied payment method country matches",
             ),
             pytest.param(
                 "BE",
                 "SE",
                 SimpleNamespace(type="link", link=SimpleNamespace()),
-                None,
-                True,
+                "checkout.billing_country_mismatch",
                 id="no payment method country and ip mismatch",
             ),
             pytest.param(
-                "DE",
-                "US",
+                "BE",
+                "",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="US")),
-                "DE136695976",
-                True,
-                id="matching tax id does not confirm the billing country",
+                "checkout.billing_country_mismatch",
+                id="unresolved ip and card mismatch",
+            ),
+            pytest.param(
+                "BE",
+                "",
+                SimpleNamespace(type="link", link=SimpleNamespace()),
+                "checkout.billing_country_unverified",
+                id="no known country",
             ),
         ],
     )
@@ -5675,8 +5667,7 @@ class TestConfirm:
         billing_country: str,
         ip_country: str,
         payment_method_preview: SimpleNamespace,
-        customer_tax_id: str | None,
-        expected_mismatch: bool,
+        expected_event: str | None,
         mocker: MockerFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -5705,15 +5696,7 @@ class TestConfirm:
                     "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
                     "customer_name": "Customer Name",
                     "customer_email": "customer@example.com",
-                    "customer_billing_name": "Customer Inc.",
-                    "customer_billing_address": {
-                        "country": billing_country,
-                        "line1": "1 Main Street",
-                        "city": "City",
-                        "postal_code": "12345",
-                    },
-                    "is_business_customer": customer_tax_id is not None,
-                    "customer_tax_id": customer_tax_id,
+                    "customer_billing_address": {"country": billing_country},
                 }
             ),
             ip_geolocation_client,
@@ -5721,12 +5704,22 @@ class TestConfirm:
         )
 
         assert checkout.status == CheckoutStatus.confirmed
-        mismatch_call = call(
-            "checkout.billing_country_mismatch",
-            checkout_id=str(checkout.id),
-            organization_id=str(checkout.organization_id),
+        billing_country_events = [
+            logged
+            for logged in log_mock.info.call_args_list
+            if logged.args[0].startswith("checkout.billing_country_")
+        ]
+        assert billing_country_events == (
+            [
+                call(
+                    expected_event,
+                    checkout_id=str(checkout.id),
+                    organization_id=str(checkout.organization_id),
+                )
+            ]
+            if expected_event is not None
+            else []
         )
-        assert (mismatch_call in log_mock.info.call_args_list) is expected_mismatch
 
     @pytest.mark.parametrize(
         ("customer_billing_address", "expected_tax_metadata"),

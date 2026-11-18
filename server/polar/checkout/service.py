@@ -1243,13 +1243,12 @@ class CheckoutService:
                     **(checkout.customer_signals or {}),
                     "payment_method_country": payment_method_country,
                 }
-                if (
-                    ip_country is not None or payment_method_country is not None
-                ) and payment_method_country not in billing_countries:
+                if payment_method_country not in billing_countries:
                     # Shadow mode: measure how often this triggers before blocking on it.
-                    # The countries stay on the checkout, out of telemetry (ADR-0013).
                     log.info(
-                        "checkout.billing_country_mismatch",
+                        "checkout.billing_country_mismatch"
+                        if ip_country is not None or payment_method_country is not None
+                        else "checkout.billing_country_unverified",
                         checkout_id=str(checkout.id),
                         organization_id=str(checkout.organization_id),
                     )

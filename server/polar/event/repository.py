@@ -279,11 +279,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             select(StagedEvent.id)
             .limit(limit)
             .with_for_update(skip_locked=True)
-            .scalar_subquery()
+            .cte("claimed")
         )
         moved = (
             delete(StagedEvent)
-            .where(StagedEvent.id.in_(claimed))
+            .where(StagedEvent.id.in_(select(claimed.c.id)))
             .returning(*StagedEvent.__table__.columns)
             .cte("moved")
         )

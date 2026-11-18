@@ -34803,6 +34803,7 @@ export interface components {
       | 'retry_customer'
       | 'retry_payment_method_update'
       | 'retry_admin'
+      | 'retry_payment_alert'
     /** Payout */
     Payout: {
       /**
@@ -76839,6 +76840,7 @@ export const paymentTriggerValues: ReadonlyArray<
   'retry_customer',
   'retry_payment_method_update',
   'retry_admin',
+  'retry_payment_alert',
 ]
 export const payoutAccountStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAccountStatus']

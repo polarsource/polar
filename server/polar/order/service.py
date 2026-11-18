@@ -1,6 +1,6 @@
 import itertools
 import uuid
-from collections.abc import AsyncIterator, Iterable, Sequence
+from collections.abc import AsyncIterator, Iterable, Mapping, Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -1831,6 +1831,8 @@ class OrderService:
         *,
         payment_mode: PaymentMode = PaymentMode.background,
         payment_trigger: PaymentTrigger | None = None,
+        extra_metadata: Mapping[str, str] | None = None,
+        idempotency_key: str | None = None,
     ) -> stripe_lib.PaymentIntent | None:
         """
         Attempt an off-session charge for the order.
@@ -1910,6 +1912,8 @@ class OrderService:
                 }
                 if payment_trigger is not None:
                     metadata[STRIPE_METADATA_PAYMENT_TRIGGER] = payment_trigger
+                if extra_metadata is not None:
+                    metadata.update(extra_metadata)
 
                 if order.tax_breakdown:
                     metadata["tax_amount"] = order.tax_amount
@@ -1924,11 +1928,11 @@ class OrderService:
                 # must be idempotent: if it succeeds but the response/commit is
                 # lost, a retry returns the cached PaymentIntent instead of
                 # double-charging. Scoping the key to the payment method keeps a
-                # retry with a *different* card a genuinely fresh attempt. Only
-                # the sync path sets this — background dunning relies on Stripe
-                # attempting a brand-new charge on each retry.
-                idempotency_key: str | None = None
-                if payment_mode == PaymentMode.sync:
+                # retry with a *different* card a genuinely fresh attempt. Unless
+                # the caller passes a key, only the sync path sets this —
+                # background dunning relies on Stripe attempting a brand-new
+                # charge on each retry.
+                if idempotency_key is None and payment_mode == PaymentMode.sync:
                     idempotency_key = (
                         f"order_finalize:{order.id}:{payment_method.processor_id}"
                     )

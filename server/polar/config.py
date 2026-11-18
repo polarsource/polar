@@ -491,6 +491,9 @@ class Settings(BaseSettings):
     # Chargeback Stop
     CHARGEBACK_STOP_WEBHOOK_SECRET: str = ""
 
+    # PaymentRetryAlert (Mastercard retry signals, by ChargebackStop)
+    PAYMENT_RETRY_ALERT_WEBHOOK_SECRET: str = ""
+
     # Polar's usage of Polar
     POLAR_ACCESS_TOKEN: str = ""
     POLAR_WEBHOOK_SECRET: str = ""
@@ -674,6 +677,7 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
     CUSTOMER_RETRY_MAX_ATTEMPTS: int = 5
+    PAYMENT_RETRY_ALERT_MAX_ATTEMPTS: int = 3
     PAYMENT_LOCK_STALE_THRESHOLD: timedelta = timedelta(hours=1)
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.numeral, TaxProcessor.stripe]

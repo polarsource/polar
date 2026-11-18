@@ -1,0 +1,34 @@
+worktree_dir: .worktrees
+base_branch: auto
+mode: session
+window_prefix: "{project}-"
+
+windows:
+  - name: api
+    panes:
+      - command: cd server && nvim
+        focus: true
+      - command: cd server
+        split: vertical
+        percentage: 30
+  - name: clients
+    panes:
+      - command: cd clients && nvim
+      - command: cd clients
+        split: vertical
+        percentage: 30
+  - name: procs
+    panes:
+      - command: bash ./dev/cli/dev docker up --wait && bash ./dev/cli/dev docker launch-json && bash ./dev/cli/dev docker logs
+  - name: webhooks
+    panes:
+      - command: bash ./dev/cli/dev stripe --listen --port "$(bash ./dev/cli/dev docker ports --json | jq -r .api_port)"
+
+pre_remove:
+  # Only worktrees that ran `dev docker` have an instance; cleanup would allocate one otherwise.
+  # Its containers run as root and leave root-owned files that would block the removal.
+  - |
+    if grep -qF "\"$WM_WORKTREE_PATH\"" ~/.config/polar/docker-instances.json 2>/dev/null; then
+      bash ./dev/cli/dev docker cleanup --force &&
+        docker run --rm -v "$WM_WORKTREE_PATH:/w" alpine chown -R "$(id -u):$(id -g)" /w
+    fi

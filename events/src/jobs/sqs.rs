@@ -391,8 +391,7 @@ mod tests {
     async fn sends_delayed_debounced_jobs_to_the_queue() {
         let (queue, requests, mut redis) = mock_queue(&["dummy"]).await;
         let key = Uuid::new_v4().to_string();
-        let jobs =
-            Vec::from_iter((0..11).map(|_| delayed_job(&key, Duration::from_secs(1_200))));
+        let jobs = Vec::from_iter((0..11).map(|_| delayed_job(&key, Duration::from_secs(1_200))));
 
         queue
             .send(&mut redis, jobs, Duration::from_millis(1_794_493_590_947))

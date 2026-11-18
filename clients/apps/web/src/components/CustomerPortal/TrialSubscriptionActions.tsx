@@ -12,17 +12,26 @@ import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import CustomerCancellationModal from './CustomerCancellationModal'
 
-const useMissingBillingDetails = () => {
+const useMissingBillingDetails = (
+  subscription: schemas['CustomerSubscription'],
+) => {
   const { data: customer } = useCustomerPortalCustomer()
 
   return {
-    paymentMethod: !!customer && !customer.default_payment_method_id,
+    paymentMethod:
+      !!customer &&
+      !subscription.payment_method_id &&
+      !customer.default_payment_method_id,
     billingAddress: !!customer && !customer.billing_address?.country,
   }
 }
 
-export const TrialBillingDetailsAlert = () => {
-  const missing = useMissingBillingDetails()
+export const TrialBillingDetailsAlert = ({
+  subscription,
+}: {
+  subscription: schemas['CustomerSubscription']
+}) => {
+  const missing = useMissingBillingDetails(subscription)
 
   if (!missing.paymentMethod && !missing.billingAddress) {
     return null
@@ -54,7 +63,7 @@ export const TrialSubscriptionActions = ({
   onChangePlan: () => void
 }) => {
   const searchParams = useSearchParams()
-  const missing = useMissingBillingDetails()
+  const missing = useMissingBillingDetails(subscription)
   const isMissingBillingDetails =
     missing.paymentMethod || missing.billingAddress
   const cancelSubscription = useCustomerCancelSubscription(api)

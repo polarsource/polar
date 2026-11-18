@@ -559,6 +559,12 @@ class StripeService:
             domain_name=domain_name, enabled=True
         )
 
+    async def list_payment_method_domains(
+        self,
+    ) -> AsyncIterator[stripe_lib.PaymentMethodDomain]:
+        result = await stripe_lib.PaymentMethodDomain.list_async(limit=100)
+        return result.auto_paging_iter()
+
     async def update_payment_method_domain(
         self, id: str, *, enabled: bool
     ) -> stripe_lib.PaymentMethodDomain:

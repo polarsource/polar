@@ -43,7 +43,14 @@ const path = (
     )
     .join('')
 
-export const MarginChart = ({ series }: { series: MarginPoint[] }) => {
+export const MarginChart = ({
+  series,
+  legend = true,
+}: {
+  series: MarginPoint[]
+  /** Off when the figure already labels both lines with their totals. */
+  legend?: boolean
+}) => {
   const running = useMemo(() => cumulative(series), [series])
   const targets = useMemo(() => {
     const revenue = resample(
@@ -159,22 +166,24 @@ export const MarginChart = ({ series }: { series: MarginPoint[] }) => {
           />
         </g>
       </svg>
-      <Box alignItems="center" columnGap="l">
+      {legend ? (
         <Box alignItems="center" columnGap="l">
-          <Box alignItems="center" columnGap="s">
-            <div className="h-0.5 w-4 rounded-full bg-black dark:bg-white" />
-            <Text variant="caption" color="muted">
-              Revenue {last ? dollars(last.revenue, 2) : ''}
-            </Text>
-          </Box>
-          <Box alignItems="center" columnGap="s">
-            <div className="dark:border-polar-500 w-4 border-t border-dashed border-gray-400" />
-            <Text variant="caption" color="muted">
-              Cost {last ? dollars(last.cost, 2) : ''}
-            </Text>
+          <Box alignItems="center" columnGap="l">
+            <Box alignItems="center" columnGap="s">
+              <div className="h-0.5 w-4 rounded-full bg-black dark:bg-white" />
+              <Text variant="caption" color="muted">
+                Revenue {last ? dollars(last.revenue, 2) : ''}
+              </Text>
+            </Box>
+            <Box alignItems="center" columnGap="s">
+              <div className="dark:border-polar-500 w-4 border-t border-dashed border-gray-400" />
+              <Text variant="caption" color="muted">
+                Cost {last ? dollars(last.cost, 2) : ''}
+              </Text>
+            </Box>
           </Box>
         </Box>
-      </Box>
+      ) : null}
     </Box>
   )
 }

@@ -329,6 +329,14 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
       "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${function_name}"
     ]
   }
+
+  statement {
+    sid     = "RollEcsServices"
+    actions = ["ecs:UpdateService", "ecs:DescribeServices"]
+    resources = [
+      "arn:aws:ecs:us-east-2:${data.aws_caller_identity.current.account_id}:service/${module.ecs_cluster[0].cluster_name}/${module.events_api[0].service_name}"
+    ]
+  }
 }
 
 resource "aws_iam_policy" "lambda_worker_deploy" {

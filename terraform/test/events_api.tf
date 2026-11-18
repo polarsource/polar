@@ -301,7 +301,7 @@ module "events_api" {
   environment = "test"
   name        = local.events_api_name
   cluster_arn = module.ecs_cluster[0].cluster_arn
-  # ponytail: tracks :latest with no CI deploy; roll new images with `aws ecs update-service --force-new-deployment`.
+  # Tracks :latest; the deploy-ecs-test job in deploy.yml rolls it after each build.
   image = "ghcr.io/polarsource/polar:latest"
   command = [
     "uv", "run", "uvicorn", "polar.event_ingestion_api_app:app",

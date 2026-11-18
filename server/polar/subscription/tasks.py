@@ -10,6 +10,7 @@ from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Subscription, SubscriptionMeter
+from polar.models.subscription import SubscriptionStatus
 from polar.observability.task_logging import LoggableField
 from polar.product.repository import ProductRepository
 from polar.subscription.repository import SubscriptionRepository
@@ -358,6 +359,44 @@ async def send_trial_conversion_reminder(
         await subscription_service.send_trial_conversion_reminder_email(
             session, subscription
         )
+
+
+@actor(
+    actor_name="subscription.cancel_expired_trial_ended",
+    priority=TaskPriority.LOW,
+)
+async def cancel_expired_trial_ended(
+    subscription_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    """Cancel a trial_ended subscription. Enqueued by the trial-ended scheduler
+    once its ``ends_at`` is reached (see ``SubscriptionTrialEndedJobStore``)."""
+    async with AsyncSessionMaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.get_by_id(
+            subscription_id,
+            options=repository.get_eager_options(),
+            for_update=True,
+        )
+        if subscription is None:
+            raise SubscriptionDoesNotExist(subscription_id)
+
+        if (
+            subscription.status != SubscriptionStatus.trial_ended
+            or subscription.ends_at is None
+            or subscription.ends_at > utc_now()
+        ):
+            log.info(
+                "Subscription is no longer an expired trial_ended, skipping cancel",
+                subscription_id=subscription_id,
+            )
+            await repository.release_scheduler_lock(subscription)
+            return
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service, notify_customer=False
+        ) as ctx:
+            await subscription_service.revoke(session, ctx, subscription)
+        await repository.release_scheduler_lock(subscription)
 
 
 @actor(actor_name="subscription.bulk_update", priority=TaskPriority.LOW)

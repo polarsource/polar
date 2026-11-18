@@ -16,6 +16,7 @@ from polar.sentry import configure_sentry
 from polar.subscription.scheduler import (
     SubscriptionJobStore,
     SubscriptionResumeJobStore,
+    SubscriptionTrialEndedJobStore,
 )
 
 from ._broker import scheduler_middleware
@@ -81,6 +82,7 @@ def start() -> None:
     )
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
     scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
+    scheduler.add_jobstore(SubscriptionTrialEndedJobStore(), "subscription_trial_ended")
 
     try:
         scheduler.start()

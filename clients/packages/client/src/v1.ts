@@ -26666,6 +26666,28 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** LemonSqueezyStoreNotFound */
+    LemonSqueezyStoreNotFound: {
+      /**
+       * Error
+       * @example LemonSqueezyStoreNotFound
+       * @constant
+       */
+      error: 'LemonSqueezyStoreNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** LemonSqueezyStoreRequired */
+    LemonSqueezyStoreRequired: {
+      /**
+       * Error
+       * @example LemonSqueezyStoreRequired
+       * @constant
+       */
+      error: 'LemonSqueezyStoreRequired'
+      /** Detail */
+      detail: string
+    }
     /** LicenseKeyActivate */
     LicenseKeyActivate: {
       /** Key */
@@ -64232,7 +64254,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
-      /** @description The Stripe API key is invalid, wrong mode, or missing permissions, or the account it belongs to can't be migrated. */
+      /** @description The API key is invalid, in the wrong mode or missing permissions, the Lemon Squeezy store needs choosing, or the account it belongs to can't be migrated. */
       400: {
         headers: {
           [name: string]: unknown
@@ -64243,7 +64265,8 @@ export interface operations {
             | components['schemas']['MissingStripeScopes']
             | components['schemas']['SourceAccountNotMigratable']
             | components['schemas']['SourceKeyModeMismatch']
-            | components['schemas']['UnsupportedMigrationSource']
+            | components['schemas']['LemonSqueezyStoreRequired']
+            | components['schemas']['LemonSqueezyStoreNotFound']
         }
       }
       /** @description Not allowed to manage this organization, migrations aren't enabled for it, or it hasn't finished onboarding. */
@@ -64258,7 +64281,7 @@ export interface operations {
             | components['schemas']['OrganizationNotOnboarded']
         }
       }
-      /** @description The Stripe account is already used by another migration. */
+      /** @description The source account is already used by another migration. */
       409: {
         headers: {
           [name: string]: unknown
@@ -64276,7 +64299,7 @@ export interface operations {
           'application/json': components['schemas']['HTTPValidationError']
         }
       }
-      /** @description Couldn't reach Stripe to validate the key. */
+      /** @description Couldn't reach the source provider to validate the key. */
       502: {
         headers: {
           [name: string]: unknown

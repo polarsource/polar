@@ -238,7 +238,7 @@ class OrganizationNotOnboarded(MerchantMigrationError):
 class InvalidSourceCredentials(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "The provided Stripe API key is invalid.",
+            "The provided API key is invalid.",
             400,
         )
 
@@ -255,7 +255,7 @@ class MissingStripeScopes(MerchantMigrationError):
 class SourceVerificationUnavailable(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "We couldn't verify the Stripe key right now. Please try again.",
+            "We couldn't verify the API key right now. Please try again.",
             502,
         )
 
@@ -263,7 +263,7 @@ class SourceVerificationUnavailable(MerchantMigrationError):
 class SourceAccountAlreadyMigrated(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
-            "This Stripe account is already used by another organization's "
+            "This account is already used by another organization's "
             "merchant migration.",
             409,
         )
@@ -452,14 +452,15 @@ def _is_live_key(api_key: str) -> bool:
 
 
 def _new_migration(
-    create_schema: MerchantMigrationStripeCreate | MerchantMigrationLemonSqueezyCreate,
+    organization: Organization,
+    source_platform: MerchantMigrationSourcePlatform,
 ) -> MerchantMigration:
     """The id is generated up front: the credentials are encrypted with it as
     context, so they're set before the single INSERT."""
     return MerchantMigration(
         id=MerchantMigration.generate_id(),
-        organization_id=create_schema.organization_id,
-        source_platform=create_schema.source_platform,
+        organization=organization,
+        source_platform=source_platform,
         step=MerchantMigrationStep.source_setup,
     )
 
@@ -520,7 +521,9 @@ class MerchantMigrationService:
             raise OrganizationNotOnboarded()
         match create_schema:
             case MerchantMigrationStripeCreate():
-                migration = await self._connect_stripe(session, create_schema)
+                migration = await self._connect_stripe(
+                    session, organization, create_schema
+                )
             case MerchantMigrationLemonSqueezyCreate():
                 migration = await self._connect_lemon_squeezy(
                     session, organization, create_schema
@@ -533,7 +536,10 @@ class MerchantMigrationService:
         return await self._queue_precheck(session, migration)
 
     async def _connect_stripe(
-        self, session: AsyncSession, create_schema: MerchantMigrationStripeCreate
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        create_schema: MerchantMigrationStripeCreate,
     ) -> MerchantMigration:
         # The key's mode must match the Polar environment, so a live switch never
         # runs against Stripe test data (and a sandbox run never touches live data).
@@ -560,7 +566,7 @@ class MerchantMigrationService:
         if blockers:
             raise SourceAccountNotMigratable(blockers)
 
-        migration = _new_migration(create_schema)
+        migration = _new_migration(organization, create_schema.source_platform)
         stripe_account_id = await adapter.get_account_id()
         migration.source_credentials = dict(
             await self._build_stripe_credentials(
@@ -573,8 +579,11 @@ class MerchantMigrationService:
         repository = MerchantMigrationRepository.from_session(session)
         if stripe_account_id is None:
             raise MissingStripeScopes(["Accounts"])
-        await repository.lock_stripe_account(stripe_account_id)
-        if await repository.stripe_account_id_exists(
+        await repository.lock_source_account(
+            MerchantMigrationSourcePlatform.stripe, stripe_account_id
+        )
+        if await repository.source_account_exists(
+            MerchantMigrationSourcePlatform.stripe,
             stripe_account_id,
             exclude_organization_id=create_schema.organization_id,
         ):
@@ -604,7 +613,7 @@ class MerchantMigrationService:
         if blockers:
             raise SourceAccountNotMigratable(blockers)
 
-        migration = _new_migration(create_schema)
+        migration = _new_migration(organization, create_schema.source_platform)
         migration.source_credentials = dict(
             LemonSqueezySourceCredentials(
                 api_key_encrypted=await self._encrypt_api_key(
@@ -615,9 +624,13 @@ class MerchantMigrationService:
             )
         )
         repository = MerchantMigrationRepository.from_session(session)
-        await repository.lock_lemon_squeezy_store(store["id"])
-        if await repository.lemon_squeezy_store_exists(
-            store["id"], exclude_organization_id=create_schema.organization_id
+        await repository.lock_source_account(
+            MerchantMigrationSourcePlatform.lemon_squeezy, store["id"]
+        )
+        if await repository.source_account_exists(
+            MerchantMigrationSourcePlatform.lemon_squeezy,
+            store["id"],
+            exclude_organization_id=create_schema.organization_id,
         ):
             raise SourceAccountAlreadyMigrated()
         return migration

@@ -130,12 +130,15 @@ class MerchantMigration(RecordModel):
         """
         if not self.source_credentials:
             return None
+        if self.source_platform == MerchantMigrationSourcePlatform.lemon_squeezy:
+            return {
+                "store_id": self.source_credentials.get("store_id"),
+                "store_name": self.source_credentials.get("store_name"),
+            }
         return {
             "stripe_user_id": self.source_credentials.get("stripe_user_id"),
             "livemode": self.source_credentials.get("livemode"),
             "has_connected_accounts": self.source_credentials.get(
                 "has_connected_accounts", False
             ),
-            "store_id": self.source_credentials.get("store_id"),
-            "store_name": self.source_credentials.get("store_name"),
         }

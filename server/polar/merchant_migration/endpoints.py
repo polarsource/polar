@@ -17,6 +17,10 @@ from polar.openapi import APITag
 from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
+from .adapters.lemon_squeezy import (
+    LemonSqueezyStoreNotFound,
+    LemonSqueezyStoreRequired,
+)
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .pan_transfer import (
     PanStepNotActionable,
@@ -104,13 +108,15 @@ async def list(
     summary="Create Merchant Migration",
     responses={
         400: {
-            "description": "The Stripe API key is invalid, wrong mode, or missing "
-            "permissions, or the account it belongs to can't be migrated.",
+            "description": "The API key is invalid, in the wrong mode or missing "
+            "permissions, the Lemon Squeezy store needs choosing, or the account "
+            "it belongs to can't be migrated.",
             "model": InvalidSourceCredentials.schema()
             | MissingStripeScopes.schema()
             | SourceAccountNotMigratable.schema()
             | SourceKeyModeMismatch.schema()
-            | UnsupportedMigrationSource.schema(),
+            | LemonSqueezyStoreRequired.schema()
+            | LemonSqueezyStoreNotFound.schema(),
         },
         403: {
             "description": "Not allowed to manage this organization, "
@@ -120,11 +126,11 @@ async def list(
             | OrganizationNotOnboarded.schema(),
         },
         409: {
-            "description": "The Stripe account is already used by another migration.",
+            "description": "The source account is already used by another migration.",
             "model": SourceAccountAlreadyMigrated.schema(),
         },
         502: {
-            "description": "Couldn't reach Stripe to validate the key.",
+            "description": "Couldn't reach the source provider to validate the key.",
             "model": SourceVerificationUnavailable.schema(),
         },
     },

@@ -213,14 +213,13 @@ def _create_schema(organization: Organization) -> MerchantMigrationStripeCreate:
 
 
 class _FakeLemonSqueezyAdapter:
-    def __init__(self, *, error: Exception | None = None, store_id: str = "1") -> None:
+    def __init__(self, *, error: Exception | None = None) -> None:
         self._error = error
-        self._store_id = store_id
 
     async def resolve_store(self) -> dict[str, Any]:
         if self._error is not None:
             raise self._error
-        return {"id": self._store_id, "attributes": {"name": "Acme"}}
+        return {"id": "1", "attributes": {"name": "Acme"}}
 
     async def get_source_account(self) -> CanonicalAccount:
         return CanonicalAccount(country="US", has_connected_accounts=False)
@@ -236,14 +235,16 @@ def _lemon_squeezy_create_schema(
     )
 
 
-async def _enable_lemon_squeezy(
+@pytest.fixture
+async def lemon_squeezy_enabled(
     save_fixture: SaveFixture, organization: Organization
-) -> None:
+) -> Organization:
     organization.feature_settings = {
         **organization.feature_settings,
         "lemon_squeezy_migration_enabled": True,
     }
     await save_fixture(organization)
+    return organization
 
 
 def _lemon_squeezy_http_error(status_code: int) -> httpx2.HTTPStatusError:
@@ -284,9 +285,9 @@ class TestCreateLemonSqueezy:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
+        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_lemon_squeezy(save_fixture, organization)
         adapter = mocker.patch(
             "polar.merchant_migration.service.LemonSqueezyAdapter",
             return_value=_FakeLemonSqueezyAdapter(),
@@ -333,9 +334,9 @@ class TestCreateLemonSqueezy:
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
+        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        await _enable_lemon_squeezy(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.LemonSqueezyAdapter",
             return_value=_FakeLemonSqueezyAdapter(error=error),
@@ -357,6 +358,7 @@ class TestCreateLemonSqueezy:
         auth_subject: AuthSubject[User],
         organization: Organization,
         organization_second: Organization,
+        lemon_squeezy_enabled: Organization,
         user_organization: UserOrganization,
     ) -> None:
         await save_fixture(
@@ -367,7 +369,6 @@ class TestCreateLemonSqueezy:
                 source_credentials={"api_key_encrypted": "v1.x", "store_id": "1"},
             )
         )
-        await _enable_lemon_squeezy(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.LemonSqueezyAdapter",
             return_value=_FakeLemonSqueezyAdapter(),

@@ -11,10 +11,10 @@ const INITIALS: Record<MigrationSource, string> = {
 
 export function SourceMark({
   source,
-  size = 44,
+  size,
 }: {
   source: MigrationSource
-  size?: number
+  size: number
 }) {
   if (source === 'stripe') {
     return <StripeMark size={size} />

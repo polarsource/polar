@@ -10,7 +10,7 @@
     "gen:icons": "node scripts/extract-icon-usage.mjs",
     "format": "oxfmt ./src",
     "format:check": "oxfmt --check ./src",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "engines": {
     "node": "=24"

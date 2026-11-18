@@ -303,6 +303,9 @@ class Address(BaseModel):
             fields.append("city")
         return fields
 
+    def has_tax_fields(self) -> bool:
+        return all(getattr(self, field) is not None for field in self.get_tax_fields())
+
     def to_text(self) -> str:
         lines = []
         if self.line1:

@@ -36,6 +36,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
@@ -8836,6 +8837,8 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
     product: Product,
     customer: Customer,
 ) -> None:
+    customer.billing_address = Address(country=CountryAlpha2("FR"))
+    await save_fixture(customer)
     subscription = await create_trialing_subscription(
         save_fixture, product=product, customer=customer
     )
@@ -8871,6 +8874,8 @@ class TestSendTrialConversionReminderEmail:
         product: Product,
         customer: Customer,
     ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -8885,6 +8890,8 @@ class TestSendTrialConversionReminderEmail:
         email = enqueue_email_mock.call_args[0][0]
         assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
         assert email.props.trial_end_date == "March 17, 2026"
+        assert email.props.payment_method_required is True
+        assert email.props.billing_address_required is False
         assert f"/{organization.slug}/portal?" in email.props.url
         kwargs = enqueue_email_mock.call_args.kwargs
         assert kwargs["subject"] == (
@@ -8892,6 +8899,47 @@ class TestSendTrialConversionReminderEmail:
         )
         assert kwargs["deduplication_key"] == (
             f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
+        )
+
+    @pytest.mark.parametrize(
+        ("has_payment_method", "expected_subject"),
+        [
+            (True, "Complete your billing address to keep your {} subscription"),
+            (False, "Add your billing details to keep your {} subscription"),
+        ],
+    )
+    async def test_incomplete_billing_address(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        has_payment_method: bool,
+        expected_subject: str,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("US"), state="NY")
+        await save_fixture(customer)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        if has_payment_method:
+            subscription.payment_method = await create_payment_method(
+                save_fixture, customer
+            )
+            await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
+        assert email.props.payment_method_required is not has_payment_method
+        assert email.props.billing_address_required is True
+        assert enqueue_email_mock.call_args.kwargs["subject"] == (
+            expected_subject.format(product.name)
         )
 
     @pytest.mark.parametrize(
@@ -8907,6 +8955,8 @@ class TestSendTrialConversionReminderEmail:
         customer: Customer,
         case: str,
     ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )

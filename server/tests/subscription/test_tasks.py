@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from polar.email.schemas import SubscriptionRevokedEmail
 from polar.enums import SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
@@ -353,6 +354,47 @@ class TestSubscriptionCycle:
             assert meter_reset is not None
             assert meter_reset.timestamp == previous_period_end
 
+    @pytest.mark.parametrize(
+        "billing_address",
+        [
+            None,
+            Address(country=CountryAlpha2("US"), state="NY"),
+            Address(country=CountryAlpha2("BR"), state="SP", postal_code="01310-100"),
+        ],
+    )
+    async def test_trial_end_with_incomplete_billing_address(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        payment_method: PaymentMethod,
+        billing_address: Address | None,
+    ) -> None:
+        mocker.patch("polar.subscription.service.enqueue_job")
+        customer.billing_address = billing_address
+        await save_fixture(customer)
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            scheduler_locked_at=utc_now(),
+        )
+        previous_period_end = subscription.current_period_end
+        session.expunge_all()
+
+        with freeze_time(previous_period_end):
+            await subscription_cycle(subscription.id)
+
+        updated_subscription = await session.get(Subscription, subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at == previous_period_end
+        order_repository = OrderRepository.from_session(session)
+        assert await order_repository.get_all_by_subscription(subscription.id) == []
+
     async def test_trial_end_with_discount_expiring_at_conversion(
         self,
         mocker: MockerFixture,
@@ -441,6 +483,8 @@ class TestSubscriptionCycle:
         conversion_reason: str,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
         discount = None
         if conversion_reason == "customer_payment_method":
             customer.default_payment_method = payment_method

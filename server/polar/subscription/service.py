@@ -1474,7 +1474,11 @@ class SubscriptionService:
     def should_expire_trial(self, subscription: Subscription) -> bool:
         if not subscription.trialing or subscription.cancel_at_period_end:
             return False
-        return self._requires_payment_method(subscription)
+        if not self._is_billed_at_renewal(subscription):
+            return False
+        return not self._has_payment_method(
+            subscription
+        ) or not self._has_complete_billing_address(subscription)
 
     async def expire_trial(
         self,
@@ -1491,12 +1495,17 @@ class SubscriptionService:
         )
         return subscription
 
-    def _requires_payment_method(self, subscription: Subscription) -> bool:
-        if (
+    def _has_payment_method(self, subscription: Subscription) -> bool:
+        return (
             subscription.payment_method_id is not None
             or subscription.customer.default_payment_method_id is not None
-        ):
-            return False
+        )
+
+    def _has_complete_billing_address(self, subscription: Subscription) -> bool:
+        billing_address = subscription.customer.billing_address
+        return billing_address is not None and billing_address.has_tax_fields()
+
+    def _is_billed_at_renewal(self, subscription: Subscription) -> bool:
         # Mirror checkout, which doesn't ask for a payment method when the
         # subscription costs nothing: free prices, pay-what-you-want at 0, or a
         # forever 100% discount. Converting those creates a paid 0-amount order.
@@ -4775,15 +4784,34 @@ class SubscriptionService:
             return
         if self._is_free_after_trial(subscription, subscription.trial_end):
             return
-        if self._requires_payment_method(subscription):
+        payment_method_required = not self._has_payment_method(subscription)
+        billing_address_required = not self._has_complete_billing_address(subscription)
+        if (
+            payment_method_required or billing_address_required
+        ) and self._is_billed_at_renewal(subscription):
+            if not billing_address_required:
+                subject_template = (
+                    "Add a payment method to keep your {product.name} subscription"
+                )
+            elif not payment_method_required:
+                subject_template = (
+                    "Complete your billing address to keep your "
+                    "{product.name} subscription"
+                )
+            else:
+                subject_template = (
+                    "Add your billing details to keep your {product.name} subscription"
+                )
             return await self._send_customer_email(
                 session,
                 subscription,
-                subject_template=(
-                    "Add a payment method to keep your {product.name} subscription"
-                ),
+                subject_template=subject_template,
                 template_name="subscription_trial_payment_method_required",
-                extra_context={"trial_end_date": format_date(subscription.trial_end)},
+                extra_context={
+                    "trial_end_date": format_date(subscription.trial_end),
+                    "payment_method_required": payment_method_required,
+                    "billing_address_required": billing_address_required,
+                },
                 deduplication_key=subscription_trial_conversion_reminder_key(
                     subscription.id, subscription.trial_end.date()
                 ),

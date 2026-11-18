@@ -3413,6 +3413,16 @@ export interface components {
       previous_billing_provider: string | null
       /** Trial End Date */
       trial_end_date: string
+      /**
+       * Payment Method Required
+       * @default true
+       */
+      payment_method_required: boolean
+      /**
+       * Billing Address Required
+       * @default false
+       */
+      billing_address_required: boolean
     }
     /** SubscriptionUncanceledEmail */
     SubscriptionUncanceledEmail: {

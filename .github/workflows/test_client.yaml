@@ -254,10 +254,11 @@ jobs:
       - name: Seed the Next.js build cache
         if: github.event_name == 'push' && steps.next-cache-restore.outputs.cache-matched-key == ''
         run: |
-          if [ -z "$(find apps/web/.next/cache apps/orbit/.next/cache -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
-            pnpm --filter web build
-            pnpm --filter orbit-playground build
-          fi
+          for app in web:web orbit:orbit-playground; do
+            if [ -z "$(find "apps/${app%%:*}/.next/cache" -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
+              pnpm --filter "${app##*:}" build
+            fi
+          done
 
       - name: Check whether the build wrote to the Next.js build cache
         id: next-cache

@@ -1,0 +1,19 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewColumns.tsx
+  s_7b0666dec04723::t_d48c574bcfbd18 120-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "895ea3348e1cbadbf11b84ad84dbb6b28a69b64f",
+  "prompts": {},
+  "sessions": {
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

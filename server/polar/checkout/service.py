@@ -1195,17 +1195,6 @@ class CheckoutService:
             checkout.payment_processor == PaymentProcessor.stripe
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
-            and (
-                checkout.customer_name is None
-                or (
-                    checkout.discount is not None
-                    and checkout.discount.max_redemptions_per_customer is not None
-                )
-                or (
-                    checkout.trial_end is not None
-                    and checkout.organization.prevent_trial_abuse
-                )
-            )
         ):
             try:
                 confirmation_token = await stripe_service.get_confirmation_token(
@@ -1213,6 +1202,46 @@ class CheckoutService:
                 )
             except stripe_lib.StripeError:
                 confirmation_token = None
+
+            card_country: str | None = None
+            if (
+                confirmation_token is not None
+                and confirmation_token.payment_method_preview is not None
+            ):
+                card = getattr(confirmation_token.payment_method_preview, "card", None)
+                card_country = getattr(card, "country", None)
+            checkout.customer_signals = {
+                **(checkout.customer_signals or {}),
+                "card_country": card_country,
+            }
+            ip_country = checkout.customer_signals.get("ip_country")
+            known_countries = {ip_country, card_country} - {None}
+            billing_address = checkout.customer_billing_address
+            if (
+                billing_address is not None
+                and known_countries
+                and billing_address.country not in known_countries
+            ):
+                log.info(
+                    "Checkout confirmation blocked by billing country mismatch",
+                    checkout_id=str(checkout.id),
+                    organization_id=str(checkout.organization_id),
+                    billing_country=billing_address.country,
+                    ip_country=ip_country,
+                    card_country=card_country,
+                )
+                errors.append(
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_billing_address", "country"),
+                        "msg": (
+                            "We couldn't verify this country. "
+                            "Select the country you're in, "
+                            "or pay with a card issued in this country."
+                        ),
+                        "input": billing_address.country,
+                    }
+                )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
         # field for better UX and instead extract the name from Stripe's confirmation token.

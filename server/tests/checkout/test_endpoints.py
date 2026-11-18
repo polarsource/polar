@@ -64,6 +64,9 @@ def api_prefix(request: pytest.FixtureRequest) -> str:
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
+    mock.get_confirmation_token.return_value = SimpleNamespace(
+        payment_method_preview=None
+    )
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     return mock
 
@@ -1462,6 +1465,7 @@ class TestClientConfirm:
         assert checkout.customer_signals == {
             "ip_address": "1.2.3.4",
             "ip_country": None,
+            "card_country": None,
         }
 
     async def test_confirm_with_discount_code(

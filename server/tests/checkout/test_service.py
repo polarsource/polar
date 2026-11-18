@@ -140,6 +140,9 @@ PRESET_AMOUNT = 5000
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
+    mock.get_confirmation_token.return_value = SimpleNamespace(
+        payment_method_preview=None
+    )
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     return mock
 
@@ -5032,6 +5035,7 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = None
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         with pytest.raises(PolarRequestValidationError) as e:
@@ -5058,6 +5062,7 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = None
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         with pytest.raises(PolarRequestValidationError) as e:
@@ -5094,6 +5099,7 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = "Beppe Boris"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -5132,6 +5138,7 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = None
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -5502,28 +5509,45 @@ class TestConfirm:
         assert customer_session.customer == checkout.customer
 
     @pytest.mark.parametrize(
-        ("ip_address", "ip_country", "expected_customer_signals"),
+        ("ip_address", "ip_country", "card_country", "expected_customer_signals"),
         [
             pytest.param(
                 "1.2.3.4",
                 "FR",
-                {"ip_address": "1.2.3.4", "ip_country": "FR"},
+                None,
+                {"ip_address": "1.2.3.4", "ip_country": "FR", "card_country": None},
                 id="resolved country",
             ),
             pytest.param(
                 "1.2.3.4",
                 "",
-                {"ip_address": "1.2.3.4", "ip_country": None},
+                None,
+                {"ip_address": "1.2.3.4", "ip_country": None, "card_country": None},
                 id="unresolved country",
             ),
-            pytest.param(None, "FR", None, id="no ip address"),
+            pytest.param(None, "FR", None, {"card_country": None}, id="no ip address"),
+            pytest.param(
+                "1.2.3.4",
+                "FR",
+                "US",
+                {"ip_address": "1.2.3.4", "ip_country": "FR", "card_country": "US"},
+                id="only ip country matches",
+            ),
+            pytest.param(
+                "1.2.3.4",
+                "US",
+                "FR",
+                {"ip_address": "1.2.3.4", "ip_country": "US", "card_country": "FR"},
+                id="only card country matches",
+            ),
         ],
     )
     async def test_customer_signals(
         self,
         ip_address: str | None,
         ip_country: str,
-        expected_customer_signals: dict[str, str | None] | None,
+        card_country: str | None,
+        expected_customer_signals: dict[str, str | None],
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
@@ -5534,6 +5558,11 @@ class TestConfirm:
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
+            payment_method_preview=SimpleNamespace(
+                card=SimpleNamespace(country=card_country)
+            )
         )
         ip_geolocation_client = MagicMock()
         ip_geolocation_client.getCountry.return_value = ip_country
@@ -5555,6 +5584,41 @@ class TestConfirm:
         )
 
         assert checkout.customer_signals == expected_customer_signals
+
+    async def test_billing_country_not_corroborated(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
+            payment_method_preview=SimpleNamespace(card=SimpleNamespace(country="SE"))
+        )
+        ip_geolocation_client = MagicMock()
+        ip_geolocation_client.getCountry.return_value = "SE"
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "UG"},
+                    }
+                ),
+                ip_geolocation_client,
+                "1.2.3.4",
+            )
+
+        assert [error["loc"] for error in e.value.errors()] == [
+            ("body", "customer_billing_address", "country")
+        ]
+        stripe_service_mock.create_payment_intent.assert_not_called()
 
     @pytest.mark.parametrize(
         ("customer_billing_address", "expected_tax_metadata"),
@@ -7287,6 +7351,7 @@ class TestConfirm:
         confirmation_token.payment_method_preview.billing_details.name = (
             "John Appleseed"
         )
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -7364,7 +7429,6 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.customer_name == "Provided Name"
-        stripe_service_mock.get_confirmation_token.assert_not_called()
 
     async def test_wallet_payment_succeeds_on_stripe_error(
         self,
@@ -7429,6 +7493,7 @@ class TestConfirm:
         confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = None
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"

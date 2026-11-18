@@ -138,9 +138,9 @@ from polar.worker import enqueue_job
 
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .payment_methods import get_payment_method_country
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
-from .territories import BILLING_COUNTRY_ALIASES
 
 if typing.TYPE_CHECKING:
     from stripe.params._customer_create_params import (
@@ -1204,19 +1204,17 @@ class CheckoutService:
             except stripe_lib.StripeError:
                 confirmation_token = None
 
-            card_country: str | None = None
-            if (
-                confirmation_token is not None
-                and confirmation_token.payment_method_preview is not None
-            ):
-                card = getattr(confirmation_token.payment_method_preview, "card", None)
-                card_country = getattr(card, "country", None)
+            payment_method_country = get_payment_method_country(
+                confirmation_token.payment_method_preview
+                if confirmation_token is not None
+                else None
+            )
             checkout.customer_signals = {
                 **(checkout.customer_signals or {}),
-                "card_country": card_country,
+                "payment_method_country": payment_method_country,
             }
             ip_country = checkout.customer_signals.get("ip_country")
-            known_countries = {ip_country, card_country} - {None}
+            known_countries = {ip_country, payment_method_country} - {None}
             billing_address = checkout.customer_billing_address
             if (
                 billing_address is not None
@@ -1224,7 +1222,9 @@ class CheckoutService:
                 and known_countries.isdisjoint(
                     {
                         billing_address.country,
-                        *BILLING_COUNTRY_ALIASES.get(billing_address.country, ()),
+                        *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
+                            billing_address.country, ()
+                        ),
                     }
                 )
             ):

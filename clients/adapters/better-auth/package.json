@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/better-auth",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "Polar integration for better-auth",
   "repository": {
     "type": "git",

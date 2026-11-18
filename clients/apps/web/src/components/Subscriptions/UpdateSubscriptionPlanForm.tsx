@@ -5,8 +5,8 @@ import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Box } from '@polar-sh/orbit/Box'
 import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
   FormControl,
@@ -15,16 +15,18 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useMemo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
+import { ProductCombobox } from '../Products/ProductCombobox'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import AmountLabel from '../Shared/AmountLabel'
 import { toast } from '../Toast/use-toast'
-import { ProductCombobox } from '../Products/ProductCombobox'
-import { subscriptionUpdateValidationDiscriminators } from './utils'
+import { SubscriptionDiscountField } from './SubscriptionDiscountField'
+import { UpdateSubscriptionChangeSummary } from './UpdateSubscriptionChangeSummary'
 import { UpdateSubscriptionProductWarning } from './UpdateSubscriptionProductWarning'
+import { UpdateSubscriptionSection } from './UpdateSubscriptionSection'
+import { subscriptionUpdateValidationDiscriminators } from './utils'
 
-export const UpdateSubscriptionProductForm = ({
+export const UpdateSubscriptionPlanForm = ({
   subscription,
   onUpdate,
   organization,
@@ -37,66 +39,88 @@ export const UpdateSubscriptionProductForm = ({
 
   const defaultProrationBehavior =
     organization.subscription_settings.proration_behavior
+  const currentDiscountId = subscription.discount_id ?? null
 
   const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
+      product_id: null,
+      discount_id: currentDiscountId,
       proration_behavior: defaultProrationBehavior,
     },
   })
   const { control, handleSubmit, setError } = form
 
-  const currentPriceIds = useMemo(
-    () => subscription.prices.map(({ id }) => id),
-    [subscription],
-  )
-
-  // oxlint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = useWatch({ control, name: 'product_id' })
+  const selectedDiscountId = useWatch({ control, name: 'discount_id' })
+  const selectedProrationBehavior = useWatch({
+    control,
+    name: 'proration_behavior',
+  })
   const { data: selectedProduct } = useProduct(selectedProductId)
   const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
-  const onSubmit = useCallback(
-    async (body: schemas['SubscriptionUpdateBase']) => {
-      await updateSubscription.mutateAsync(body).then(({ error }) => {
-        if (error) {
-          if (error.detail)
-            if (isValidationError(error.detail)) {
-              setValidationErrors(
-                error.detail,
-                setError,
-                undefined,
-                subscriptionUpdateValidationDiscriminators,
-              )
-            } else {
-              toast({
-                title: 'Subscription update failed',
-                description: `Error while updating subscription ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
-              })
-            }
-          return
-        }
+  const isChangingProduct = !!selectedProductId
+  const isChangingDiscount = (selectedDiscountId ?? null) !== currentDiscountId
 
-        toast({
-          title: 'Subscription updated',
-          description: `Subscription ${subscription.product.name} successfully updated`,
-        })
-        onUpdate?.()
-      })
-    },
-    [updateSubscription, subscription, setError, onUpdate],
-  )
+  const previewChange: schemas['SubscriptionChangePreviewProduct'] | null =
+    selectedProductId
+      ? {
+          product_id: selectedProductId,
+          proration_behavior: selectedProrationBehavior,
+          ...(isChangingDiscount
+            ? { discount_id: selectedDiscountId ?? null }
+            : {}),
+        }
+      : null
+
+  const onSubmit = async ({
+    product_id,
+    proration_behavior,
+    discount_id,
+  }: schemas['SubscriptionUpdateBase']) => {
+    const discountChanged = (discount_id ?? null) !== currentDiscountId
+    const { error } = await updateSubscription.mutateAsync({
+      ...(product_id ? { product_id, proration_behavior } : {}),
+      ...(discountChanged ? { discount_id: discount_id ?? null } : {}),
+    })
+
+    if (error) {
+      if (error.detail)
+        if (isValidationError(error.detail)) {
+          setValidationErrors(
+            error.detail,
+            setError,
+            undefined,
+            subscriptionUpdateValidationDiscriminators,
+          )
+        } else {
+          toast({
+            title: 'Subscription update failed',
+            description: `Error while updating subscription ${subscription.product.name}: ${extractApiErrorMessage(error)}`,
+          })
+        }
+      return
+    }
+
+    toast({
+      title: 'Subscription updated',
+      description: `Subscription ${subscription.product.name} successfully updated`,
+    })
+    onUpdate?.()
+  }
 
   return (
     <Form {...form}>
-      <form
-        className="flex grow flex-col justify-between gap-y-6"
+      <Box
+        as="form"
+        flexDirection="column"
+        rowGap="2xl"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <Box flexDirection="column" rowGap="xl">
+        <UpdateSubscriptionSection title="Product">
           <FormField
             control={control}
             name="product_id"
-            rules={{ required: 'Please select a product' }}
             render={({ field }) => (
               <FormItem>
                 <Box flexDirection="column" rowGap="none">
@@ -129,14 +153,14 @@ export const UpdateSubscriptionProductForm = ({
                     onChange={field.onChange}
                     currency={subscription.currency}
                     currentProductId={subscription.product_id}
-                    currentPriceIds={currentPriceIds}
+                    currentPriceIds={subscription.prices.map(({ id }) => id)}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          {subscription.status !== 'trialing' && (
+          {isChangingProduct && subscription.status !== 'trialing' && (
             <FormField
               control={control}
               name="proration_behavior"
@@ -157,27 +181,50 @@ export const UpdateSubscriptionProductForm = ({
               )}
             />
           )}
-        </Box>
-        <Box flexDirection="column" rowGap="l">
-          <Button
-            type="submit"
-            size="lg"
-            loading={updateSubscription.isPending}
-            disabled={updateSubscription.isPending}
-          >
-            {trialOutcome?.kind === 'ends'
-              ? 'Update Subscription & End Trial'
-              : 'Update Subscription'}
-          </Button>
-          {selectedProduct ? (
+          {selectedProduct && (
             <UpdateSubscriptionProductWarning
               subscription={subscription}
               selectedProduct={selectedProduct}
               trialOutcome={trialOutcome}
             />
-          ) : null}
-        </Box>
-      </form>
+          )}
+        </UpdateSubscriptionSection>
+
+        <UpdateSubscriptionSection title="Discount" divider>
+          <SubscriptionDiscountField
+            control={control}
+            subscription={subscription}
+            targetProductId={selectedProductId || subscription.product_id}
+          />
+        </UpdateSubscriptionSection>
+
+        {(isChangingProduct || isChangingDiscount) && (
+          <UpdateSubscriptionSection title="Summary" divider>
+            <UpdateSubscriptionChangeSummary
+              subscription={subscription}
+              selectedProduct={selectedProduct}
+              change={previewChange}
+              isChangingDiscount={isChangingDiscount}
+              newDiscountId={selectedDiscountId ?? null}
+              trialOutcome={trialOutcome}
+            />
+          </UpdateSubscriptionSection>
+        )}
+
+        <Button
+          type="submit"
+          size="lg"
+          loading={updateSubscription.isPending}
+          disabled={
+            !(isChangingProduct || isChangingDiscount) ||
+            updateSubscription.isPending
+          }
+        >
+          {trialOutcome?.kind === 'ends'
+            ? 'Update Subscription & End Trial'
+            : 'Update Subscription'}
+        </Button>
+      </Box>
     </Form>
   )
 }

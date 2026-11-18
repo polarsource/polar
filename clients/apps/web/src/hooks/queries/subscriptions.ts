@@ -75,6 +75,23 @@ export const useSubscriptionMeterChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionChangePreview = (
+  id: string,
+  change: schemas['SubscriptionChangePreviewProduct'] | null,
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'change-preview', change],
+    queryFn: () =>
+      unwrap(
+        api.POST('/v1/subscriptions/{id}/change-preview', {
+          params: { path: { id } },
+          body: change!,
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: change !== null,
+  })
+
 export const useSubscriptionCancelPreview = (
   id: string,
   options?: { enabled?: boolean },

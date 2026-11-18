@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import func, select
 
 from polar.auth.models import AuthSubject, is_user
@@ -2718,6 +2719,70 @@ class TestIngested:
 
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is not None
+
+    async def test_activation_queries_do_not_scale_with_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+        )
+
+        async def count_events_queries(customer_count: int) -> int:
+            customer_meters: list[CustomerMeter] = []
+            event_ids: list[uuid.UUID] = []
+            for _ in range(customer_count):
+                customer = await create_customer(
+                    save_fixture,
+                    organization=organization,
+                    email=f"{uuid.uuid4()}@example.com",
+                )
+                customer_meter = CustomerMeter(
+                    customer=customer, meter=meter, activated_at=None
+                )
+                await save_fixture(customer_meter)
+                customer_meters.append(customer_meter)
+                event = await create_event(
+                    save_fixture,
+                    customer=customer,
+                    organization=organization,
+                    source=EventSource.user,
+                    metadata={"model": "lite"},
+                )
+                event_ids.append(event.id)
+
+            count = 0
+
+            def on_execute(*args: Any) -> None:
+                nonlocal count
+                if "FROM events" in args[2]:
+                    count += 1
+
+            bind = session.sync_session.bind
+            assert bind is not None
+            sqlalchemy_event.listen(bind, "before_cursor_execute", on_execute)
+            try:
+                await event_service.ingested(session, event_ids)
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", on_execute)
+
+            for customer_meter in customer_meters:
+                await session.refresh(customer_meter)
+                assert customer_meter.activated_at is not None
+            return count
+
+        assert await count_events_queries(1) == await count_events_queries(3)
 
     # async def test_creates_meter_events_for_matching_events(
     #     self,

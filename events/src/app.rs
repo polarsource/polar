@@ -78,6 +78,7 @@ impl AppState {
     pub async fn connect(config: Config) -> anyhow::Result<Self> {
         let db = PgPoolOptions::new()
             .max_connections(config.postgres_pool_size)
+            .test_before_acquire(false)
             .acquire_timeout(DATABASE_ACQUIRE_TIMEOUT)
             .connect_with(config.postgres.clone())
             .await

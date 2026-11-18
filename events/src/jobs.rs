@@ -12,12 +12,10 @@ pub use self::sqs::{SqsQueue, SqsSettings};
 
 const QUEUE: &str = "low_priority";
 const RECORD_TOKEN_USAGE_ACTOR: &str = "organization_access_token.record_usage";
-const SYNC_REDUCER_BUCKET_ACTOR: &str = "reducer_bucket.sync";
-pub const ACTORS: [&str; 2] = [RECORD_TOKEN_USAGE_ACTOR, SYNC_REDUCER_BUCKET_ACTOR];
+pub const ACTORS: [&str; 1] = [RECORD_TOKEN_USAGE_ACTOR];
 const DEBOUNCE_KEY_PREFIX: &str = "debounce:";
 const DEBOUNCE_KEY_TTL_SECONDS: i64 = 60 * 60;
 const DEFAULT_DEBOUNCE_MIN_THRESHOLD: Duration = Duration::from_secs(15);
-const REDUCER_BUCKET_SYNC_DEBOUNCE_MIN_THRESHOLD: Duration = Duration::from_secs(10);
 
 pub struct Job {
     actor: &'static str,
@@ -52,31 +50,6 @@ impl Job {
             debounce: Some(Debounce {
                 key: format!("organization_access_token.record_usage:{token_id}"),
                 min_threshold: DEFAULT_DEBOUNCE_MIN_THRESHOLD,
-            }),
-        }
-    }
-
-    pub fn sync_reducer_bucket(
-        reducer_id: Uuid,
-        bucket_start: &str,
-        bucket_key: &str,
-        customer_id: Option<Uuid>,
-        external_customer_id: Option<&str>,
-        delay: Duration,
-    ) -> Self {
-        Self {
-            actor: SYNC_REDUCER_BUCKET_ACTOR,
-            args: vec![
-                json!(reducer_id),
-                json!(bucket_start),
-                json!(customer_id),
-                json!(external_customer_id),
-            ],
-            kwargs: Map::new(),
-            delay: Some(delay),
-            debounce: Some(Debounce {
-                key: format!("reducer_bucket.sync:{bucket_key}"),
-                min_threshold: REDUCER_BUCKET_SYNC_DEBOUNCE_MIN_THRESHOLD,
             }),
         }
     }
@@ -248,36 +221,6 @@ mod tests {
                 "message_id": Uuid::nil(),
                 "message_timestamp": 1_794_493_590_947_u64,
             })
-        );
-    }
-
-    #[test]
-    fn reducer_bucket_sync_waits_for_the_bucket_to_close() {
-        let job = Job::sync_reducer_bucket(
-            Uuid::from_u128(1),
-            "2025-01-01T00:05:00+00:00",
-            "reducer_bucket:key",
-            None,
-            Some("customer"),
-            Duration::from_secs(120),
-        );
-
-        let message = encode(job);
-
-        assert_eq!(message["queue_name"], "low_priority.DQ");
-        assert_eq!(
-            message["args"],
-            json!([
-                Uuid::from_u128(1),
-                "2025-01-01T00:05:00+00:00",
-                null,
-                "customer"
-            ])
-        );
-        assert_eq!(message["options"]["eta"], 1_794_493_710_947_u64);
-        assert_eq!(
-            message["options"]["debounce_key"],
-            "debounce:reducer_bucket.sync:reducer_bucket:key"
         );
     }
 

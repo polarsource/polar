@@ -39,7 +39,7 @@ use crate::{
     jobs::{self, SqsQueue, SqsSettings},
     outpost::{self, ReducerBucketChange},
     rate_limit::{self, RateLimiter},
-    reducer::{self, ActiveBuckets, QueuedSyncs},
+    reducer::{self, ActiveBuckets},
     telemetry,
 };
 
@@ -72,7 +72,6 @@ pub struct AppState {
     pub cap_token_usage_records: bool,
     pub trusted_proxies: Arc<TrustedProxies>,
     pub event_types: Arc<EventTypeCache>,
-    pub queued_syncs: Arc<QueuedSyncs>,
 }
 
 impl AppState {
@@ -139,7 +138,6 @@ impl AppState {
             cap_token_usage_records: config.environment == "test",
             trusted_proxies: Arc::new(config.trusted_proxies),
             event_types: Arc::default(),
-            queued_syncs: Arc::default(),
             db,
             redis,
             redis_client,
@@ -285,7 +283,7 @@ async fn ingest(
     }
 
     // A dropped connection or the request timeout cancels this handler: the write runs in its
-    // own task so it never stops between the commit and handing off the bucket syncs.
+    // own task so it never stops between the commit and updating the Redis buckets.
     let response = state
         .tasks
         .clone()
@@ -312,8 +310,7 @@ async fn store_events(
     WriteDeadline(deadline): WriteDeadline,
 ) -> Result<IngestResponse, IngestError> {
     // The deadline counts from the request's arrival and leaves the commit a margin before
-    // the request times out. Bucket syncs are queued before the commit; the Redis buckets only
-    // learn about events Postgres has committed.
+    // the request times out. The Redis buckets only learn about events Postgres has committed.
     let written = tokio::time::timeout_at(deadline, write_events(&state, organization_id, &events))
         .await
         .map_err(|_| IngestError::TimedOut)??;
@@ -395,8 +392,8 @@ async fn write_events(
     request_span.record("skipped_duplicates", staged.duplicates);
 
     let now = Utc::now();
-    let (active_buckets, sync_jobs, outpost_changes) = if staged.inserted.is_empty() {
-        (None, Vec::new(), Vec::new())
+    let (active_buckets, outpost_changes) = if staged.inserted.is_empty() {
+        (None, Vec::new())
     } else {
         let span = tracing::info_span!(
             "rollup_reducer_buckets",
@@ -415,22 +412,8 @@ async fn write_events(
         .instrument(span.clone())
         .await?;
         span.record("rolled_up_buckets", rollup.bucket_count);
-        (
-            Some(rollup.active_buckets),
-            rollup.sync_jobs,
-            rollup.outpost_changes,
-        )
+        (Some(rollup.active_buckets), rollup.outpost_changes)
     };
-    // Read again: the rollup may have taken a while, and a stale clock would skip syncs
-    // that are due because the bucket is about to close.
-    let now = Utc::now();
-    let (sync_jobs, queued_buckets) = state.queued_syncs.pending(sync_jobs, now);
-    let job_count = sync_jobs.len();
-    jobs::enqueue(state.sqs.as_deref(), &mut state.redis.clone(), sync_jobs)
-        .instrument(tracing::info_span!("enqueue_bucket_syncs", job_count))
-        .await
-        .map_err(IngestError::QueueUnavailable)?;
-    state.queued_syncs.record(queued_buckets, now);
     Ok(WrittenEvents {
         response: IngestResponse {
             inserted: staged.inserted.len(),

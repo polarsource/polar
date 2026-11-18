@@ -240,7 +240,7 @@ mod tests {
     use serde_json::json;
     use tokio::net::TcpListener;
 
-    use super::*;
+    use super::{super::Debounce, *};
     use crate::aws::{AwsSettings, sdk_config};
 
     type Requests = Arc<Mutex<Vec<(String, Value)>>>;
@@ -319,25 +319,27 @@ mod tests {
         (queue, requests, redis)
     }
 
-    fn sync_job(bucket_key: &str) -> Job {
-        Job::sync_reducer_bucket(
-            Uuid::from_u128(1),
-            "2025-01-01T00:05:00+00:00",
-            bucket_key,
-            None,
-            Some("customer"),
-            Duration::from_secs(1_200),
-        )
+    fn delayed_job(key: &str, delay: Duration) -> Job {
+        Job {
+            actor: "dummy",
+            args: vec![json!("value")],
+            kwargs: Map::new(),
+            delay: Some(delay),
+            debounce: Some(Debounce {
+                key: format!("dummy:{key}"),
+                min_threshold: Duration::from_secs(10),
+            }),
+        }
     }
 
     #[tokio::test]
     #[ignore = "needs the local development Redis"]
     async fn leaves_the_debounce_key_alone_when_a_job_is_rejected() {
-        let (queue, _, mut redis) = mock_queue(&["reducer_bucket.sync"]).await;
-        let accepted = format!("reducer_bucket:{}", Uuid::new_v4());
-        let rejected = format!("reducer_bucket:rejected:{}", Uuid::new_v4());
-        let accepted_key = format!("debounce:reducer_bucket.sync:{accepted}");
-        let rejected_key = format!("debounce:reducer_bucket.sync:{rejected}");
+        let (queue, _, mut redis) = mock_queue(&["dummy"]).await;
+        let accepted = Uuid::new_v4().to_string();
+        let rejected = format!("rejected:{}", Uuid::new_v4());
+        let accepted_key = format!("debounce:dummy:{accepted}");
+        let rejected_key = format!("debounce:dummy:{rejected}");
         let _: () = redis
             .hset(&rejected_key, "message_id", "previous")
             .await
@@ -346,7 +348,10 @@ mod tests {
         let result = queue
             .send(
                 &mut redis,
-                vec![sync_job(&rejected), sync_job(&accepted)],
+                vec![
+                    delayed_job(&rejected, Duration::from_secs(1_200)),
+                    delayed_job(&accepted, Duration::from_secs(1_200)),
+                ],
                 Duration::from_millis(1_794_493_590_947),
             )
             .await;
@@ -367,9 +372,9 @@ mod tests {
     #[tokio::test]
     #[ignore = "needs the local development Redis"]
     async fn accepts_only_the_actors_routed_to_it() {
-        let (queue, ..) = mock_queue(&["reducer_bucket.sync"]).await;
+        let (queue, ..) = mock_queue(&["dummy"]).await;
 
-        assert!(queue.accepts("reducer_bucket.sync"));
+        assert!(queue.accepts("dummy"));
         assert!(!queue.accepts("organization_access_token.record_usage"));
     }
 
@@ -384,15 +389,16 @@ mod tests {
     #[tokio::test]
     #[ignore = "needs the local development Redis"]
     async fn sends_delayed_debounced_jobs_to_the_queue() {
-        let (queue, requests, mut redis) = mock_queue(&["reducer_bucket.sync"]).await;
-        let bucket_key = format!("reducer_bucket:{}", Uuid::new_v4());
-        let jobs = Vec::from_iter((0..11).map(|_| sync_job(&bucket_key)));
+        let (queue, requests, mut redis) = mock_queue(&["dummy"]).await;
+        let key = Uuid::new_v4().to_string();
+        let jobs =
+            Vec::from_iter((0..11).map(|_| delayed_job(&key, Duration::from_secs(1_200))));
 
         queue
             .send(&mut redis, jobs, Duration::from_millis(1_794_493_590_947))
             .await
             .unwrap();
-        let debounce_key = format!("debounce:reducer_bucket.sync:{bucket_key}");
+        let debounce_key = format!("debounce:dummy:{key}");
         let owner: String = redis.hget(&debounce_key, "message_id").await.unwrap();
         let _: () = redis.del(&debounce_key).await.unwrap();
 
@@ -415,21 +421,14 @@ mod tests {
         assert_eq!(first[0]["DelaySeconds"], 900);
         let envelope: Value =
             serde_json::from_str(last[0]["MessageBody"].as_str().unwrap()).unwrap();
-        assert_eq!(envelope["actor"], "reducer_bucket.sync");
+        assert_eq!(envelope["actor"], "dummy");
         assert_eq!(envelope["debounce_key"], debounce_key);
         assert_eq!(envelope["message_id"], owner);
     }
 
     #[test]
     fn builds_the_envelope_the_lambda_worker_parses() {
-        let job = Job::sync_reducer_bucket(
-            Uuid::from_u128(1),
-            "2025-01-01T00:05:00+00:00",
-            "reducer_bucket:key",
-            None,
-            Some("customer"),
-            Duration::from_secs(120),
-        );
+        let job = delayed_job("key", Duration::from_secs(120));
 
         let (envelope, delay) =
             Envelope::new(job, Duration::from_millis(1_794_493_590_947), Uuid::nil());
@@ -438,19 +437,14 @@ mod tests {
         assert_eq!(
             serde_json::to_value(envelope).unwrap(),
             json!({
-                "actor": "reducer_bucket.sync",
-                "args": [
-                    "00000000-0000-0000-0000-000000000001",
-                    "2025-01-01T00:05:00+00:00",
-                    null,
-                    "customer",
-                ],
+                "actor": "dummy",
+                "args": ["value"],
                 "kwargs": {},
                 "correlation_id": null,
                 "attempt": 1,
                 "message_timestamp": 1_794_493_590_947_u64,
                 "message_id": "00000000-0000-0000-0000-000000000000",
-                "debounce_key": "debounce:reducer_bucket.sync:reducer_bucket:key",
+                "debounce_key": "debounce:dummy:key",
                 "message_options": {},
             })
         );

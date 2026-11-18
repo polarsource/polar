@@ -38,7 +38,6 @@ pub enum IngestError {
     InvalidPayload(Vec<ValidationError>),
     InvalidReferences(Vec<ValidationError>),
     EventTypeUnavailable,
-    QueueUnavailable(anyhow::Error),
     Database(sqlx::Error),
     Interrupted(tokio::task::JoinError),
     TimedOut,
@@ -71,17 +70,6 @@ impl IntoResponse for IngestError {
             Self::EventTypeUnavailable => {
                 tracing::error!("event type could not be created");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-            Self::QueueUnavailable(error) => {
-                tracing::error!(
-                    error = format!("{error:#}"),
-                    "failed to enqueue reducer bucket syncs"
-                );
-                error_response(
-                    StatusCode::SERVICE_UNAVAILABLE,
-                    "IngestUnavailable",
-                    "The events could not be queued for processing. None of them were stored.",
-                )
             }
             Self::TimedOut => {
                 tracing::error!("event ingestion timed out before committing");

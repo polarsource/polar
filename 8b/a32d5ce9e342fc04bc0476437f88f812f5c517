@@ -1,0 +1,21 @@
+server/polar/merchant_migration/adapters/lemon_squeezy.py
+  s_94ff348b263c5b::t_350a3b813881ea 507-510
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_94ff348b263c5b::t_16729b6b6d3d18 428
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8ba32d5ce9e342fc04bc0476437f88f812f5c517",
+  "prompts": {},
+  "sessions": {
+    "s_94ff348b263c5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_94ff348b263c5b",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

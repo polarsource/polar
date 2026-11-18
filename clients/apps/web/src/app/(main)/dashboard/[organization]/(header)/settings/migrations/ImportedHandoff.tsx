@@ -22,7 +22,7 @@ interface Props {
 
 const UNCOUNTED = 'Your catalog is now in Polar.'
 const CARDS_AT_STRIPE =
-  "Your customers' cards are still at Stripe. Moving them lets Polar charge " +
+  "Your customers' cards are still with your current provider. Moving them lets Polar charge " +
   'them. This is a checklist. You can leave and come back.'
 const MAYBE_ON_POLAR =
   'These subscriptions were prepared in an earlier migration. If their ' +
@@ -40,7 +40,7 @@ function receipt(outcome: ImportOutcome, nothingLanded: boolean): string {
   if (total === 0) {
     // Mid-refetch this zero is still the pre-import number.
     return nothingLanded
-      ? 'No records were imported. Everything stayed on Stripe.'
+      ? 'No records were imported. Everything stayed where it was.'
       : UNCOUNTED
   }
   const verb = total === 1 ? 'is' : 'are'

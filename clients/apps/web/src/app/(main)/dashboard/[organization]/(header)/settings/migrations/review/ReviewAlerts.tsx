@@ -28,7 +28,7 @@ export function ReviewAlerts({
       {refreshError && (
         <Alert
           variant="danger"
-          title="We couldn't refresh from Stripe"
+          title="We couldn't refresh your catalog"
           description={refreshError}
         />
       )}

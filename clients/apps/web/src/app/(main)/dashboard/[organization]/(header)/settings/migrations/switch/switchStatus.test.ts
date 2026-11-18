@@ -43,9 +43,9 @@ describe('switchStatus', () => {
     })
   })
 
-  it('shows "Left on Stripe" (yellow) when skipped', () => {
+  it('shows "Not switched" (yellow) when skipped', () => {
     expect(switchStatus(row({ cutover_status: 'skipped' }))).toEqual({
-      label: 'Left on Stripe',
+      label: 'Not switched',
       color: 'yellow',
     })
   })

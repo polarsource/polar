@@ -24,7 +24,7 @@ type Stage =
 const STAGES: Record<Stage, { label: string; color?: StatusColor }> = {
   switched: { label: 'Switched', color: 'gray' },
   failed: { label: 'Failed', color: 'red' },
-  stays: { label: 'Stays on Stripe', color: 'red' },
+  stays: { label: 'Not moving', color: 'red' },
   needs_info: { label: 'Needs info', color: 'yellow' },
   ready: { label: 'Ready', color: 'green' },
   to_prepare: { label: 'To prepare' },

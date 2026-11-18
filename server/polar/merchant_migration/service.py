@@ -126,8 +126,8 @@ _PRECHECK_KINDS = {None, MerchantMigrationOperationKind.precheck}
 _IMPORT_FAILURE = "We couldn't prepare these subscriptions. Please try again."
 _STALLED_CUTOVER_ERROR = "Switch stalled with no progress; start it again to resume."
 _FINISHED_CUTOVER_ERROR = (
-    "This migration is finished and its Stripe key is deleted. "
-    "Start a new migration to switch the subscriptions still on Stripe."
+    "This migration is finished and its API key is deleted. "
+    "Start a new migration to switch the subscriptions still on the source."
 )
 _STALLED_OPERATION_ERROR = (
     "The last migration job stalled. Start it again, then try once it finishes."
@@ -232,7 +232,7 @@ class MerchantMigrationNotEnabled(MerchantMigrationError):
 
 class OrganizationNotOnboarded(MerchantMigrationError):
     def __init__(self) -> None:
-        super().__init__("Finish onboarding before migrating from Stripe.", 403)
+        super().__init__("Finish onboarding before starting a migration.", 403)
 
 
 class InvalidSourceCredentials(MerchantMigrationError):

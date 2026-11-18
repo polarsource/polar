@@ -145,7 +145,7 @@ export const STEP_COPY: Record<string, StepCopy> = {
   cutover: {
     title: 'Switch billing to Polar',
     description:
-      'Pick the subscriptions to switch. Polar starts billing them and stops them on Stripe.',
+      'Pick the subscriptions to switch. Polar starts billing them and stops them at your current provider.',
     warning: 'You cannot undo this. Charges start on Polar from now on.',
     action: 'Switch subscriptions',
   },

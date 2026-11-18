@@ -158,7 +158,8 @@ _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
 )
 _SUBSCRIPTION_PRODUCT_MISSING_REASON = (
-    "This subscription's price wasn't in the catalog Polar read from Stripe. "
+    "This subscription's price wasn't in the catalog Polar read from the "
+    "source. "
     "That usually means the product was deleted. It stays on the source."
 )
 _SUBSCRIPTION_CUSTOMER_REASON = (
@@ -166,8 +167,8 @@ _SUBSCRIPTION_CUSTOMER_REASON = (
 )
 _CUSTOMER_SUBSCRIBED_ON_POLAR_REASON = (
     "This customer already has a subscription on Polar. Moving this one too "
-    "would bill them twice, so it stays on Stripe. If it's a duplicate, cancel "
-    "it on Stripe. If they should keep both, contact Polar support."
+    "would bill them twice, so it stays on the source. If it's a duplicate, "
+    "cancel it on the source. If they should keep both, contact Polar support."
 )
 _CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
     "A Polar customer with this email is already tied to a different Stripe "
@@ -655,7 +656,8 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="customer_missing_country",
                 message=(
-                    f"{count} customers have no billing country on Stripe. Polar "
+                    f"{count} customers have no billing country on the source. "
+                    "Polar "
                     "will use a payment-method country when available; otherwise "
                     "they import without a country and tax isn't calculated."
                 ),

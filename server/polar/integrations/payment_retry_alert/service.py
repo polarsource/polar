@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 
 import structlog
@@ -32,12 +32,11 @@ class SkipReason(StrEnum):
     unmatched = "unmatched"
     not_in_dunning = "not_in_dunning"
     subscription_ended = "subscription_ended"
-    renewals_disabled = "renewals_disabled"
     payment_in_progress = "payment_in_progress"
     max_attempts_reached = "max_attempts_reached"
     non_recoverable_decline = "non_recoverable_decline"
     payment_method_changed = "payment_method_changed"
-    no_charge_needed = "no_charge_needed"
+    not_charged = "not_charged"
 
 
 def _is_same_network_transaction(
@@ -90,7 +89,6 @@ class PaymentRetryAlertService:
         order = await order_repository.get_by_id(
             declined_payment.order_id,
             options=order_repository.get_eager_options(),
-            for_update=True,
         )
         if (
             order is None
@@ -102,12 +100,6 @@ class PaymentRetryAlertService:
         subscription = order.subscription
         if subscription is None or subscription.ended_at is not None:
             return SkipReason.subscription_ended
-
-        if not order.organization.can_renew_subscriptions:
-            return SkipReason.renewals_disabled
-
-        if order.payment_lock_acquired_at is not None:
-            return SkipReason.payment_in_progress
 
         payment_repository = PaymentRepository.from_session(session)
         attempts = await payment_repository.count_payments_for_order_by_trigger(
@@ -154,7 +146,7 @@ class PaymentRetryAlertService:
             return None
 
         if payment_intent is None:
-            return SkipReason.no_charge_needed
+            return SkipReason.not_charged
         return None
 
     async def _match_declined_payment(
@@ -168,11 +160,11 @@ class PaymentRetryAlertService:
             brand="mastercard",
             since=utc_now() - MATCHING_WINDOW,
             network_transaction_id=network_transaction_id,
-            last4=last4,
+            last4=None if network_transaction_id else last4,
         )
 
         if network_transaction_id is not None:
-            payment = _get_single_order_payment(
+            return _get_single_order_payment(
                 [
                     candidate
                     for candidate in candidates
@@ -182,14 +174,14 @@ class PaymentRetryAlertService:
                     )
                 ]
             )
-            if payment is not None:
-                return payment
 
         amount = alert["transaction_amount_in_cents"]
         if last4 is None or amount is None or not alert["transaction_time"]:
             return None
         currency = alert["transaction_currency"].lower()
         declined_at = datetime.fromisoformat(alert["transaction_time"])
+        if declined_at.tzinfo is None:
+            declined_at = declined_at.replace(tzinfo=UTC)
         return _get_single_order_payment(
             [
                 candidate

@@ -394,7 +394,6 @@ class TestHandleFailureTrigger:
             metadata={
                 "order_id": str(order.id),
                 "payment_trigger": "retry_payment_alert",
-                "payment_retry_alert_id": "alrt_test",
             },
             billing_details={"email": "test@example.com"},
             payment_method_details={"card": {"last4": "4444"}, "type": "card"},

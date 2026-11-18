@@ -78,6 +78,7 @@ impl AppState {
     pub async fn connect(config: Config) -> anyhow::Result<Self> {
         let db = PgPoolOptions::new()
             .max_connections(config.postgres_pool_size)
+            .min_connections(config.postgres_pool_size)
             .test_before_acquire(false)
             .acquire_timeout(DATABASE_ACQUIRE_TIMEOUT)
             .connect_with(config.postgres.clone())
@@ -581,6 +582,7 @@ mod tests {
     async fn limits_requests_without_a_token_by_client_ip() {
         let mut config = Config::from_env().unwrap();
         config.environment = "sandbox".to_owned();
+        config.postgres_pool_size = 1;
         let state = AppState::connect(config).await.unwrap();
         let ip = format!("test-{}", Uuid::new_v4());
         let send = || {

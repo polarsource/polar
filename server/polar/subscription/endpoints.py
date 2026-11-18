@@ -37,6 +37,7 @@ from .schemas import (
     SubscriptionBulkUpdateCreate,
     SubscriptionBulkUpdateID,
     SubscriptionCancelPreview,
+    SubscriptionChangeChargePreview,
     SubscriptionChangePreview,
     SubscriptionChangePreviewSeats,
     SubscriptionChangePreviewUnits,
@@ -281,7 +282,7 @@ async def get_cancel_preview(
 @router.post(
     "/{id}/change-preview",
     summary="Preview Subscription Change",
-    response_model=SubscriptionChargePreview,
+    response_model=SubscriptionChangeChargePreview,
     responses={
         403: {"model": AlreadyCanceledSubscription.schema()},
         404: SubscriptionNotFound,
@@ -293,7 +294,7 @@ async def preview_change(
     change: SubscriptionChangePreview,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChargePreview:
+) -> SubscriptionChangeChargePreview:
     """
     Preview what a subscription change would cost, without applying it.
 
@@ -332,6 +333,7 @@ async def preview_change(
         subscription,
         product_id=change.product_id,
         proration_behavior=change.proration_behavior,
+        discount=change.discount,
     )
 
 

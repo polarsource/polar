@@ -374,6 +374,16 @@ class SubscriptionCreateExternalCustomer(SubscriptionCreateBase):
 SubscriptionCreate = SubscriptionCreateCustomer | SubscriptionCreateExternalCustomer
 
 
+def _discount_input(
+    discount_id: UUID4 | None, fields_set: set[str]
+) -> UUID4 | Literal["unset"] | None:
+    if discount_id is not None:
+        return discount_id
+    if "discount_id" in fields_set:
+        return "unset"
+    return None
+
+
 class SubscriptionUpdateBase(MetadataInputMixin, Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -421,11 +431,7 @@ class SubscriptionUpdateBase(MetadataInputMixin, Schema):
 
     @property
     def discount(self) -> UUID4 | Literal["unset"] | None:
-        if self.discount_id is not None:
-            return self.discount_id
-        if "discount_id" in self.model_fields_set:
-            return "unset"
-        return None
+        return _discount_input(self.discount_id, self.model_fields_set)
 
 
 class SubscriptionUpdateSeats(Schema):
@@ -656,6 +662,17 @@ class SubscriptionChargePreview(Schema):
     )
 
 
+class SubscriptionChangeChargePreview(SubscriptionChargePreview):
+    """Preview of what a subscription change would cost, without applying it."""
+
+    proration_behavior: SubscriptionProrationBehavior = Field(
+        description=(
+            "How the change would be billed, resolved from the requested "
+            "or organization setting."
+        )
+    )
+
+
 class SubscriptionMeterChargePreview(Schema):
     """Preview of the metered usage billed at the end of the current meter cycle."""
 
@@ -704,6 +721,17 @@ class SubscriptionChangePreviewProduct(Schema):
             "If not provided, will use the default organization setting."
         ),
     )
+    discount_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "Preview the change with this discount applied. "
+            "If set to `null`, preview it with the current discount removed."
+        ),
+    )
+
+    @property
+    def discount(self) -> UUID4 | Literal["unset"] | None:
+        return _discount_input(self.discount_id, self.model_fields_set)
 
 
 class SubscriptionChangePreviewSeats(Schema):

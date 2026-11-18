@@ -107,7 +107,7 @@ nothing else will.
 
 ## Development Workflow
 
-**Always prefix Python commands with `uv run`** — it guarantees the correct Python (3.14),
+**Always prefix Python commands with `uv run`** — it guarantees the correct Python (3.15),
 project dependencies, environment variables, and virtualenv context.
 
 ```bash

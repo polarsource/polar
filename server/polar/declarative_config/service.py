@@ -1,11 +1,10 @@
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, TypeForm
 from uuid import UUID
 
 from pydantic import BaseModel, Field, create_model
 from sqlalchemy.exc import IntegrityError
-from typing_extensions import TypeForm
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission

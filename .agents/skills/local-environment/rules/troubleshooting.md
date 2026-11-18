@@ -39,12 +39,12 @@ down. If you see it, start Docker (OrbStack or Docker Desktop) and retry. A raw
 `docker.sock: no such file or directory` from another command means the same
 thing.
 
-## `No interpreter found for Python 3.14.x` (stale base image)
+## `No interpreter found for Python 3.15.x` (stale base image)
 
 The api container exits during the JWKS/`uv sync` step with something like:
 
 ```
-error: No interpreter found for Python 3.14.6 in managed installations or search path
+error: No interpreter found for Python 3.15.2 in managed installations or search path
 ```
 
 This is a **stale base image**: the cached api image ships an older Python patch
@@ -55,7 +55,7 @@ than `server/.python-version` requires, and a plain rebuild reuses the cached
 dev docker up -b --pull -d
 ```
 
-`--pull` re-fetches `python:3.14.x-slim` and `uv` so the rebuilt image satisfies
+`--pull` re-fetches `python:3.15.x-slim` and `uv` so the rebuilt image satisfies
 the pin. (The Dockerfile pins the patch to keep this rare, but a `.python-version`
 bump can still outrun a cached image.)
 

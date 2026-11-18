@@ -2,11 +2,11 @@
 # Optimized for hot-reloading with mounted source code
 
 # Keep the patch version in sync with server/.python-version. A floating
-# `3.14-slim` tag drifts behind the pinned interpreter and, once cached, a
+# `3.15-slim` tag drifts behind the pinned interpreter and, once cached, a
 # rebuild won't pick up the newer patch — uv then can't resolve the required
 # Python and boot fails. Pinning the exact patch makes that a clean, visible
 # bump instead of a silent stale-cache break.
-FROM python:3.14.6-slim
+FROM python:3.15.2-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \

@@ -640,7 +640,7 @@ jobs:
 
       - name: 📊 Merge shard test durations
         if: github.event_name == 'push' && needs.test.result == 'success'
-        run: uv run --no-project --python 3.14 server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
+        run: uv run --no-project --python 3.15 server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/test-durations/*/.test_durations
 
       - name: 💾 Save merged test durations
         if: github.event_name == 'push' && needs.test.result == 'success'

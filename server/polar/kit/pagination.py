@@ -1,6 +1,6 @@
 import math
 from collections.abc import Sequence
-from typing import Annotated, Any, NamedTuple, Self, overload
+from typing import Annotated, Any, NamedTuple, Self, TypeForm, overload
 
 from fastapi import Depends, Query
 from pydantic import BaseModel, GetCoreSchemaHandler
@@ -9,7 +9,6 @@ from pydantic_core import CoreSchema
 from sqlalchemy import Select, func, literal, select
 from sqlalchemy.sql._typing import _ColumnsClauseArgument
 from sqlalchemy.sql.selectable import Subquery
-from typing_extensions import TypeForm
 
 from polar.config import settings
 from polar.kit.db.models import RecordModel

@@ -13,6 +13,7 @@ from collections.abc import (
     Iterable,
     Sequence,
 )
+from typing import TypeForm
 
 from fastapi import APIRouter, FastAPI
 from fastapi._compat import ModelField
@@ -36,7 +37,6 @@ from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute, Match
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 from starlette.websockets import WebSocketClose
-from typing_extensions import TypeForm
 
 from polar.kit.schemas import Schema
 

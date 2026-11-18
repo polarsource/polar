@@ -20,7 +20,7 @@ Comprehensive load testing suite for Polar's payment infrastructure, focusing on
 
 ### Prerequisites
 
-- Python 3.14+ with uv
+- Python 3.15+ with uv
 - Running Polar API server (or staging environment)
 - Test data (products, organizations)
 

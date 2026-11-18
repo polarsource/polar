@@ -1,7 +1,6 @@
-from typing import Literal
+from typing import Literal, TypeForm
 
 from pydantic import BaseModel, Field, create_model
-from typing_extensions import TypeForm
 
 from polar.config import settings
 from polar.exceptions import PolarError

@@ -63,7 +63,7 @@ permissions:
 
 env:
   # CodSpeed profiles Python from 3.12; 3.14 runs this code about as fast as 3.11, 3.12 slower.
-  UV_PYTHON: "3.14"
+  UV_PYTHON: "3.15"
   # CodSpeed traces the interpreter from setup-python; keep uv from downloading its own.
   UV_PYTHON_PREFERENCE: only-system
   # A random hash seed changes dict collisions, hence instruction counts, from run to run.

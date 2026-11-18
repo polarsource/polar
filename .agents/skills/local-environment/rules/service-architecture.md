@@ -36,7 +36,7 @@ publishes **no host ports** — reach it with `dev docker exec <service> ...`.
 ## Application services (project `polar-app-<N>`)
 
 ### api (FastAPI backend)
-- `python:3.14.6-slim` + uvicorn, hot-reload on.
+- `python:3.15.2-slim` + uvicorn, hot-reload on.
 - Host port: `8000` (instance 0) or `8100+N`.
 - Healthcheck: `curl /healthz` (generous `start_period` covers first-boot sync +
   migrations + seed).

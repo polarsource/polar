@@ -69,7 +69,7 @@ RUN sed -i -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' /etc/ca-certificates.
 RUN setcap -r /usr/bin/caddy
 
 # Render backend image, also used by the private backoffice.
-FROM --platform=$BUILDPLATFORM python:3.14.6-slim AS production
+FROM --platform=$BUILDPLATFORM python:3.15.2-slim AS production
 
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar \
   org.opencontainers.image.description="Polar" \
@@ -119,7 +119,7 @@ CMD ["uv", "run", "uvicorn", "polar.app:app", \
   "--limit-max-requests", "50000", "--limit-max-requests-jitter", "10000", \
   "--timeout-graceful-shutdown", "30"]
 
-FROM public.ecr.aws/lambda/python:3.14 AS lambda-base
+FROM public.ecr.aws/lambda/python:3.15 AS lambda-base
 
 ARG DNF_REFRESH_DATE
 RUN dnf upgrade -y --releasever=latest \

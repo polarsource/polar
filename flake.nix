@@ -72,8 +72,8 @@
               nodejs_24
               (if pnpmLinux != null then pnpm else corepack_24)
 
-              # server/ requires Python 3.14 and runs everything through uv
-              python314
+              # server/ requires Python 3.15 and runs everything through uv
+              python315
               uv
               # Tinybird's install.sh (run by dev up) does `uv tool install tinybird --python 3.11`
               python311

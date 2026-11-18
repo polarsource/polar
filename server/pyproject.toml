@@ -2,8 +2,8 @@
 name = "polar"
 version = "0.0.0"
 readme = "README.md"
-# 3.14 floor: the Vercel build image ships an earlier 3.14 patch.
-requires-python = ">=3.14"
+# 3.15 floor: the Vercel build image ships an earlier 3.15 patch.
+requires-python = ">=3.15"
 dependencies = [
   "certifi>=2026.10.19",
   "fastapi==0.162.2",
@@ -153,7 +153,7 @@ exclude_lines = [
 ] # See: https://github.com/nedbat/coveragepy/issues/831
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py315"
 
 [tool.ruff.lint]
 extend-select = [

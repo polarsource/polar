@@ -19,7 +19,7 @@ log: Logger = structlog.get_logger()
 
 @actor(
     actor_name="payment_retry_alert.webhook.alert.created",
-    priority=TaskPriority.HIGH,
+    priority=TaskPriority.MEDIUM,
 )
 async def alert_created(event_id: Annotated[uuid.UUID, LoggableField]) -> None:
     async with AsyncSessionMaker() as session:

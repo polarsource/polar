@@ -40,7 +40,7 @@ class PaymentRetryAlertClient:
         if not response.is_success:
             raise PaymentRetryAlertAPIError(
                 "PATCH", "/alerts/{id}", response.status_code
-            ) from None
+            )
 
 
 client = PaymentRetryAlertClient()

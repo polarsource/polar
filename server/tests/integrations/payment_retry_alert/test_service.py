@@ -23,6 +23,7 @@ from polar.models import Customer, Order, Organization, Payment, PaymentMethod, 
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
+from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -47,13 +48,14 @@ def build_alert(
     network_transaction_id: str = BANKNET_REFERENCE,
     card_last_four: str = "1234",
     transaction_amount_in_cents: int | None = 2150,
+    transaction_time: str | None = None,
 ) -> PaymentRetryAlert:
     return {
         "id": "alrt_test",
         "enrolment_mid": "MID",
         "card_scheme": "MASTERCARD",
         "notification_type": notification_type,
-        "transaction_time": "2026-11-17T08:30:00.000Z",
+        "transaction_time": transaction_time or utc_now().isoformat(),
         "transaction_amount_in_cents": transaction_amount_in_cents,
         "transaction_currency": "USD",
         "network_transaction_id": network_transaction_id,
@@ -222,6 +224,49 @@ class TestHandleAlert:
 
         stripe_service_mock.create_payment_intent.assert_called_once()
         enqueue_job_mock.assert_not_called()
+
+    async def test_rejected_retry_is_reported_as_failed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        declined_payment: Payment,
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.payment_retry_alert.service.order_service.trigger_payment",
+            side_effect=PaymentFailed(PaymentFailedReason.card_error),
+        )
+
+        await payment_retry_alert_service.handle_alert(session, build_alert())
+
+        enqueue_job_mock.assert_called_once_with(
+            "payment_retry_alert.report_outcome",
+            alert_id="alrt_test",
+            outcome=RetryOutcome.failed,
+        )
+
+    async def test_card_details_far_from_decline_time(
+        self,
+        session: AsyncSession,
+        stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        log_mock: MagicMock,
+        declined_payment: Payment,
+    ) -> None:
+        await payment_retry_alert_service.handle_alert(
+            session,
+            build_alert(
+                network_transaction_id="",
+                transaction_time=(utc_now() - timedelta(days=5)).isoformat(),
+            ),
+        )
+
+        stripe_service_mock.create_payment_intent.assert_not_called()
+        log_mock.info.assert_called_once_with(
+            "Payment retry alert not attempted",
+            alert_id="alrt_test",
+            reason=SkipReason.unmatched,
+        )
 
     async def test_unmatched(
         self,

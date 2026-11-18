@@ -131,12 +131,9 @@ class PaymentRepository(
         ``trigger = retry_customer`` to enforce a per-order ceiling on manual
         retry attempts — separate from the dunning ceiling.
         """
-        statement = select(func.count(Payment.id)).where(
-            Payment.order_id == order_id,
-            Payment.trigger == PaymentTrigger.retry_customer,
+        return await self.count_payments_for_order_by_trigger(
+            order_id, PaymentTrigger.retry_customer
         )
-        result = await self.session.execute(statement)
-        return result.scalar() or 0
 
     async def count_payments_for_order_by_trigger(
         self, order_id: UUID, trigger: PaymentTrigger

@@ -1,4 +1,3 @@
-import json
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request
@@ -20,13 +19,13 @@ router = APIRouter(
 WEBHOOK_EVENTS = {"alert.created"}
 
 
-def _verify_webhook(raw_body: bytes, headers: dict[str, str]) -> None:
+def _verify_webhook(raw_body: bytes, headers: dict[str, str]) -> dict[str, Any]:
     secret = settings.PAYMENT_RETRY_ALERT_WEBHOOK_SECRET
     if not secret:
         raise HTTPException(status_code=500)
 
     try:
-        StandardWebhook(secret.removeprefix("whsec_")).verify(raw_body, headers)
+        return StandardWebhook(secret.removeprefix("whsec_")).verify(raw_body, headers)
     except WebhookVerificationError, ValueError:
         raise HTTPException(status_code=400)
 
@@ -38,10 +37,7 @@ async def webhook(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    raw_body = await request.body()
-    _verify_webhook(raw_body, {k.lower(): v for k, v in request.headers.items()})
-
-    event: dict[str, Any] = json.loads(raw_body)
+    event = _verify_webhook(await request.body(), dict(request.headers))
     expected_mode = "LIVE" if settings.is_production() else "TEST"
     if event["organisation_mode"] != expected_mode:
         return

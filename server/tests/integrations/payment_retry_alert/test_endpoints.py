@@ -8,9 +8,11 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 
-from polar.models.external_event import ExternalEventSource
+from polar.models.external_event import ExternalEvent, ExternalEventSource
+from polar.postgres import AsyncSession
 
 WEBHOOK_SECRET = "whsec_" + base64.b64encode(b"test_payment_retry_alert").decode()
 WEBHOOK_URL = "/v1/integrations/payment-retry-alert/webhook"
@@ -108,8 +110,8 @@ class TestWebhook:
         assert response.status_code == 202
         enqueue_mock.assert_not_called()
 
-    async def test_alert_created_is_enqueued(
-        self, client: AsyncClient, enqueue_mock: AsyncMock
+    async def test_alert_created_is_stored(
+        self, client: AsyncClient, session: AsyncSession
     ) -> None:
         event = _event()
         body, headers = _sign(event)
@@ -117,10 +119,13 @@ class TestWebhook:
         response = await client.post(WEBHOOK_URL, content=body, headers=headers)
 
         assert response.status_code == 202
-        enqueue_mock.assert_awaited_once()
-        assert enqueue_mock.await_args is not None
-        _, source, task_name, external_id, data = enqueue_mock.await_args.args
-        assert source == ExternalEventSource.payment_retry_alert
-        assert task_name == "payment_retry_alert.webhook.alert.created"
-        assert external_id == "evt_test"
-        assert data == event
+        stored_event = (
+            await session.execute(
+                select(ExternalEvent).where(
+                    ExternalEvent.source == ExternalEventSource.payment_retry_alert,
+                    ExternalEvent.external_id == "evt_test",
+                )
+            )
+        ).scalar_one()
+        assert stored_event.task_name == "payment_retry_alert.webhook.alert.created"
+        assert stored_event.data == event

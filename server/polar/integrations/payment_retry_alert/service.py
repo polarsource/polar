@@ -1,7 +1,8 @@
 from collections.abc import Mapping, Sequence
-from datetime import timedelta
+from datetime import datetime, timedelta
 from enum import StrEnum
 
+import stripe as stripe_lib
 import structlog
 
 from polar.config import settings
@@ -26,6 +27,7 @@ STRIPE_METADATA_PAYMENT_RETRY_ALERT_ID = "payment_retry_alert_id"
 
 # Mastercard watches a declined card for up to 30 days.
 MATCHING_WINDOW = timedelta(days=31)
+DECLINE_TIME_TOLERANCE = timedelta(days=1)
 
 
 class SkipReason(StrEnum):
@@ -78,11 +80,7 @@ class PaymentRetryAlertService:
             alert_id=alert["id"],
             reason=skip_reason,
         )
-        enqueue_job(
-            "payment_retry_alert.report_outcome",
-            alert_id=alert["id"],
-            outcome=RetryOutcome.not_attempted,
-        )
+        self._enqueue_report(alert["id"], RetryOutcome.not_attempted)
 
     def enqueue_outcome_report(
         self, stripe_metadata: Mapping[str, str] | None, payment: Payment
@@ -101,6 +99,9 @@ class PaymentRetryAlertService:
             case PaymentStatus.pending:
                 return
 
+        self._enqueue_report(alert_id, outcome)
+
+    def _enqueue_report(self, alert_id: str, outcome: RetryOutcome) -> None:
         enqueue_job(
             "payment_retry_alert.report_outcome", alert_id=alert_id, outcome=outcome
         )
@@ -176,8 +177,11 @@ class PaymentRetryAlertService:
             )
         except PaymentAlreadyInProgress:
             return SkipReason.payment_in_progress
-        except PaymentFailed:
-            # The outcome is reported by the Stripe failure webhook.
+        except PaymentFailed as e:
+            # Declines are reported by the Stripe failure webhook. Other
+            # rejections create no charge, so no webhook carries the alert ID.
+            if not isinstance(e.__cause__, stripe_lib.CardError):
+                self._enqueue_report(alert["id"], RetryOutcome.failed)
             return None
 
         if payment_intent is None:
@@ -213,9 +217,10 @@ class PaymentRetryAlertService:
                 return payment
 
         amount = alert["transaction_amount_in_cents"]
-        if last4 is None or amount is None:
+        if last4 is None or amount is None or not alert["transaction_time"]:
             return None
         currency = alert["transaction_currency"].lower()
+        declined_at = datetime.fromisoformat(alert["transaction_time"])
         return _get_single_order_payment(
             [
                 candidate
@@ -223,6 +228,7 @@ class PaymentRetryAlertService:
                 if candidate.method_metadata.get("last4") == last4
                 and candidate.amount == amount
                 and candidate.currency == currency
+                and abs(candidate.created_at - declined_at) <= DECLINE_TIME_TOLERANCE
             ]
         )
 

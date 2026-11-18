@@ -108,7 +108,10 @@ it('reads a custom field by slug, with its bounds as minimum and maximum', () =>
     } as unknown as schemas['ConfigExportDocument'],
   ])
   expect(format('custom_fields', { field: 'seats', required: true })).toBe(
-    'Seats, required',
+    'Seats',
+  )
+  expect(format('custom_fields', { field: 'seats', required: false })).toBe(
+    'Seats, optional',
   )
   expect(format('options', { value: 'pro', label: 'Pro plan' })).toBe(
     'Pro plan (pro)',

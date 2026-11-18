@@ -212,7 +212,7 @@ export const valueFormatter = (configs: Config[]) => {
     if (field === 'meter') return meterName(value as string)
     if (field === 'custom_fields') {
       const { field: slug, required } = value as CustomFieldReference
-      return `${customFields.get(slug) ?? slug}${required ? ', required' : ''}`
+      return `${customFields.get(slug) ?? slug}${required ? '' : ', optional'}`
     }
     if (field === 'options') {
       const option = value as SelectOption

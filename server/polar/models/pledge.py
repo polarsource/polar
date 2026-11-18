@@ -5,20 +5,13 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
-    Boolean,
-    ColumnElement,
     ForeignKey,
     String,
     Uuid,
-    and_,
-    or_,
-    type_coerce,
 )
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
-from polar.kit.utils import utc_now
 
 from .organization import Organization
 from .user import User
@@ -49,15 +42,6 @@ class PledgeState(StrEnum):
     # Manually cancalled by a Polar admin.
     cancelled = "cancelled"
 
-    # The states in which this pledge is "active", i.e. is listed on the issue
-    @classmethod
-    def active_states(cls) -> list["PledgeState"]:
-        return [
-            cls.created,
-            cls.pending,
-            cls.disputed,
-        ]
-
     # Happy paths:
     #   Pay upfront:
     #       initiated -> created -> pending -> (transfer)
@@ -68,48 +52,6 @@ class PledgeState(StrEnum):
     #   Pay regardless:
     #       pending -> (transfer)
     #
-
-    @classmethod
-    def to_created_states(cls) -> list["PledgeState"]:
-        """
-        Allowed states to move into initiated from
-        """
-        return [cls.initiated]
-
-    @classmethod
-    def to_confirmation_pending_states(cls) -> list["PledgeState"]:
-        """
-        Allowed states to move into confirmation pending from
-        """
-        return [cls.created]
-
-    @classmethod
-    def to_pending_states(cls) -> list["PledgeState"]:
-        """
-        Allowed states to move into pending from
-        """
-        return [cls.created]
-
-    @classmethod
-    def to_disputed_states(cls) -> list["PledgeState"]:
-        """
-        # Allowed states to move into disputed from
-        """
-        return [cls.created, cls.pending]
-
-    @classmethod
-    def to_paid_states(cls) -> list["PledgeState"]:
-        """
-        Allowed states to move into paid from
-        """
-        return [cls.pending]
-
-    @classmethod
-    def to_refunded_states(cls) -> list["PledgeState"]:
-        """
-        Allowed states to move into refunded from
-        """
-        return [cls.created, cls.pending, cls.disputed]
 
     @classmethod
     def from_str(cls, s: str) -> "PledgeState":
@@ -278,24 +220,4 @@ class Pledge(RecordModel):
     def created_by_user(cls) -> Mapped[User | None]:
         return relationship(
             User, primaryjoin=User.id == cls.created_by_user_id, lazy="raise"
-        )
-
-    @hybrid_property
-    def ready_for_transfer(self) -> bool:
-        return self.state == PledgeState.pending and (
-            self.scheduled_payout_at is None or self.scheduled_payout_at < utc_now()
-        )
-
-    @ready_for_transfer.inplace.expression
-    @classmethod
-    def _ready_for_transfer_expression(cls) -> ColumnElement[bool]:
-        return type_coerce(
-            and_(
-                cls.state == PledgeState.pending,
-                or_(
-                    cls.scheduled_payout_at.is_(None),
-                    cls.scheduled_payout_at < utc_now(),
-                ),
-            ),
-            Boolean,
         )

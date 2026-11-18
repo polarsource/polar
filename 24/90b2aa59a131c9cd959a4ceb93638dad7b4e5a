@@ -1,0 +1,24 @@
+server/polar/event/repository.py
+  s_7a60aadba05ac9::t_b55dc39fb73692 282,286
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2490b2aa59a131c9cd959a4ceb93638dad7b4e5a",
+  "prompts": {},
+  "humans": {
+    "h_cc2173b7b86bcc": {
+      "author": "Joel Bonander <joel@polar.sh>"
+    }
+  },
+  "sessions": {
+    "s_7a60aadba05ac9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "844feab4-89a2-4787-bc0c-e762d3680173",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

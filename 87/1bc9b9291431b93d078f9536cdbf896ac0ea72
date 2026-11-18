@@ -1,0 +1,20 @@
+docs/integrate/mcp.mdx
+  s_82504741161fd3::t_787d0d5917811e 141
+  s_82504741161fd3::t_5d71d5872bc543 169,187-189,193,272,277-278
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "871bc9b9291431b93d078f9536cdbf896ac0ea72",
+  "prompts": {},
+  "sessions": {
+    "s_82504741161fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1eada-0f28-7920-8642-629f54794b94",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

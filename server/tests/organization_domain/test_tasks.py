@@ -3,7 +3,13 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
-from polar.organization_domain.tasks import register_payment_method_domains
+from polar.kit.utils import utc_now
+from polar.models import Organization, OrganizationDomain
+from polar.organization_domain.tasks import (
+    register_payment_method_domains,
+    unregister_payment_method_domains,
+)
+from tests.fixtures.database import SaveFixture
 
 
 @pytest.mark.anyio
@@ -36,3 +42,32 @@ class TestRegisterPaymentMethodDomains:
             "pmd_123", enabled=True
         )
         stripe_service_mock.create_payment_method_domain.assert_not_awaited()
+
+
+@pytest.mark.anyio
+class TestUnregisterPaymentMethodDomains:
+    async def test_disables_domains_no_longer_vouched_for(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        stripe_service_mock = mocker.patch(
+            "polar.organization_domain.tasks.stripe_service", autospec=True
+        )
+        stripe_service_mock.get_payment_method_domain = AsyncMock(
+            side_effect=lambda domain: MagicMock(id=f"pmd_{domain}", enabled=True)
+        )
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await unregister_payment_method_domains(["shop.acme.com", "old.acme.com"])
+
+        stripe_service_mock.update_payment_method_domain.assert_awaited_once_with(
+            "pmd_old.acme.com", enabled=False
+        )

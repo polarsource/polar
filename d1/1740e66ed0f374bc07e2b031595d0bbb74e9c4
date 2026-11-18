@@ -1,0 +1,19 @@
+.github/workflows/deploy.yml
+  s_7a60aadba05ac9::t_7d89a629f5d272 532-533
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d11740e66ed0f374bc07e2b031595d0bbb74e9c4",
+  "prompts": {},
+  "sessions": {
+    "s_7a60aadba05ac9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "844feab4-89a2-4787-bc0c-e762d3680173",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

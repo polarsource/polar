@@ -1,114 +1,118 @@
-'use client'
+import { Checkout } from '../mor/Checkout'
+import { Filings, Receipt, Routes } from '../mor/plates'
+import { Head, Lede, Marker, Rows, Section, Split } from './Destination'
+import { FeatureCTA, FeaturePageLayout } from './FeaturePageLayout'
 
-import { OrbitingSpheres } from '../graphics/OrbitingSpheres'
-import {
-  FeatureCardGrid,
-  FeatureCTA,
-  FeaturePageHeader,
-  FeaturePageIntro,
-  FeaturePageLayout,
-  FeatureRichList,
-  FeatureSection,
-} from './FeaturePageLayout'
+const DOCS = '/docs/merchant-of-record/introduction'
 
-export const MerchantOfRecordPage = () => {
-  return (
-    <FeaturePageLayout>
-      <FeaturePageHeader
-        graphic={OrbitingSpheres}
-        title="Sell globally, without the tax compliance"
-        description="Polar as your Merchant of Record."
-        docsHref="/docs/merchant-of-record/introduction"
+/** What the marks on the receipt are. */
+const RECEIPT_NOTES: [number, string, string][] = [
+  [
+    1,
+    'The seller',
+    'Polar, on every receipt, so the sale and its tax are ours.',
+  ],
+  [
+    2,
+    'Your product',
+    'Sold on your behalf, under the name your customers know.',
+  ],
+  [3, 'Local tax', 'At the customer’s rate, worked out at checkout.'],
+  [4, 'Registration', 'Filed under Polar’s registrations, not yours.'],
+]
+
+export const MerchantOfRecordPage = () => (
+  <FeaturePageLayout>
+    <Head
+      title="Sell globally, without the tax compliance"
+      line="Polar is the merchant on every sale."
+      docs={DOCS}
+    >
+      <Routes />
+    </Head>
+
+    {/* 01: who sells, on the receipt */}
+    <Section id="seller">
+      <Split
+        words={
+          <>
+            <Lede
+              title="We are the seller, you keep the customer"
+              line="A payment processor moves money, but the merchant on the receipt is still you, and so is the tax. As merchant of record, Polar resells your product, so the tax on every sale is ours."
+            />
+            <dl className="flex flex-col gap-6">
+              {RECEIPT_NOTES.map(([n, k, v]) => (
+                <div key={k} className="flex flex-col gap-1">
+                  <dt className="flex items-center gap-2 text-base">
+                    <Marker n={n} />
+                    {k}
+                  </dt>
+                  <dd className="dark:text-polar-500 text-base text-gray-500">
+                    {v}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        }
+        plate={
+          <div className="mx-auto w-full max-w-[30rem]">
+            <Receipt />
+          </div>
+        }
       />
+    </Section>
 
-      <FeaturePageIntro>
-        Most jurisdictions tax digital sales, and the rules differ country by
-        country. Polar takes the role of reseller for those sales, which moves
-        the international tax liability off your balance sheet onto ours.
-      </FeaturePageIntro>
+    {/* 02: one price, four checkouts */}
+    <Section id="checkout">
+      <div className="flex flex-col gap-16">
+        <Lede
+          title="The right tax at every checkout"
+          line="The rate follows the customer’s location and tax status, and EU businesses with a VAT ID get reverse charge automatically."
+        />
+        <Checkout />
+      </div>
+    </Section>
 
-      <FeatureSection title="What Merchant of Record actually means">
-        <p>
-          A Payment Service Provider like Stripe routes money between your
-          customer and your bank. It&apos;s a powerful abstraction for
-          processing transactions, but it stops there: the merchant on every
-          receipt is still you, which means the tax liability for every
-          international sale is also still yours.
-        </p>
-        <p>
-          A Merchant of Record sits one layer higher. Polar buys the digital
-          good from you and resells it to your customer, which makes us the
-          merchant for that specific sale. As a consequence, international sales
-          tax (VAT, GST, US Sales Tax, and the rest) is owed by us, not you.
-        </p>
-        <p>
-          What stays with you is the customer relationship. The renewals, the
-          support, and the product experience are all yours. We sit underneath,
-          handling the regulatory layer the customer never has to think about.
-        </p>
-      </FeatureSection>
-
-      <FeatureCardGrid
-        cards={[
-          {
-            title: 'Global coverage',
-            description:
-              'Sell into every country we support. We monitor thresholds and expand registrations as our volume grows.',
-          },
-          {
-            title: 'Tax-correct invoices',
-            description:
-              'Every order ships with a compliant invoice and the right VAT, GST, or Sales Tax line.',
-          },
-          {
-            title: 'Liability on us',
-            description:
-              "We're on the hook for capturing and remitting international sales tax.",
-          },
-          {
-            title: 'EU B2B reverse charge',
-            description:
-              'VAT-registered EU businesses get reverse-charge handling automatically.',
-          },
-        ]}
+    {/* 03: the filings, and what is left to you */}
+    <Section id="filings">
+      <Split
+        flip
+        words={
+          <>
+            <Lede
+              title="Filed and remitted, every period"
+              line="Charging tax is the start. Polar takes the whole chain, from the checkout to the return."
+            />
+            <Rows
+              rows={[
+                [
+                  'Registrations',
+                  'EU OSS VAT through Ireland, UK VAT and US states, with more as volume crosses thresholds.',
+                ],
+                [
+                  'Remittance',
+                  'Returns filed and tax paid to each authority on the cadence it sets.',
+                ],
+                [
+                  'Invoices',
+                  'Every order comes with a tax-correct invoice for the customer’s accountant.',
+                ],
+                [
+                  'Refunds and disputes',
+                  'A refund adjusts the tax with it, and disputes are handled end to end.',
+                ],
+              ]}
+            />
+          </>
+        }
+        plate={<Filings />}
       />
+    </Section>
 
-      <FeatureRichList
-        title="What we cover"
-        description="Tax compliance is more than charging the right rate at checkout. Polar takes the full chain, from the moment money is captured to the moment it's remitted."
-        items={[
-          {
-            title: 'Capture',
-            description:
-              "We charge the correct rate at checkout based on the customer's location and tax status, including reverse charge for EU B2B.",
-          },
-          {
-            title: 'Remittance',
-            description:
-              'We file and pay sales tax to the relevant authorities on the cadence they require.',
-          },
-          {
-            title: 'Registrations',
-            description:
-              'We hold EU OSS VAT (Ireland), UK VAT, and US state registrations, and we add new ones as we cross volume thresholds.',
-          },
-          {
-            title: 'Invoices and receipts',
-            description:
-              'Every order produces a tax-correct invoice the customer can hand to their accountant.',
-          },
-          {
-            title: 'Refunds and disputes',
-            description:
-              'Refunds adjust the tax line automatically. Disputes are managed end to end.',
-          },
-        ]}
-      />
-
-      <FeatureCTA
-        title="Sell internationally"
-        description="Polar takes the international tax exposure as your Merchant of Record."
-      />
-    </FeaturePageLayout>
-  )
-}
+    <FeatureCTA
+      title="Sell internationally"
+      description="Polar takes the international tax exposure as your Merchant of Record."
+    />
+  </FeaturePageLayout>
+)

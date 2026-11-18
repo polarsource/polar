@@ -38,7 +38,9 @@ import { SubscriptionPaused } from './subscription_paused'
 import { SubscriptionRenewalReminder } from './subscription_renewal_reminder'
 import { SubscriptionResumed } from './subscription_resumed'
 import { SubscriptionRevoked } from './subscription_revoked'
+import { SubscriptionTrialCancellation } from './subscription_trial_cancellation'
 import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
+import { SubscriptionTrialEnded } from './subscription_trial_ended'
 import { SubscriptionTrialPaymentMethodRequired } from './subscription_trial_payment_method_required'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
 import { SubscriptionUpdated } from './subscription_updated'
@@ -71,7 +73,9 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   subscription_resumed: SubscriptionResumed,
   subscription_renewal_reminder: SubscriptionRenewalReminder,
   subscription_revoked: SubscriptionRevoked,
+  subscription_trial_cancellation: SubscriptionTrialCancellation,
   subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,
+  subscription_trial_ended: SubscriptionTrialEnded,
   subscription_trial_payment_method_required:
     SubscriptionTrialPaymentMethodRequired,
   subscription_uncanceled: SubscriptionUncanceled,

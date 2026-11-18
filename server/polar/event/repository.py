@@ -91,13 +91,11 @@ _INSERT_STAGED_EVENTS_COLUMNS = frozenset(_INSERT_STAGED_EVENTS._bindparams)
 _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS = text(
     """
     DELETE FROM staged_events
-    WHERE organization_id = :organization_id
-    AND external_id IN (
-        SELECT external_id FROM events
-        WHERE organization_id = :organization_id
-        AND external_id = ANY(CAST(:external_ids AS varchar[]))
-    )
-    RETURNING id
+    USING events
+    WHERE staged_events.id = ANY(CAST(:ids AS uuid[]))
+    AND events.organization_id = staged_events.organization_id
+    AND events.external_id = staged_events.external_id
+    RETURNING staged_events.id
     """
 )
 
@@ -245,22 +243,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         # unique index only catches duplicates still in `staged_events`. This is
         # its own statement after the insert because an insert racing the mover
         # on the same external ID waits for the mover to commit, and only a
-        # snapshot taken after that wait sees the moved row in `events`.
-        external_ids_by_organization: dict[UUID, list[str]] = {}
-        for _, organization_id, external_id in inserted:
-            if external_id is not None:
-                external_ids_by_organization.setdefault(organization_id, []).append(
-                    external_id
-                )
-        duplicate_ids: list[UUID] = []
-        for organization_id, external_ids in external_ids_by_organization.items():
+        # snapshot taken after that wait sees the moved row in `events`. Only
+        # this insert's own rows are checked, so the mover never blocks it.
+        ids_with_external_id = [
+            id for id, _, external_id in inserted if external_id is not None
+        ]
+        duplicate_id_set: set[UUID] = set()
+        if ids_with_external_id:
             moved = await self.session.execute(
-                _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS,
-                {"organization_id": organization_id, "external_ids": external_ids},
+                _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS, {"ids": ids_with_external_id}
             )
-            duplicate_ids.extend(moved.scalars())
-
-        duplicate_id_set = set(duplicate_ids)
+            duplicate_id_set = set(moved.scalars())
         inserted_ids = [id for id, _, _ in inserted if id not in duplicate_id_set]
         return inserted_ids, len(events) - len(inserted_ids)
 

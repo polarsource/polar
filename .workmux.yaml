@@ -29,6 +29,6 @@ pre_remove:
   # Its containers run as root and leave root-owned files that would block the removal.
   - |
     if grep -qF "\"$WM_WORKTREE_PATH\"" ~/.config/polar/docker-instances.json 2>/dev/null; then
-      bash ./dev/cli/dev docker cleanup --force
-      docker run --rm -v "$WM_WORKTREE_PATH:/w" alpine chown -R "$(id -u):$(id -g)" /w
+      bash ./dev/cli/dev docker cleanup --force &&
+        docker run --rm -v "$WM_WORKTREE_PATH:/w" alpine chown -R "$(id -u):$(id -g)" /w
     fi

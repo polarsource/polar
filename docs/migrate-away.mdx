@@ -32,7 +32,7 @@ If your new provider is Stripe, we transfer your customers and their saved payme
 
 ## Limitations to be aware of
 
-Payment data moves through Stripe's own migration tools, so it inherits their limits. Plan for these before you commit to a migration date.
+Payment data moves through Stripe's own migration tools, so it inherits their limits.
 
 ### Payment methods that can't be moved
 
@@ -44,7 +44,6 @@ Customers on any of these payment methods need to enter new payment details with
 
 ### Stripe-to-Stripe copies
 
-- **Only customers and payment methods are copied.** You recreate subscriptions on your new account yourself.
 - **Payment method IDs change.** Customer IDs stay the same, but every payment method gets a new ID. Stripe puts a mapping file (old ID to new ID) in the **Documents** section of your new Stripe account.
 - **Your new account must be activated** before it can receive the copy. Most copies finish within 72 hours of you accepting the request in your Stripe Dashboard.
 - **Enable the copied payment methods.** Check that your new account accepts the copied payment method types under **Settings → Payment methods** in the Stripe Dashboard.

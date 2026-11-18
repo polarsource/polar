@@ -514,7 +514,7 @@ jobs:
     with:
       environment: test
       render-api-service-id: "srv-d8ffbc42m8qs73e7lv30"
-      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770,srv-dbktog5bedkc73eht8i0,srv-dbqsgrbm8hqs73eohvt0"
+      render-worker-service-ids: "srv-d8ffbbvavr4c73a79u00,srv-dai1d8hijrss7388u770,srv-dbktog5bedkc73eht8i0"
       has-migrations: ${{ needs.changes.outputs.migrations-sandbox == 'true' || github.event_name == 'workflow_dispatch' }}
       skip-backend: ${{ needs.changes.outputs.backend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
       skip-frontend: ${{ needs.changes.outputs.frontend-sandbox != 'true' && github.event_name != 'workflow_dispatch' }}
@@ -525,6 +525,41 @@ jobs:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+
+  deploy-ecs-test:
+    name: "Deploy ECS Services to Test 🧰"
+    needs: [changes, build, deploy-test]
+    if: always() && !failure() && !cancelled() && needs.build.result == 'success' && needs.deploy-test.result == 'success' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CLUSTER: polar-test
+      SERVICE: polar-test-api-events-test
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      # The task definition tracks :latest, which `build` just pushed.
+      # A circuit-breaker rollback drops our deployment, so it must end COMPLETED.
+      - name: Roll api-events-test onto the new image
+        run: |
+          deployment=$(aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --force-new-deployment \
+            --query 'service.deployments[?status==`PRIMARY`].id' --output text)
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"
+          state=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+            --query "services[0].deployments[?id=='$deployment'].rolloutState" --output text)
+          echo "$deployment: ${state:-rolled back}"
+          [ "$state" = COMPLETED ]
 
   deploy-production:
     name: "Deploy to Production 🚀"

@@ -2,20 +2,18 @@ import { Effect } from 'effect'
 import type { ActiveOrganization } from '@/schemas/Auth'
 import type { ConfigIssue, LoadedConfig } from '@/schemas/BillingConfig'
 import { type Clients, eventNames } from '@/services/billing-config/api'
+import { entryKey, record } from '@/utils/billing-config/describe'
 import { referencedResource } from '@/utils/billing-config/problems'
+import { NOUNS } from '@/utils/billing-config/review'
 import { closest } from '@/utils/closest'
 
 const externalIds = (input: unknown, resource: string | undefined) => {
-  const section =
-    typeof input === 'object' && input !== null
-      ? (input as Record<string, unknown>)[`${resource?.replace(' ', '_')}s`]
-      : undefined
-  return (Array.isArray(section) ? section : []).flatMap(
-    (entry: { external_id?: unknown; slug?: unknown }) => {
-      const id = entry?.external_id ?? entry?.slug
-      return typeof id === 'string' ? [id] : []
-    },
-  )
+  const section = NOUNS.find(([, noun]) => noun === resource)?.[0]
+  const entries = section === undefined ? undefined : record(input)?.[section]
+  return (Array.isArray(entries) ? entries : []).flatMap((entry) => {
+    const key = entryKey(entry)
+    return key === undefined ? [] : [key]
+  })
 }
 
 const textOf = (got: string | undefined) => {

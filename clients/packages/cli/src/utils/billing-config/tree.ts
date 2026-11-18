@@ -1,9 +1,10 @@
 import type { AppliedEntry, RemovalReason } from '@/schemas/BillingConfig'
-import { name, record } from '@/utils/billing-config/describe'
+import { entryKey, name, record } from '@/utils/billing-config/describe'
 import { MARKS, formatRows, updatedIds } from '@/utils/billing-config/entries'
 import {
   type MeterUse,
   benefitSentence,
+  customFieldSentence,
   meterSentence,
   meterUnit,
   productMeters,
@@ -31,7 +32,7 @@ const isSection = (section: string): section is Section =>
 
 const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
-  custom_fields: () => undefined,
+  custom_fields: customFieldSentence,
   benefits: benefitSentence,
   products: productSentence,
   webhooks: webhookSentence,
@@ -39,7 +40,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
-  custom_fields: new Set(),
+  custom_fields: new Set(['type', 'name', 'properties']),
   benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',
@@ -65,23 +66,55 @@ export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {
-    const id = record(item)?.['external_id'] ?? record(item)?.['slug']
-    if (typeof id === 'string') byId.set(name(id), item)
+    const id = entryKey(item)
+    if (id !== undefined) byId.set(name(id), item)
   }
   return byId
 }
 
-type Grant = {
+// A benefit, meter or custom field that a product points at
+type Reference = {
   id: string
   status: 'kept' | 'added' | 'removed' | 'updated'
   required?: boolean
+}
+
+type Listed = Omit<Reference, 'status'>
+
+const listed = (ids: ReadonlyArray<string>): Listed[] =>
+  ids.map((id) => ({ id }))
+
+const compared = (
+  before: ReadonlyArray<Listed>,
+  after: ReadonlyArray<Listed>,
+  updated: ReadonlySet<string>,
+): Reference[] => {
+  const previous = new Map(before.map((item) => [item.id, item]))
+  const kept = new Set(after.map(({ id }) => id))
+  return [
+    ...after.map((item): Reference => {
+      const old = previous.get(item.id)
+      return {
+        ...item,
+        status:
+          old === undefined
+            ? 'added'
+            : updated.has(item.id) || old.required !== item.required
+              ? 'updated'
+              : 'kept',
+      }
+    }),
+    ...before
+      .filter(({ id }) => !kept.has(id))
+      .map((item): Reference => ({ ...item, status: 'removed' })),
+  ]
 }
 
 const grants = (
   entry: AppliedEntry,
   product: unknown,
   updated: ReadonlySet<string>,
-): Grant[] => {
+): Reference[] => {
   const change = entry.diff.find(({ field }) => field === 'benefits')
   if (change === undefined) {
     return ids(record(product)?.['benefits']).map((id) => ({
@@ -89,57 +122,27 @@ const grants = (
       status: entry.action === 'created' ? 'added' : 'kept',
     }))
   }
-  const before = ids(change.before)
-  const after = ids(change.after)
-  return [
-    ...after.map(
-      (id): Grant => ({
-        id,
-        status: !before.includes(id)
-          ? 'added'
-          : updated.has(id)
-            ? 'updated'
-            : 'kept',
-      }),
-    ),
-    ...before
-      .filter((id) => !after.includes(id))
-      .map((id): Grant => ({ id, status: 'removed' })),
-  ]
+  return compared(
+    listed(ids(change.before)),
+    listed(ids(change.after)),
+    updated,
+  )
 }
 
-const asked = (input: unknown) =>
-  new Map(
-    (Array.isArray(input) ? input : []).map((item) => [
-      name(record(item)?.['field']),
-      record(item)?.['required'] === true,
-    ]),
-  )
+const attachments = (input: unknown): Listed[] =>
+  (Array.isArray(input) ? input : []).map((item) => ({
+    id: name(record(item)?.['field']),
+    required: record(item)?.['required'] === true,
+  }))
 
-const askedFields = (
+const attachedFields = (
   entry: AppliedEntry,
   updated: ReadonlySet<string>,
-): Grant[] => {
+): Reference[] => {
   const change = entry.diff.find(({ field }) => field === 'custom_fields')
-  if (change === undefined) return []
-  const before = asked(change.before)
-  const after = asked(change.after)
-  return [
-    ...[...after].map(
-      ([id, required]): Grant => ({
-        id,
-        required,
-        status: !before.has(id)
-          ? 'added'
-          : updated.has(id) || before.get(id) !== required
-            ? 'updated'
-            : 'kept',
-      }),
-    ),
-    ...[...before]
-      .filter(([id]) => !after.has(id))
-      .map(([id, required]): Grant => ({ id, required, status: 'removed' })),
-  ]
+  return change === undefined
+    ? []
+    : compared(attachments(change.before), attachments(change.after), updated)
 }
 
 // The config may leave out a price's currency, the planned prices carry it
@@ -191,16 +194,20 @@ const rows = (
 ) =>
   formatRows(
     indent,
-    shownDiff(section, entry.diff, document).filter(({ field }) =>
-      entry.action === 'created'
-        ? !(isSection(section) && COVERED[section].has(field))
-        : field !== 'benefits' && field !== 'custom_fields',
+    shownDiff(
+      section,
+      entry.diff.filter(({ field }) =>
+        entry.action === 'created'
+          ? !(isSection(section) && COVERED[section].has(field))
+          : field !== 'benefits' && field !== 'custom_fields',
+      ),
+      document,
     ),
     entry.action,
     section,
   )
 
-const GRANT_MARKS: Record<Grant['status'], string> = {
+const REFERENCE_MARKS: Record<Reference['status'], string> = {
   added: ui.green('+'),
   removed: ui.red('-'),
   kept: ui.dim('='),
@@ -209,8 +216,13 @@ const GRANT_MARKS: Record<Grant['status'], string> = {
 
 const reference =
   (kind: string) =>
-  ({ id, status, required }: Grant): Block => ({
-    head: `${GRANT_MARKS[status]} ${ui.dim(kind)} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}${required ? ` ${ui.dim('required')}` : ''}`,
+  ({ id, status, required }: Reference): Block => ({
+    head: [
+      REFERENCE_MARKS[status],
+      ui.dim(kind),
+      status === 'kept' ? ui.dim(id) : ui.bold(id),
+      ...(required ? [ui.dim('required')] : []),
+    ].join(' '),
     body: [],
   })
 
@@ -236,21 +248,9 @@ export const formatTree = (
     const before = usedMeters(entry, 'before')
     const after = usedMeters(entry, 'after')
     if (!after.some((id) => updatedMeters.has(id))) return []
-    return [
-      ...after.map(
-        (id): Grant => ({
-          id,
-          status: !before.includes(id)
-            ? 'added'
-            : updatedMeters.has(id)
-              ? 'updated'
-              : 'kept',
-        }),
-      ),
-      ...before
-        .filter((id) => !after.includes(id))
-        .map((id): Grant => ({ id, status: 'removed' })),
-    ].map(reference('meter'))
+    return compared(listed(before), listed(after), updatedMeters).map(
+      reference('meter'),
+    )
   }
 
   const width = Math.max(
@@ -269,8 +269,8 @@ export const formatTree = (
     const document = docs.products.get(entry.id)
     const granted = grants(entry, document, updatedBenefits)
     const regranted = granted.some(({ status }) => status !== 'kept')
-    const fields = askedFields(entry, updatedCustomFields)
-    const reasked = fields.some(({ status }) => status !== 'kept')
+    const fields = attachedFields(entry, updatedCustomFields)
+    const fieldsChanged = fields.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'
     const planned = withPlannedPrices(document, entry)
@@ -288,7 +288,7 @@ export const formatTree = (
         : []),
       ...meterUses(entry),
       ...(fresh || regranted ? granted.map(reference('benefit')) : []),
-      ...(reasked ? fields.map(reference('custom field')) : []),
+      ...(fieldsChanged ? fields.map(reference('custom field')) : []),
     ]
     return [
       `${TOP}${own.head}`,

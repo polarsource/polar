@@ -5,6 +5,7 @@ import type {
 } from '@/schemas/BillingConfig'
 import { languageOf } from '@/services/billing-config/languages'
 import type { SourcePath as Path } from '@/services/billing-config/languages/language'
+import { entryKey } from '@/utils/billing-config/describe'
 
 const KEY_ISSUES = new Set(['extra_forbidden'])
 
@@ -37,18 +38,8 @@ const supplied = (config: LoadedConfig, path: Path, input: unknown) =>
   input === null ? valueAt(config.input, path) === null : input !== undefined
 
 const externalIdOf = (input: unknown, path: Path) => {
-  const entry = valueAt(input, path)
-  const externalId =
-    typeof entry === 'object' && entry !== null
-      ? 'external_id' in entry
-        ? entry.external_id
-        : 'slug' in entry
-          ? entry.slug
-          : undefined
-      : undefined
-  return typeof externalId === 'string' && externalId !== ''
-    ? externalId
-    : undefined
+  const externalId = entryKey(valueAt(input, path))
+  return externalId === '' ? undefined : externalId
 }
 
 const readablePath = (config: LoadedConfig, path: Path) =>

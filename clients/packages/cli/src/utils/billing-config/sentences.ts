@@ -285,6 +285,31 @@ const propertyValue = (property: string, value: unknown, type: unknown) => {
   return value
 }
 
+const propertyText = (property: string, value: unknown, type: unknown) => {
+  const shown = propertyValue(property, value, type)
+  return shown instanceof Rendered
+    ? shown.text.replaceAll('\n', ', ')
+    : name(shown)
+}
+
+export const customFieldSentence = (input: unknown) => {
+  const field = record(input)
+  if (field === undefined) return undefined
+  return fields([
+    ['type', name(field['type'])],
+    ['name', name(field['name'])],
+    ...Object.entries(record(field['properties']) ?? {})
+      .filter(([, value]) => isSet(value))
+      .map(
+        ([key, value]) =>
+          [
+            FIELD_PROPERTIES[key] ?? key,
+            propertyText(key, value, field['type']),
+          ] as const,
+      ),
+  ])
+}
+
 // A custom field's properties show as one row each, with readable names.
 const customFieldProperties = (
   change: AppliedEntry['diff'][number],

@@ -5,6 +5,7 @@ import {
   type SourcePath as Path,
   span,
 } from '@/services/billing-config/languages/language'
+import { entryKey } from '@/utils/billing-config/describe'
 
 const PARAMETERS = /^\s*:\s*(?:async\s*)?\([^)]*\)\s*=>/
 
@@ -153,12 +154,7 @@ export const locateInScript = (
       : undefined
   }
   if (!Array.isArray(entries)) return undefined
-  const externalIds = entries.map(
-    (entry: { external_id?: unknown; slug?: unknown }) => {
-      const id = entry?.external_id ?? entry?.slug
-      return typeof id === 'string' ? id : undefined
-    },
-  )
+  const externalIds = entries.map(entryKey)
   const externalId = externalIds[index]
   if (externalId === undefined) return undefined
   const range = entryRange(source, section, externalIds, index)

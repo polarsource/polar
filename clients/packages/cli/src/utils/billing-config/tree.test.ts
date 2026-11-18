@@ -825,7 +825,7 @@ describe('formatTree', () => {
     )
   })
 
-  test('lists custom fields one setting per row, and the products asking for a changed one', () => {
+  test('lists custom fields one setting per row, and the products a changed one is attached to', () => {
     const output = stripAnsi(
       formatTree(
         {
@@ -924,9 +924,9 @@ describe('formatTree', () => {
       [
         '  custom_fields',
         '  + company',
-        '      type      "text"',
-        '      name      "Company"',
-        '      label     "Company name"',
+        '      type      text',
+        '      name      Company',
+        '      label     Company name',
         '      textarea  yes',
         '  ~ size',
         '      options',

@@ -134,7 +134,7 @@ class InputField<
 }
 
 class TextField extends InputField<'text'> {
-  /** Asks with a multi-line text area. */
+  /** Uses a multi-line text area instead of a single-line input. */
   textarea(): this {
     return this.set({ textarea: true })
   }
@@ -190,9 +190,10 @@ type SelectOptions =
   | ReadonlyArray<readonly [value: string, label: string]>
 
 /**
- * A dropdown. Its choices are `{ value: label }` or `[value, label]` entries,
- * in the order they're shown. Use entries when a value looks like an integer:
- * objects list those keys first.
+ * Asks with a dropdown. Its choices are `{ value: label }` or `[value, label]`
+ * entries, in the order they're shown. Use entries when a value looks like an
+ * integer: objects list those keys first. The name defaults to its key in
+ * `customFields`.
  */
 export const select = (
   ...args: [options: SelectOptions] | [name: string, options: SelectOptions]
@@ -217,7 +218,7 @@ export const number = (name?: string): NumberField =>
 export const date = (name?: string): DateField =>
   new DateField(name, 'date', {})
 
-/** A checkbox, like accepting terms. The name defaults to its key in `customFields`. */
+/** Asks with a checkbox. If required, the customer must tick it. The name defaults to its key in `customFields`. */
 export const checkbox = (name?: string): CustomFieldBuilder<'checkbox'> =>
   new CustomFieldBuilder(name, 'checkbox', {})
 
@@ -228,9 +229,9 @@ export type CustomFieldHelpers = {
   readonly number: typeof number
   /** Asks for a calendar day. The name defaults to its key in `customFields`. */
   readonly date: typeof date
-  /** A checkbox, like accepting terms. The name defaults to its key in `customFields`. */
+  /** Asks with a checkbox. If required, the customer must tick it. The name defaults to its key in `customFields`. */
   readonly checkbox: typeof checkbox
-  /** A dropdown of `{ value: label }` or `[value, label]` choices, in the order they're shown. */
+  /** Asks with a dropdown of `{ value: label }` or `[value, label]` choices, in the order they're shown. The name defaults to its key in `customFields`. */
   readonly select: typeof select
 }
 

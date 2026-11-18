@@ -248,6 +248,7 @@ class SubscriptionTrialEndedJobStore(_SubscriptionScheduleJobStore):
             .where(
                 ~Customer.is_deleted,
                 ~Organization.is_deleted,
+                ~Subscription.is_deleted,
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.status == SubscriptionStatus.trial_ended,
                 Subscription.ends_at.is_not(None),

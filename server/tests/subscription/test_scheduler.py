@@ -101,6 +101,15 @@ async def test_trial_ended_scheduler_only_selects_due_trial_ended_subscriptions(
         ends_at=now - timedelta(hours=1),
         scheduler_locked_at=now,
     )
+    deleted = await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.trial_ended,
+        ends_at=now - timedelta(hours=1),
+    )
+    deleted.deleted_at = now
+    await save_fixture(deleted)
     await create_subscription(
         save_fixture,
         product=product,

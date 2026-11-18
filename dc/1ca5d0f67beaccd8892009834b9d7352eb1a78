@@ -1,0 +1,27 @@
+events/tests/fixtures/reducer_cases.json
+  s_b19d48cab90194::t_a7835426b77e27 2-63,66-151
+events/tests/fixtures/generate_ingest_cases.py
+  s_b19d48cab90194::t_a7835426b77e27 362-366
+events/tests/fixtures/ingest_cases.json
+  s_b19d48cab90194::t_a7835426b77e27 2-194
+events/src/reducer/mod.rs
+  s_b19d48cab90194::t_e60455963a469f 199-226,228
+events/tests/fixtures/generate_reducer_cases.py
+  s_b19d48cab90194::t_a7835426b77e27 119-128,130-168,171-175
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dc1ca5d0f67beaccd8892009834b9d7352eb1a78",
+  "prompts": {},
+  "sessions": {
+    "s_b19d48cab90194": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "082d3de0-2977-4bf5-a817-0df983ecd6bd",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

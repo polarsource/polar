@@ -1,0 +1,67 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationRow.tsx
+  s_24786c431aa0b0::t_bacaa4e2e74ef6 7-8,13,34,47,49-51,53-54
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationsPage.tsx
+  s_24786c431aa0b0::t_8d74b97f4258e6 12,111
+clients/packages/client/src/v1.ts
+  s_a780e4b2d06d03::t_1c3926930b7302 27813,27821-27823,27906-27929,28242-28260,32149-32154,74874-74876,74900-74902
+server/polar/merchant_migration/adapters/__init__.py
+  s_a780e4b2d06d03::t_94ff2a21dabcae 2,5-10
+server/polar/merchant_migration/repository.py
+  s_a780e4b2d06d03::t_40752493e6df2f 104-123
+server/polar/merchant_migration/schemas.py
+  s_a780e4b2d06d03::t_dc3da258a687a2 4,6,10,30,34-37,51-78,509-511
+server/polar/merchant_migration/service.py
+  s_a780e4b2d06d03::t_bf42d579fc0b53 7,52,100,106,200-208,454-466,521-533,535-537,563,582-615,617-623,2193-2202,2204,2212-2218,2228
+server/polar/models/merchant_migration.py
+  s_a780e4b2d06d03::t_f9e10d98b9155f 139-140
+server/polar/models/organization.py
+  s_a780e4b2d06d03::t_4b6334028a7401 780-783
+server/polar/organization/schemas.py
+  s_a780e4b2d06d03::t_2fd6b25d53cfa1 284-293
+server/tests/merchant_migration/test_endpoints.py
+  s_a780e4b2d06d03::t_570644dc3ec9f8 125-150
+server/tests/merchant_migration/test_service.py
+  s_a780e4b2d06d03::t_dfde4974048a02 9,27,63-64,74,207-208,215-383,421,803,840
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.test.tsx
+  s_7b0666dec04723::t_5ed469ae04d5df 65-83,234-281
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.tsx
+  s_7b0666dec04723::t_3889eb7d13b466 4-11,15-17,28,33,37,84-97,99-100,102,104-115,117-129,131,133-151,153-162,165-168,170-176
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/LemonSqueezyConnectForm.tsx
+  s_7b0666dec04723::t_0b48fa4d6dc3c7 1-100
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/SourceMark.tsx
+  s_7b0666dec04723::t_e950340e87bed8 1-39
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/sources.ts
+  s_7b0666dec04723::t_862f34ebfaaf2f 1-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "59dda95be74a2e3beaff4da81bb905a63f22c19c",
+  "prompts": {},
+  "sessions": {
+    "s_24786c431aa0b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ee5c-1b6e-78f3-9133-73e19b105d3d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_a780e4b2d06d03": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0bd4e-4c20-7aa3-8f09-0221685d0e8b",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -14,6 +14,7 @@ export const SubscriptionDateRows = ({
   const isPaused = subscription.status === 'paused'
   const isTrialing =
     subscription.status === 'trialing' && !!subscription.trial_end
+  const isTrialEnded = subscription.status === 'trial_ended'
 
   return (
     <>
@@ -23,7 +24,22 @@ export const SubscriptionDateRows = ({
           value={<DateValue datetime={subscription.started_at} />}
         />
       )}
-      {isTrialing && subscription.trial_end ? (
+      {isTrialEnded ? (
+        <>
+          {subscription.trial_end && (
+            <PortalRow
+              label="Trial ended"
+              value={<DateValue datetime={subscription.trial_end} />}
+            />
+          )}
+          {subscription.ends_at && (
+            <PortalRow
+              label="Ends on"
+              value={<DateValue datetime={subscription.ends_at} />}
+            />
+          )}
+        </>
+      ) : isTrialing && subscription.trial_end ? (
         <PortalRow
           label="Trial ends"
           value={<DateValue datetime={subscription.trial_end} />}

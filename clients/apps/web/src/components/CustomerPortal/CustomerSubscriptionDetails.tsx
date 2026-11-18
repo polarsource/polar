@@ -26,6 +26,8 @@ import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 import UncancelSubscriptionButton from './UncancelSubscriptionButton'
 import {
   TrialBillingDetailsAlert,
+  TrialEndedAlert,
+  TrialEndedSubscriptionActions,
   TrialSubscriptionActions,
 } from './TrialSubscriptionActions'
 
@@ -65,6 +67,7 @@ const CustomerSubscriptionDetails = ({
 
   const isPastDue = subscription.status === 'past_due'
   const isTrialing = subscription.status === 'trialing'
+  const isTrialEnded = subscription.status === 'trial_ended'
   const isPausingIndefinitely =
     (subscription.status === 'paused' || subscription.pause_at_period_end) &&
     !subscription.resumes_at
@@ -97,6 +100,7 @@ const CustomerSubscriptionDetails = ({
       {isTrialing && !isCanceled && (
         <TrialBillingDetailsAlert subscription={subscription} />
       )}
+      {isTrialEnded && <TrialEndedAlert subscription={subscription} />}
 
       <CustomerSubscriptionHeader subscription={subscription} />
 
@@ -172,7 +176,12 @@ const CustomerSubscriptionDetails = ({
       />
 
       <Box columnGap="s" rowGap="s" flexWrap="wrap" justifyContent="end">
-        {isTrialing && !isCanceled ? (
+        {isTrialEnded ? (
+          <TrialEndedSubscriptionActions
+            api={api}
+            subscription={subscription}
+          />
+        ) : isTrialing && !isCanceled ? (
           <TrialSubscriptionActions
             api={api}
             subscription={subscription}

@@ -11,6 +11,7 @@ from polar.checkout.repository import CheckoutRepository
 from polar.checkout.service import NotConfirmedCheckout
 from polar.checkout.tasks import checkout_success
 from polar.enums import PaymentProcessor
+from polar.integrations.payment_retry_alert.types import RetryOutcome
 from polar.integrations.stripe.payment import (
     _resolve_trigger,
     handle_failure,
@@ -371,6 +372,65 @@ class TestHandleFailureTrigger:
         )
         assert payment is not None
         assert payment.trigger == PaymentTrigger.retry_dunning
+
+    async def test_payment_retry_alert_failure_keeps_dunning_schedule(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_payment_attempt_at = utc_now() + timedelta(days=3)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_payment_attempt_at,
+            payment_lock_acquired_at=utc_now(),
+        )
+        enqueue = mocker.patch(
+            "polar.integrations.payment_retry_alert.service.enqueue_job"
+        )
+
+        charge = build_stripe_charge(
+            status="failed",
+            amount=2000,
+            metadata={
+                "order_id": str(order.id),
+                "payment_trigger": "retry_payment_alert",
+                "payment_retry_alert_id": "alrt_test",
+            },
+            billing_details={"email": "test@example.com"},
+            payment_method_details={
+                "card": {"brand": "mastercard", "last4": "4444"},
+                "type": "card",
+            },
+            outcome={
+                "reason": "insufficient_funds",
+                "seller_message": "The bank returned the decline code `insufficient_funds`.",
+            },
+        )
+
+        await handle_failure(session, charge)
+
+        payment = await PaymentRepository.from_session(session).get_by_processor_id(
+            PaymentProcessor.stripe, charge.id
+        )
+        assert payment is not None
+        assert payment.trigger == PaymentTrigger.retry_payment_alert
+        updated_order = await OrderRepository.from_session(session).get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.next_payment_attempt_at == next_payment_attempt_at
+        assert updated_order.payment_lock_acquired_at is None
+        enqueue.assert_called_once_with(
+            "payment_retry_alert.report_outcome",
+            alert_id="alrt_test",
+            outcome=RetryOutcome.failed,
+        )
 
     async def test_no_trigger_for_pre_deployment_charge(
         self,

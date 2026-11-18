@@ -1,0 +1,126 @@
+import base64
+import json
+from datetime import UTC, datetime
+from math import floor
+from typing import Any
+from unittest.mock import AsyncMock
+
+import pytest
+from httpx2 import AsyncClient
+from pytest_mock import MockerFixture
+from standardwebhooks.webhooks import Webhook as StandardWebhook
+
+from polar.models.external_event import ExternalEventSource
+
+WEBHOOK_SECRET = "whsec_" + base64.b64encode(b"test_payment_retry_alert").decode()
+WEBHOOK_URL = "/v1/integrations/payment-retry-alert/webhook"
+
+
+def _event(
+    *, type: str = "alert.created", organisation_mode: str = "TEST"
+) -> dict[str, Any]:
+    return {
+        "id": "evt_test",
+        "object": "event",
+        "type": type,
+        "api_version": "2026-10-05",
+        "organisation_mode": organisation_mode,
+        "created_at": "2026-11-18T10:00:00.000Z",
+        "data": {"object": {"id": "alrt_test", "notification_type": "RETRY_NOW"}},
+    }
+
+
+def _sign(payload: dict[str, Any]) -> tuple[bytes, dict[str, str]]:
+    body = json.dumps(payload).encode()
+    now = datetime.now(UTC)
+    signature = StandardWebhook(WEBHOOK_SECRET.removeprefix("whsec_")).sign(
+        "msg_test", now, body.decode()
+    )
+    headers = {
+        "webhook-id": "msg_test",
+        "webhook-timestamp": str(floor(now.timestamp())),
+        "webhook-signature": signature,
+        "content-type": "application/json",
+    }
+    return body, headers
+
+
+@pytest.fixture(autouse=True)
+def webhook_secret(mocker: MockerFixture) -> None:
+    mocker.patch(
+        "polar.integrations.payment_retry_alert.endpoints.settings.PAYMENT_RETRY_ALERT_WEBHOOK_SECRET",
+        WEBHOOK_SECRET,
+    )
+
+
+@pytest.fixture
+def enqueue_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch(
+        "polar.integrations.payment_retry_alert.endpoints.external_event_service.enqueue",
+        new_callable=AsyncMock,
+    )
+
+
+@pytest.mark.anyio
+class TestWebhook:
+    async def test_invalid_signature(
+        self, client: AsyncClient, enqueue_mock: AsyncMock
+    ) -> None:
+        body, headers = _sign(_event())
+        headers["webhook-signature"] = "v1,invalid"
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 400
+        enqueue_mock.assert_not_called()
+
+    async def test_missing_secret(
+        self, client: AsyncClient, enqueue_mock: AsyncMock, mocker: MockerFixture
+    ) -> None:
+        mocker.patch(
+            "polar.integrations.payment_retry_alert.endpoints.settings.PAYMENT_RETRY_ALERT_WEBHOOK_SECRET",
+            "",
+        )
+        body, headers = _sign(_event())
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 500
+        enqueue_mock.assert_not_called()
+
+    async def test_other_organisation_mode_is_ignored(
+        self, client: AsyncClient, enqueue_mock: AsyncMock
+    ) -> None:
+        body, headers = _sign(_event(organisation_mode="LIVE"))
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 202
+        enqueue_mock.assert_not_called()
+
+    async def test_unhandled_event_type_is_ignored(
+        self, client: AsyncClient, enqueue_mock: AsyncMock
+    ) -> None:
+        body, headers = _sign(_event(type="enrolment.updated"))
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 202
+        enqueue_mock.assert_not_called()
+
+    async def test_alert_created_is_enqueued(
+        self, client: AsyncClient, enqueue_mock: AsyncMock
+    ) -> None:
+        event = _event()
+        body, headers = _sign(event)
+
+        response = await client.post(WEBHOOK_URL, content=body, headers=headers)
+
+        assert response.status_code == 202
+        enqueue_mock.assert_awaited_once()
+        assert enqueue_mock.await_args is not None
+        _, source, task_name, external_id, data = enqueue_mock.await_args.args
+        assert source == ExternalEventSource.payment_retry_alert
+        assert task_name == "payment_retry_alert.webhook.alert.created"
+        assert external_id == "evt_test"
+        assert data == event

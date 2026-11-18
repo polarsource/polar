@@ -55,6 +55,13 @@ class LemonSqueezyStoreRequired(MerchantMigrationError):
         )
 
 
+class LemonSqueezyStoreNotFound(MerchantMigrationError):
+    def __init__(self, store_id: str) -> None:
+        super().__init__(
+            f"This Lemon Squeezy API key can't read store {store_id}.", 400
+        )
+
+
 class LemonSqueezyExtractionPhase(StrEnum):
     variants = "variants"
     discounts = "discounts"
@@ -91,7 +98,8 @@ class LemonSqueezyAdapter:
         self._store: dict[str, Any] | None = None
         self._prices_by_variant: dict[str, list[dict[str, Any]]] = {}
         self._prices_by_id: dict[str, dict[str, Any]] = {}
-        self._discounts_by_order: dict[str, list[dict[str, Any]]] | None = None
+        self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
+        self._redemption_counts: dict[str, int] = {}
 
     async def _list(
         self, path: str, page: int, params: dict[str, Any] | None = None
@@ -114,8 +122,11 @@ class LemonSqueezyAdapter:
             if len(stores) != 1:
                 raise LemonSqueezyStoreRequired([store["id"] for store in stores])
             self.store_id = stores[0]["id"]
-        self._store = next(store for store in stores if store["id"] == self.store_id)
-        return self._store
+        store = next((store for store in stores if store["id"] == self.store_id), None)
+        if store is None:
+            raise LemonSqueezyStoreNotFound(self.store_id)
+        self._store = store
+        return store
 
     @property
     def _store_filter(self) -> dict[str, Any]:
@@ -288,6 +299,7 @@ class LemonSqueezyAdapter:
             cursor.page,
             {**self._store_filter, "include": "variants"},
         )
+        await self._load_redemptions()
         currency = await self._currency()
         records: list[CanonicalRecord] = [
             record
@@ -321,9 +333,11 @@ class LemonSqueezyAdapter:
             amounts={} if percent else {currency: int(attributes["amount"])},
             code=polar_discount_code(attributes.get("code")),
             ends_at=parse_datetime(attributes.get("expires_at")),
-            # The redemption count isn't on the discount; the cap is the
-            # original one until it's read from `/discount-redemptions`.
-            max_redemptions=attributes.get("max_redemptions")
+            max_redemptions=max(
+                attributes["max_redemptions"]
+                - self._redemption_counts.get(discount["id"], 0),
+                0,
+            )
             if attributes.get("is_limited_redemptions")
             else None,
             product_source_ids=variant_ids
@@ -357,7 +371,7 @@ class LemonSqueezyAdapter:
             "/subscriptions", cursor.page, self._store_filter
         )
         await self._load_all_prices()
-        discounts_by_order = await self._redemptions_by_order()
+        discounts_by_order = await self._load_redemptions()
         currency = await self._currency()
         records: list[CanonicalRecord] = [
             self._map_subscription(subscription, discounts_by_order, currency)
@@ -366,22 +380,27 @@ class LemonSqueezyAdapter:
         ]
         return records, has_more
 
-    async def _redemptions_by_order(self) -> dict[str, list[dict[str, Any]]]:
-        """A subscription keeps the discount its first order redeemed; the
-        subscription itself doesn't say which, the redemption does."""
-        if self._discounts_by_order is not None:
-            return self._discounts_by_order
+    async def _load_redemptions(self) -> dict[str, list[dict[str, Any]]]:
+        """Redemptions, per order and counted per discount. A subscription keeps
+        the discount its first order redeemed, which only the redemption says,
+        and a discount's cap moves over minus what's already been redeemed."""
+        if self._redemptions_by_order is not None:
+            return self._redemptions_by_order
         by_order: dict[str, list[dict[str, Any]]] = {}
         page = 1
         while True:
             redemptions, has_more, _ = await self._list("/discount-redemptions", page)
             for redemption in redemptions:
-                order_id = str(redemption["attributes"]["order_id"])
-                by_order.setdefault(order_id, []).append(redemption)
+                attributes = redemption["attributes"]
+                by_order.setdefault(str(attributes["order_id"]), []).append(redemption)
+                discount_id = str(attributes["discount_id"])
+                self._redemption_counts[discount_id] = (
+                    self._redemption_counts.get(discount_id, 0) + 1
+                )
             if not has_more:
                 break
             page += 1
-        self._discounts_by_order = by_order
+        self._redemptions_by_order = by_order
         return by_order
 
     async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
@@ -394,7 +413,7 @@ class LemonSqueezyAdapter:
             return None
         await self._load_all_prices()
         return self._map_subscription(
-            subscription, await self._redemptions_by_order(), await self._currency()
+            subscription, await self._load_redemptions(), await self._currency()
         )
 
     async def stop_source_subscription(
@@ -444,7 +463,9 @@ class LemonSqueezyAdapter:
             price_source_id=price_id,
             status=self._map_status(status),
             collection_method=CanonicalCollectionMethod.charge_automatically,
-            current_period_start=self._period_start(current_period_end, price_id),
+            current_period_start=self._period_start(
+                current_period_end, price_id, attributes.get("billing_anchor")
+            ),
             current_period_end=current_period_end,
             trialing=status == "on_trial",
             paused_collection=attributes.get("pause") is not None,
@@ -478,7 +499,7 @@ class LemonSqueezyAdapter:
         return latest["id"]
 
     def _period_start(
-        self, period_end: datetime | None, price_id: str
+        self, period_end: datetime | None, price_id: str, anchor_day: int | None
     ) -> datetime | None:
         """Lemon Squeezy only dates the next renewal: the start is one
         interval back."""
@@ -492,7 +513,7 @@ class LemonSqueezyAdapter:
             return None
         return interval.get_next_period(
             period_end,
-            period_end.day,
+            anchor_day or period_end.day,
             -(attributes.get("renewal_interval_quantity") or 1),
         )
 

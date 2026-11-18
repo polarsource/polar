@@ -7,6 +7,7 @@ import pytest
 from polar.merchant_migration.adapters.lemon_squeezy import (
     API_BASE_URL,
     LemonSqueezyAdapter,
+    LemonSqueezyStoreNotFound,
     LemonSqueezyStoreRequired,
 )
 from polar.merchant_migration.canonical import (
@@ -131,8 +132,8 @@ ROUTES: dict[str, dict[str, Any]] = {
                     "duration": "repeating",
                     "duration_in_months": 3,
                     "is_limited_to_products": True,
-                    "is_limited_redemptions": False,
-                    "max_redemptions": 0,
+                    "is_limited_redemptions": True,
+                    "max_redemptions": 5,
                     "expires_at": None,
                     "status": "published",
                 },
@@ -216,6 +217,7 @@ class TestExtract:
         assert discount.basis_points == 2000
         assert discount.duration == CanonicalDiscountDuration.repeating
         assert discount.product_source_ids == ["10"]
+        assert discount.max_redemptions == 4
 
         [customer] = [r for r in records if isinstance(r, CanonicalCustomer)]
         assert customer.email == "ada@example.com"
@@ -270,9 +272,31 @@ class TestGetSourceAccount:
         with pytest.raises(LemonSqueezyStoreRequired):
             await adapter.get_source_account()
 
+    async def test_unknown_store(self) -> None:
+        adapter, _ = _adapter(store_id="2")
+
+        with pytest.raises(LemonSqueezyStoreNotFound):
+            await adapter.get_source_account()
+
 
 @pytest.mark.anyio
 class TestGetSubscription:
+    async def test_period_start_keeps_month_end_anchor(self) -> None:
+        adapter, _ = _adapter(
+            {
+                "/v1/subscriptions/100": {
+                    "data": _subscription(
+                        billing_anchor=31, renews_at="2027-02-28T00:00:00Z"
+                    )
+                }
+            }
+        )
+
+        subscription = await adapter.get_subscription("100")
+
+        assert subscription is not None
+        assert subscription.current_period_start == datetime(2027, 1, 31, tzinfo=UTC)
+
     async def test_cancelled_is_a_pending_end(self) -> None:
         adapter, _ = _adapter(
             {

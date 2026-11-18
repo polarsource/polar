@@ -1480,7 +1480,7 @@ class SubscriptionService:
         # A change the merchant scheduled for the trial end is applied as is.
         if subscription.pending_update is not None:
             return False
-        if not self._is_billed_at_renewal(subscription):
+        if not self._charges_after_trial(subscription):
             return False
         return not self._has_payment_method(
             subscription
@@ -1502,12 +1502,9 @@ class SubscriptionService:
         repository = SubscriptionRepository.from_session(session)
         return await repository.release_scheduler_lock(subscription)
 
-    def _is_billed_at_renewal(self, subscription: Subscription) -> bool:
-        # Mirror checkout, which doesn't ask for a payment method when the
-        # subscription costs nothing: free prices, pay-what-you-want at 0, or a
-        # forever 100% discount. Converting those creates a paid 0-amount order.
-        # A discount that expires at conversion is dropped by the cycle, so judge
-        # the price the customer is billed for the next period.
+    def _charges_after_trial(self, subscription: Subscription) -> bool:
+        # Like checkout, which asks for no card for free prices, pay-what-you-want
+        # at 0 or a forever 100% discount.
         has_metered_prices = any(
             is_metered_price(price) for price in subscription.prices
         )

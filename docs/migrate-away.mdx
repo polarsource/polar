@@ -19,15 +19,27 @@ Migrations are not self-serve today. To get started, email [support@polar.sh](ma
 | Data | Moves to your new provider | Notes |
 | --- | --- | --- |
 | Customers | Yes | Name, email, and billing details. |
-| Saved payment methods | Yes | Easiest Stripe-to-Stripe. We can also move them to any PCI-compliant provider via Stripe's secure PAN export. |
+| Saved payment methods | Mostly | Cards move. Link and some other payment methods don't. See [Limitations](#limitations-to-be-aware-of). |
+| Order history, invoices, refunds | No | Payment history stays in Polar and isn't copied to your new provider. |
 | Products, prices, discounts, benefits | No, recreate them | These live in your Polar configuration and need to be set up again on your new provider. |
 | Active subscriptions | No, recreate them | Recreate them on your new provider following your existing billing cycle, then cancel on Polar. See [Recreating your subscriptions](#recreating-your-subscriptions). |
 
 <Note>
 **Stripe to Stripe is the simplest path**
 
-If your new provider is Stripe, we transfer your customers and their saved payment methods directly between Stripe accounts. Moving to a different provider is also supported through Stripe's secure PAN export, which sends card data to any PCI-compliant processor. Both paths are handled by our team, so no card data ever passes through you and your customers don't need to re-enter their details.
+If your new provider is Stripe, we transfer your customers and their saved payment methods directly between Stripe accounts. Moving to a different provider is also supported through Stripe's secure PAN export, which sends card data to any PCI DSS Level 1 compliant processor. Both paths are handled by our team, so no card data ever passes through you, and most customers with a saved card won't need to re-enter their details.
 </Note>
+
+## Limitations to be aware of
+
+- **Link isn't transferred.** Stripe doesn't copy or export payment methods saved with Link.
+- **Only cards are transferred.** Cash App Pay, Amazon Pay and Korean payment methods stay behind.
+- **Apple Pay and Google Pay cards may not work outside Stripe.** They're stored as device tokens, not card numbers.
+- **Moving to a European or UK Stripe account?** Polar's Stripe account is in the US, so some renewals on European or UK cards may be declined until the customer re-authenticates.
+- **Payment method IDs change.** Customer IDs stay the same, and Stripe gives you a file mapping old payment method IDs to new ones.
+- **Other providers must be PCI DSS Level 1 compliant** to receive card data. The CVC is never exported.
+
+Customers whose payment method can't be moved need to add a new one on your new provider before their first renewal there.
 
 ## The holding period
 
@@ -52,7 +64,7 @@ After 120 days, your remaining balance is released and you can withdraw it.
     Email [support@polar.sh](mailto:support@polar.sh) with the Stripe account (or other provider) you want to migrate to. We will confirm the details and set your organization to offboarding. The destination account must already exist and be under your control before we can begin the migration.
   </Step>
   <Step title="We transfer your customers and payment methods">
-    We coordinate a secure transfer of your customers and their saved payment methods to your new account. Stripe-to-Stripe is a direct account-to-account copy. For other providers, we use Stripe's PAN export to send card data to your PCI-compliant processor. No card data passes through you, keeping the migration PCI-compliant.
+    We coordinate a secure transfer of your customers and their saved payment methods to your new account. Stripe-to-Stripe is a direct account-to-account copy. For other providers, we use Stripe's PAN export to send card data to your PCI DSS Level 1 compliant processor. No card data passes through you, keeping the migration PCI-compliant.
   </Step>
   <Step title="Recreate your catalog on the new provider">
     Set up your products, prices, discounts, and benefits on your new provider. These configurations live in Polar and don't transfer automatically. Depending on your new provider, this can often be automated using their APIs or bulk import tools and we don't offer personalized exports of data.
@@ -93,10 +105,10 @@ After the 120-day holding period ends, your remaining balance is released and yo
   No. Polar does not charge a fee to migrate your customers or saved payment methods to another provider.
 </Accordion>
 <Accordion title="Will my customers notice the migration?">
-    They shouldn't experience an interruption. Subscriptions keep renewing on Polar until you cancel them, and we transfer saved payment methods so they don't need to re-enter card details. The main visible change is who appears on their statement once you start billing from your new provider.
+    Most won't. Subscriptions keep renewing on Polar until you cancel them, and saved cards are transferred, so those customers don't need to re-enter their details. Customers who paid with Link or another payment method that can't be moved need to add a new one (see [Limitations](#limitations-to-be-aware-of)). The main visible change is who appears on their statement once you start billing from your new provider.
   </Accordion>
   <Accordion title="Can I move to a provider other than Stripe?">
-    Yes. Stripe-to-Stripe is the easiest path, but we can also move your saved payment methods to another provider through Stripe's secure PAN export, as long as your new processor is PCI-compliant and able to receive the data.
+    Yes. Stripe-to-Stripe is the easiest path, but we can also move your saved payment methods to another provider through Stripe's secure PAN export, as long as your new processor is PCI DSS Level 1 compliant and able to receive the data.
   </Accordion>
   <Accordion title="Why can't I just export the card numbers myself?">
     Raw card data is subject to strict PCI and card network rules and is never handed to merchants directly. Payment methods are moved account-to-account through the processor's secure migration process, which is why this step is handled by our team.

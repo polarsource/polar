@@ -1,6 +1,8 @@
+from collections.abc import Mapping
 from datetime import timedelta
 from enum import StrEnum
 
+import stripe as stripe_lib
 import structlog
 
 from polar.config import settings
@@ -9,15 +11,16 @@ from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Payment
 from polar.models.order import OrderStatus
-from polar.models.payment import PaymentTrigger
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.order.repository import OrderRepository
 from polar.order.service import PaymentAlreadyInProgress, PaymentFailed
 from polar.order.service import order as order_service
 from polar.payment.repository import PaymentRepository
 from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
+from polar.worker import enqueue_job
 
-from .types import RETRY_NOW_NOTIFICATION_TYPE, PaymentRetryAlert
+from .types import RETRY_NOW_NOTIFICATION_TYPE, PaymentRetryAlert, RetryOutcome
 
 log: Logger = structlog.get_logger()
 
@@ -90,6 +93,31 @@ class PaymentRetryAlertService:
             alert_id=alert["id"],
             reason=skip_reason,
         )
+        self._enqueue_report(alert["id"], RetryOutcome.not_attempted)
+
+    def enqueue_outcome_report(
+        self, stripe_metadata: Mapping[str, str] | None, payment: Payment
+    ) -> None:
+        if stripe_metadata is None:
+            return
+        alert_id = stripe_metadata.get(STRIPE_METADATA_PAYMENT_RETRY_ALERT_ID)
+        if alert_id is None:
+            return
+
+        match payment.status:
+            case PaymentStatus.succeeded:
+                outcome = RetryOutcome.succeeded
+            case PaymentStatus.failed:
+                outcome = RetryOutcome.failed
+            case PaymentStatus.pending:
+                return
+
+        self._enqueue_report(alert_id, outcome)
+
+    def _enqueue_report(self, alert_id: str, outcome: RetryOutcome) -> None:
+        enqueue_job(
+            "payment_retry_alert.report_outcome", alert_id=alert_id, outcome=outcome
+        )
 
     async def _retry_declined_payment(
         self, session: AsyncSession, alert: PaymentRetryAlert
@@ -155,7 +183,11 @@ class PaymentRetryAlertService:
             )
         except PaymentAlreadyInProgress:
             return SkipReason.payment_in_progress
-        except PaymentFailed:
+        except PaymentFailed as e:
+            # Declines are reported by the Stripe failure webhook. Other
+            # rejections create no charge, so no webhook carries the alert ID.
+            if not isinstance(e.__cause__, stripe_lib.CardError):
+                self._enqueue_report(alert["id"], RetryOutcome.failed)
             return None
 
         if payment_intent is None:

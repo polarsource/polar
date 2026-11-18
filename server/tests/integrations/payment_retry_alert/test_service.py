@@ -3,6 +3,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.integrations.payment_retry_alert.service import (
@@ -14,13 +15,17 @@ from polar.integrations.payment_retry_alert.service import (
 from polar.integrations.payment_retry_alert.service import (
     payment_retry_alert as payment_retry_alert_service,
 )
-from polar.integrations.payment_retry_alert.types import PaymentRetryAlert
+from polar.integrations.payment_retry_alert.types import (
+    PaymentRetryAlert,
+    RetryOutcome,
+)
 from polar.integrations.stripe.service import StripeService
 from polar.kit.utils import utc_now
 from polar.models import Customer, Order, Organization, Payment, Product
 from polar.models.order import OrderStatus
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
+from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -52,6 +57,11 @@ def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
     mocker.patch("polar.order.service.stripe_service", new=mock)
     return mock
+
+
+@pytest.fixture
+def enqueue_job_mock(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch("polar.integrations.payment_retry_alert.service.enqueue_job")
 
 
 @pytest.fixture
@@ -172,6 +182,7 @@ class TestHandleAlert:
         save_fixture: SaveFixture,
         session: AsyncSession,
         stripe_service_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
         log_mock: MagicMock,
         organization: Organization,
         dunning_order: Order,
@@ -192,3 +203,48 @@ class TestHandleAlert:
         assert log_mock.info.call_args.kwargs["reason"] == (
             SkipReason.max_attempts_reached
         )
+        enqueue_job_mock.assert_called_once_with(
+            "payment_retry_alert.report_outcome",
+            alert_id="alrt_test",
+            outcome=RetryOutcome.not_attempted,
+        )
+
+    @pytest.mark.parametrize(
+        ("cause", "reported"),
+        [
+            pytest.param(
+                stripe_lib.CardError("Declined", None, "card_declined"),
+                False,
+                id="declined",
+            ),
+            pytest.param(
+                stripe_lib.InvalidRequestError("Detached", None), True, id="rejected"
+            ),
+        ],
+    )
+    async def test_failed_retry(
+        self,
+        cause: stripe_lib.StripeError,
+        reported: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        declined_payment: Payment,
+    ) -> None:
+        failure = PaymentFailed(PaymentFailedReason.card_error)
+        failure.__cause__ = cause
+        mocker.patch(
+            "polar.integrations.payment_retry_alert.service.order_service.trigger_payment",
+            side_effect=failure,
+        )
+
+        await payment_retry_alert_service.handle_alert(session, build_alert())
+
+        if reported:
+            enqueue_job_mock.assert_called_once_with(
+                "payment_retry_alert.report_outcome",
+                alert_id="alrt_test",
+                outcome=RetryOutcome.failed,
+            )
+        else:
+            enqueue_job_mock.assert_not_called()

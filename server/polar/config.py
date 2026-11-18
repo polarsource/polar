@@ -492,6 +492,8 @@ class Settings(BaseSettings):
     CHARGEBACK_STOP_WEBHOOK_SECRET: str = ""
 
     # PaymentRetryAlert (Mastercard retry signals, by ChargebackStop)
+    PAYMENT_RETRY_ALERT_API_KEY: str = ""
+    PAYMENT_RETRY_ALERT_API_BASE_URL: str = "https://api.paymentretryalert.com/v1"
     PAYMENT_RETRY_ALERT_WEBHOOK_SECRET: str = ""
 
     # Polar's usage of Polar

@@ -1906,14 +1906,13 @@ class OrderService:
         async with self.acquire_payment_lock(session, order):
             if payment_method.processor == PaymentProcessor.stripe:
                 metadata: dict[str, Any] = {
+                    **(extra_metadata or {}),
                     "organization_id": str(order.organization_id),
                     "order_id": str(order.id),
                     "payment_mode": payment_mode,
                 }
                 if payment_trigger is not None:
                     metadata[STRIPE_METADATA_PAYMENT_TRIGGER] = payment_trigger
-                if extra_metadata is not None:
-                    metadata.update(extra_metadata)
 
                 if order.tax_breakdown:
                     metadata["tax_amount"] = order.tax_amount

@@ -32,7 +32,23 @@ const NOTHING_TO_MOVE =
   'There is nothing to move yet. Prepare your subscriptions first, then come ' +
   "back to move your customers' saved cards."
 
-function receipt(outcome: ImportOutcome, nothingLanded: boolean): string {
+function receipt(
+  outcome: ImportOutcome,
+  nothingLanded: boolean,
+  readyToSwitch: number,
+): string {
+  const imported = importedReceipt(outcome, nothingLanded)
+  const ready = plural(readyToSwitch, 'subscription')
+  if (!ready || imported === UNCOUNTED) {
+    return imported
+  }
+  return `${imported} ${ready} ${readyToSwitch === 1 ? 'is' : 'are'} ready to switch.`
+}
+
+function importedReceipt(
+  outcome: ImportOutcome,
+  nothingLanded: boolean,
+): string {
   if (outcome.isLoading || outcome.isError) {
     return UNCOUNTED
   }
@@ -79,7 +95,9 @@ export function ImportedHandoff({
         <Text variant="title" as="h3">
           Catalog imported
         </Text>
-        <Text color="muted">{receipt(outcome, nothingLanded)}</Text>
+        <Text color="muted">
+          {receipt(outcome, nothingLanded, landed.readyToSwitch)}
+        </Text>
       </Box>
 
       <Box

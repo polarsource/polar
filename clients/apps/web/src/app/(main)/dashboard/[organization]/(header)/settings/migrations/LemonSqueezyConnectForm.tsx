@@ -3,9 +3,11 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Alert, Button, Input, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ArrowUpRight } from '@polar-sh/orbit/icons'
 import { useState } from 'react'
 
 const CONNECT_FALLBACK = 'Please check the API key and try again.'
+const LEMON_SQUEEZY_API_KEYS_URL = 'https://app.lemonsqueezy.com/settings/api'
 
 export function LemonSqueezyConnectForm({
   organizationId,
@@ -48,10 +50,23 @@ export function LemonSqueezyConnectForm({
   return (
     <Box as="form" onSubmit={handleSubmit} flexDirection="column" rowGap="xl">
       <Text color="muted">
-        Connect Lemon Squeezy with an API key from Settings → API in your Lemon
-        Squeezy dashboard. Polar only reads your store until you approve each
-        step.
+        Connect Lemon Squeezy with an API key so Polar can read your products,
+        discounts, customers and subscriptions. Nothing in Lemon Squeezy changes
+        until you approve each step.
       </Text>
+
+      <Button variant="secondary" fullWidth asChild>
+        <a
+          href={LEMON_SQUEEZY_API_KEYS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Box alignItems="center" columnGap="s">
+            Create an API key in Lemon Squeezy
+            <ArrowUpRight size={16} />
+          </Box>
+        </a>
+      </Button>
 
       <Box flexDirection="column" rowGap="m">
         <Input

@@ -100,10 +100,10 @@ describe('reviewStatus', () => {
   })
 
   describe('moving subscriptions', () => {
-    it('shows "Ready" for a pending subscription with a card', () => {
+    it('shows "Ready to prepare" for a pending subscription with a card', () => {
       expect(
         reviewStatus(row({ status: 'importable', import_status: 'pending' })),
-      ).toMatchObject({ label: 'Ready' })
+      ).toMatchObject({ label: 'Ready to prepare' })
     })
 
     it('shows "Prepared" once dependencies are prepared', () => {
@@ -131,7 +131,7 @@ describe('reviewStatus', () => {
       ).toMatchObject({ label: 'Needs a card', color: 'yellow' })
     })
 
-    it('shows "Ready" for an info-level reason that does not need attention', () => {
+    it('shows "Ready to prepare" for an info-level reason that does not need attention', () => {
       expect(
         reviewStatus(
           row({
@@ -140,7 +140,7 @@ describe('reviewStatus', () => {
             reason_level: 'info',
           }),
         ),
-      ).toMatchObject({ label: 'Ready' })
+      ).toMatchObject({ label: 'Ready to prepare' })
     })
 
     it.each(['link', null] as const)(

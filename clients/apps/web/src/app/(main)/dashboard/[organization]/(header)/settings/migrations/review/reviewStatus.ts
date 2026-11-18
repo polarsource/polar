@@ -72,5 +72,5 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   }
   return stage === 'ready'
     ? { label: 'Prepared', paymentMethod }
-    : { label: 'Ready', color: 'green', paymentMethod }
+    : { label: 'Ready to prepare', color: 'green', paymentMethod }
 }

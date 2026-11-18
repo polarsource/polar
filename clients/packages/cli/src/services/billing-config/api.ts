@@ -66,6 +66,7 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
 
 export const SECTIONS = {
   meter: 'meters',
+  custom_field: 'custom_fields',
   benefit: 'benefits',
   product: 'products',
   webhook: 'webhooks',

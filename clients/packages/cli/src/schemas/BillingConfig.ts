@@ -54,6 +54,7 @@ type FieldChange = typeof FieldChange.Type
 
 export const ConfigResource = Schema.Literals([
   'meter',
+  'custom_field',
   'benefit',
   'product',
   'webhook',

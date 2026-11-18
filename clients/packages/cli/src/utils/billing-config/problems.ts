@@ -7,7 +7,7 @@ export const plural = (count: number, noun: string, nouns = `${noun}s`) =>
 const quote = (value: string) => `"${value}"`
 
 export const referencedResource = (message: string) =>
-  /^No (\w+) in this config/.exec(message)?.[1]
+  /^No ([\w ]+?) in this config/.exec(message)?.[1]
 
 type SourceLocation = NonNullable<ConfigIssue['location']>
 
@@ -99,9 +99,10 @@ const describe = (issue: ConfigIssue): Problem => {
         label: 'the meter is already aggregating events',
       }
     case 'duplicate_external_id':
+    case 'duplicate_slug':
       return {
         ...base,
-        title: `Duplicate external_id ${issue.got ?? quote(key)}`,
+        title: `Duplicate ${key === 'field' ? 'custom field' : key} ${issue.got ?? quote(key)}`,
         label: 'already used by another entry',
       }
     case 'unknown_reference': {

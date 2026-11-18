@@ -37,6 +37,10 @@ export default defineConfig({
       .units(1000)
       .rollover(),
   }),
+  customFields: ({ text, checkbox }) => ({
+    company: text('Company').placeholder('Acme Inc.'),
+    terms: checkbox('Terms').label('I accept the terms of service'),
+  }),
   products: ({ product, free, fixed, seats, units, tier, meter }) => ({
     free: product('Free')
       .prices(free())
@@ -53,7 +57,8 @@ export default defineConfig({
           .min(1),
       )
       .recurring('monthly')
-      .grants(['custom_servers']),
+      .grants(['custom_servers'])
+      .customFields((optional) => ['terms', optional('company')]),
     servers: product('Servers')
       .prices(
         units()

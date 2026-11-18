@@ -21,6 +21,12 @@ export const record = (input: unknown): Record<string, unknown> | undefined =>
     ? (input as Record<string, unknown>)
     : undefined
 
+// Custom fields are keyed by slug, everything else by external_id
+export const entryKey = (entry: unknown) => {
+  const key = record(entry)?.['external_id'] ?? record(entry)?.['slug']
+  return typeof key === 'string' ? key : undefined
+}
+
 const clause = (input: Record<string, unknown>) =>
   `${name(input['property'])} ${OPERATORS[String(input['operator'])] ?? name(input['operator'])} ${JSON.stringify(input['value'])}`
 

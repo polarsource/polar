@@ -47,6 +47,7 @@ export const target = (organization: ActiveOrganization) =>
 
 export const NOUNS = [
   ['meters', 'meter'],
+  ['custom_fields', 'custom field'],
   ['benefits', 'benefit'],
   ['products', 'product'],
   ['webhooks', 'webhook'],

@@ -24,7 +24,6 @@ import { API_URL, server } from './server'
 
 export const CLIENT_SECRET = 'polar_c_test'
 export const CHECKOUT_URL = `http://localhost:3000/checkout/${CLIENT_SECRET}`
-export const DISTINCT_ID = 'distinct_test'
 export const CUSTOMER_SESSION_TOKEN = 'cst_test'
 
 type CheckoutDiscount = NonNullable<ProductCheckoutPublic['discount']>
@@ -361,7 +360,6 @@ export interface RenderCheckoutOptions
   embed?: boolean
   theme?: 'light' | 'dark'
   locale?: AcceptedLocale
-  distinctId?: string | null
 }
 
 export const renderCheckout = ({
@@ -370,7 +368,6 @@ export const renderCheckout = ({
   embed = false,
   theme = 'light',
   locale = 'en',
-  distinctId = DISTINCT_ID,
   paymentStatus,
   discounts,
   fulfillment,
@@ -384,10 +381,6 @@ export const renderCheckout = ({
     fulfillment,
     benefitGrants,
   })
-  document.cookie = distinctId
-    ? `polar_distinct_id=${distinctId}; path=/`
-    : 'polar_distinct_id=; max-age=0; path=/'
-
   const result = renderWithProviders(
     <UserContextProvider
       user={authenticatedUser}

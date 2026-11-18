@@ -18,7 +18,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Organization, OrganizationDomain
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import STATUS_CAPABILITIES, OrganizationStatus
 from polar.organization.embed_hosts import (
     WILDCARD_PREFIX,
     is_shared_host,
@@ -122,8 +122,12 @@ class OrganizationDomainService:
             raise OrganizationDomainAlreadyExists(create.domain) from e
 
     async def delete(
-        self, session: AsyncSession, organization_domain: OrganizationDomain
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        organization_domain: OrganizationDomain,
     ) -> None:
+        await self.unregister_payment_method_domains(session, organization)
         repository = OrganizationDomainRepository.from_session(session)
         await repository.soft_delete(organization_domain)
 
@@ -175,12 +179,14 @@ class OrganizationDomainService:
         session: AsyncReadSession,
         organization: Organization,
         embed_hosts: Iterable[str] | None = None,
+        *,
+        approved_only: bool = True,
     ) -> Sequence[str]:
         """Stripe shows Apple Pay and Google Pay only on registered domains, and
         takes no wildcards, so each embed host under a verified domain goes in
         alone. Without `embed_hosts`, takes every embed host. Only approved
-        organizations register."""
-        if organization.status != OrganizationStatus.ACTIVE:
+        organizations register, unless `approved_only` is off."""
+        if approved_only and organization.status != OrganizationStatus.ACTIVE:
             return []
         repository = OrganizationDomainRepository.from_session(session)
         verified_domains = [
@@ -218,6 +224,44 @@ class OrganizationDomainService:
                 domains=domains,
             )
 
+    async def unregister_payment_method_domains(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        embed_hosts: Iterable[str] | None = None,
+    ) -> None:
+        domains = await self.get_payment_method_domains(
+            session, organization, embed_hosts, approved_only=False
+        )
+        if domains:
+            enqueue_job(
+                "organization_domain.unregister_payment_method_domains",
+                domains=domains,
+            )
+
+    def on_organization_status_changed(
+        self,
+        organization_id: UUID,
+        previous_status: OrganizationStatus,
+        status: OrganizationStatus,
+    ) -> None:
+        if (
+            status == OrganizationStatus.ACTIVE
+            and previous_status != OrganizationStatus.ACTIVE
+        ):
+            enqueue_job(
+                "organization_domain.register_organization_payment_method_domains",
+                organization_id=organization_id,
+            )
+        elif (
+            STATUS_CAPABILITIES[previous_status]["checkout_payments"]
+            and not STATUS_CAPABILITIES[status]["checkout_payments"]
+        ):
+            enqueue_job(
+                "organization_domain.unregister_organization_payment_method_domains",
+                organization_id=organization_id,
+            )
+
     async def is_payment_method_domain_vouched_for(
         self, session: AsyncReadSession, domain: str
     ) -> bool:
@@ -225,11 +269,11 @@ class OrganizationDomainService:
         parents = [".".join(labels[i:]) for i in range(len(labels))]
         repository = OrganizationDomainRepository.from_session(session)
         organization_domains = (
-            await repository.get_all_verified_for_active_organizations(parents)
+            await repository.get_all_verified_for_paying_organizations(parents)
         )
         for organization_domain in organization_domains:
             if domain in await self.get_payment_method_domains(
-                session, organization_domain.organization
+                session, organization_domain.organization, approved_only=False
             ):
                 return True
         return False
@@ -271,6 +315,7 @@ class OrganizationDomainService:
                     organization_id=str(organization.id),
                     domain=organization_domain.domain,
                 )
+                await self.unregister_payment_method_domains(session, organization)
                 await repository.update(
                     organization_domain,
                     update_dict={

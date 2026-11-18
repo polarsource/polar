@@ -11,7 +11,13 @@ from polar.kit.repository import (
 )
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import STATUS_CAPABILITIES
+
+PAYING_STATUSES = frozenset(
+    status
+    for status, capabilities in STATUS_CAPABILITIES.items()
+    if capabilities["checkout_payments"]
+)
 
 
 class OrganizationDomainRepository(
@@ -35,7 +41,7 @@ class OrganizationDomainRepository(
             OrganizationDomain.verified_at.is_not(None)
         )
 
-    async def get_all_verified_for_active_organizations(
+    async def get_all_verified_for_paying_organizations(
         self, domains: Sequence[str]
     ) -> Sequence[OrganizationDomain]:
         statement = (
@@ -44,7 +50,7 @@ class OrganizationDomainRepository(
             .where(
                 OrganizationDomain.domain.in_(domains),
                 OrganizationDomain.verified_at.is_not(None),
-                Organization.status == OrganizationStatus.ACTIVE,
+                Organization.status.in_(PAYING_STATUSES),
                 Organization.deleted_at.is_(None),
             )
             .options(contains_eager(OrganizationDomain.organization))

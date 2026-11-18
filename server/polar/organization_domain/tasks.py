@@ -69,3 +69,17 @@ async def unregister_payment_method_domains(
                 await stripe_service.update_payment_method_domain(
                     payment_method_domain.id, enabled=False
                 )
+
+
+@actor(actor_name="organization_domain.unregister_organization_payment_method_domains")
+async def unregister_organization_payment_method_domains(
+    organization_id: Annotated[uuid.UUID, LoggableField],
+) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+        await organization_domain_service.unregister_payment_method_domains(
+            session, organization
+        )

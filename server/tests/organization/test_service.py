@@ -6485,7 +6485,7 @@ class TestSetStatus:
     async def test_approval_registers_payment_method_domains(
         self, mocker: MockerFixture, organization: Organization
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
         organization.status = OrganizationStatus.REVIEW
 
         organization_service.set_status(organization, OrganizationStatus.ACTIVE)
@@ -6498,7 +6498,7 @@ class TestSetStatus:
     async def test_leaving_active_unregisters_payment_method_domains(
         self, mocker: MockerFixture, organization: Organization
     ) -> None:
-        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
 
         organization_service.set_status(organization, OrganizationStatus.DENIED)
 

@@ -25,6 +25,11 @@ interface OperationTool {
   inputSchema: JsonSchemaType
 }
 
+// OpenAI's review requires `destructiveHint: true` on tools that overwrite data.
+// These are not marked `destructive` on the server because that annotation also
+// makes the CLI ask for confirmation, and fail without `--confirm` in scripts.
+const OVERWRITING_TOOLS = new Set(['orders_update', 'checkout_links_update'])
+
 const withIntent = (schema: JsonSchemaType): JsonSchemaType => ({
   ...schema,
   properties: { ...schema.properties, intent: intentJsonSchema },
@@ -37,7 +42,9 @@ const operationTools = (generatedTools as unknown as OperationTool[]).map(
     annotations: {
       title: tool.title,
       readOnlyHint: tool.annotations.includes('read_only'),
-      destructiveHint: tool.annotations.includes('destructive'),
+      destructiveHint:
+        tool.annotations.includes('destructive') ||
+        OVERWRITING_TOOLS.has(tool.name),
       idempotentHint: tool.annotations.includes('idempotent'),
       openWorldHint: tool.annotations.includes('open_world'),
     },

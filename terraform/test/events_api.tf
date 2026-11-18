@@ -401,7 +401,7 @@ module "events" {
   repository_credentials   = { arn = aws_secretsmanager_secret.ghcr[0].arn }
   lb_target_group          = { arn = aws_lb_target_group.events[0].arn }
   desired_count            = 3
-  tags                     = local.events_api_tags
+  tags                     = { Environment = "test", Service = local.events_name }
 
   environment_variables = {
     # The service reads its telemetry name from Render's variable.

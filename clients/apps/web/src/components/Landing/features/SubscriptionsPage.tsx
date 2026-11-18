@@ -1,151 +1,144 @@
-'use client'
+import { Proration } from '../subscriptions/Proration'
+import { Cycle, Recovery, Renewals } from '../subscriptions/plates'
+import { Head, Lede, Rows, Section, Split } from './Destination'
+import { FeatureCTA, FeaturePageLayout } from './FeaturePageLayout'
 
-import { CycleArrow } from '../graphics/CycleArrow'
-import {
-  FeatureCardGrid,
-  FeatureCTA,
-  FeatureHighlight,
-  FeaturePageHeader,
-  FeaturePageIntro,
-  FeaturePageLayout,
-  FeatureRichList,
-  FeatureSection,
-  FeatureSplit,
-} from './FeaturePageLayout'
+const DOCS = '/docs/features/subscriptions/introduction'
 
-export const SubscriptionsPage = () => {
-  return (
-    <FeaturePageLayout>
-      <FeaturePageHeader
-        graphic={CycleArrow}
-        title="Subscriptions, end to end"
-        description="Renewals, proration, dunning, and benefits."
-        docsHref="/docs/features/subscriptions/introduction"
+export const SubscriptionsPage = () => (
+  <FeaturePageLayout>
+    <Head
+      title="Subscriptions, end to end"
+      line="Renewals, upgrades and recovery, handled."
+      docs={DOCS}
+    >
+      <Cycle />
+    </Head>
+
+    {/* 01: every renewal, one after another */}
+    <Section id="lifecycle">
+      <Split
+        words={
+          <>
+            <Lede
+              title="Check out once, renewed every cycle"
+              line="A recurring price on a product is all it takes. Polar advances the period and charges the saved card, without your code in the loop."
+            />
+            <Rows
+              rows={[
+                [
+                  'Pricing',
+                  'Fixed, pay what you want or free, on any cadence.',
+                ],
+                [
+                  'Orders',
+                  'Every renewal is an order, with tax and discounts applied.',
+                ],
+                [
+                  'Benefits',
+                  'Granted at checkout, and kept in step with the subscription.',
+                ],
+              ]}
+            />
+          </>
+        }
+        plate={
+          <div className="mx-auto w-full max-w-[32rem]">
+            <Renewals />
+          </div>
+        }
       />
+    </Section>
 
-      <FeaturePageIntro>
-        At the close of each cycle, Polar advances the period and charges the
-        saved card. If the charge fails, the subscription enters payment
-        recovery before anything is revoked.
-      </FeaturePageIntro>
+    {/* 02: one upgrade, three ways to settle it */}
+    <Section id="proration">
+      <div className="flex flex-col gap-16">
+        <Lede
+          title="Three ways to settle a plan change"
+          line="Set a default for the organization, and override it on any call where a change deserves different handling."
+        />
+        <Proration />
+      </div>
+    </Section>
 
-      <FeatureSection title="How a subscription works">
-        <p>
-          A subscription is created the moment a customer checks out a product
-          with a recurring price. Polar issues the first order, collects the
-          first payment, and grants every{' '}
-          <FeatureHighlight>benefit</FeatureHighlight> attached to the product.
-        </p>
-        <p>
-          From that point on, the subscription advances itself. At the end of
-          every cycle, Polar generates a new order with tax and any active
-          discount applied, then charges the saved payment method without your
-          code in the loop.
-        </p>
-        <p>
-          Benefits track the subscription&apos;s state throughout. While
-          it&apos;s active or trialing, the customer keeps access; when it moves
-          to canceled or unpaid, benefits are revoked, optionally after a grace
-          period you control.
-        </p>
-      </FeatureSection>
-
-      <FeatureCardGrid
-        cards={[
-          {
-            title: 'Flexible pricing',
-            description:
-              'Fixed, pay-what-you-want, or free recurring prices on any cadence.',
-          },
-          {
-            title: 'Plan changes',
-            description:
-              'Upgrades and downgrades with prorated charges and credits.',
-          },
-          {
-            title: 'Payment recovery',
-            description:
-              'Automatic retries on past_due with optional grace periods.',
-          },
-          {
-            title: 'Customer Portal',
-            description:
-              'Subscribers update payment, change plans, and cancel from a hosted page.',
-          },
-        ]}
+    {/* 03: a renewal that failed, and how it came back */}
+    <Section id="recovery">
+      <Split
+        flip
+        words={
+          <>
+            <Lede
+              title="Failed renewals, recovered"
+              line="A declined card moves the subscription to past due, not out the door. Polar retries four times over 21 days."
+            />
+            <Rows
+              rows={[
+                [
+                  'Retries',
+                  'After 2, 5, 7 and 7 days. One that pays makes it active again.',
+                ],
+                [
+                  'Reminders',
+                  'The customer is emailed at the first failure, with a link to update their card.',
+                ],
+                [
+                  'Grace period',
+                  'Keep benefits for 2, 7, 14 or 21 days while it recovers, or revoke them at once.',
+                ],
+                [
+                  'Renewal notices',
+                  'Cycles of six months or longer get an email a week before they renew.',
+                ],
+              ]}
+            />
+          </>
+        }
+        plate={<Recovery />}
       />
+    </Section>
 
-      <FeatureSplit
-        title="Three proration behaviors"
-        description="Set a default at the organization level. Override per API call when a particular change deserves different handling."
-        bullets={[
-          {
-            title: 'Invoice immediately',
-            description:
-              'The plan changes now and the prorated difference is invoiced and charged in the same call. For upgrades, when you want the revenue immediately.',
-          },
-          {
-            title: 'Apply on next invoice',
-            description:
-              'The plan changes now, but the prorated difference rides along on the next renewal invoice. The default for routine plan changes.',
-          },
-          {
-            title: 'Apply on next period',
-            description:
-              'The change is scheduled and only takes effect at the start of the next billing period. No proration is issued. Safer for downgrades.',
-          },
-        ]}
-      />
+    {/* 04: what customers can do themselves */}
+    <Section id="portal">
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-8">
+        <div className="lg:col-span-5">
+          <Lede
+            title="Customers manage their own"
+            line="Every Polar account comes with a hosted Customer Portal. Link to it, or embed it in your product."
+          />
+        </div>
+        <div className="lg:col-span-6 lg:col-start-7">
+          <Rows
+            rows={[
+              [
+                'Payment methods',
+                'Update the card on file, without writing to you.',
+              ],
+              [
+                'Invoices',
+                'Every order’s invoice, ready to hand to an accountant.',
+              ],
+              [
+                'Plan changes',
+                'Upgrades and downgrades, prorated the way you set.',
+              ],
+              ['Seats', 'Add and remove seats on seat-based plans.'],
+              [
+                'Cancel at period end',
+                'Access runs to the end of the paid term, and it can be undone until then.',
+              ],
+              [
+                'Revoke immediately',
+                'From the dashboard or the API, access ends on the spot.',
+              ],
+            ]}
+          />
+        </div>
+      </div>
+    </Section>
 
-      <FeatureRichList
-        title="Payment recovery"
-        description="When a renewal charge fails, the subscription moves to past_due and Polar runs a four-attempt retry schedule before revoking benefits."
-        items={[
-          {
-            title: 'Four retries over 21 days',
-            description:
-              'Polar retries the charge after 2, 5, 7, and 7 days. A successful retry restores the subscription to active.',
-          },
-          {
-            title: 'Customer reminders',
-            description:
-              'The customer is emailed at the first failure with a link to the Customer Portal so they can update their payment method.',
-          },
-          {
-            title: 'Configurable grace period',
-            description:
-              'Choose whether benefits are revoked immediately or after 2, 7, 14, or 21 days. Keeps paying customers from being locked out by a single declined card.',
-          },
-          {
-            title: 'Long-cycle renewal reminders',
-            description:
-              'For subscriptions on cycles of six months or more, the customer is emailed 7 days before renewal.',
-          },
-        ]}
-      />
-
-      <FeatureSection title="The Customer Portal">
-        <p>
-          Every Polar account includes a hosted{' '}
-          <FeatureHighlight>Customer Portal</FeatureHighlight> where subscribers
-          can update payment methods, download invoices, change plans, manage
-          seats, and cancel. You can either link to it directly or embed it
-          inside your product.
-        </p>
-        <p>
-          Cancellation comes in two flavors that work the same way from the
-          dashboard, the API, and the portal.{' '}
-          <FeatureHighlight>Cancel at period end</FeatureHighlight> keeps
-          benefits live until the paid term runs out and is reversible until the
-          end date. <FeatureHighlight>Revoke immediately</FeatureHighlight> ends
-          access on the spot and isn&apos;t reversible.
-        </p>
-      </FeatureSection>
-
-      <FeatureCTA
-        title="Connect a recurring product"
-        description="Set a recurring price on a product and Polar runs the rest of the lifecycle."
-      />
-    </FeaturePageLayout>
-  )
-}
+    <FeatureCTA
+      title="Connect a recurring product"
+      description="Set a recurring price on a product and Polar runs the rest of the lifecycle."
+    />
+  </FeaturePageLayout>
+)

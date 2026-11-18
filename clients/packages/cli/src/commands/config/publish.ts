@@ -50,7 +50,13 @@ interface Drift {
 }
 
 // Webhooks apply right away, everything else waits in the draft
-const DRAFTED = new Set(['products', 'benefits', 'meters', 'settings'])
+const DRAFTED = new Set([
+  'products',
+  'benefits',
+  'meters',
+  'custom_fields',
+  'settings',
+])
 
 const drifted = (entries: ReadonlyArray<AppliedEntry>) =>
   entries.filter(

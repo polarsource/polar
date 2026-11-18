@@ -14,10 +14,11 @@ import {
 } from '@/utils/billing-config/sentences'
 import * as ui from '@/utils/ui'
 
-type Section = 'meters' | 'benefits' | 'products' | 'webhooks'
+type Section = 'meters' | 'custom_fields' | 'benefits' | 'products' | 'webhooks'
 
 const SECTIONS: ReadonlyArray<Section> = [
   'meters',
+  'custom_fields',
   'benefits',
   'products',
   'webhooks',
@@ -30,6 +31,7 @@ const isSection = (section: string): section is Section =>
 
 const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
   meters: meterSentence,
+  custom_fields: () => undefined,
   benefits: benefitSentence,
   products: productSentence,
   webhooks: webhookSentence,
@@ -37,6 +39,7 @@ const SENTENCES: Record<Section, (input: unknown) => Sentence | undefined> = {
 
 const COVERED: Record<Section, ReadonlySet<string>> = {
   meters: new Set(['name', 'filter', 'aggregation', 'unit', 'custom_label']),
+  custom_fields: new Set(),
   benefits: new Set(['description', 'type', 'properties', 'visibility']),
   products: new Set([
     'name',
@@ -47,6 +50,7 @@ const COVERED: Record<Section, ReadonlySet<string>> = {
     'meter_interval_count',
     'prices',
     'benefits',
+    'custom_fields',
   ]),
   webhooks: new Set(['url', 'format', 'events', 'api_version']),
 }
@@ -61,13 +65,17 @@ export const documents = (input: unknown, section: Section) => {
   const items = record(input)?.[section]
   const byId = new Map<string, unknown>()
   for (const item of Array.isArray(items) ? items : []) {
-    const id = record(item)?.['external_id']
+    const id = record(item)?.['external_id'] ?? record(item)?.['slug']
     if (typeof id === 'string') byId.set(name(id), item)
   }
   return byId
 }
 
-type Grant = { id: string; status: 'kept' | 'added' | 'removed' | 'updated' }
+type Grant = {
+  id: string
+  status: 'kept' | 'added' | 'removed' | 'updated'
+  required?: boolean
+}
 
 const grants = (
   entry: AppliedEntry,
@@ -97,6 +105,40 @@ const grants = (
     ...before
       .filter((id) => !after.includes(id))
       .map((id): Grant => ({ id, status: 'removed' })),
+  ]
+}
+
+const asked = (input: unknown) =>
+  new Map(
+    (Array.isArray(input) ? input : []).map((item) => [
+      name(record(item)?.['field']),
+      record(item)?.['required'] === true,
+    ]),
+  )
+
+const askedFields = (
+  entry: AppliedEntry,
+  updated: ReadonlySet<string>,
+): Grant[] => {
+  const change = entry.diff.find(({ field }) => field === 'custom_fields')
+  if (change === undefined) return []
+  const before = asked(change.before)
+  const after = asked(change.after)
+  return [
+    ...[...after].map(
+      ([id, required]): Grant => ({
+        id,
+        required,
+        status: !before.has(id)
+          ? 'added'
+          : updated.has(id) || before.get(id) !== required
+            ? 'updated'
+            : 'kept',
+      }),
+    ),
+    ...[...before]
+      .filter(([id]) => !after.has(id))
+      .map(([id, required]): Grant => ({ id, required, status: 'removed' })),
   ]
 }
 
@@ -152,7 +194,7 @@ const rows = (
     shownDiff(section, entry.diff, document).filter(({ field }) =>
       entry.action === 'created'
         ? !(isSection(section) && COVERED[section].has(field))
-        : field !== 'benefits',
+        : field !== 'benefits' && field !== 'custom_fields',
     ),
     entry.action,
     section,
@@ -167,8 +209,8 @@ const GRANT_MARKS: Record<Grant['status'], string> = {
 
 const reference =
   (kind: string) =>
-  ({ id, status }: Grant): Block => ({
-    head: `${GRANT_MARKS[status]} ${ui.dim(kind)} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}`,
+  ({ id, status, required }: Grant): Block => ({
+    head: `${GRANT_MARKS[status]} ${ui.dim(kind)} ${status === 'kept' ? ui.dim(id) : ui.bold(id)}${required ? ` ${ui.dim('required')}` : ''}`,
     body: [],
   })
 
@@ -181,6 +223,7 @@ export const formatTree = (
     entries.filter((entry) => entry.section === section)
   const docs = {
     meters: documents(input, 'meters'),
+    custom_fields: documents(input, 'custom_fields'),
     benefits: documents(input, 'benefits'),
     products: documents(input, 'products'),
     webhooks: documents(input, 'webhooks'),
@@ -188,6 +231,7 @@ export const formatTree = (
 
   const updatedBenefits = updatedIds(entries, 'benefits')
   const updatedMeters = updatedIds(entries, 'meters')
+  const updatedCustomFields = updatedIds(entries, 'custom_fields')
   const meterUses = (entry: AppliedEntry) => {
     const before = usedMeters(entry, 'before')
     const after = usedMeters(entry, 'after')
@@ -225,6 +269,8 @@ export const formatTree = (
     const document = docs.products.get(entry.id)
     const granted = grants(entry, document, updatedBenefits)
     const regranted = granted.some(({ status }) => status !== 'kept')
+    const fields = askedFields(entry, updatedCustomFields)
+    const reasked = fields.some(({ status }) => status !== 'kept')
     if (entry.action === 'unchanged' && !regranted) return undefined
     const fresh = entry.action === 'created'
     const planned = withPlannedPrices(document, entry)
@@ -242,6 +288,7 @@ export const formatTree = (
         : []),
       ...meterUses(entry),
       ...(fresh || regranted ? granted.map(reference('benefit')) : []),
+      ...(reasked ? fields.map(reference('custom field')) : []),
     ]
     return [
       `${TOP}${own.head}`,

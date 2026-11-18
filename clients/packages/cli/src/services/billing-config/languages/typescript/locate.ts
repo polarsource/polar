@@ -38,6 +38,7 @@ const SECTIONS = [
   'settings',
   'events',
   'meters',
+  'customFields',
   'benefits',
   'products',
   'webhooks',
@@ -46,8 +47,12 @@ const SECTIONS = [
 const columnOf = (source: string, offset: number) =>
   offset - source.lastIndexOf('\n', offset - 1)
 
+const SOURCE_KEYS: Record<string, string> = { custom_fields: 'customFields' }
+
+const sourceKey = (section: string) => SOURCE_KEYS[section] ?? section
+
 const sectionKey = (source: string, section: string) => {
-  const own = findAll(source, keyPattern(section), 0)
+  const own = findAll(source, keyPattern(sourceKey(section)), 0)
   const columns = own.map(({ offset }) => columnOf(source, offset))
   return own[columns.indexOf(Math.min(...columns))]
 }
@@ -59,10 +64,11 @@ export const sectionRange = (source: string, section: string): Range => {
   if (start === undefined) return whole
   const key = start.offset + start.length
   const from = key + (PARAMETERS.exec(source.slice(key))?.[0].length ?? 0)
-  const ends = SECTIONS.filter((other) => other !== section).flatMap((other) =>
-    findAll(source, keyPattern(other), from)
-      .filter((match) => column(match) <= column(start))
-      .map(({ offset }) => offset),
+  const ends = SECTIONS.filter((other) => other !== sourceKey(section)).flatMap(
+    (other) =>
+      findAll(source, keyPattern(other), from)
+        .filter((match) => column(match) <= column(start))
+        .map(({ offset }) => offset),
   )
   return { start: from, end: Math.min(source.length, ...ends) }
 }
@@ -147,8 +153,11 @@ export const locateInScript = (
       : undefined
   }
   if (!Array.isArray(entries)) return undefined
-  const externalIds = entries.map((entry: { external_id?: unknown }) =>
-    typeof entry?.external_id === 'string' ? entry.external_id : undefined,
+  const externalIds = entries.map(
+    (entry: { external_id?: unknown; slug?: unknown }) => {
+      const id = entry?.external_id ?? entry?.slug
+      return typeof id === 'string' ? id : undefined
+    },
   )
   const externalId = externalIds[index]
   if (externalId === undefined) return undefined

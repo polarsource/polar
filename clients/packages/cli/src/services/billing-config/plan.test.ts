@@ -174,6 +174,32 @@ describe('plan', () => {
     ])
   })
 
+  test('suggests the slug a misspelled custom field was meant to be', async () => {
+    api.routes[`POST ${planUrl}`] = Response.json({
+      changes: [],
+      issues: [
+        {
+          severity: 'error',
+          type: 'unknown_reference',
+          loc: ['body', 'products', 0, 'custom_fields', 0, 'field'],
+          msg: 'No custom field in this config has this slug.',
+          input: 'compnay',
+        },
+      ],
+    })
+    const config = JSON.stringify({
+      custom_fields: [{ slug: 'company' }],
+      products: [{ external_id: 'pro', custom_fields: [{ field: 'compnay' }] }],
+    })
+
+    const [issue] = (await run(await write(config))).issues
+
+    expect(issue).toMatchObject({
+      path: 'products.pro.custom_fields.0.field',
+      suggestion: 'company',
+    })
+  })
+
   test('lists removals, in place of the deprecated entry', async () => {
     api.routes[`POST ${planUrl}`] = Response.json({
       changes: [

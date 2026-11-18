@@ -39,8 +39,12 @@ const supplied = (config: LoadedConfig, path: Path, input: unknown) =>
 const externalIdOf = (input: unknown, path: Path) => {
   const entry = valueAt(input, path)
   const externalId =
-    typeof entry === 'object' && entry !== null && 'external_id' in entry
-      ? entry.external_id
+    typeof entry === 'object' && entry !== null
+      ? 'external_id' in entry
+        ? entry.external_id
+        : 'slug' in entry
+          ? entry.slug
+          : undefined
       : undefined
   return typeof externalId === 'string' && externalId !== ''
     ? externalId

@@ -65,6 +65,7 @@ export const errorName = (response: HttpClientResponse.HttpClientResponse) =>
   )
 
 export const SECTIONS = {
+  custom_field: 'custom_fields',
   meter: 'meters',
   benefit: 'benefits',
   product: 'products',

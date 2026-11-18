@@ -8,11 +8,13 @@ import { closest } from '@/utils/closest'
 const externalIds = (input: unknown, resource: string | undefined) => {
   const section =
     typeof input === 'object' && input !== null
-      ? (input as Record<string, unknown>)[`${resource}s`]
+      ? (input as Record<string, unknown>)[`${resource?.replace(' ', '_')}s`]
       : undefined
   return (Array.isArray(section) ? section : []).flatMap(
-    (entry: { external_id?: unknown }) =>
-      typeof entry?.external_id === 'string' ? [entry.external_id] : [],
+    (entry: { external_id?: unknown; slug?: unknown }) => {
+      const id = entry?.external_id ?? entry?.slug
+      return typeof id === 'string' ? [id] : []
+    },
   )
 }
 

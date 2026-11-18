@@ -116,22 +116,14 @@ function AmountCell({ row }: { row: ReviewRow }) {
   if (!amount) {
     return <Box />
   }
-  const discount = row.discount_code ?? row.discount_name
   return (
-    <Box width="100%" flexDirection="column" alignItems="end" rowGap="xs">
-      <Box justifyContent="end" alignItems="baseline" columnGap="xs">
-        <Text monospace tabularNums align="right">
-          {amount.money}
-        </Text>
-        {amount.interval && (
-          <Text variant="caption" monospace color="muted">
-            {amount.interval}
-          </Text>
-        )}
-      </Box>
-      {discount && (
-        <Text variant="caption" color="muted">
-          Discount {discount}
+    <Box width="100%" justifyContent="end" alignItems="baseline" columnGap="xs">
+      <Text monospace tabularNums align="right">
+        {amount.money}
+      </Text>
+      {amount.interval && (
+        <Text variant="caption" monospace color="muted">
+          {amount.interval}
         </Text>
       )}
     </Box>

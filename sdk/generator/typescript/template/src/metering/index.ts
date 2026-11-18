@@ -11,7 +11,7 @@ export type {
   ActorInput,
   ActorMetering,
   MeteringOptions,
-  MeteringOutpostOptions,
+  MeteringOutpost,
   MeteringStrategy,
 } from "./client";
 export { BufferedMeteringStrategy } from "./buffered";

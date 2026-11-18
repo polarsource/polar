@@ -10,6 +10,10 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix outpost related bundler errors
+
 ## [1.3.0] - 2026-11-16
 
 ### Changed

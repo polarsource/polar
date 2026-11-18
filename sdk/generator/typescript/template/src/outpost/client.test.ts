@@ -14,6 +14,7 @@ import {
   decodeState,
   MissingExternalIdError,
   Outpost,
+  outpost,
   type OutpostOptions,
   PolarOutpostError,
   UnavailableRedisError,
@@ -2039,7 +2040,7 @@ it("composes buffered Polar delivery with Outpost through the client factory", a
   const polar = createPolar({ baseUrl, accessToken: "test-token", organizationId: "org" });
   const reader = await start();
   {
-    const metering = polar.metering({ outpost: { redisUrl: redisServer.socket } });
+    const metering = polar.metering({ outpost: outpost({ redisUrl: redisServer.socket }) });
     try {
       await metering.track({
         ...customer,

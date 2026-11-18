@@ -164,34 +164,6 @@ def collect_enum_names(type_ref: object | None, api: APIVersion) -> set[str]:
     return enum_imports
 
 
-def collect_enum_imports(
-    type_ref: TypeRef | None, enum_imports: set[str], api: APIVersion
-) -> None:
-    """Collect all enum names from a TypeRef."""
-    if type_ref is None:
-        return
-
-    if isinstance(type_ref, EnumRef):
-        enum_imports.add(type_ref.name)
-    elif isinstance(type_ref, NullableType):
-        collect_enum_imports(type_ref.inner, enum_imports, api)
-    elif isinstance(type_ref, ArrayType):
-        collect_enum_imports(type_ref.items, enum_imports, api)
-    elif isinstance(type_ref, MapType):
-        collect_enum_imports(type_ref.value_type, enum_imports, api)
-        if type_ref.key_type is not None:
-            collect_enum_imports(type_ref.key_type, enum_imports, api)
-    elif isinstance(type_ref, UnionType):
-        for variant in type_ref.variants:
-            collect_enum_imports(variant, enum_imports, api)
-    elif isinstance(type_ref, UnionRef):
-        for union in api.input_unions + api.output_unions:
-            if union.name == type_ref.name:
-                for variant in union.variants:
-                    collect_enum_imports(variant, enum_imports, api)
-                break
-
-
 def collect_union_imports(type_ref: TypeRef | None, api: APIVersion) -> set[str]:
     """Collect all union type imports from a TypeRef."""
     if type_ref is None:

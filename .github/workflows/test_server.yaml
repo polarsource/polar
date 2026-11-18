@@ -67,16 +67,34 @@ jobs:
   linters:
     name: "Server: Linters 📝${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
-    if: needs.changes.outputs.server == 'true'
+    # GitHub only evaluates this required check's name when the job runs.
+    if: >-
+      ${{ !cancelled() &&
+      (github.event.action != 'edited' || github.event.changes.base) &&
+      (github.event_name != 'push' || (needs.changes.result == 'success' && needs.changes.outputs.server == 'true')) }}
     timeout-minutes: 15
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ needs.changes.result == 'success' && needs.changes.outputs.server == 'true' && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-slim' }}
     steps:
+      - name: Report server change detection
+        if: needs.changes.result != 'success' || needs.changes.outputs.server != 'true'
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SERVER_CHANGED: ${{ needs.changes.outputs.server }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ] || [ "$SERVER_CHANGED" != "false" ]; then
+            echo "::error::Could not determine whether server files changed."
+            exit 1
+          fi
+          echo "No server changes; lint and type checks are not needed."
+
       - name: Harden the runner (Audit all outbound calls)
+        if: needs.changes.outputs.server == 'true'
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.changes.outputs.server == 'true'
 
       # - uses: actions/cache@v4
       #   with:
@@ -88,24 +106,29 @@ jobs:
       #       mypy-
 
       - name: Install uv
+        if: needs.changes.outputs.server == 'true'
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
+        if: needs.changes.outputs.server == 'true'
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "server/pyproject.toml"
 
       - name: 🔧 uv install
+        if: needs.changes.outputs.server == 'true'
         working-directory: ./server
         run: uv sync --dev --frozen
 
       - name: 🐶 Lint Server (ruff)
+        if: needs.changes.outputs.server == 'true'
         working-directory: ./server
         run: uv run task lint_check
 
       - name: 🛟 Type Check Server (mypy)
+        if: needs.changes.outputs.server == 'true'
         working-directory: ./server
         run: uv run task lint_types
 

@@ -189,17 +189,21 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.detect-release.outputs.version }}
         run: |
-          delay=5
-          for attempt in $(seq 1 5); do
+          deadline=$((SECONDS + 300))
+          attempt=1
+          while true; do
             if npm view "@polar-sh/sdk@$RELEASE_VERSION" version >/dev/null 2>&1; then
               echo "@polar-sh/sdk@$RELEASE_VERSION is available on npm"
               exit 0
             fi
-            echo "Attempt $attempt: @polar-sh/sdk@$RELEASE_VERSION not yet available, retrying in ${delay}s"
-            sleep "$delay"
-            delay=$((delay * 2))
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              break
+            fi
+            echo "Attempt $attempt: @polar-sh/sdk@$RELEASE_VERSION not yet available, retrying in 15s"
+            sleep 15
+            attempt=$((attempt + 1))
           done
-          echo "::error::@polar-sh/sdk@$RELEASE_VERSION did not appear on npm in time"
+          echo "::error::@polar-sh/sdk@$RELEASE_VERSION did not appear on npm within 5 minutes"
           exit 1
 
       - name: Update lockfile

@@ -9,7 +9,7 @@ When writing effect code look for best practices and established patterns in:
 
 ```
 src/
-├── commands/   one file per command (or group); nothing else lives here
+├── commands/   one file per command (or group), or a directory whose index.ts defines it (with its own modules next to it); nothing else lives here
 ├── services/   talk to the API or the system; return data and typed errors, never print
 ├── schemas/    Effect schemas, result types and error classes shared by every layer
 └── utils/      rendering and helpers; may use types from services, never call them

@@ -169,10 +169,10 @@ async def lifespan(
     sync_engine = create_sync_engine("app")
     sync_sessionmaker = create_sync_sessionmaker(sync_engine)
     instrument_engines.append(sync_engine)
-    instrument_sqlalchemy(instrument_engines)
-
     redis = create_redis("app")
-    instrument_redis(redis)
+    if not settings.LOGFIRE_ROOT_SPANS_ONLY:
+        instrument_sqlalchemy(instrument_engines)
+        instrument_redis(redis)
 
     try:
         ip_geolocation_client = ip_geolocation.get_client()

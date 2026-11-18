@@ -225,7 +225,9 @@ def configure_logfire(service_name: Literal["server", "worker"]) -> None:
         sampling=logfire.SamplingOptions.level_or_duration(
             head=ParentBased(
                 IgnoreSampler((_healthz_matcher, _worker_health_matcher)),
-                local_parent_sampled=LevelSampler(),
+                local_parent_sampled=ALWAYS_OFF
+                if settings.LOGFIRE_ROOT_SPANS_ONLY
+                else LevelSampler(),
             ),
             level_threshold=cast(logfire.LevelName, settings.LOG_LEVEL.lower()),
         ),

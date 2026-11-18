@@ -4,7 +4,7 @@ use std::{
 };
 
 use axum::{
-    http::StatusCode,
+    http::{HeaderValue, StatusCode, header::RETRY_AFTER},
     response::{IntoResponse, Response},
 };
 use chrono::Utc;
@@ -38,6 +38,7 @@ pub enum IngestError {
     InvalidPayload(Vec<ValidationError>),
     InvalidReferences(Vec<ValidationError>),
     EventTypeUnavailable,
+    Overloaded,
     Database(sqlx::Error),
     Interrupted(tokio::task::JoinError),
     TimedOut,
@@ -45,7 +46,10 @@ pub enum IngestError {
 
 impl From<sqlx::Error> for IngestError {
     fn from(error: sqlx::Error) -> Self {
-        Self::Database(error)
+        match error {
+            sqlx::Error::PoolTimedOut => Self::Overloaded,
+            error => Self::Database(error),
+        }
     }
 }
 
@@ -70,6 +74,18 @@ impl IntoResponse for IngestError {
             Self::EventTypeUnavailable => {
                 tracing::error!("event type could not be created");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+            Self::Overloaded => {
+                tracing::warn!("no database connection became available in time");
+                (
+                    [(RETRY_AFTER, HeaderValue::from_static("1"))],
+                    error_response(
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        "IngestOverloaded",
+                        "The service is handling too many requests. None of the events were stored.",
+                    ),
+                )
+                    .into_response()
             }
             Self::TimedOut => {
                 tracing::error!("event ingestion timed out before committing");

@@ -46,7 +46,7 @@ use crate::{
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const WRITE_TIMEOUT: Duration = Duration::from_secs(25);
 const BEGIN_WITH_STATEMENT_TIMEOUT: &str = "BEGIN; SET LOCAL statement_timeout = 10000";
-const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(5);
+const DATABASE_ACQUIRE_TIMEOUT: Duration = Duration::from_secs(1);
 const MAX_BACKGROUND_TASKS: usize = 256;
 const TRUE_CLIENT_IP: &str = "true-client-ip";
 const X_FORWARDED_FOR: &str = "x-forwarded-for";

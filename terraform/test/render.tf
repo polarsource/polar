@@ -89,15 +89,6 @@ module "test" {
     plan                   = "pro_plus"
   }
 
-  additional_api_services = {
-    events-test = {
-      image_url      = "ghcr.io/polarsource/polar-events"
-      plan           = "standard"
-      custom_domains = [{ name = "events.test.polar.sh" }]
-      autoscaling    = { min = 1, max = 3 }
-    }
-  }
-
   workers = {
     worker-test = {
       start_command      = "uv run dramatiq -p 2 -t 4 -f polar.worker.scheduler:start polar.worker.run"
@@ -143,9 +134,9 @@ resource "cloudflare_dns_record" "test_api_events" {
 resource "cloudflare_dns_record" "test_events" {
   count   = local.test_enabled ? 1 : 0
   zone_id = "22bcd1b07ec25452aab472486bc8df94"
-  name    = "events.test.polar.sh"
+  name    = local.events_hostname
   type    = "CNAME"
-  content = replace(module.test[0].additional_api_service_urls["events-test"], "https://", "")
+  content = aws_lb.events_api[0].dns_name
   proxied = true
   ttl     = 1
 }

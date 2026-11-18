@@ -7,6 +7,9 @@ locals {
   events_api_hostname = "test-api-events.polar.sh"
   events_api_port     = 10000
 
+  events_name     = "events-test"
+  events_hostname = "events.test.polar.sh"
+
   events_api_tags = {
     Environment = "test"
     Service     = local.events_api_name
@@ -199,10 +202,11 @@ resource "aws_vpc_security_group_ingress_rule" "redis_events_api" {
 # Load balancer
 
 resource "aws_acm_certificate" "events_api" {
-  count             = local.test_enabled ? 1 : 0
-  domain_name       = local.events_api_hostname
-  validation_method = "DNS"
-  tags              = local.events_api_tags
+  count                     = local.test_enabled ? 1 : 0
+  domain_name               = local.events_api_hostname
+  subject_alternative_names = [local.events_hostname]
+  validation_method         = "DNS"
+  tags                      = local.events_api_tags
 
   lifecycle {
     create_before_destroy = true
@@ -293,6 +297,42 @@ resource "aws_lb_listener_rule" "events_api_host" {
   }
 }
 
+resource "aws_lb_target_group" "events" {
+  count                = local.test_enabled ? 1 : 0
+  name                 = "polar-test-${local.events_name}"
+  port                 = local.events_api_port
+  protocol             = "HTTP"
+  target_type          = "ip"
+  vpc_id               = module.vpc[0].vpc_id
+  deregistration_delay = 30
+  tags                 = local.events_api_tags
+
+  health_check {
+    path              = "/healthz"
+    matcher           = "200"
+    interval          = 10
+    healthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener_rule" "events_host" {
+  count        = local.test_enabled ? 1 : 0
+  listener_arn = aws_lb_listener.events_api_https[0].arn
+  priority     = 2
+  tags         = local.events_api_tags
+
+  condition {
+    host_header {
+      values = [local.events_hostname]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.events[0].arn
+  }
+}
+
 # Service
 
 module "events_api" {
@@ -337,6 +377,47 @@ module "events_api" {
     aws_secretsmanager_secret_version.events_api,
     aws_secretsmanager_secret_version.ghcr,
     aws_lb_listener_rule.events_api_host,
+    aws_iam_role_policy.events_api_task,
+  ]
+}
+
+# Rust event service
+
+module "events" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/ecs_service"
+
+  environment    = "test"
+  name           = local.events_name
+  cluster_arn    = module.ecs_cluster[0].cluster_arn
+  image          = "ghcr.io/polarsource/polar-events:latest"
+  profile        = "small"
+  container_port = local.events_api_port
+
+  subnet_ids               = module.vpc[0].secondary_private_subnet_ids
+  security_group_ids       = [aws_security_group.events_api[0].id]
+  task_role_arn            = aws_iam_role.events_api_task[0].arn
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+  repository_credentials   = { arn = aws_secretsmanager_secret.ghcr[0].arn }
+  lb_target_group          = { arn = aws_lb_target_group.events[0].arn }
+  desired_count            = 3
+  tags                     = local.events_api_tags
+
+  environment_variables = {
+    # The service reads its telemetry name from Render's variable.
+    RENDER_SERVICE_NAME = local.events_name
+    SECRET_VERSION_ID   = aws_secretsmanager_secret_version.events_api[0].version_id
+  }
+
+  secrets = {
+    for key in nonsensitive(keys(local.events_api_environment)) :
+    key => "${aws_secretsmanager_secret.events_api[0].arn}:${key}::"
+  }
+
+  depends_on = [
+    aws_secretsmanager_secret_version.events_api,
+    aws_secretsmanager_secret_version.ghcr,
+    aws_lb_listener_rule.events_host,
     aws_iam_role_policy.events_api_task,
   ]
 }

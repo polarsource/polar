@@ -334,7 +334,8 @@ data "aws_iam_policy_document" "lambda_worker_deploy" {
     sid     = "RollEcsServices"
     actions = ["ecs:UpdateService", "ecs:DescribeServices"]
     resources = [
-      "arn:aws:ecs:us-east-2:${data.aws_caller_identity.current.account_id}:service/${module.ecs_cluster[0].cluster_name}/${module.events_api[0].service_name}"
+      for service_name in [module.events_api[0].service_name, module.events[0].service_name] :
+      "arn:aws:ecs:us-east-2:${data.aws_caller_identity.current.account_id}:service/${module.ecs_cluster[0].cluster_name}/${service_name}"
     ]
   }
 }

@@ -2859,6 +2859,69 @@ class TestCreate:
             == created_price_ids[0]
         )
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_ad_hoc_prices_keep_the_requested_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="ai_credits",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            is_current=False,
+            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
+        )
+        pro_v2 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(1500, "usd"), (current, Decimal(100), None, "usd")],
+        )
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        checkout = await checkout_service.create(
+            session,
+            CheckoutProductsCreate(
+                products=[pro_v2.id],
+                prices={
+                    pro_v2.id: [
+                        ProductPriceFixedCreate(
+                            amount_type=ProductPriceAmountType.fixed,
+                            price_amount=100_00,
+                            price_currency=PresentmentCurrency.usd,
+                        ),
+                    ]
+                },
+            ),
+            auth_subject,
+        )
+
+        checkout = await checkout_service.update(
+            session, checkout, CheckoutUpdate(customer_email=customer.email)
+        )
+
+        assert checkout.product == pro_v2
+        assert checkout.amount == 100_00
+
 
 @pytest.mark.anyio
 class TestCheckoutLinkCreate:
@@ -4514,7 +4577,57 @@ class TestUpdate:
 
         assert checkout.customer_email == customer.email
 
-    async def test_customer_on_another_meter_version(
+    async def test_customer_on_previous_meter_version_switches_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="ai_credits",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        pro_v1 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            is_current=False,
+            is_archived=True,
+            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
+        )
+        pro_v2 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(1500, "usd"), (current, Decimal(100), None, "usd")],
+        )
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        checkout = await create_checkout(save_fixture, products=[pro_v2])
+
+        checkout = await checkout_service.update(
+            session, checkout, CheckoutUpdate(customer_email=customer.email)
+        )
+
+        assert checkout.product == pro_v1
+        assert checkout.amount == 1000
+
+        checkout = await checkout_service.update(
+            session, checkout, CheckoutUpdate(customer_email="someone@example.com")
+        )
+
+        assert checkout.product == pro_v2
+        assert checkout.amount == 1500
+
+    async def test_no_version_on_the_customer_meter_versions(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -5321,6 +5434,58 @@ class TestConfirm:
         error_locations = {error["loc"] for error in errors}
         for missing_field in missing_fields:
             assert ("body", *missing_field) in error_locations
+
+    async def test_price_changed_for_the_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        previous, current = [
+            await create_meter(
+                save_fixture,
+                organization=organization,
+                id=uuid.uuid4(),
+                external_id="ai_credits",
+                is_current=is_current,
+            )
+            for is_current in (False, True)
+        ]
+        await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            is_current=False,
+            prices=[(1000, "usd"), (previous, Decimal(100), None, "usd")],
+        )
+        pro_v2 = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            external_id="pro",
+            prices=[(1500, "usd"), (current, Decimal(100), None, "usd")],
+        )
+        await save_fixture(CustomerMeter(customer=customer, meter=previous))
+        checkout = await create_checkout(save_fixture, products=[pro_v2])
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_email": customer.email,
+                    }
+                ),
+            )
+
+        assert e.value.errors()[0]["loc"] == ("body", "customer_email")
+        assert checkout.product == pro_v2
 
     async def test_full_billing_address_required_for_payment_method(
         self,

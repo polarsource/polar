@@ -2791,7 +2791,9 @@ class CheckoutService:
             raise DiscountRedemptionLimitReached(checkout)
 
         await self._validate_subscription_uniqueness(session, checkout)
-        await self._validate_meter_versions(session, checkout)
+        checkout = await self._resolve_meter_versions_on_update(
+            session, checkout, checkout_update
+        )
 
         return checkout
 
@@ -3077,13 +3079,35 @@ class CheckoutService:
         if len(existing_subscriptions) > 0:
             raise AlreadyActiveSubscriptionError()
 
-    async def _validate_meter_versions(
-        self, session: AsyncSession, checkout: Checkout
-    ) -> None:
+    async def _resolve_meter_versions_on_update(
+        self,
+        session: AsyncSession,
+        checkout: Checkout,
+        checkout_update: CheckoutUpdate | CheckoutUpdatePublic | CheckoutConfirm,
+    ) -> Checkout:
+        """Swap the checkout's product for its version on the meter versions of
+        the customer, once we know who the customer is."""
         # Upgrading a subscription moves it to the current version, like a
-        # product change.
+        # product change. Ad-hoc prices keep the product the merchant passed.
         if not has_product_checkout(checkout) or checkout.subscription is not None:
-            return
+            return checkout
+        checkout_product = next(
+            checkout_product
+            for checkout_product in checkout.checkout_products
+            if checkout_product.product_id == checkout.product_id
+        )
+        if checkout_product.ad_hoc_prices:
+            return checkout
+
+        repository = ProductRepository.from_session(session)
+        requested = checkout.product
+        if not requested.is_current:
+            versions = await repository.get_other_published_versions(
+                requested, options=repository.get_eager_options()
+            )
+            if versions and versions[0].is_current:
+                requested = versions[0]
+
         customer_id = checkout.customer_id
         if customer_id is None and checkout.customer_email is not None:
             customer = await CustomerRepository.from_session(
@@ -3092,26 +3116,67 @@ class CheckoutService:
                 checkout.customer_email, checkout.organization.id
             )
             customer_id = customer.id if customer is not None else None
-        if customer_id is None:
-            return
-
-        version = await product_service.resolve_meter_versions(
-            session, checkout.product, customer_id
-        )
-        if version is not checkout.product:
+        version: Product | None = requested
+        if customer_id is not None:
+            version = await product_service.resolve_meter_versions(
+                session,
+                requested,
+                customer_id,
+                options=repository.get_eager_options(),
+            )
+        if version is None:
             raise PolarRequestValidationError(
                 [
                     {
                         "type": "value_error",
                         "loc": ("body", "product_id"),
                         "msg": (
-                            "This product doesn't use the meter versions "
+                            "No version of this product uses the meter versions "
                             "of the customer."
                         ),
                         "input": checkout.product.id,
                     }
                 ]
             )
+        if version.id == checkout.product.id:
+            return checkout
+        # The customer must see the price of the version they pay for.
+        if isinstance(checkout_update, CheckoutConfirmBase):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "customer_email"),
+                        "msg": (
+                            "The price changed for this customer. "
+                            "Review the checkout before paying."
+                        ),
+                        "input": checkout.customer_email,
+                    }
+                ]
+            )
+
+        try:
+            currency_prices = PriceSet.from_product(version, checkout.currency)
+        except NoPricesForCurrencies as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "product_id"),
+                        "msg": "Product is not available in the checkout currency.",
+                        "input": checkout.product.id,
+                    }
+                ]
+            ) from e
+        checkout_product.product = version
+        checkout.product = version
+        checkout = await self._update_price(checkout, checkout_update, currency_prices)
+        if checkout.discount is not None and not checkout.discount.is_applicable(
+            version, checkout.currency
+        ):
+            checkout.discount = None
+        return checkout
 
     def _validate_seat_limits(
         self,

@@ -1,6 +1,6 @@
 use redis::{AsyncCommands, RedisResult, aio::ConnectionManager};
 use serde_json::{Value, json};
-use sqlx::PgConnection;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::Reducer;
@@ -12,7 +12,7 @@ pub(super) fn active_reducers_cache_key(organization_id: Uuid) -> String {
 }
 
 pub(super) async fn active_reducers(
-    connection: &mut PgConnection,
+    db: &PgPool,
     redis_client: &redis::Client,
     redis: &mut ConnectionManager,
     organization_id: Uuid,
@@ -38,7 +38,7 @@ pub(super) async fn active_reducers(
         }
     };
     if !refill {
-        return parse_reducers(select_active_reducers(connection, organization_id).await?);
+        return parse_reducers(select_active_reducers(db, organization_id).await?);
     }
 
     // WATCH is per connection: the shared multiplexed one would leak it to other requests.
@@ -51,7 +51,7 @@ pub(super) async fn active_reducers(
         Ok::<_, redis::RedisError>(watcher)
     }
     .await;
-    let active = select_active_reducers(connection, organization_id).await?;
+    let active = select_active_reducers(db, organization_id).await?;
     let stored = match watcher {
         Ok(mut watcher) => {
             redis::pipe()
@@ -68,10 +68,7 @@ pub(super) async fn active_reducers(
     parse_reducers(active)
 }
 
-async fn select_active_reducers(
-    connection: &mut PgConnection,
-    organization_id: Uuid,
-) -> Result<Value, sqlx::Error> {
+async fn select_active_reducers(db: &PgPool, organization_id: Uuid) -> Result<Value, sqlx::Error> {
     let rows: Vec<(Uuid, Value, Value)> = sqlx::query_as(
         "SELECT reducers.id, reducers.filter, reducers.aggregation \
          FROM reducers \
@@ -87,7 +84,7 @@ async fn select_active_reducers(
          ) AND reducers.organization_id = $1",
     )
     .bind(organization_id)
-    .fetch_all(connection)
+    .fetch_all(db)
     .await?;
     Ok(Value::Array(Vec::from_iter(rows.into_iter().map(
         |(id, filter, aggregation)| {

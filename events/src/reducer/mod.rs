@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 use redis::aio::ConnectionManager;
 use serde::Deserialize;
-use sqlx::PgConnection;
+use sqlx::{PgConnection, PgPool};
 use uuid::Uuid;
 
 use self::{
@@ -77,17 +77,27 @@ pub struct Rollup {
     pub outpost_changes: Vec<ReducerBucketChange>,
 }
 
-pub async fn rollup(
-    connection: &mut PgConnection,
+pub struct ActiveReducers(Vec<Reducer>);
+
+pub async fn load_active_reducers(
+    db: &PgPool,
     redis_client: &redis::Client,
     redis: &mut ConnectionManager,
     organization_id: Uuid,
+) -> Result<ActiveReducers, sqlx::Error> {
+    let mut reducers = active_reducers(db, redis_client, redis, organization_id).await?;
+    reducers.retain(|reducer| !matches!(reducer.aggregation, Aggregation::Unique));
+    Ok(ActiveReducers(reducers))
+}
+
+pub async fn rollup(
+    connection: &mut PgConnection,
+    organization_id: Uuid,
+    ActiveReducers(reducers): &ActiveReducers,
     events: &[&EventCreate],
     now: DateTime<Utc>,
 ) -> Result<Rollup, sqlx::Error> {
-    let mut reducers = active_reducers(connection, redis_client, redis, organization_id).await?;
-    reducers.retain(|reducer| !matches!(reducer.aggregation, Aggregation::Unique));
-    let contributions = reduce_events(&reducers, events);
+    let contributions = reduce_events(reducers, events);
 
     let current_bucket_start = bucket_start(now.timestamp());
     let oldest_active_bucket_start = current_bucket_start - BUCKET_SIZE_SECONDS;
@@ -101,7 +111,7 @@ pub async fn rollup(
         customer_id: bucket.customer_id,
         external_customer_id: bucket.external_customer_id.map(str::to_owned),
     }));
-    add_to_closed_buckets(connection, organization_id, &reducers, closed).await?;
+    add_to_closed_buckets(connection, organization_id, reducers, closed).await?;
 
     let active = Vec::from_iter(
         contributions
@@ -109,7 +119,7 @@ pub async fn rollup(
             .filter(|(bucket, _)| bucket.start >= oldest_active_bucket_start),
     );
     let active_buckets = ActiveBuckets {
-        increments: bucket_increments(&reducers, &active),
+        increments: bucket_increments(reducers, &active),
         bucket_count: active.len(),
         event_count: events.len(),
     };
@@ -166,7 +176,6 @@ fn reduce_events<'a>(reducers: &[Reducer], events: &[&'a EventCreate]) -> Contri
 mod tests {
     use redis::AsyncCommands;
     use serde_json::{Value, json};
-    use sqlx::Connection;
 
     use super::{
         cache::active_reducers_cache_key,
@@ -258,9 +267,7 @@ mod tests {
     #[ignore = "needs the local development database and Redis"]
     async fn loads_active_reducers_through_the_cache() {
         let config = crate::config::Config::from_env().unwrap();
-        let mut connection = sqlx::PgConnection::connect_with(&config.postgres)
-            .await
-            .unwrap();
+        let db = PgPool::connect_with(config.postgres.clone()).await.unwrap();
         let client = redis::Client::open(config.redis_url).unwrap();
         let mut redis = ConnectionManager::new(client.clone()).await.unwrap();
         let organization_id = Uuid::new_v4();
@@ -270,16 +277,16 @@ mod tests {
             Uuid::new_v4()
         );
 
-        let missing = active_reducers(&mut connection, &client, &mut redis, organization_id)
+        let missing = active_reducers(&db, &client, &mut redis, organization_id)
             .await
             .unwrap();
         let refilled: String = redis.get(&key).await.unwrap();
         let _: () = redis.set(&key, "").await.unwrap();
-        let invalidated = active_reducers(&mut connection, &client, &mut redis, organization_id)
+        let invalidated = active_reducers(&db, &client, &mut redis, organization_id)
             .await
             .unwrap();
         let _: () = redis.set(&key, &python_cached).await.unwrap();
-        let cached = active_reducers(&mut connection, &client, &mut redis, organization_id)
+        let cached = active_reducers(&db, &client, &mut redis, organization_id)
             .await
             .unwrap();
         let _: () = redis.del(&key).await.unwrap();

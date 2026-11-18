@@ -368,6 +368,14 @@ async fn write_events(
 ) -> Result<WrittenEvents, IngestError> {
     // A statement stuck behind a bucket lock must not pin a pooled connection for long after
     // the write is abandoned.
+    let reducers = reducer::load_active_reducers(
+        &state.db,
+        &state.redis_client,
+        &mut state.redis.clone(),
+        organization_id,
+    )
+    .instrument(tracing::info_span!("load_active_reducers"))
+    .await?;
     let connection = state
         .db
         .acquire()
@@ -411,9 +419,8 @@ async fn write_events(
         );
         let rollup = reducer::rollup(
             &mut transaction,
-            &state.redis_client,
-            &mut state.redis.clone(),
             organization_id,
+            &reducers,
             &staged.inserted,
             now,
         )

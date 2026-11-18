@@ -4,11 +4,11 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize, reopened, edited]
   merge_group:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.action == 'edited' && !github.event.changes.base && format('pr-metadata-{0}', github.run_id) || github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -16,7 +16,8 @@ permissions:
 
 jobs:
   changes:
-    name: "Detect changes"
+    name: "Detect changes${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       dev_cli: ${{ steps.filter.outputs.dev_cli }}
@@ -36,7 +37,7 @@ jobs:
               - '.github/workflows/test_dev_cli.yaml'
 
   lint:
-    name: "Dev CLI: Lint 📝"
+    name: "Dev CLI: Lint 📝${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.dev_cli == 'true'
     timeout-minutes: 5

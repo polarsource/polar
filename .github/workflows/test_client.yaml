@@ -4,11 +4,11 @@ on:
   push:
     branches: ["main"]
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize, reopened, edited]
   merge_group:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.action == 'edited' && !github.event.changes.base && format('pr-metadata-{0}', github.run_id) || github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -20,7 +20,8 @@ permissions:
 
 jobs:
   changes:
-    name: "Detect changes"
+    name: "Detect changes${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       clients: ${{ steps.filter.outputs.clients }}
@@ -58,7 +59,7 @@ jobs:
         run: echo "turbo-scope=--affected" >> "$GITHUB_OUTPUT"
 
   checks:
-    name: "Client: Checks 💅"
+    name: "Client: Checks 💅${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -100,7 +101,7 @@ jobs:
         run: pnpm turbo run typecheck $TURBO_SCOPE
 
   test-web:
-    name: "Client: Test Web 🧪"
+    name: "Client: Test Web 🧪${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -133,7 +134,7 @@ jobs:
         run: pnpm turbo run test --filter=web $TURBO_SCOPE
 
   test-checkout:
-    name: "Client: Test Checkout 🧪"
+    name: "Client: Test Checkout 🧪${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -166,7 +167,7 @@ jobs:
         run: pnpm turbo run test --filter=@polar-sh/checkout $TURBO_SCOPE
 
   test-packages:
-    name: "Client: Test Packages 🧪"
+    name: "Client: Test Packages 🧪${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -206,7 +207,7 @@ jobs:
         run: pnpm --filter @polar-sh/cli docs:check
 
   build:
-    name: "Client: Build 🛠️"
+    name: "Client: Build 🛠️${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -239,7 +240,7 @@ jobs:
         run: pnpm turbo run build $TURBO_SCOPE
 
   cli-binary:
-    name: "Client: CLI Binary 📦"
+    name: "Client: CLI Binary 📦${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.clients == 'true'
     timeout-minutes: 15
@@ -286,9 +287,9 @@ jobs:
         run: ./polar --version
 
   status:
-    name: "Client: Tests 🎨"
+    name: "Client: Tests 🎨${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: [changes, checks, test-web, test-checkout, test-packages, build, cli-binary]
-    if: always()
+    if: always() && (github.event.action != 'edited' || github.event.changes.base)
     runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:
       run:

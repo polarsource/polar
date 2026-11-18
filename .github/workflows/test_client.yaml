@@ -256,7 +256,7 @@ jobs:
         run: |
           for app in web:web orbit:orbit-playground; do
             if [ -z "$(find "apps/${app%%:*}/.next/cache" -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
-              pnpm --filter "${app##*:}" build
+              pnpm turbo run build --only --force --filter="${app##*:}"
             fi
           done
 

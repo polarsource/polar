@@ -101,6 +101,26 @@ class MerchantMigrationRepository(
         )
         return bool(await self.session.scalar(statement))
 
+    async def lock_lemon_squeezy_store(self, store_id: str) -> None:
+        await pg_advisory_xact_lock(
+            self.session, "merchant_migration.lemon_squeezy_store", store_id
+        )
+
+    async def lemon_squeezy_store_exists(
+        self, store_id: str, *, exclude_organization_id: UUID
+    ) -> bool:
+        statement = select(
+            self.get_base_statement()
+            .where(
+                MerchantMigration.source_platform
+                == MerchantMigrationSourcePlatform.lemon_squeezy,
+                MerchantMigration.source_credentials["store_id"].astext == store_id,
+                MerchantMigration.organization_id != exclude_organization_id,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(statement))
+
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[MerchantMigration]:

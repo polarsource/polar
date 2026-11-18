@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any, NamedTuple, TypedDict
 from uuid import UUID
 
+import httpx2
 import stripe as stripe_lib
 import structlog
 
@@ -48,7 +49,7 @@ from polar.product.repository import ProductRepository
 from polar.worker import can_retry, enqueue_job
 
 from . import pan_transfer
-from .adapters import PaginatedSourceAdapter, StripeAdapter
+from .adapters import LemonSqueezyAdapter, PaginatedSourceAdapter, StripeAdapter
 from .canonical import (
     CanonicalCustomer,
     CanonicalPaymentMethod,
@@ -96,11 +97,13 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
+    MerchantMigrationLemonSqueezyCreate,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
     MerchantMigrationRecordSummaryEntity,
     MerchantMigrationRecordTaxUpdate,
     MerchantMigrationRecordUpdate,
+    MerchantMigrationStripeCreate,
     MerchantMigrationTaxBehaviorUpdateResult,
     PanTransferChecklist,
     PrecheckEntity,
@@ -192,6 +195,15 @@ class StripeSourceCredentials(TypedDict):
     stripe_user_id: str | None
     livemode: bool
     has_connected_accounts: bool
+
+
+class LemonSqueezySourceCredentials(TypedDict):
+    """Shape of ``MerchantMigration.source_credentials`` for a Lemon Squeezy
+    source. Only ``api_key_encrypted`` is a secret."""
+
+    api_key_encrypted: str
+    store_id: str
+    store_name: str | None
 
 
 class MerchantMigrationNotFound(MerchantMigrationError):
@@ -439,6 +451,19 @@ def _is_live_key(api_key: str) -> bool:
     return api_key.startswith(("rk_live_", "sk_live_"))
 
 
+def _new_migration(
+    create_schema: MerchantMigrationStripeCreate | MerchantMigrationLemonSqueezyCreate,
+) -> MerchantMigration:
+    """The id is generated up front: the credentials are encrypted with it as
+    context, so they're set before the single INSERT."""
+    return MerchantMigration(
+        id=MerchantMigration.generate_id(),
+        organization_id=create_schema.organization_id,
+        source_platform=create_schema.source_platform,
+        step=MerchantMigrationStep.source_setup,
+    )
+
+
 class MerchantMigrationService:
     async def get(
         self,
@@ -493,9 +518,23 @@ class MerchantMigrationService:
             raise NotPermitted()
         if organization.status not in RENEWAL_ENABLED_STATUSES:
             raise OrganizationNotOnboarded()
-        if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
-            raise UnsupportedMigrationSource(create_schema.source_platform)
+        match create_schema:
+            case MerchantMigrationStripeCreate():
+                migration = await self._connect_stripe(session, create_schema)
+            case MerchantMigrationLemonSqueezyCreate():
+                migration = await self._connect_lemon_squeezy(
+                    session, organization, create_schema
+                )
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.create(migration, flush=True)
+        enqueue_job(
+            "merchant_migration.notify_created", merchant_migration_id=migration.id
+        )
+        return await self._queue_precheck(session, migration)
 
+    async def _connect_stripe(
+        self, session: AsyncSession, create_schema: MerchantMigrationStripeCreate
+    ) -> MerchantMigration:
         # The key's mode must match the Polar environment, so a live switch never
         # runs against Stripe test data (and a sandbox run never touches live data).
         expect_live = settings.is_production()
@@ -521,14 +560,7 @@ class MerchantMigrationService:
         if blockers:
             raise SourceAccountNotMigratable(blockers)
 
-        # Pre-generate the id so the credentials (encrypted with it as context) can
-        # be set before the row is inserted — one INSERT instead of INSERT+UPDATE.
-        migration = MerchantMigration(
-            id=MerchantMigration.generate_id(),
-            organization_id=create_schema.organization_id,
-            source_platform=create_schema.source_platform,
-            step=MerchantMigrationStep.source_setup,
-        )
+        migration = _new_migration(create_schema)
         stripe_account_id = await adapter.get_account_id()
         migration.source_credentials = dict(
             await self._build_stripe_credentials(
@@ -547,11 +579,48 @@ class MerchantMigrationService:
             exclude_organization_id=create_schema.organization_id,
         ):
             raise SourceAccountAlreadyMigrated()
-        migration = await repository.create(migration, flush=True)
-        enqueue_job(
-            "merchant_migration.notify_created", merchant_migration_id=migration.id
+        return migration
+
+    async def _connect_lemon_squeezy(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        create_schema: MerchantMigrationLemonSqueezyCreate,
+    ) -> MerchantMigration:
+        if not organization.is_lemon_squeezy_migration_enabled:
+            raise MerchantMigrationNotEnabled()
+
+        adapter = LemonSqueezyAdapter(create_schema.api_key, create_schema.store_id)
+        try:
+            store = await adapter.resolve_store()
+            source_account = await adapter.get_source_account()
+        except httpx2.HTTPStatusError as e:
+            if e.response.status_code in (401, 403):
+                raise InvalidSourceCredentials() from e
+            raise SourceVerificationUnavailable() from e
+        except httpx2.HTTPError as e:
+            raise SourceVerificationUnavailable() from e
+        blockers = account_blockers(source_account)
+        if blockers:
+            raise SourceAccountNotMigratable(blockers)
+
+        migration = _new_migration(create_schema)
+        migration.source_credentials = dict(
+            LemonSqueezySourceCredentials(
+                api_key_encrypted=await self._encrypt_api_key(
+                    migration, create_schema.api_key
+                ),
+                store_id=store["id"],
+                store_name=store["attributes"].get("name"),
+            )
         )
-        return await self._queue_precheck(session, migration)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.lock_lemon_squeezy_store(store["id"])
+        if await repository.lemon_squeezy_store_exists(
+            store["id"], exclude_organization_id=create_schema.organization_id
+        ):
+            raise SourceAccountAlreadyMigrated()
+        return migration
 
     async def start_precheck(
         self,
@@ -2121,17 +2190,31 @@ class MerchantMigrationService:
     async def _build_adapter(
         self, migration: MerchantMigration
     ) -> PaginatedSourceAdapter:
-        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
-            raise UnsupportedMigrationSource(migration.source_platform)
-        return StripeAdapter(await self._decrypt_stripe_api_key(migration))
+        match migration.source_platform:
+            case MerchantMigrationSourcePlatform.stripe:
+                return StripeAdapter(await self._decrypt_api_key(migration))
+            case MerchantMigrationSourcePlatform.lemon_squeezy:
+                return LemonSqueezyAdapter(
+                    await self._decrypt_api_key(migration),
+                    migration.source_credentials.get("store_id"),
+                )
+            case _:
+                raise UnsupportedMigrationSource(migration.source_platform)
 
-    async def _decrypt_stripe_api_key(self, migration: MerchantMigration) -> str:
+    async def _decrypt_api_key(self, migration: MerchantMigration) -> str:
         encrypted = migration.source_credentials.get("api_key_encrypted")
         if not encrypted:
             raise SourceNotConnected()
         return await EncryptedString(
             encrypted, SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT
         ).decrypt(id=str(migration.id))
+
+    async def _encrypt_api_key(self, migration: MerchantMigration, api_key: str) -> str:
+        encrypted = await EncryptedString.encrypt(
+            api_key,
+            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
+        )
+        return encrypted.encrypted_value
 
     async def _build_stripe_credentials(
         self,
@@ -2141,12 +2224,8 @@ class MerchantMigrationService:
         *,
         has_connected_accounts: bool,
     ) -> StripeSourceCredentials:
-        encrypted = await EncryptedString.encrypt(
-            api_key,
-            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
-        )
         return StripeSourceCredentials(
-            api_key_encrypted=encrypted.encrypted_value,
+            api_key_encrypted=await self._encrypt_api_key(migration, api_key),
             stripe_user_id=stripe_account_id,
             livemode=_is_live_key(api_key),
             has_connected_accounts=has_connected_accounts,

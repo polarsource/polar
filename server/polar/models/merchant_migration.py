@@ -136,4 +136,6 @@ class MerchantMigration(RecordModel):
             "has_connected_accounts": self.source_credentials.get(
                 "has_connected_accounts", False
             ),
+            "store_id": self.source_credentials.get("store_id"),
+            "store_name": self.source_credentials.get("store_name"),
         }

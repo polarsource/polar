@@ -15,13 +15,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
 import { Control } from 'react-hook-form'
-
-const isApplicableToProduct = (
-  discount: schemas['Discount'],
-  productId: string,
-): boolean =>
-  discount.products.length === 0 ||
-  discount.products.some((product) => product.id === productId)
+import { isDiscountApplicableToProduct } from './utils'
 
 export const SubscriptionDiscountField = ({
   control,
@@ -37,7 +31,7 @@ export const SubscriptionDiscountField = ({
 
   const { data: discounts, isLoading } = useDiscounts(organizationId, {
     query: discountQuery || undefined,
-    limit: 10,
+    limit: 100,
     sorting: ['name'],
   })
   const { data: currentDiscount } = useDiscount(
@@ -46,7 +40,7 @@ export const SubscriptionDiscountField = ({
   )
 
   const applicableDiscounts = (discounts?.items ?? []).filter((discount) =>
-    isApplicableToProduct(discount, targetProductId),
+    isDiscountApplicableToProduct(discount, targetProductId),
   )
 
   return (

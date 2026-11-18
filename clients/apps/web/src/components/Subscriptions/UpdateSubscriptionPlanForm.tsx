@@ -1,6 +1,6 @@
 'use client'
 
-import { useProduct } from '@/hooks/queries'
+import { useDiscount, useProduct } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { useTrialChangeOutcome } from '@/utils/trial-change'
@@ -24,7 +24,10 @@ import { SubscriptionDiscountField } from './SubscriptionDiscountField'
 import { UpdateSubscriptionChangeSummary } from './UpdateSubscriptionChangeSummary'
 import { UpdateSubscriptionProductWarning } from './UpdateSubscriptionProductWarning'
 import { UpdateSubscriptionSection } from './UpdateSubscriptionSection'
-import { subscriptionUpdateValidationDiscriminators } from './utils'
+import {
+  isDiscountApplicableToProduct,
+  subscriptionUpdateValidationDiscriminators,
+} from './utils'
 
 export const UpdateSubscriptionPlanForm = ({
   subscription,
@@ -48,7 +51,7 @@ export const UpdateSubscriptionPlanForm = ({
       proration_behavior: defaultProrationBehavior,
     },
   })
-  const { control, handleSubmit, setError } = form
+  const { control, handleSubmit, setError, setValue } = form
 
   const selectedProductId = useWatch({ control, name: 'product_id' })
   const selectedDiscountId = useWatch({ control, name: 'discount_id' })
@@ -57,6 +60,10 @@ export const UpdateSubscriptionPlanForm = ({
     name: 'proration_behavior',
   })
   const { data: selectedProduct } = useProduct(selectedProductId)
+  const { data: selectedDiscount } = useDiscount(
+    subscription.product.organization_id,
+    selectedDiscountId,
+  )
   const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
   const isChangingProduct = !!selectedProductId
@@ -150,7 +157,18 @@ export const UpdateSubscriptionPlanForm = ({
                   <ProductCombobox
                     organizationId={subscription.product.organization_id}
                     value={field.value ?? undefined}
-                    onChange={field.onChange}
+                    onChange={(productId) => {
+                      field.onChange(productId)
+                      if (
+                        selectedDiscount &&
+                        !isDiscountApplicableToProduct(
+                          selectedDiscount,
+                          productId,
+                        )
+                      ) {
+                        setValue('discount_id', null)
+                      }
+                    }}
                     currency={subscription.currency}
                     currentProductId={subscription.product_id}
                     currentPriceIds={subscription.prices.map(({ id }) => id)}

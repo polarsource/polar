@@ -1,0 +1,41 @@
+clients/packages/client/src/v1.ts
+  s_24786c431aa0b0::t_9bd2eb24f511b8 26669-26690,64257,64268-64269,64284,64302
+docs/openapi/2027-01.openapi.json
+  s_24786c431aa0b0::t_fb62b63f2dd8ae 71051-71056
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/SourceMark.tsx
+  s_7b0666dec04723::t_9546d44180dfc7 14,17
+server/polar/merchant_migration/endpoints.py
+  s_7b0666dec04723::t_ad317b65948fe1 20-23,111-113,118-119,129,133
+server/polar/merchant_migration/repository.py
+  s_7b0666dec04723::t_b2298388b32052 76-82,90-92,94-96,99-104,106,110-114
+server/polar/merchant_migration/service.py
+  s_7b0666dec04723::t_0ce7d34f6e08d4 241,258,266,455-456,462-463,524-526,539-542,569,582-586,616,627-633
+server/polar/models/merchant_migration.py
+  s_7b0666dec04723::t_ac4b877261b11f 133-137
+server/tests/merchant_migration/test_service.py
+  s_7b0666dec04723::t_60b2d136a664a7 216,222,238-239,241,247,288,337,361
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "40d180a4ed76a68c18244021b3db48fbdafeadbe",
+  "prompts": {},
+  "sessions": {
+    "s_24786c431aa0b0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ee5c-1b6e-78f3-9133-73e19b105d3d",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

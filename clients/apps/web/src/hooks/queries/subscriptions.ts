@@ -3,6 +3,7 @@ import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import { defaultRetry } from './retry'
 
 export const useSubscriptions = (
@@ -62,6 +63,38 @@ export const useInfiniteSubscriptions = (
         : lastPageParam + 1,
     retry: defaultRetry,
   })
+
+const ALL_PAGE_SIZE = 100
+const ALL_MAX_PAGES = 20
+
+// Loads every page up to a cap, for views that sum over all subscriptions.
+export const useAllSubscriptions = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['subscriptions:list']['parameters']['query']>,
+    'organization_id' | 'page' | 'limit'
+  >,
+) => {
+  const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useInfiniteSubscriptions(organizationId, {
+      ...parameters,
+      limit: ALL_PAGE_SIZE,
+    })
+  const pageCount = data?.pages.length ?? 0
+  const canLoadMore = hasNextPage && pageCount < ALL_MAX_PAGES
+
+  useEffect(() => {
+    if (canLoadMore && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [canLoadMore, isFetchingNextPage, fetchNextPage])
+
+  return {
+    subscriptions: data?.pages.flatMap((page) => page.items),
+    totalCount: data?.pages[0]?.pagination.total_count,
+    isLoading: data === undefined || canLoadMore,
+  }
+}
 
 export const useSubscription = (
   id: string,

@@ -15,6 +15,7 @@ interface UseGanttViewportOptions {
   start: number
   now: number
   zoom: GanttZoom
+  focus?: number
 }
 
 // The timeline has no fixed end. Only a window around the viewport is rendered,
@@ -23,17 +24,19 @@ export const useGanttViewport = ({
   start,
   now,
   zoom,
+  focus = now,
 }: UseGanttViewportOptions) => {
   const scrollerRef = useRef<HTMLDivElement>(null)
   const labelsRef = useRef<HTMLDivElement>(null)
-  const anchorRef = useRef(now)
+  const anchorRef = useRef(focus)
   const yearRef = useRef<HTMLSpanElement>(null)
+  const todayRef = useRef<HTMLButtonElement>(null)
   const dragRef = useRef<{ x: number; left: number; moved: boolean } | null>(
     null,
   )
   const suppressClickRef = useRef(false)
   const [viewportWidth, setViewportWidth] = useState(0)
-  const [center, setCenter] = useState(now)
+  const [center, setCenter] = useState(focus)
 
   const span = GANTT_ZOOM_DAYS[zoom] * DAY_MS
   const rendered: TimelineRange = {
@@ -57,9 +60,19 @@ export const useGanttViewport = ({
     return () => observer.disconnect()
   }, [])
 
-  const showYear = (time: number) => {
+  // The pill follows a spacer that ends where today is, so any distance between
+  // the two means the pill is stuck to an edge.
+  const syncHeader = (time: number) => {
     if (yearRef.current) {
       yearRef.current.textContent = String(new Date(time).getFullYear())
+    }
+    const today = todayRef.current
+    const spacer = today?.previousElementSibling
+    if (today && spacer) {
+      const offset =
+        today.getBoundingClientRect().left -
+        spacer.getBoundingClientRect().right
+      today.dataset.stuck = String(Math.abs(offset) > 0.5)
     }
   }
 
@@ -70,7 +83,7 @@ export const useGanttViewport = ({
     if (viewportWidth === 0 || !scroller) return
     scroller.scrollLeft =
       ((anchorRef.current - start) / DAY_MS) * pixelsPerDay - anchorOffset
-    showYear(
+    syncHeader(
       start + ((scroller.scrollLeft + viewportWidth) / pixelsPerDay) * DAY_MS,
     )
   }, [start, pixelsPerDay, viewportWidth, anchorOffset])
@@ -79,7 +92,7 @@ export const useGanttViewport = ({
     const scroller = scrollerRef.current
     if (!scroller || viewportWidth === 0) return
     anchorRef.current = scale.toTime(scroller.scrollLeft + anchorOffset)
-    showYear(scale.toTime(scroller.scrollLeft + viewportWidth))
+    syncHeader(scale.toTime(scroller.scrollLeft + viewportWidth))
     const visibleCenter = scale.toTime(scroller.scrollLeft + viewportWidth / 2)
     if (Math.abs(visibleCenter - center) > span) {
       setCenter(visibleCenter)
@@ -128,6 +141,7 @@ export const useGanttViewport = ({
     scrollerRef,
     labelsRef,
     yearRef,
+    todayRef,
     scale,
     rendered,
     onScroll,

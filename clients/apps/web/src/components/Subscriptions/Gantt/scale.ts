@@ -14,13 +14,24 @@ export const GANTT_ZOOM_DAYS: Record<GanttZoom, number> = {
   '3Y': 1095,
 }
 
+export const ganttGroupValues = [
+  'customer',
+  'total',
+  'product',
+  'interval',
+] as const
+
+export type GanttGroup = (typeof ganttGroupValues)[number]
+
+export const DEFAULT_GANTT_GROUP: GanttGroup = 'customer'
+
 export const ROW_HEIGHT = 52
 export const HEADER_HEIGHT = 56
 export const DATE_LABEL_HEIGHT = 22
 export const BAR_HEIGHT = 16
 export const BAR_RADIUS = 4
 export const MIN_CYCLE_WIDTH = 6
-export const TODAY_VIEWPORT_RATIO = 0.6
+export const TODAY_VIEWPORT_RATIO = 0.25
 export const FALLBACK_VIEWPORT_WIDTH = 960
 
 export interface GanttScale {

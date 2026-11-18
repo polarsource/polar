@@ -5,12 +5,21 @@ export const useGanttPointer = (scale: GanttScale, now: number) => {
   const trackRef = useRef<HTMLElement>(null)
   const cursorRef = useRef<HTMLElement>(null)
   const cursorLabelRef = useRef<HTMLSpanElement>(null)
+  const clientXRef = useRef<number | null>(null)
 
-  const onMouseMove = (event: React.MouseEvent) => {
+  const hide = () => {
+    clientXRef.current = null
+    if (cursorRef.current) {
+      cursorRef.current.style.opacity = '0'
+    }
+  }
+
+  // Also runs on scroll, where the content moves under a pointer that has not.
+  const syncCursor = () => {
     const track = trackRef.current
     const cursor = cursorRef.current
-    if (!track || !cursor) return
-    const x = event.clientX - track.getBoundingClientRect().left
+    if (!track || !cursor || clientXRef.current === null) return
+    const x = clientXRef.current - track.getBoundingClientRect().left
     cursor.style.transform = `translateX(${x}px)`
     cursor.style.opacity = '1'
     if (cursorLabelRef.current) {
@@ -18,11 +27,21 @@ export const useGanttPointer = (scale: GanttScale, now: number) => {
     }
   }
 
-  const onMouseLeave = () => {
-    if (cursorRef.current) {
-      cursorRef.current.style.opacity = '0'
+  const onMouseMove = (event: React.MouseEvent) => {
+    if (!(event.target as HTMLElement).closest('[data-gantt-rows]')) {
+      hide()
+      return
     }
+    clientXRef.current = event.clientX
+    syncCursor()
   }
 
-  return { trackRef, cursorRef, cursorLabelRef, onMouseMove, onMouseLeave }
+  return {
+    trackRef,
+    cursorRef,
+    cursorLabelRef,
+    onMouseMove,
+    onMouseLeave: hide,
+    syncCursor,
+  }
 }

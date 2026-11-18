@@ -5,7 +5,9 @@ import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
 import { GanttLegend } from '@/components/Subscriptions/Gantt/GanttLegend'
 import {
+  DEFAULT_GANTT_GROUP,
   DEFAULT_GANTT_ZOOM,
+  ganttGroupValues,
   ganttZoomValues,
 } from '@/components/Subscriptions/Gantt/scale'
 import { SubscriptionsGantt } from '@/components/Subscriptions/Gantt/SubscriptionsGantt'
@@ -28,7 +30,8 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
-import React from 'react'
+import React, { useState } from 'react'
+import { SubscriptionsAggregateView } from './SubscriptionsAggregateView'
 import { SubscriptionsSidebar } from './SubscriptionsSidebar'
 
 const PAGE_SIZE = 50
@@ -43,6 +46,8 @@ const filterParsers = {
   cancel_at_period_end: parseAsBoolean,
   zoom: parseAsStringLiteral(ganttZoomValues).withDefault(DEFAULT_GANTT_ZOOM),
   subscription: parseAsString,
+  group:
+    parseAsStringLiteral(ganttGroupValues).withDefault(DEFAULT_GANTT_GROUP),
 }
 
 interface ClientPageProps {
@@ -63,6 +68,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cancel_at_period_end: cancelAtPeriodEnd,
       zoom,
       subscription: selectedId,
+      group,
     },
     setFilters,
   ] = useQueryStates(filterParsers)
@@ -112,14 +118,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     setSorting(DEFAULT_SORTING)
   }
 
+  const listFilters = {
+    product_id: productId ?? undefined,
+    external_product_id: externalProductId ?? undefined,
+    status: status === 'any' ? undefined : [status],
+    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+  }
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteSubscriptions(organization.id, {
+      ...listFilters,
       limit: PAGE_SIZE,
       sorting: sortingStateToQueryParam(sorting),
-      product_id: productId ?? undefined,
-      external_product_id: externalProductId ?? undefined,
-      status: status === 'any' ? undefined : [status],
-      cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
     })
 
   const subscriptions = data?.pages.flatMap((page) => page.items)
@@ -135,6 +144,26 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const previous = subscriptions?.[selectedIndex - 1]
   const next = selected ? subscriptions?.[selectedIndex + 1] : undefined
   const select = (id: string | null) => setFilters({ subscription: id })
+
+  const [focus, setFocus] = useState<number>()
+  const drillDown = ({
+    groupKey,
+    start,
+  }: {
+    groupKey: string
+    start?: number
+  }) => {
+    setFilters({
+      group: 'customer',
+      ...(group === 'product'
+        ? { product_id: groupKey, external_product_id: null }
+        : {}),
+    })
+    if (start !== undefined) {
+      setSorting([{ id: 'current_period_end', desc: false }])
+    }
+    setFocus(start)
+  }
 
   return (
     <DashboardBody
@@ -158,6 +187,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           onSortingChange={setSorting}
           zoom={zoom}
           onZoomChange={(value) => setFilters({ zoom: value })}
+          group={group}
+          onGroupChange={(value) => setFilters({ group: value })}
           hasActiveFilters={hasActiveFilters}
           onReset={resetFilters}
           onExport={showExportModal}
@@ -176,9 +207,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         ) : undefined
       }
       wide
+      flush
     >
       <Box flexDirection="column" rowGap="l" flexGrow={1} minHeight={0}>
-        {!subscriptions ? (
+        {group !== 'customer' ? (
+          <SubscriptionsAggregateView
+            organization={organization}
+            filters={listFilters}
+            zoom={zoom}
+            group={group}
+            onSelect={drillDown}
+          />
+        ) : !subscriptions ? (
           <Box justifyContent="center" py="3xl">
             <Spinner />
           </Box>
@@ -191,13 +231,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             subscriptions={subscriptions}
             earliest={new Date(organization.created_at).getTime()}
             zoom={zoom}
+            focus={focus}
             selectedId={selectedId}
             onSelect={select}
             isLoadingMore={isFetchingNextPage}
             onEndReached={loadMore}
           />
         )}
-        <GanttLegend />
+        <Box px="l">
+          <GanttLegend aggregate={group !== 'customer'} />
+        </Box>
       </Box>
       <ExportSubscriptionsModal
         organization={organization}

@@ -2,6 +2,7 @@
 
 import {
   ganttZoomValues,
+  type GanttGroup,
   type GanttZoom,
 } from '@/components/Subscriptions/Gantt/scale'
 import { type FilterOption } from '@/components/Shared/FilterPopover'
@@ -44,6 +45,13 @@ const SORT_OPTIONS = [
   { value: 'product', label: 'Product' },
   { value: '-amount', label: 'Highest amount' },
 ] as const
+
+const GROUP_LABELS: Record<GanttGroup, string> = {
+  customer: 'Customer',
+  total: 'Total',
+  product: 'Product',
+  interval: 'Billing interval',
+}
 
 const ZOOM_OPTIONS = ganttZoomValues.map((value) => ({ value, label: value }))
 
@@ -98,6 +106,8 @@ interface SubscriptionsSidebarProps {
   onSortingChange: (sorting: DataTableSortingState) => void
   zoom: GanttZoom
   onZoomChange: (zoom: GanttZoom) => void
+  group: GanttGroup
+  onGroupChange: (group: GanttGroup) => void
   hasActiveFilters: boolean
   onReset: () => void
   onExport: () => void
@@ -116,6 +126,8 @@ export const SubscriptionsSidebar = ({
   onSortingChange,
   zoom,
   onZoomChange,
+  group,
+  onGroupChange,
   hasActiveFilters,
   onReset,
   onExport,
@@ -204,6 +216,23 @@ export const SubscriptionsSidebar = ({
         paddingHorizontal="l"
         paddingVertical="l"
       >
+        <FilterSection title="Group by">
+          <Select
+            value={group}
+            onValueChange={(value) => onGroupChange(value as GanttGroup)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(GROUP_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FilterSection>
         <FilterSection title="Zoom">
           <SegmentedControl
             variant="tabs"
@@ -234,27 +263,29 @@ export const SubscriptionsSidebar = ({
             }
           />
         </FilterSection>
-        <FilterSection title="Sorting">
-          <Select
-            value={sortValue}
-            onValueChange={(value) =>
-              onSortingChange([
-                { id: value.replace(/^-/, ''), desc: value.startsWith('-') },
-              ])
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              {SORT_OPTIONS.map(({ value, label }) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FilterSection>
+        {group === 'customer' && (
+          <FilterSection title="Sorting">
+            <Select
+              value={sortValue}
+              onValueChange={(value) =>
+                onSortingChange([
+                  { id: value.replace(/^-/, ''), desc: value.startsWith('-') },
+                ])
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FilterSection>
+        )}
       </Box>
     </Box>
   )

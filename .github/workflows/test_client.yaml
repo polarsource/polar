@@ -242,9 +242,9 @@ jobs:
           path: |
             clients/apps/web/.next/cache
             clients/apps/orbit/.next/cache
-          key: next-build-proof2-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
+          key: next-build-proof3-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
-            next-build-proof2-${{ hashFiles('clients/pnpm-lock.yaml') }}-
+            next-build-proof3-${{ hashFiles('clients/pnpm-lock.yaml') }}-
 
       - name: 🛠️ Build
         run: |
@@ -256,7 +256,7 @@ jobs:
         run: |
           for app in web:web orbit:orbit-playground; do
             if [ -z "$(find "apps/${app%%:*}/.next/cache" -type f -newer "$RUNNER_TEMP/build-started" -print -quit 2>/dev/null)" ]; then
-              pnpm --filter "${app##*:}" build
+              pnpm turbo run build --only --force --filter="${app##*:}"
             fi
           done
 
@@ -274,7 +274,7 @@ jobs:
           path: |
             clients/apps/web/.next/cache
             clients/apps/orbit/.next/cache
-          key: next-build-proof2-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
+          key: next-build-proof3-${{ hashFiles('clients/pnpm-lock.yaml') }}-${{ github.sha }}
 
   cli-binary:
     name: "Client: CLI Binary 📦"

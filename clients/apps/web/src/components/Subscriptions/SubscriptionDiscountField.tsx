@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useState } from 'react'
-import { Control } from 'react-hook-form'
+import { Control, useWatch } from 'react-hook-form'
 import { isDiscountApplicableToProduct } from './utils'
 
 export const SubscriptionDiscountField = ({
@@ -34,9 +34,10 @@ export const SubscriptionDiscountField = ({
     limit: 100,
     sorting: ['name'],
   })
-  const { data: currentDiscount } = useDiscount(
+  const selectedDiscountId = useWatch({ control, name: 'discount_id' })
+  const { data: selectedDiscount } = useDiscount(
     organizationId,
-    subscription.discount_id,
+    selectedDiscountId,
   )
 
   const applicableDiscounts = (discounts?.items ?? []).filter((discount) =>
@@ -49,8 +50,8 @@ export const SubscriptionDiscountField = ({
       name="discount_id"
       render={({ field }) => {
         const selectedItem =
-          currentDiscount?.id === field.value
-            ? currentDiscount
+          selectedDiscount?.id === field.value
+            ? selectedDiscount
             : discounts?.items.find((d) => d.id === field.value)
 
         return (

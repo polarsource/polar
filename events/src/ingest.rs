@@ -305,22 +305,21 @@ pub async fn insert_staged_events<'a>(
     .await?;
 
     let mut inserted_ids: HashSet<Uuid> = staged.iter().map(|(id, _)| *id).collect();
-    let external_ids = Vec::from_iter(
+    let ids_with_external_id = Vec::from_iter(
         staged
             .into_iter()
-            .filter_map(|(_, external_id)| external_id),
+            .filter_map(|(id, external_id)| external_id.map(|_| id)),
     );
-    if !external_ids.is_empty() {
+    if !ids_with_external_id.is_empty() {
         let already_moved: Vec<Uuid> = sqlx::query_scalar(
             "DELETE FROM staged_events \
-             WHERE organization_id = $1 AND external_id IN (\
-                 SELECT external_id FROM events \
-                 WHERE organization_id = $1 AND external_id = ANY($2)\
-             ) \
-             RETURNING id",
+             USING events \
+             WHERE staged_events.id = ANY($1) \
+             AND events.organization_id = staged_events.organization_id \
+             AND events.external_id = staged_events.external_id \
+             RETURNING staged_events.id",
         )
-        .bind(organization_id)
-        .bind(external_ids)
+        .bind(ids_with_external_id)
         .fetch_all(&mut *connection)
         .await?;
         for id in already_moved {

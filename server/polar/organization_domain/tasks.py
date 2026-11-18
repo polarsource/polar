@@ -21,7 +21,12 @@ async def register_payment_method_domains(
     domains: Annotated[list[str], LoggableField],
 ) -> None:
     for domain in domains:
-        if await stripe_service.get_payment_method_domain(domain) is not None:
+        payment_method_domain = await stripe_service.get_payment_method_domain(domain)
+        if payment_method_domain is not None:
+            if not payment_method_domain.enabled:
+                await stripe_service.update_payment_method_domain(
+                    payment_method_domain.id, enabled=True
+                )
             continue
         try:
             await stripe_service.create_payment_method_domain(domain)

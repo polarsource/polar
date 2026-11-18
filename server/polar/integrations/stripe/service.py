@@ -559,6 +559,12 @@ class StripeService:
             domain_name=domain_name, enabled=True
         )
 
+    async def update_payment_method_domain(
+        self, id: str, *, enabled: bool
+    ) -> stripe_lib.PaymentMethodDomain:
+        log.info("stripe.payment_method_domain.update", id=id, enabled=enabled)
+        return await stripe_lib.PaymentMethodDomain.modify_async(id, enabled=enabled)
+
     async def get_verification_session(
         self, id: str, *, expand: list[str] | None = None
     ) -> stripe_lib.identity.VerificationSession:

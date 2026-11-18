@@ -1214,7 +1214,14 @@ class CheckoutService:
                 "payment_method_country": payment_method_country,
             }
             ip_country = checkout.customer_signals.get("ip_country")
-            known_countries = {ip_country, payment_method_country} - {None}
+            tax_id_country = (
+                ip_geolocation.get_tax_id_country(checkout.customer_tax_id)
+                if checkout.customer_tax_id is not None
+                else None
+            )
+            known_countries = {ip_country, payment_method_country, tax_id_country} - {
+                None
+            }
             billing_address = checkout.customer_billing_address
             if (
                 billing_address is not None

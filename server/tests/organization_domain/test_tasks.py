@@ -5,8 +5,10 @@ from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
 from polar.models import Organization, OrganizationDomain
+from polar.models.organization import OrganizationStatus
 from polar.organization_domain.tasks import (
     register_payment_method_domains,
+    unregister_organization_payment_method_domains,
     unregister_payment_method_domains,
 )
 from tests.fixtures.database import SaveFixture
@@ -70,4 +72,30 @@ class TestUnregisterPaymentMethodDomains:
 
         stripe_service_mock.update_payment_method_domain.assert_awaited_once_with(
             "pmd_old.acme.com", enabled=False
+        )
+
+
+@pytest.mark.anyio
+class TestUnregisterOrganizationPaymentMethodDomains:
+    async def test_blocked_organization(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.status = OrganizationStatus.BLOCKED
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await unregister_organization_payment_method_domains(organization.id)
+
+        enqueue_job_mock.assert_called_once_with(
+            "organization_domain.unregister_payment_method_domains",
+            domains=["shop.acme.com"],
         )

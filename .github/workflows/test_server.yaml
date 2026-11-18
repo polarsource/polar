@@ -89,7 +89,7 @@ jobs:
 
       - name: Merge frozen timing input
         if: steps.filter.outputs.server == 'true' && steps.timing_input.outputs.cache-hit != 'true'
-        run: uv run --no-project --python "$(command -v python3)" server/scripts/merge_test_durations.py --expected-shards 2 --output server/.test_durations "$RUNNER_TEMP"/frozen-durations/*/.test_durations
+        run: uv run --no-project --python "$(command -v python3)" server/scripts/merge_test_durations.py --expected-shards 4 --output server/.test_durations "$RUNNER_TEMP"/frozen-durations/*/.test_durations
 
   linters:
     name: "Server: Linters 📝"

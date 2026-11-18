@@ -31,7 +31,7 @@ from polar.enums import (
     TaxProcessor,
 )
 from polar.event.system import SystemEvent
-from polar.exceptions import PolarRequestValidationError
+from polar.exceptions import BillingAddressRequired, PolarRequestValidationError
 from polar.integrations.stripe.service import StripeService
 from polar.invoice.service import invoice as invoice_service
 from polar.kit.address import (
@@ -626,6 +626,68 @@ class TestUpdate:
         assert updated_order.billing_address is not None
         assert updated_order.billing_address.country == "FR"
         assert updated_order.billing_address.line1 == "Rue de la Paix"
+
+    async def test_draft_country_change_recalculates_tax(
+        self,
+        calculate_tax_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product_one_time: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time,
+            status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_address=AddressInput(
+                    country=CountryAlpha2Input("US"),
+                    state="NY",
+                    postal_code="10001",
+                ),
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_order)
+
+        assert updated_order.billing_address is not None
+        assert updated_order.billing_address.country == "US"
+        assert updated_order.tax_amount == 200
+        assert updated_order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"
+        assert calculate_tax_mock.call_args.args[5].country == "US"
+
+    async def test_draft_incomplete_billing_address_rejected(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product_one_time: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product_one_time,
+            status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await order_service.update(
+                session,
+                order,
+                OrderUpdate(
+                    billing_address=AddressInput(
+                        country=CountryAlpha2Input("US"), state="NY"
+                    ),
+                ),
+            )
 
 
 @pytest.mark.anyio
@@ -7395,6 +7457,17 @@ async def off_session_organization(
 
 @pytest.mark.anyio
 class TestCreateDraftOrder:
+    @pytest.fixture
+    async def customer(
+        self,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        calculate_tax_mock: AsyncMock,
+    ) -> Customer:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+        return customer
+
     async def test_feature_flag_disabled(
         self,
         session: AsyncSession,
@@ -7677,6 +7750,50 @@ class TestCreateDraftOrder:
         assert order.subtotal_amount == 1500
         assert order.items[0].amount == 1500
 
+    @pytest.mark.parametrize(
+        "billing_address",
+        [None, Address(country=CountryAlpha2("US"), state="NY")],
+    )
+    async def test_incomplete_billing_address_rejected(
+        self,
+        billing_address: Address | None,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=off_session_organization,
+            billing_address=billing_address,
+        )
+        payload = OrderCreate(customer_id=customer.id, product_id=product_one_time.id)
+        with pytest.raises(BillingAddressRequired):
+            await order_service.create_draft_order(
+                session, off_session_organization, payload
+            )
+
+    async def test_free_order_without_billing_address(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        off_session_organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=off_session_organization
+        )
+        product = await create_product(
+            save_fixture,
+            organization=off_session_organization,
+            recurring_interval=None,
+            prices=[(None, "usd")],
+        )
+        payload = OrderCreate(customer_id=customer.id, product_id=product.id)
+        order = await order_service.create_draft_order(
+            session, off_session_organization, payload
+        )
+        assert order.subtotal_amount == 0
+
     async def test_custom_description_overrides_label(
         self,
         session: AsyncSession,
@@ -7808,7 +7925,7 @@ class TestCreateDraftOrder:
         customer = await create_customer(
             save_fixture,
             organization=off_session_organization,
-            billing_address=Address(country=CountryAlpha2("US")),
+            billing_address=Address(country=CountryAlpha2("FR")),
         )
         payload = OrderCreate(
             customer_id=customer.id,
@@ -7995,6 +8112,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
         )
         original_invoice_number = order.invoice_number
         mocker.patch(
@@ -8026,6 +8144,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
         with pytest.raises(OffSessionChargesNotEnabled):
@@ -8052,6 +8171,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
         with pytest.raises(OrganizationNotReadyForPayments):
@@ -8074,6 +8194,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
         with pytest.raises(PaymentFailed):
@@ -8082,6 +8203,27 @@ class TestFinalizeOrder:
         await session.refresh(order)
         # Missing payment method is caught before any state mutation —
         # nothing changes on the order.
+        assert order.status == OrderStatus.draft
+
+    async def test_missing_billing_address(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        off_session_organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.draft,
+            invoice_number=None,
+        )
+        with pytest.raises(BillingAddressRequired):
+            await order_service.finalize_order(session, order)
+
+        await session.refresh(order)
         assert order.status == OrderStatus.draft
 
     async def test_card_error_reverts_to_draft(
@@ -8099,6 +8241,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8133,6 +8276,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8166,6 +8310,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8193,6 +8338,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8266,6 +8412,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8357,6 +8504,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8443,6 +8591,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
         stripe_service_mock.create_payment_intent.side_effect = stripe_lib.CardError(
@@ -8478,6 +8627,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 
@@ -8529,6 +8679,7 @@ class TestFinalizeOrder:
             product=product,
             customer=customer,
             status=OrderStatus.draft,
+            billing_address=Address(country=CountryAlpha2("FR")),
             invoice_number=None,
         )
 

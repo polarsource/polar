@@ -2538,6 +2538,13 @@ class BenefitUpdatedEvent:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BillingAddressRequired:
+    error: typing.Literal["BillingAddressRequired"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CannotCreateOrganizationError:
     error: typing.Literal["CannotCreateOrganizationError"]
 

@@ -1,6 +1,6 @@
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx2 import AsyncClient
@@ -8,10 +8,13 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.enums import TaxBehavior, TaxProcessor
+from polar.kit.address import Address, CountryAlpha2
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
+from polar.tax.calculation import TaxCalculationService
 from polar.version import V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -859,6 +862,28 @@ async def off_session_organization(
 
 @pytest.mark.anyio
 class TestCreateOrder:
+    @pytest.fixture(autouse=True)
+    def calculate_tax_mock(self, mocker: MockerFixture) -> MagicMock:
+        mock = mocker.patch(
+            "polar.order.amounts.tax_calculation_service", spec=TaxCalculationService
+        )
+        mock.calculate.return_value = (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": 0,
+                "tax_behavior": TaxBehavior.exclusive,
+                "tax_breakdown": [],
+            },
+            TaxProcessor.numeral,
+        )
+        return mock.calculate
+
+    @pytest.fixture
+    async def customer(self, save_fixture: SaveFixture, customer: Customer) -> Customer:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
+        return customer
+
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.post("/v1/orders/", json={})
         assert response.status_code == 401

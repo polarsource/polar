@@ -45,7 +45,12 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.eventstream.service import publish as eventstream_publish
-from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
+from polar.exceptions import (
+    BillingAddressRequired,
+    PolarError,
+    PolarRequestValidationError,
+    ValidationError,
+)
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.stripe.service import (
     STRIPE_METADATA_PAYMENT_TRIGGER,
@@ -54,6 +59,7 @@ from polar.integrations.stripe.service import (
     stripe as stripe_service,
 )
 from polar.invoice.service import invoice as invoice_service
+from polar.kit.address import Address
 from polar.kit.currency import (
     format_currency,
     get_maximum_currency_amount,
@@ -490,7 +496,13 @@ class OrderService:
         errors: list[ValidationError] = []
 
         billing_address = order_update.billing_address
-        if billing_address is not None and order.billing_address is not None:
+        update_dict = order_update.model_dump(exclude_unset=True)
+        if order.status == OrderStatus.draft:
+            if billing_address is not None:
+                update_dict |= await self._calculate_draft_order_tax(
+                    order, billing_address
+                )
+        elif billing_address is not None and order.billing_address is not None:
             for field in order.billing_address.get_tax_fields():
                 value = getattr(billing_address, field)
                 if value != getattr(order.billing_address, field):
@@ -509,13 +521,68 @@ class OrderService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        order = await repository.update(
-            order, update_dict=order_update.model_dump(exclude_unset=True)
-        )
+        order = await repository.update(order, update_dict=update_dict)
 
         await self.send_webhook(session, order, WebhookEventType.order_updated)
 
         return order
+
+    async def _calculate_draft_order_tax(
+        self, order: Order, billing_address: Address
+    ) -> dict[str, Any]:
+        if order.subtotal_amount > 0 and not billing_address.has_required_fields():
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "billing_address"),
+                        "msg": "Billing address is missing fields required for tax.",
+                        "input": billing_address,
+                    }
+                ]
+            )
+
+        assert order.product is not None
+        taxable_amount = order.subtotal_amount - order.discount_amount
+        try:
+            (
+                tax_processor,
+                tax_behavior,
+                tax_calculation_processor_id,
+                tax_amount,
+                tax_breakdown,
+            ) = await calculate_tax(
+                reference=str(order.id),
+                taxable_amount=taxable_amount,
+                tax_behavior_option=order.organization.default_tax_behavior,
+                currency=order.currency,
+                customer=order.customer,
+                product=order.product,
+                tax_exempted=False,
+                allow_silent_failure=False,
+                billing_address=billing_address,
+            )
+        except TaxCalculationLogicalError as e:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "billing_address"),
+                        "msg": "Tax could not be calculated for this address.",
+                        "input": billing_address,
+                    }
+                ]
+            ) from e
+
+        return {
+            "tax_amount": tax_amount,
+            "net_amount": taxable_amount
+            - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0),
+            "tax_behavior": tax_behavior,
+            "tax_breakdown": tax_breakdown or None,
+            "tax_processor": tax_processor,
+            "tax_calculation_processor_id": tax_calculation_processor_id,
+        }
 
     async def set_refunds_blocked(
         self,
@@ -1158,6 +1225,12 @@ class OrderService:
             )
         discount_amount = 0
 
+        if subtotal_amount > 0 and (
+            customer.billing_address is None
+            or not customer.billing_address.has_required_fields()
+        ):
+            raise BillingAddressRequired("creating a paid order")
+
         order_id = uuid.uuid4()
         # Unlike the subscription flow, a draft order persists its tax and never
         # recomputes it at finalize — so a tax we can't compute now (e.g. the
@@ -1271,6 +1344,12 @@ class OrderService:
         # which the None-handling below can only report as a generic failure.
         if not organization.can_accept_payments:
             raise OrganizationNotReadyForPayments(organization.id)
+
+        if order.subtotal_amount > 0 and (
+            order.billing_address is None
+            or not order.billing_address.has_required_fields()
+        ):
+            raise BillingAddressRequired("charging this order")
 
         customer = order.customer
         payment_method = await self._resolve_payment_method(

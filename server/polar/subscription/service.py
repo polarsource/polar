@@ -70,6 +70,7 @@ from polar.event.system import (
     build_system_event,
 )
 from polar.exceptions import (
+    BillingAddressRequired,
     PaymentNotReady,
     PolarError,
     PolarRequestValidationError,
@@ -2184,6 +2185,13 @@ class SubscriptionService:
             product_id=product_id,
             allowed_visibilities=allowed_visibilities,
         )
+
+        if all(price.is_free for price in previous_prices) and any(
+            not price.is_free for price in currency_prices
+        ):
+            billing_address = subscription.customer.billing_address
+            if billing_address is None or not billing_address.has_required_fields():
+                raise BillingAddressRequired("switching to a paid product")
 
         old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)

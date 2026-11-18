@@ -151,6 +151,11 @@ class PaymentNotReady(PolarError):
         super().__init__(message, status_code)
 
 
+class BillingAddressRequired(PolarError):
+    def __init__(self, action: str) -> None:
+        super().__init__(f"Add a billing address before {action}.", 409)
+
+
 class ValidationError(TypedDict):
     loc: tuple[int | str, ...]
     msg: LiteralString

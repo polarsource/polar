@@ -31,7 +31,7 @@ export const command = Command.make(
       billing_address: jsonFlag('billing-address').pipe(
         Flag.optional,
         Flag.withDescription(
-          'The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
+          'The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be changed on draft orders, which recalculates their tax. JSON: {"country": "AD" | "AE" | "AF" | "AG" | "AI" | ..., ...}',
         ),
       ),
     },

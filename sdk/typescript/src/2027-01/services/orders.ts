@@ -15,6 +15,7 @@ import type {
 } from "../models";
 
 import {
+  BillingAddressRequired,
   HTTPValidationError,
   MissingInvoiceBillingDetails,
   OrderNotDraft,
@@ -153,6 +154,7 @@ export const createOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {BillingAddressRequired} The order has a price, but the customer's billing address is missing or incomplete.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: OrderCreate, requestOptions?: RequestOptions): Promise<Order> => {
@@ -161,6 +163,7 @@ export const createOrders = (client: ClientBase) => {
     const request = client.buildRequest("POST", "/v1/orders/", pathParams, queryParams, body);
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Order>(response, "json", {
+      409: BillingAddressRequired,
       422: HTTPValidationError,
     });
   };
@@ -301,6 +304,7 @@ export const finalizeOrders = (client: ClientBase) => {
    * @throws {OrdersFinalize402Error} The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
    * @throws {OrdersFinalize403Error} Off-session charges are not enabled for this organization, or its account can't currently accept payments.
    * @throws {ResourceNotFound} Order not found.
+   * @throws {BillingAddressRequired} The order has a price, but its billing address is missing or incomplete.
    * @throws {OrderNotDraft} The order is not in `draft` status.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -325,6 +329,7 @@ export const finalizeOrders = (client: ClientBase) => {
       402: OrdersFinalize402Error,
       403: OrdersFinalize403Error,
       404: ResourceNotFound,
+      409: BillingAddressRequired,
       412: OrderNotDraft,
       422: HTTPValidationError,
     });

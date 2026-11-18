@@ -3,7 +3,7 @@ from typing import Annotated
 import structlog
 from fastapi import Depends, Query
 
-from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.exceptions import BillingAddressRequired, NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.sorting import Sorting, SortingGetter
@@ -265,10 +265,13 @@ async def preview_change(
         409: {
             "description": (
                 "The subscription has no payment method to charge, "
-                "or is not scheduled to be canceled."
+                "is not scheduled to be canceled, "
+                "or the billing address is incomplete for a switch from a free "
+                "to a paid product."
             ),
             "model": PaymentMethodRequired.schema()
-            | SubscriptionNotScheduledToCancel.schema(),
+            | SubscriptionNotScheduledToCancel.schema()
+            | BillingAddressRequired.schema(),
         },
     },
 )

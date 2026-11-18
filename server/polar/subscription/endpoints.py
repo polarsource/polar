@@ -6,7 +6,12 @@ from fastapi import Depends, Query
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
-from polar.exceptions import NotPermitted, PaymentNotReady, ResourceNotFound
+from polar.exceptions import (
+    BillingAddressRequired,
+    NotPermitted,
+    PaymentNotReady,
+    ResourceNotFound,
+)
 from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
@@ -474,10 +479,13 @@ async def get_bulk_update(
         404: SubscriptionNotFound,
         409: {
             "description": (
-                "Subscription is pending an update, or is not scheduled to be canceled."
+                "Subscription is pending an update, is not scheduled to be canceled, "
+                "or the customer's billing address is incomplete for a switch from a "
+                "free to a paid product."
             ),
             "model": SubscriptionLocked.schema()
-            | SubscriptionNotScheduledToCancel.schema(),
+            | SubscriptionNotScheduledToCancel.schema()
+            | BillingAddressRequired.schema(),
         },
     },
 )

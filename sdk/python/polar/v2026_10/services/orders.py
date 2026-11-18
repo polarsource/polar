@@ -11,6 +11,7 @@ from polar.base import (
     parse_response_text,
 )
 from polar.v2026_10.errors import (
+    BillingAddressRequired,
     HTTPValidationError,
     MissingInvoiceBillingDetails,
     OrderNotDraft,
@@ -229,6 +230,7 @@ class OrdersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            BillingAddressRequired: The order has a price, but the customer's billing address is missing or incomplete.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -245,6 +247,7 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
+            409: BillingAddressRequired,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Order, method_errors)
@@ -424,6 +427,7 @@ class OrdersSync(SyncServiceBase):
             OrdersFinalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
             OrdersFinalize403Error: Off-session charges are not enabled for this organization, or its account can't currently accept payments.
             ResourceNotFound: Order not found.
+            BillingAddressRequired: The order has a price, but its billing address is missing or incomplete.
             OrderNotDraft: The order is not in `draft` status.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -446,6 +450,7 @@ class OrdersSync(SyncServiceBase):
             402: OrdersFinalize402Error,
             403: OrdersFinalize403Error,
             404: ResourceNotFound,
+            409: BillingAddressRequired,
             412: OrderNotDraft,
             422: HTTPValidationError,
         }
@@ -771,6 +776,7 @@ class OrdersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
+            BillingAddressRequired: The order has a price, but the customer's billing address is missing or incomplete.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -787,6 +793,7 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
+            409: BillingAddressRequired,
             422: HTTPValidationError,
         }
         return parse_response_json(response, Order, method_errors)
@@ -966,6 +973,7 @@ class OrdersAsync(AsyncServiceBase):
             OrdersFinalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
             OrdersFinalize403Error: Off-session charges are not enabled for this organization, or its account can't currently accept payments.
             ResourceNotFound: Order not found.
+            BillingAddressRequired: The order has a price, but its billing address is missing or incomplete.
             OrderNotDraft: The order is not in `draft` status.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -988,6 +996,7 @@ class OrdersAsync(AsyncServiceBase):
             402: OrdersFinalize402Error,
             403: OrdersFinalize403Error,
             404: ResourceNotFound,
+            409: BillingAddressRequired,
             412: OrderNotDraft,
             422: HTTPValidationError,
         }

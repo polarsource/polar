@@ -14277,6 +14277,17 @@ export interface components {
      * @enum {string}
      */
     BillingAddressFieldMode: 'required' | 'optional' | 'disabled'
+    /** BillingAddressRequired */
+    BillingAddressRequired: {
+      /**
+       * Error
+       * @example BillingAddressRequired
+       * @constant
+       */
+      error: 'BillingAddressRequired'
+      /** Detail */
+      detail: string
+    }
     /**
      * BlockingOrganization
      * @description Organization that is blocking user deletion.
@@ -21734,7 +21745,7 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be changed on draft orders, which recalculates their tax. */
       billing_address?: components['schemas']['AddressInput'] | null
     }
     /** CustomerOrganization */
@@ -31024,7 +31035,7 @@ export interface components {
        * @description The name of the customer that should appear on the invoice.
        */
       billing_name?: string | null
-      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated. */
+      /** @description The address of the customer that should appear on the invoice. Address fields used for tax calculation can only be changed on draft orders, which recalculates their tax. */
       billing_address?: components['schemas']['AddressInput'] | null
     }
     /**
@@ -49649,7 +49660,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The subscription has no payment method to charge, or is not scheduled to be canceled. */
+      /** @description The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product. */
       409: {
         headers: {
           [name: string]: unknown
@@ -49658,6 +49669,7 @@ export interface operations {
           'application/json':
             | components['schemas']['PaymentMethodRequired']
             | components['schemas']['SubscriptionNotScheduledToCancel']
+            | components['schemas']['BillingAddressRequired']
         }
       }
       /** @description Validation Error */
@@ -51404,7 +51416,7 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description Subscription is pending an update, or is not scheduled to be canceled. */
+      /** @description Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product. */
       409: {
         headers: {
           [name: string]: unknown
@@ -51413,6 +51425,7 @@ export interface operations {
           'application/json':
             | components['schemas']['SubscriptionLocked']
             | components['schemas']['SubscriptionNotScheduledToCancel']
+            | components['schemas']['BillingAddressRequired']
         }
       }
       /** @description Validation Error */
@@ -52836,6 +52849,15 @@ export interface operations {
           'application/json': components['schemas']['Order']
         }
       }
+      /** @description The order has a price, but the customer's billing address is missing or incomplete. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BillingAddressRequired']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -53039,6 +53061,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The order has a price, but its billing address is missing or incomplete. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BillingAddressRequired']
         }
       }
       /** @description The order is not in `draft` status. */

@@ -326,7 +326,7 @@ class SubscriptionsSync(SyncServiceBase):
             PaymentFailed: Payment required to apply the subscription update.
             CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
             ResourceNotFound: Customer subscription was not found.
-            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, or is not scheduled to be canceled.
+            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -646,7 +646,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             PaymentFailed: Payment required to apply the subscription update.
             CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
             ResourceNotFound: Customer subscription was not found.
-            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, or is not scheduled to be canceled.
+            CustomerPortalSubscriptionsUpdate409Error: The subscription has no payment method to charge, is not scheduled to be canceled, or the billing address is incomplete for a switch from a free to a paid product.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.

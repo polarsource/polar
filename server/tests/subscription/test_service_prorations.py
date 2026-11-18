@@ -18,6 +18,7 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.event.system import SystemEvent
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.trial import TrialInterval
 from polar.models import (
     BillingEntry,
@@ -45,6 +46,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_customer,
     create_discount,
     create_product,
     create_product_fixed_and_seat,
@@ -529,8 +531,12 @@ class TestUpdateProductProrations:
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
-        customer: Customer,
     ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
         old_product = await create_product(
             save_fixture,
             organization=organization,

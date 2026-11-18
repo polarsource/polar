@@ -486,7 +486,7 @@ class SubscriptionsSync(SyncServiceBase):
             SubscriptionsUpdate402Error: The charge failed, or requires customer authentication that can't be completed off-session.
             SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
             ResourceNotFound: Subscription not found.
-            SubscriptionsUpdate409Error: Subscription is pending an update, or is not scheduled to be canceled.
+            SubscriptionsUpdate409Error: Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -958,7 +958,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             SubscriptionsUpdate402Error: The charge failed, or requires customer authentication that can't be completed off-session.
             SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, is not active, or the organization is not ready to renew subscriptions.
             ResourceNotFound: Subscription not found.
-            SubscriptionsUpdate409Error: Subscription is pending an update, or is not scheduled to be canceled.
+            SubscriptionsUpdate409Error: Subscription is pending an update, is not scheduled to be canceled, or the customer's billing address is incomplete for a switch from a free to a paid product.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.

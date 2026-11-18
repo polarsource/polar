@@ -1,0 +1,19 @@
+server/tests/merchant_migration/test_lemon_squeezy_adapter.py
+  s_964661f8ef141c::t_1ec83c1bffdd1a 257-273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7adbe4c0cc1ab7087a3474d28cbfa3b8186cc118",
+  "prompts": {},
+  "sessions": {
+    "s_964661f8ef141c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_964661f8ef141c",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

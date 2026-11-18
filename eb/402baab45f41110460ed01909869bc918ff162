@@ -1,0 +1,31 @@
+server/polar/oauth2/schemas.py
+  s_82504741161fd3::t_b8dde913a49e40 30-32
+  s_82504741161fd3::t_e106bd8303a306 44,72
+server/tests/models/test_oauth2_client.py
+  s_82504741161fd3::t_59f62f5c7505c3 22-40
+docs/integrate/oauth2/setup.mdx
+  s_82504741161fd3::t_e106bd8303a306 16
+server/polar/models/oauth2_client.py
+  s_82504741161fd3::t_e106bd8303a306 5,12,98-111
+  s_82504741161fd3::t_0014d9d2832951 112
+server/tests/oauth2/endpoints/test_oauth2.py
+  s_82504741161fd3::t_e106bd8303a306 154,184
+server/tests/oauth2/endpoints/list/test_list_oauth2_clients.py
+  s_82504741161fd3::t_59f62f5c7505c3 65,73,89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb402baab45f41110460ed01909869bc918ff162",
+  "prompts": {},
+  "sessions": {
+    "s_82504741161fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1eada-0f28-7920-8642-629f54794b94",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

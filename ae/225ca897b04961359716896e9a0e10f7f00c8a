@@ -1,0 +1,23 @@
+server/tests/oauth2/endpoints/list/test_list_oauth2_clients.py
+  s_82504741161fd3::t_2d74cb8716de48 72
+docs/integrate/oauth2/setup.mdx
+  s_82504741161fd3::t_2d74cb8716de48 16
+server/polar/oauth2/schemas.py
+  s_82504741161fd3::t_6a015f6be6510f 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ae225ca897b04961359716896e9a0e10f7f00c8a",
+  "prompts": {},
+  "sessions": {
+    "s_82504741161fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1eada-0f28-7920-8642-629f54794b94",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+server/scripts/pytest_shards.py
+  s_f83d2c94945117::t_ed9b97aa1053ea 10-14,33-43,56,72,77-83,85-87
+server/tests/integrations/tinybird/test_service.py
+  s_f83d2c94945117::t_ed9b97aa1053ea 865-869,906-910
+server/tests/scripts/test_pytest_shards.py
+  s_f83d2c94945117::t_ed9b97aa1053ea 45-55
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_ed9b97aa1053ea 5,15,41,67-93,125,183,204-206,443,474,489,499,554,574-576,595,598-626,632,634,643-653,701
+server/tests/auth/oauth2/test_router.py
+  s_f83d2c94945117::t_ed9b97aa1053ea 3,6,27-37
+  s_f83d2c94945117::t_6c676f075cf8fe 38-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "152e968c1f8769d4d9ff905789b892ee50320f34",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

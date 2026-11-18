@@ -1,0 +1,21 @@
+.github/workflows/test_server.yaml
+  s_f83d2c94945117::t_59453574ac2315 5,15,41,67-93,125,183,204-206,443,474,489,499,554,574-576,595,598-626,632,634,643-653,701
+server/tests/integrations/tinybird/test_service.py
+  s_f83d2c94945117::t_59453574ac2315 865-869,906-910
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "49c6d614b6c858c8b458c0c28baf1a20d24fc3c6",
+  "prompts": {},
+  "sessions": {
+    "s_f83d2c94945117": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1d548-ada9-7b02-b2b4-cc59de731da5",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -18,7 +18,7 @@ use chrono::Utc;
 use redis::aio::ConnectionManager;
 use serde::Serialize;
 use serde_json::{Value, json};
-use sqlx::{PgPool, Postgres, Transaction, postgres::PgPoolOptions};
+use sqlx::{PgPool, Postgres, SqlSafeStr, Transaction, postgres::PgPoolOptions};
 use tokio::{
     sync::Semaphore,
     time::{Instant, MissedTickBehavior},
@@ -366,11 +366,17 @@ async fn write_events(
 ) -> Result<WrittenEvents, IngestError> {
     // A statement stuck behind a bucket lock must not pin a pooled connection for long after
     // the write is abandoned.
-    let mut transaction = state
+    let connection = state
         .db
-        .begin_with(BEGIN_WITH_STATEMENT_TIMEOUT)
-        .instrument(tracing::info_span!("begin"))
+        .acquire()
+        .instrument(tracing::info_span!("acquire_connection"))
         .await?;
+    let mut transaction = Transaction::begin(
+        connection,
+        Some(BEGIN_WITH_STATEMENT_TIMEOUT.into_sql_str()),
+    )
+    .instrument(tracing::info_span!("begin"))
+    .await?;
     ingest::validate_references(&mut transaction, organization_id, events)
         .instrument(tracing::info_span!("validate_references"))
         .await?;

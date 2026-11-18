@@ -373,7 +373,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
 
         uuid_pending_in_batch: list[UUID] = []
         for event_id, _, pending_ref in batch_rows:
-            if pending_ref is None:
+            if pending_ref is None or pending_ref.lower().startswith("urn:uuid:"):
                 continue
             try:
                 UUID(pending_ref)

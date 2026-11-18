@@ -1,0 +1,27 @@
+events/src/lib.rs
+  s_b19d48cab90194::t_6f1e3600348a92 4
+events/src/batch.rs
+  s_b19d48cab90194::t_b0c884617b2839 136,233
+  s_b19d48cab90194::t_0e724d366a30ad 177-178,205-207
+  s_b19d48cab90194::t_051515cf90a01c 1-135,137-176,179-204,208-232,234-274
+events/src/ingest.rs
+  s_b19d48cab90194::t_6f1e3600348a92 13,31-36,48,105,119,137,145,230-238,241,244-254,286-289,291-292,295,302,305-308,315,318,322,324,351-365,385,396,585-590,593-600,602-607,612,626-633,651-653,656
+events/src/app.rs
+  s_b19d48cab90194::t_6f1e3600348a92 21,28,34,42,74,135-145,148-149,158,298-299,326-340,343-345,349,353,362,365-376,378
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6b2226aa8da48e56ae07092d302b4beec8c59624",
+  "prompts": {},
+  "sessions": {
+    "s_b19d48cab90194": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "082d3de0-2977-4bf5-a817-0df983ecd6bd",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

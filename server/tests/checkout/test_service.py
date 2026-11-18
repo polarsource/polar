@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import ANY, AsyncMock, MagicMock
+from unittest.mock import ANY, AsyncMock, MagicMock, call
 
 import pytest
 import stripe as stripe_lib
@@ -5585,40 +5585,65 @@ class TestConfirm:
 
         assert checkout.customer_signals == expected_customer_signals
 
-    async def test_billing_country_not_corroborated(
+    @pytest.mark.parametrize(
+        ("billing_country", "ip_country", "card_country", "expected_mismatch"),
+        [
+            pytest.param("UG", "SE", "SE", True, id="no match"),
+            pytest.param("GP", "FR", "US", False, id="territory seen as parent"),
+            pytest.param("AD", "US", "ES", False, id="territory with two parents"),
+            pytest.param("FR", "GP", "GP", True, id="parent seen as territory"),
+        ],
+    )
+    async def test_billing_country_mismatch_is_only_logged(
         self,
+        billing_country: str,
+        ip_country: str,
+        card_country: str,
+        expected_mismatch: bool,
+        mocker: MockerFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
     ) -> None:
+        log_mock = mocker.patch("polar.checkout.service.log")
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
+        )
         stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
-            payment_method_preview=SimpleNamespace(card=SimpleNamespace(country="SE"))
+            payment_method_preview=SimpleNamespace(
+                card=SimpleNamespace(country=card_country)
+            )
         )
         ip_geolocation_client = MagicMock()
-        ip_geolocation_client.getCountry.return_value = "SE"
+        ip_geolocation_client.getCountry.return_value = ip_country
 
-        with pytest.raises(PolarRequestValidationError) as e:
-            await checkout_service.confirm(
-                session,
-                auth_subject,
-                checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
-                    {
-                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
-                        "customer_name": "Customer Name",
-                        "customer_email": "customer@example.com",
-                        "customer_billing_address": {"country": "UG"},
-                    }
-                ),
-                ip_geolocation_client,
-                "1.2.3.4",
-            )
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": billing_country},
+                }
+            ),
+            ip_geolocation_client,
+            "1.2.3.4",
+        )
 
-        assert [error["loc"] for error in e.value.errors()] == [
-            ("body", "customer_billing_address", "country")
-        ]
-        stripe_service_mock.create_payment_intent.assert_not_called()
+        assert checkout.status == CheckoutStatus.confirmed
+        mismatch_call = call(
+            "checkout.billing_country_mismatch",
+            checkout_id=str(checkout.id),
+            organization_id=str(checkout.organization_id),
+        )
+        assert (mismatch_call in log_mock.info.call_args_list) is expected_mismatch
 
     @pytest.mark.parametrize(
         ("customer_billing_address", "expected_tax_metadata"),

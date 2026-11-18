@@ -140,6 +140,7 @@ from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
+from .territories import BILLING_COUNTRY_ALIASES
 
 if typing.TYPE_CHECKING:
     from stripe.params._customer_create_params import (
@@ -1220,27 +1221,19 @@ class CheckoutService:
             if (
                 billing_address is not None
                 and known_countries
-                and billing_address.country not in known_countries
+                and known_countries.isdisjoint(
+                    {
+                        billing_address.country,
+                        *BILLING_COUNTRY_ALIASES.get(billing_address.country, ()),
+                    }
+                )
             ):
+                # Shadow mode: measure how often this triggers before blocking on it.
+                # The countries stay on the checkout, out of telemetry (ADR-0013).
                 log.info(
-                    "Checkout confirmation blocked by billing country mismatch",
+                    "checkout.billing_country_mismatch",
                     checkout_id=str(checkout.id),
                     organization_id=str(checkout.organization_id),
-                    billing_country=billing_address.country,
-                    ip_country=ip_country,
-                    card_country=card_country,
-                )
-                errors.append(
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "customer_billing_address", "country"),
-                        "msg": (
-                            "We couldn't verify this country. "
-                            "Select the country you're in, "
-                            "or pay with a card issued in this country."
-                        ),
-                        "input": billing_address.country,
-                    }
                 )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name

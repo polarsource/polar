@@ -1,0 +1,19 @@
+events/src/config.rs
+  s_b19d48cab90194::t_4ae8d6b6ac90be 15,118-121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7badb9f51dbc0d9fd01672f8f0544b3688aff153",
+  "prompts": {},
+  "sessions": {
+    "s_b19d48cab90194": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "082d3de0-2977-4bf5-a817-0df983ecd6bd",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

@@ -100,7 +100,7 @@
             shellHook = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
               # manylinux wheels (greenlet, numpy, pillow, ...) dynamically link
               # against libstdc++.so.6, which isn't on NixOS's default library path.
-              export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:$LD_LIBRARY_PATH"
+              export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
               export MINIFLARE_WORKERD_PATH="${workerd}/bin/workerd"
             '' + ''
               # The Docker daemon is a system service this shell can't provide

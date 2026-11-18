@@ -26,12 +26,14 @@ const isEmpty = (value: unknown) =>
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
-// Prices of the same type, currency and meter read as one price that changed
+// Prices of the same type, currency and meter read as one price that changed, and so does a product's custom field
 const pairKey = (value: unknown) =>
   JSON.stringify(
     isObject(value) && 'amount_type' in value
       ? [value.amount_type, value.price_currency, value.meter]
-      : value,
+      : isObject(value) && 'required' in value
+        ? value.field
+        : value,
   )
 
 const diffList = (field: string, before: unknown[], after: unknown[]) => {

@@ -25,6 +25,23 @@ describe('diff', () => {
     ])
   })
 
+  it("pairs a product's custom field whose required flag changed", () => {
+    expect(
+      diffValue(
+        'custom_fields',
+        [{ field: 'company', required: false }],
+        [{ field: 'company', required: true }],
+      ),
+    ).toEqual([
+      {
+        change: 'changed',
+        field: 'custom_fields',
+        before: { field: 'company', required: false },
+        after: { field: 'company', required: true },
+      },
+    ])
+  })
+
   it('splits items into added, changed, removed and unchanged', () => {
     const { entries, unchanged } = diffItems<Row>(
       [

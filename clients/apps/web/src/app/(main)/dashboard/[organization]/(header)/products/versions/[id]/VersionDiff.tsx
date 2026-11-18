@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useId, useState } from 'react'
 import { Change, diffItems, Line } from './diff'
 import {
+  customFieldFields,
   fieldLabel,
   meterFields,
   plural,
@@ -344,6 +345,15 @@ export const VersionDiff = ({
           after={config.meters.map(meterFields)}
           nameField="name"
           href={meterHref}
+          format={format}
+        />
+        <DiffSection
+          title="Custom fields"
+          noun="custom field"
+          before={parentConfig?.custom_fields?.map(customFieldFields) ?? []}
+          after={config.custom_fields?.map(customFieldFields) ?? []}
+          nameField="name"
+          href={() => undefined}
           format={format}
         />
       </Box>

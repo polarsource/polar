@@ -1,6 +1,11 @@
 import { schemas } from '@polar-sh/client'
 import { expect, it } from 'vitest'
-import { meterFields, settingsFields, valueFormatter } from './format'
+import {
+  customFieldFields,
+  meterFields,
+  settingsFields,
+  valueFormatter,
+} from './format'
 
 it('lists every tier of a tiered price', () => {
   expect(
@@ -78,4 +83,34 @@ it('names settings like the payment settings page', () => {
     default_payment_currency: 'EUR',
     default_tax_behavior: 'Location based',
   })
+})
+
+it('reads a custom field by slug, with its bounds as minimum and maximum', () => {
+  const field = {
+    slug: 'seats',
+    name: 'Seats',
+    type: 'number',
+    properties: { form_label: 'How many seats?', ge: 1, le: 50 },
+    metadata: {},
+  } as const
+  expect(customFieldFields(field)).toMatchObject({
+    external_id: 'seats',
+    name: 'Seats',
+    form_label: 'How many seats?',
+    minimum: 1,
+    maximum: 50,
+  })
+  const format = valueFormatter([
+    {
+      benefits: [],
+      meters: [],
+      custom_fields: [field],
+    } as unknown as schemas['ConfigExportDocument'],
+  ])
+  expect(format('custom_fields', { field: 'seats', required: true })).toBe(
+    'Seats, required',
+  )
+  expect(format('options', { value: 'pro', label: 'Pro plan' })).toBe(
+    'Pro plan (pro)',
+  )
 })

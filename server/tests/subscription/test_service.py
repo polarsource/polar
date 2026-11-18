@@ -9431,6 +9431,81 @@ class TestUpdatePaymentMethodFromNewDefault:
         assert first_subscription.payment_method_id == first_payment_method.id
         assert second_subscription.payment_method_id == second_payment_method.id
 
+    async def test_trial_ended_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        await subscription_service.update_payment_method_from_new_default(
+            session, customer, new_payment_method
+        )
+
+        assert subscription.payment_method == new_payment_method
+
+
+@pytest.mark.anyio
+class TestAfterSubscriptionUpdated:
+    async def test_trial_ended_is_not_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+
+        await subscription_service._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=SubscriptionStatus.trialing,
+            previous_is_canceled=False,
+        )
+
+        subscription_hooks.revoked.assert_not_called()
+        subscription_hooks.canceled.assert_not_called()
+
+    async def test_trial_ended_to_canceled_is_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+
+        await subscription_service._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=SubscriptionStatus.trial_ended,
+            previous_is_canceled=False,
+        )
+
+        subscription_hooks.revoked.assert_called_once()
+
 
 @pytest.mark.anyio
 class TestUpdateSeats:

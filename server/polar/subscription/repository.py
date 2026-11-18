@@ -196,7 +196,8 @@ class SubscriptionRepository(
             .where(
                 Subscription.id != subscription.id,
                 Subscription.status.in_(
-                    SubscriptionStatus.billable_statuses() | {SubscriptionStatus.paused}
+                    SubscriptionStatus.billable_statuses()
+                    | {SubscriptionStatus.paused, SubscriptionStatus.trial_ended}
                 ),
                 Subscription.ended_at.is_(None),
                 or_(
@@ -308,7 +309,7 @@ class SubscriptionRepository(
     ) -> bool:
         # "Live" = could still bill: not canceled/unpaid/incomplete, not ended.
         dead_statuses = (
-            SubscriptionStatus.revoked_statuses()
+            SubscriptionStatus.terminal_statuses()
             | SubscriptionStatus.incomplete_statuses()
         )
         statement = (
@@ -778,8 +779,9 @@ class SubscriptionRepository(
                     ),
                     (Subscription.status == SubscriptionStatus.paused, 6),
                     (Subscription.status == SubscriptionStatus.past_due, 7),
-                    (Subscription.status == SubscriptionStatus.canceled, 8),
-                    (Subscription.status == SubscriptionStatus.unpaid, 9),
+                    (Subscription.status == SubscriptionStatus.trial_ended, 8),
+                    (Subscription.status == SubscriptionStatus.canceled, 9),
+                    (Subscription.status == SubscriptionStatus.unpaid, 10),
                 )
             case SubscriptionSortProperty.started_at:
                 return Subscription.started_at

@@ -77053,7 +77053,8 @@
           "past_due",
           "canceled",
           "unpaid",
-          "paused"
+          "paused",
+          "trial_ended"
         ],
         "title": "SubscriptionStatus"
       },

@@ -1210,7 +1210,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
 
-        if SubscriptionStatus.is_revoked(self.data.status):
+        if SubscriptionStatus.is_terminal(self.data.status):
             return self._get_revoked_discord_payload(target)
 
         if self.data.status == SubscriptionStatus.past_due:
@@ -1234,7 +1234,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
         if isinstance(target, User):
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
-        if SubscriptionStatus.is_revoked(self.data.status):
+        if SubscriptionStatus.is_terminal(self.data.status):
             return self._get_revoked_slack_payload(target)
 
         if self.data.status == SubscriptionStatus.past_due:

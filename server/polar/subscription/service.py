@@ -1950,8 +1950,14 @@ class SubscriptionService:
         product_id: uuid.UUID,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
     ) -> tuple[Product, PriceSet]:
-        if subscription.revoked or subscription.cancel_at_period_end:
+        if (
+            SubscriptionStatus.is_terminal(subscription.status)
+            or subscription.cancel_at_period_end
+        ):
             raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.status == SubscriptionStatus.trial_ended:
+            raise InactiveSubscription(subscription)
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id_and_organization(
@@ -2089,8 +2095,14 @@ class SubscriptionService:
         *,
         units: int,
     ) -> None:
-        if subscription.revoked or subscription.cancel_at_period_end:
+        if (
+            SubscriptionStatus.is_terminal(subscription.status)
+            or subscription.cancel_at_period_end
+        ):
             raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.status == SubscriptionStatus.trial_ended:
+            raise InactiveSubscription(subscription)
 
         unit_price = subscription.get_price_by_type(ProductPriceUnit)
         if unit_price is None:
@@ -2142,8 +2154,14 @@ class SubscriptionService:
         *,
         seats: int,
     ) -> None:
-        if subscription.revoked or subscription.cancel_at_period_end:
+        if (
+            SubscriptionStatus.is_terminal(subscription.status)
+            or subscription.cancel_at_period_end
+        ):
             raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.status == SubscriptionStatus.trial_ended:
+            raise InactiveSubscription(subscription)
 
         seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
         if seat_price is None:
@@ -2867,7 +2885,7 @@ class SubscriptionService:
         *,
         new_period_end: datetime,
     ) -> Subscription:
-        if subscription.revoked:
+        if SubscriptionStatus.is_terminal(subscription.status):
             raise AlreadyCanceledSubscription(subscription)
 
         if not subscription.active:
@@ -3983,9 +4001,9 @@ class SubscriptionService:
         )
         became_canceled = subscription.canceled and not previous_is_canceled
         became_uncanceled = not subscription.canceled and previous_is_canceled
-        became_revoked = subscription.revoked and not SubscriptionStatus.is_revoked(
-            previous_status
-        )
+        became_revoked = SubscriptionStatus.is_terminal(
+            subscription.status
+        ) and not SubscriptionStatus.is_terminal(previous_status)
 
         if became_activated:
             await self._on_subscription_activated(

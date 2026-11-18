@@ -16,7 +16,7 @@ from typing import Any
 
 import httpx2
 
-from polar.enums import RecurringInterval
+from polar.enums import RecurringInterval, TaxBehavior
 from polar.kit.schemas import Schema
 
 from ..canonical import (
@@ -104,6 +104,7 @@ class LemonSqueezyAdapter:
         self._prices_by_id: dict[str, dict[str, Any]] = {}
         self._redemptions_by_order: dict[str, list[dict[str, Any]]] | None = None
         self._redemption_counts: dict[str, int] = {}
+        self._order_tax_behaviors: dict[str, TaxBehavior] | None = None
 
     async def _request(
         self, method: str, path: str, params: dict[str, Any] | None = None
@@ -427,13 +428,39 @@ class LemonSqueezyAdapter:
         )
         await self._load_all_prices()
         discounts_by_order = await self._load_redemptions()
+        tax_behaviors = await self._load_order_tax_behaviors()
         currency = await self._currency()
         records: list[CanonicalRecord] = [
-            self._map_subscription(subscription, discounts_by_order, currency)
+            self._map_subscription(
+                subscription, discounts_by_order, tax_behaviors, currency
+            )
             for subscription in subscriptions
             if subscription["attributes"]["status"] not in SKIPPED_SUBSCRIPTION_STATUSES
         ]
         return records, has_more
+
+    async def _load_order_tax_behaviors(self) -> dict[str, TaxBehavior]:
+        """Whether each order's price included tax. Prices don't say; the order
+        a subscription started from does, and its renewals follow it."""
+        if self._order_tax_behaviors is not None:
+            return self._order_tax_behaviors
+        behaviors: dict[str, TaxBehavior] = {}
+        page = 1
+        while True:
+            orders, has_more, _ = await self._list("/orders", page, self._store_filter)
+            for order in orders:
+                tax_inclusive = order["attributes"].get("tax_inclusive")
+                if tax_inclusive is not None:
+                    behaviors[order["id"]] = (
+                        TaxBehavior.inclusive
+                        if tax_inclusive
+                        else TaxBehavior.exclusive
+                    )
+            if not has_more:
+                break
+            page += 1
+        self._order_tax_behaviors = behaviors
+        return behaviors
 
     async def _load_redemptions(self) -> dict[str, list[dict[str, Any]]]:
         """Redemptions, per order and counted per discount. A subscription keeps
@@ -467,7 +494,10 @@ class LemonSqueezyAdapter:
             return None
         await self._load_all_prices()
         return self._map_subscription(
-            subscription, await self._load_redemptions(), await self._currency()
+            subscription,
+            await self._load_redemptions(),
+            await self._load_order_tax_behaviors(),
+            await self._currency(),
         )
 
     async def stop_source_subscription(
@@ -505,6 +535,7 @@ class LemonSqueezyAdapter:
         self,
         subscription: dict[str, Any],
         discounts_by_order: dict[str, list[dict[str, Any]]],
+        tax_behaviors: dict[str, TaxBehavior],
         currency: str,
     ) -> CanonicalSubscription:
         attributes = subscription["attributes"]
@@ -561,6 +592,7 @@ class LemonSqueezyAdapter:
             currency=currency,
             # Lemon Squeezy is the merchant of record and always computes tax.
             automatic_tax=True,
+            price_tax_behavior=tax_behaviors.get(str(attributes["order_id"])),
         )
 
     def _price_id(self, item: dict[str, Any], variant_id: Any) -> str:

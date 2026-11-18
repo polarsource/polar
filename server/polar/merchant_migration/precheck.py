@@ -197,9 +197,9 @@ _TAX_EXEMPT_REASON = (
     "their first renewal on Polar. Let them know before you migrate."
 )
 _TAX_BEHAVIOR_UNSPECIFIED_REASON = (
-    "The Stripe price doesn't say whether tax is included, so Stripe Tax used "
-    "your account's default. Polar will treat it as tax-inclusive. Check that "
-    "matches what the customer paid, and change it here if not."
+    "The source doesn't say whether this price includes tax. Polar will treat "
+    "it as tax-inclusive. Check that matches what the customer paid, and "
+    "change it here if not."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
 _PAYMENT_REENTRY_REASON = (

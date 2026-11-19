@@ -1503,8 +1503,7 @@ class SubscriptionService:
         return await repository.release_scheduler_lock(subscription)
 
     def _charges_after_trial(self, subscription: Subscription) -> bool:
-        # Like checkout, which asks for no card for free prices, pay-what-you-want
-        # at 0 or a forever 100% discount.
+        # Same rule checkout uses to decide whether to ask for a card.
         has_metered_prices = any(
             is_metered_price(price) for price in subscription.prices
         )
@@ -4805,14 +4804,9 @@ class SubscriptionService:
     async def send_trial_conversion_reminder_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
-        if all(
-            spp.product_price.is_free
-            for spp in subscription.subscription_product_prices
-        ):
-            return
         if subscription.trial_end is None:
             return
-        if self._is_free_after_trial(subscription, subscription.trial_end):
+        if not self._charges_after_trial(subscription):
             return
         payment_method_required = not self._has_payment_method(subscription)
         billing_address_required = not self._has_complete_billing_address(subscription)
@@ -4865,23 +4859,6 @@ class SubscriptionService:
     def _has_complete_billing_address(self, subscription: Subscription) -> bool:
         billing_address = subscription.customer.billing_address
         return billing_address is not None and billing_address.has_tax_fields()
-
-    def _is_free_after_trial(
-        self, subscription: Subscription, trial_end: datetime
-    ) -> bool:
-        discount = subscription.discount
-        if discount is None or subscription.amount > 0:
-            return False
-        if discount.is_repetition_expired(
-            subscription.discount_applied_at or trial_end, trial_end
-        ):
-            return False
-        covers_usage = (
-            isinstance(discount, DiscountPercentage) and discount.basis_points == 10_000
-        )
-        return covers_usage or not any(
-            is_metered_price(price) for price in subscription.prices
-        )
 
     async def _send_customer_email(
         self,

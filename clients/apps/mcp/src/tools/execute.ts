@@ -10,7 +10,11 @@ const EXECUTE_LIMITS = { cpuMs: 10_000, subRequests: 50 }
 
 const polarClient = (apiUrl: string) => `
 const polar = {
-  async request({ method = 'GET', path, query, body }) {
+  async request(options) {
+    if (typeof options?.path !== 'string') {
+      throw new TypeError("polar.request takes one options object with a path, e.g. polar.request({ method: 'GET', path: '/v1/products/', query: { limit: 100 } })")
+    }
+    const { method = 'GET', path, query, body } = options
     const url = new URL(path, ${JSON.stringify(apiUrl)})
     const append = (name, value) => {
       for (const item of Array.isArray(value) ? value : [value]) {

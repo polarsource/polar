@@ -291,7 +291,9 @@ test('the execute sandbox client serializes requests and handles every kind of r
         const empty = await polar.request({ method: 'DELETE', path: '/v1/products/1' })
         const failure = await polar.request({ path: '/v1/products/2' }).catch(({ message, status }) => ({ message, status }))
         const offline = await polar.request({ path: '/v1/orders/' }).catch(({ message }) => message)
-        return { list, created, text, empty, failure, offline }
+        const positional = await polar.request('GET', '/v1/orders/').catch(({ name, message }) => ({ name, message }))
+        const pathless = await polar.request({ method: 'GET' }).catch(({ message }) => message)
+        return { list, created, text, empty, failure, offline, positional, pathless }
       }`,
     },
   })
@@ -321,6 +323,13 @@ test('the execute sandbox client serializes requests and handles every kind of r
     empty: null,
     failure: { message: 'Polar API 404: {"detail":"Not found"}', status: 404 },
     offline: 'network down',
+    positional: {
+      name: 'TypeError',
+      message:
+        "polar.request takes one options object with a path, e.g. polar.request({ method: 'GET', path: '/v1/products/', query: { limit: 100 } })",
+    },
+    pathless:
+      "polar.request takes one options object with a path, e.g. polar.request({ method: 'GET', path: '/v1/products/', query: { limit: 100 } })",
   })
   expect(
     calls.map(({ method, url, status }: Record<string, unknown>) => [

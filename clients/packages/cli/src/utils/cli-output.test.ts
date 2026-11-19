@@ -20,8 +20,22 @@ describe('formatErrors', () => {
     )
   })
 
+  test.each([
+    { parent: ['polar', 'auth'], subcommand: 'status', moved: 'whoami' },
+    {
+      parent: ['polar', 'products'],
+      subcommand: 'archive',
+      moved: 'update <id> --is-archived=true',
+    },
+  ])('suggests $moved for $subcommand', ({ parent, subcommand, moved }) => {
+    expect(unknown(subcommand, parent)).toContain(
+      `Did you mean this?\n    ${moved}`,
+    )
+  })
+
   test('leaves other unknown subcommands alone', () => {
     expect(unknown('listen', ['polar', 'config'])).not.toContain('Did you mean')
+    expect(unknown('status', ['polar'])).not.toContain('Did you mean')
     expect(unknown('nope', ['polar'])).not.toContain('Did you mean')
   })
 })

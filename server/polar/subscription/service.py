@@ -50,7 +50,6 @@ from polar.enums import (
     PaymentMode,
     ProrationBehaviorSetting,
     SubscriptionProrationBehavior,
-    SubscriptionRecurringInterval,
     TaxBehavior,
 )
 from polar.event.service import event as event_service
@@ -623,7 +622,6 @@ class SubscriptionService:
         active: bool | None = None,
         status: Sequence[SubscriptionStatus] | None = None,
         cancel_at_period_end: bool | None = None,
-        recurring_interval: Sequence[SubscriptionRecurringInterval] | None = None,
         customer_cancellation_reason: Sequence[CustomerCancellationReason]
         | None = None,
         canceled_at_after: datetime | None = None,
@@ -676,11 +674,6 @@ class SubscriptionService:
         if cancel_at_period_end is not None:
             statement = statement.where(
                 Subscription.cancel_at_period_end.is_(cancel_at_period_end)
-            )
-
-        if recurring_interval is not None:
-            statement = statement.where(
-                Subscription.recurring_interval.in_(recurring_interval)
             )
 
         if customer_cancellation_reason is not None:

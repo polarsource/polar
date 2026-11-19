@@ -100,7 +100,6 @@ async def list(
         active=filters.active,
         status=filters.status,
         cancel_at_period_end=filters.cancel_at_period_end,
-        recurring_interval=filters.recurring_interval,
         customer_cancellation_reason=filters.customer_cancellation_reason,
         canceled_at_after=filters.canceled_at_after,
         canceled_at_before=filters.canceled_at_before,

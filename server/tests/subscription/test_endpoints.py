@@ -102,40 +102,6 @@ class TestListSubscriptions:
             assert item["user"]["id"] == item["customer"]["id"]
 
     @pytest.mark.auth
-    async def test_filter_by_recurring_interval(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        intervals = [
-            SubscriptionRecurringInterval.week,
-            SubscriptionRecurringInterval.year,
-        ]
-        await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        for interval in intervals:
-            await create_active_subscription(
-                save_fixture,
-                product=await create_product(
-                    save_fixture, organization=organization, recurring_interval=interval
-                ),
-                customer=customer,
-            )
-
-        response = await client.get(
-            "/v1/subscriptions/", params={"recurring_interval": intervals}
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert sorted(item["recurring_interval"] for item in json["items"]) == intervals
-
-    @pytest.mark.auth
     async def test_fixed_discount(
         self,
         save_fixture: SaveFixture,

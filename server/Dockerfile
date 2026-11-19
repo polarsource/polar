@@ -79,7 +79,9 @@ COPY --from=uv /uv /uvx /bin/
 COPY --from=tailscale /usr/local/bin/tailscaled /usr/local/bin/tailscale /usr/local/bin/containerboot /usr/local/bin/
 COPY --from=build-backoffice-proxy /usr/bin/caddy /usr/local/bin/caddy
 
+# Empty PYTHONTZPATH makes zoneinfo use the tzdata package pinned in uv.lock
 ENV PYTHONUNBUFFERED=1 \
+  PYTHONTZPATH="" \
   UV_COMPILE_BYTECODE=1 \
   UV_LINK_MODE=copy \
   UV_NO_SYNC=1 \
@@ -182,6 +184,7 @@ ENV RELEASE_VERSION=${RELEASE_VERSION} \
   LAMBDA_TASK_ROOT=/app/server \
   PATH="/app/server/.venv/bin:$PATH" \
   PYTHONPATH="/app/server:/app/server/.venv/lib/python3.14/site-packages" \
+  PYTHONTZPATH="" \
   POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg \
   POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data \
   POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb

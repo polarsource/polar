@@ -22,7 +22,12 @@ import type { CustomerMeter } from "../metering/meter";
 
 import { ClientBase, PolarClientError, PolarError, PolarRateLimitError } from "../base";
 import { type MeteringOutpost, OUTPOST } from "../metering/client";
-import { type DropReason, MeteringError, UnknownMeterError } from "../metering/errors";
+import {
+  type DropReason,
+  MeteringError,
+  UnknownMeterError,
+  retryAfterMs,
+} from "../metering/errors";
 import { customerKey, parseEvent } from "./event";
 import {
   reduce,
@@ -70,6 +75,8 @@ const FLUSHERS = 32;
 const OUTBOX_CLAIM_IDLE = 60000;
 const FLUSHER_LOCK_TTL = 30000;
 const DRAIN_INTERVAL = 1000;
+const OUTBOX_RETRY_DELAY = 1000;
+const MAX_OUTBOX_RETRY_DELAY = 60000;
 // The consumer group the flushers read the outbox through.
 const OUTBOX_GROUP = "polar";
 const REPORT_INTERVAL = 30000;
@@ -160,7 +167,11 @@ interface OutpostRedis extends Redis {
   ): Promise<number>;
   outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
-  outpostOutboxBacklog(key: string, group: string): Promise<[number, number]>;
+  outpostOutboxBacklog(
+    key: string,
+    backoffKey: string,
+    group: string,
+  ): Promise<[number, number, string]>;
   outpostCommitPull(key: string, lockKey: string, ...args: (string | number)[]): Promise<number>;
 }
 interface OutpostPipeline extends ChainableCommander {
@@ -550,7 +561,7 @@ export class Outpost {
         lua: APPLY_SNAPSHOT_SCRIPT,
       });
       this.redis.defineCommand("outpostOutboxBacklog", {
-        numberOfKeys: 1,
+        numberOfKeys: 2,
         lua: OUTBOX_BACKLOG_SCRIPT,
       });
       this.redis.defineCommand("outpostCommitPull", { numberOfKeys: 2, lua: COMMIT_PULL_SCRIPT });
@@ -988,6 +999,10 @@ export class Outpost {
     return `${this.prefix}:outbox`;
   }
 
+  private get outboxBackoffKey(): string {
+    return `${this.outboxKey}:backoff`;
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -1104,12 +1119,19 @@ export class Outpost {
   }
 
   // One more failure on the key, for the whole fleet: when to try again, in milliseconds.
-  private async backOff(key: string, ...forget: number[]): Promise<number> {
+  private async backOff(
+    key: string,
+    {
+      first = PULL_RETRY_DELAY,
+      max = MAX_PULL_RETRY_DELAY,
+      forget,
+    }: { first?: number; max?: number; forget?: number } = {},
+  ): Promise<number> {
     const now = Date.now();
     const retryAt = await this.redis
-      ?.eval(BACKOFF_SCRIPT, 1, key, now, PULL_RETRY_DELAY, MAX_PULL_RETRY_DELAY, ...forget)
+      ?.eval(BACKOFF_SCRIPT, 1, key, now, first, max, ...(forget === undefined ? [] : [forget]))
       .catch(() => undefined);
-    return Number(retryAt ?? now + PULL_RETRY_DELAY);
+    return Number(retryAt ?? now + first);
   }
 
   private missingKey(identity: string): string {
@@ -1333,9 +1355,18 @@ export class Outpost {
     const redis = this.requireRedis();
     try {
       for (let round = 0; ; round += 1) {
-        const [length, delivering] = await redis.outpostOutboxBacklog(this.outboxKey, OUTBOX_GROUP);
+        const [length, delivering, retryAt] = await redis.outpostOutboxBacklog(
+          this.outboxKey,
+          this.outboxBackoffKey,
+          OUTBOX_GROUP,
+        );
         // The first round also takes back the batches that wait on a failed or frozen flusher.
         if (!length || (round && length === delivering)) return;
+        // Polar failed to take a batch: the fleet waits before sending the outbox again.
+        if (Number(retryAt) > Date.now()) {
+          this.undrained = true;
+          return;
+        }
         // A partial batch goes only when no flusher delivers: the last one in flight takes it.
         const full = Math.floor((length - delivering) / this.batchSize);
         const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
@@ -1348,6 +1379,8 @@ export class Outpost {
           return;
         }
         if (!outcomes.includes("drained")) return;
+        // Polar takes batches again: the next failure waits the first delay.
+        if (retryAt) await redis.del(this.outboxBackoffKey);
       }
     } catch (error) {
       // Redis lost the group, with the rest of its keys: the next flush reads a new one.
@@ -1380,6 +1413,7 @@ export class Outpost {
         if (from === ">") {
           const [length, delivering] = await redis.outpostOutboxBacklog(
             this.outboxKey,
+            this.outboxBackoffKey,
             OUTBOX_GROUP,
           );
           if (length === delivering) return "drained";
@@ -1429,7 +1463,15 @@ export class Outpost {
         await this.request("POST", "/v1/events/ingest", { body: { events }, timeout: TIMEOUT });
       } catch (error) {
         dropped = error instanceof PolarClientError && !(error instanceof PolarRateLimitError);
-        if (!dropped) return false;
+        if (!dropped) {
+          // As long as Polar asks, or longer after each failure in a row.
+          const wait = retryAfterMs(error);
+          await this.backOff(this.outboxBackoffKey, {
+            first: wait ?? OUTBOX_RETRY_DELAY,
+            max: wait ?? MAX_OUTBOX_RETRY_DELAY,
+          });
+          return false;
+        }
       }
     await this.requireRedis().outpostConfirm(
       ...confirmArguments(this.prefix, !dropped, this.settlements(events), delivery),
@@ -1597,7 +1639,7 @@ export class Outpost {
       if (pulled && !(await this.requireRedis().exists(key))) return false;
       // The fleet asks again later, longer after each miss, and forgets the misses past the
       // longest wait.
-      await this.backOff(this.missingKey(identity), 2 * MAX_PULL_RETRY_DELAY);
+      await this.backOff(this.missingKey(identity), { forget: 2 * MAX_PULL_RETRY_DELAY });
       return false;
     }
     if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))

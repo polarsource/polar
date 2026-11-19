@@ -37,7 +37,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from polar.base import PolarError
 from polar.logging import get_logger
 from polar.metering.client import PolarClient
-from polar.metering.errors import DropReason, UnknownMeterError
+from polar.metering.errors import DropReason, UnknownMeterError, retry_after_seconds
 from polar.metering.events import EventInput
 from polar.metering.meter import CustomerMeter
 from polar.outpost.event import Event
@@ -236,6 +236,8 @@ FLUSHERS = 32
 OUTBOX_CLAIM_IDLE = 60.0
 FLUSHER_LOCK_TTL = 30.0
 DRAIN_INTERVAL = 1.0
+OUTBOX_RETRY_DELAY = 1.0
+MAX_OUTBOX_RETRY_DELAY = 60.0
 # The consumer group the flushers read the outbox through.
 OUTBOX_GROUP = "polar"
 REPORT_INTERVAL = 30.0
@@ -281,13 +283,14 @@ return 0
 """
 
 OUTBOX_BACKLOG_SCRIPT = """
--- The outbox's length and how many of its entries flushers hold: KEYS[1] is the outbox, ARGV[1]
--- the consumer group.
+-- The outbox's length, how many of its entries flushers hold, and when the fleet may send it
+-- again after Polar failed: KEYS[1] is the outbox, KEYS[2] its backoff, ARGV[1] the consumer group.
+local retry_at = redis.call('HGET', KEYS[2], 'retry_at') or ''
 local length = redis.call('XLEN', KEYS[1])
 if length == 0 then
-    return {0, 0}
+    return {0, 0, retry_at}
 end
-return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1]}
+return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1], retry_at}
 """
 
 READ_STATE_SCRIPT = """
@@ -1637,17 +1640,23 @@ class Outpost:
         """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
         Once its flushers let go of their slots, the instance looks again: an event
         queued while they held them is not left behind."""
-        self._require_redis()
+        redis = self._require_redis()
         assert self._outbox_backlog is not None
         first = True
         try:
             while True:
-                length, delivering = await self._outbox_backlog(
-                    keys=[self._outbox_key], args=[OUTBOX_GROUP]
+                length, delivering, retry_at = await self._outbox_backlog(
+                    keys=[self._outbox_key, self._outbox_backoff_key],
+                    args=[OUTBOX_GROUP],
                 )
                 # The first round also takes back the batches that wait on a failed or
                 # frozen flusher.
                 if not length or (not first and length == delivering):
+                    return
+                # Polar failed to take a batch: the fleet waits before sending the
+                # outbox again.
+                if retry_at and float(retry_at) > time.time() * 1000:
+                    self._undrained = True
                     return
                 # A partial batch goes only when no flusher delivers: the last one in
                 # flight takes it.
@@ -1669,6 +1678,9 @@ class Outpost:
                     return
                 if "drained" not in outcomes:
                     return
+                # Polar takes batches again: the next failure waits the first delay.
+                if retry_at:
+                    await redis.delete(self._outbox_backoff_key)
         except Exception as error:
             # Redis lost the group, with the rest of its keys: the next flush reads a new
             # one.
@@ -1702,8 +1714,9 @@ class Outpost:
             while True:
                 if start == ">":
                     assert self._outbox_backlog is not None
-                    length, delivering = await self._outbox_backlog(
-                        keys=[self._outbox_key], args=[OUTBOX_GROUP]
+                    length, delivering, _ = await self._outbox_backlog(
+                        keys=[self._outbox_key, self._outbox_backoff_key],
+                        args=[OUTBOX_GROUP],
                     )
                     if length == delivering:
                         return "drained"
@@ -1735,6 +1748,14 @@ class Outpost:
             with contextlib.suppress(RedisError):
                 await redis.eval(RELEASE_LOCK_SCRIPT, 1, lock_key, token)
 
+    async def _back_off_outbox(self, wait: float | None) -> None:
+        """As long as Polar asks, or longer after each failure in a row."""
+        await self._back_off(
+            self._outbox_backoff_key,
+            first=wait if wait is not None else OUTBOX_RETRY_DELAY,
+            maximum=wait if wait is not None else MAX_OUTBOX_RETRY_DELAY,
+        )
+
     async def _deliver(self, entries: list[typing.Any], delivery: _Delivery) -> bool:
         """Sends a batch to Polar, then acknowledges it and settles its events in one
         script. Polar refusing the batch drops it; failing to take it leaves it for the
@@ -1749,6 +1770,7 @@ class Outpost:
                     "/v1/events/ingest", json={"events": events}, timeout=TIMEOUT
                 )
             except httpx2.TransportError:
+                await self._back_off_outbox(None)
                 return False
             # Only a 2xx means Polar has the batch; a 4xx other than a refusal or a rate
             # limit drops it; anything else leaves it for the next flush.
@@ -1758,6 +1780,14 @@ class Outpost:
                 429,
             )
             if not response.is_success and not dropped:
+                retry_after = response.headers.get("Retry-After")
+                await self._back_off_outbox(
+                    retry_after_seconds(int(retry_after))
+                    if response.status_code == 429
+                    and retry_after
+                    and retry_after.isdecimal()
+                    else None
+                )
                 return False
         assert self._confirm_script is not None
         await self._confirm_script(
@@ -1980,6 +2010,10 @@ class Outpost:
         return f"{self._prefix}:outbox"
 
     @property
+    def _outbox_backoff_key(self) -> str:
+        return f"{self._outbox_key}:backoff"
+
+    @property
     def _configuration_key(self) -> str:
         """A new instance reads its token's configuration from Redis instead of Polar.
         The key hashes the token: Redis never sees it."""
@@ -2122,10 +2156,16 @@ class Outpost:
             self._pulling = None
             done.set()
 
-    async def _back_off(self, key: str, *forget: int) -> float:
+    async def _back_off(
+        self,
+        key: str,
+        *forget: int,
+        first: float = PULL_RETRY_DELAY,
+        maximum: float = MAX_PULL_RETRY_DELAY,
+    ) -> float:
         """One more failure on the key, for the whole fleet: when to try again."""
         now = int(time.time() * 1000)
-        retry_at = now + int(PULL_RETRY_DELAY * 1000)
+        retry_at = now + int(first * 1000)
         if self._redis is not None:
             with contextlib.suppress(RedisError):
                 retry_at = await self._redis.eval(
@@ -2133,8 +2173,8 @@ class Outpost:
                     1,
                     key,
                     now,
-                    int(PULL_RETRY_DELAY * 1000),
-                    int(MAX_PULL_RETRY_DELAY * 1000),
+                    int(first * 1000),
+                    int(maximum * 1000),
                     *forget,
                 )
         return retry_at / 1000

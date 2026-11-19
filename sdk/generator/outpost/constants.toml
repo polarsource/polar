@@ -25,6 +25,10 @@ outbox_claim_idle = 60000
 flusher_lock_ttl = 30000
 # How often a long-running instance drains the events it queued, without a flush.
 drain_interval = 1000
+# How long the fleet waits to send the outbox again after Polar failed to take a batch, when
+# Polar does not say; each failure in a row doubles it, up to the maximum.
+outbox_retry_delay = 1000
+max_outbox_retry_delay = 60000
 # How often an instance reports the size of its Redis to telemetry.
 report_interval = 30000
 # One span in this many goes to Polar for the others; spans with an error or a drift always go.

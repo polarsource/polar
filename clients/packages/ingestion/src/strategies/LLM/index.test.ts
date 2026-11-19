@@ -134,4 +134,20 @@ describe('LLMStrategy', () => {
       ],
     })
   })
+
+  it('should return the model result and log when ingest fails', async () => {
+    mockEventsIngest.mockRejectedValueOnce(new Error('Polar is down'))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const llm = Ingestion()
+      .strategy(new LLMStrategy(mockLLMClient))
+      .ingest('prompt-tokens')
+
+    const result = await llm.client({ customerId }).doGenerate({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'Hello' }] }],
+    })
+
+    expect(result.usage.totalTokens).toBe(2)
+    expect(consoleError).toHaveBeenCalledTimes(1)
+  })
 })

@@ -23321,12 +23321,12 @@ export interface components {
        */
       cancellation_comment?: string | null
     }
-    CustomerSubscriptionChangePreview:
-      | components['schemas']['CustomerSubscriptionChangePreviewProduct']
-      | components['schemas']['CustomerSubscriptionChangePreviewSeats']
-      | components['schemas']['CustomerSubscriptionChangePreviewUnits']
-    /** CustomerSubscriptionChangePreviewProduct */
-    CustomerSubscriptionChangePreviewProduct: {
+    CustomerSubscriptionChange:
+      | components['schemas']['CustomerSubscriptionChangeProduct']
+      | components['schemas']['CustomerSubscriptionChangeSeats']
+      | components['schemas']['CustomerSubscriptionChangeUnits']
+    /** CustomerSubscriptionChangeProduct */
+    CustomerSubscriptionChangeProduct: {
       /**
        * Product Id
        * Format: uuid4
@@ -23334,16 +23334,16 @@ export interface components {
        */
       product_id: string
     }
-    /** CustomerSubscriptionChangePreviewSeats */
-    CustomerSubscriptionChangePreviewSeats: {
+    /** CustomerSubscriptionChangeSeats */
+    CustomerSubscriptionChangeSeats: {
       /**
        * Seats
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
     }
-    /** CustomerSubscriptionChangePreviewUnits */
-    CustomerSubscriptionChangePreviewUnits: {
+    /** CustomerSubscriptionChangeUnits */
+    CustomerSubscriptionChangeUnits: {
       /**
        * Units
        * @description Preview a change of the subscription to this number of units.
@@ -39008,11 +39008,15 @@ export interface components {
       /** Cancel At Period End */
       cancel_at_period_end?: boolean
     }
+    SubscriptionChange:
+      | components['schemas']['SubscriptionChangeProduct']
+      | components['schemas']['SubscriptionChangeSeats']
+      | components['schemas']['SubscriptionChangeUnits']
     /**
-     * SubscriptionChangeChargePreview
+     * SubscriptionChangePreview
      * @description Preview of what a subscription change would cost, without applying it.
      */
-    SubscriptionChangeChargePreview: {
+    SubscriptionChangePreview: {
       /**
        * Base Amount
        * @description Base subscription amount in cents (sum of product prices)
@@ -39071,12 +39075,8 @@ export interface components {
       /** @description How the change would be billed, resolved from the requested or organization setting. */
       proration_behavior: components['schemas']['SubscriptionProrationBehavior']
     }
-    SubscriptionChangePreview:
-      | components['schemas']['SubscriptionChangePreviewProduct']
-      | components['schemas']['SubscriptionChangePreviewSeats']
-      | components['schemas']['SubscriptionChangePreviewUnits']
-    /** SubscriptionChangePreviewProduct */
-    SubscriptionChangePreviewProduct: {
+    /** SubscriptionChangeProduct */
+    SubscriptionChangeProduct: {
       /**
        * Product Id
        * Format: uuid4
@@ -39098,8 +39098,8 @@ export interface components {
        */
       discount_id?: string | null
     }
-    /** SubscriptionChangePreviewSeats */
-    SubscriptionChangePreviewSeats: {
+    /** SubscriptionChangeSeats */
+    SubscriptionChangeSeats: {
       /**
        * Seats
        * @description Preview a change of the subscription to this number of seats.
@@ -39114,8 +39114,8 @@ export interface components {
         | 'auto'
         | null
     }
-    /** SubscriptionChangePreviewUnits */
-    SubscriptionChangePreviewUnits: {
+    /** SubscriptionChangeUnits */
+    SubscriptionChangeUnits: {
       /**
        * Units
        * @description Preview a change of the subscription to this number of units.
@@ -49879,7 +49879,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['CustomerSubscriptionChangePreview']
+        'application/json': components['schemas']['CustomerSubscriptionChange']
       }
     }
     responses: {
@@ -51634,7 +51634,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['SubscriptionChangePreview']
+        'application/json': components['schemas']['SubscriptionChange']
       }
     }
     responses: {
@@ -51644,7 +51644,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SubscriptionChangeChargePreview']
+          'application/json': components['schemas']['SubscriptionChangePreview']
         }
       }
       /** @description Forbidden */

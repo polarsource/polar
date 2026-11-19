@@ -147,7 +147,7 @@ from .repository import SubscriptionRepository, SubscriptionUpdateRepository
 from .schemas import (
     SubscriptionCancel,
     SubscriptionCancelPreview,
-    SubscriptionChangeChargePreview,
+    SubscriptionChangePreview,
     SubscriptionChargePreview,
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
@@ -3544,7 +3544,7 @@ class SubscriptionService:
         proration_behavior: ProrationBehaviorSetting | None = None,
         discount: uuid.UUID | Literal["unset"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
-    ) -> SubscriptionChangeChargePreview:
+    ) -> SubscriptionChangePreview:
         # The change is applied inside a savepoint: the preview prices the rows the
         # invoice would bill.
         nested = await session.begin_nested()
@@ -3573,7 +3573,7 @@ class SubscriptionService:
         proration_behavior: ProrationBehaviorSetting | None,
         discount: uuid.UUID | Literal["unset"] | None,
         allowed_visibilities: frozenset[Visibility],
-    ) -> SubscriptionChangeChargePreview:
+    ) -> SubscriptionChangePreview:
         provided = [product_id is not None, seats is not None, units is not None]
         assert sum(provided) == 1, "exactly one change per preview"
         assert discount is None or product_id is not None, (
@@ -3717,7 +3717,7 @@ class SubscriptionService:
             prorations=prorations,
             proration_amount=proration_amount,
         )
-        return SubscriptionChangeChargePreview(
+        return SubscriptionChangePreview(
             **preview.model_dump(), proration_behavior=proration_behavior
         )
 

@@ -6,8 +6,8 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
-    CustomerSubscriptionChangePreviewProduct,
-    CustomerSubscriptionChangePreviewUnits,
+    CustomerSubscriptionChangeProduct,
+    CustomerSubscriptionChangeUnits,
     CustomerSubscriptionPause,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdateClear,
@@ -327,9 +327,7 @@ class TestUpdate:
             await customer_subscription_service.preview_change(
                 session,
                 subscription,
-                change=CustomerSubscriptionChangePreviewProduct(
-                    product_id=product_second.id
-                ),
+                change=CustomerSubscriptionChangeProduct(product_id=product_second.id),
             )
 
     @pytest.mark.keep_session_state
@@ -397,7 +395,7 @@ class TestUpdateUnits:
             await customer_subscription_service.preview_change(
                 session,
                 subscription,
-                change=CustomerSubscriptionChangePreviewUnits(units=5),
+                change=CustomerSubscriptionChangeUnits(units=5),
             )
 
     @pytest.mark.keep_session_state

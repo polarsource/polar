@@ -37,10 +37,10 @@ from .schemas import (
     SubscriptionBulkUpdateCreate,
     SubscriptionBulkUpdateID,
     SubscriptionCancelPreview,
-    SubscriptionChangeChargePreview,
+    SubscriptionChange,
     SubscriptionChangePreview,
-    SubscriptionChangePreviewSeats,
-    SubscriptionChangePreviewUnits,
+    SubscriptionChangeSeats,
+    SubscriptionChangeUnits,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -282,7 +282,7 @@ async def get_cancel_preview(
 @router.post(
     "/{id}/change-preview",
     summary="Preview Subscription Change",
-    response_model=SubscriptionChangeChargePreview,
+    response_model=SubscriptionChangePreview,
     responses={
         403: {"model": AlreadyCanceledSubscription.schema()},
         404: SubscriptionNotFound,
@@ -291,10 +291,10 @@ async def get_cancel_preview(
 )
 async def preview_change(
     id: SubscriptionID,
-    change: SubscriptionChangePreview,
+    change: SubscriptionChange,
     auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> SubscriptionChangeChargePreview:
+) -> SubscriptionChangePreview:
     """
     Preview what a subscription change would cost, without applying it.
 
@@ -312,7 +312,7 @@ async def preview_change(
         OrganizationPermission.sales_manage,
     )
 
-    if isinstance(change, SubscriptionChangePreviewSeats):
+    if isinstance(change, SubscriptionChangeSeats):
         return await subscription_service.calculate_change_preview(
             session,
             subscription,
@@ -320,7 +320,7 @@ async def preview_change(
             proration_behavior=change.proration_behavior,
         )
 
-    if isinstance(change, SubscriptionChangePreviewUnits):
+    if isinstance(change, SubscriptionChangeUnits):
         return await subscription_service.calculate_change_preview(
             session,
             subscription,

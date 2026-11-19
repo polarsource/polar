@@ -28,7 +28,7 @@ from .. import auth
 from ..schemas.subscription import (
     CustomerPortalSubscriptionListParams,
     CustomerSubscription,
-    CustomerSubscriptionChangePreview,
+    CustomerSubscriptionChange,
     CustomerSubscriptionRevoke,
     CustomerSubscriptionUpdate,
 )
@@ -221,7 +221,7 @@ async def get_cancel_preview(
 )
 async def preview_change(
     id: SubscriptionID,
-    change: CustomerSubscriptionChangePreview,
+    change: CustomerSubscriptionChange,
     auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionChargePreview:

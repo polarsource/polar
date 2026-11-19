@@ -662,7 +662,7 @@ class SubscriptionChargePreview(Schema):
     )
 
 
-class SubscriptionChangeChargePreview(SubscriptionChargePreview):
+class SubscriptionChangePreview(SubscriptionChargePreview):
     """Preview of what a subscription change would cost, without applying it."""
 
     proration_behavior: SubscriptionProrationBehavior = Field(
@@ -707,7 +707,7 @@ class SubscriptionCancelPreview(Schema):
     )
 
 
-class SubscriptionChangePreviewProduct(Schema):
+class SubscriptionChangeProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID4 = Field(
@@ -734,7 +734,7 @@ class SubscriptionChangePreviewProduct(Schema):
         return _discount_input(self.discount_id, self.model_fields_set)
 
 
-class SubscriptionChangePreviewSeats(Schema):
+class SubscriptionChangeSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
     seats: Int32 = Field(
@@ -750,7 +750,7 @@ class SubscriptionChangePreviewSeats(Schema):
     )
 
 
-class SubscriptionChangePreviewUnits(Schema):
+class SubscriptionChangeUnits(Schema):
     model_config = ConfigDict(extra="forbid")
 
     units: Int32 = Field(
@@ -766,11 +766,9 @@ class SubscriptionChangePreviewUnits(Schema):
     )
 
 
-SubscriptionChangePreview = Annotated[
-    SubscriptionChangePreviewProduct
-    | SubscriptionChangePreviewSeats
-    | SubscriptionChangePreviewUnits,
-    SetSchemaReference("SubscriptionChangePreview"),
+SubscriptionChange = Annotated[
+    SubscriptionChangeProduct | SubscriptionChangeSeats | SubscriptionChangeUnits,
+    SetSchemaReference("SubscriptionChange"),
 ]
 
 

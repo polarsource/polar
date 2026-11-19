@@ -586,6 +586,32 @@ class TestSyncBucket:
         assert bucket.sealed_at is None
         assert bucket.synced_at is not None
 
+    async def test_logs_a_change_only_when_the_sync_changes_the_bucket(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        sum_reducer: Reducer,
+        organization: Organization,
+    ) -> None:
+        enqueue_outpost_event = mocker.patch(
+            "polar.reducer.service.enqueue_outpost_event"
+        )
+        await create_tokens_event(save_fixture, organization, 3)
+
+        # Each window is synced twice: the second sync mostly finds nothing new.
+        for _ in range(2):
+            await reducer_service.sync_bucket(
+                session, sum_reducer.id, BUCKET_START, None, "external"
+            )
+        assert enqueue_outpost_event.call_count == 1
+
+        await create_tokens_event(save_fixture, organization, 4)
+        await reducer_service.sync_bucket(
+            session, sum_reducer.id, BUCKET_START, None, "external"
+        )
+        assert enqueue_outpost_event.call_count == 2
+
     async def test_counts_events_waiting_in_staged_events(
         self,
         mocker: MockerFixture,

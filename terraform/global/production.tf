@@ -1046,6 +1046,10 @@ resource "tfe_variable" "payment_retry_alert_api_key_production" {
   description     = "PaymentRetryAlert API key for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "payment_retry_alert_webhook_secret_production" {
@@ -1054,4 +1058,8 @@ resource "tfe_variable" "payment_retry_alert_webhook_secret_production" {
   description     = "PaymentRetryAlert webhook signing secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }

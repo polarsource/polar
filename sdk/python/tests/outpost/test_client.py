@@ -3109,6 +3109,27 @@ async def test_fails_when_polar_refuses_a_pull(
 
 
 @pytest.mark.anyio
+async def test_resumes_once_a_pull_succeeds_after_polar_refused_one(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    refusal: dict[str, int | None],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        refusal["status"] = 401
+        await outpost._pull()
+        with pytest.raises(PolarOutpostError, match="refused"):
+            await outpost.track(_usage("event-0", 10))
+        refusal["status"] = None
+        # Once the pull's backoff ends, the next pull succeeds and ends the failure.
+        with anyio.fail_after(5):
+            while not outpost.connected:
+                await anyio.sleep(0.05)
+        await outpost.track(_usage("event-0", 10))
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(("status", "connected"), [(422, False), (429, True)])
 async def test_fails_when_polar_rejects_a_pull_unless_it_only_slows_it_down(
     redis_connection: tuple[str, Redis],

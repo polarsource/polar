@@ -5411,7 +5411,7 @@ class TestEnqueueBenefitsGrants:
             ]
         )
 
-    async def test_seat_based_product_skips_benefits(
+    async def test_seat_based_product_enqueues_team_benefits(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -5419,6 +5419,7 @@ class TestEnqueueBenefitsGrants:
         organization: Organization,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        seat_service_mock = mocker.patch("polar.subscription.service.seat_service")
 
         product = await create_product(
             save_fixture,
@@ -5438,7 +5439,56 @@ class TestEnqueueBenefitsGrants:
 
         await subscription_service.enqueue_benefits_grants(session, subscription)
 
-        enqueue_job_mock.assert_not_called()
+        seat_service_mock.revoke_all_seats_for_subscription.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+
+    async def test_inactive_seat_based_product_revokes_seats_and_team_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.subscription.service.enqueue_job")
+        seat_service_mock = mocker.patch("polar.subscription.service.seat_service")
+        seat_service_mock.revoke_all_seats_for_subscription = AsyncMock()
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            seats=5,
+            status=SubscriptionStatus.canceled,
+        )
+
+        await subscription_service.enqueue_benefits_grants(session, subscription)
+
+        seat_service_mock.revoke_all_seats_for_subscription.assert_awaited_once_with(
+            session, subscription
+        )
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="revoke",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
 
     async def test_non_seat_based_product_grants_benefits(
         self,

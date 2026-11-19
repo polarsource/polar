@@ -703,7 +703,10 @@ class TestUpsertFromStripe:
             customer_seat_service_mock.revoke_all_seats_for_order.await_args.args[1].id
             == order.id
         )
-        benefit_grant_service_mock.enqueue_benefits_grants.assert_not_awaited()
+        benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once()
+        call = benefit_grant_service_mock.enqueue_benefits_grants.await_args
+        assert call.kwargs["task"] == "revoke"
+        assert call.kwargs["order"].id == order.id
 
     async def test_revoke_subscription(
         self,

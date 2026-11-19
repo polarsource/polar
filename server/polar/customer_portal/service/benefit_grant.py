@@ -8,6 +8,9 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Customer, Member, is_customer, is_member
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditAllocation,
+)
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import NotPermitted, PolarRequestValidationError
 from polar.kit.db.postgres import AsyncSession
@@ -267,9 +270,19 @@ class CustomerBenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         # Filter based on auth subject type
         if is_member(auth_subject):
-            # Member: filter by member_id to show only this member's grants
+            # Member: show this member's grants, and the team's meter credits
+            member = auth_subject.subject
             statement = statement.where(
-                BenefitGrant.member_id == auth_subject.subject.id
+                or_(
+                    BenefitGrant.member_id == member.id,
+                    and_(
+                        BenefitGrant.customer_id == member.customer_id,
+                        BenefitGrant.member_id.is_(None),
+                        Benefit.type == BenefitType.meter_credit,
+                        Benefit.properties["allocation"].astext
+                        == BenefitMeterCreditAllocation.team,
+                    ),
+                )
             )
         elif is_customer(auth_subject):
             # Customer: filter by customer_id to show all customer grants

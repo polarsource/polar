@@ -6,14 +6,19 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies.base.service import BenefitPropertiesValidationError
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditAllocation,
+)
 from polar.benefit.strategies.meter_credit.service import BenefitMeterCreditService
 from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
+from polar.enums import SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOperator
 from polar.models import (
+    Benefit,
     Customer,
     Meter,
     Organization,
@@ -29,9 +34,13 @@ from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
+    create_benefit_grant,
     create_event,
+    create_member,
     create_meter,
     create_order,
+    create_product,
+    create_subscription_with_seats,
 )
 
 
@@ -554,4 +563,188 @@ class TestValidateProperties:
                 auth_subject,
                 organization,
                 {"meter_id": str(uuid4()), "units": 100, "rollover": False},
+            )
+
+
+@pytest.mark.anyio
+class TestTeamAllocation:
+    async def test_team_and_per_seat_credits_pool_on_billing_customer(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=3
+        )
+        team_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(meter.id),
+                "units": 10_000,
+                "rollover": False,
+                "allocation": "team",
+            },
+        )
+        per_seat_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(meter.id), "units": 1_000, "rollover": False},
+        )
+
+        await benefit_grant_service.grant_benefit(
+            session, redis, customer, team_benefit, subscription=subscription
+        )
+        for index in range(3):
+            member = await create_member(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                email=f"member-{index}@example.com",
+            )
+            await benefit_grant_service.grant_benefit(
+                session,
+                redis,
+                customer,
+                per_seat_benefit,
+                member=member,
+                subscription=subscription,
+            )
+
+        customer_meter = await CustomerMeterRepository.from_session(
+            session
+        ).get_by_customer_and_meter(customer.id, meter.id)
+        assert customer_meter is not None
+        assert customer_meter.credited_units == 13_000
+
+
+@pytest.mark.anyio
+class TestValidatePropertiesUpdate:
+    async def _create_benefit(
+        self, save_fixture: SaveFixture, organization: Organization, allocation: str
+    ) -> Benefit:
+        return await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(uuid4()),
+                "units": 100,
+                "rollover": False,
+                "allocation": allocation,
+            },
+        )
+
+    async def test_keeps_current_allocation_when_omitted(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await self._create_benefit(save_fixture, organization, "team")
+        service = BenefitMeterCreditService(session, redis)
+
+        properties = await service.validate_properties_update(
+            benefit,
+            {
+                "meter_id": benefit.properties["meter_id"],
+                "units": 200,
+                "rollover": False,
+                "allocation": None,  # type: ignore[typeddict-item]
+            },
+        )
+
+        assert properties["allocation"] == "team"
+        assert properties["units"] == 200
+
+    async def test_legacy_benefit_defaults_to_per_claimed_seat(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={"meter_id": str(uuid4()), "units": 100, "rollover": False},
+        )
+        service = BenefitMeterCreditService(session, redis)
+
+        properties = await service.validate_properties_update(
+            benefit,
+            {
+                "meter_id": benefit.properties["meter_id"],
+                "units": 100,
+                "rollover": False,
+                "allocation": None,  # type: ignore[typeddict-item]
+            },
+        )
+
+        assert properties["allocation"] == "per_claimed_seat"
+
+    async def test_changes_allocation_before_any_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        benefit = await self._create_benefit(
+            save_fixture, organization, "per_claimed_seat"
+        )
+        service = BenefitMeterCreditService(session, redis)
+
+        properties = await service.validate_properties_update(
+            benefit,
+            {
+                "meter_id": benefit.properties["meter_id"],
+                "units": 100,
+                "rollover": False,
+                "allocation": BenefitMeterCreditAllocation.team,
+            },
+        )
+
+        assert properties["allocation"] == "team"
+
+    async def test_rejects_allocation_change_once_granted(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        benefit = await self._create_benefit(
+            save_fixture, organization, "per_claimed_seat"
+        )
+        await create_benefit_grant(
+            save_fixture, customer, benefit, granted=False, subscription=subscription
+        )
+        service = BenefitMeterCreditService(session, redis)
+
+        with pytest.raises(BenefitPropertiesValidationError):
+            await service.validate_properties_update(
+                benefit,
+                {
+                    "meter_id": benefit.properties["meter_id"],
+                    "units": 100,
+                    "rollover": False,
+                    "allocation": BenefitMeterCreditAllocation.team,
+                },
             )

@@ -1,4 +1,5 @@
 from typing import Any, cast
+from uuid import uuid4
 
 import pytest
 from pytest_mock import MockerFixture
@@ -490,6 +491,42 @@ class TestListMember:
         # Member should not see customer-level grants
         assert count == 0
         assert len(grants) == 0
+
+    @pytest.mark.auth(MEMBER_AUTH_SUBJECT)
+    async def test_member_sees_team_meter_credits(
+        self,
+        auth_subject: AuthSubject[Member],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        team_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(uuid4()),
+                "units": 100,
+                "rollover": False,
+                "allocation": "team",
+            },
+        )
+        team_grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            subscription=subscription,
+        )
+
+        grants, count = await customer_benefit_grant_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert count == 1
+        assert grants[0].id == team_grant.id
 
 
 @pytest.mark.anyio

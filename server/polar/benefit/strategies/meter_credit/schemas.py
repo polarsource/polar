@@ -1,6 +1,7 @@
 from typing import Annotated, Literal
 
 from annotated_types import Gt
+from pydantic import Field
 from pydantic.types import UUID4
 
 from polar.kit.schemas import Int32, Schema
@@ -14,6 +15,19 @@ from ..base.schemas import (
     BenefitUpdateBase,
     BenefitUpdateVisibilityMixin,
 )
+from .properties import BenefitMeterCreditAllocation
+
+_ALLOCATION_DESCRIPTION = (
+    "How the units are granted on seat-based products. "
+    "`per_claimed_seat` grants the units for each claimed seat. "
+    "`team` grants the units once per purchase, whatever the number of seats. "
+    "In both cases, the units are credited to the billing customer. "
+    "On products without seats, the units are always granted once per purchase."
+)
+
+Allocation = Annotated[
+    BenefitMeterCreditAllocation, Field(description=_ALLOCATION_DESCRIPTION)
+]
 
 
 class BenefitMeterCreditProperties(Schema):
@@ -24,6 +38,7 @@ class BenefitMeterCreditProperties(Schema):
     units: int
     rollover: bool
     meter_id: UUID4
+    allocation: Allocation = BenefitMeterCreditAllocation.per_claimed_seat
 
 
 class BenefitMeterCreditCreateProperties(Schema):
@@ -34,6 +49,30 @@ class BenefitMeterCreditCreateProperties(Schema):
     units: Annotated[Int32, Gt(0)]
     rollover: bool
     meter_id: UUID4
+    allocation: Allocation = BenefitMeterCreditAllocation.per_claimed_seat
+
+
+class BenefitMeterCreditUpdateProperties(Schema):
+    """
+    Properties for updating a benefit of type `meter_unit`.
+    """
+
+    units: Annotated[Int32, Gt(0)]
+    rollover: bool
+    meter_id: UUID4
+    allocation: (
+        Annotated[
+            BenefitMeterCreditAllocation,
+            Field(
+                description=(
+                    f"{_ALLOCATION_DESCRIPTION} "
+                    "If omitted, the current value is kept. "
+                    "It can't be changed once the benefit has been granted."
+                )
+            ),
+        ]
+        | None
+    ) = None
 
 
 class BenefitMeterCreditSubscriberProperties(Schema):
@@ -44,6 +83,7 @@ class BenefitMeterCreditSubscriberProperties(Schema):
     units: int
     rollover: bool
     meter_id: UUID4
+    allocation: Allocation = BenefitMeterCreditAllocation.per_claimed_seat
 
 
 class BenefitMeterCreditCreate(BenefitCreateBase):
@@ -57,7 +97,7 @@ class BenefitMeterCreditCreate(BenefitCreateBase):
 
 class BenefitMeterCreditUpdate(BenefitUpdateVisibilityMixin, BenefitUpdateBase):
     type: Literal[BenefitType.meter_credit]
-    properties: BenefitMeterCreditCreateProperties | None = None
+    properties: BenefitMeterCreditUpdateProperties | None = None
 
 
 class BenefitMeterCredit(BenefitBase):
@@ -83,6 +123,7 @@ class BenefitMeterCreditPublicProperties(Schema):
 
     units: int
     meter_id: UUID4
+    allocation: Allocation = BenefitMeterCreditAllocation.per_claimed_seat
 
 
 class BenefitMeterCreditPublic(BenefitPublicBase):

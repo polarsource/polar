@@ -1227,6 +1227,13 @@ class DeclarativeConfigService:
                             # Metadata left out of the config is kept, as on update.
                             if "metadata" not in change.config.model_fields_set:
                                 update_dict["user_metadata"] = previous.user_metadata
+                            if (
+                                allocation := previous.properties.get("allocation")
+                            ) is not None:
+                                update_dict["properties"] = {
+                                    **benefit.properties,
+                                    "allocation": allocation,
+                                }
                         await repository.update(
                             benefit, update_dict=update_dict, flush=True
                         )

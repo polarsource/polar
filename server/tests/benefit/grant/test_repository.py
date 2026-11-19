@@ -7,7 +7,15 @@ from polar.models import BenefitGrant, Customer, Member, Organization, Payment, 
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_benefit, create_order, create_refund
+from tests.fixtures.random_objects import (
+    create_benefit,
+    create_benefit_grant,
+    create_order,
+    create_order_with_seats,
+    create_product,
+    create_refund,
+    set_product_benefits,
+)
 
 
 @pytest.fixture
@@ -81,3 +89,42 @@ class TestListErroredByCustomerAndBenefitType:
         )
 
         assert list(grants) == ([] if revoke_benefits else [pending_grant])
+
+
+@pytest.mark.anyio
+class TestIsScopeActive:
+    @pytest.mark.parametrize(
+        ("with_member", "expected"), [(False, True), (True, False)]
+    )
+    async def test_seat_based_order_without_claimed_seat(
+        self,
+        with_member: bool,
+        expected: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+            prices=[("seat", 1000, "usd")],
+        )
+        order = await create_order_with_seats(
+            save_fixture, product=product, customer=customer, seats=3
+        )
+        benefit = await create_benefit(save_fixture, organization=organization)
+        await set_product_benefits(save_fixture, product=product, benefits=[benefit])
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            member=member if with_member else None,
+            order=order,
+        )
+
+        repository = BenefitGrantRepository.from_session(session)
+
+        assert await repository.is_scope_active(grant) is expected

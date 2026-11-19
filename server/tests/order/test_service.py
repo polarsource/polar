@@ -996,9 +996,14 @@ class TestCreateFromCheckoutOneTime:
         await session.refresh(customer)
         assert customer.type == CustomerType.team
 
-        # Seat-based orders defer benefit grants until seats are claimed
-        for c in enqueue_job_mock.call_args_list:
-            assert c.args[0] != "benefit.enqueue_benefits_grants"
+        # Per-seat benefits wait for seat claims, team benefits are granted now
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
 
     async def test_unit_based_grants_benefits_immediately(
         self,
@@ -1098,9 +1103,14 @@ class TestCreateFromCheckoutOneTime:
         await session.refresh(customer)
         assert customer.type == CustomerType.team
 
-        # Seat-based orders defer benefit grants until seats are claimed
-        for c in enqueue_job_mock.call_args_list:
-            assert c.args[0] != "benefit.enqueue_benefits_grants"
+        # Per-seat benefits wait for seat claims, team benefits are granted now
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+        )
 
 
 @pytest.mark.anyio
@@ -6886,7 +6896,7 @@ class TestUpdateProductBenefitsGrants:
 
         enqueue_job_mock.assert_not_called()
 
-    async def test_skips_seat_based_orders(
+    async def test_includes_seat_based_orders_for_team_benefits(
         self,
         enqueue_job_mock: MagicMock,
         session: AsyncSession,
@@ -6894,7 +6904,6 @@ class TestUpdateProductBenefitsGrants:
         product: Product,
         customer: Customer,
     ) -> None:
-        """Test that seat-based orders are skipped"""
         order = await create_order(
             save_fixture,
             product=product,
@@ -6906,7 +6915,14 @@ class TestUpdateProductBenefitsGrants:
 
         await order_service.update_product_benefits_grants(session, product)
 
-        enqueue_job_mock.assert_not_called()
+        enqueue_job_mock.assert_called_once_with(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product.id,
+            order_id=order.id,
+            delay=ANY,
+        )
 
     async def test_skips_soft_deleted_customers(
         self,

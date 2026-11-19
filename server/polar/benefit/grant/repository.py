@@ -130,10 +130,21 @@ class BenefitGrantRepository(
                 ~purchase.is_deleted,
                 eligible_purchase,
                 ProductBenefit.benefit_id == grant.benefit_id,
-                or_(purchase.seats.is_(None), claimed_seat),
             )
         )
+        # A grant without a member on a seat-based purchase is a team grant,
+        # which doesn't depend on a claimed seat.
+        if grant.member_id is not None:
+            statement = statement.where(or_(purchase.seats.is_(None), claimed_seat))
         return (await self.session.execute(select(statement.exists()))).scalar_one()
+
+    async def has_any_by_benefit(self, benefit: Benefit) -> bool:
+        statement = select(
+            exists().where(
+                BenefitGrant.benefit_id == benefit.id, ~BenefitGrant.is_deleted
+            )
+        )
+        return (await self.session.execute(statement)).scalar_one()
 
     async def list_granted_by_scope(
         self, **scope: Unpack[BenefitGrantScope]
@@ -323,6 +334,8 @@ class BenefitGrantRepository(
     async def list_by_customer_and_scope(
         self,
         customer: Customer,
+        *,
+        memberless: bool = False,
         **scope: Unpack[BenefitGrantScope],
     ) -> Sequence[BenefitGrant]:
         statement = self.get_base_statement().where(
@@ -330,6 +343,8 @@ class BenefitGrantRepository(
             BenefitGrant.scope == scope,
             ~BenefitGrant.is_deleted,
         )
+        if memberless:
+            statement = statement.where(BenefitGrant.member_id.is_(None))
         return await self.get_all(statement)
 
     async def list_by_member_and_scope(
@@ -427,6 +442,7 @@ class BenefitGrantRepository(
         product: Product,
         *,
         member_id: UUID | None = None,
+        memberless: bool = False,
         **scope: Unpack[BenefitGrantScope],
     ) -> Sequence[BenefitGrant]:
         product_benefits_statement = (
@@ -442,6 +458,8 @@ class BenefitGrantRepository(
         )
         if member_id is not None:
             statement = statement.where(BenefitGrant.member_id == member_id)
+        elif memberless:
+            statement = statement.where(BenefitGrant.member_id.is_(None))
         return await self.get_all(statement)
 
     async def list_unrevoked_by_benefit(

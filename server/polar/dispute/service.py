@@ -498,12 +498,14 @@ class DisputeService:
                     session, subscription, subscription_service
                 ) as ctx:
                     await subscription_service.revoke(session, ctx, subscription)
-        elif dispute.order.seats is not None:
+            return
+
+        if dispute.order.seats is not None:
             await customer_seat_service.revoke_all_seats_for_order(
                 session, dispute.order
             )
-        # Revoke the order benefits
-        elif dispute.order.product_id is not None:
+        # Revoke the order benefits. On seat-based orders, only team benefits.
+        if dispute.order.product_id is not None:
             product_repository = ProductRepository.from_session(session)
             product = await product_repository.get_by_id(
                 dispute.order.product_id,

@@ -51,7 +51,7 @@ from ..strategies import (
 )
 from .repository import BenefitGrantRepository
 from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal, BenefitGrantUpdate
-from .scope import scope_to_args
+from .scope import is_seat_based_scope, is_team_benefit, scope_to_args
 from .sorting import BenefitGrantSortProperty
 
 log: Logger = structlog.get_logger()
@@ -528,6 +528,16 @@ class BenefitGrantService:
     ) -> None:
         repository = BenefitGrantRepository.from_session(session)
 
+        # On seat-based purchases, a seat holder gets the per-seat benefits and
+        # the billing customer gets the team benefits once, without a member.
+        seat_based = is_seat_based_scope(scope)
+        team_grants = seat_based and member_id is None
+        benefits = (
+            [b for b in product.benefits if is_team_benefit(b) == team_grants]
+            if seat_based
+            else product.benefits
+        )
+
         # Get existing grants to avoid redundant jobs
         # When a member_id is provided, only check that member's grants
         if member_id is not None:
@@ -543,7 +553,7 @@ class BenefitGrantService:
                 existing_grants = []
         else:
             existing_grants = await repository.list_by_customer_and_scope(
-                customer, **scope
+                customer, memberless=team_grants, **scope
             )
 
         granted_benefit_ids = {
@@ -563,7 +573,7 @@ class BenefitGrantService:
         grant_benefit_ids = (
             [
                 b.id
-                for b in product.benefits
+                for b in benefits
                 if b.id not in granted_benefit_ids
                 and b.id not in errored_benefit_ids
                 and b.id not in manually_revoked_benefit_ids
@@ -576,7 +586,7 @@ class BenefitGrantService:
         revoke_benefit_ids = (
             [
                 b.id
-                for b in product.benefits
+                for b in benefits
                 if b.id in granted_benefit_ids
                 or b.id in errored_benefit_ids
                 or b.id in manually_revoked_benefit_ids
@@ -587,7 +597,7 @@ class BenefitGrantService:
 
         # Include outdated grants (from subscription upgrades/downgrades)
         outdated_grants = await repository.list_outdated_grants(
-            product, member_id=member_id, **scope
+            product, member_id=member_id, memberless=team_grants, **scope
         )
         revoke_benefit_ids.extend(g.benefit_id for g in outdated_grants)
 

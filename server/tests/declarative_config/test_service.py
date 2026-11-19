@@ -1090,6 +1090,7 @@ class TestApply:
             "meter_id": str(meter.id),
             "units": 1000,
             "rollover": False,
+            "allocation": "per_claimed_seat",
         }
         assert benefits["beta"].type == BenefitType.feature_flag
         assert benefits["tool-call-credits"].visibility == Visibility.public

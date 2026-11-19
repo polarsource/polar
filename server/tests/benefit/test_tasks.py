@@ -29,13 +29,16 @@ from polar.models import (
     Organization,
     Subscription,
 )
+from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionService
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_benefit,
     create_benefit_grant,
     create_order,
+    create_order_with_seats,
     create_product_fixed_and_seat,
 )
 
@@ -112,6 +115,65 @@ class TestBenefitGrant:
         revoked_grant = await session.get(BenefitGrant, grant_id)
         assert revoked_grant is not None
         assert revoked_grant.is_revoked
+
+    @pytest.mark.parametrize(
+        ("allocation", "member_expected"),
+        [("team", False), ("per_claimed_seat", True)],
+    )
+    async def test_seat_based_order_team_allocation(
+        self,
+        allocation: str,
+        member_expected: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        grant_benefit_mock = mocker.patch.object(
+            benefit_grant_service,
+            "grant_benefit",
+            spec=BenefitGrantService.grant_benefit,
+        )
+        revoke_benefit_mock = mocker.patch.object(
+            benefit_grant_service,
+            "revoke_benefit",
+            spec=BenefitGrantService.revoke_benefit,
+        )
+        product = await create_product_fixed_and_seat(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        order = await create_order_with_seats(
+            save_fixture, product=product, customer=customer, seats=3
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.meter_credit,
+            properties={
+                "meter_id": str(uuid.uuid4()),
+                "units": 100,
+                "rollover": False,
+                "allocation": allocation,
+            },
+        )
+        member_id = member.id if member_expected else None
+
+        await benefit_grant(
+            customer.id, benefit.id, member_id=member_id, order_id=order.id
+        )
+        await benefit_revoke(
+            customer.id, benefit.id, member_id=member_id, order_id=order.id
+        )
+
+        for mock in (grant_benefit_mock, revoke_benefit_mock):
+            granted_member = mock.call_args.kwargs["member"]
+            if member_expected:
+                assert granted_member is not None
+                assert granted_member.id == member.id
+            else:
+                assert granted_member is None
 
     async def test_not_existing_customer(
         self,

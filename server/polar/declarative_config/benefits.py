@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from polar.benefit.strategies.feature_flag.schemas import (
@@ -9,6 +10,7 @@ from polar.benefit.strategies.meter_credit.schemas import (
     BenefitMeterCreditCreate,
     BenefitMeterCreditCreateProperties,
     BenefitMeterCreditUpdate,
+    BenefitMeterCreditUpdateProperties,
 )
 
 from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
@@ -16,13 +18,13 @@ from .schemas import ConfigBenefit, ConfigBenefitMeterCredit
 
 def _meter_credit_properties(
     benefit_config: ConfigBenefitMeterCredit, meter_ids: dict[str, UUID]
-) -> BenefitMeterCreditCreateProperties:
+) -> dict[str, Any]:
     properties = benefit_config.properties
-    return BenefitMeterCreditCreateProperties(
-        meter_id=meter_ids[properties.meter],
-        units=properties.units,
-        rollover=properties.rollover,
-    )
+    return {
+        "meter_id": meter_ids[properties.meter],
+        "units": properties.units,
+        "rollover": properties.rollover,
+    }
 
 
 def benefit_create(
@@ -37,7 +39,9 @@ def benefit_create(
             metadata=benefit_config.metadata,
             visibility=benefit_config.visibility,
             organization_id=organization_id,
-            properties=_meter_credit_properties(benefit_config, meter_ids),
+            properties=BenefitMeterCreditCreateProperties(
+                **_meter_credit_properties(benefit_config, meter_ids)
+            ),
         )
     return BenefitFeatureFlagCreate(
         type=benefit_config.type,
@@ -60,6 +64,8 @@ def benefit_update(
         return BenefitMeterCreditUpdate(
             type=benefit_config.type,
             **fields,
-            properties=_meter_credit_properties(benefit_config, meter_ids),
+            properties=BenefitMeterCreditUpdateProperties(
+                **_meter_credit_properties(benefit_config, meter_ids)
+            ),
         )
     return BenefitFeatureFlagUpdate(type=benefit_config.type, **fields)

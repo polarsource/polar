@@ -777,13 +777,12 @@ export class Outpost {
         read.outcome = "unknown_customer";
         return null;
       }
-      if (state.coldUntil === undefined) throw new NotReadyError("Customer snapshot is not ready");
-      const creditReady = creditState?.coldUntil !== undefined;
-      read.outcome = !creditReducer || creditReady ? "ready" : "not_ready";
+      // A balance without its credits would read as overdrawn.
+      if (state.coldUntil === undefined || (creditReducer && creditState.coldUntil === undefined))
+        throw new NotReadyError("Customer snapshot is not ready");
+      read.outcome = "ready";
       const consumed = consumedUnits(state, reducer.aggregation.func);
-      const credited = creditReady
-        ? consumedUnits(creditState, creditReducer!.aggregation.func)
-        : 0;
+      const credited = creditReducer ? consumedUnits(creditState, creditReducer.aggregation.func) : 0;
       return {
         ...input,
         consumed_units: consumed,

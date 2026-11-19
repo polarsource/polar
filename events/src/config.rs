@@ -12,7 +12,7 @@ use tracing::level_filters::LevelFilter;
 use crate::{aws::AwsSettings, client_ip::TrustedProxies, jobs::SqsSettings};
 
 const MAX_TOKEN_CACHE_TTL_SECONDS: f64 = 86_400.0;
-const MAX_POSTGRES_POOL_SIZE: u32 = 4;
+const MAX_POSTGRES_POOL_SIZE: u32 = 8;
 
 pub struct Config {
     pub port: u16,
@@ -115,7 +115,7 @@ impl Config {
                 .unwrap_or(LevelFilter::INFO),
             logfire_token: lookup("POLAR_LOGFIRE_TOKEN"),
             postgres,
-            postgres_pool_size: var("POLAR_DATABASE_POOL_SIZE", "4")
+            postgres_pool_size: var("POLAR_DATABASE_POOL_SIZE", "8")
                 .parse::<u32>()
                 .context("POLAR_DATABASE_POOL_SIZE")?
                 .min(MAX_POSTGRES_POOL_SIZE),

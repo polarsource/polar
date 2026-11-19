@@ -865,3 +865,27 @@ resource "tfe_variable" "backoffice_google_hosted_domain_test" {
     ignore_changes = [value]
   }
 }
+
+resource "tfe_variable" "payment_retry_alert_api_key_test" {
+  key             = "payment_retry_alert_api_key"
+  category        = "terraform"
+  description     = "PaymentRetryAlert API key for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "payment_retry_alert_webhook_secret_test" {
+  key             = "payment_retry_alert_webhook_secret"
+  category        = "terraform"
+  description     = "PaymentRetryAlert webhook signing secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}

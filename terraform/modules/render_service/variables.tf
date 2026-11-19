@@ -146,6 +146,8 @@ variable "environment_groups" {
       POLAR_RESEND_API_KEY                       = string
       POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID       = optional(string)
       POLAR_RESEND_WEBHOOK_SECRET                = string
+      POLAR_PAYMENT_RETRY_ALERT_API_KEY          = string
+      POLAR_PAYMENT_RETRY_ALERT_WEBHOOK_SECRET   = string
       POLAR_FIRECRAWL_API_KEY                    = string
       POLAR_LOGO_DEV_PUBLISHABLE_KEY             = string
       POLAR_SENTRY_DSN                           = string

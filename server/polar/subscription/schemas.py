@@ -826,6 +826,13 @@ class SubscriptionListParams(QuerySchema):
         None,
         description="Filter by subscriptions that are set to cancel at period end.",
     )
+    recurring_interval: MultipleQueryFilter[SubscriptionRecurringInterval] | None = (
+        Field(
+            None,
+            title="RecurringInterval Filter",
+            description="Filter by billing interval.",
+        )
+    )
     customer_cancellation_reason: (
         MultipleQueryFilter[CustomerCancellationReason] | None
     ) = Field(

@@ -70,6 +70,7 @@ class SubscriptionStatus(StrEnum):
     canceled = "canceled"
     unpaid = "unpaid"
     paused = "paused"
+    trial_ended = "trial_ended"
 
     @classmethod
     def incomplete_statuses(cls) -> set[Self]:
@@ -82,6 +83,10 @@ class SubscriptionStatus(StrEnum):
     @classmethod
     def revoked_statuses(cls) -> set[Self]:
         return {cls.canceled, cls.unpaid}  # pyright: ignore
+
+    @classmethod
+    def paused_statuses(cls) -> set[Self]:
+        return {cls.paused, cls.trial_ended}  # pyright: ignore
 
     @classmethod
     def billable_statuses(cls) -> set[Self]:
@@ -492,6 +497,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         """Whether a payment method is still needed to bill this subscription."""
         if self.status == SubscriptionStatus.paused:
             return self.resumes_at is not None
+        if self.status == SubscriptionStatus.trial_ended:
+            return True
         if not self.billable:
             return False
         if SubscriptionStatus.is_active(self.status) and self.cancel_at_period_end:
@@ -518,6 +525,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
         return type_coerce(
             scheduled_resume
+            | (cls.status == SubscriptionStatus.trial_ended)
             | (
                 cls.status.in_(SubscriptionStatus.billable_statuses())
                 & (
@@ -548,9 +556,9 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
-        # A paused subscription isn't billable, but can still be revoked
-        # immediately instead of having to be resumed first.
-        if immediately and self.status == SubscriptionStatus.paused:
+        # A paused or trial-ended subscription isn't billable, but can still be
+        # revoked immediately instead of having to be resumed first.
+        if immediately and self.status in SubscriptionStatus.paused_statuses():
             return self.ended_at is None
 
         if not SubscriptionStatus.is_billable(self.status):

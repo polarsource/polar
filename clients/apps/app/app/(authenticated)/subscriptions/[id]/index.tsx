@@ -26,6 +26,7 @@ const statusColors = {
   trialing: 'blue',
   unpaid: 'yellow',
   paused: 'yellow',
+  trial_ended: 'yellow',
 } as const
 
 export default function Index() {

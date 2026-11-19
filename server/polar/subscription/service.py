@@ -1953,6 +1953,9 @@ class SubscriptionService:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
+        if subscription.status == SubscriptionStatus.trial_ended:
+            raise InactiveSubscription(subscription)
+
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id_and_organization(
             product_id,
@@ -2092,6 +2095,9 @@ class SubscriptionService:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
 
+        if subscription.status == SubscriptionStatus.trial_ended:
+            raise InactiveSubscription(subscription)
+
         unit_price = subscription.get_price_by_type(ProductPriceUnit)
         if unit_price is None:
             raise NotAUnitBasedSubscription(subscription, units)
@@ -2144,6 +2150,9 @@ class SubscriptionService:
     ) -> None:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
+
+        if subscription.status == SubscriptionStatus.trial_ended:
+            raise InactiveSubscription(subscription)
 
         seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
         if seat_price is None:

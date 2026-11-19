@@ -39,6 +39,7 @@ USAGE_POLICIES = {
     SubscriptionStatus.past_due: UsagePolicy.charge,
     SubscriptionStatus.trialing: UsagePolicy.trial,
     SubscriptionStatus.paused: UsagePolicy.paused,
+    SubscriptionStatus.trial_ended: UsagePolicy.paused,
 }
 
 

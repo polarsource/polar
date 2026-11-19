@@ -97,7 +97,7 @@ Recurring billing relationship.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `status` | SubscriptionStatus | incomplete, trialing, active, past_due, canceled, unpaid |
+| `status` | SubscriptionStatus | incomplete, trialing, active, past_due, canceled, unpaid, ... |
 | `amount`, `currency` | int, str | Subscription gross price |
 | `net_amount` | int | Net amount (gross minus inclusive tax, equal to gross if tax-exclusive) |
 | `tax_behavior` | TaxBehavior \| None | Inclusive, exclusive, or null (set at creation) |

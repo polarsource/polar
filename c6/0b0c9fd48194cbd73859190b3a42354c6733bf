@@ -1,0 +1,21 @@
+clients/pnpm-workspace.yaml
+  s_2c8623a773c273::t_1de630268ccc2e 112
+clients/pnpm-lock.yaml
+  s_2c8623a773c273::t_b75ba392ae6fbd 336,14144-14146,15160,30434
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c60b0c9fd48194cbd73859190b3a42354c6733bf",
+  "prompts": {},
+  "sessions": {
+    "s_2c8623a773c273": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f403-0ad2-71f1-aa65-1943b73bd14b",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

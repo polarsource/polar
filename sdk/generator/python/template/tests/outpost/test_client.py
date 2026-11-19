@@ -2388,6 +2388,65 @@ async def test_keeps_a_backoff_another_flusher_set_while_this_one_delivered(
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("event", '{"external_id":"unreadable","ratio":NaN}'),
+        ("event", '{"external_id":"unreadable","ratio":1e999}'),
+        ("other", "unreadable"),
+    ],
+)
+async def test_skips_an_outbox_entry_it_cannot_read_and_delivers_the_rest(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+    field: str,
+    value: str,
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        await redis.xadd(OUTBOX, {field: value})
+        await outpost.track(_usage("event-0", 10))
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"]]
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_delivers_an_event_another_sdk_queued_in_a_form_it_cannot_parse(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        # Another SDK takes a timestamp this one refuses.
+        foreign = _usage("foreign", 10, timestamp="2026-10-12t12:00:00z")
+        await redis.xadd(OUTBOX, {"event": json.dumps(foreign)})
+        await outpost.track(_usage("event-0", 10))
+        await outpost.flush()
+        assert _delivered(ingest) == [["foreign", "event-0"]]
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
+async def test_refuses_to_track_a_number_json_cannot_carry(
+    redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        event = _usage("event-0", 10)
+        event["metadata"] = {"tokens": 10, "ratio": float("nan")}
+        with pytest.raises(ValueError, match="JSON"):
+            await outpost.track(event)
+        assert await redis.xlen(OUTBOX) == 0
+        assert await _pending_count(redis) is None
+
+
+@pytest.mark.anyio
 async def test_drops_a_batch_polar_refuses_settles_its_events_and_reports_them(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

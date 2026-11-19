@@ -5617,9 +5617,9 @@ class TestConfirm:
             ),
             pytest.param(
                 "FR",
-                "GP",
+                "CY",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="GP")),
-                ("checkout.billing_country_mismatch", "GP"),
+                None,
                 id="parent seen as territory",
             ),
             pytest.param(

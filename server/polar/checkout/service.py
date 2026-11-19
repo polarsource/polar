@@ -1198,6 +1198,11 @@ class CheckoutService:
                 *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
                     billing_address.country, ()
                 ),
+                *(
+                    territory
+                    for territory, parents in ip_geolocation.BILLING_COUNTRY_ALIASES.items()
+                    if billing_address.country in parents
+                ),
             }
             if billing_address is not None
             else set()

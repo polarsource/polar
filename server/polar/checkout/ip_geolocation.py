@@ -81,7 +81,8 @@ def get_ip_country(client: IPGeolocationClient, ip: str) -> str | None:
     return ret
 
 
-# Countries an IP or payment method lookup may report for a billing country.
+# Territories and their parent countries. A billing country matches its aliases
+# in both directions, since IP and payment method lookups can report either one.
 BILLING_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
     "AX": ("FI",),
     "GP": ("FR",),

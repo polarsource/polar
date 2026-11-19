@@ -30,9 +30,9 @@ from polar.subscription.service import (
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
-    CustomerSubscriptionChangePreview,
-    CustomerSubscriptionChangePreviewSeats,
-    CustomerSubscriptionChangePreviewUnits,
+    CustomerSubscriptionChange,
+    CustomerSubscriptionChangeSeats,
+    CustomerSubscriptionChangeUnits,
     CustomerSubscriptionPause,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
@@ -275,10 +275,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
         *,
-        change: CustomerSubscriptionChangePreview,
+        change: CustomerSubscriptionChange,
     ) -> SubscriptionChargePreview:
         organization = subscription.product.organization
-        if isinstance(change, CustomerSubscriptionChangePreviewSeats):
+        if isinstance(change, CustomerSubscriptionChangeSeats):
             if not organization.customer_portal_subscription_update_seats:
                 raise UpdateSubscriptionSeatsNotAllowed()
             return await subscription_service.calculate_change_preview(
@@ -287,7 +287,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 seats=change.seats,
             )
 
-        if isinstance(change, CustomerSubscriptionChangePreviewUnits):
+        if isinstance(change, CustomerSubscriptionChangeUnits):
             if not organization.customer_portal_subscription_update_units:
                 raise UpdateSubscriptionUnitsNotAllowed()
             return await subscription_service.calculate_change_preview(

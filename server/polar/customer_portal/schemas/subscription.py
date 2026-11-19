@@ -118,7 +118,7 @@ class CustomerSubscriptionUpdateUnits(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewProduct(Schema):
+class CustomerSubscriptionChangeProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 
     product_id: UUID4 = Field(
@@ -126,7 +126,7 @@ class CustomerSubscriptionChangePreviewProduct(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewSeats(Schema):
+class CustomerSubscriptionChangeSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
     seats: Int32 = Field(
@@ -135,7 +135,7 @@ class CustomerSubscriptionChangePreviewSeats(Schema):
     )
 
 
-class CustomerSubscriptionChangePreviewUnits(Schema):
+class CustomerSubscriptionChangeUnits(Schema):
     model_config = ConfigDict(extra="forbid")
 
     units: Int32 = Field(
@@ -144,11 +144,11 @@ class CustomerSubscriptionChangePreviewUnits(Schema):
     )
 
 
-CustomerSubscriptionChangePreview = Annotated[
-    CustomerSubscriptionChangePreviewProduct
-    | CustomerSubscriptionChangePreviewSeats
-    | CustomerSubscriptionChangePreviewUnits,
-    SetSchemaReference("CustomerSubscriptionChangePreview"),
+CustomerSubscriptionChange = Annotated[
+    CustomerSubscriptionChangeProduct
+    | CustomerSubscriptionChangeSeats
+    | CustomerSubscriptionChangeUnits,
+    SetSchemaReference("CustomerSubscriptionChange"),
 ]
 
 

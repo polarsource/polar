@@ -147,6 +147,7 @@ from .repository import SubscriptionRepository, SubscriptionUpdateRepository
 from .schemas import (
     SubscriptionCancel,
     SubscriptionCancelPreview,
+    SubscriptionChangePreview,
     SubscriptionChargePreview,
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
@@ -2424,9 +2425,26 @@ class SubscriptionService:
             yield "unset"
             return
 
+        resolved_discount = await self._get_applicable_discount(
+            session, subscription, discount_id=discount, product=product
+        )
+        async with discount_service.redeem_discount(
+            session, resolved_discount
+        ) as redemption:
+            redemption.subscription = subscription
+            yield resolved_discount
+
+    async def _get_applicable_discount(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        discount_id: uuid.UUID,
+        product: Product,
+    ) -> Discount:
         resolved_discount = await discount_service.get_by_id_and_organization(
             session,
-            discount,
+            discount_id,
             subscription.organization,
             products=[product],
             currency=subscription.currency,
@@ -2442,7 +2460,7 @@ class SubscriptionService:
                             "is not applicable to this product "
                             "or is not redeemable."
                         ),
-                        "input": discount,
+                        "input": discount_id,
                     }
                 ]
             )
@@ -2453,16 +2471,11 @@ class SubscriptionService:
                         "type": "value_error",
                         "loc": ("body", "discount_id"),
                         "msg": "This discount is already applied to the subscription.",
-                        "input": discount,
+                        "input": discount_id,
                     }
                 ]
             )
-
-        async with discount_service.redeem_discount(
-            session, resolved_discount
-        ) as redemption:
-            redemption.subscription = subscription
-            yield resolved_discount
+        return resolved_discount
 
     async def update_discount(
         self,
@@ -3538,8 +3551,9 @@ class SubscriptionService:
         seats: int | None = None,
         units: int | None = None,
         proration_behavior: ProrationBehaviorSetting | None = None,
+        discount: uuid.UUID | Literal["unset"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
-    ) -> SubscriptionChargePreview:
+    ) -> SubscriptionChangePreview:
         # The change is applied inside a savepoint: the preview prices the rows the
         # invoice would bill.
         nested = await session.begin_nested()
@@ -3551,6 +3565,7 @@ class SubscriptionService:
                 seats=seats,
                 units=units,
                 proration_behavior=proration_behavior,
+                discount=discount,
                 allowed_visibilities=allowed_visibilities,
             )
         finally:
@@ -3565,10 +3580,14 @@ class SubscriptionService:
         seats: int | None,
         units: int | None,
         proration_behavior: ProrationBehaviorSetting | None,
+        discount: uuid.UUID | Literal["unset"] | None,
         allowed_visibilities: frozenset[Visibility],
-    ) -> SubscriptionChargePreview:
+    ) -> SubscriptionChangePreview:
         provided = [product_id is not None, seats is not None, units is not None]
         assert sum(provided) == 1, "exactly one change per preview"
+        assert discount is None or product_id is not None, (
+            "a discount is only previewed with a product change"
+        )
 
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(
@@ -3584,6 +3603,15 @@ class SubscriptionService:
                 subscription,
                 product_id=product_id,
                 allowed_visibilities=allowed_visibilities,
+            )
+
+        new_discount: Discount | Literal["unset"] | None = None
+        if discount == "unset":
+            new_discount = "unset"
+        elif discount is not None:
+            assert product is not None
+            new_discount = await self._get_applicable_discount(
+                session, subscription, discount_id=discount, product=product
             )
 
         proration_behavior = resolve_proration_behavior(
@@ -3640,11 +3668,20 @@ class SubscriptionService:
             )
 
         subscription_update, billing_entries = generate_subscription_update(
-            subscription, proration_behavior, product=product, seats=seats, units=units
+            subscription,
+            proration_behavior,
+            product=product,
+            seats=seats,
+            units=units,
+            discount=new_discount,
         )
+        discount_after_update = subscription_update.after_update_discount
 
         applies_now = proration_behavior != SubscriptionProrationBehavior.next_period
 
+        items: Sequence[OrderItem] = []
+        prorations: Sequence[SubscriptionChargePreviewProration] = []
+        proration_amount = 0
         if applies_now and subscription.trialing:
             # Ending the trial bills a full period of the new product; keeping it
             # bills nothing today. Either way, a trial has no proration to surface.
@@ -3653,60 +3690,44 @@ class SubscriptionService:
                 and self._resolve_trial_end(subscription, product) is None
             ):
                 subscription_update.apply_update()
-                return await self._build_preview(
-                    session,
-                    subscription,
-                    [
-                        OrderItem(
-                            label="Subscription",
-                            amount=spp.amount,
-                            net_amount=spp.amount,
-                            tax_amount=0,
-                            proration=False,
-                        )
-                        for spp in subscription.subscription_product_prices
-                        if is_static_price(spp.product_price)
-                    ],
-                    billing_reason=OrderBillingReasonInternal.subscription_update,
-                    discount=subscription.discount,
-                    base_amount=0,
-                    metered_amount=0,
-                    prorations=[],
-                    proration_amount=0,
-                )
-            return await self._build_preview(
-                session,
-                subscription,
-                [],
-                billing_reason=OrderBillingReasonInternal.subscription_update,
-                discount=subscription.discount,
-                base_amount=0,
-                metered_amount=0,
-                prorations=[],
-                proration_amount=0,
-            )
+                items = [
+                    OrderItem(
+                        label="Subscription",
+                        amount=spp.amount,
+                        net_amount=spp.amount,
+                        tax_amount=0,
+                        proration=False,
+                    )
+                    for spp in subscription.subscription_product_prices
+                    if is_static_price(spp.product_price)
+                ]
+        else:
+            if applies_now:
+                session.add(event)
+                for entry in billing_entries:
+                    entry.event = event
+                    session.add(entry)
+                await session.flush()
 
-        if applies_now:
-            session.add(event)
-            for entry in billing_entries:
-                entry.event = event
-                session.add(entry)
-            await session.flush()
+            (
+                prorations,
+                items,
+                proration_amount,
+            ) = await self._collect_pending_prorations(session, subscription)
 
-        prorations, items, proration_amount = await self._collect_pending_prorations(
-            session, subscription
-        )
-
-        return await self._build_preview(
+        preview = await self._build_preview(
             session,
             subscription,
             items,
             billing_reason=OrderBillingReasonInternal.subscription_update,
-            discount=subscription.discount,
+            discount=discount_after_update,
             base_amount=0,
             metered_amount=0,
             prorations=prorations,
             proration_amount=proration_amount,
+        )
+        return SubscriptionChangePreview(
+            **preview.model_dump(), proration_behavior=proration_behavior
         )
 
     def _promote_seats_for_seat_transition(

@@ -20,11 +20,13 @@ from polar.models import (
     Product,
     Subscription,
 )
+from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_discount,
     create_product,
     create_product_fixed_and_seat,
     create_product_unit_based,
@@ -101,6 +103,87 @@ class TestCalculateChangePreview:
         assert preview.proration_amount == 2000
         assert preview.subtotal_amount == 2000
         assert preview.total_amount == 2000
+
+    async def test_upgrade_with_new_discount_prices_the_new_product_discounted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                current_period_end=datetime(2025, 2, 1, tzinfo=UTC),
+            )
+            new_product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(5000, "usd")],
+            )
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=10000,
+                duration=DiscountDuration.forever,
+                organization=organization,
+                products=[new_product],
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+                discount=discount.id,
+            )
+
+        # The old product's unused half is credited; the new one is fully discounted.
+        assert preview.proration_amount == -500
+        assert preview.total_amount == -500
+        assert preview.proration_behavior == SubscriptionProrationBehavior.prorate
+
+    async def test_discount_not_applicable_to_new_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[product],
+        )
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+                discount=discount.id,
+            )
+
+        assert exc_info.value.errors()[0]["loc"] == ("body", "discount_id")
 
     async def test_trial_ending_change_charges_a_full_period(
         self,

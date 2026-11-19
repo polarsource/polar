@@ -9,6 +9,13 @@ export const subscriptionUpdateValidationDiscriminators = [
   'SubscriptionUpdateSeats',
 ]
 
+export const isDiscountApplicableToProduct = (
+  discount: schemas['Discount'],
+  productId: string,
+): boolean =>
+  discount.products.length === 0 ||
+  discount.products.some((product) => product.id === productId)
+
 export const subscriptionStatusDisplayNames: {
   [key in schemas['SubscriptionStatus']]: string
 } = {

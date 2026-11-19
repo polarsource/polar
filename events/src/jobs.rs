@@ -19,15 +19,8 @@ const DEFAULT_DEBOUNCE_MIN_THRESHOLD: Duration = Duration::from_secs(15);
 
 pub struct Job {
     actor: &'static str,
-    args: Vec<Value>,
     kwargs: Map<String, Value>,
-    delay: Option<Duration>,
-    debounce: Option<Debounce>,
-}
-
-struct Debounce {
-    key: String,
-    min_threshold: Duration,
+    debounce_key: String,
 }
 
 impl Job {
@@ -44,28 +37,11 @@ impl Job {
         kwargs.insert("last_used_at".to_owned(), json!(last_used_at));
         Self {
             actor: RECORD_TOKEN_USAGE_ACTOR,
-            args: Vec::new(),
             kwargs,
-            delay: None,
-            debounce: Some(Debounce {
-                key: format!("organization_access_token.record_usage:{token_id}"),
-                min_threshold: DEFAULT_DEBOUNCE_MIN_THRESHOLD,
-            }),
+            debounce_key: format!(
+                "{DEBOUNCE_KEY_PREFIX}organization_access_token.record_usage:{token_id}"
+            ),
         }
-    }
-
-    fn effective_delay(&self) -> Option<Duration> {
-        match &self.debounce {
-            Some(debounce) => Some(self.delay.unwrap_or_default().max(debounce.min_threshold)),
-            None => self.delay,
-        }
-        .filter(|delay| !delay.is_zero())
-    }
-
-    fn debounce_key(&self) -> Option<String> {
-        self.debounce
-            .as_ref()
-            .map(|debounce| format!("{DEBOUNCE_KEY_PREFIX}{}", debounce.key))
     }
 }
 
@@ -81,7 +57,7 @@ fn set_debounce(pipeline: &mut redis::Pipeline, key: &str, message_id: Uuid, now
 struct Message {
     queue_name: String,
     actor_name: &'static str,
-    args: Vec<Value>,
+    args: [Value; 0],
     kwargs: Map<String, Value>,
     options: MessageOptions,
     message_id: Uuid,
@@ -92,31 +68,24 @@ struct Message {
 struct MessageOptions {
     redis_message_id: Uuid,
     source_correlation_id: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    debounce_key: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    eta: Option<u64>,
+    debounce_key: String,
+    eta: u64,
 }
 
 impl Message {
     fn new(job: Job, now: Duration, message_id: Uuid, redis_message_id: Uuid) -> Self {
         let now_millis = now.as_millis() as u64;
-        let delay = job.effective_delay();
-        let debounce_key = job.debounce_key();
 
         Self {
-            queue_name: match delay {
-                Some(_) => format!("{QUEUE}.DQ"),
-                None => QUEUE.to_owned(),
-            },
+            queue_name: format!("{QUEUE}.DQ"),
             actor_name: job.actor,
-            args: job.args,
+            args: [],
             kwargs: job.kwargs,
             options: MessageOptions {
                 redis_message_id,
                 source_correlation_id: None,
-                debounce_key,
-                eta: delay.map(|delay| now_millis + delay.as_millis() as u64),
+                debounce_key: job.debounce_key,
+                eta: now_millis + DEFAULT_DEBOUNCE_MIN_THRESHOLD.as_millis() as u64,
             },
             message_id,
             message_timestamp: now_millis,
@@ -163,9 +132,12 @@ async fn enqueue_in_redis(
     for job in jobs {
         let message = Message::new(job, now, Uuid::new_v4(), Uuid::new_v4());
         let redis_message_id = message.options.redis_message_id.to_string();
-        if let Some(key) = &message.options.debounce_key {
-            set_debounce(&mut pipeline, key, message.message_id, now);
-        }
+        set_debounce(
+            &mut pipeline,
+            &message.options.debounce_key,
+            message.message_id,
+            now,
+        );
         let encoded = serde_json::to_string(&message).expect("job messages serialize to JSON");
         pipeline
             .hset(
@@ -222,23 +194,5 @@ mod tests {
                 "message_timestamp": 1_794_493_590_947_u64,
             })
         );
-    }
-
-    #[test]
-    fn immediate_job_goes_to_the_main_queue() {
-        let job = Job {
-            actor: "dummy",
-            args: vec![json!("value")],
-            kwargs: Map::new(),
-            delay: None,
-            debounce: None,
-        };
-
-        let message = encode(job);
-
-        assert_eq!(message["queue_name"], "low_priority");
-        assert_eq!(message["args"], json!(["value"]));
-        assert!(message["options"].get("eta").is_none());
-        assert!(message["options"].get("debounce_key").is_none());
     }
 }

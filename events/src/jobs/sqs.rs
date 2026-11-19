@@ -11,12 +11,11 @@ use serde::Serialize;
 use serde_json::{Map, Value};
 use uuid::Uuid;
 
-use super::{Job, QUEUE, set_debounce};
+use super::{DEFAULT_DEBOUNCE_MIN_THRESHOLD, Job, QUEUE, set_debounce};
 
 const BATCH_SIZE: usize = 10;
 const MAX_CONCURRENT_BATCHES: usize = 8;
 const MAX_BATCH_BYTES: usize = 262_144;
-const MAX_DELAY_SECONDS: u64 = 900;
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(2);
 const READ_TIMEOUT: Duration = Duration::from_secs(5);
 const MAX_ATTEMPTS: u32 = 3;
@@ -36,31 +35,29 @@ pub struct SqsQueue {
 #[derive(Serialize)]
 struct Envelope {
     actor: &'static str,
-    args: Vec<Value>,
+    args: [Value; 0],
     kwargs: Map<String, Value>,
     correlation_id: Option<String>,
     attempt: u32,
     message_timestamp: u64,
     message_id: Uuid,
-    debounce_key: Option<String>,
+    debounce_key: String,
     message_options: Map<String, Value>,
 }
 
 impl Envelope {
-    fn new(job: Job, now: Duration, message_id: Uuid) -> (Self, Option<Duration>) {
-        let delay = job.effective_delay();
-        let envelope = Self {
-            debounce_key: job.debounce_key(),
+    fn new(job: Job, now: Duration, message_id: Uuid) -> Self {
+        Self {
+            debounce_key: job.debounce_key,
             actor: job.actor,
-            args: job.args,
+            args: [],
             kwargs: job.kwargs,
             correlation_id: None,
             attempt: 1,
             message_timestamp: now.as_millis() as u64,
             message_id,
             message_options: Map::new(),
-        };
-        (envelope, delay)
+        }
     }
 }
 
@@ -140,7 +137,7 @@ impl SqsQueue {
                 .parse::<usize>()
                 .ok()
                 .and_then(|id| owners.get(id));
-            if let Some((message_id, Some(key))) = owner {
+            if let Some((message_id, key)) = owner {
                 set_debounce(&mut debounces, key, *message_id, now);
             }
         }
@@ -159,7 +156,7 @@ impl SqsQueue {
         let mut batches: Vec<Vec<QueuedJob>> = vec![Vec::new()];
         let mut batch_bytes = 0;
         for job in jobs {
-            let (envelope, delay) = Envelope::new(job, now, Uuid::new_v4());
+            let envelope = Envelope::new(job, now, Uuid::new_v4());
             let body = ensure_ascii(
                 &serde_json::to_string(&envelope).expect("job envelopes serialize to JSON"),
             );
@@ -175,7 +172,7 @@ impl SqsQueue {
             let entry = SendMessageBatchRequestEntry::builder()
                 .id(batch.len().to_string())
                 .message_body(body)
-                .set_delay_seconds(delay.map(|delay| delay.as_secs().min(MAX_DELAY_SECONDS) as i32))
+                .delay_seconds(DEFAULT_DEBOUNCE_MIN_THRESHOLD.as_secs() as i32)
                 .build()
                 .context("building an SQS batch entry")?;
             batch.push(QueuedJob {
@@ -204,7 +201,7 @@ impl SqsQueue {
 struct QueuedJob {
     entry: SendMessageBatchRequestEntry,
     message_id: Uuid,
-    debounce_key: Option<String>,
+    debounce_key: String,
 }
 
 fn ensure_ascii(json: &str) -> String {
@@ -240,7 +237,7 @@ mod tests {
     use serde_json::json;
     use tokio::net::TcpListener;
 
-    use super::{super::Debounce, *};
+    use super::*;
     use crate::aws::{AwsSettings, sdk_config};
 
     type Requests = Arc<Mutex<Vec<(String, Value)>>>;
@@ -319,16 +316,11 @@ mod tests {
         (queue, requests, redis)
     }
 
-    fn delayed_job(key: &str, delay: Duration) -> Job {
+    fn job(key: &str) -> Job {
         Job {
             actor: "dummy",
-            args: vec![json!("value")],
             kwargs: Map::new(),
-            delay: Some(delay),
-            debounce: Some(Debounce {
-                key: format!("dummy:{key}"),
-                min_threshold: Duration::from_secs(10),
-            }),
+            debounce_key: format!("debounce:dummy:{key}"),
         }
     }
 
@@ -348,10 +340,7 @@ mod tests {
         let result = queue
             .send(
                 &mut redis,
-                vec![
-                    delayed_job(&rejected, Duration::from_secs(1_200)),
-                    delayed_job(&accepted, Duration::from_secs(1_200)),
-                ],
+                vec![job(&rejected), job(&accepted)],
                 Duration::from_millis(1_794_493_590_947),
             )
             .await;
@@ -391,7 +380,7 @@ mod tests {
     async fn sends_delayed_debounced_jobs_to_the_queue() {
         let (queue, requests, mut redis) = mock_queue(&["dummy"]).await;
         let key = Uuid::new_v4().to_string();
-        let jobs = Vec::from_iter((0..11).map(|_| delayed_job(&key, Duration::from_secs(1_200))));
+        let jobs = Vec::from_iter((0..11).map(|_| job(&key)));
 
         queue
             .send(&mut redis, jobs, Duration::from_millis(1_794_493_590_947))
@@ -417,7 +406,7 @@ mod tests {
         let last = requests[2].1["Entries"].as_array().unwrap();
         assert_eq!((first.len(), last.len()), (10, 1));
         assert_eq!(first[9]["Id"], "9");
-        assert_eq!(first[0]["DelaySeconds"], 900);
+        assert_eq!(first[0]["DelaySeconds"], 15);
         let envelope: Value =
             serde_json::from_str(last[0]["MessageBody"].as_str().unwrap()).unwrap();
         assert_eq!(envelope["actor"], "dummy");
@@ -427,17 +416,17 @@ mod tests {
 
     #[test]
     fn builds_the_envelope_the_lambda_worker_parses() {
-        let job = delayed_job("key", Duration::from_secs(120));
+        let envelope = Envelope::new(
+            job("key"),
+            Duration::from_millis(1_794_493_590_947),
+            Uuid::nil(),
+        );
 
-        let (envelope, delay) =
-            Envelope::new(job, Duration::from_millis(1_794_493_590_947), Uuid::nil());
-
-        assert_eq!(delay, Some(Duration::from_secs(120)));
         assert_eq!(
             serde_json::to_value(envelope).unwrap(),
             json!({
                 "actor": "dummy",
-                "args": ["value"],
+                "args": [],
                 "kwargs": {},
                 "correlation_id": null,
                 "attempt": 1,

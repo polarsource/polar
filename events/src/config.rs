@@ -227,7 +227,10 @@ mod tests {
             ("POLAR_LOG_LEVEL", "DEBUG"),
             ("POLAR_LOGFIRE_TOKEN", "token"),
             ("POLAR_WORKER_SQS_ENABLED", "true"),
-            ("POLAR_WORKER_SQS_ACTORS", r#"["reducer_bucket.sync"]"#),
+            (
+                "POLAR_WORKER_SQS_ACTORS",
+                r#"["organization_access_token.record_usage"]"#,
+            ),
             ("POLAR_WORKER_SQS_QUEUE_PREFIX", "polar-production-tasks"),
             ("POLAR_POSTGRES_HOST", "db.internal"),
             ("POLAR_POSTGRES_SSL", "True"),
@@ -244,7 +247,9 @@ mod tests {
         assert_eq!(worker_sqs.queue_prefix, "polar-production-tasks");
         assert_eq!(
             worker_sqs.actors,
-            Some(HashSet::from(["reducer_bucket.sync".to_owned()]))
+            Some(HashSet::from([
+                "organization_access_token.record_usage".to_owned()
+            ]))
         );
         assert_eq!(config.aws.region, "us-east-2");
         assert!(config.aws.static_credentials.is_none());

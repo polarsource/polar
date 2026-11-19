@@ -16,6 +16,8 @@ const ITEM_CLASS =
 interface ToolbarMultiSelectProps<T extends string> {
   label: string
   emptyLabel: string
+  // Names the selection once there is more than one: "3 products".
+  manyLabel: string
   value: T[]
   options: { value: T; label: string }[]
   onChange: (value: T[]) => void
@@ -24,6 +26,7 @@ interface ToolbarMultiSelectProps<T extends string> {
 export const ToolbarMultiSelect = <T extends string>({
   label,
   emptyLabel,
+  manyLabel,
   value,
   options,
   onChange,
@@ -32,7 +35,9 @@ export const ToolbarMultiSelect = <T extends string>({
   const summary =
     selected.length === 0
       ? emptyLabel
-      : selected.map((option) => option.label).join(', ')
+      : selected.length === 1
+        ? selected[0].label
+        : `${selected.length} ${manyLabel}`
   // Kept in the order of the options, whatever order they were picked in.
   const toggle = (toggled: T) =>
     onChange(
@@ -51,7 +56,7 @@ export const ToolbarMultiSelect = <T extends string>({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="dark:bg-polar-800 w-44 rounded-xl border-none p-1"
+        className="dark:bg-polar-800 max-h-80 w-60 overflow-y-auto rounded-xl border-none p-1"
       >
         {options.map((option) => (
           <button
@@ -62,8 +67,12 @@ export const ToolbarMultiSelect = <T extends string>({
             className={ITEM_CLASS}
             onClick={() => toggle(option.value)}
           >
-            <Text variant="caption">{option.label}</Text>
-            <Box width={16} height={16} alignItems="center">
+            <Box minWidth={0}>
+              <Text variant="caption" truncate>
+                {option.label}
+              </Text>
+            </Box>
+            <Box width={16} height={16} flexShrink={0} alignItems="center">
               {value.includes(option.value) && <Check className="size-4" />}
             </Box>
           </button>

@@ -38,7 +38,6 @@ import {
 import dynamic from 'next/dynamic'
 import React, { useCallback, useRef, useState } from 'react'
 import {
-  subscriptionIntervalValues,
   SubscriptionsToolbar,
   subscriptionViewValues,
 } from './SubscriptionsToolbar'
@@ -68,8 +67,8 @@ const ZOOM_COMMIT_DELAY = 150
 const DEFAULT_SORTING = [{ id: 'started_at', desc: true }]
 
 const filterParsers = {
-  product_id: parseAsString,
-  external_product_id: parseAsString,
+  product_id: parseAsArrayOf(parseAsString),
+  external_product_id: parseAsArrayOf(parseAsString),
   status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
     DEFAULT_SUBSCRIPTION_STATUS,
   ),
@@ -77,9 +76,6 @@ const filterParsers = {
   zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
   subscription: parseAsString,
   view: parseAsStringLiteral(subscriptionViewValues).withDefault('timeline'),
-  interval: parseAsArrayOf(
-    parseAsStringLiteral(subscriptionIntervalValues),
-  ).withDefault([]),
   group:
     parseAsStringLiteral(ganttGroupValues).withDefault(DEFAULT_GANTT_GROUP),
 }
@@ -103,7 +99,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       zoom,
       subscription: selectedId,
       view,
-      interval: intervals,
       group,
     },
     setFilters,
@@ -130,7 +125,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     externalProductId !== null ||
     status !== DEFAULT_SUBSCRIPTION_STATUS ||
     cancelAtPeriodEnd !== null ||
-    intervals.length > 0 ||
     sort?.id !== DEFAULT_SORTING[0].id ||
     sort.desc !== DEFAULT_SORTING[0].desc
 
@@ -140,7 +134,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: null,
       status: null,
       cancel_at_period_end: null,
-      interval: null,
     })
     setSorting(DEFAULT_SORTING)
   }
@@ -150,7 +143,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId ?? undefined,
     status: status === 'any' ? undefined : [status],
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-    recurring_interval: intervals.length > 0 ? intervals : undefined,
   }
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteSubscriptions(organization.id, {
@@ -203,7 +195,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     setFilters({
       group: 'customer',
       ...(group === 'product'
-        ? { product_id: groupKey, external_product_id: null }
+        ? { product_id: [groupKey], external_product_id: null }
         : {}),
     })
     if (start !== undefined) {
@@ -243,10 +235,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         }
         sorting={sorting}
         onSortingChange={setSorting}
-        intervals={intervals}
-        onIntervalsChange={(value) =>
-          setFilters({ interval: value.length > 0 ? value : null })
-        }
         view={view}
         onViewChange={(value) => setFilters({ view: value })}
         group={group}

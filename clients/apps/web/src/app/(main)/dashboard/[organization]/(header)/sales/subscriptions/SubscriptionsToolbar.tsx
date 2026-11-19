@@ -37,8 +37,6 @@ import { twMerge } from 'tailwind-merge'
 import { ToolbarMultiSelect } from './ToolbarMultiSelect'
 import { ToolbarSelect } from './ToolbarSelect'
 
-const ALL_PRODUCTS = 'all'
-
 // The toolbar never wraps. Below this width of its own container, the status
 // tabs and the dropdowns collapse into a single filter popover.
 const WIDE_ONLY_CLASS = 'hidden @[1460px]:flex'
@@ -60,21 +58,6 @@ const GROUP_OPTIONS: { value: GanttGroup; label: string }[] = [
   { value: 'total', label: 'Totals' },
   { value: 'product', label: 'By product' },
   { value: 'interval', label: 'By interval' },
-]
-
-export const subscriptionIntervalValues = [
-  'day',
-  'week',
-  'month',
-  'year',
-] as const
-type SubscriptionInterval = (typeof subscriptionIntervalValues)[number]
-
-const INTERVAL_OPTIONS: { value: SubscriptionInterval; label: string }[] = [
-  { value: 'day', label: 'Daily' },
-  { value: 'week', label: 'Weekly' },
-  { value: 'month', label: 'Monthly' },
-  { value: 'year', label: 'Yearly' },
 ]
 
 export const subscriptionViewValues = ['timeline', 'table'] as const
@@ -141,8 +124,6 @@ interface SubscriptionsToolbarProps {
   ) => void
   sorting: DataTableSortingState
   onSortingChange: (sorting: DataTableSortingState) => void
-  intervals: SubscriptionInterval[]
-  onIntervalsChange: (intervals: SubscriptionInterval[]) => void
   view: SubscriptionView
   onViewChange: (view: SubscriptionView) => void
   group: GanttGroup
@@ -161,8 +142,6 @@ export const SubscriptionsToolbar = ({
   onStatusSelect,
   sorting,
   onSortingChange,
-  intervals,
-  onIntervalsChange,
   view,
   onViewChange,
   group,
@@ -184,7 +163,7 @@ export const SubscriptionsToolbar = ({
     sorting: ['name'],
     limit: 100,
   })
-  const selectedValues = productFilter ? [productFilter] : []
+  const selectedValues = productFilter ?? []
   const { data: selectedProducts } = useSelectedProducts(
     filterByExternalId
       ? { organization_id: organization.id, external_id: selectedValues }
@@ -215,7 +194,6 @@ export const SubscriptionsToolbar = ({
   const counts = useSubscriptionCounts(organization.id, {
     product_id: product.product_id ?? undefined,
     external_product_id: product.external_product_id ?? undefined,
-    recurring_interval: intervals.length > 0 ? intervals : undefined,
   })
   const statusValue: SubscriptionCountKey =
     status === 'active' && cancelAtPeriodEnd ? 'canceling' : status
@@ -224,12 +202,14 @@ export const SubscriptionsToolbar = ({
   const isGroupable = view === 'timeline'
   const isSortable = view === 'table' || group === 'customer'
 
-  const selectProduct = (value: string | null) =>
+  const selectProducts = (value: string[]) => {
+    const selected = value.length > 0 ? value : null
     onProductSelect(
       filterByExternalId
-        ? { product_id: null, external_product_id: value }
-        : { product_id: value, external_product_id: null },
+        ? { product_id: null, external_product_id: selected }
+        : { product_id: selected, external_product_id: null },
     )
+  }
   const selectStatus = (key: SubscriptionCountKey) =>
     key === 'canceling'
       ? onStatusSelect('active', true)
@@ -262,18 +242,10 @@ export const SubscriptionsToolbar = ({
     {
       key: 'product',
       label: 'Product',
-      type: 'single',
-      options: productOptions,
-      value: productFilter,
-      onChange: selectProduct,
-    },
-    {
-      key: 'interval',
-      label: 'Interval',
       type: 'multi',
-      options: INTERVAL_OPTIONS,
-      value: intervals,
-      onChange: (value) => onIntervalsChange(value as SubscriptionInterval[]),
+      options: productOptions,
+      value: selectedValues,
+      onChange: selectProducts,
     },
     ...(isGroupable
       ? [
@@ -344,24 +316,13 @@ export const SubscriptionsToolbar = ({
         </Box>
         <Box alignItems="center" gap="s" flexShrink={0} minHeight={32}>
           <div className={twMerge(WIDE_ONLY_CLASS, 'items-center gap-2')}>
-            <ToolbarSelect
-              label="Product"
-              showLabel={false}
-              value={productFilter ?? ALL_PRODUCTS}
-              options={[
-                { value: ALL_PRODUCTS, label: 'All products' },
-                ...productOptions,
-              ]}
-              onChange={(value) =>
-                selectProduct(value === ALL_PRODUCTS ? null : value)
-              }
-            />
             <ToolbarMultiSelect
-              label="Interval"
-              emptyLabel="All intervals"
-              value={intervals}
-              options={INTERVAL_OPTIONS}
-              onChange={onIntervalsChange}
+              label="Product"
+              emptyLabel="All products"
+              manyLabel="products"
+              value={selectedValues}
+              options={productOptions}
+              onChange={selectProducts}
             />
             {isGroupable && (
               <ToolbarSelect

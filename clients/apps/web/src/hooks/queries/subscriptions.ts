@@ -101,10 +101,7 @@ const COUNT_FILTERS: Record<SubscriptionCountKey, SubscriptionListQuery> = {
 
 export const useSubscriptionCounts = (
   organizationId: string,
-  parameters: Pick<
-    SubscriptionListQuery,
-    'product_id' | 'external_product_id' | 'recurring_interval'
-  >,
+  parameters: Pick<SubscriptionListQuery, 'product_id' | 'external_product_id'>,
 ): Partial<Record<SubscriptionCountKey, number>> =>
   useQueries({
     queries: subscriptionCountKeys.map((key) => ({

@@ -10,8 +10,8 @@ import {
 import React from 'react'
 
 export interface ProductFilter {
-  product_id: string | null
-  external_product_id: string | null
+  product_id: string[] | null
+  external_product_id: string[] | null
 }
 
 interface SubscriptionsProductSelectProps {

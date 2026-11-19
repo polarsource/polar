@@ -8,7 +8,7 @@ import {
 } from './columns'
 
 const ROW_COUNT = 12
-const ROW_MIN_HEIGHT = 37
+const ROW_MIN_HEIGHT = 38
 const COMPACT_WIDTHS = [
   [140, 150],
   [180, 130],

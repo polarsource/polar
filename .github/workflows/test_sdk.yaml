@@ -106,13 +106,16 @@ jobs:
         working-directory: ./sdk/generator
         run: just test
 
+      # Redis 8.2 or later: the Redis cost tests read each client's bytes from CLIENT LIST.
+      - name: Install Redis
+        uses: shogo82148/actions-setup-redis@d566e806806d1bac2b414538d57b2b7f721e1d83 # v1.60.0
+        with:
+          redis-version: "8.2"
+          auto-start: false
+
       - name: Generate and test SDKs
         working-directory: ./sdk/generator
         run: |
-          # Redis 8.2 or later: the Redis cost tests read each client's bytes from CLIENT LIST.
-          curl -fsSL https://packages.redis.io/gpg | sudo gpg --dearmor -o /usr/share/keyrings/redis-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/redis-archive-keyring.gpg] https://packages.redis.io/deb $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/redis.list
-          sudo apt-get update && sudo apt-get install -y redis-server
           just openapi
           just generate-all
 

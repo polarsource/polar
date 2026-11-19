@@ -229,6 +229,46 @@ class TestUpsertFromStripe:
 
 
 @pytest.mark.anyio
+class TestUpsertFromStripeIntent:
+    async def test_sets_default_when_customer_has_none(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        stripe_payment_method = build_stripe_payment_method(type="card")
+        intent = stripe_lib.SetupIntent.construct_from(
+            {"id": "seti_test", "payment_method": stripe_payment_method}, None
+        )
+
+        payment_method = await payment_method_service.upsert_from_stripe_intent(
+            session, intent, Checkout(customer=customer)
+        )
+
+        assert customer.default_payment_method == payment_method
+
+    async def test_keeps_existing_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        existing_default = await create_payment_method(save_fixture, customer)
+        customer.default_payment_method = existing_default
+        await save_fixture(customer)
+        stripe_payment_method = build_stripe_payment_method(type="card")
+        intent = stripe_lib.SetupIntent.construct_from(
+            {"id": "seti_test", "payment_method": stripe_payment_method}, None
+        )
+
+        payment_method = await payment_method_service.upsert_from_stripe_intent(
+            session, intent, Checkout(customer=customer)
+        )
+
+        assert payment_method.id != existing_default.id
+        assert customer.default_payment_method_id == existing_default.id
+
+
+@pytest.mark.anyio
 class TestDelete:
     @pytest.fixture(autouse=True)
     def stripe_service_mock(self, mocker: MockerFixture) -> MagicMock:

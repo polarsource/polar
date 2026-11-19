@@ -141,10 +141,18 @@ class PaymentMethodService:
     ) -> PaymentMethod:
         stripe_payment_method = await self.resolve_from_stripe_intent(intent)
 
-        assert checkout.customer is not None
-        return await self.upsert_from_stripe(
-            session, checkout.customer, stripe_payment_method
+        customer = checkout.customer
+        assert customer is not None
+        payment_method = await self.upsert_from_stripe(
+            session, customer, stripe_payment_method, flush=True
         )
+
+        if customer.default_payment_method_id is None:
+            await CustomerRepository.from_session(session).update(
+                customer, update_dict={"default_payment_method": payment_method}
+            )
+
+        return payment_method
 
     async def upsert_from_stripe_payment_intent_for_order(
         self,

@@ -5,7 +5,7 @@ import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   Form,
@@ -130,29 +130,7 @@ export const UpdateSubscriptionPlanForm = ({
             name="product_id"
             render={({ field }) => (
               <FormItem>
-                <Box flexDirection="column" rowGap="none">
-                  <FormLabel>New product</FormLabel>
-                  <Box
-                    alignItems="baseline"
-                    justifyContent="between"
-                    columnGap="s"
-                    flexWrap="wrap"
-                    color="text-secondary"
-                    paddingTop="xs"
-                  >
-                    <Text variant="caption" color="muted">
-                      Current: {subscription.product.name}
-                    </Text>
-                    <span className="text-xs leading-none [&_*]:!text-inherit">
-                      <AmountLabel
-                        amount={subscription.amount}
-                        currency={subscription.currency}
-                        interval={subscription.recurring_interval}
-                        intervalCount={subscription.recurring_interval_count}
-                      />
-                    </span>
-                  </Box>
-                </Box>
+                <FormLabel>New product</FormLabel>
                 <FormControl>
                   <ProductCombobox
                     organizationId={subscription.product.organization_id}
@@ -163,7 +141,7 @@ export const UpdateSubscriptionPlanForm = ({
                         selectedDiscount &&
                         !isDiscountApplicableToProduct(
                           selectedDiscount,
-                          productId,
+                          productId ?? subscription.product_id,
                         )
                       ) {
                         setValue('discount_id', null)
@@ -172,6 +150,17 @@ export const UpdateSubscriptionPlanForm = ({
                     currency={subscription.currency}
                     currentProductId={subscription.product_id}
                     currentPriceIds={subscription.prices.map(({ id }) => id)}
+                    currentPlan={{
+                      name: subscription.product.name,
+                      price: (
+                        <AmountLabel
+                          amount={subscription.amount}
+                          currency={subscription.currency}
+                          interval={subscription.recurring_interval}
+                          intervalCount={subscription.recurring_interval_count}
+                        />
+                      ),
+                    }}
                   />
                 </FormControl>
                 <FormMessage />

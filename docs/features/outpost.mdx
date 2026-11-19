@@ -2,24 +2,24 @@
 title: "Zero-latency metering (Outpost)"
 sidebarTitle: "Zero-latency metering"
 tag: "Beta"
-description: "Read a customer's balance in microseconds, right after you track an event."
+description: "Read a customer's balance from your own Redis, right after you track an event."
 ---
 
-Outpost runs inside the Polar SDK. It keeps a copy of each customer's meter usage in a Redis you own, updates that copy when you track an event, and answers balance reads from it. Polar stays the source of truth: your events still reach it in batches, and it sends its totals back, which replace the local copy.
+Outpost runs inside the Polar SDK. It keeps a copy of each customer's meter usage in a Redis you own, updates that copy when you track an event, and answers balance reads from it. It also delivers your events to Polar. Polar stays the source of truth: it sends its totals back, and they replace the local copy.
 
 Use it when your application has to check a balance on every request, and a round trip to Polar on each one is too slow.
 
 ## What it promises
 
 - A read sees every event `track()` has returned for, on every instance that shares the Redis.
-- A read answers from the instance's memory, kept in step with Redis, in microseconds. It never calls Polar.
-- An event counts locally until Polar has stored it, and Polar's totals then replace the local count, bucket by bucket. A local balance is never higher than Polar's.
-- A credit reaches local reads within seconds: Polar pushes a snapshot as soon as it records the grant.
+- A read costs one Redis command. It never calls Polar once the customer is known.
+- An event counts locally until Polar has stored it. Polar's totals then replace the local count, bucket by bucket. A local balance is never higher than Polar's.
+- A credit reaches local reads once Polar closes the 5-minute bucket the grant falls in, at the next pull.
 
 ## What it leaves to you
 
 - Outpost never refuses an event. Checking the balance before you serve a request is your call, as it is without Outpost.
-- Polar's own meter reads lag behind Outpost by the time it takes to ingest the batch. Both converge within minutes.
+- Polar's own meter reads lag behind Outpost by the time it takes to deliver and ingest the events. Both converge within minutes.
 
 ## How it works
 
@@ -31,47 +31,56 @@ sequenceDiagram
     participant Polar
 
     App->>SDK: track(event)
-    SDK->>Redis: add the event to its 5-minute bucket
-    SDK-->>Polar: ingest, in batches
+    SDK->>Redis: add the event to its 5-minute bucket, and queue it for Polar
+    SDK-->>Polar: deliver the queue, in batches of up to 1,000
     App->>SDK: meter(customer)
-    Note over SDK: state in memory, kept in step by Redis
+    SDK->>Redis: read the customer's state
     SDK-->>App: consumed, credited, balance
-    Polar-->>SDK: snapshot of its totals, over WebSocket
+    SDK->>Polar: pull the changes since the last pull
+    Polar-->>SDK: snapshots of its totals
     SDK->>Redis: replace the local buckets Polar now covers
 ```
 
-Every instance of your application that runs the SDK with the same Redis shares one state. Redis tells the other instances about each write, so they see it within milliseconds.
+Every instance of your application that runs the SDK with the same Redis shares one state and one queue. A read goes to Redis, so it sees the writes of every other instance at once. One instance at a time pulls Polar's changes for the whole fleet.
 
 ## Set it up
 
 <Steps>
   <Step title="Give Outpost a Redis database">
-    Outpost needs a Redis reachable from every instance of your application. Give it a database of its own, and one per environment: a sandbox and a production deployment must not share one. Set its URL in `REDIS_URL`, or pass it as an option.
+    Outpost needs a Redis reachable from every instance of your application. Give it a database of its own, and one per environment: a sandbox and a production deployment must not share one.
   </Step>
   <Step title="Use an organization access token with events:write">
-    Outpost opens a WebSocket to Polar with the token your client uses. The token needs the `events:write` scope, the same one event ingestion needs.
+    Outpost calls Polar with the token your client uses. The token needs the `events:write` scope, the same one event ingestion needs.
   </Step>
-  <Step title="Start Metering">
-    Outpost is off by default. Pass `outpost: true` to `polar.metering()`, or `outpost=True` in Python, to turn it on with `REDIS_URL`. Pass an object instead to configure it.
+  <Step title="Start Metering with Outpost">
+    Outpost is off by default. With Outpost, `Metering` sends your events through Outpost instead of its in-memory buffer: pass the buffer's options or Outpost's, not both.
   </Step>
 </Steps>
 
 <Tabs>
   <Tab title="TypeScript">
+    Outpost needs the optional `ioredis` and `@opentelemetry/*` peer dependencies; the rest of the SDK does not.
+
     ```typescript
     import { createPolar } from "@polar-sh/sdk/2026-10";
+    import { outpost } from "@polar-sh/sdk/outpost";
 
     const polar = createPolar({ accessToken: process.env.POLAR_ACCESS_TOKEN! });
 
-    await using metering = await polar
-      .metering({ outpost: { redisUrl: process.env.REDIS_URL! } })
-      .start();
+    await using metering = await polar.metering({ outpost: outpost() }).start();
     ```
 
-    | Option      | Default                          | Meaning                                   |
-    | ----------- | -------------------------------- | ----------------------------------------- |
-    | `redisUrl`  | `REDIS_URL` environment variable | The Redis Outpost uses.                   |
-    | `telemetry` | `true`                           | Send Outpost metrics and traces to Polar. |
+    `outpost()` reads `REDIS_URL` and throws if it is unset. Pass options to configure it:
+
+    | Option            | Default                          | Meaning                                                          |
+    | ----------------- | -------------------------------- | ---------------------------------------------------------------- |
+    | `redisUrl`        | `REDIS_URL` environment variable | The Redis Outpost uses.                                          |
+    | `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                        |
+    | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar.       |
+    | `confirmTimeout`  | `2000`                           | Milliseconds a snapshot waits for Polar to confirm events.       |
+    | `batchSize`       | `1000`                           | Maximum events per request delivering the queue to Polar.        |
+    | `onDelivered`     | `undefined`                      | Called with each batch Polar accepted; may be async.             |
+    | `onDropped`       | `undefined`                      | Called with each batch Polar refused, and why; may be async.     |
   </Tab>
   <Tab title="Python">
     ```python
@@ -80,14 +89,19 @@ Every instance of your application that runs the SDK with the same Redis shares 
     from polar.v2026_10 import PolarAsync
 
     async with PolarAsync(os.environ["POLAR_ACCESS_TOKEN"]) as polar:
-        async with polar.metering(outpost={"redis_url": os.environ["REDIS_URL"]}) as metering:
+        async with polar.metering(outpost=True) as metering:
             ...
     ```
 
-    | Option      | Default                          | Meaning                                   |
-    | ----------- | -------------------------------- | ----------------------------------------- |
-    | `redis_url` | `REDIS_URL` environment variable | The Redis Outpost uses.                   |
-    | `telemetry` | `True`                           | Send Outpost metrics and traces to Polar. |
+    `outpost=True` reads `REDIS_URL`. Pass a dictionary instead to configure it:
+
+    | Option         | Default                          | Meaning                                                   |
+    | -------------- | -------------------------------- | --------------------------------------------------------- |
+    | `redis_url`    | `REDIS_URL` environment variable | The Redis Outpost uses.                                   |
+    | `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                 |
+    | `batch_size`   | `1000`                           | Maximum events per request delivering the queue to Polar. |
+    | `on_delivered` | `None`                           | Called with each batch Polar accepted.                    |
+    | `on_dropped`   | `None`                           | Called with each batch Polar refused, and why.            |
   </Tab>
 </Tabs>
 
@@ -95,7 +109,7 @@ Every instance of your application that runs the SDK with the same Redis shares 
 
 Every event needs an `external_id`. Outpost uses it to count an event once, however many times it is tracked or retried, and to settle it once Polar confirms it. `track()` rejects an event without one.
 
-The first read of a customer waits for Polar's snapshot, up to 5 seconds. Warm the customer when the session starts, so the read that matters comes from memory:
+The first read of a customer waits for Polar's snapshot, up to 5 seconds. Warm the customer when the session starts, so the read that matters is ready:
 
 <Tabs>
   <Tab title="TypeScript">
@@ -123,32 +137,90 @@ The first read of a customer waits for Polar's snapshot, up to 5 seconds. Warm t
 
 A read returns the customer's `consumed_units`, `credited_units` and `balance` for one meter, computed as Polar does: credits minus consumption.
 
-In a serverless runtime, flush `Metering` before each request ends, as the [SDK guide](/integrate/sdk/typescript) explains, so your events reach Polar before the runtime freezes.
+## Deliver the events
+
+Outpost queues each event in Redis when you track it, and delivers the queue to Polar in batches of up to 1,000 events, shared by every instance. A long-running server delivers every second on its own. In a serverless runtime, flush `Metering` after each response, as the [SDK guide](/integrate/sdk/typescript) explains, so the function does not freeze before the delivery starts.
+
+## Run it on Vercel
+
+On Vercel, each request can land on a different function instance. Pin each customer to one instance instead: the customer's reads stay warm there, and your Redis sees one set of connections per pinned instance, not one per instance Vercel starts. The SDK spreads your customers over 128 shards by default, one pinned instance each, and moves each shard to a fresh instance before Vercel retires the old one.
+
+Install the optional `@vercel/oidc` peer dependency, then wire three pieces:
+
+<Steps>
+  <Step title="Turn on strict affinity for the routes that use Outpost">
+    In `vercel.json`, give each route that tracks or reads through Outpost `"affinity": { "mode": "strict" }` and a `maxDuration`. With a `vercel.ts` config, `withOutpostAffinity(config, ["app/api/usage/route.ts"])` from `@polar-sh/sdk/outpost/vercel` adds the affinity for you.
+  </Step>
+  <Step title="Pin each request to its customer's shard in your middleware">
+    ```typescript
+    import { vercelAffinity } from "@polar-sh/sdk/outpost/vercel";
+    import { type NextRequest, NextResponse } from "next/server";
+
+    // The same maxDuration as the pinned route, in seconds.
+    const pin = vercelAffinity({ maxDurationSeconds: 300 });
+
+    export async function middleware(request: NextRequest) {
+      const customer = request.headers.get("x-customer-id");
+      if (!customer) return NextResponse.next();
+      const headers = await pin(request, { externalCustomerId: customer });
+      return NextResponse.next({ request: { headers } });
+    }
+    ```
+
+    From Next.js 16, the middleware is `proxy.ts` and its function is named `proxy`. A request without a customer, or outside Vercel, goes on unpinned.
+  </Step>
+  <Step title="Answer warm-ups in the pinned route">
+    Before a shard moves, the SDK sends its next instance one warm-up request, so the customers it moves find Outpost started.
+
+    ```typescript
+    import { isVercelAffinityWarmup, warmNextVercelInstance } from "@polar-sh/sdk/outpost/vercel";
+    import { after } from "next/server";
+
+    export async function POST(request: Request) {
+      if (isVercelAffinityWarmup(request)) {
+        await metering.actor({ external_customer_id: request.headers.get("x-customer-id")! });
+        return new Response(null, { status: 204 });
+      }
+      warmNextVercelInstance(request, after);
+      // ... track and read as usual, then flush after the response.
+      after(() => metering.flush());
+    }
+    ```
+  </Step>
+</Steps>
+
+Each customer moves to the next instance at its own moment, within a short window around its shard's move. Vercel answers `503` to a fresh pinned instance that takes a whole shard at once, and the spread works around it while Vercel fixes it.
 
 ## When something is down
 
-**Redis is unreachable.** `track()` and `meter()` fail with `UnavailableRedisError`. The event is already queued for Polar, so nothing is lost; your code decides whether to serve the request without a balance. Outpost reconnects on its own.
+**Redis is unreachable.** `track()` and `meter()` fail with `UnavailableRedisError`, and the event is not queued for Polar. Your code decides whether to serve the request without a balance, and whether to track the event again. Outpost reconnects on its own.
 
-**Polar is unreachable.** Reads keep answering, with the last totals Polar sent plus every event tracked since. A first read of a customer Outpost has never seen fails at once, because no snapshot can arrive.
+**Polar is unreachable or overloaded.** Reads keep answering, with the last totals Polar sent plus every event tracked since. Events stay queued in Redis. After a failed delivery, every instance waits before it tries again: as long as Polar asks with `Retry-After`, otherwise 1 second, doubling up to a minute. A first read of a customer Outpost has never seen fails once `snapshotTimeout` passes, because no snapshot can arrive.
 
-`Metering` retries each batch of events a few times, then reports it to `onDropped`. Polar never bills a dropped event, so once Polar is back, its next snapshot removes it from local reads too.
+**Polar refuses a batch.** A `4xx` other than `401`, `403` or `429` means a retry cannot succeed. Outpost drops the batch and reports it to `onDropped`. Polar never bills a dropped event, so it leaves local reads too.
 
-**An instance restarts.** Nothing to rebuild: the state lives in Redis. A new instance reads it and asks Polar for a snapshot of each customer it touches.
+**An instance restarts.** Nothing to rebuild: the state and the queue live in Redis. A new instance reads them, and asks Polar for a snapshot of each customer it touches for the first time.
 
 ## Telemetry
 
-Outpost sends Polar the latency of local writes and reads, their outcomes, connection events, and the difference between local and Polar totals at each snapshot. Polar uses it to improve Outpost and to see how it runs in your deployment. It holds numbers, meter IDs and customer identities, never your events' metadata. Exports leave a few times a minute, over the same token.
+Outpost sends Polar the latency of local writes and reads, their outcomes, connection events, and the difference between local and Polar totals at each snapshot. Polar uses it to improve Outpost and to see how it runs in your deployment. It holds numbers, meter IDs and customer identities, never your events' metadata. Each instance queues its exports in Redis, and the instance that pulls sends them to Polar, over the same token.
 
 To turn it off, pass `telemetry: false`, or set `POLAR_OUTPOST_TELEMETRY=0`.
 
 ## What Outpost stores in Redis
 
-| Key                                                     | Content                                                                        | Lifetime                                   |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------ |
-| `outpost:v1:state:<customer>:<reducer>`                 | One hash per customer and meter: Polar's totals, local 5-minute buckets, credits | 24 hours after the last read, write or snapshot |
-| `outpost:v1:pending:<customer>:<reducer>:<bucket>`      | The events of a bucket Polar has not confirmed yet                              | 65 minutes after the last write            |
-| `outpost:v1:<db>:updates`                               | Pub/sub channel that carries each write to the other instances                  | No storage                                 |
+Every key starts with `outpost:v1:` and your organization ID, which the table leaves out.
 
-A customer who stops sending events disappears from Redis after a day. A hash holds a few hundred bytes per bucket, and Polar's snapshots fold buckets into one total every five minutes, so a customer costs a few kilobytes.
+| Key                               | Content                                                                            | Lifetime                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `state:<customer>:<reducer>`      | One hash per customer and meter: Polar's totals and the local 5-minute buckets    | 24 hours after the last read, write or snapshot  |
+| `pending:<customer>:<reducer>:<bucket>` | The events of a bucket Polar has not confirmed yet                          | 65 minutes after the last write                  |
+| `outbox`                          | A stream of the events waiting for delivery to Polar                               | Until Polar takes them                           |
+| `pull`, `configuration`           | The position in Polar's changes, and your meters' configuration                    | No expiry                                        |
+| `telemetry:<kind>`                | Telemetry exports waiting to be sent                                               | The newest 1,000 exports                         |
+
+Locks, queues and backoffs (`pull:lock`, `cold`, `fetch:…`, `missing:…`, `outbox:flusher:<slot>`, `outbox:backoff`) coordinate the instances. They expire within a minute, or once their work is done.
+
+A customer who stops sending events disappears from Redis after a day. A hash holds a few hundred bytes per bucket, and Polar's snapshots fold buckets into one total every five minutes, so a customer costs a few kilobytes. The outbox holds each event until Polar takes it, usually within a second.
 
 The `v1` in each key names the layout. A future layout takes a new version and starts from Polar's snapshot; it never reads the previous keys, which expire on their own.

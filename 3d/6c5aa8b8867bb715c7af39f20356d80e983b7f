@@ -1,0 +1,42 @@
+server/polar/refund/service.py
+  s_e0c76dfaa01995::t_e89f8ab86b4526 95-100,320-325
+server/polar/refund/endpoints.py
+  s_e0c76dfaa01995::t_e89f8ab86b4526 14,64-66
+  s_e0c76dfaa01995::t_ae8b0a15b95ca3 67
+server/tests/refund/test_endpoints.py
+  s_e0c76dfaa01995::t_459958759195e9 324-328
+  s_e0c76dfaa01995::t_e89f8ab86b4526 4,303-323,329-335
+  s_e0c76dfaa01995::t_5a983831c6bcaa 336
+clients/packages/client/src/v1.ts
+  s_1d8ee520a4bc71::t_1528d584b5d273 37310-37320,58912-58920
+docs/openapi/2026-04.openapi.json
+  s_1d8ee520a4bc71::t_62f4cb6e0c9078 18518-18527,72623-72644
+docs/openapi/2026-10.openapi.json
+  s_1d8ee520a4bc71::t_fee64f0731180d 18518-18527,72735-72756
+docs/openapi/2027-01.openapi.json
+  s_1d8ee520a4bc71::t_a77b70140bef3a 19338-19347,75552-75573
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3d6c5aa8b8867bb715c7af39f20356d80e983b7f",
+  "prompts": {},
+  "sessions": {
+    "s_1d8ee520a4bc71": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f2e9-d6fe-7bd2-a97b-fb175a67690f",
+        "model": "unknown"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    },
+    "s_e0c76dfaa01995": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f2dc-d088-7df3-812e-18f674ba5caa",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

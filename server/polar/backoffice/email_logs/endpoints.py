@@ -189,7 +189,7 @@ async def get_email_log(
             with tag.div(classes="flex justify-between items-center"):
                 with tag.h1(classes="text-4xl"):
                     text(email_log.subject)
-                # Resend webhook errors start with the event type; only hard bounces add to the suppression list
+                # Only hard bounces put the address on Resend's suppression list
                 if (
                     not settings.is_sandbox()
                     and email_log.error is not None

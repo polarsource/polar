@@ -2,7 +2,6 @@ import { CustomerRow } from '@/components/Customers/CustomerRow'
 import { OrderRow } from '@/components/Orders/OrderRow'
 import { ProductRow } from '@/components/Products/ProductRow'
 import { Box } from '@/components/Shared/Box'
-import { Button } from '@/components/Shared/Button'
 import { DetailRow, Details } from '@/components/Shared/Details'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Pill } from '@/components/Shared/Pill'
@@ -13,7 +12,7 @@ import { useOrders } from '@/hooks/polar/orders'
 import { useSubscription } from '@/hooks/polar/subscriptions'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import * as Clipboard from 'expo-clipboard'
-import { Link, Stack, useLocalSearchParams } from 'expo-router'
+import { Stack, useLocalSearchParams } from 'expo-router'
 import { useContext, useMemo } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
 
@@ -220,17 +219,6 @@ export default function Index() {
             </Box>
           )
         : null}
-
-      {subscription.status === 'active' ? (
-        <Box flexDirection="column" gap="spacing-8">
-          <Link key={'update'} href={`/subscriptions/${id}/update`} asChild>
-            <Button>Update Subscription</Button>
-          </Link>
-          <Link key={'cancel'} href={`/subscriptions/${id}/cancel`} asChild>
-            <Button variant="secondary">Cancel Subscription</Button>
-          </Link>
-        </Box>
-      ) : null}
 
       <Box gap="spacing-16" paddingVertical="spacing-12">
         <Box

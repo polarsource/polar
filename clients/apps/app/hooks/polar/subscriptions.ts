@@ -1,7 +1,6 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
-import { queryClient } from '@/utils/query'
-import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { operations, unwrap } from '@polar-sh/client'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 
 export const useSubscription = (id: string) => {
   const { polar } = usePolarClient()
@@ -41,28 +40,6 @@ export const useSubscriptions = (
     getNextPageParam: (lastPage, pages) => {
       if (lastPage.items.length === 0) return undefined
       return pages.length + 1
-    },
-  })
-}
-
-const SUBSCRIPTION_UPDATE_HEADERS = { 'Polar-Version': '2027-01' }
-
-export const useUpdateSubscription = (id: string) => {
-  const { polar } = usePolarClient()
-
-  return useMutation({
-    mutationFn: (body: schemas['SubscriptionUpdate']) =>
-      polar.PATCH('/v1/subscriptions/{id}', {
-        params: { path: { id } },
-        body,
-        headers: SUBSCRIPTION_UPDATE_HEADERS,
-      }),
-    onSuccess: (data, variables) => {
-      queryClient.setQueryData(['subscription', id], data.data)
-
-      queryClient.invalidateQueries({
-        queryKey: ['subscriptions'],
-      })
     },
   })
 }

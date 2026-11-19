@@ -1,6 +1,6 @@
 import re
 from collections.abc import Sequence
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Annotated, Literal, NotRequired, Self
 
@@ -92,10 +92,14 @@ def default_timestamp_factory() -> datetime:
     return datetime.now(UTC)
 
 
+# How far the sender's clock may run ahead of ours.
+TIMESTAMP_AHEAD_TOLERANCE = timedelta(seconds=5)
+
+
 def is_past_timestamp(timestamp: datetime) -> datetime:
     # Convert to UTC
     timestamp = timestamp.astimezone(UTC)
-    if timestamp > datetime.now(UTC):
+    if timestamp > datetime.now(UTC) + TIMESTAMP_AHEAD_TOLERANCE:
         raise ValueError("Timestamp must be in the past.")
     return timestamp
 

@@ -33,6 +33,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import insert
 
 from polar.event.repository import EventRepository
+from polar.event.schemas import TIMESTAMP_AHEAD_TOLERANCE
 from polar.kit.db.locking import pg_advisory_xact_locks
 from polar.kit.repository import RepositoryBase
 from polar.kit.utils import utc_now
@@ -50,7 +51,7 @@ from polar.models.reducer import ReducerKind
 
 from .redis_store import BucketId, get_reducer_bucket_key
 
-INGESTED_BEFORE_TIMESTAMP_MARGIN = timedelta(seconds=5)
+INGESTED_BEFORE_TIMESTAMP_MARGIN = TIMESTAMP_AHEAD_TOLERANCE
 
 # count, sum, min and max.
 type Totals = tuple[Any, Any, Any, Any]

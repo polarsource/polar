@@ -53,6 +53,29 @@ describe('selectFields', () => {
     })
   })
 
+  test('accepts fields written from the top of a list response', () => {
+    const list = {
+      items: [product],
+      pagination: { total_count: 1, max_page: 1 },
+    }
+    expect(selected(list, 'items.id,items.name')).toEqual({
+      items: [{ id: 'prod-1', name: 'Pro' }],
+      pagination: { total_count: 1, max_page: 1 },
+    })
+    expect(selected(list, 'items')).toEqual(list)
+  })
+
+  test('reads items as a field of each row when the rows have one', () => {
+    const orders = {
+      items: [{ id: 'order-1', items: [{ label: 'Pro', amount: 1000 }] }],
+      pagination: { total_count: 1, max_page: 1 },
+    }
+    expect(selected(orders, 'items.label')).toEqual({
+      items: [{ items: [{ label: 'Pro' }] }],
+      pagination: { total_count: 1, max_page: 1 },
+    })
+  })
+
   test('treats a record with its own items as one record, not a list', () => {
     const order = { id: 'order-1', items: [{ label: 'Pro', amount: 1000 }] }
     expect(selected(order, 'id,items.label')).toEqual({

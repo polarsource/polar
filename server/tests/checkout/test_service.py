@@ -5516,41 +5516,31 @@ class TestConfirm:
         (
             "ip_address",
             "ip_country",
-            "payment_method_country",
             "expected_customer_signals",
+            "expected_confirmation_token_fetched",
         ),
         [
             pytest.param(
                 "1.2.3.4",
                 "FR",
-                None,
                 {"ip_address": "1.2.3.4", "ip_country": "FR"},
+                False,
                 id="resolved country",
             ),
             pytest.param(
                 "1.2.3.4",
                 "",
-                None,
-                {
-                    "ip_address": "1.2.3.4",
-                    "ip_country": None,
-                    "payment_method_country": None,
-                },
+                {"ip_address": "1.2.3.4", "ip_country": None},
+                True,
                 id="unresolved country",
             ),
-            pytest.param(
-                None, "FR", None, {"payment_method_country": None}, id="no ip address"
-            ),
+            pytest.param(None, "FR", None, True, id="no ip address"),
             pytest.param(
                 "1.2.3.4",
                 "US",
-                "FR",
-                {
-                    "ip_address": "1.2.3.4",
-                    "ip_country": "US",
-                    "payment_method_country": "FR",
-                },
-                id="only card country matches",
+                {"ip_address": "1.2.3.4", "ip_country": "US"},
+                True,
+                id="ip country mismatch",
             ),
         ],
     )
@@ -5558,8 +5548,8 @@ class TestConfirm:
         self,
         ip_address: str | None,
         ip_country: str,
-        payment_method_country: str | None,
-        expected_customer_signals: dict[str, str | None],
+        expected_customer_signals: dict[str, str | None] | None,
+        expected_confirmation_token_fetched: bool,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
@@ -5570,11 +5560,6 @@ class TestConfirm:
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             id="STRIPE_INTENT_ID", client_secret="CLIENT_SECRET", status="succeeded"
-        )
-        stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
-            payment_method_preview=SimpleNamespace(
-                type="card", card=SimpleNamespace(country=payment_method_country)
-            )
         )
         ip_geolocation_client = MagicMock()
         ip_geolocation_client.getCountry.return_value = ip_country
@@ -5596,8 +5581,9 @@ class TestConfirm:
         )
 
         assert checkout.customer_signals == expected_customer_signals
-        assert stripe_service_mock.get_confirmation_token.called is (
-            "payment_method_country" in expected_customer_signals
+        assert (
+            stripe_service_mock.get_confirmation_token.called
+            is expected_confirmation_token_fetched
         )
 
     @pytest.mark.parametrize(
@@ -5605,14 +5591,14 @@ class TestConfirm:
             "billing_country",
             "ip_country",
             "payment_method_preview",
-            "expected_event",
+            "expected_log",
         ),
         [
             pytest.param(
                 "UG",
                 "SE",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="SE")),
-                "checkout.billing_country_mismatch",
+                ("checkout.billing_country_mismatch", "SE"),
                 id="no match",
             ),
             pytest.param(
@@ -5633,7 +5619,7 @@ class TestConfirm:
                 "FR",
                 "GP",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="GP")),
-                "checkout.billing_country_mismatch",
+                ("checkout.billing_country_mismatch", "GP"),
                 id="parent seen as territory",
             ),
             pytest.param(
@@ -5647,21 +5633,21 @@ class TestConfirm:
                 "BE",
                 "SE",
                 SimpleNamespace(type="link", link=SimpleNamespace()),
-                "checkout.billing_country_mismatch",
+                ("checkout.billing_country_mismatch", None),
                 id="no payment method country and ip mismatch",
             ),
             pytest.param(
                 "BE",
                 "",
                 SimpleNamespace(type="card", card=SimpleNamespace(country="US")),
-                "checkout.billing_country_mismatch",
+                ("checkout.billing_country_mismatch", "US"),
                 id="unresolved ip and card mismatch",
             ),
             pytest.param(
                 "BE",
                 "",
                 SimpleNamespace(type="link", link=SimpleNamespace()),
-                "checkout.billing_country_unverified",
+                ("checkout.billing_country_unverified", None),
                 id="no known country",
             ),
         ],
@@ -5671,7 +5657,7 @@ class TestConfirm:
         billing_country: str,
         ip_country: str,
         payment_method_preview: SimpleNamespace,
-        expected_event: str | None,
+        expected_log: tuple[str, str | None] | None,
         mocker: MockerFixture,
         stripe_service_mock: MagicMock,
         session: AsyncSession,
@@ -5716,12 +5702,13 @@ class TestConfirm:
         assert billing_country_events == (
             [
                 call(
-                    expected_event,
+                    expected_log[0],
                     checkout_id=str(checkout.id),
                     organization_id=str(checkout.organization_id),
+                    payment_method_country=expected_log[1],
                 )
             ]
-            if expected_event is not None
+            if expected_log is not None
             else []
         )
 

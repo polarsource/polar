@@ -1242,10 +1242,6 @@ class CheckoutService:
                     and confirmation_token.payment_method_preview is not None
                     else None
                 )
-                checkout.customer_signals = {
-                    **(checkout.customer_signals or {}),
-                    "payment_method_country": payment_method_country,
-                }
                 if payment_method_country not in billing_countries:
                     # Shadow mode: measure how often this triggers before blocking on it.
                     log.info(
@@ -1254,6 +1250,7 @@ class CheckoutService:
                         else "checkout.billing_country_unverified",
                         checkout_id=str(checkout.id),
                         organization_id=str(checkout.organization_id),
+                        payment_method_country=payment_method_country,
                     )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name

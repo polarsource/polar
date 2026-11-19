@@ -70,11 +70,11 @@ export class StreamStrategy<TStream extends Stream> extends IngestionStrategy<
   ): TStream {
     const stream = this.stream as TStream
 
+    // A stream is read once, so it stays with the first customer it was tracked for
     if (!this.customer) {
+      this.customer = customer
       this.wrapStream({ stream, execute: this.createExecutionHandler() })
     }
-
-    this.customer = customer
 
     return stream
   }

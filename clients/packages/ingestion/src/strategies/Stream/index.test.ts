@@ -75,7 +75,7 @@ describe('StreamStrategy', () => {
     expect(sentEvents(ingest)[0].metadata).toMatchObject({ bytes: 0 })
   })
 
-  it('should send one event when client() is called twice for one stream', async () => {
+  it('should bill the first customer when client() is called twice for one stream', async () => {
     const { strategy, ingest } = trackStream(Readable.from([Buffer.alloc(10)]))
 
     strategy.client({ customerId: 'alice' })
@@ -83,7 +83,7 @@ describe('StreamStrategy', () => {
 
     await vi.waitFor(() => expect(ingest).toHaveBeenCalled())
     expect(sentEvents(ingest)).toEqual([
-      expect.objectContaining({ customerId: 'bob' }),
+      expect.objectContaining({ customerId: 'alice' }),
     ])
   })
 

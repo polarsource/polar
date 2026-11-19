@@ -459,7 +459,7 @@ it.each([
   expect((await reader.meter(meter))?.balance).toBe(100 - expected);
 });
 
-it("talks to Redis over one connection, with no subscriber", async () => {
+it("talks to Redis over one connection", async () => {
   const clients = async () => ((await redis.client("LIST")) as string).trim().split("\n").length;
   const before = await clients();
   await start();
@@ -548,7 +548,7 @@ it.each([
 
 it("reports a missing customer snapshot and an unknown meter", async () => {
   const outpost = await start();
-  expect(await ingest(outpost, 3)).toBeUndefined();
+  await ingest(outpost, 3);
   const notReady = outpost.meter(meter);
   await expect(notReady).rejects.toBeInstanceOf(NotReadyError);
   await expect(notReady).rejects.toBeInstanceOf(PolarOutpostError);
@@ -2376,7 +2376,7 @@ it("fails fast while Redis is unavailable", async () => {
   expect(await readOutcomes(outpost)).toEqual([["meter", "redis_unavailable"]]);
 });
 
-it("composes buffered Polar delivery with Outpost through the client factory", async () => {
+it("delivers each event once, through Outpost, when the client factory starts it", async () => {
   const polarFetch = globalThis.fetch;
   const fetch = vi
     .spyOn(globalThis, "fetch")

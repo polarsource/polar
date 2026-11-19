@@ -358,11 +358,6 @@ end
 return {length, redis.call('XPENDING', KEYS[1], ARGV[1])[1], retry_at}
 """
 
-READ_STATE_SCRIPT = """
-redis.call('EXPIRE', KEYS[1], 86400)
-return redis.call('HGETALL', KEYS[1])
-"""
-
 READ_STATES_SCRIPT = """
 -- A customer's read in one command: for each reducer, KEYS holds its state and its missing marker,
 -- and the last key is the pull. ARGV names, per reducer, the statistics the reader adds up,

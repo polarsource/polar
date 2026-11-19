@@ -20,6 +20,18 @@ describe('formatErrors', () => {
     )
   })
 
+  test.each([
+    [['polar'], 'login', 'auth login'],
+    [['polar'], 'whoami', 'auth whoami'],
+    [['polar', 'auth'], 'status', 'auth whoami'],
+    [['polar', 'webhooks'], 'list', 'webhooks list_webhook_endpoints'],
+    [['polar', 'webhooks'], 'listen', 'webhook listen'],
+  ])('suggests the real command for %j %s', (parent, subcommand, intended) => {
+    expect(unknown(subcommand, parent)).toContain(
+      `Did you mean this?\n    ${intended}`,
+    )
+  })
+
   test('leaves other unknown subcommands alone', () => {
     expect(unknown('listen', ['polar', 'config'])).not.toContain('Did you mean')
     expect(unknown('nope', ['polar'])).not.toContain('Did you mean')

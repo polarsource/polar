@@ -13438,11 +13438,8 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
-      /**
-       * @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase.
-       * @default per_claimed_seat
-       */
-      allocation: components['schemas']['BenefitMeterCreditAllocation']
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. Defaults to `per_claimed_seat` on creation. On update, the current value is kept if omitted. It can't be changed once the benefit has been granted. */
+      allocation?: components['schemas']['BenefitMeterCreditAllocation'] | null
     }
     /**
      * BenefitMeterCreditProperties
@@ -13458,10 +13455,7 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
-      /**
-       * @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase.
-       * @default per_claimed_seat
-       */
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. */
       allocation: components['schemas']['BenefitMeterCreditAllocation']
     }
     /**
@@ -13534,10 +13528,7 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
-      /**
-       * @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase.
-       * @default per_claimed_seat
-       */
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. */
       allocation: components['schemas']['BenefitMeterCreditAllocation']
     }
     /** BenefitMeterCreditSubscriber */
@@ -13608,10 +13599,7 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
-      /**
-       * @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase.
-       * @default per_claimed_seat
-       */
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. */
       allocation: components['schemas']['BenefitMeterCreditAllocation']
     }
     /** BenefitMeterCreditUpdate */
@@ -13652,24 +13640,8 @@ export interface components {
        */
       type: 'meter_credit'
       properties?:
-        | components['schemas']['BenefitMeterCreditUpdateProperties']
+        | components['schemas']['BenefitMeterCreditCreateProperties']
         | null
-    }
-    /**
-     * BenefitMeterCreditUpdateProperties
-     * @description Properties for updating a benefit of type `meter_unit`.
-     */
-    BenefitMeterCreditUpdateProperties: {
-      /** Units */
-      units: number
-      /** Rollover */
-      rollover: boolean
-      /**
-       * Meter Id
-       * Format: uuid4
-       */
-      meter_id: string
-      allocation?: components['schemas']['BenefitMeterCreditAllocation'] | null
     }
     BenefitPublic:
       | components['schemas']['BenefitCustomPublic']

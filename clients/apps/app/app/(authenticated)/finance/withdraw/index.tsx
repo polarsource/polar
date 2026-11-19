@@ -14,6 +14,7 @@ import { useOrganizationEmail } from '@/hooks/polar/organizationEmail'
 import { useOrders } from '@/hooks/polar/orders'
 import { useStoreReview } from '@/hooks/useStoreReview'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
+import { capture } from '@/utils/posthog'
 import { formatCurrency } from '@polar-sh/currency'
 import { Stack, useRouter } from 'expo-router'
 import React, { useContext, useMemo } from 'react'
@@ -109,6 +110,7 @@ export default function Index() {
             successText="Withdrawal Complete!"
             onSlideComplete={async () => {
               await withdrawFunds()
+              capture('app:finance:payout:create')
             }}
             onFinish={() => {
               if (shouldShow(hasOrders)) {

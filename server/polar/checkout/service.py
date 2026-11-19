@@ -1193,7 +1193,7 @@ class CheckoutService:
 
         billing_address = checkout.customer_billing_address
         billing_countries = (
-            ip_geolocation.get_billing_countries(billing_address.country)
+            ip_geolocation.get_matching_countries(billing_address.country)
             if billing_address is not None
             else set()
         )

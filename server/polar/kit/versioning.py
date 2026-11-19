@@ -132,6 +132,15 @@ def api_version_context(version: APIVersion) -> Generator[None]:
         _ACTIVE_API_VERSION.reset(token)
 
 
+@contextlib.contextmanager
+def all_api_versions() -> Generator[None]:
+    token = _ACTIVE_API_VERSION.set(None)
+    try:
+        yield
+    finally:
+        _ACTIVE_API_VERSION.reset(token)
+
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class _VersionRange:
     starting_from: APIVersion | None = None

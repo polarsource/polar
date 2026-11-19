@@ -1,18 +1,12 @@
 import { DAY_MS, type TimelineRange } from '@/utils/subscriptionTimeline'
 import { format } from 'date-fns'
 
-export const ganttZoomValues = ['3M', '6M', '1Y', '3Y'] as const
-
-export type GanttZoom = (typeof ganttZoomValues)[number]
-
-export const DEFAULT_GANTT_ZOOM: GanttZoom = '1Y'
-
-export const GANTT_ZOOM_DAYS: Record<GanttZoom, number> = {
-  '3M': 92,
-  '6M': 183,
-  '1Y': 365,
-  '3Y': 1095,
-}
+// Zoom is a fixed scale in pixels per day, not a number of days to fit. That
+// way the chart does not rescale when its width changes, for example when the
+// detail panel opens beside it.
+export const MIN_PIXELS_PER_DAY = 1
+export const MAX_PIXELS_PER_DAY = 36
+export const DEFAULT_PIXELS_PER_DAY = 3
 
 export const ganttGroupValues = [
   'customer',
@@ -33,14 +27,27 @@ export const BAR_RADIUS = 4
 export const MIN_CYCLE_WIDTH = 6
 export const TODAY_VIEWPORT_RATIO = 0.25
 export const FALLBACK_VIEWPORT_WIDTH = 960
+export const FALLBACK_VIEWPORT_HEIGHT = 800
+
+// Horizontal positions are CSS expressions of this variable, so zooming only
+// has to change its value. Nothing is re-rendered while the zoom is dragged.
+export const PIXELS_PER_DAY_VAR = '--gantt-pixels-per-day'
+
+export interface GanttZoomHandle {
+  zoomTo: (pixelsPerDay: number) => void
+}
 
 export interface GanttScale {
   range: TimelineRange
+  /** The value at the last render. It lags behind while the zoom is dragged. */
   pixelsPerDay: number
-  width: number
-  toX: (time: number) => number
-  toTime: (x: number) => number
+  width: string
+  x: (time: number, offset?: number) => string
+  span: (start: number, end: number, inset?: number) => string
 }
+
+const scaled = (days: number, offset: number) =>
+  `calc(var(${PIXELS_PER_DAY_VAR}) * ${days}px + ${offset}px)`
 
 export const createGanttScale = (
   range: TimelineRange,
@@ -48,9 +55,10 @@ export const createGanttScale = (
 ): GanttScale => ({
   range,
   pixelsPerDay,
-  width: ((range.end - range.start) / DAY_MS) * pixelsPerDay,
-  toX: (time) => ((time - range.start) / DAY_MS) * pixelsPerDay,
-  toTime: (x) => range.start + (x / pixelsPerDay) * DAY_MS,
+  width: scaled((range.end - range.start) / DAY_MS, 0),
+  x: (time, offset = 0) => scaled((time - range.start) / DAY_MS, offset),
+  span: (start, end, inset = 0) =>
+    `max(1px, ${scaled((end - start) / DAY_MS, -inset)})`,
 })
 
 export const formatGanttDate = (time: number, now: number): string =>

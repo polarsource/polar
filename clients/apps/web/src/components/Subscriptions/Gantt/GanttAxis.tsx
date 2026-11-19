@@ -1,5 +1,6 @@
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { ChevronLeft, ChevronRight } from '@polar-sh/orbit/icons'
 import { eachMonthOfInterval, format } from 'date-fns'
 import { type TimelineRange } from '@/utils/subscriptionTimeline'
 import { type RefObject } from 'react'
@@ -19,6 +20,9 @@ const YEAR_WIDTH = 36
 // a spacer because a margin would stop it from sticking to the right.
 const TODAY_CLASS =
   'group sticky left-[148px] right-[68px] z-10 shrink-0 cursor-pointer self-start md:left-[264px]'
+// The arrow points to where today is: the opposite of the edge it stuck to.
+const ARROW_LEFT_CLASS = 'hidden size-3 group-data-[stuck=left]:block'
+const ARROW_RIGHT_CLASS = 'hidden size-3 group-data-[stuck=right]:block'
 const AVERAGE_MONTH_DAYS = 30.44
 
 const getLabelInterval = (monthWidth: number): number => {
@@ -61,7 +65,7 @@ export const GanttAxis = ({
             position="absolute"
             top={0}
             bottom={0}
-            left={scale.toX(month.getTime())}
+            left={scale.x(month.getTime())}
             borderLeftWidth={1}
             borderStyle="solid"
             borderColor={
@@ -88,7 +92,7 @@ export const GanttAxis = ({
                   position="absolute"
                   top={0}
                   bottom={0}
-                  left={scale.toX(month.getTime())}
+                  left={scale.x(month.getTime())}
                   pl="s"
                   alignItems="center"
                 >
@@ -103,7 +107,7 @@ export const GanttAxis = ({
                 </Box>
               )
             })}
-          <Box flexShrink={0} width={scale.toX(now) - TODAY_WIDTH / 2} />
+          <Box flexShrink={0} width={scale.x(now, -TODAY_WIDTH / 2)} />
           <button
             ref={todayRef}
             type="button"
@@ -111,7 +115,7 @@ export const GanttAxis = ({
             style={{ marginTop: (HEADER_HEIGHT - DATE_LABEL_HEIGHT) / 2 }}
             onClick={onToday}
           >
-            <div className="group-data-[stuck=true]:hidden">
+            <div className="group-data-[stuck=left]:hidden group-data-[stuck=right]:hidden">
               <Box
                 width={TODAY_WIDTH}
                 height={DATE_LABEL_HEIGHT}
@@ -125,18 +129,24 @@ export const GanttAxis = ({
                 </Text>
               </Box>
             </div>
-            <div className="hidden group-data-[stuck=true]:block">
+            <div className="hidden group-data-[stuck=left]:block group-data-[stuck=right]:block">
               <Box
-                width={TODAY_WIDTH}
                 height={DATE_LABEL_HEIGHT}
+                px="s"
                 alignItems="center"
                 justifyContent="center"
+                gap="xs"
                 borderRadius="s"
                 backgroundColor="background-card"
+                color={{ base: 'text-secondary', hover: 'text-primary' }}
+                transitionProperty="colors"
+                transitionDuration="fast"
               >
-                <Text variant="label" wrap="nowrap">
+                <ChevronLeft className={ARROW_LEFT_CLASS} />
+                <Text variant="label" color="inherit" wrap="nowrap">
                   Today
                 </Text>
+                <ChevronRight className={ARROW_RIGHT_CLASS} />
               </Box>
             </div>
           </button>

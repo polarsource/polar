@@ -28,7 +28,7 @@ export const subscriptionStatusFilterValues = [
 export type SubscriptionStatusFilter =
   (typeof subscriptionStatusFilterValues)[number]
 
-export const DEFAULT_SUBSCRIPTION_STATUS: SubscriptionStatusFilter = 'active'
+export const DEFAULT_SUBSCRIPTION_STATUS: SubscriptionStatusFilter = 'any'
 
 interface SubscriptionStatusSelectProps {
   value: SubscriptionStatusFilter

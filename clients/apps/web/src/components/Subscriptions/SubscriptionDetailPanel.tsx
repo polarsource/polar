@@ -1,13 +1,12 @@
 import { Field } from '@/components/Events/EventDetailField'
 import { IconButton, Section } from '@/components/Events/EventDetailPanel'
 import { buildCustomerDashboardPath } from '@/utils/customer'
+import { getDiscountDisplay } from '@/utils/discount'
 import {
-  getMonthlyRecurringAmount,
   getSubscriptionActivity,
   type SubscriptionActivityKind,
 } from '@/utils/subscriptionSummary'
 import { schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -56,6 +55,16 @@ interface SubscriptionDetailPanelProps {
   onClose: () => void
 }
 
+const formatDiscountDuration = (
+  discount: NonNullable<schemas['Subscription']['discount']>,
+): string => {
+  if (discount.duration === 'forever') return 'forever'
+  if (discount.duration === 'once') return 'once'
+  if (!('duration_in_months' in discount)) return ''
+  const months = discount.duration_in_months
+  return months === 1 ? 'for 1 month' : `for ${months} months`
+}
+
 export const SubscriptionDetailPanel = ({
   subscription,
   organization,
@@ -64,8 +73,7 @@ export const SubscriptionDetailPanel = ({
   onClose,
 }: SubscriptionDetailPanelProps) => {
   const [now] = useState(() => Date.now())
-  const { customer, product } = subscription
-  const monthlyAmount = getMonthlyRecurringAmount(subscription)
+  const { customer, product, discount } = subscription
   const activity = getSubscriptionActivity(subscription, now)
 
   return (
@@ -121,11 +129,15 @@ export const SubscriptionDetailPanel = ({
         <Field label="Price">
           <Text tabularNums>{formatSubscriptionPrice(subscription)}</Text>
         </Field>
-        {monthlyAmount !== null && (
-          <Field label="MRR">
-            <Text tabularNums>
-              {formatCurrency('compact')(monthlyAmount, subscription.currency)}
-            </Text>
+        {discount && (
+          <Field label="Discount">
+            <Box alignItems="center" gap="s" minWidth={0}>
+              <Text truncate>{discount.name}</Text>
+              <Text color="muted" wrap="nowrap" tabularNums>
+                {getDiscountDisplay(discount)}{' '}
+                {formatDiscountDuration(discount)}
+              </Text>
+            </Box>
           </Field>
         )}
         <Field label="Since">

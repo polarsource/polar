@@ -8,24 +8,19 @@ import {
 import { getTimelineStart } from '@/utils/subscriptionTimeline'
 import { schemas } from '@polar-sh/client'
 import { format } from 'date-fns'
-import { useState } from 'react'
+import { useState, type Ref } from 'react'
 import { formatRecurringSchedule } from '../SubscriptionDetailsGrid'
 import { AggregateCells } from './AggregateCells'
 import { AggregateRowLabel } from './AggregateRowLabel'
 import { GanttFrame } from './GanttFrame'
-import { type GanttGroup, type GanttZoom } from './scale'
+import { type GanttGroup, type GanttZoomHandle } from './scale'
 
 export type AggregateGrouping = Exclude<GanttGroup, 'customer'>
 
 const TOTAL_ROW_HEIGHT = 280
 const GROUP_ROW_HEIGHT = 128
 
-const UNITS: Record<GanttZoom, AggregateUnit> = {
-  '3M': 'week',
-  '6M': 'week',
-  '1Y': 'month',
-  '3Y': 'month',
-}
+const WEEKLY_MIN_PIXELS_PER_DAY = 5
 
 const GROUPINGS: Record<
   AggregateGrouping,
@@ -62,7 +57,9 @@ const formatPeriod = (start: number, unit: AggregateUnit) =>
 interface AggregateTimelineProps {
   subscriptions: schemas['Subscription'][]
   earliest: number
-  zoom: GanttZoom
+  zoom: number
+  zoomRef?: Ref<GanttZoomHandle>
+  onZoomChange?: (zoom: number) => void
   group: AggregateGrouping
   onSelect: (selection: { groupKey: string; start?: number }) => void
 }
@@ -71,11 +68,14 @@ export const AggregateTimeline = ({
   subscriptions,
   earliest,
   zoom,
+  zoomRef,
+  onZoomChange,
   group,
   onSelect,
 }: AggregateTimelineProps) => {
   const [hoveredStart, setHoveredStart] = useState<number | null>(null)
-  const unit = UNITS[zoom]
+  const unit: AggregateUnit =
+    zoom >= WEEKLY_MIN_PIXELS_PER_DAY ? 'week' : 'month'
   const { cornerLabel, groupOf } = GROUPINGS[group]
   const height = group === 'total' ? TOTAL_ROW_HEIGHT : GROUP_ROW_HEIGHT
 
@@ -83,6 +83,8 @@ export const AggregateTimeline = ({
     <GanttFrame
       start={getTimelineStart(subscriptions, earliest)}
       zoom={zoom}
+      zoomRef={zoomRef}
+      onZoomChange={onZoomChange}
       cornerLabel={cornerLabel}
     >
       {({ scale, rendered, now }) => {

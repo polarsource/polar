@@ -1,10 +1,22 @@
 import { schemas } from '@polar-sh/client'
 
-export type GanttTone = 'background-inverse' | 'background-warning'
+export type GanttTone = 'neutral' | 'success' | 'warning' | 'danger'
+export type GanttPattern = 'trial' | 'paused'
+
+// Fills are drawn in a text color, which is saturated in both themes. The
+// background tokens are near-white in light mode and disappear on the surface.
+export const TONE_COLOR = {
+  neutral: 'text-primary',
+  success: 'text-success',
+  warning: 'text-warning',
+  danger: 'text-danger',
+} as const satisfies Record<GanttTone, string>
 
 export const TONE_OPACITY: Record<GanttTone, number> = {
-  'background-inverse': 0.16,
-  'background-warning': 1,
+  neutral: 0.16,
+  success: 0.55,
+  warning: 0.55,
+  danger: 0.55,
 }
 
 export const getGanttTone = (
@@ -13,12 +25,12 @@ export const getGanttTone = (
     'status' | 'ended_at' | 'ends_at' | 'pause_at_period_end'
   >,
 ): GanttTone => {
-  if (subscription.ended_at) return 'background-inverse'
+  if (subscription.ended_at) return 'neutral'
+  if (subscription.status === 'past_due') return 'danger'
   const isActive =
     subscription.status === 'active' || subscription.status === 'trialing'
   const isWindingDown =
     subscription.ends_at !== null || subscription.pause_at_period_end
-  return subscription.status === 'past_due' || (isActive && isWindingDown)
-    ? 'background-warning'
-    : 'background-inverse'
+  if (!isActive) return 'neutral'
+  return isWindingDown ? 'warning' : 'success'
 }

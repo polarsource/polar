@@ -1,9 +1,10 @@
 import { type AggregateRow } from '@/utils/subscriptionAggregate'
+import { DAY_MS } from '@/utils/subscriptionTimeline'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { type GanttScale } from './scale'
-import { TONE_OPACITY } from './tone'
+import { GanttFill } from './GanttFill'
 
 const MIN_LABEL_WIDTH = 52
 const LABEL_HEIGHT = 20
@@ -39,8 +40,8 @@ export const AggregateCells = ({
   return (
     <Box position="relative" height={height}>
       {row.buckets.map((bucket) => {
-        const left = scale.toX(bucket.start)
-        const width = scale.toX(bucket.end) - left
+        const width =
+          ((bucket.end - bucket.start) / DAY_MS) * scale.pixelsPerDay
         const amount = bucket.renewingAmount + bucket.atRiskAmount
         return (
           <div
@@ -50,7 +51,10 @@ export const AggregateCells = ({
                 ? 'dark:bg-polar-800/50 absolute inset-y-0 cursor-pointer bg-gray-50'
                 : 'absolute inset-y-0 cursor-pointer'
             }
-            style={{ left, width }}
+            style={{
+              left: scale.x(bucket.start),
+              width: scale.span(bucket.start, bucket.end),
+            }}
             onMouseEnter={() => onHover(bucket.start)}
             onClick={() => onSelect(bucket.start)}
           >
@@ -83,15 +87,12 @@ export const AggregateCells = ({
                   marginRight: BAR_GAP,
                 }}
               >
-                <Box
-                  flexGrow={bucket.atRiskAmount}
-                  backgroundColor="background-warning"
-                />
-                <Box
-                  flexGrow={bucket.renewingAmount}
-                  backgroundColor="background-inverse"
-                  opacity={TONE_OPACITY['background-inverse']}
-                />
+                <Box flexGrow={bucket.atRiskAmount} flexBasis={0}>
+                  <GanttFill tone="warning" />
+                </Box>
+                <Box flexGrow={bucket.renewingAmount} flexBasis={0}>
+                  <GanttFill tone="success" />
+                </Box>
               </div>
             </Box>
           </div>

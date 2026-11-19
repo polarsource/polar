@@ -3,7 +3,7 @@
 import { type TimelineRange } from '@/utils/subscriptionTimeline'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode, type Ref } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { GanttAxis } from './GanttAxis'
 import { GanttCorner } from './GanttCorner'
@@ -12,7 +12,7 @@ import {
   HEADER_HEIGHT,
   SURFACE_CLASS,
   type GanttScale,
-  type GanttZoom,
+  type GanttZoomHandle,
 } from './scale'
 import { useGanttPointer } from './useGanttPointer'
 import { useGanttViewport } from './useGanttViewport'
@@ -21,12 +21,18 @@ export interface GanttContext {
   scale: GanttScale
   rendered: TimelineRange
   now: number
+  getVisibleRows: (
+    rowHeight: number,
+    count: number,
+  ) => { first: number; last: number }
 }
 
 interface GanttFrameProps {
   start: number
-  zoom: GanttZoom
+  zoom: number
   focus?: number
+  zoomRef?: Ref<GanttZoomHandle>
+  onZoomChange?: (zoom: number) => void
   cornerLabel: string
   children: (context: GanttContext) => { labels: ReactNode; track: ReactNode }
 }
@@ -35,6 +41,8 @@ export const GanttFrame = ({
   start,
   zoom,
   focus,
+  zoomRef,
+  onZoomChange,
   cornerLabel,
   children,
 }: GanttFrameProps) => {
@@ -47,10 +55,19 @@ export const GanttFrame = ({
     todayRef,
     scale,
     rendered,
+    getVisibleRows,
+    toTime,
     onScroll,
-    scrollToToday,
+    scrollToTime,
     panHandlers,
-  } = useGanttViewport({ start, now, zoom, focus })
+  } = useGanttViewport({
+    start,
+    now,
+    pixelsPerDay: zoom,
+    focus,
+    zoomRef,
+    onZoomChange,
+  })
   const {
     trackRef,
     cursorRef,
@@ -58,7 +75,7 @@ export const GanttFrame = ({
     onMouseMove,
     onMouseLeave,
     syncCursor,
-  } = useGanttPointer(scale, now)
+  } = useGanttPointer(toTime, now)
 
   // Toggled on the DOM so hovering never waits for a render of every row.
   const hoverRow = (id: string | null) => {
@@ -75,7 +92,12 @@ export const GanttFrame = ({
     hoveredRef.current = id
   }
 
-  const { labels, track } = children({ scale, rendered, now })
+  const { labels, track } = children({
+    scale,
+    rendered,
+    now,
+    getVisibleRows,
+  })
 
   return (
     <div
@@ -92,6 +114,15 @@ export const GanttFrame = ({
         )
       }
       onMouseLeave={() => hoverRow(null)}
+      onClickCapture={(event) => {
+        const jump = (event.target as HTMLElement).closest<HTMLElement>(
+          '[data-jump]',
+        )
+        if (jump) {
+          event.stopPropagation()
+          scrollToTime(Number(jump.dataset.jump))
+        }
+      }}
     >
       <Box flexShrink={0} minHeight="100%">
         <div
@@ -125,7 +156,7 @@ export const GanttFrame = ({
             scale={scale}
             rendered={rendered}
             now={now}
-            onToday={scrollToToday}
+            onToday={() => scrollToTime(now)}
             yearRef={yearRef}
             todayRef={todayRef}
           />
@@ -136,7 +167,7 @@ export const GanttFrame = ({
             position="absolute"
             top={HEADER_HEIGHT}
             bottom={0}
-            left={scale.toX(now)}
+            left={scale.x(now)}
             width={1}
             backgroundColor="background-inverse"
             pointerEvents="none"

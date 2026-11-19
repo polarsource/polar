@@ -1,7 +1,7 @@
 import { useRef } from 'react'
-import { formatGanttDate, type GanttScale } from './scale'
+import { formatGanttDate } from './scale'
 
-export const useGanttPointer = (scale: GanttScale, now: number) => {
+export const useGanttPointer = (toTime: (x: number) => number, now: number) => {
   const trackRef = useRef<HTMLElement>(null)
   const cursorRef = useRef<HTMLElement>(null)
   const cursorLabelRef = useRef<HTMLSpanElement>(null)
@@ -23,7 +23,7 @@ export const useGanttPointer = (scale: GanttScale, now: number) => {
     cursor.style.transform = `translateX(${x}px)`
     cursor.style.opacity = '1'
     if (cursorLabelRef.current) {
-      cursorLabelRef.current.textContent = formatGanttDate(scale.toTime(x), now)
+      cursorLabelRef.current.textContent = formatGanttDate(toTime(x), now)
     }
   }
 

@@ -51099,6 +51099,11 @@ export interface operations {
           | null
         /** @description Filter by subscriptions that are set to cancel at period end. */
         cancel_at_period_end?: boolean | null
+        /** @description Filter by billing interval. */
+        recurring_interval?:
+          | components['schemas']['RecurringInterval']
+          | components['schemas']['RecurringInterval'][]
+          | null
         /** @description Filter by customer cancellation reason. */
         customer_cancellation_reason?:
           | components['schemas']['CustomerCancellationReason']

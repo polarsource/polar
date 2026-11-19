@@ -67,6 +67,10 @@ class NotReadyError(PolarOutpostError):
     in time."""
 
 
+# The reset count of a state whose snapshot Polar did not confirm.
+UNCONFIRMED = -1
+
+
 class UnavailableRedisError(PolarOutpostError):
     def __init__(self) -> None:
         super().__init__("Redis is unavailable")
@@ -2023,7 +2027,9 @@ class Outpost:
             confirmation.snapshot if confirmation is not None else snapshot,
             confirmation,
             answered=answered,
-            resets=resets,
+            # Polar did not say which pending events the snapshot counts: no reset
+            # count matches, so the state asks again at its next read.
+            resets=UNCONFIRMED if confirmation is not None and not answered else resets,
         )
         return True
 

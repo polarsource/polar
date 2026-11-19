@@ -416,6 +416,9 @@ const reportLocalValue = (
   }
 };
 
+// The reset count of a state whose snapshot Polar did not confirm.
+const UNCONFIRMED = -1;
+
 class RefusedError extends PolarOutpostError {
   constructor(message = "Polar refused Outpost") {
     super(message);
@@ -1632,7 +1635,9 @@ export class Outpost {
       identity,
       customer,
       confirmation?.snapshot ?? snapshot,
-      resets,
+      // Polar did not say which pending events the snapshot counts: no reset count matches, so
+      // the state asks again at its next read.
+      confirmation && !answered ? UNCONFIRMED : resets,
       confirmation,
       answered,
     );

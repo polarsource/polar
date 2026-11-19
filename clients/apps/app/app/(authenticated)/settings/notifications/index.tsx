@@ -1,36 +1,23 @@
 import { SettingsItem } from '@/components/Settings/SettingsList'
 import { Box } from '@/components/Shared/Box'
-import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import {
   useCreateNotificationRecipient,
   useDeleteNotificationRecipient,
   useGetNotificationRecipient,
 } from '@/hooks/polar/notifications'
-import {
-  useUpdateUserOrganizationNotificationSettings,
-  useUserOrganizationNotificationSettings,
-} from '@/hooks/polar/userOrganizations'
 import { setPushNotificationsOptedOut } from '@/hooks/pushNotificationOptOut'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
-import { schemas } from '@polar-sh/client'
 import * as Notifications from 'expo-notifications'
 import { Stack } from 'expo-router'
 import { useCallback, useContext, useEffect, useState } from 'react'
-import { RefreshControl, ScrollView, Switch } from 'react-native'
+import { Linking, ScrollView, Switch } from 'react-native'
 
 export default function NotificationsPage() {
   const theme = useTheme()
-
   const { organization } = useContext(OrganizationContext)
-
-  const {
-    data: userNotificationSettings,
-    refetch: refetchNotificationSettings,
-    isRefetching: isRefetchingNotificationSettings,
-  } = useUserOrganizationNotificationSettings(organization?.id)
 
   const {
     enablePushNotifications,
@@ -38,40 +25,10 @@ export default function NotificationsPage() {
     pushNotificationsEnabled,
   } = usePushNotifications()
 
-  const { mutateAsync: updateNotificationSettings } =
-    useUpdateUserOrganizationNotificationSettings()
-
-  const notificationSettings = userNotificationSettings?.notification_settings
-  const organizationId = organization?.id
-
-  const createNotificationSettingHandler = useCallback(
-    (key: keyof schemas['OrganizationNotificationSettings']) =>
-      async (value: boolean) => {
-        if (!organizationId || !notificationSettings) {
-          return
-        }
-
-        await updateNotificationSettings({
-          organizationId,
-          notification_settings: {
-            ...notificationSettings,
-            [key]: value,
-          },
-        })
-      },
-    [organizationId, notificationSettings, updateNotificationSettings],
-  )
-
   return (
     <>
       <Stack.Screen options={{ title: 'Notifications' }} />
       <ScrollView
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefetchingNotificationSettings}
-            onRefresh={refetchNotificationSettings}
-          />
-        }
         contentContainerStyle={{
           padding: theme.spacing['spacing-16'],
         }}
@@ -90,88 +47,15 @@ export default function NotificationsPage() {
         </SettingsItem>
         <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
         <SettingsItem
-          title="New One-Time Purchases"
-          description="Send a notification when a one-time purchase is made"
-          variant="static"
-        >
-          <Switch
-            value={notificationSettings?.new_order ?? false}
-            onValueChange={createNotificationSettingHandler('new_order')}
-          />
-        </SettingsItem>
-        <SettingsItem
-          title="New Subscriptions"
-          description="Send a notification when a paid subscription starts"
-          variant="static"
-        >
-          <Switch
-            value={notificationSettings?.new_subscription ?? false}
-            onValueChange={createNotificationSettingHandler('new_subscription')}
-          />
-        </SettingsItem>
-        <SettingsItem
-          title="New Trials"
-          description="Send a notification when a customer starts a trial"
-          variant="static"
-        >
-          <Switch
-            value={
-              notificationSettings?.new_trial ??
-              notificationSettings?.new_subscription ??
-              false
-            }
-            onValueChange={createNotificationSettingHandler('new_trial')}
-          />
-        </SettingsItem>
-        <SettingsItem
-          title="Subscription Renewals"
-          description="Send a notification each time a subscription renewal payment is collected"
-          variant="static"
-        >
-          <Switch
-            value={notificationSettings?.subscription_renewal ?? false}
-            onValueChange={createNotificationSettingHandler(
-              'subscription_renewal',
-            )}
-          />
-        </SettingsItem>
-        <SettingsItem
-          title="Subscription Cancellations"
-          description="Send a notification when a customer cancels a subscription"
-          variant="static"
-        >
-          <Switch
-            value={notificationSettings?.subscription_cancellation ?? false}
-            onValueChange={createNotificationSettingHandler(
-              'subscription_cancellation',
-            )}
-          />
-        </SettingsItem>
-        <SettingsItem
-          title="Exclude Free Products"
-          description="Skip subscription, trial, renewal and cancellation notifications for free products."
-          variant="static"
-        >
-          <Switch
-            value={notificationSettings?.exclude_free_products ?? false}
-            onValueChange={createNotificationSettingHandler(
-              'exclude_free_products',
-            )}
-          />
-        </SettingsItem>
-        <Box
-          flexDirection="column"
-          gap="spacing-4"
-          marginVertical="spacing-12"
-          padding="spacing-16"
-          backgroundColor="card"
-          borderRadius="border-radius-12"
-        >
-          <Text variant="bodySmall" color="subtext">
-            These settings will affect both email & push notifications on all
-            your devices.
-          </Text>
-        </Box>
+          title="Choose notifications on polar.sh"
+          description="Pick which sales send email and push notifications"
+          variant="link"
+          onPress={() =>
+            Linking.openURL(
+              `https://polar.sh/dashboard/${organization?.slug}/settings/notifications`,
+            )
+          }
+        />
       </ScrollView>
     </>
   )

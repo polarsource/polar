@@ -1,0 +1,27 @@
+docs/openapi/2027-01.openapi.json
+  s_7b0666dec04723::t_aedfb73843b33f 35032,35069-35070
+server/migrations/versions/2026-11-19-1200_allow_several_keyed_manual_grants.py
+  s_7b0666dec04723::t_be2ce88ef0b36c 33-41,73-86
+server/polar/benefit/grant/schemas.py
+  s_7b0666dec04723::t_9307eade90f99a 6,26,42
+server/polar/benefit/grant/service.py
+  s_7b0666dec04723::t_356f9f823499e6 22,215-224
+server/tests/benefit/grant/test_schemas.py
+  s_7b0666dec04723::t_71f36ac44cb696 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "15edd716d29035d5cb3af1bc297d865c69bd2665",
+  "prompts": {},
+  "sessions": {
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "unknown"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

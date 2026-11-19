@@ -10,6 +10,7 @@ import {
   missingFlags,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['checkoutLinks']['create']>[0]>
@@ -18,6 +19,7 @@ export const command = Command.make(
   'create',
   {
     fields,
+    org,
     data,
     input: {
       metadata: jsonFlag('metadata').pipe(
@@ -143,6 +145,7 @@ export const command = Command.make(
         method: 'POST',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) => client.checkoutLinks.create(body),
       })

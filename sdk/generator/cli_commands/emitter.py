@@ -364,6 +364,14 @@ class CLICommandsEmitter(EmitterBase):
             description = f"{description} (preview, API {api.version})"
 
         has_organization = any(field.name == "organization_id" for field in fields)
+        takes_org = method.requires_authentication and not has_organization
+        if takes_org:
+            if any(field.name == "org" for field in fields):
+                raise ValueError(
+                    f"{method.operation_id} has an input named 'org', "
+                    "which collides with the CLI's own --org flag."
+                )
+            helpers.append("org")
         arguments = [f"config.path.{p.name}" for p in method.path_params]
         if input_type:
             arguments.append(input_type.lower())
@@ -380,6 +388,7 @@ class CLICommandsEmitter(EmitterBase):
             "required": [field.name for field in required],
             "example": example,
             "has_organization": has_organization,
+            "takes_org": takes_org,
             "input_index": len(method.path_params),
             "fields": generated_fields,
             "helpers": helpers,

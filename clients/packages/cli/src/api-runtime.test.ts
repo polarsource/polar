@@ -690,6 +690,15 @@ describe('organization resolution', () => {
     },
   )
 
+  test('--org selects the organization on a command without an organization input', async () => {
+    await run(['products', 'get', 'product-1', `--org=${sandbox.id}`]).promise
+    const url = new URL(requests.at(-1)!.url)
+    expect(url.hostname).toBe('sandbox-api.polar.sh')
+    expect(url.pathname).toBe('/v1/products/product-1')
+    expect(requests.map(scope)).toEqual([sandbox.id, sandbox.id])
+    expect(config.state.activeOrganization).toEqual(production)
+  })
+
   test('repeated organization flags filter by every organization without scoping to one', async () => {
     organizations.push({
       ...production,

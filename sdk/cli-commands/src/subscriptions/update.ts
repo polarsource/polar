@@ -10,6 +10,7 @@ import {
   mergeInput,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['subscriptions']['update']>[1]>
@@ -19,6 +20,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       id: Argument.String('id'),
     },
@@ -182,6 +184,7 @@ export const command = Command.make(
           confirmationInput['pause_at_period_end'] === true ||
           confirmationInput['resume'] === true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

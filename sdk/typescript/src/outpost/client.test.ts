@@ -882,19 +882,15 @@ it("waits in flush for the relay a pull in flight starts", async () => {
 
 it("keeps its telemetry for the next flush when Redis fails the write", async () => {
   const outpost = await start();
-  const instance = outpost["redis"]!;
-  const pipeline = instance.pipeline.bind(instance);
-  vi.spyOn(instance, "pipeline").mockImplementationOnce(() => {
-    const failing = pipeline();
-    failing.exec = () => Promise.reject(new Error("Connection is closed."));
-    return failing;
-  });
+  const spans = `outpost:v1:${organization}:telemetry:spans`;
+  vi.spyOn(outpost["redis"]!, "outpostPushTelemetry").mockRejectedValueOnce(
+    new Error("Connection is closed."),
+  );
   outpost["outbox"].spans.push(Buffer.from("spans;"));
   await outpost.flushTelemetry();
+  expect(await redis.llen(spans)).toBe(0);
   await outpost.flushTelemetry();
-  expect(await redis.lrange(`outpost:v1:${organization}:telemetry:spans`, 0, -1)).toEqual([
-    "spans;",
-  ]);
+  expect(await redis.lrange(spans, 0, -1)).toEqual(["spans;"]);
 });
 
 it("marks the spans its sample keeps with the sample rate", async () => {

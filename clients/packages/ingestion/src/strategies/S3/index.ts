@@ -39,14 +39,16 @@ export class S3Strategy extends IngestionStrategy<S3StrategyContext, S3Client> {
           (next, _context) => async (args) => {
             const result = await next(args)
 
-            if ('request' in args) {
-              const payload: S3StrategyContext = {
-                bytes: Number.parseInt(
-                  // @ts-expect-error request is typed as unknown in the middleware args
-                  args.request.headers['content-length'] ?? '0',
-                ),
-                strategy: 'S3',
-              }
+            const bytes =
+              'request' in args
+                ? Number.parseInt(
+                    // @ts-expect-error request is typed as unknown in the middleware args
+                    args.request.headers['content-length'] ?? '0',
+                  )
+                : 0
+
+            if (bytes > 0) {
+              const payload: S3StrategyContext = { bytes, strategy: 'S3' }
 
               if ('Bucket' in args.input) {
                 payload.bucket = args.input.Bucket
@@ -73,9 +75,17 @@ export class S3Strategy extends IngestionStrategy<S3StrategyContext, S3Client> {
       },
     }
 
-    s3Client.middlewareStack.use(plugin)
+    // Tracking added to the shared client would bill every customer it has seen for each upload
+    const tracked: S3Client = Object.assign(
+      Object.create(Object.getPrototypeOf(s3Client)),
+      s3Client,
+      // The copy must not reuse handlers cached for the shared middleware stack
+      { handlers: undefined },
+    )
+    tracked.middlewareStack = s3Client.middlewareStack.clone()
+    tracked.middlewareStack.use(plugin)
 
-    return s3Client
+    return tracked
   }
 
   public client(

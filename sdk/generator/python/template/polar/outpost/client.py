@@ -235,6 +235,7 @@ OUTBOX_BATCH = {{ outpost_constants.outbox_batch }}
 FLUSHERS = {{ outpost_constants.flushers }}
 OUTBOX_CLAIM_IDLE = {{ outpost_constants.outbox_claim_idle / 1000 }}
 FLUSHER_LOCK_TTL = {{ outpost_constants.flusher_lock_ttl / 1000 }}
+DRAIN_INTERVAL = {{ outpost_constants.drain_interval / 1000 }}
 # The consumer group the flushers read the outbox through.
 OUTBOX_GROUP = "polar"
 REPORT_INTERVAL = {{ outpost_constants.report_interval / 1000 }}
@@ -439,6 +440,11 @@ def _is_ready(state: ReducerState | None) -> bool:
 
 log = get_logger(__name__)
 
+# Called with each batch of events Polar accepted from the outbox.
+OnDelivered = typing.Callable[[list[EventInput]], typing.Awaitable[None]]
+# Called with each batch of events Polar refused, which leave the outbox.
+OnDropped = typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
+
 
 class Configuration(typing.TypedDict):
     organization_id: str
@@ -504,18 +510,15 @@ class Outpost:
         client: httpx2.AsyncClient,
         telemetry: bool = True,
         confirm_timeout: float = CONFIRM_TIMEOUT,
-        serverless: bool = False,
-        on_delivered: (
-            typing.Callable[[list[EventInput]], typing.Awaitable[None]] | None
-        ) = None,
-        on_dropped: (
-            typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
-            | None
-        ) = None,
+        batch_size: int = OUTBOX_BATCH,
+        on_delivered: OnDelivered | None = None,
+        on_dropped: OnDropped | None = None,
     ) -> None:
         self.redis_url = redis_url
         self._client = client
-        self._serverless = serverless
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than zero")
+        self._batch_size = batch_size
         self._on_delivered = on_delivered
         self._on_dropped = on_dropped
         self._telemetry = is_telemetry_enabled(telemetry)
@@ -569,10 +572,22 @@ class Outpost:
 
     @classmethod
     def create(
-        cls, polar: PolarClient, redis_url: str, *, telemetry: bool = True
+        cls,
+        polar: PolarClient,
+        redis_url: str,
+        *,
+        telemetry: bool = True,
+        batch_size: int = OUTBOX_BATCH,
+        on_delivered: OnDelivered | None = None,
+        on_dropped: OnDropped | None = None,
     ) -> typing.Self:
         return cls(
-            redis_url=redis_url, client=polar._client._client, telemetry=telemetry
+            redis_url=redis_url,
+            client=polar._client._client,
+            telemetry=telemetry,
+            batch_size=batch_size,
+            on_delivered=on_delivered,
+            on_dropped=on_dropped,
         )
 
     @_raise_redis_unavailable
@@ -606,8 +621,7 @@ class Outpost:
             self._redis_available = True
             # Keys carry the organization: organizations can share a Redis.
             await self._configure()
-            if self._serverless:
-                await self._create_outbox_group()
+            await self._create_outbox_group()
             self._apply_snapshot = self._redis.register_script(APPLY_SNAPSHOT_SCRIPT)
             self._confirm_script = self._redis.register_script(CONFIRM_SCRIPT)
             self._commit_pull = self._redis.register_script(COMMIT_PULL_SCRIPT)
@@ -619,6 +633,7 @@ class Outpost:
             await self._load_pull()
             self._tasks.start_soon(self._pull_on_time)
             self._tasks.start_soon(self._report_on_time)
+            self._tasks.start_soon(self._drain_on_time)
         except BaseException:
             try:
                 if self._tasks is not None:
@@ -712,18 +727,13 @@ class Outpost:
                 self._ingest_buckets.add(len(updates))
             assert self._redis is not None
             # Polar dates the event as Outpost bucketed it.
-            queued = (
-                json.dumps(
-                    {
-                        **event,
-                        "timestamp": event.get("timestamp")
-                        or parsed.timestamp.isoformat(),
-                    }
-                )
-                if self._serverless
-                else ""
+            queued = json.dumps(
+                {
+                    **event,
+                    "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
+                }
             )
-            if not updates and queued:
+            if not updates:
                 await self._redis.xadd(self._outbox_key, {"event": queued})
                 self._undrained = True
             writes: list[list[str | int | float]] = []
@@ -775,7 +785,7 @@ class Outpost:
                     first_error = result
             if first_error is not None:
                 raise first_error
-            if queued and writes and results[0] == 2:
+            if writes and results[0] == 2:
                 self._undrained = True
         except BaseException:
             outcome = "error"
@@ -904,9 +914,9 @@ class Outpost:
                 read.outcome = "ready"
 
     async def flush(self, *, timeout: float = 30.0) -> None:
-        """Deliver the outbox to Polar when serverless, and wait for the pull and the
-        fetches in flight: a serverless function must not freeze in the middle of them. A newer flush that
-        outlasts this one releases it, since it waits for the same work."""
+        """Deliver the events this instance queued, and wait for the pull and the fetches
+        in flight: a serverless function must not freeze in the middle of them. A newer
+        flush that outlasts this one releases it, since it waits for the same work."""
         deadline = anyio.current_time() + timeout
         for older, until in self._flushing.items():
             if until <= deadline:
@@ -1214,10 +1224,9 @@ class Outpost:
                 raise
 
     async def _drain_outbox_quietly(self) -> None:
-        """Redis keeps what a drain fails to deliver: the next flush takes it. Only a
-        serverless Outpost delivers; otherwise the metering buffer does. Without an event
-        of its own to deliver, a flush waits for the drain in flight, if any."""
-        if not self._serverless or self._redis is None or self._failure is not None:
+        """Redis keeps what a drain fails to deliver: the next flush takes it. Without an
+        event of its own to deliver, a flush waits for the drain in flight, if any."""
+        if self._redis is None or self._failure is not None:
             return
         if self._undrained:
             await self._drain()
@@ -1265,11 +1274,13 @@ class Outpost:
                 # frozen flusher.
                 if not length or (not first and length == delivering):
                     return
+                # A partial batch goes only when no flusher delivers: the last one in
+                # flight takes it.
+                full = (length - delivering) // self._batch_size
+                slots = min(FLUSHERS, full or (0 if delivering and not first else 1))
+                if not slots:
+                    return
                 first = False
-                slots = min(
-                    FLUSHERS,
-                    max(1, math.ceil((length - delivering) / OUTBOX_BATCH)),
-                )
                 outcomes: list[str] = []
 
                 async def flush_slot(slot: int, outcomes: list[str] = outcomes) -> None:
@@ -1309,18 +1320,30 @@ class Outpost:
                     OUTBOX_GROUP,
                     consumer,
                     int(OUTBOX_CLAIM_IDLE * 1000),
-                    count=OUTBOX_BATCH,
+                    count=self._batch_size,
                     justid=True,
                 )
             start = "0"
             while True:
+                if start == ">":
+                    assert self._outbox_backlog is not None
+                    length, delivering = await self._outbox_backlog(
+                        keys=[self._outbox_key], args=[OUTBOX_GROUP]
+                    )
+                    if length == delivering:
+                        return "drained"
+                    # The flusher still in flight takes a partial batch; if it let go
+                    # meanwhile, the next drain does.
+                    if delivering and length - delivering < self._batch_size:
+                        self._undrained = True
+                        return "drained"
                 read = typing.cast(
                     list[typing.Any],
                     await redis.xreadgroup(
                         OUTBOX_GROUP,
                         consumer,
                         {self._outbox_key: start},
-                        count=OUTBOX_BATCH,
+                        count=self._batch_size,
                     ),
                 )
                 entries = read[0][1] if read else []
@@ -1332,8 +1355,6 @@ class Outpost:
                         return "failed"
                 elif start == "0":
                     start = ">"
-                else:
-                    return "drained"
         finally:
             # Past its TTL, the slot may be another flusher's.
             with contextlib.suppress(RedisError):
@@ -1527,6 +1548,13 @@ class Outpost:
         while True:
             await anyio.sleep(REPORT_INTERVAL)
             await self.flush_telemetry()
+
+    async def _drain_on_time(self) -> None:
+        """A long-running process delivers what it queued without a flush."""
+        while True:
+            await anyio.sleep(DRAIN_INTERVAL)
+            if self._undrained:
+                await self._drain_outbox_quietly()
 
     def _lose_redis(self, error: Exception) -> None:
         """Reads and writes fail fast until Redis answers again."""

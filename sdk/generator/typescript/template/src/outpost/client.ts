@@ -17,6 +17,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
 
+import { type MeteringOutpost, OUTPOST } from "../metering/client";
 import { type DropReason, MeteringError, UnknownMeterError } from "../metering/errors";
 import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
@@ -68,6 +69,7 @@ const OUTBOX_BATCH = {{ outpost_constants.outbox_batch }};
 const FLUSHERS = {{ outpost_constants.flushers }};
 const OUTBOX_CLAIM_IDLE = {{ outpost_constants.outbox_claim_idle }};
 const FLUSHER_LOCK_TTL = {{ outpost_constants.flusher_lock_ttl }};
+const DRAIN_INTERVAL = {{ outpost_constants.drain_interval }};
 // The consumer group the flushers read the outbox through.
 const OUTBOX_GROUP = "polar";
 const REPORT_INTERVAL = {{ outpost_constants.report_interval }};
@@ -441,11 +443,8 @@ export interface OutpostOptions {
    * then applies with the events still pending.
    */
   confirmTimeout?: number;
-  /**
-   * Queue tracked events in Redis and deliver them to Polar on flush(), for a serverless function
-   * that flushes before it freezes. Defaults to false: the metering buffer delivers them.
-   */
-  serverless?: boolean;
+  /** Events per request delivering the outbox to Polar. Defaults to 1000. */
+  batchSize?: number;
   /** Called with each batch of events Polar accepted from the outbox; may be async. */
   onDelivered?: (events: EventInput[]) => void | Promise<void>;
   /** Called with each batch of events Polar refused, which leave the outbox; may be async. */
@@ -472,6 +471,7 @@ export class Outpost {
   private prefix = KEY_VERSION;
   private refreshTimer?: ReturnType<typeof setInterval>;
   private pullTimer?: ReturnType<typeof setInterval>;
+  private drainTimer?: ReturnType<typeof setInterval>;
   private pulledAt = 0;
   private pullInterval = PULL_INTERVAL;
   private pulling?: Promise<void>;
@@ -492,7 +492,11 @@ export class Outpost {
   constructor(
     readonly redisUrl: string,
     private readonly options: OutpostOptions,
-  ) {}
+  ) {
+    const { batchSize } = options;
+    if (batchSize !== undefined && (!Number.isSafeInteger(batchSize) || batchSize < 1))
+      throw new RangeError("Batch size must be a positive integer");
+  }
 
   get connectionId(): string | undefined {
     return this._connectionId;
@@ -585,10 +589,9 @@ export class Outpost {
       });
       // Keys carry the organization: organizations can share a Redis.
       await this.configure();
-      if (this.options.serverless)
-        await this.createOutboxGroup().catch((error: unknown) => {
-          throw redisUnavailable(error);
-        });
+      await this.createOutboxGroup().catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
       this._connectionId = randomUUID();
       await this.loadPull().catch((error: unknown) => {
         throw redisUnavailable(error);
@@ -598,6 +601,10 @@ export class Outpost {
         if (!this.failure) void this.refresh().catch(() => {});
       }, PULL_CHECK_INTERVAL);
       this.refreshTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
+      // A long-running process delivers what it queued without a flush.
+      this.drainTimer = setInterval(() => {
+        if (this.undrained && this.delivers) void this.drain().catch(() => {});
+      }, DRAIN_INTERVAL);
       this.requireRedis();
       return this;
     } catch (error) {
@@ -609,6 +616,7 @@ export class Outpost {
   async close(): Promise<void> {
     clearInterval(this.refreshTimer);
     clearInterval(this.pullTimer);
+    clearInterval(this.drainTimer);
     await this.inFlight();
     if (this.delivers) await this.drain().catch(() => {});
     const redis = this.redis;
@@ -663,14 +671,12 @@ export class Outpost {
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
       this.ingestBuckets?.add(updates.length);
       // Polar dates the event as Outpost bucketed it.
-      const queued = this.options.serverless
-        ? JSON.stringify({
-            ...event,
-            timestamp: event.timestamp ?? new Date(Math.floor(parsed.timestamp / 1000)).toISOString(),
-          })
-        : "";
+      const queued = JSON.stringify({
+        ...event,
+        timestamp: event.timestamp ?? new Date(Math.floor(parsed.timestamp / 1000)).toISOString(),
+      });
       const pipeline = redis.pipeline() as OutpostPipeline;
-      if (!updates.length && queued) pipeline.xadd(this.outboxKey, "*", "event", queued);
+      if (!updates.length) pipeline.xadd(this.outboxKey, "*", "event", queued);
       for (const [index, update] of updates.entries()) {
         const identity = `${update.customer}:${update.reducer}`;
         const statistics = update.statistics;
@@ -694,7 +700,7 @@ export class Outpost {
       if (results === null) throw new UnavailableRedisError();
       const failed = results.find(([error]) => error)?.[0];
       if (failed) throw redisUnavailable(failed);
-      if (queued && (!updates.length || results[0][1] === 2)) this.undrained = true;
+      if (!updates.length || results[0][1] === 2) this.undrained = true;
     } catch (error) {
       outcome = "error";
       throw error;
@@ -804,9 +810,9 @@ export class Outpost {
   }
 
   /**
-   * Deliver the outbox to Polar when serverless, and wait for the pull in flight: a serverless
-   * function must not freeze in the middle of either. A newer flush releases this one, since it waits for the same
-   * work.
+   * Deliver the events this instance queued, and wait for the pull in flight: a serverless function
+   * must not freeze in the middle of either. A newer flush releases this one, since it waits for the
+   * same work.
    */
   async flush(): Promise<void> {
     this.releaseFlush?.();
@@ -817,9 +823,14 @@ export class Outpost {
     await Promise.race([Promise.all([this.inFlight(), draining]), released]);
   }
 
-  // A serverless Outpost delivers the events it queued; otherwise the metering buffer does.
+  readonly [OUTPOST] = true;
+
+  private get batchSize(): number {
+    return this.options.batchSize ?? OUTBOX_BATCH;
+  }
+
   private get delivers(): boolean {
-    return Boolean(this.options.serverless && this.redis && !this.failure);
+    return Boolean(this.redis && !this.failure);
   }
 
   private async inFlight(): Promise<void> {
@@ -1325,7 +1336,10 @@ export class Outpost {
         const [length, delivering] = await redis.outpostOutboxBacklog(this.outboxKey, OUTBOX_GROUP);
         // The first round also takes back the batches that wait on a failed or frozen flusher.
         if (!length || (round && length === delivering)) return;
-        const slots = Math.min(FLUSHERS, Math.max(1, Math.ceil((length - delivering) / OUTBOX_BATCH)));
+        // A partial batch goes only when no flusher delivers: the last one in flight takes it.
+        const full = Math.floor((length - delivering) / this.batchSize);
+        const slots = Math.min(FLUSHERS, full || (round && delivering ? 0 : 1));
+        if (!slots) return;
         const outcomes = await Promise.all(Array.from({ length: slots }, (_, slot) => this.flushSlot(slot)));
         if (outcomes.includes("failed")) {
           this.undrained = true;
@@ -1350,9 +1364,19 @@ export class Outpost {
     if (!(await redis.set(lockKey, token, "PX", FLUSHER_LOCK_TTL, "NX"))) return "busy";
     try {
       if (slot === 0)
-        await redis.xautoclaim(this.outboxKey, OUTBOX_GROUP, consumer, OUTBOX_CLAIM_IDLE, "0-0", "COUNT", OUTBOX_BATCH, "JUSTID");
+        await redis.xautoclaim(this.outboxKey, OUTBOX_GROUP, consumer, OUTBOX_CLAIM_IDLE, "0-0", "COUNT", this.batchSize, "JUSTID");
       for (let from = "0"; ; ) {
-        const read = (await redis.xreadgroup("GROUP", OUTBOX_GROUP, consumer, "COUNT", OUTBOX_BATCH, "STREAMS", this.outboxKey, from)) as
+        if (from === ">") {
+          const [length, delivering] = await redis.outpostOutboxBacklog(this.outboxKey, OUTBOX_GROUP);
+          if (length === delivering) return "drained";
+          // The flusher still in flight takes a partial batch; if it let go meanwhile, the next
+          // drain does.
+          if (delivering && length - delivering < this.batchSize) {
+            this.undrained = true;
+            return "drained";
+          }
+        }
+        const read = (await redis.xreadgroup("GROUP", OUTBOX_GROUP, consumer, "COUNT", this.batchSize, "STREAMS", this.outboxKey, from)) as
           | [string, [string, string[] | null][]][]
           | null;
         const entries = read?.[0]?.[1] ?? [];
@@ -1360,7 +1384,6 @@ export class Outpost {
           if (!(await this.deliver(entries, { entries: entries.map(([id]) => id), lockKey, token })))
             return "failed";
         } else if (from === "0") from = ">";
-        else return "drained";
       }
     } finally {
       // Past its TTL, the slot may be another flusher's.
@@ -1712,7 +1735,7 @@ export type OutpostFactoryOptions = Omit<OutpostOptions, "client"> & {
 export const outpost = ({
   redisUrl = process.env.REDIS_URL,
   ...options
-}: OutpostFactoryOptions = {}): ((client: ClientBase) => Outpost) => {
+}: OutpostFactoryOptions = {}): MeteringOutpost => {
   if (!redisUrl) throw new MeteringError("Outpost requires redisUrl or REDIS_URL");
   return (client) => new Outpost(redisUrl, { ...options, client });
 };

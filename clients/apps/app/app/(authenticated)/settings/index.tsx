@@ -1,11 +1,10 @@
-import { DeleteAccountSheet } from '@/components/Accounts/DeleteAccountSheet'
 import { OrganizationsSheet } from '@/components/Settings/OrganizationsSheet'
 import { SettingsItem } from '@/components/Settings/SettingsList'
 import { Box } from '@/components/Shared/Box'
 import { Text } from '@/components/Shared/Text'
 import { useTheme } from '@/design-system/useTheme'
 import { useOrganizations } from '@/hooks/polar/organizations'
-import { useSettingsActions } from '@/hooks/useSettingsActions'
+import { useLogout } from '@/hooks/auth'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import Constants from 'expo-constants'
 import { useUpdates } from 'expo-updates'
@@ -31,25 +30,14 @@ function UpdateId() {
 }
 
 export default function Index() {
-  const {
-    setOrganization,
-    organization: selectedOrganization,
-    organizations,
-  } = useContext(OrganizationContext)
+  const { organization: selectedOrganization } = useContext(OrganizationContext)
 
   const theme = useTheme()
   const { refetch, isRefetching } = useOrganizations()
-  const { logout } = useSettingsActions({
-    selectedOrganization,
-    organizations,
-    setOrganization,
-    refetch,
-  })
+  const logout = useLogout()
 
   const safeAreaInsets = useSafeAreaInsets()
 
-  const [showAccountDeletionSheet, setShowAccountDeletionSheet] =
-    useState(false)
   const [showOrganizationsSheet, setShowOrganizationsSheet] = useState(false)
   const router = useRouter()
 
@@ -108,8 +96,12 @@ export default function Index() {
           <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
           <SettingsItem
             title="Delete Account"
-            variant="navigate"
-            onPress={() => setShowAccountDeletionSheet(true)}
+            variant="link"
+            onPress={() =>
+              Linking.openURL(
+                `https://polar.sh/dashboard/${selectedOrganization?.slug}/settings/profile`,
+              )
+            }
           />
           <SettingsItem title="Logout" variant="navigate" onPress={logout} />
         </Box>
@@ -125,12 +117,6 @@ export default function Index() {
           <UpdateId />
         </Box>
       </ScrollView>
-
-      {showAccountDeletionSheet ? (
-        <DeleteAccountSheet
-          onDismiss={() => setShowAccountDeletionSheet(false)}
-        />
-      ) : null}
 
       {showOrganizationsSheet ? (
         <OrganizationsSheet

@@ -1,7 +1,7 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
 import { unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/react-native'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 
 export const useOrganizations = (
   {
@@ -33,18 +33,5 @@ export const useOrganizations = (
       }
     },
     enabled,
-  })
-}
-
-export const useDeleteOrganization = () => {
-  const { polar } = usePolarClient()
-
-  return useMutation({
-    mutationFn: async (organizationId: string) => {
-      const { data, error } = await polar.DELETE('/v1/organizations/{id}', {
-        params: { path: { id: organizationId } },
-      })
-      return { data, error }
-    },
   })
 }

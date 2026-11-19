@@ -1,0 +1,19 @@
+terraform/test/events_api.tf
+  s_911b6b724cfe5f::t_472c9562780c4e 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9833973db9413e00a1b409dd6ab20a3c42712446",
+  "prompts": {},
+  "sessions": {
+    "s_911b6b724cfe5f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "722fa755-14f5-4bd3-8d4f-f1b30c01f0dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

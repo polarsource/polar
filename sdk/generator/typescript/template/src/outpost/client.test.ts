@@ -128,6 +128,10 @@ let meterUsageMostInFlight = 0;
 let meterUsageStatus = 200;
 // Meter usage requests that fail with a 503 before Polar answers again.
 let meterUsageFailures = 0;
+// Each ingest request's events, and the statuses Polar answers the next ones with.
+const ingestRequests: Record<string, unknown>[][] = [];
+let ingestStatuses: number[] = [];
+let ingestDelay = 0;
 const outposts: Outpost[] = [];
 
 const creditReducer = (id: string, meterId: string): Reducer => ({
@@ -281,6 +285,15 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
         },
       });
     }
+    case "POST /v1/events/ingest": {
+      ingestRequests.push(body.events);
+      const status = ingestStatuses.shift() ?? 200;
+      setTimeout(
+        () => respond(response, { inserted: body.events.length, duplicates: 0 }, status),
+        ingestDelay,
+      );
+      return;
+    }
     case "GET /v1/outpost/changes": {
       changeRequests.push(url.searchParams.get("cursor"));
       if (changesStatus !== 200) return respond(response, {}, changesStatus);
@@ -340,6 +353,9 @@ beforeEach(async () => {
   answerConfirm = true;
   confirmSnapshot = undefined;
   confirmRequests.length = 0;
+  ingestRequests.length = 0;
+  ingestStatuses = [];
+  ingestDelay = 0;
   exported.length = 0;
   metrics.length = 0;
 });
@@ -1308,6 +1324,142 @@ it("keeps a cold bucket's events pending on Polar's receipt until a snapshot cou
   expect((await outpost.meter(meter))?.consumed_units).toBe(0);
 });
 
+// The events Outpost queued for Polar, as Polar ingests them.
+const queued = async (): Promise<unknown[]> =>
+  (await redis.xrange("outpost:v1:org-1:outbox", "-", "+")).map(([, fields]) =>
+    JSON.parse(fields[1]),
+  );
+
+it("queues nothing for Polar unless serverless", async () => {
+  const outpost = await warm();
+  await outpost.track(usage("event-1", 10));
+  expect(await queued()).toEqual([]);
+});
+
+it("queues a tracked event for Polar", async () => {
+  const outpost = await warm({ serverless: true });
+  await outpost.track(usage("event-1", 10));
+  expect(await queued()).toEqual([usage("event-1", 10)]);
+});
+
+it("queues an event once however many times it is tracked", async () => {
+  const outpost = await warm({ serverless: true });
+  await outpost.track(usage("same", 10));
+  await outpost.track(usage("same", 10));
+  expect(await queued()).toEqual([usage("same", 10)]);
+});
+
+it("queues an event once when two meters count it", async () => {
+  reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
+  const outpost = await warm({ serverless: true });
+  await outpost.track(usage("event-1", 10));
+  expect(await queued()).toEqual([usage("event-1", 10)]);
+});
+
+it("queues an event no meter counts", async () => {
+  reducers = [
+    {
+      ...reducers[0],
+      filter: {
+        conjunction: "and",
+        clauses: [{ property: "name", operator: "eq", value: "other" }],
+      },
+    },
+    reducers[1],
+  ];
+  const outpost = await warm({ serverless: true });
+  await outpost.track(usage("event-1", 10));
+  expect(await queued()).toEqual([usage("event-1", 10)]);
+});
+
+// The external_ids Polar received, request by request.
+const delivered = () => ingestRequests.map((events) => events.map((event) => event.external_id));
+
+it("delivers nothing from flush() unless serverless", async () => {
+  const outpost = await warm();
+  await outpost.track(usage("event-0", 10));
+  await outpost.flush();
+  expect(ingestRequests).toEqual([]);
+});
+
+it("delivers the stream to Polar in batches of a thousand, whichever instance flushes", async () => {
+  const outposts = [await warm({ serverless: true }), await start({ serverless: true })];
+  for (let index = 0; index < 2500; index += 1)
+    await outposts[index % 2].track(usage(`event-${index}`, 1));
+  await Promise.all(outposts.map((outpost) => outpost.flush()));
+  expect(ingestRequests.map((events) => events.length).sort()).toEqual([1000, 1000, 500]);
+  expect(new Set(delivered().flat()).size).toBe(2500);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+});
+
+it("settles the events Polar received and reports them", async () => {
+  const onDelivered = vi.fn();
+  const outpost = await warm({ onDelivered, serverless: true });
+  const events = [usage("event-0", 10), usage("event-1", 10)];
+  for (const event of events) await outpost.track(event);
+  await outpost.flush();
+  expect(ingestRequests).toEqual([events]);
+  expect(onDelivered).toHaveBeenCalledWith(events);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+  expect((await outpost.meter(meter))?.consumed_units).toBe(20);
+});
+
+it("keeps a batch Polar fails to take and delivers it on the next flush", async () => {
+  const outpost = await warm({ serverless: true });
+  await outpost.track(usage("event-0", 10));
+  ingestStatuses = [503];
+  await outpost.flush();
+  expect(await queued()).toEqual([usage("event-0", 10)]);
+  await outpost.flush();
+  expect(delivered()).toEqual([["event-0"], ["event-0"]]);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+  await outpost.flush();
+  expect(ingestRequests).toHaveLength(2);
+});
+
+it("drops a batch Polar refuses, settles its events and reports them", async () => {
+  const onDropped = vi.fn();
+  const outpost = await warm({ onDropped, serverless: true });
+  const events = [usage("event-0", 10), usage("event-1", 10)];
+  for (const event of events) await outpost.track(event);
+  ingestStatuses = [422];
+  await outpost.flush();
+  expect(onDropped).toHaveBeenCalledWith(events, "permanent_error");
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+  expect(await redis.hget(key, `pending:${bucket}:count`)).toBeNull();
+  await outpost.flush();
+  expect(ingestRequests).toHaveLength(1);
+});
+
+it("takes back the batch of a flusher that died on the next drain once it sat idle long enough", async () => {
+  const outpost = await warm({ serverless: true });
+  await outpost.track(usage("event-0", 10));
+  // A flusher read the batch and froze before Polar answered.
+  const stream = "outpost:v1:org-1:outbox";
+  const read = await redis.xreadgroup("GROUP", "polar", "frozen", "STREAMS", stream, ">");
+  const [[, entries]] = read as [string, [string, string[]][]][];
+  await outpost.flush();
+  expect(ingestRequests).toHaveLength(0);
+  await redis.xclaim(stream, "polar", "frozen", 0, ...entries.map(([id]) => id), "IDLE", 60_000);
+  await outpost.track(usage("event-1", 10));
+  await outpost.flush();
+  expect(delivered().flat().sort()).toEqual(["event-0", "event-1"]);
+  expect(await redis.xlen(stream)).toBe(0);
+});
+
+it("delivers what another instance queued while it flushed", async () => {
+  const [first, second] = [await warm({ serverless: true }), await start({ serverless: true })];
+  await first.track(usage("event-0", 10));
+  ingestDelay = 100;
+  const flushing = first.flush();
+  await vi.waitFor(() => expect(ingestRequests).toHaveLength(1));
+  await second.track(usage("event-1", 10));
+  await second.flush();
+  await flushing;
+  expect(delivered().flat().sort()).toEqual(["event-0", "event-1"]);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+});
+
 it("ignores a duplicate external_id", async () => {
   const outpost = await warm();
   await outpost.track(usage("same", 10));
@@ -2131,7 +2283,12 @@ describe("Redis cost", () => {
     const after = await traffic();
     await new Promise((resolve) => setTimeout(resolve, 50));
     monitor.disconnect();
-    return { commands, sent: after.sent - before.sent, received: after.received - before.received };
+    // A copy: the monitor may report the next commands before its connection closes.
+    return {
+      commands: { ...commands },
+      sent: after.sent - before.sent,
+      received: after.received - before.received,
+    };
   };
   // Telemetry relays its exports through Redis after a pull: only its own test counts them.
   const quiet = (options: Partial<OutpostOptions> = {}) => start({ telemetry: false, ...options });
@@ -2186,6 +2343,76 @@ describe("Redis cost", () => {
     expect((await redisCost(() => outpost.acknowledge([measured]))).commands).toEqual({
       evalsha: 1,
     });
+  });
+
+  it("acknowledges a thousand events over a hundred customers in one command", async () => {
+    await seed();
+    const outpost = await quiet();
+    const events = Array.from({ length: 1000 }, (_, index) => ({
+      ...event(),
+      external_customer_id: `customer-${index % 100}`,
+    }));
+    for (const each of events) await outpost.track(each);
+    await outpost.acknowledge(events.slice(0, 1));
+    expect((await redisCost(() => outpost.acknowledge(events.slice(1)))).commands).toEqual({
+      evalsha: 1,
+    });
+  });
+
+  it("flushes a thousand events in as many commands as one", async () => {
+    await seed();
+    const outpost = await quiet({ serverless: true });
+    const flushCost = async (events: number) => {
+      for (let index = 0; index < events; index += 1) await outpost.track(event());
+      const { commands } = await redisCost(() => outpost.flush());
+      expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+      return commands;
+    };
+    await flushCost(1);
+    expect(await flushCost(1000)).toEqual(await flushCost(1));
+  });
+
+  it("flushes twenty concurrent requests for the commands of one, and one more look at most", async () => {
+    await seed();
+    const outpost = await quiet({ serverless: true });
+    await deliver(outpost);
+    await outpost.track(event());
+    await outpost.flush();
+    const flushCost = async (concurrent: number) => {
+      await outpost.track(event());
+      const { commands } = await redisCost(() =>
+        Promise.all(Array.from({ length: concurrent }, () => outpost.flush())),
+      );
+      return commands;
+    };
+    const { evalsha: once, ...single } = await flushCost(1);
+    const { evalsha: concurrent, ...twenty } = await flushCost(20);
+    // The flushes of one instance share its drain, which looks once more for their events.
+    expect(twenty).toEqual(single);
+    expect(concurrent - once).toBeLessThanOrEqual(1);
+  });
+
+  it("tracks and flushes in one command while another instance drains the stream", async () => {
+    await seed();
+    const [first, second] = [await quiet({ serverless: true }), await quiet({ serverless: true })];
+    await deliver(first);
+    await deliver(second);
+    const queued = event();
+    await first.track(queued);
+    // A duplicate queues nothing: it loads the script on the second instance's connection.
+    await second.track(queued);
+    // Polar holds the first instance's batch past the measure, which counts every connection.
+    ingestDelay = 1_000;
+    const draining = first.flush();
+    await vi.waitFor(() => expect(ingestRequests).toHaveLength(1));
+    const cost = await redisCost(async () => {
+      await second.track(event());
+      await second.flush();
+    });
+    // The instance draining reads the stream again once it lets go of its slot.
+    expect(cost.commands).toEqual({ evalsha: 1 });
+    await draining;
+    expect(ingestRequests.flat()).toHaveLength(2);
   });
 
   it("warms a known customer over eleven reducers in one command, readiness alone", async () => {

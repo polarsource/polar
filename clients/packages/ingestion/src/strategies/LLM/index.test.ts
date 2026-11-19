@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LLMStrategy } from '.'
 
 const mockEventsIngest = vi.fn()
@@ -39,6 +39,10 @@ const mockLLMClient = {
 
 describe('LLMStrategy', () => {
   const customerId = 'test-customer-id'
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
   it('should call the meter handler with the correct context', async () => {
     const input = { prompt: 'Hello, world!' }
@@ -148,6 +152,36 @@ describe('LLMStrategy', () => {
     })
 
     expect(result.usage.totalTokens).toBe(2)
+    expect(consoleError).toHaveBeenCalledTimes(1)
+  })
+
+  it('should finish the stream and log when ingest fails', async () => {
+    mockEventsIngest.mockRejectedValueOnce(new Error('Polar is down'))
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockLLMClient.doStream.mockResolvedValueOnce({
+      stream: new ReadableStream({
+        start(controller) {
+          controller.enqueue({
+            type: 'finish',
+            finishReason: 'stop',
+            usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+          })
+          controller.close()
+        },
+      }),
+    })
+
+    const llm = Ingestion()
+      .strategy(new LLMStrategy(mockLLMClient))
+      .ingest('prompt-tokens')
+
+    const { stream } = await llm.client({ customerId }).doStream({
+      prompt: [{ role: 'user', content: [{ type: 'text', text: 'Hello' }] }],
+    })
+    const chunks = []
+    for await (const chunk of stream) chunks.push(chunk)
+
+    expect(chunks).toHaveLength(1)
     expect(consoleError).toHaveBeenCalledTimes(1)
   })
 })

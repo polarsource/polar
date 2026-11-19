@@ -8,7 +8,10 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { githubRepositoryPermissionDisplayNames } from './utils'
+import {
+  githubRepositoryPermissionDisplayNames,
+  meterCreditAllocationDisplayNames,
+} from './utils'
 
 export const DiscordCells = ({
   benefit,
@@ -218,7 +221,7 @@ export const MeterCreditCells = ({
   benefit: schemas['BenefitMeterCredit']
   organization: schemas['Organization']
 }) => {
-  const { meter_id, units, rollover } = benefit.properties
+  const { meter_id, units, rollover, allocation } = benefit.properties
   const { data: meter } = useMeter(meter_id)
 
   return (
@@ -243,6 +246,10 @@ export const MeterCreditCells = ({
         value={
           rollover ? 'Unused credits roll over' : 'Balance resets on each grant'
         }
+      />
+      <DetailCell
+        label="Allocation on seat-based products"
+        value={meterCreditAllocationDisplayNames[allocation]}
       />
     </>
   )

@@ -22,6 +22,7 @@ import { useModal } from '@/components/Modal/useModal'
 import { SpinnerNoMargin } from '@polar-sh/orbit'
 import { useMeters } from '@/hooks/queries/meters'
 import { Button } from '@polar-sh/orbit'
+import { MeterCreditAllocationField } from './AllocationField'
 
 export const MeterCreditBenefitForm = ({
   organization,
@@ -152,6 +153,7 @@ export const MeterCreditBenefitForm = ({
               </FormItem>
             )}
           />
+          <MeterCreditAllocationField />
         </>
       )}
       <InlineModal

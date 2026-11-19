@@ -2,10 +2,12 @@
 
 import {
   benefitsDisplayNames,
+  meterCreditAllocationDisplayNames,
   resolveBenefitIcon,
 } from '@/components/Benefit/utils'
 import { Pagination } from '@/components/Products/Benefits/components/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
+import { isSeatBasedPrice } from '@/utils/product'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -27,6 +29,7 @@ export const ProductBenefits = ({
   const [page, setPage] = useState(1)
   const benefitCount = product.benefits.length
   const totalPages = Math.max(1, Math.ceil(benefitCount / PAGE_SIZE))
+  const isSeatBasedProduct = product.prices.some(isSeatBasedPrice)
 
   const pageBenefits = useMemo(() => {
     const start = (page - 1) * PAGE_SIZE
@@ -101,6 +104,9 @@ export const ProductBenefits = ({
                       <Box alignItems="center" columnGap="s" minWidth={0}>
                         <Text variant="caption" color="muted" truncate>
                           {benefitsDisplayNames[benefit.type]}
+                          {isSeatBasedProduct && benefit.type === 'meter_credit'
+                            ? ` · ${meterCreditAllocationDisplayNames[benefit.properties.allocation]}`
+                            : null}
                         </Text>
                         {benefit.visibility !== 'public' ? (
                           <Pill

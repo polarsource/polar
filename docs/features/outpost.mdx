@@ -14,7 +14,7 @@ Use it when your application has to check a balance on every request, and a roun
 - A read sees every event `track()` has returned for, on every instance that shares the Redis.
 - A read costs one Redis command. It never calls Polar once the customer is known.
 - An event counts locally until Polar has stored it. Polar's totals then replace the local count, bucket by bucket. A local balance is never higher than Polar's.
-- A credit reaches local reads once Polar closes the 5-minute bucket the grant falls in, at the next pull.
+- A credit reaches local reads at the next pull, within 30 seconds of the grant.
 
 ## What it leaves to you
 
@@ -32,7 +32,7 @@ sequenceDiagram
 
     App->>SDK: track(event)
     SDK->>Redis: add the event to its 5-minute bucket, and queue it for Polar
-    SDK-->>Polar: deliver the queue, in batches of up to 1,000
+    SDK-->>Polar: deliver the queue, in batches
     App->>SDK: meter(customer)
     SDK->>Redis: read the customer's state
     SDK-->>App: consumed, credited, balance
@@ -77,8 +77,6 @@ Every instance of your application that runs the SDK with the same Redis shares 
     | `redisUrl`        | `REDIS_URL` environment variable | The Redis Outpost uses.                                          |
     | `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                        |
     | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar.       |
-    | `confirmTimeout`  | `2000`                           | Milliseconds a snapshot waits for Polar to confirm events.       |
-    | `batchSize`       | `1000`                           | Maximum events per request delivering the queue to Polar.        |
     | `onDelivered`     | `undefined`                      | Called with each batch Polar accepted; may be async.             |
     | `onDropped`       | `undefined`                      | Called with each batch Polar refused, and why; may be async.     |
   </Tab>
@@ -99,7 +97,6 @@ Every instance of your application that runs the SDK with the same Redis shares 
     | -------------- | -------------------------------- | --------------------------------------------------------- |
     | `redis_url`    | `REDIS_URL` environment variable | The Redis Outpost uses.                                   |
     | `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                 |
-    | `batch_size`   | `1000`                           | Maximum events per request delivering the queue to Polar. |
     | `on_delivered` | `None`                           | Called with each batch Polar accepted.                    |
     | `on_dropped`   | `None`                           | Called with each batch Polar refused, and why.            |
   </Tab>
@@ -139,7 +136,9 @@ A read returns the customer's `consumed_units`, `credited_units` and `balance` f
 
 ## Deliver the events
 
-Outpost queues each event in Redis when you track it, and delivers the queue to Polar in batches of up to 1,000 events, shared by every instance. A long-running server delivers every second on its own. In a serverless runtime, flush `Metering` after each response, as the [SDK guide](/integrate/sdk/typescript) explains, so the function does not freeze before the delivery starts.
+Outpost queues each event in Redis when you track it, and delivers the queue to Polar in batches shared by every instance. A long-running server delivers every second on its own. In a serverless runtime, flush `Metering` after each response, as the [SDK guide](/integrate/sdk/typescript) explains, so the function does not freeze before the delivery starts.
+
+`onDelivered` and `onDropped` run on the instance that delivered the batch. A batch mixes events from every instance, so it does not map to one request.
 
 ## Run it on Vercel
 
@@ -149,7 +148,20 @@ Install the optional `@vercel/oidc` peer dependency, then wire three pieces:
 
 <Steps>
   <Step title="Turn on strict affinity for the routes that use Outpost">
-    In `vercel.json`, give each route that tracks or reads through Outpost `"affinity": { "mode": "strict" }` and a `maxDuration`. With a `vercel.ts` config, `withOutpostAffinity(config, ["app/api/usage/route.ts"])` from `@polar-sh/sdk/outpost/vercel` adds the affinity for you.
+    List each route that tracks or reads through Outpost in `vercel.json`:
+
+    ```json vercel.json
+    {
+      "functions": {
+        "app/api/usage/route.ts": {
+          "affinity": { "mode": "strict" },
+          "maxDuration": 300
+        }
+      }
+    }
+    ```
+
+    With a `vercel.ts` config, `withOutpostAffinity(config, ["app/api/usage/route.ts"])` from `@polar-sh/sdk/outpost/vercel` adds the same `affinity` for you.
   </Step>
   <Step title="Pin each request to its customer's shard in your middleware">
     ```typescript

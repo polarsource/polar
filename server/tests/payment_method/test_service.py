@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
+from sqlalchemy import update
 
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
@@ -226,6 +227,73 @@ class TestUpsertFromStripe:
             "last4": "9999",
         }
         assert updated_payment_method.customer == customer
+
+
+@pytest.mark.anyio
+class TestUpsertFromStripeIntent:
+    async def test_sets_default_when_customer_has_none(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        stripe_payment_method = build_stripe_payment_method(type="card")
+        intent = stripe_lib.SetupIntent.construct_from(
+            {"id": "seti_test", "payment_method": stripe_payment_method}, None
+        )
+
+        payment_method = await payment_method_service.upsert_from_stripe_intent(
+            session, intent, Checkout(customer=customer)
+        )
+
+        assert customer.default_payment_method == payment_method
+
+    async def test_keeps_existing_default(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        existing_default = await create_payment_method(save_fixture, customer)
+        customer.default_payment_method = existing_default
+        await save_fixture(customer)
+        stripe_payment_method = build_stripe_payment_method(type="card")
+        intent = stripe_lib.SetupIntent.construct_from(
+            {"id": "seti_test", "payment_method": stripe_payment_method}, None
+        )
+
+        payment_method = await payment_method_service.upsert_from_stripe_intent(
+            session, intent, Checkout(customer=customer)
+        )
+
+        assert payment_method.id != existing_default.id
+        assert customer.default_payment_method_id == existing_default.id
+
+    async def test_keeps_default_set_concurrently(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        concurrent_default = await create_payment_method(save_fixture, customer)
+        await session.execute(
+            update(Customer)
+            .where(Customer.id == customer.id)
+            .values(default_payment_method_id=concurrent_default.id)
+            .execution_options(synchronize_session=False)
+        )
+        assert customer.default_payment_method_id is None
+        stripe_payment_method = build_stripe_payment_method(type="card")
+        intent = stripe_lib.SetupIntent.construct_from(
+            {"id": "seti_test", "payment_method": stripe_payment_method}, None
+        )
+
+        await payment_method_service.upsert_from_stripe_intent(
+            session, intent, Checkout(customer=customer)
+        )
+        await session.flush()
+
+        await session.refresh(customer, {"default_payment_method_id"})
+        assert customer.default_payment_method_id == concurrent_default.id
 
 
 @pytest.mark.anyio

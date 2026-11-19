@@ -78,8 +78,8 @@ including `null`, are sent as given. An `--org` value selects that organization,
 with its environment and credentials, for the request without changing the saved
 selection. Repeated `--org` values must share an environment; they are sent as
 filters and the header is omitted, since it scopes a request to one organization.
-Commands without an organization input use the selected environment and the
-resource ID you supply.
+Commands without an organization input take `--org` to set it; otherwise they
+use the selected environment and the resource ID you supply.
 
 `--data` / `-d` accepts a single JSON object. It supplies query parameters on
 query-bearing commands and body fields on create/update. Explicit flags replace

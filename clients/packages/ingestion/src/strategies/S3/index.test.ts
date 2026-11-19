@@ -55,6 +55,24 @@ describe('S3Strategy', () => {
     })
   })
 
+  it('should send metadata that S3StrategyContext accepts when ContentType is undefined', async () => {
+    const { strategy, ingest } = trackUploads(createS3Client())
+
+    await strategy.client({ customerId: 'alice' }).send(
+      new PutObjectCommand({
+        Bucket: 'bucket',
+        Key: 'key',
+        Body: 'hello',
+        ContentType: undefined,
+      }),
+    )
+
+    const [{ metadata }] = ingest.mock.calls[0][0].events
+    expect(await S3StrategyContext['~standard'].validate(metadata)).toEqual({
+      value: metadata,
+    })
+  })
+
   it('should send the uploaded bytes for the customer', async () => {
     const { strategy, ingest } = trackUploads(createS3Client())
 

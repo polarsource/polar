@@ -58,11 +58,14 @@ export class S3Strategy extends IngestionStrategy<S3StrategyContext, S3Client> {
               const payload: S3StrategyContext = {
                 bytes,
                 strategy: 'S3',
-                ...('Bucket' in input && { bucket: input.Bucket }),
-                ...('Key' in input && { key: input.Key }),
-                ...('ContentType' in input && {
-                  contentType: input.ContentType,
-                }),
+                ...('Bucket' in input &&
+                  input.Bucket !== undefined && { bucket: input.Bucket }),
+                ...('Key' in input &&
+                  input.Key !== undefined && { key: input.Key }),
+                ...('ContentType' in input &&
+                  input.ContentType !== undefined && {
+                    contentType: input.ContentType,
+                  }),
               }
 
               execute(payload, customer)

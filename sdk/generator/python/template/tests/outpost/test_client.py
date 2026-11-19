@@ -39,6 +39,7 @@ from redis.exceptions import TimeoutError as RedisTimeoutError
 from polar import __version__
 from polar.metering import EventInput
 from polar.metering.errors import UnknownMeterError
+from polar.outpost import NotReadyError
 from polar.outpost.client import (
     APPLY_SNAPSHOT_SCRIPT,
     WRITE_BUCKET_SCRIPT,
@@ -48,7 +49,6 @@ from polar.outpost.client import (
     RedisReconnectBackoff,
     UnavailableRedisError,
     _is_connection_error,
-    _NotReadyError,
     _number,
     decode_state,
     is_sampled,
@@ -796,7 +796,7 @@ async def test_reports_a_missing_snapshot_and_an_unknown_meter(
         await outpost.actor(external_customer_id="alice")
         with pytest.raises(UnknownMeterError):
             await outpost.meter(external_customer_id="alice", meter_id="unknown")
-        with pytest.raises(PolarOutpostError, match="snapshot is not ready"):
+        with pytest.raises(NotReadyError, match="snapshot is not ready"):
             await outpost.meter(external_customer_id="alice", meter_id="meter")
 
 
@@ -3215,7 +3215,7 @@ async def test_snapshot_redis_error_keeps_serving(
                         meter_id="meter", external_customer_id="alice"
                     )
                     break
-                except _NotReadyError:
+                except NotReadyError:
                     pass
         assert meter is not None and meter.consumed_units == 3
         await outpost.track(

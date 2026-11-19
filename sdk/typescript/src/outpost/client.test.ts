@@ -20,6 +20,7 @@ import {
   UnavailableRedisError,
   isSampled,
 } from "./client";
+import { NotReadyError } from "./index";
 import { BUCKET_SIZE, getBucketStart, type Reducer } from "./reducer";
 import { APPLY_SNAPSHOT_SCRIPT } from "./scripts";
 import { SAMPLE_RATE_ATTRIBUTE, TELEMETRY_ENV } from "./telemetry";
@@ -538,7 +539,10 @@ it.each([
 it("reports a missing customer snapshot and an unknown meter", async () => {
   const outpost = await start();
   expect(await ingest(outpost, 3)).toBeUndefined();
-  await expect(outpost.meter(meter)).rejects.toThrow("snapshot is not ready");
+  const notReady = outpost.meter(meter);
+  await expect(notReady).rejects.toBeInstanceOf(NotReadyError);
+  await expect(notReady).rejects.toBeInstanceOf(PolarOutpostError);
+  await expect(notReady).rejects.toThrow("snapshot is not ready");
   await expect(outpost.meter({ ...customer, meter_id: "unknown" })).rejects.toThrow(
     UnknownMeterError,
   );

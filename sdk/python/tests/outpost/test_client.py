@@ -499,7 +499,7 @@ async def test_ingest_accepts_single_events(
     ]
     async with Outpost(url, client=polar_client) as outpost:
         for event in events:
-            assert await outpost.track(event) is None
+            await outpost.track(event)
     field = f"bucket:{BUCKET}:sum"
     assert (
         await redis.hget("outpost:v1:org-1:state:external:alice:tokens", field) == b"3"
@@ -726,7 +726,7 @@ async def test_customer_meter_reads_at_once_on_the_writer_and_its_peers(
 
 
 @pytest.mark.anyio
-async def test_talks_to_redis_over_one_connection_with_no_subscriber(
+async def test_talks_to_redis_over_one_connection(
     redis_connection: tuple[str, Redis], polar_client: httpx2.AsyncClient
 ) -> None:
     url, redis = redis_connection

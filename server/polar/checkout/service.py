@@ -138,6 +138,7 @@ from polar.worker import enqueue_job
 
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .payment_methods import get_payment_method_country
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
@@ -1190,29 +1191,69 @@ class CheckoutService:
             if checkout.has_future_charges:
                 raise PaymentNotReady()
 
+        billing_address = checkout.customer_billing_address
+        billing_countries = (
+            {
+                billing_address.country,
+                *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
+                    billing_address.country, ()
+                ),
+            }
+            if billing_address is not None
+            else set()
+        )
+        ip_country = (checkout.customer_signals or {}).get("ip_country")
+        is_billing_country_confirmed = (
+            billing_address is None or ip_country in billing_countries
+        )
+        # The payment method country costs a Stripe round trip:
+        # only ask for it when the IP country doesn't confirm the billing country.
+        should_load_confirmation_token = (
+            not is_billing_country_confirmed
+            or checkout.customer_name is None
+            or (
+                checkout.discount is not None
+                and checkout.discount.max_redemptions_per_customer is not None
+            )
+            or (
+                checkout.trial_end is not None
+                and checkout.organization.prevent_trial_abuse
+            )
+        )
+
         confirmation_token: stripe_lib.ConfirmationToken | None = None
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
-            and (
-                checkout.customer_name is None
-                or (
-                    checkout.discount is not None
-                    and checkout.discount.max_redemptions_per_customer is not None
-                )
-                or (
-                    checkout.trial_end is not None
-                    and checkout.organization.prevent_trial_abuse
-                )
-            )
         ):
-            try:
-                confirmation_token = await stripe_service.get_confirmation_token(
-                    checkout_confirm.confirmation_token_id
+            if should_load_confirmation_token:
+                try:
+                    confirmation_token = await stripe_service.get_confirmation_token(
+                        checkout_confirm.confirmation_token_id
+                    )
+                except stripe_lib.StripeError:
+                    confirmation_token = None
+
+            if not is_billing_country_confirmed:
+                payment_method_country = (
+                    get_payment_method_country(
+                        confirmation_token.payment_method_preview
+                    )
+                    if confirmation_token is not None
+                    and confirmation_token.payment_method_preview is not None
+                    else None
                 )
-            except stripe_lib.StripeError:
-                confirmation_token = None
+                if payment_method_country not in billing_countries:
+                    # Shadow mode: measure how often this triggers before blocking on it.
+                    log.info(
+                        "checkout.billing_country_mismatch"
+                        if ip_country is not None or payment_method_country is not None
+                        else "checkout.billing_country_unverified",
+                        checkout_id=str(checkout.id),
+                        organization_id=str(checkout.organization_id),
+                        payment_method_country=payment_method_country,
+                    )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
         # field for better UX and instead extract the name from Stripe's confirmation token.

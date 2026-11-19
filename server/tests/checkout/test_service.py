@@ -5708,7 +5708,7 @@ class TestConfirm:
                     payment_method_country=expected_log[1],
                     ip_country=ip_country or None,
                     billing_country=billing_country,
-                    customer_tax_id=None,
+                    tax_country="US",
                 )
             ]
             if expected_log is not None

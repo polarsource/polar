@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from typing import assert_never
 
+import sentry_sdk
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
@@ -393,11 +394,18 @@ class DisputeService:
 
     async def upsert_from_chargeback_stop(
         self, session: AsyncSession, alert: ChargebackStopAlert
-    ) -> Dispute:
+    ) -> Dispute | None:
         repository = DisputeRepository.from_session(session)
 
         # ChargebackStop uses PaymentIntent ID, but we use Charge ID
         payment_intent_id = alert["integration_transaction_id"]
+        if payment_intent_id is None:
+            sentry_sdk.capture_exception(
+                Exception(
+                    f"ChargebackStop alert {alert['id']} has no linked transaction"
+                )
+            )
+            return None
         payment_intent = await stripe_service.get_payment_intent(payment_intent_id)
         latest_charge = payment_intent.latest_charge
         assert latest_charge is not None

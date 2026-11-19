@@ -3,6 +3,7 @@
 import CreateCustomFieldModalContent from '@/components/CustomFields/CreateCustomFieldModalContent'
 import CustomFieldTypeLabel from '@/components/CustomFields/CustomFieldTypeLabel'
 import UpdateCustomFieldModalContent from '@/components/CustomFields/UpdateCustomFieldModalContent'
+import { ManagedAsCodeBadge } from '@/components/Dashboard/ManagedAsCodeBadge'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { InlineModal } from '@polar-sh/orbit'
 import { toast } from '@/components/Toast/use-toast'
@@ -169,7 +170,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wrapperClassName="max-w-(--breakpoint-md)!"
       title="Custom Fields"
       header={
-        managedAsCode ? undefined : (
+        managedAsCode ? (
+          <ManagedAsCodeBadge />
+        ) : (
           <Button type="button" onClick={() => setShowNewModal(true)}>
             New
           </Button>

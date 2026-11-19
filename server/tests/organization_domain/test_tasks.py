@@ -74,6 +74,36 @@ class TestUnregisterPaymentMethodDomains:
             "pmd_old.acme.com", enabled=False
         )
 
+    async def test_disables_domains_of_organizations_without_checkout(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        stripe_service_mock = mocker.patch(
+            "polar.organization_domain.tasks.stripe_service", autospec=True
+        )
+        stripe_service_mock.get_payment_method_domain = AsyncMock(
+            return_value=MagicMock(id="pmd_123", enabled=True)
+        )
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": False,
+        }
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await unregister_payment_method_domains(["shop.acme.com"])
+
+        stripe_service_mock.update_payment_method_domain.assert_awaited_once_with(
+            "pmd_123", enabled=False
+        )
+
 
 @pytest.mark.anyio
 class TestUnregisterOrganizationPaymentMethodDomains:

@@ -413,8 +413,9 @@ it.each<[string | undefined, OutpostFactoryOptions | undefined, string | undefin
     vi.stubEnv("REDIS_URL", "redis://changed:6379");
     await metering.flush();
     await metering.close();
-    expect(metering.strategies[0]).toBeInstanceOf(BufferedMeteringStrategy);
-    expect(metering.strategies).toHaveLength(expectedUrl ? 2 : 1);
+    // Outpost delivers its events itself: the buffer would send each one twice.
+    expect(metering.strategies).toHaveLength(1);
+    expect(metering.strategies[0] instanceof BufferedMeteringStrategy).toBe(!expectedUrl);
     if (expectedUrl) {
       expect(start.mock.instances[0]).toMatchObject({ redisUrl: expectedUrl });
       expect(close).toHaveBeenCalledOnce();
@@ -494,83 +495,41 @@ it("forwards buffer options and reports failed delivery", async () => {
   expect(send).toHaveBeenCalledOnce();
 });
 
-it("confirms events in Outpost once Polar accepts or drops them", async () => {
-  vi.spyOn(console, "warn").mockImplementation(() => {});
+it("runs Outpost alone, on its own batches, and refuses buffer options beside it", async () => {
   const { Outpost } = await import("../outpost/client");
-  vi.spyOn(Outpost.prototype, "start").mockImplementation(
-    async function (this: InstanceType<typeof Outpost>) {
-      return this;
-    },
-  );
-  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
-  vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
-  const acknowledge = vi.spyOn(Outpost.prototype, "acknowledge").mockResolvedValue(undefined);
-  const confirm = vi.spyOn(Outpost.prototype, "confirm").mockResolvedValue(undefined);
   const polar = createPolar({ accessToken: "token" });
-  const accepted = { ...event, external_id: "accepted", timestamp: "2026-10-22T08:00:00Z" };
-  const dropped = { ...accepted, external_id: "dropped" };
-  vi.spyOn(polar.events, "ingest").mockImplementation(async ({ events }) => {
-    if (events[0].external_id === "dropped") throw new PolarError("rejected");
-    return {} as never;
-  });
   const onDelivered = vi.fn();
-  const onDropped = vi.fn();
-  const metering = polar.metering({
-    buffered: { batchSize: 1, maxAttempts: 1, onDelivered, onDropped },
-    outpost: outpost({ redisUrl: "redis://localhost:6379", telemetry: false }),
+  const create = outpost({ redisUrl: "redis://localhost:6379", telemetry: false, batchSize: 50, onDelivered });
+  expect(() => polar.metering({ buffered: {}, outpost: create })).toThrow(MeteringError);
+  const start = vi.spyOn(Outpost.prototype, "start").mockImplementation(async function (this: InstanceType<typeof Outpost>) {
+    return this;
   });
+  vi.spyOn(Outpost.prototype, "close").mockResolvedValue(undefined);
+  const metering = polar.metering({ outpost: create });
   try {
-    await metering.track(accepted);
-    await metering.track(dropped);
-    await expect(metering.flush()).rejects.toBeInstanceOf(MeteringDeliveryError);
-    // Received events settle where their bucket is hot; dropped ones settle everywhere.
-    expect(acknowledge).toHaveBeenCalledExactlyOnceWith([accepted]);
-    expect(confirm).toHaveBeenCalledExactlyOnceWith([dropped]);
-    expect(onDelivered).toHaveBeenCalledExactlyOnceWith([accepted]);
-    expect(onDropped).toHaveBeenCalledExactlyOnceWith([dropped], "permanent_error");
+    await metering.flush();
+    expect(metering.strategies).toHaveLength(1);
+    expect(metering.strategies[0]).not.toBeInstanceOf(BufferedMeteringStrategy);
+    expect(start.mock.instances[0]).toMatchObject({ options: { batchSize: 50, onDelivered } });
   } finally {
     await metering.close();
   }
 });
 
-it("drains the buffer into Outpost before closing it", async () => {
-  const calls: string[] = [];
+it("refuses the buffer beside Outpost as explicit strategies", async () => {
   const { Outpost } = await import("../outpost/client");
-  vi.spyOn(Outpost.prototype, "start").mockImplementation(
-    async function (this: InstanceType<typeof Outpost>) {
-      return this;
-    },
-  );
-  vi.spyOn(Outpost.prototype, "close").mockImplementation(async () => {
-    calls.push("close");
-  });
-  vi.spyOn(Outpost.prototype, "track").mockResolvedValue(undefined);
-  vi.spyOn(Outpost.prototype, "acknowledge").mockImplementation(async () => {
-    calls.push("acknowledge");
-  });
   const polar = createPolar({ accessToken: "token" });
-  vi.spyOn(polar.events, "ingest").mockResolvedValue({} as never);
-  const metering = polar.metering({
-    outpost: outpost({ redisUrl: "redis://localhost:6379", telemetry: false }),
-  });
-  try {
-    await metering.track({ ...event, external_id: "last" });
-    await metering.close();
-    expect(calls).toEqual(["acknowledge", "close"]);
-  } finally {
-    await metering.close();
-  }
+  const strategies = [new BufferedMeteringStrategy(polar), new Outpost("redis://localhost:6379", { client })];
+  expect(() => polar.metering({ strategies })).toThrow(MeteringError);
 });
 
-it("propagates Outpost startup failures and closes the buffer", async () => {
+it("propagates Outpost startup failures", async () => {
   vi.stubEnv("REDIS_URL", "redis://environment:6379");
   const { Outpost } = await import("../outpost/client");
   vi.spyOn(Outpost.prototype, "start").mockRejectedValue(new Error("Redis unavailable"));
-  const close = vi.spyOn(BufferedMeteringStrategy.prototype, "close");
   await expect(
     createPolar({ accessToken: "token" }).metering({ outpost: outpost() }).flush(),
   ).rejects.toThrow("Redis unavailable");
-  expect(close).toHaveBeenCalledOnce();
 });
 
 it("forwards Outpost options and actor warmup", async () => {

@@ -1330,20 +1330,14 @@ const queued = async (): Promise<unknown[]> =>
     JSON.parse(fields[1]),
   );
 
-it("queues nothing for Polar unless serverless", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("event-1", 10));
-  expect(await queued()).toEqual([]);
-});
-
 it("queues a tracked event for Polar", async () => {
-  const outpost = await warm({ serverless: true });
+  const outpost = await warm();
   await outpost.track(usage("event-1", 10));
   expect(await queued()).toEqual([usage("event-1", 10)]);
 });
 
 it("queues an event once however many times it is tracked", async () => {
-  const outpost = await warm({ serverless: true });
+  const outpost = await warm();
   await outpost.track(usage("same", 10));
   await outpost.track(usage("same", 10));
   expect(await queued()).toEqual([usage("same", 10)]);
@@ -1351,7 +1345,7 @@ it("queues an event once however many times it is tracked", async () => {
 
 it("queues an event once when two meters count it", async () => {
   reducers = [...reducers, { ...reducers[0], id: "requests", meter_ids: ["requests"] }];
-  const outpost = await warm({ serverless: true });
+  const outpost = await warm();
   await outpost.track(usage("event-1", 10));
   expect(await queued()).toEqual([usage("event-1", 10)]);
 });
@@ -1367,7 +1361,7 @@ it("queues an event no meter counts", async () => {
     },
     reducers[1],
   ];
-  const outpost = await warm({ serverless: true });
+  const outpost = await warm();
   await outpost.track(usage("event-1", 10));
   expect(await queued()).toEqual([usage("event-1", 10)]);
 });
@@ -1375,26 +1369,26 @@ it("queues an event no meter counts", async () => {
 // The external_ids Polar received, request by request.
 const delivered = () => ingestRequests.map((events) => events.map((event) => event.external_id));
 
-it("delivers nothing from flush() unless serverless", async () => {
+it("delivers what it queued on its own, without a flush", async () => {
   const outpost = await warm();
   await outpost.track(usage("event-0", 10));
-  await outpost.flush();
-  expect(ingestRequests).toEqual([]);
+  await vi.waitFor(() => expect(delivered()).toEqual([["event-0"]]), { timeout: 3000 });
 });
 
 it("delivers the stream to Polar in batches of a thousand, whichever instance flushes", async () => {
-  const outposts = [await warm({ serverless: true }), await start({ serverless: true })];
+  const outposts = [await warm(), await start()];
   for (let index = 0; index < 2500; index += 1)
     await outposts[index % 2].track(usage(`event-${index}`, 1));
   await Promise.all(outposts.map((outpost) => outpost.flush()));
-  expect(ingestRequests.map((events) => events.length).sort()).toEqual([1000, 1000, 500]);
+  // The periodic drain may send part of the stream while it is written.
+  expect(Math.max(...ingestRequests.map((events) => events.length))).toBe(1000);
   expect(new Set(delivered().flat()).size).toBe(2500);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
 });
 
 it("settles the events Polar received and reports them", async () => {
   const onDelivered = vi.fn();
-  const outpost = await warm({ onDelivered, serverless: true });
+  const outpost = await warm({ onDelivered });
   const events = [usage("event-0", 10), usage("event-1", 10)];
   for (const event of events) await outpost.track(event);
   await outpost.flush();
@@ -1405,7 +1399,7 @@ it("settles the events Polar received and reports them", async () => {
 });
 
 it("keeps a batch Polar fails to take and delivers it on the next flush", async () => {
-  const outpost = await warm({ serverless: true });
+  const outpost = await warm();
   await outpost.track(usage("event-0", 10));
   ingestStatuses = [503];
   await outpost.flush();
@@ -1419,7 +1413,7 @@ it("keeps a batch Polar fails to take and delivers it on the next flush", async 
 
 it("drops a batch Polar refuses, settles its events and reports them", async () => {
   const onDropped = vi.fn();
-  const outpost = await warm({ onDropped, serverless: true });
+  const outpost = await warm({ onDropped });
   const events = [usage("event-0", 10), usage("event-1", 10)];
   for (const event of events) await outpost.track(event);
   ingestStatuses = [422];
@@ -1432,7 +1426,7 @@ it("drops a batch Polar refuses, settles its events and reports them", async () 
 });
 
 it("takes back the batch of a flusher that died on the next drain once it sat idle long enough", async () => {
-  const outpost = await warm({ serverless: true });
+  const outpost = await warm();
   await outpost.track(usage("event-0", 10));
   // A flusher read the batch and froze before Polar answered.
   const stream = "outpost:v1:org-1:outbox";
@@ -1447,8 +1441,25 @@ it("takes back the batch of a flusher that died on the next drain once it sat id
   expect(await redis.xlen(stream)).toBe(0);
 });
 
+it("sends only full batches while another flusher delivers, and the rest once none does", async () => {
+  const outpost = await warm({ batchSize: 2 });
+  const stream = "outpost:v1:org-1:outbox";
+  await outpost.track(usage("event-0", 10));
+  // Another flusher holds a batch in flight.
+  await redis.xreadgroup("GROUP", "polar", "other", "STREAMS", stream, ">");
+  for (const id of ["event-1", "event-2", "event-3"]) await outpost.track(usage(id, 10));
+  await outpost.flush();
+  expect(delivered()).toEqual([["event-1", "event-2"]]);
+  // The other flusher delivered its batch.
+  const [[entry]] = await redis.xrange(stream, "-", "+", "COUNT", 1);
+  await redis.xack(stream, "polar", entry);
+  await redis.xdel(stream, entry);
+  await outpost.flush();
+  expect(delivered()).toEqual([["event-1", "event-2"], ["event-3"]]);
+});
+
 it("delivers what another instance queued while it flushed", async () => {
-  const [first, second] = [await warm({ serverless: true }), await start({ serverless: true })];
+  const [first, second] = [await warm(), await start()];
   await first.track(usage("event-0", 10));
   ingestDelay = 100;
   const flushing = first.flush();
@@ -2361,7 +2372,7 @@ describe("Redis cost", () => {
 
   it("flushes a thousand events in as many commands as one", async () => {
     await seed();
-    const outpost = await quiet({ serverless: true });
+    const outpost = await quiet();
     const flushCost = async (events: number) => {
       for (let index = 0; index < events; index += 1) await outpost.track(event());
       const { commands } = await redisCost(() => outpost.flush());
@@ -2374,7 +2385,7 @@ describe("Redis cost", () => {
 
   it("flushes twenty concurrent requests for the commands of one, and one more look at most", async () => {
     await seed();
-    const outpost = await quiet({ serverless: true });
+    const outpost = await quiet();
     await deliver(outpost);
     await outpost.track(event());
     await outpost.flush();
@@ -2394,7 +2405,7 @@ describe("Redis cost", () => {
 
   it("tracks and flushes in one command while another instance drains the stream", async () => {
     await seed();
-    const [first, second] = [await quiet({ serverless: true }), await quiet({ serverless: true })];
+    const [first, second] = [await quiet(), await quiet()];
     await deliver(first);
     await deliver(second);
     const queued = event();

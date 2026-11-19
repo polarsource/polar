@@ -904,6 +904,17 @@ class OrganizationDetailView:
                                 with tag.a(
                                     hx_get=str(
                                         request.url_for(
+                                            "organizations:import_license_keys",
+                                            organization_id=self.org.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                ):
+                                    text("Import License Keys")
+                            with tag.li():
+                                with tag.a(
+                                    hx_get=str(
+                                        request.url_for(
                                             "organizations:add_payment_method_domain",
                                             organization_id=self.org.id,
                                         )

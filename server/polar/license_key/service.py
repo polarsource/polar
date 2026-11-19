@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import cast
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies import BenefitGrantProperties
 from polar.benefit.strategies.license_keys.properties import (
+    BenefitGrantLicenseKeyTermsProperties,
     BenefitLicenseKeyExpirationProperties,
     BenefitLicenseKeysProperties,
 )
@@ -492,9 +494,13 @@ class LicenseKeyService:
         member_id: UUID | None = None,
         set_expiration: bool = True,
         regrant: bool = False,
+        terms: BenefitGrantLicenseKeyTermsProperties | None = None,
     ) -> LicenseKey:
         props = cast(BenefitLicenseKeysProperties, benefit.properties)
-        expires = props.get("expires", None) if set_expiration else None
+        # A provided key keeps its own expiration, never the benefit's.
+        expires = (
+            props.get("expires", None) if set_expiration and terms is None else None
+        )
         if key is not None:
             create_schema = LicenseKeyCreate.build(
                 organization_id=benefit.organization_id,
@@ -515,6 +521,16 @@ class LicenseKeyService:
                 activations=props.get("activations", None),
                 expires=expires,
             )
+
+        if terms is not None:
+            create_schema.status = LicenseKeyStatus(terms["status"])
+            create_schema.expires_at = (
+                datetime.fromisoformat(terms["expires_at"])
+                if terms["expires_at"] is not None
+                else None
+            )
+            if terms["limit_activations"] is not None:
+                create_schema.limit_activations = terms["limit_activations"]
 
         log.info(
             "license_key.grant.request",

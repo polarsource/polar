@@ -99,6 +99,18 @@ class BenefitGrantRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def user_provided_key_exists(self, organization_id: UUID, key: str) -> bool:
+        """A grant in the organization already carries this key, issued or not."""
+        statement = select(
+            exists().where(
+                BenefitGrant.benefit_id == Benefit.id,
+                Benefit.organization_id == organization_id,
+                BenefitGrant.deleted_at.is_(None),
+                BenefitGrant.properties["user_provided_key"].astext == key,
+            )
+        )
+        return bool(await self.session.scalar(statement))
+
     async def is_scope_active(self, grant: BenefitGrant) -> bool:
         purchase: type[Subscription | Order]
         eligible_purchase: SQLColumnExpression[bool]

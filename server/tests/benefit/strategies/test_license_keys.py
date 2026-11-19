@@ -1,22 +1,34 @@
+from datetime import UTC, datetime
 from typing import cast
 from uuid import UUID
 
 import pytest
 from dateutil.relativedelta import relativedelta
 
+from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository
+from polar.benefit.grant.schemas import BenefitGrantCreate, BenefitGrantLicenseKeyCreate
+from polar.benefit.grant.service import LicenseKeyAlreadyExists
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
 )
 from polar.benefit.strategies.license_keys.schemas import (
+    BenefitLicenseKeyActivationCreateProperties,
     BenefitLicenseKeyExpirationProperties,
     BenefitLicenseKeysCreateProperties,
 )
 from polar.benefit.tasks import benefit_grant, benefit_revoke
 from polar.kit.utils import utc_now
 from polar.license_key.repository import LicenseKeyRepository
-from polar.models import BenefitGrant, Customer, LicenseKey, Organization, Product
+from polar.models import (
+    BenefitGrant,
+    Customer,
+    LicenseKey,
+    Member,
+    Organization,
+    Product,
+)
 from polar.models.benefit import BenefitType
 from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
@@ -244,3 +256,118 @@ class TestRevokeRegrant:
         assert len(regranted) == 1
         assert regranted[0].id == original_id
         assert regranted[0].status == LicenseKeyStatus.granted
+
+
+PROVIDED_KEY_BENEFIT_PROPERTIES = BenefitLicenseKeysCreateProperties(
+    expires=BenefitLicenseKeyExpirationProperties(ttl=1, timeframe="year"),
+    activations=BenefitLicenseKeyActivationCreateProperties(
+        limit=2, enable_customer_admin=True
+    ),
+).model_dump(mode="json")
+
+
+@pytest.mark.anyio
+class TestGrantProvidedKey:
+    async def _grant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        license_key: BenefitGrantLicenseKeyCreate,
+    ) -> LicenseKey:
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.license_keys,
+            organization=organization,
+            properties=PROVIDED_KEY_BENEFIT_PROPERTIES,
+        )
+        grant = await benefit_grant_service.create(
+            session,
+            AuthSubject(organization, set(), None),
+            BenefitGrantCreate(
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                license_key=license_key,
+            ),
+        )
+        await benefit_grant(customer.id, benefit.id, benefit_grant_id=grant.id)
+        issued = await LicenseKeyRepository.from_session(
+            session
+        ).get_by_organization_and_key(organization.id, license_key.key)
+        assert issued is not None
+        return issued
+
+    async def test_issues_the_key_with_its_own_terms(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        expires_at = datetime(2030, 1, 1, tzinfo=UTC)
+
+        license_key = await self._grant(
+            session,
+            save_fixture,
+            organization,
+            customer,
+            BenefitGrantLicenseKeyCreate(
+                key="LS-38B1460A", expires_at=expires_at, limit_activations=5
+            ),
+        )
+
+        assert license_key.customer_id == customer.id
+        assert license_key.status == LicenseKeyStatus.granted
+        assert license_key.expires_at == expires_at
+        assert license_key.limit_activations == 5
+
+    async def test_key_without_terms_never_expires(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        license_key = await self._grant(
+            session,
+            save_fixture,
+            organization,
+            customer,
+            BenefitGrantLicenseKeyCreate(
+                key="LS-LIFETIME", status=LicenseKeyStatus.disabled
+            ),
+        )
+
+        assert license_key.expires_at is None
+        assert license_key.limit_activations == 2
+        assert license_key.status == LicenseKeyStatus.disabled
+
+    async def test_issued_key_cannot_be_granted_again(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        license_key = await self._grant(
+            session,
+            save_fixture,
+            organization,
+            customer,
+            BenefitGrantLicenseKeyCreate(key="LS-ISSUED"),
+        )
+
+        with pytest.raises(LicenseKeyAlreadyExists):
+            await benefit_grant_service.create(
+                session,
+                AuthSubject(organization, set(), None),
+                BenefitGrantCreate(
+                    customer_id=customer.id,
+                    benefit_id=license_key.benefit_id,
+                    license_key=BenefitGrantLicenseKeyCreate(key="LS-ISSUED"),
+                ),
+            )

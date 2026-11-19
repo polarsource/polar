@@ -11895,6 +11895,8 @@ export interface components {
        * @description The ID of the member receiving the benefit. If not provided, the benefit is granted to the customer's owner.
        */
       member_id?: string | null
+      /** @description An existing license key to issue. Only for license key benefits; otherwise Polar generates one. */
+      license_key?: components['schemas']['BenefitGrantLicenseKeyCreate'] | null
     }
     /**
      * BenefitGrantCreateExternal
@@ -11923,6 +11925,8 @@ export interface components {
        * @description The ID of the organization owning the customer and benefit. **Required unless your credential identifies one organization.** Omit this field when using an organization token.
        */
       organization_id?: string | null
+      /** @description An existing license key to issue. Only for license key benefits; otherwise Polar generates one. */
+      license_key?: components['schemas']['BenefitGrantLicenseKeyCreate'] | null
     }
     /** BenefitGrantCustomProperties */
     BenefitGrantCustomProperties: Record<string, never>
@@ -12403,6 +12407,36 @@ export interface components {
       previous_properties?:
         | components['schemas']['BenefitGrantGitHubRepositoryProperties']
         | null
+    }
+    /**
+     * BenefitGrantLicenseKeyCreate
+     * @description An existing license key to issue instead of generating one, for example
+     *     when moving customers from another provider.
+     */
+    BenefitGrantLicenseKeyCreate: {
+      /**
+       * Key
+       * @description The license key, issued exactly as given.
+       * @example 38B1460A-5104-4067-A91D-77B872934D51
+       */
+      key: string
+      /**
+       * Status
+       * @description Whether the key starts out usable or disabled.
+       * @default granted
+       * @enum {string}
+       */
+      status: 'granted' | 'disabled'
+      /**
+       * Expires At
+       * @description When the key expires. If not set, the key never expires: the benefit's expiration doesn't apply to a provided key.
+       */
+      expires_at?: string | null
+      /**
+       * Limit Activations
+       * @description How many devices can activate the key. If not set, the benefit's activation limit applies.
+       */
+      limit_activations?: number | null
     }
     /** BenefitGrantLicenseKeysProperties */
     BenefitGrantLicenseKeysProperties: {
@@ -26799,6 +26833,17 @@ export interface components {
       /** Modified At */
       modified_at: string | null
       license_key: components['schemas']['LicenseKeyRead']
+    }
+    /** LicenseKeyAlreadyExists */
+    LicenseKeyAlreadyExists: {
+      /**
+       * Error
+       * @example LicenseKeyAlreadyExists
+       * @constant
+       */
+      error: 'LicenseKeyAlreadyExists'
+      /** Detail */
+      detail: string
     }
     /** LicenseKeyCustomer */
     LicenseKeyCustomer: {
@@ -59570,7 +59615,9 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['BenefitGrantAlreadyExists']
+          'application/json':
+            | components['schemas']['BenefitGrantAlreadyExists']
+            | components['schemas']['LicenseKeyAlreadyExists']
         }
       }
       /** @description Validation Error */
@@ -74193,6 +74240,9 @@ export const benefitGitHubRepositoryPublicTypeValues: ReadonlyArray<
 export const benefitGrantGitHubRepositoryPropertiesPermissionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGrantGitHubRepositoryProperties']['permission']
 > = ['pull', 'triage', 'push', 'maintain', 'admin']
+export const benefitGrantLicenseKeyCreateStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitGrantLicenseKeyCreate']['status']
+> = ['granted', 'disabled']
 export const benefitGrantSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitGrantSortProperty']
 > = [

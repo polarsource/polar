@@ -125,8 +125,10 @@ class BenefitGrant(RecordModel):
             postgresql_nulls_not_distinct=True,
             postgresql_where=text("deleted_at IS NULL AND manually_granted_at IS NULL"),
         ),
+        # One active manual grant per recipient and benefit, unless each carries
+        # its own license key: a customer can own several keys for one product.
         Index(
-            "ix_benefit_grants_active_manual_unique",
+            "ix_benefit_grants_active_unkeyed_manual_unique",
             "customer_id",
             "member_id",
             "benefit_id",
@@ -134,7 +136,8 @@ class BenefitGrant(RecordModel):
             postgresql_nulls_not_distinct=True,
             postgresql_where=text(
                 "deleted_at IS NULL AND manually_granted_at IS NOT NULL "
-                "AND manually_revoked_at IS NULL"
+                "AND manually_revoked_at IS NULL "
+                "AND properties->>'user_provided_key' IS NULL"
             ),
         ),
     )

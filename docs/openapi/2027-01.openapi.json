@@ -20633,7 +20633,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BenefitGrantAlreadyExists"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BenefitGrantAlreadyExists"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LicenseKeyAlreadyExists"
+                    }
+                  ],
+                  "title": "Response 409 Benefit-Grants:Create"
                 }
               }
             },
@@ -33717,6 +33725,17 @@
             ],
             "title": "Member Id",
             "description": "The ID of the member receiving the benefit. If not provided, the benefit is granted to the customer's owner."
+          },
+          "license_key": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantLicenseKeyCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An existing license key to issue. Only for license key benefits; otherwise Polar generates one."
           }
         },
         "additionalProperties": false,
@@ -33777,6 +33796,17 @@
             ],
             "title": "Organization Id",
             "description": "The ID of the organization owning the customer and benefit. **Required unless your credential identifies one organization.** Omit this field when using an organization token."
+          },
+          "license_key": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitGrantLicenseKeyCreate"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "An existing license key to issue. Only for license key benefits; otherwise Polar generates one."
           }
         },
         "additionalProperties": false,
@@ -34992,6 +35022,66 @@
           "properties"
         ],
         "title": "BenefitGrantGitHubRepositoryWebhook"
+      },
+      "BenefitGrantLicenseKeyCreate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Key",
+            "description": "The license key, issued exactly as given.",
+            "examples": [
+              "38B1460A-5104-4067-A91D-77B872934D51"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "granted",
+              "disabled"
+            ],
+            "title": "Status",
+            "description": "Whether the key starts out usable or disabled.",
+            "default": "granted"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "examples": [
+                  "2026-01-01T00:00:00.000000Z"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At",
+            "description": "When the key expires. If not set, the key never expires: the benefit's expiration doesn't apply to a provided key."
+          },
+          "limit_activations": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Activations",
+            "description": "How many devices can activate the key. If not set, the benefit's activation limit applies."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "BenefitGrantLicenseKeyCreate",
+        "description": "An existing license key to issue instead of generating one, for example\nwhen moving customers from another provider."
       },
       "BenefitGrantLicenseKeysProperties": {
         "properties": {
@@ -54198,6 +54288,19 @@
           "product": {
             "$ref": "#/components/schemas/CustomerSubscriptionProduct"
           },
+          "payment_method_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Id",
+            "description": "ID of the payment method pinned to the subscription, if any."
+          },
           "prices": {
             "items": {
               "oneOf": [
@@ -54262,6 +54365,7 @@
           "customer_cancellation_reason",
           "customer_cancellation_comment",
           "product",
+          "payment_method_id",
           "prices",
           "meters",
           "pending_update"
@@ -61074,6 +61178,28 @@
           "license_key"
         ],
         "title": "LicenseKeyActivationRead"
+      },
+      "LicenseKeyAlreadyExists": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "LicenseKeyAlreadyExists",
+            "title": "Error",
+            "examples": [
+              "LicenseKeyAlreadyExists"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "LicenseKeyAlreadyExists"
       },
       "LicenseKeyCustomer": {
         "properties": {

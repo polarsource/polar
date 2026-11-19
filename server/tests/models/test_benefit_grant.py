@@ -35,7 +35,7 @@ class TestBenefitGrantConstraints:
         await save_fixture(grant)
 
         with pytest.raises(
-            IntegrityError, match="ix_benefit_grants_active_manual_unique"
+            IntegrityError, match="ix_benefit_grants_active_unkeyed_manual_unique"
         ):
             async with session.begin_nested():
                 await save_fixture(

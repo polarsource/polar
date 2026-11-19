@@ -12,6 +12,7 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.version import V2026_10, V2027_01
@@ -325,6 +326,40 @@ class TestListBenefitGrants:
 @pytest.mark.anyio
 @pytest.mark.api_version(V2027_01)
 class TestCreate:
+    @pytest.mark.auth
+    async def test_license_key_terms_stay_out_of_the_response(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+        user_organization: UserOrganization,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.license_keys,
+            organization=organization,
+            properties={
+                "prefix": None,
+                "expires": None,
+                "activations": None,
+                "limit_usage": None,
+            },
+        )
+
+        response = await client.post(
+            "/v1/benefit-grants/",
+            json={
+                "customer_id": str(customer.id),
+                "benefit_id": str(benefit.id),
+                "license_key": {"key": "LS-38B1460A", "limit_activations": 3},
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["properties"] == {"user_provided_key": "LS-38B1460A"}
+
     @pytest.mark.auth
     async def test_manual_lifecycle_events(
         self,

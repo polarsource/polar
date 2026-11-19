@@ -10,7 +10,11 @@ from polar.models import Benefit, Customer, Member, Organization, User
 from polar.models.benefit_grant import BenefitGrantScopeArgs
 
 from ..base.service import BenefitServiceProtocol
-from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
+from .properties import (
+    BenefitGrantLicenseKeysProperties,
+    BenefitGrantLicenseKeysStoredProperties,
+    BenefitLicenseKeysProperties,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -55,6 +59,9 @@ class BenefitLicenseKeysService(
             # Subscription-backed keys never expire; they follow the subscription.
             set_expiration=scope.get("subscription_id") is None,
             regrant=not update,
+            terms=cast(BenefitGrantLicenseKeysStoredProperties, grant_properties).get(
+                "user_provided_terms"
+            ),
         )
         return {
             **grant_properties,

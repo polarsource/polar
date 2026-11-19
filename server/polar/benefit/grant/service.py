@@ -22,6 +22,7 @@ from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNo
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
+from polar.license_key.repository import LicenseKeyRepository
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -49,8 +50,16 @@ from ..strategies import (
     BenefitGrantProperties,
     BenefitProperties,
 )
+from ..strategies.license_keys.properties import (
+    BenefitGrantLicenseKeysStoredProperties,
+)
 from .repository import BenefitGrantRepository
-from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal, BenefitGrantUpdate
+from .schemas import (
+    BenefitGrantCreate,
+    BenefitGrantCreateExternal,
+    BenefitGrantLicenseKeyCreate,
+    BenefitGrantUpdate,
+)
 from .scope import scope_to_args
 from .sorting import BenefitGrantSortProperty
 
@@ -65,6 +74,28 @@ class BenefitGrantAlreadyExists(BenefitGrantError):
         super().__init__(
             "An active manual grant already exists for this recipient and benefit.", 409
         )
+
+
+class LicenseKeyAlreadyExists(BenefitGrantError):
+    def __init__(self) -> None:
+        super().__init__("This license key is already used in this organization.", 409)
+
+
+def _license_key_properties(
+    license_key: BenefitGrantLicenseKeyCreate | None,
+) -> BenefitGrantLicenseKeysStoredProperties:
+    if license_key is None:
+        return {}
+    return {
+        "user_provided_key": license_key.key,
+        "user_provided_terms": {
+            "status": license_key.status.value,
+            "expires_at": license_key.expires_at.isoformat()
+            if license_key.expires_at is not None
+            else None,
+            "limit_activations": license_key.limit_activations,
+        },
+    }
 
 
 class BenefitGrantService:
@@ -134,6 +165,10 @@ class BenefitGrantService:
             raise invalid_reference(
                 "benefit_id", "Meter-credit benefits cannot be granted manually."
             )
+        if create.license_key is not None and benefit.type != BenefitType.license_keys:
+            raise invalid_reference(
+                "benefit_id", "Only license key benefits accept a license key."
+            )
 
         if (
             isinstance(create, BenefitGrantCreateExternal)
@@ -155,6 +190,32 @@ class BenefitGrantService:
         if member is None:
             raise invalid_reference("member_id", "Member not found.")
 
+        return await self.grant_manually(
+            session,
+            organization=organization,
+            customer=customer,
+            benefit=benefit,
+            member=member,
+            license_key=create.license_key,
+        )
+
+    async def grant_manually(
+        self,
+        session: AsyncSession,
+        *,
+        organization: Organization,
+        customer: Customer,
+        benefit: Benefit,
+        member: Member,
+        license_key: BenefitGrantLicenseKeyCreate | None = None,
+    ) -> BenefitGrant:
+        """Grant a benefit outside of any purchase. Callers check access, resolve
+        the member and check that the benefit accepts a license key."""
+        if license_key is not None and await self._license_key_taken(
+            session, organization, license_key.key
+        ):
+            raise LicenseKeyAlreadyExists()
+
         repository = BenefitGrantRepository.from_session(session)
         try:
             async with session.begin_nested():
@@ -164,12 +225,12 @@ class BenefitGrantService:
                         benefit=benefit,
                         member=member,
                         manually_granted_at=utc_now(),
-                        properties={},
+                        properties=_license_key_properties(license_key),
                     ),
                     flush=True,
                 )
         except IntegrityError as e:
-            if "ix_benefit_grants_active_manual_unique" in str(e):
+            if "ix_benefit_grants_active_unkeyed_manual_unique" in str(e):
                 raise BenefitGrantAlreadyExists() from e
             raise
 
@@ -183,6 +244,18 @@ class BenefitGrantService:
             benefit_grant_id=grant.id,
         )
         return grant
+
+    async def _license_key_taken(
+        self, session: AsyncSession, organization: Organization, key: str
+    ) -> bool:
+        license_key_repository = LicenseKeyRepository.from_session(session)
+        if await license_key_repository.get_by_organization_and_key(
+            organization.id, key, include_deleted=True
+        ):
+            return True
+        return await BenefitGrantRepository.from_session(
+            session
+        ).user_provided_key_exists(organization.id, key)
 
     async def revoke(
         self,
@@ -232,7 +305,7 @@ class BenefitGrantService:
                     grant, update_dict={"manually_revoked_at": None}, flush=True
                 )
         except IntegrityError as e:
-            if "ix_benefit_grants_active_manual_unique" in str(e):
+            if "ix_benefit_grants_active_unkeyed_manual_unique" in str(e):
                 raise BenefitGrantAlreadyExists() from e
             raise
 

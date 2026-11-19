@@ -2,7 +2,13 @@ import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+} from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { defaultRetry } from './retry'
 
@@ -55,6 +61,7 @@ export const useInfiniteSubscriptions = (
           },
         }),
       ),
+    placeholderData: keepPreviousData,
     initialPageParam: 1,
     getNextPageParam: (lastPage, _allPages, lastPageParam) =>
       lastPage.items.length === 0 ||
@@ -62,6 +69,73 @@ export const useInfiniteSubscriptions = (
         ? null
         : lastPageParam + 1,
     retry: defaultRetry,
+  })
+
+export const subscriptionCountKeys = [
+  'any',
+  'active',
+  'trialing',
+  'past_due',
+  'canceling',
+  'paused',
+  'canceled',
+  'unpaid',
+] as const
+
+export type SubscriptionCountKey = (typeof subscriptionCountKeys)[number]
+
+type SubscriptionListQuery = NonNullable<
+  operations['subscriptions:list']['parameters']['query']
+>
+
+const COUNT_FILTERS: Record<SubscriptionCountKey, SubscriptionListQuery> = {
+  any: {},
+  active: { status: ['active'] },
+  trialing: { status: ['trialing'] },
+  past_due: { status: ['past_due'] },
+  canceling: { status: ['active'], cancel_at_period_end: true },
+  paused: { status: ['paused'] },
+  canceled: { status: ['canceled'] },
+  unpaid: { status: ['unpaid'] },
+}
+
+export const useSubscriptionCounts = (
+  organizationId: string,
+  parameters: Pick<
+    SubscriptionListQuery,
+    'product_id' | 'external_product_id' | 'recurring_interval'
+  >,
+): Partial<Record<SubscriptionCountKey, number>> =>
+  useQueries({
+    queries: subscriptionCountKeys.map((key) => ({
+      queryKey: [
+        'subscriptions',
+        'count',
+        { organizationId, key, ...parameters },
+      ],
+      queryFn: () =>
+        unwrap(
+          api.GET('/v1/subscriptions/', {
+            params: {
+              query: {
+                organization_id: organizationId,
+                ...parameters,
+                ...COUNT_FILTERS[key],
+                limit: 1,
+              },
+            },
+          }),
+        ),
+      retry: defaultRetry,
+      placeholderData: keepPreviousData,
+    })),
+    combine: (results) =>
+      Object.fromEntries(
+        results.map(({ data }, index) => [
+          subscriptionCountKeys[index],
+          data?.pagination.total_count,
+        ]),
+      ),
   })
 
 const ALL_PAGE_SIZE = 100

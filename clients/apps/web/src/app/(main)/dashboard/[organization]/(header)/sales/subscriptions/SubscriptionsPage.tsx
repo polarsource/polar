@@ -5,36 +5,66 @@ import { useModal } from '@/components/Modal/useModal'
 import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
 import { GanttLegend } from '@/components/Subscriptions/Gantt/GanttLegend'
 import {
+  GanttZoomSlider,
+  type GanttZoomSliderHandle,
+} from '@/components/Subscriptions/Gantt/GanttZoomSlider'
+import {
   DEFAULT_GANTT_GROUP,
-  DEFAULT_GANTT_ZOOM,
+  DEFAULT_PIXELS_PER_DAY,
+  type GanttZoomHandle,
   ganttGroupValues,
-  ganttZoomValues,
 } from '@/components/Subscriptions/Gantt/scale'
-import { SubscriptionsGantt } from '@/components/Subscriptions/Gantt/SubscriptionsGantt'
+import { SubscriptionsTable } from '@/components/Subscriptions/SubscriptionsTable'
 import { SubscriptionDetailPanel } from '@/components/Subscriptions/SubscriptionDetailPanel'
 import {
   DEFAULT_SUBSCRIPTION_STATUS,
   subscriptionStatusFilterValues,
-  type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
 import { type ProductFilter } from '@/components/Subscriptions/SubscriptionsProductSelect'
 import { useInfiniteSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { useDebouncedCallback } from '@/hooks/utils'
 import { sortingStateToQueryParam } from '@/utils/datatable'
 import { schemas } from '@polar-sh/client'
-import { Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
+  parseAsArrayOf,
   parseAsBoolean,
+  parseAsFloat,
   parseAsString,
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
-import React, { useState } from 'react'
-import { SubscriptionsAggregateView } from './SubscriptionsAggregateView'
-import { SubscriptionsSidebar } from './SubscriptionsSidebar'
+import dynamic from 'next/dynamic'
+import React, { useCallback, useRef, useState } from 'react'
+import {
+  subscriptionIntervalValues,
+  SubscriptionsToolbar,
+  subscriptionViewValues,
+} from './SubscriptionsToolbar'
+
+// The timeline is laid out from the current time and the local timezone, so
+// it cannot be rendered on the server without a hydration mismatch.
+const ChartPlaceholder = () => <Box flexGrow={1} />
+
+const SubscriptionsGantt = dynamic(
+  () =>
+    import('@/components/Subscriptions/Gantt/SubscriptionsGantt').then(
+      (module) => module.SubscriptionsGantt,
+    ),
+  { ssr: false, loading: ChartPlaceholder },
+)
+
+const SubscriptionsAggregateView = dynamic(
+  () =>
+    import('./SubscriptionsAggregateView').then(
+      (module) => module.SubscriptionsAggregateView,
+    ),
+  { ssr: false, loading: ChartPlaceholder },
+)
 
 const PAGE_SIZE = 50
+const ZOOM_COMMIT_DELAY = 150
 const DEFAULT_SORTING = [{ id: 'started_at', desc: true }]
 
 const filterParsers = {
@@ -44,8 +74,12 @@ const filterParsers = {
     DEFAULT_SUBSCRIPTION_STATUS,
   ),
   cancel_at_period_end: parseAsBoolean,
-  zoom: parseAsStringLiteral(ganttZoomValues).withDefault(DEFAULT_GANTT_ZOOM),
+  zoom: parseAsFloat.withDefault(DEFAULT_PIXELS_PER_DAY),
   subscription: parseAsString,
+  view: parseAsStringLiteral(subscriptionViewValues).withDefault('timeline'),
+  interval: parseAsArrayOf(
+    parseAsStringLiteral(subscriptionIntervalValues),
+  ).withDefault([]),
   group:
     parseAsStringLiteral(ganttGroupValues).withDefault(DEFAULT_GANTT_GROUP),
 }
@@ -68,6 +102,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cancel_at_period_end: cancelAtPeriodEnd,
       zoom,
       subscription: selectedId,
+      view,
+      interval: intervals,
       group,
     },
     setFilters,
@@ -88,23 +124,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     setFilters(value)
   }
 
-  const onStatusSelect = (value: SubscriptionStatusFilter) => {
-    setFilters({
-      status: value,
-      cancel_at_period_end: value === 'active' ? cancelAtPeriodEnd : null,
-    })
-  }
-
-  const onCancelAtPeriodEndSelect = (value: boolean | null) => {
-    setFilters({ cancel_at_period_end: value })
-  }
-
   const [sort] = sorting
   const hasActiveFilters =
     productId !== null ||
     externalProductId !== null ||
     status !== DEFAULT_SUBSCRIPTION_STATUS ||
     cancelAtPeriodEnd !== null ||
+    intervals.length > 0 ||
     sort?.id !== DEFAULT_SORTING[0].id ||
     sort.desc !== DEFAULT_SORTING[0].desc
 
@@ -114,6 +140,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       external_product_id: null,
       status: null,
       cancel_at_period_end: null,
+      interval: null,
     })
     setSorting(DEFAULT_SORTING)
   }
@@ -123,6 +150,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     external_product_id: externalProductId ?? undefined,
     status: status === 'any' ? undefined : [status],
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    recurring_interval: intervals.length > 0 ? intervals : undefined,
   }
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } =
     useInfiniteSubscriptions(organization.id, {
@@ -132,7 +160,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     })
 
   const subscriptions = data?.pages.flatMap((page) => page.items)
-  const rowCount = data?.pages[0]?.pagination.total_count
   const loadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
       fetchNextPage()
@@ -146,6 +173,26 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const select = (id: string | null) => setFilters({ subscription: id })
 
   const [focus, setFocus] = useState<number>()
+  // Dragging the zoom moves the chart directly. The URL and the render that
+  // follows from it only catch up once the drag pauses.
+  const zoomRef = useRef<GanttZoomHandle>(null)
+  const commitSpan = useDebouncedCallback(
+    (value: number) => setFilters({ zoom: Math.round(value * 100) / 100 }),
+    ZOOM_COMMIT_DELAY,
+  )
+  const sliderRef = useRef<GanttZoomSliderHandle>(null)
+  // Stable, because the chart subscribes to it from an effect.
+  const onPinch = useCallback(
+    (value: number) => {
+      sliderRef.current?.show(value)
+      commitSpan(value)
+    },
+    [commitSpan],
+  )
+  const onZoom = (value: number) => {
+    zoomRef.current?.zoomTo(value)
+    commitSpan(value)
+  }
   const drillDown = ({
     groupKey,
     start,
@@ -168,32 +215,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   return (
     <DashboardBody
       title={null}
-      wrapperClassName="gap-4 pt-4 md:gap-0 md:pt-0"
-      className="min-h-0 flex-1 md:pb-4"
-      contextViewPlacement="left"
-      contextViewTitle="Filters"
-      contextViewClassName="w-full lg:max-w-[300px] xl:max-w-[300px] h-full overflow-y-hidden"
-      contextView={
-        <SubscriptionsSidebar
-          organization={organization}
-          count={rowCount}
-          product={product}
-          onProductSelect={onProductSelect}
-          status={status}
-          onStatusSelect={onStatusSelect}
-          cancelAtPeriodEnd={cancelAtPeriodEnd}
-          onCancelAtPeriodEndSelect={onCancelAtPeriodEndSelect}
-          sorting={sorting}
-          onSortingChange={setSorting}
-          zoom={zoom}
-          onZoomChange={(value) => setFilters({ zoom: value })}
-          group={group}
-          onGroupChange={(value) => setFilters({ group: value })}
-          hasActiveFilters={hasActiveFilters}
-          onReset={resetFilters}
-          onExport={showExportModal}
-        />
-      }
+      wrapperClassName="gap-0 pt-0"
+      className="min-h-0 flex-1 pb-0"
       detailView={
         selected ? (
           <SubscriptionDetailPanel
@@ -209,39 +232,78 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       wide
       flush
     >
-      <Box flexDirection="column" rowGap="l" flexGrow={1} minHeight={0}>
-        {group !== 'customer' ? (
-          <SubscriptionsAggregateView
-            organization={organization}
-            filters={listFilters}
-            zoom={zoom}
-            group={group}
-            onSelect={drillDown}
-          />
-        ) : !subscriptions ? (
-          <Box justifyContent="center" py="3xl">
-            <Spinner />
+      <SubscriptionsToolbar
+        organization={organization}
+        product={product}
+        onProductSelect={onProductSelect}
+        status={status}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
+        onStatusSelect={(value, cancel) =>
+          setFilters({ status: value, cancel_at_period_end: cancel })
+        }
+        sorting={sorting}
+        onSortingChange={setSorting}
+        intervals={intervals}
+        onIntervalsChange={(value) =>
+          setFilters({ interval: value.length > 0 ? value : null })
+        }
+        view={view}
+        onViewChange={(value) => setFilters({ view: value })}
+        group={group}
+        onGroupChange={(value) => setFilters({ group: value })}
+        hasActiveFilters={hasActiveFilters}
+        onReset={resetFilters}
+        onExport={showExportModal}
+      />
+      {view === 'table' ? (
+        <SubscriptionsTable
+          subscriptions={subscriptions}
+          selectedId={selectedId}
+          onSelect={select}
+          isLoadingMore={isFetchingNextPage}
+          onEndReached={loadMore}
+        />
+      ) : (
+        <Box flexDirection="column" flexGrow={1} minHeight={0}>
+          {group !== 'customer' ? (
+            <SubscriptionsAggregateView
+              organization={organization}
+              filters={listFilters}
+              zoom={zoom}
+              zoomRef={zoomRef}
+              onZoomChange={onPinch}
+              group={group}
+              onSelect={drillDown}
+            />
+          ) : (
+            <SubscriptionsGantt
+              subscriptions={subscriptions}
+              earliest={new Date(organization.created_at).getTime()}
+              zoom={zoom}
+              zoomRef={zoomRef}
+              onZoomChange={onPinch}
+              focus={focus}
+              selectedId={selectedId}
+              onSelect={select}
+              isLoadingMore={isFetchingNextPage}
+              onEndReached={loadMore}
+            />
+          )}
+          <Box
+            px="l"
+            py="m"
+            alignItems="center"
+            gap="l"
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          >
+            <GanttZoomSlider ref={sliderRef} zoom={zoom} onChange={onZoom} />
+
+            <GanttLegend aggregate={group !== 'customer'} />
           </Box>
-        ) : subscriptions.length === 0 ? (
-          <Box justifyContent="center" py="3xl">
-            <Text color="muted">No subscriptions found</Text>
-          </Box>
-        ) : (
-          <SubscriptionsGantt
-            subscriptions={subscriptions}
-            earliest={new Date(organization.created_at).getTime()}
-            zoom={zoom}
-            focus={focus}
-            selectedId={selectedId}
-            onSelect={select}
-            isLoadingMore={isFetchingNextPage}
-            onEndReached={loadMore}
-          />
-        )}
-        <Box px="l">
-          <GanttLegend aggregate={group !== 'customer'} />
         </Box>
-      </Box>
+      )}
       <ExportSubscriptionsModal
         organization={organization}
         product={product}

@@ -76,7 +76,7 @@ Every instance of your application that runs the SDK with the same Redis shares 
     | ----------------- | -------------------------------- | ---------------------------------------------------------------- |
     | `redisUrl`        | `REDIS_URL` environment variable | The Redis Outpost uses.                                          |
     | `telemetry`       | `true`                           | Send Outpost metrics and traces to Polar.                        |
-    | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar.       |
+    | `snapshotTimeout` | `5000`                           | Milliseconds the first read of a customer waits for Polar's snapshot before it throws. |
     | `onDelivered`     | `undefined`                      | Called with each batch Polar accepted; may be async.             |
     | `onDropped`       | `undefined`                      | Called with each batch Polar refused, and why; may be async.     |
   </Tab>
@@ -106,7 +106,7 @@ Every instance of your application that runs the SDK with the same Redis shares 
 
 Every event needs an `external_id`. Outpost uses it to count an event once, however many times it is tracked or retried, and to settle it once Polar confirms it. `track()` rejects an event without one.
 
-The first read of a customer waits for Polar's snapshot, up to 5 seconds. Warm the customer when the session starts, so the read that matters is ready:
+The first read of a customer waits for Polar's snapshot, up to 5 seconds. Past that, `meter()` throws a Polar error, "Customer snapshot is not ready", and the next read asks Polar again. Warm the customer when the session starts, so the read that matters is ready:
 
 <Tabs>
   <Tab title="TypeScript">
@@ -148,20 +148,35 @@ Install the optional `@vercel/oidc` peer dependency, then wire three pieces:
 
 <Steps>
   <Step title="Turn on strict affinity for the routes that use Outpost">
-    List each route that tracks or reads through Outpost in `vercel.json`:
+    List each route that tracks or reads through Outpost:
 
-    ```json vercel.json
-    {
-      "functions": {
-        "app/api/usage/route.ts": {
-          "affinity": { "mode": "strict" },
-          "maxDuration": 300
+    <Tabs>
+      <Tab title="vercel.json">
+        ```json vercel.json
+        {
+          "functions": {
+            "app/api/usage/route.ts": {
+              "affinity": { "mode": "strict" },
+              "maxDuration": 300
+            }
+          }
         }
-      }
-    }
-    ```
+        ```
+      </Tab>
+      <Tab title="vercel.ts">
+        ```typescript vercel.ts
+        import type { VercelConfig } from "@vercel/config/v1";
+        import { withOutpostAffinity } from "@polar-sh/sdk/outpost/vercel";
 
-    With a `vercel.ts` config, `withOutpostAffinity(config, ["app/api/usage/route.ts"])` from `@polar-sh/sdk/outpost/vercel` adds the same `affinity` for you.
+        export const config: VercelConfig = withOutpostAffinity(
+          { functions: { "app/api/usage/route.ts": { maxDuration: 300 } } },
+          ["app/api/usage/route.ts"],
+        );
+        ```
+
+        `withOutpostAffinity` adds `"affinity": { "mode": "strict" }` to each route you list.
+      </Tab>
+    </Tabs>
   </Step>
   <Step title="Pin each request to its customer's shard in your middleware">
     ```typescript

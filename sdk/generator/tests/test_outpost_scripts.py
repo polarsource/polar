@@ -18,6 +18,7 @@ def test_loads_every_outpost_script() -> None:
         "backoff",
         "release_lock",
         "extend_lock",
+        "outbox_backlog",
     }
 
 

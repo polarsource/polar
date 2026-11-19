@@ -16,6 +16,9 @@ export const WRITE_BUCKET_SCRIPT = `
 export const CONFIRM_SCRIPT = `
 {{ outpost_scripts.confirm }}`;
 
+export const OUTBOX_BACKLOG_SCRIPT = `
+{{ outpost_scripts.outbox_backlog }}`;
+
 export const RELEASE_LOCK_SCRIPT = `
 {{ outpost_scripts.release_lock }}`;
 

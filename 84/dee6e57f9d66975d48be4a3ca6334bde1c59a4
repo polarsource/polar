@@ -1,0 +1,32 @@
+server/polar/event/service.py
+  s_e0fcb62a86e4a2::t_1fe5d32afa9b3f 7,59,1194
+  s_e0fcb62a86e4a2::t_e3a01fef0897a2 1188-1190
+server/polar/reducer/types.py
+  s_e0fcb62a86e4a2::t_1fe5d32afa9b3f 4,8-17
+server/polar/meter/filter.py
+  s_e0fcb62a86e4a2::t_1fe5d32afa9b3f 1,126-129,133,137,141,143,199-202,205,209
+  s_e0fcb62a86e4a2::t_e3a01fef0897a2 123-125,196-198
+server/tests/event/test_service.py
+  s_e0fcb62a86e4a2::t_899fb3ddf879c8 1126-1133
+  s_e0fcb62a86e4a2::t_e3a01fef0897a2 1100,1107-1108,1113-1119,1139-1140,1142-1145,1147
+server/polar/reducer/service.py
+  s_e0fcb62a86e4a2::t_1fe5d32afa9b3f 52,554,1551,1567-1580,1583,1587,1594-1595
+server/polar/meter/aggregation.py
+  s_e0fcb62a86e4a2::t_1fe5d32afa9b3f 1,110-114,116,119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84dee6e57f9d66975d48be4a3ca6334bde1c59a4",
+  "prompts": {},
+  "sessions": {
+    "s_e0fcb62a86e4a2": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f3d6-4961-7080-ab49-d5be8fc19ecd",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

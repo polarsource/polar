@@ -1,0 +1,19 @@
+sdk/CHANGELOG.md
+  s_1948f7c000ac71::t_936db4096899c4 13-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "17d2b582ab9258eebaaf063a1c5034a49dce3f9c",
+  "prompts": {},
+  "sessions": {
+    "s_1948f7c000ac71": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e0ab2e82-88cf-49cb-aa72-78a7db35759c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

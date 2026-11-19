@@ -1,0 +1,41 @@
+clients/apps/web/src/components/Benefit/MeterCredit/AllocationField.test.tsx
+  s_1d438dd4b8461b::t_6ad2875b604637 1-3,7-13,33-35,37-42,44-51,56-60,64-66
+  s_1d438dd4b8461b::t_50ed600387d405 4-6,14-32,36,43,52-55,61-63
+clients/apps/web/src/components/Benefit/MeterCredit/AllocationField.tsx
+  s_1d438dd4b8461b::t_f14a2754d4c407 1-18,20-29,31-35,37-97,99-124
+  s_1d438dd4b8461b::t_6fda058bca986e 19,30,36
+  s_1d438dd4b8461b::t_dea0707d817c00 98
+clients/apps/web/src/components/Benefit/BenefitDetailCells.tsx
+  s_1d438dd4b8461b::t_6fda058bca986e 11-14,224,250,252
+  s_1d438dd4b8461b::t_3c9714c92fdfa8 251
+clients/packages/i18n/src/locales/en.ts
+  s_1d438dd4b8461b::t_9a39b9cff986d8 124-134,137-139
+  s_1d438dd4b8461b::t_af93e3b915259b 135-136
+clients/packages/checkout/src/components/MeteredChargesDetails.test.tsx
+  s_1d438dd4b8461b::t_b40cc8f0ae471d 9,16,31,38,41,57-60,69-76,280-353
+clients/packages/checkout/src/components/MeteredChargesDetails.tsx
+  s_1d438dd4b8461b::t_af93e3b915259b 12,19-23,26-28,31-38,44-77,113-117,140-141,146-151
+clients/apps/web/src/components/Benefit/MeterCredit/BenefitForm.tsx
+  s_1d438dd4b8461b::t_e5a89b23c945be 25
+  s_1d438dd4b8461b::t_e62f165a5b9dc0 156
+clients/apps/web/src/components/Benefit/utils.tsx
+  s_1d438dd4b8461b::t_6fda058bca986e 90-96
+clients/apps/web/src/components/Products/ProductPage/ProductBenefits.tsx
+  s_1d438dd4b8461b::t_3c9714c92fdfa8 5,10,32,107-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7c5753cc0789a3aeedf34fe3c62d0851029494e4",
+  "prompts": {},
+  "sessions": {
+    "s_1d438dd4b8461b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b8733fe4-603d-4d6a-9e0c-c652028b0159",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

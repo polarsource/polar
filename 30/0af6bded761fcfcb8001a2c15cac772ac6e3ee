@@ -1,0 +1,55 @@
+server/polar/benefit/grant/service.py
+  s_566edb22b87246::t_d4b697820a5d43 604-613
+server/polar/declarative_config/benefits.py
+  s_566edb22b87246::t_bfc052b48c60c9 19,21-25,40,63
+docs/openapi/2027-01.openapi.json
+  ai_agent 37073-37080,37197-37207,37233-37236,37243-37244,37343-37346,37352-37353,37459-37462,37469-37470
+server/tests/customer_seat/test_service.py
+  s_566edb22b87246::t_9de1818b39df00 2162-2163
+  s_566edb22b87246::t_a82977b4ca5cf3 2377-2381,2389-2393,2972-2974,2982-2984
+  s_566edb22b87246::t_e55c99e281b740 2151-2161,2164-2170
+server/tests/customer_seat/conftest.py
+  s_566edb22b87246::t_e55c99e281b740 84-89,94
+server/polar/benefit/strategies/meter_credit/schemas.py
+  s_566edb22b87246::t_42375f81441036 1,4,37-47,55,80,88,121,128
+  s_566edb22b87246::t_462731324a07c2 8,10,31-33,66-77,102
+server/tests/benefit/grant/test_service.py
+  s_566edb22b87246::t_0dbc212c56fed9 1849-1904
+server/polar/benefit/tasks.py
+  s_566edb22b87246::t_c136e63a9259f4 163,243
+server/tests/benefit/test_endpoints.py
+  s_566edb22b87246::t_1f66854dbba35f 8,662,685-687,689-690,692
+  s_566edb22b87246::t_921c5544846f2f 2,9-11,693-694
+  s_566edb22b87246::t_e136b412b1bf37 13
+  s_566edb22b87246::t_430917baadad9e 30,36,656-661,663-684,688,691,695,820-857
+  s_566edb22b87246::t_9f8d4a8f6c4dcf 29
+docs/features/benefits/credits.mdx
+  s_566edb22b87246::t_2e882b14f3ccde 32-45
+server/tests/benefit/test_tasks.py
+  ai_agent 121
+docs/features/seat-based-pricing.mdx
+  s_566edb22b87246::t_2e882b14f3ccde 85-86
+server/polar/benefit/strategies/meter_credit/service.py
+  s_566edb22b87246::t_6f0bc4131cba58 187-189
+server/polar/customer_seat/service.py
+  s_566edb22b87246::t_8b7be799121162 527-530
+server/tests/benefit/strategies/test_meter_credit.py
+  s_566edb22b87246::t_1c0953b40abae2 530-554
+  s_566edb22b87246::t_3cb7bdecca81f4 689,716,739,769
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "300af6bded761fcfcb8001a2c15cac772ac6e3ee",
+  "prompts": {},
+  "sessions": {
+    "s_566edb22b87246": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d5252bbb-f8a0-4717-9e45-9cd22a82ec89",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Abris Simon <abris96@gmail.com>"
+    }
+  }
+}

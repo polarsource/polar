@@ -136,6 +136,7 @@ from .analytics import (
 )
 from .forms import (
     AddPaymentMethodDomainForm,
+    OrganizationLicenseKeysImportForm,
     OrganizationOrdersImportForm,
     UpdateAccountSettingsForm,
     UpdateCatalogLimitsForm,
@@ -145,6 +146,7 @@ from .forms import (
     UpdateOrganizationSocialsForm,
     UpdateRateLimitGroupForm,
 )
+from .license_keys_import import license_keys_import_sse
 from .orders_import import orders_import_sse
 from .priority import Signals
 from .views.detail_view import OrganizationDetailView
@@ -5098,6 +5100,53 @@ async def import_orders(
                     type="submit",
                     variant="primary",
                 ):
+                    text("Import")
+
+
+@router.api_route(
+    "/{organization_id}/import-license-keys",
+    name="organizations:import_license_keys",
+    methods=["GET", "POST"],
+    dependencies=[Depends(get_admin)],
+)
+async def import_license_keys(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_deleted=True)
+
+    if organization is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    if request.method == "POST":
+        data = await request.form()
+        try:
+            form = OrganizationLicenseKeysImportForm.model_validate_form(data)
+            return EventSourceResponse(
+                license_keys_import_sse(session, organization, form.file)
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with modal("Import License Keys", open=True):
+        with OrganizationLicenseKeysImportForm.render(
+            {},
+            action=str(request.url),
+            method="POST",
+            classes="flex flex-col",
+            validation_error=validation_error,
+            _="on submit halt the event then call formPostSSE(me, '#import-progress')",
+        ):
+            with tag.div(id="import-progress"):
+                pass
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(type="submit", variant="primary"):
                     text("Import")
 
 

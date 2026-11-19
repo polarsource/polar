@@ -1,4 +1,5 @@
 import typing
+from datetime import UTC, datetime
 from typing import Any, cast
 from unittest.mock import MagicMock, call
 from uuid import uuid4
@@ -12,9 +13,13 @@ from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.schemas import (
     BenefitGrantCreate,
     BenefitGrantCreateExternal,
+    BenefitGrantLicenseKeyCreate,
     BenefitGrantUpdate,
 )
-from polar.benefit.grant.service import BenefitGrantAlreadyExists
+from polar.benefit.grant.service import (
+    BenefitGrantAlreadyExists,
+    LicenseKeyAlreadyExists,
+)
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies import BenefitActionRequiredError, BenefitServiceProtocol
 from polar.benefit.strategies.base.properties import BenefitGrantProperties
@@ -37,6 +42,7 @@ from polar.models import (
 from polar.models.benefit import BenefitType
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.catalog import Catalog, CatalogStatus
+from polar.models.license_key import LicenseKeyStatus
 from polar.models.member import MemberRole
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
@@ -65,6 +71,25 @@ def benefit_strategy_mock(mocker: MockerFixture) -> MagicMock:
     mock = mocker.patch("polar.benefit.grant.service.get_benefit_strategy")
     mock.return_value = strategy_mock
     return strategy_mock
+
+
+LICENSE_KEY_BENEFIT_PROPERTIES = {
+    "prefix": None,
+    "expires": {"ttl": 1, "timeframe": "year"},
+    "activations": {"limit": 2, "enable_customer_admin": True},
+    "limit_usage": None,
+}
+
+
+async def _license_key_benefit(
+    save_fixture: SaveFixture, organization: Organization
+) -> Benefit:
+    return await create_benefit(
+        save_fixture,
+        type=BenefitType.license_keys,
+        organization=organization,
+        properties=LICENSE_KEY_BENEFIT_PROPERTIES,
+    )
 
 
 @pytest.mark.anyio
@@ -225,7 +250,7 @@ class TestCreate:
             await benefit_grant_service.create(
                 session,
                 AuthSubject(organization, set(), None),
-                BenefitGrantCreate(**payload),
+                BenefitGrantCreate.model_validate(payload),
             )
         assert exc.value.errors()[0]["loc"] == ("body", field)
 
@@ -336,6 +361,109 @@ class TestCreate:
                 ),
             )
         assert exc.value.errors()[0]["loc"] == ("body", "external_customer_id")
+
+    async def test_license_key_is_stored_on_the_grant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        benefit = await _license_key_benefit(save_fixture, organization)
+        auth_subject = AuthSubject(organization, set(), None)
+
+        grant = await benefit_grant_service.create(
+            session,
+            auth_subject,
+            BenefitGrantCreate(
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                license_key=BenefitGrantLicenseKeyCreate(
+                    key="LS-38B1460A",
+                    status=LicenseKeyStatus.disabled,
+                    expires_at=datetime(2030, 1, 1, tzinfo=UTC),
+                    limit_activations=5,
+                ),
+            ),
+        )
+
+        assert cast(dict[str, Any], grant.properties) == {
+            "user_provided_key": "LS-38B1460A",
+            "user_provided_terms": {
+                "status": "disabled",
+                "expires_at": "2030-01-01T00:00:00+00:00",
+                "limit_activations": 5,
+            },
+        }
+
+    async def test_license_key_requires_license_key_benefit(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+        benefit_organization: Benefit,
+    ) -> None:
+        auth_subject = AuthSubject(organization, set(), None)
+
+        with pytest.raises(PolarRequestValidationError):
+            await benefit_grant_service.create(
+                session,
+                auth_subject,
+                BenefitGrantCreate(
+                    customer_id=customer.id,
+                    benefit_id=benefit_organization.id,
+                    license_key=BenefitGrantLicenseKeyCreate(key="LS-1"),
+                ),
+            )
+
+    async def test_license_key_already_used(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        benefit = await _license_key_benefit(save_fixture, organization)
+        auth_subject = AuthSubject(organization, set(), None)
+        create = BenefitGrantCreate(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            license_key=BenefitGrantLicenseKeyCreate(key="LS-TAKEN"),
+        )
+        await benefit_grant_service.create(session, auth_subject, create)
+
+        with pytest.raises(LicenseKeyAlreadyExists):
+            await benefit_grant_service.create(session, auth_subject, create)
+
+    async def test_several_license_keys_for_one_benefit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        member_owner: Member,
+    ) -> None:
+        benefit = await _license_key_benefit(save_fixture, organization)
+        auth_subject = AuthSubject(organization, set(), None)
+
+        first, second = [
+            await benefit_grant_service.create(
+                session,
+                auth_subject,
+                BenefitGrantCreate(
+                    customer_id=customer.id,
+                    benefit_id=benefit.id,
+                    license_key=BenefitGrantLicenseKeyCreate(key=key),
+                ),
+            )
+            for key in ("LS-FIRST", "LS-SECOND")
+        ]
+
+        assert first.id != second.id
+        assert first.member_id == second.member_id == member_owner.id
 
 
 @pytest.mark.anyio

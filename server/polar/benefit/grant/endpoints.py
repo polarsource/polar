@@ -16,7 +16,7 @@ from polar.version import V2027_01
 from ..auth import BenefitGrantsRead, BenefitGrantsWrite
 from ..schemas import BenefitGrant
 from .schemas import BenefitGrantCreate, BenefitGrantCreateExternal, BenefitGrantUpdate
-from .service import BenefitGrantAlreadyExists
+from .service import BenefitGrantAlreadyExists, LicenseKeyAlreadyExists
 from .service import benefit_grant as benefit_grant_service
 from .sorting import ListSorting
 
@@ -32,7 +32,12 @@ router = APIRouter(
     status_code=201,
     summary="Create Benefit Grant",
     openapi_extra=open_world(),
-    responses={409: {"model": BenefitGrantAlreadyExists.schema()}},
+    responses={
+        409: {
+            "model": BenefitGrantAlreadyExists.schema()
+            | LicenseKeyAlreadyExists.schema()
+        }
+    },
 )
 @version(starting_from=V2027_01)
 async def create(

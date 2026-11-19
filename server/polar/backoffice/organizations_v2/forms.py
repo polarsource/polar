@@ -269,6 +269,23 @@ class OrganizationOrdersImportForm(forms.BaseForm):
     ]
 
 
+class OrganizationLicenseKeysImportForm(forms.BaseForm):
+    file: Annotated[
+        UploadFile,
+        forms.InputField(type="file"),
+        Field(
+            title="CSV File",
+            description=(
+                "One license key per row, issued without an order. "
+                "Required: `email`, `benefit_id` (a license key benefit) and "
+                "`key`. Optional: `name`, `status` (`granted` or `disabled`), "
+                "`expires_at` and `activation_limit`. A key without "
+                "`expires_at` never expires."
+            ),
+        ),
+    ]
+
+
 class AddPaymentMethodDomainForm(forms.BaseForm):
     domain_name: Annotated[
         str,

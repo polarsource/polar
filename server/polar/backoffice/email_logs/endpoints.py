@@ -10,6 +10,7 @@ from sqlalchemy import or_
 from tagflow import classes, tag, text
 
 from polar.backoffice.routing import BackofficeRouter
+from polar.config import settings
 from polar.email.react import render_from_json
 from polar.email.repository import EmailLogRepository
 from polar.email.schemas import EmailTemplate
@@ -185,8 +186,24 @@ async def get_email_log(
         "email_logs:list",
     ):
         with tag.div(classes="flex flex-col gap-4"):
-            with tag.h1(classes="text-4xl"):
-                text(email_log.subject)
+            with tag.div(classes="flex justify-between items-center"):
+                with tag.h1(classes="text-4xl"):
+                    text(email_log.subject)
+                # Resend webhook errors start with the event type; only hard bounces add to the suppression list
+                if (
+                    not settings.is_sandbox()
+                    and email_log.error is not None
+                    and email_log.error.startswith(
+                        ("email.suppressed", "email.bounced; type=Permanent")
+                    )
+                ):
+                    with button(
+                        hx_get=str(
+                            request.url_for("email_logs:unsuppress", id=email_log.id)
+                        ),
+                        hx_target="#modal",
+                    ):
+                        text("Unsuppress")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 with tag.div(classes="flex flex-col gap-4"):
@@ -235,25 +252,6 @@ async def get_email_log(
                                 ),
                             ).render(request, email_log):
                                 pass
-                            # Resend webhook errors start with the event type; bounces add to the suppression list
-                            if (
-                                email_log.error is not None
-                                and email_log.error.startswith(
-                                    ("email.suppressed", "email.bounced")
-                                )
-                            ):
-                                with tag.div(classes="card-actions justify-end"):
-                                    with button(
-                                        variant="warning",
-                                        size="sm",
-                                        hx_get=str(
-                                            request.url_for(
-                                                "email_logs:unsuppress", id=email_log.id
-                                            )
-                                        ),
-                                        hx_target="#modal",
-                                    ):
-                                        text("Unsuppress")
 
                     with tag.div(classes="card card-border w-full shadow-sm"):
                         with tag.div(classes="card-body"):
@@ -299,6 +297,9 @@ async def unsuppress(
     id: UUID4,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> Any:
+    if settings.is_sandbox():
+        raise HTTPException(status_code=404)
+
     repository = EmailLogRepository.from_session(session)
     email_log = await repository.get_by_id(id)
 
@@ -307,13 +308,18 @@ async def unsuppress(
 
     if request.method == "POST":
         try:
-            await email_sender.remove_suppression(email_log.to_email_addr)
+            removed = await email_sender.remove_suppression(email_log.to_email_addr)
         except EmailSenderError as e:
             await add_toast(request, f"Failed to unsuppress: {e}", "error")
             return
-        await add_toast(
-            request, f"{email_log.to_email_addr} has been unsuppressed.", "success"
-        )
+        if removed:
+            await add_toast(
+                request, f"{email_log.to_email_addr} has been unsuppressed.", "success"
+            )
+        else:
+            await add_toast(
+                request, f"{email_log.to_email_addr} wasn't on the suppression list."
+            )
         return
 
     with modal(f"Unsuppress {email_log.to_email_addr}", open=True):

@@ -116,14 +116,21 @@ class TestUnsuppress:
         assert response.status_code == 200
         assert f"/email-logs/{email_log.id}/unsuppress" in response.text
 
+    @pytest.mark.parametrize(
+        "error",
+        ["Resend request timed out", "email.bounced; type=Transient"],
+    )
     async def test_button_hidden_for_other_failure(
-        self, save_fixture: SaveFixture, backoffice_client: httpx2.AsyncClient
+        self,
+        error: str,
+        save_fixture: SaveFixture,
+        backoffice_client: httpx2.AsyncClient,
     ) -> None:
         email_log = await create_email_log(
             save_fixture,
             created_at=utc_now(),
             status=EmailLogStatus.failed,
-            error="Resend request timed out",
+            error=error,
         )
 
         response = await backoffice_client.get(f"/email-logs/{email_log.id}")
@@ -131,14 +138,21 @@ class TestUnsuppress:
         assert response.status_code == 200
         assert "/unsuppress" not in response.text
 
+    @pytest.mark.parametrize(
+        ("removed", "message"),
+        [(True, "has been unsuppressed"), (False, "on the suppression list")],
+    )
     async def test_removes_suppression(
         self,
+        removed: bool,
+        message: str,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
         backoffice_client: httpx2.AsyncClient,
     ) -> None:
         remove_suppression = mocker.patch(
-            "polar.backoffice.email_logs.endpoints.email_sender.remove_suppression"
+            "polar.backoffice.email_logs.endpoints.email_sender.remove_suppression",
+            return_value=removed,
         )
         email_log = await create_email_log(
             save_fixture, created_at=utc_now(), status=EmailLogStatus.failed
@@ -150,3 +164,4 @@ class TestUnsuppress:
 
         assert response.status_code == 200
         remove_suppression.assert_awaited_once_with("customer@example.com")
+        assert message in response.text

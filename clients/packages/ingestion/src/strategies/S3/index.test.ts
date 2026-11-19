@@ -9,7 +9,7 @@ import {
 import { Readable } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 
-import { S3Strategy } from '.'
+import { S3Strategy, S3StrategyContext } from '.'
 import { Ingestion } from '../../ingestion'
 
 const createS3Client = (config: S3ClientConfig = {}) =>
@@ -44,6 +44,17 @@ const billedCustomers = (ingest: ReturnType<typeof trackUploads>['ingest']) =>
   )
 
 describe('S3Strategy', () => {
+  it('should send metadata that S3StrategyContext accepts', async () => {
+    const { strategy, ingest } = trackUploads(createS3Client())
+
+    await strategy.client({ customerId: 'alice' }).send(upload('key'))
+
+    const [{ metadata }] = ingest.mock.calls[0][0].events
+    expect(await S3StrategyContext['~standard'].validate(metadata)).toEqual({
+      value: metadata,
+    })
+  })
+
   it('should send the uploaded bytes for the customer', async () => {
     const { strategy, ingest } = trackUploads(createS3Client())
 

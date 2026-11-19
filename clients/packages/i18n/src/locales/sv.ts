@@ -128,6 +128,10 @@ export default {
         volumeExplainer:
           'All användning debiteras med priset för det intervall det hamnar i',
       },
+      meteredIncludedTeam: '{units} ingår för teamet',
+      meteredIncludedPerSeat: '{units} ingår per användare',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} ingår per användare samt {teamUnits} för teamet',
     },
     trial: {
       hero: {

@@ -129,6 +129,10 @@ export default {
         volumeExplainer:
           'Todo o consumo é faturado à tarifa da faixa em que se enquadra',
       },
+      meteredIncludedTeam: '{units} incluídos para a equipa',
+      meteredIncludedPerSeat: '{units} incluídos por utilizador',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} incluídos por utilizador, mais {teamUnits} para a equipa',
     },
     trial: {
       hero: {

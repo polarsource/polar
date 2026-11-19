@@ -128,6 +128,10 @@ export default {
         volumeExplainer:
           'A teljes használatot annak a sávnak az árával számlázzuk, amelybe beleesik',
       },
+      meteredIncludedTeam: '{units} a csapat számára benne van',
+      meteredIncludedPerSeat: '{units} felhasználónként benne van',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} felhasználónként benne van, plusz {teamUnits} a csapat számára',
     },
     trial: {
       hero: {

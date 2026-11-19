@@ -129,6 +129,10 @@ export default {
         volumeExplainer:
           'Die gesamte Nutzung wird zum Tarif des Bereichs abgerechnet, in den sie fällt',
       },
+      meteredIncludedTeam: '{units} im Team enthalten',
+      meteredIncludedPerSeat: '{units} pro Platz enthalten',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} pro Platz enthalten, zusätzlich {teamUnits} für das Team',
     },
     trial: {
       hero: {

@@ -128,6 +128,10 @@ export default {
         volumeExplainer:
           'Tüm kullanım, düştüğü aralığın tarifesine göre ücretlendirilir',
       },
+      meteredIncludedTeam: 'Ekip için {units} dahil',
+      meteredIncludedPerSeat: 'Koltuk başına {units} dahil',
+      meteredIncludedPerSeatAndTeam:
+        'Koltuk başına {perSeatUnits} dahil, ayrıca ekip için {teamUnits}',
     },
     trial: {
       hero: {

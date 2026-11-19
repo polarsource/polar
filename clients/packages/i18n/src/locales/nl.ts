@@ -129,6 +129,10 @@ export default {
         volumeExplainer:
           'Alle verbruik wordt berekend tegen het tarief van de schaal waarin het valt',
       },
+      meteredIncludedTeam: '{units} inbegrepen voor het team',
+      meteredIncludedPerSeat: '{units} inbegrepen per gebruiker',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} inbegrepen per gebruiker, plus {teamUnits} voor het team',
     },
     trial: {
       hero: {

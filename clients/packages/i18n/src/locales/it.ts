@@ -129,6 +129,10 @@ export default {
         volumeExplainer:
           "Tutto l'utilizzo viene addebitato alla tariffa dell'intervallo in cui rientra",
       },
+      meteredIncludedTeam: '{units} incluse per il team',
+      meteredIncludedPerSeat: '{units} incluse per utente',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} incluse per utente, più {teamUnits} per il team',
     },
     trial: {
       hero: {

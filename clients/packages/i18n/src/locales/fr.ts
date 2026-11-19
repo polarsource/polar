@@ -131,6 +131,10 @@ export default {
         volumeExplainer:
           'Toute la consommation est facturée au tarif correspondant à la tranche dans laquelle elle se situe',
       },
+      meteredIncludedTeam: "{units} inclus pour l'équipe",
+      meteredIncludedPerSeat: '{units} inclus par siège',
+      meteredIncludedPerSeatAndTeam:
+        "{perSeatUnits} inclus par siège, plus {teamUnits} pour l'équipe",
     },
     trial: {
       hero: {

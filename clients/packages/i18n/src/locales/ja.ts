@@ -127,6 +127,10 @@ export default {
         andAbove: '{from}+',
         volumeExplainer: 'すべての使用量は、該当する範囲の料金で請求されます',
       },
+      meteredIncludedTeam: 'チーム全体に{units}が含まれます',
+      meteredIncludedPerSeat: '1シートあたり{units}が含まれます',
+      meteredIncludedPerSeatAndTeam:
+        '1シートあたり{perSeatUnits}が含まれ、さらにチーム全体に{teamUnits}が含まれます',
     },
     trial: {
       hero: {

@@ -1,7 +1,6 @@
 from polar.metering import EventInput
 from polar.outpost.client import (
     CustomerMeter,
-    IngestResult,
     MissingExternalIdError,
     NotReadyError,
     Outpost,
@@ -32,7 +31,6 @@ __all__ = [
     "EventMatcher",
     "Filter",
     "FilterClause",
-    "IngestResult",
     "MissingExternalIdError",
     "NotReadyError",
     "Outpost",

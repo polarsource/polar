@@ -908,12 +908,6 @@ class Changes(typing.TypedDict):
     next_poll_in: float
 
 
-@dataclasses.dataclass
-class IngestResult:
-    inserted: int
-    duplicates: int = 0
-
-
 # What Polar said of the pending events a snapshot seals.
 @dataclasses.dataclass
 class _Confirmation:

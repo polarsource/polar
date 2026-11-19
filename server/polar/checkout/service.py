@@ -1257,6 +1257,7 @@ class CheckoutService:
                         billing_country=billing_address.country
                         if billing_address is not None
                         else None,
+                        customer_tax_id=checkout.customer_tax_id_number,
                     )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name

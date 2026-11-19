@@ -160,7 +160,7 @@ async def benefit_grant(
                 return
         member = (
             None
-            if is_team_grant(benefit, selector)
+            if member_id is None and is_team_grant(benefit, selector)
             else await resolve_member(
                 session,
                 customer_id=customer_id,
@@ -240,7 +240,7 @@ async def benefit_revoke(
             return
         member = (
             None
-            if is_team_grant(benefit, selector)
+            if member_id is None and is_team_grant(benefit, selector)
             else await resolve_member(
                 session,
                 customer_id=customer_id,

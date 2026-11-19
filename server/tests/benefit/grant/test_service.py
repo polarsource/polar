@@ -1846,6 +1846,62 @@ class TestEnqueueBenefitsGrantsSeatBased:
             subscription_id=subscription.id,
         )
 
+    async def test_with_member_revokes_member_team_grants(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        seat_based_product: Product,
+        benefit_organization: Benefit,
+        team_benefit: Benefit,
+        customer: Customer,
+        member: Member,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.service.group")
+        broker = mocker.patch("polar.benefit.grant.service.dramatiq.get_broker")
+        revoke_actor = MagicMock()
+        enqueue_grants_actor = MagicMock()
+        broker.return_value.get_actor.side_effect = {
+            "benefit.revoke": revoke_actor,
+            "benefit.enqueue_grants": enqueue_grants_actor,
+        }.__getitem__
+        subscription = await self._setup(
+            save_fixture,
+            seat_based_product,
+            customer,
+            [benefit_organization, team_benefit],
+        )
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            team_benefit,
+            granted=True,
+            member=member,
+            subscription=subscription,
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session,
+            "grant",
+            customer,
+            seat_based_product,
+            member_id=member.id,
+            subscription=subscription,
+        )
+
+        revoke_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            benefit_id=team_benefit.id,
+            member_id=member.id,
+            subscription_id=subscription.id,
+        )
+        enqueue_grants_actor.message.assert_called_once_with(
+            customer_id=customer.id,
+            grant_benefit_ids=[benefit_organization.id],
+            member_id=member.id,
+            subscription_id=subscription.id,
+        )
+
 
 @pytest.mark.anyio
 class TestEnqueueBenefitGrantUpdates:

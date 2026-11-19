@@ -601,6 +601,16 @@ class BenefitGrantService:
         )
         revoke_benefit_ids.extend(g.benefit_id for g in outdated_grants)
 
+        # A seat holder's grants of team benefits predate the switch to seats:
+        # the team grant replaces them.
+        if seat_based and member_id is not None:
+            team_benefit_ids = {b.id for b in product.benefits if is_team_benefit(b)}
+            revoke_benefit_ids.extend(
+                g.benefit_id
+                for g in existing_grants
+                if g.benefit_id in team_benefit_ids and not g.is_revoked
+            )
+
         if not revoke_benefit_ids and not grant_benefit_ids:
             return
 

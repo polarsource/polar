@@ -527,6 +527,32 @@ class TestValidateProperties:
         assert properties["meter_id"] == str(meter.id)
 
     @pytest.mark.auth
+    async def test_drops_omitted_allocation(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        meter = await create_meter(save_fixture, organization=organization)
+        service = BenefitMeterCreditService(session, redis)
+
+        properties = await service.validate_properties(
+            auth_subject,
+            organization,
+            {
+                "meter_id": str(meter.id),
+                "units": 100,
+                "rollover": False,
+                "allocation": None,
+            },
+        )
+
+        assert "allocation" not in properties
+
+    @pytest.mark.auth
     async def test_meter_from_other_organization(
         self,
         session: AsyncSession,
@@ -660,10 +686,9 @@ class TestValidatePropertiesUpdate:
         properties = await service.validate_properties_update(
             benefit,
             {
-                "meter_id": benefit.properties["meter_id"],
+                "meter_id": str(uuid4()),
                 "units": 200,
                 "rollover": False,
-                "allocation": None,  # type: ignore[typeddict-item]
             },
         )
 
@@ -688,10 +713,9 @@ class TestValidatePropertiesUpdate:
         properties = await service.validate_properties_update(
             benefit,
             {
-                "meter_id": benefit.properties["meter_id"],
+                "meter_id": str(uuid4()),
                 "units": 100,
                 "rollover": False,
-                "allocation": None,  # type: ignore[typeddict-item]
             },
         )
 
@@ -712,7 +736,7 @@ class TestValidatePropertiesUpdate:
         properties = await service.validate_properties_update(
             benefit,
             {
-                "meter_id": benefit.properties["meter_id"],
+                "meter_id": str(uuid4()),
                 "units": 100,
                 "rollover": False,
                 "allocation": BenefitMeterCreditAllocation.team,
@@ -742,7 +766,7 @@ class TestValidatePropertiesUpdate:
             await service.validate_properties_update(
                 benefit,
                 {
-                    "meter_id": benefit.properties["meter_id"],
+                    "meter_id": str(uuid4()),
                     "units": 100,
                     "rollover": False,
                     "allocation": BenefitMeterCreditAllocation.team,

@@ -184,6 +184,9 @@ class BenefitMeterCreditService(
                 ]
             )
 
+        if properties.get("allocation") is None:
+            properties.pop("allocation", None)
+
         return cast(BenefitMeterCreditProperties, properties)
 
     async def validate_properties_update(

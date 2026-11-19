@@ -118,7 +118,7 @@ class TestBenefitGrant:
 
     @pytest.mark.parametrize(
         ("allocation", "member_expected"),
-        [("team", False), ("per_claimed_seat", True)],
+        [("team", False), ("team", True), ("per_claimed_seat", True)],
     )
     async def test_seat_based_order_team_allocation(
         self,

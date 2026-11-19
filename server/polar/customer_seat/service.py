@@ -524,8 +524,10 @@ class SeatService:
         original_customer_id = seat.customer_id
         original_member_id = seat.member_id
 
-        # Revoke benefits from the customer before clearing the customer_id
-        if original_customer_id:
+        # Revoke benefits from the customer before clearing the customer_id.
+        # Without a member, the seat holds no per-seat grants, and a call without
+        # a member would revoke the team's grants instead.
+        if original_customer_id and original_member_id:
             if seat.subscription_id:
                 enqueue_job(
                     "benefit.enqueue_benefits_grants",

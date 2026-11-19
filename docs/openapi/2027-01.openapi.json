@@ -37070,6 +37070,14 @@
         "title": "BenefitMeterCredit",
         "description": "A benefit of type `meter_unit`.\n\nUse it to grant a number of units on a specific meter."
       },
+      "BenefitMeterCreditAllocation": {
+        "type": "string",
+        "enum": [
+          "per_claimed_seat",
+          "team"
+        ],
+        "title": "BenefitMeterCreditAllocation"
+      },
       "BenefitMeterCreditCreate": {
         "properties": {
           "external_id": {
@@ -37186,6 +37194,17 @@
             "type": "string",
             "format": "uuid4",
             "title": "Meter Id"
+          },
+          "allocation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BenefitMeterCreditAllocation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. Defaults to `per_claimed_seat` on creation. On update, the current value is kept if omitted. It can't be changed once the benefit has been granted."
           }
         },
         "type": "object",
@@ -37211,13 +37230,18 @@
             "type": "string",
             "format": "uuid4",
             "title": "Meter Id"
+          },
+          "allocation": {
+            "$ref": "#/components/schemas/BenefitMeterCreditAllocation",
+            "description": "How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase."
           }
         },
         "type": "object",
         "required": [
           "units",
           "rollover",
-          "meter_id"
+          "meter_id",
+          "allocation"
         ],
         "title": "BenefitMeterCreditProperties",
         "description": "Properties for a benefit of type `meter_unit`."
@@ -37316,12 +37340,17 @@
             "type": "string",
             "format": "uuid4",
             "title": "Meter Id"
+          },
+          "allocation": {
+            "$ref": "#/components/schemas/BenefitMeterCreditAllocation",
+            "description": "How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase."
           }
         },
         "type": "object",
         "required": [
           "units",
-          "meter_id"
+          "meter_id",
+          "allocation"
         ],
         "title": "BenefitMeterCreditPublicProperties",
         "description": "Properties for a benefit of type `meter_credit`."
@@ -37427,13 +37456,18 @@
             "type": "string",
             "format": "uuid4",
             "title": "Meter Id"
+          },
+          "allocation": {
+            "$ref": "#/components/schemas/BenefitMeterCreditAllocation",
+            "description": "How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase."
           }
         },
         "type": "object",
         "required": [
           "units",
           "rollover",
-          "meter_id"
+          "meter_id",
+          "allocation"
         ],
         "title": "BenefitMeterCreditSubscriberProperties",
         "description": "Properties available to subscribers for a benefit of type `meter_unit`."

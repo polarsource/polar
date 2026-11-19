@@ -148,6 +148,11 @@ class PaymentMethodService:
         )
 
         if customer.default_payment_method_id is None:
+            await session.refresh(
+                customer, {"default_payment_method_id"}, with_for_update=True
+            )
+
+        if customer.default_payment_method_id is None:
             await CustomerRepository.from_session(session).update(
                 customer, update_dict={"default_payment_method": payment_method}
             )

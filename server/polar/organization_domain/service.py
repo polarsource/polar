@@ -185,8 +185,12 @@ class OrganizationDomainService:
         """Stripe shows Apple Pay and Google Pay only on registered domains, and
         takes no wildcards, so each embed host under a verified domain goes in
         alone. Without `embed_hosts`, takes every embed host. Only approved
-        organizations register, unless `approved_only` is off."""
-        if approved_only and organization.status != OrganizationStatus.ACTIVE:
+        organizations that can take payments register, unless `approved_only`
+        is off."""
+        if approved_only and not (
+            organization.status == OrganizationStatus.ACTIVE
+            and organization.can_accept_payments
+        ):
             return []
         repository = OrganizationDomainRepository.from_session(session)
         verified_domains = [

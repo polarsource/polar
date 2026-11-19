@@ -10,9 +10,9 @@ import {
 
 export const S3StrategyContext = Schema.toStandardSchemaV1(
   Schema.Struct({
-    bucket: Schema.optionalKey(Schema.String),
-    key: Schema.optionalKey(Schema.String),
-    contentType: Schema.optionalKey(Schema.String),
+    bucket: Schema.optional(Schema.String),
+    key: Schema.optional(Schema.String),
+    contentType: Schema.optional(Schema.String),
     bytes: Schema.Finite,
     strategy: Schema.Literal('S3'),
   }),
@@ -58,14 +58,11 @@ export class S3Strategy extends IngestionStrategy<S3StrategyContext, S3Client> {
               const payload: S3StrategyContext = {
                 bytes,
                 strategy: 'S3',
-                ...('Bucket' in input &&
-                  input.Bucket !== undefined && { bucket: input.Bucket }),
-                ...('Key' in input &&
-                  input.Key !== undefined && { key: input.Key }),
-                ...('ContentType' in input &&
-                  input.ContentType !== undefined && {
-                    contentType: input.ContentType,
-                  }),
+                ...('Bucket' in input && { bucket: input.Bucket }),
+                ...('Key' in input && { key: input.Key }),
+                ...('ContentType' in input && {
+                  contentType: input.ContentType,
+                }),
               }
 
               execute(payload, customer)

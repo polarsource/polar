@@ -1,0 +1,28 @@
+terraform/test/events_api.tf
+  s_09cd482de194d1::t_18d2576ac53a6c 383-393,395-402,404-423
+  s_09cd482de194d1::t_515864db991ae7 394,403
+  s_09cd482de194d1::t_8c0265ecf36c49 205,209
+  s_09cd482de194d1::t_5d04ec81e49fbf 300-335
+  s_09cd482de194d1::t_5cf7e7c2845b10 10-12
+  s_09cd482de194d1::t_34299ab7e0c7d9 206-208
+terraform/test/render.tf
+  s_09cd482de194d1::t_a2d071748871b6 137,139
+terraform/test/aws.tf
+  s_09cd482de194d1::t_cfb610d589524b 337-338
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "088840e09b0511d2c699a2ad7a4650cf01d4e742",
+  "prompts": {},
+  "sessions": {
+    "s_09cd482de194d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bddc0952-eceb-408b-88ff-76557c4f9d4b",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": null
+    }
+  }
+}

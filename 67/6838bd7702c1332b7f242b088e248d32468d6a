@@ -1,0 +1,31 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportTaxPicker.tsx
+  s_7b0666dec04723::t_efbdec1df34e8c 74-80
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_7b0666dec04723::t_7a1e9b02711607 35-51,98-100
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/LemonSqueezyConnectForm.tsx
+  s_7b0666dec04723::t_db1336b4a68141 6,10,53-55,58-70
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/recordFormat.ts
+  s_7b0666dec04723::t_fd319eb4d6fe9d 11-15,39-44
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewColumns.tsx
+  s_7b0666dec04723::t_f31cc15d4bca2e 119,121-134
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.test.ts
+  s_7b0666dec04723::t_0509b2cd6ad6cd 103,106,134,143
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.ts
+  s_7b0666dec04723::t_b02de5dca84d9a 75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "676838bd7702c1332b7f242b088e248d32468d6a",
+  "prompts": {},
+  "sessions": {
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

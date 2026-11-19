@@ -1,0 +1,33 @@
+server/polar/event/endpoints.py
+  s_0046c516d306f0::t_75cddf9236f71a 5,433,440-446,457,464-470
+server/tests/event/test_writer.py
+  s_0046c516d306f0::t_ef714de02af903 8-10,18-19,75-102
+  s_0046c516d306f0::t_0174575f16d1d7 1-7,11-17,20-74
+server/polar/event/writer.py
+  s_0046c516d306f0::t_efaaad32afb11f 1-123
+server/polar/event/service.py
+  s_0046c516d306f0::t_90625e5f259a0f 1201
+  s_0046c516d306f0::t_58e7db96bafdd3 1223-1225,1228-1230
+  s_0046c516d306f0::t_75cddf9236f71a 4,1041-1044,1145,1147-1153,1191,1193,1198,1204-1222,1226-1227,1231-1241
+server/polar/app.py
+  s_0046c516d306f0::t_75cddf9236f71a 4-6,26,132-134,191-198,214-216,219-220
+  s_0046c516d306f0::t_238a939c18ec90 221
+server/polar/config.py
+  s_0046c516d306f0::t_75cddf9236f71a 248-250
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d63d6993f33228835e993497681d5aa628dfa1e8",
+  "prompts": {},
+  "sessions": {
+    "s_0046c516d306f0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "94fb14a9-772b-47dd-aff9-12742a129b7e",
+        "model": "claude-fable-5-2"
+      },
+      "human_author": "Jesper Bränn <jesper@polar.sh>"
+    }
+  }
+}

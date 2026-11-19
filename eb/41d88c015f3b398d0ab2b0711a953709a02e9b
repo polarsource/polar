@@ -1,0 +1,69 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_7b0666dec04723::t_260e94bca4dfcd 25,43
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationsPage.tsx
+  s_7b0666dec04723::t_018591c9890b5e 60,84
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.test.tsx
+  s_7b0666dec04723::t_8b190ea7ce7503 55
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.tsx
+  s_7b0666dec04723::t_323a80c165bbb0 42-44,51
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/cards/panTransferCopy.ts
+  s_7b0666dec04723::t_50d507ed58bf66 148
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/CatalogEmptyPanel.test.tsx
+  s_7b0666dec04723::t_5fad9a8b8c5dfd 38,43,59,74,78
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/CatalogEmptyPanel.tsx
+  s_7b0666dec04723::t_7f5fde94aa58d6 65
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewAlerts.tsx
+  s_7b0666dec04723::t_9736c440f3d077 31
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordModal.tsx
+  s_7b0666dec04723::t_43c43f1e516767 99,120,145,153,164
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewStatusTabs.tsx
+  s_7b0666dec04723::t_5d68f2c93212d1 19,27
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_7b0666dec04723::t_11002d564dea6d 126,128
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewToolbarActions.tsx
+  s_7b0666dec04723::t_3b7f9462fed00a 50
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/paymentMethod.ts
+  s_7b0666dec04723::t_222a6817d314e1 12
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewCatalog.ts
+  s_7b0666dec04723::t_a66488842c15f7 52,57,60,67-68
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.test.ts
+  s_7b0666dec04723::t_643012e014fcb4 54,57,60,63,68-69,72,200
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.ts
+  s_7b0666dec04723::t_393bcc1c65d524 27
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_7b0666dec04723::t_88fa6ce4a2019c 28,30,60
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/SwitchRecordModal.test.tsx
+  s_7b0666dec04723::t_33d7d31cb7d112 66,68-69,72,74
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/SwitchRecordModal.tsx
+  s_7b0666dec04723::t_5c1c1fbe7f931d 80,103,124,150,153,158
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/SwitchSummary.tsx
+  s_7b0666dec04723::t_ea067f4712bdb8 21
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/switchCopy.ts
+  s_7b0666dec04723::t_83f3f50ae1fd75 11,18,24,27,59
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/switchStatus.test.ts
+  s_7b0666dec04723::t_c78608473f5dca 46,48
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/switch/switchStatus.ts
+  s_7b0666dec04723::t_9fc71dce2861ac 16
+server/polar/merchant_migration/precheck.py
+  s_7b0666dec04723::t_08335f41dae868 161-162,170-171,659-660
+server/polar/merchant_migration/service.py
+  s_7b0666dec04723::t_1adec7de818b09 129-130,235
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_7b0666dec04723::t_a5c64cd90cfc27 16,38,66,68-69,72,74,123,168-170,179
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "eb41d88c015f3b398d0ab2b0711a953709a02e9b",
+  "prompts": {},
+  "sessions": {
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

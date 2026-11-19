@@ -515,13 +515,8 @@ CONFIRM_SCRIPT = """
 -- the lock's token and TTL, ARGV[4] the number of entries, then the entries; then each group
 -- gives its bucket start, its number of ids and the ids.
 local BATCH = 1000
--- An entry is the event's value, or nothing when it only counts. Earlier SDK versions stored
--- the event's count, sum, min and max as a JSON array; their entries expire within the hour.
+-- An entry is the event's value, or nothing when it only counts.
 local function value_of(entry)
-    if entry:sub(1, 1) == '[' then
-        local legacy = cjson.decode(entry)
-        entry = legacy[3] ~= '' and legacy[2] or ''
-    end
     return entry ~= '' and tonumber(entry) or nil
 end
 local function settle(state, pending_key, start, ids)

@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, func, or_, select
+from sqlalchemy import Select, func, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -15,7 +15,6 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Order, Payment, Transaction
-from polar.models.order import OrderStatus
 from polar.models.payment import (
     DUNNING_COUNTING_TRIGGERS,
     PaymentStatus,
@@ -145,42 +144,18 @@ class PaymentRepository(
         result = await self.session.execute(statement)
         return result.scalar() or 0
 
-    async def get_failed_card_payments_in_dunning(
-        self,
-        *,
-        brand: str,
-        since: datetime,
-        network_transaction_id: str | None,
-        last4: str | None,
+    async def get_failed_card_payments_by_network_transaction_id(
+        self, network_transaction_id: str, *, since: datetime
     ) -> Sequence[Payment]:
-        """Failed card payments of orders that are still being retried by dunning,
-        whose network transaction ID contains ``network_transaction_id`` or whose
-        card ends with ``last4``."""
-        card_clauses: list[ColumnElement[bool]] = []
-        if network_transaction_id:
-            card_clauses.append(
-                Payment.method_metadata["network_transaction_id"].astext.contains(
-                    network_transaction_id, autoescape=True
-                )
-            )
-        if last4:
-            card_clauses.append(Payment.method_metadata["last4"].astext == last4)
-        if not card_clauses:
-            return []
-
         statement = (
             self.get_base_statement()
-            .join(Order, Payment.order_id == Order.id)
             .where(
                 Payment.status == PaymentStatus.failed,
                 Payment.method == "card",
                 Payment.created_at >= since,
-                Payment.method_metadata["brand"].astext == brand,
-                or_(*card_clauses),
-                ~Order.is_deleted,
-                Order.status == OrderStatus.pending,
-                Order.next_payment_attempt_at.is_not(None),
-                Order.subscription_id.is_not(None),
+                Payment.method_metadata["network_transaction_id"].astext.contains(
+                    network_transaction_id, autoescape=True
+                ),
             )
             .order_by(Payment.created_at.desc())
         )

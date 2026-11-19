@@ -1,10 +1,10 @@
-from collections.abc import Sequence
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from enum import StrEnum
 
 import structlog
 
 from polar.config import settings
+from polar.exceptions import PolarTaskError
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Payment
@@ -25,11 +25,30 @@ STRIPE_METADATA_PAYMENT_RETRY_ALERT_ID = "payment_retry_alert_id"
 
 # Mastercard watches a declined card for up to 30 days.
 MATCHING_WINDOW = timedelta(days=31)
-DECLINE_TIME_TOLERANCE = timedelta(days=1)
+
+
+class PaymentRetryAlertError(PolarTaskError): ...
+
+
+class MissingNetworkTransactionId(PaymentRetryAlertError):
+    def __init__(self, alert_id: str) -> None:
+        self.alert_id = alert_id
+        super().__init__(
+            f"Payment retry alert {alert_id} has no network transaction ID."
+        )
+
+
+class DeclinedPaymentNotFound(PaymentRetryAlertError):
+    def __init__(self, alert_id: str, matched_orders: int) -> None:
+        self.alert_id = alert_id
+        self.matched_orders = matched_orders
+        super().__init__(
+            f"Payment retry alert {alert_id} matches declined payments "
+            f"of {matched_orders} orders instead of one."
+        )
 
 
 class SkipReason(StrEnum):
-    unmatched = "unmatched"
     not_in_dunning = "not_in_dunning"
     subscription_ended = "subscription_ended"
     payment_in_progress = "payment_in_progress"
@@ -55,12 +74,6 @@ def _is_same_network_transaction(
     )
 
 
-def _get_single_order_payment(payments: Sequence[Payment]) -> Payment | None:
-    if len({payment.order_id for payment in payments}) != 1:
-        return None
-    return payments[0]
-
-
 class PaymentRetryAlertService:
     async def handle_alert(
         self, session: AsyncSession, alert: PaymentRetryAlert
@@ -82,8 +95,8 @@ class PaymentRetryAlertService:
         self, session: AsyncSession, alert: PaymentRetryAlert
     ) -> SkipReason | None:
         declined_payment = await self._match_declined_payment(session, alert)
-        if declined_payment is None or declined_payment.order_id is None:
-            return SkipReason.unmatched
+        if declined_payment.order_id is None:
+            return SkipReason.not_in_dunning
 
         order_repository = OrderRepository.from_session(session)
         order = await order_repository.get_by_id(
@@ -151,47 +164,29 @@ class PaymentRetryAlertService:
 
     async def _match_declined_payment(
         self, session: AsyncSession, alert: PaymentRetryAlert
-    ) -> Payment | None:
-        network_transaction_id = alert["network_transaction_id"] or None
-        last4 = alert["card_last_four"] or None
+    ) -> Payment:
+        network_transaction_id = alert["network_transaction_id"]
+        if not network_transaction_id:
+            raise MissingNetworkTransactionId(alert["id"])
 
         repository = PaymentRepository.from_session(session)
-        candidates = await repository.get_failed_card_payments_in_dunning(
-            brand="mastercard",
-            since=utc_now() - MATCHING_WINDOW,
-            network_transaction_id=network_transaction_id,
-            last4=None if network_transaction_id else last4,
-        )
-
-        if network_transaction_id is not None:
-            return _get_single_order_payment(
-                [
-                    candidate
-                    for candidate in candidates
-                    if _is_same_network_transaction(
-                        candidate.method_metadata.get("network_transaction_id"),
-                        network_transaction_id,
-                    )
-                ]
+        candidates = (
+            await repository.get_failed_card_payments_by_network_transaction_id(
+                network_transaction_id, since=utc_now() - MATCHING_WINDOW
             )
-
-        amount = alert["transaction_amount_in_cents"]
-        if last4 is None or amount is None or not alert["transaction_time"]:
-            return None
-        currency = alert["transaction_currency"].lower()
-        declined_at = datetime.fromisoformat(alert["transaction_time"])
-        if declined_at.tzinfo is None:
-            declined_at = declined_at.replace(tzinfo=UTC)
-        return _get_single_order_payment(
-            [
-                candidate
-                for candidate in candidates
-                if candidate.method_metadata.get("last4") == last4
-                and candidate.amount == amount
-                and candidate.currency == currency
-                and abs(candidate.created_at - declined_at) <= DECLINE_TIME_TOLERANCE
-            ]
         )
+        matches = [
+            candidate
+            for candidate in candidates
+            if _is_same_network_transaction(
+                candidate.method_metadata.get("network_transaction_id"),
+                network_transaction_id,
+            )
+        ]
+        matched_orders = len({payment.order_id for payment in matches})
+        if matched_orders != 1:
+            raise DeclinedPaymentNotFound(alert["id"], matched_orders)
+        return matches[0]
 
 
 payment_retry_alert = PaymentRetryAlertService()

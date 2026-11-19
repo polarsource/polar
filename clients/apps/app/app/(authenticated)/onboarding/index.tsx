@@ -1,98 +1,29 @@
-import { FormInput } from '@/components/Form/FormInput'
 import { Box } from '@/components/Shared/Box'
 import { Button } from '@/components/Shared/Button'
-import { Checkbox } from '@/components/Shared/Checkbox'
 import { Text } from '@/components/Shared/Text'
 import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useLogout } from '@/hooks/auth'
-import { useCreateOrganization } from '@/hooks/polar/organizations'
-import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { queryClient } from '@/utils/query'
-import { ClientResponseError, schemas } from '@polar-sh/client'
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Stack, useRouter } from 'expo-router'
+import { useState } from 'react'
 import { Linking, SafeAreaView, ScrollView } from 'react-native'
-import slugify from 'slugify'
 
 export default function Onboarding() {
   const theme = useTheme()
   const router = useRouter()
-  const { organizations, setOrganization } = useContext(OrganizationContext)
-  const { from } = useLocalSearchParams<{ from?: string }>()
   const signOut = useLogout()
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const form = useForm<schemas['OrganizationCreate'] & { terms: boolean }>({
-    defaultValues: {
-      name: '',
-      slug: '',
-      terms: false,
-    },
-  })
-
-  const {
-    control,
-    handleSubmit,
-    watch,
-    setError,
-    clearErrors,
-    setValue,
-    formState: { errors },
-  } = form
-
-  const createOrganization = useCreateOrganization()
-  const [editedSlug, setEditedSlug] = useState(false)
-
-  const name = watch('name')
-  const slug = watch('slug')
-  const terms = watch('terms')
-
-  const isValid = useMemo(() => {
-    return name.length > 2 && slug.length > 2 && terms
-  }, [name, slug, terms])
-
-  useEffect(() => {
-    if (!editedSlug && name) {
-      setValue('slug', slugify(name, { lower: true, strict: true }))
-    } else if (slug) {
-      setValue(
-        'slug',
-        slugify(slug, { lower: true, trim: false, strict: true }),
-      )
+  const refresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await queryClient.refetchQueries({ queryKey: ['organizations'] })
+      router.replace('/')
+    } finally {
+      setIsRefreshing(false)
     }
-  }, [name, editedSlug, slug, setValue])
-
-  const onSubmit = useCallback(
-    async (data: schemas['OrganizationCreate']) => {
-      clearErrors('root')
-      try {
-        const organization = await createOrganization.mutateAsync(data)
-        setOrganization(organization)
-        await queryClient.refetchQueries({ queryKey: ['organizations'] })
-        router.replace('/')
-      } catch (error) {
-        if (error instanceof ClientResponseError) {
-          const errorDetail = error.error.detail
-
-          if (Array.isArray(errorDetail)) {
-            const validationError = errorDetail[0]
-
-            setError('root', { message: validationError.msg })
-            return
-          }
-        }
-
-        setError('root', {
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Failed to create organization',
-        })
-      }
-    },
-    [clearErrors, createOrganization, setOrganization, router, setError],
-  )
+  }
 
   return (
     <ScrollView
@@ -121,108 +52,34 @@ export default function Onboarding() {
           >
             Create your organization
           </Text>
-          {errors.root ? (
-            <Text color="error">{errors.root.message}</Text>
-          ) : null}
-          <FormInput
-            label="Organization Name"
-            placeholder="Acme Inc."
-            control={control}
-            name="name"
-          />
-          <FormInput
-            label="Organization Slug"
-            placeholder="acme-inc"
-            control={control}
-            onFocus={() => setEditedSlug(true)}
-            name="slug"
-          />
-          <Checkbox
-            label="I agree to the terms below"
-            checked={watch('terms')}
-            onChange={(checked) => setValue('terms', checked)}
-          />
-          <Box>
-            <Box marginLeft="spacing-4" gap="spacing-8">
-              <Box flexDirection="row" alignItems="flex-start">
-                <Box>
-                  <Touchable
-                    onPress={() =>
-                      Linking.openURL(
-                        'https://docs.polar.sh/merchant-of-record/acceptable-use',
-                      )
-                    }
-                  >
-                    <Text color="primary">Acceptable Use Policy</Text>
-                  </Touchable>
-                  <Text color="subtext">
-                    I&apos;ll only sell digital products and SaaS that complies
-                    with it or risk suspension.
-                  </Text>
-                </Box>
-              </Box>
-              <Box>
-                <Touchable
-                  onPress={() =>
-                    Linking.openURL(
-                      'https://docs.polar.sh/merchant-of-record/account-reviews',
-                    )
-                  }
-                >
-                  <Text color="primary">Account Reviews</Text>
-                </Touchable>
-                <Text color="subtext">
-                  I&apos;ll comply with all reviews and requests for compliance
-                  materials (KYC/AML).
-                </Text>
-              </Box>
-              <Box>
-                <Touchable
-                  onPress={() =>
-                    Linking.openURL(
-                      'https://polar.sh/legal/master-services-terms',
-                    )
-                  }
-                >
-                  <Text color="primary">Terms of Service</Text>
-                </Touchable>
-              </Box>
-
-              <Box>
-                <Touchable
-                  onPress={() =>
-                    Linking.openURL('https://polar.sh/legal/privacy-policy')
-                  }
-                >
-                  <Text color="primary">Privacy Policy</Text>
-                </Touchable>
-              </Box>
-            </Box>
-          </Box>
+          <Text color="subtext">
+            Set up your organization on polar.sh. Come back here to follow your
+            sales and get notified of new orders.
+          </Text>
         </Box>
 
         <Box gap="spacing-8">
           <Box>
-            <Button onPress={handleSubmit(onSubmit)} disabled={!isValid}>
-              Create Organization
+            <Button onPress={() => Linking.openURL('https://polar.sh/start')}>
+              Continue on polar.sh
             </Button>
           </Box>
-          {organizations.length > 0 ? (
-            <Box>
-              <Button onPress={() => router.replace('/')} variant="secondary">
-                Back to Dashboard
-              </Button>
-            </Box>
-          ) : null}
-          {from === 'signup' ? (
-            <Box alignItems="center" marginTop="spacing-12">
-              <Touchable onPress={signOut}>
-                <Text color="subtext" variant="bodyMedium">
-                  Logout
-                </Text>
-              </Touchable>
-            </Box>
-          ) : null}
+          <Box>
+            <Button
+              variant="secondary"
+              onPress={refresh}
+              loading={isRefreshing}
+            >
+              I&apos;ve created it
+            </Button>
+          </Box>
+          <Box alignItems="center" marginTop="spacing-12">
+            <Touchable onPress={signOut}>
+              <Text color="subtext" variant="bodyMedium">
+                Logout
+              </Text>
+            </Touchable>
+          </Box>
         </Box>
       </SafeAreaView>
     </ScrollView>

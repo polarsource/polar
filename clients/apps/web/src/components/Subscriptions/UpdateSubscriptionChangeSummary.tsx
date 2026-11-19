@@ -1,6 +1,5 @@
 'use client'
 
-import { Field } from '@/components/Events/EventDetailField'
 import { ListRow } from '@/components/Widgets/ListRow'
 import { useDiscount } from '@/hooks/queries'
 import { useSubscriptionChangePreview } from '@/hooks/queries/subscriptions'
@@ -9,7 +8,7 @@ import { getDiscountDisplay } from '@/utils/discount'
 import { formatTrialEnd, type TrialChangeOutcome } from '@/utils/trial-change'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Text } from '@polar-sh/orbit'
+import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ArrowRight } from '@polar-sh/orbit/icons'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -17,14 +16,25 @@ import type { ReactNode } from 'react'
 
 const format = formatCurrency('accounting')
 
-const Change = ({ from, to }: { from: ReactNode; to: ReactNode }) => (
-  <Box alignItems="center" columnGap="xs" minWidth={0}>
+const ChangeRow = ({
+  label,
+  from,
+  to,
+}: {
+  label: string
+  from: ReactNode
+  to: ReactNode
+}) => (
+  <>
+    <Text color="muted">{label}</Text>
     <Text color="muted" truncate>
       {from}
     </Text>
-    <ArrowRight className="dark:text-polar-500 h-3 w-3 shrink-0 text-gray-400" />
+    <Box paddingHorizontal="xs">
+      <ArrowRight className="dark:text-polar-500 h-3 w-3 text-gray-400" />
+    </Box>
     <Text truncate>{to}</Text>
-  </Box>
+  </>
 )
 
 const discountName = (discount: schemas['Discount'] | undefined) =>
@@ -163,21 +173,27 @@ export const UpdateSubscriptionChangeSummary = ({
         </Box>
       )}
 
-      <Box flexDirection="column">
+      <Grid
+        templateColumns="92px auto auto minmax(0, 1fr)"
+        autoRows="minmax(26px, auto)"
+        columnGap="xs"
+        alignItems="center"
+      >
         {change !== null && (
-          <Field label="Product">
-            <Change from={subscription.product.name} to={productName} />
-          </Field>
+          <ChangeRow
+            label="Product"
+            from={subscription.product.name}
+            to={productName}
+          />
         )}
         {isChangingDiscount && (
-          <Field label="Discount">
-            <Change
-              from={discountName(currentDiscount)}
-              to={discountName(newDiscount)}
-            />
-          </Field>
+          <ChangeRow
+            label="Discount"
+            from={discountName(currentDiscount)}
+            to={discountName(newDiscount)}
+          />
         )}
-      </Box>
+      </Grid>
 
       {preview.data && lines.length > 0 && (
         <Box flexDirection="column">

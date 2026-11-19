@@ -213,10 +213,6 @@ class CustomerService:
                 params["name"] = customer.billing_name
             if customer.billing_address is not None:
                 params["address"] = customer.billing_address.to_dict()
-            if new_default_payment_method is not None:
-                params["invoice_settings"] = {
-                    "default_payment_method": new_default_payment_method.processor_id,
-                }
             stripe_tax_id: CustomerCreateParamsTaxIdDatum | None = None
             if customer.tax_id is not None:
                 try:
@@ -389,8 +385,6 @@ class CustomerService:
         setup_intent: stripe_lib.SetupIntent,
         set_default: bool,
     ) -> CustomerPaymentMethodCreateResponse:
-        assert customer.stripe_customer_id is not None
-
         if setup_intent.status == "requires_action":
             assert setup_intent.client_secret is not None
             return CustomerPaymentMethodCreateRequiresActionResponse(
@@ -412,12 +406,6 @@ class CustomerService:
         stripe_payment_method = await payment_method_service.resolve_from_stripe_intent(
             setup_intent
         )
-        if set_default:
-            await stripe_service.update_customer(
-                customer.stripe_customer_id,
-                invoice_settings={"default_payment_method": stripe_payment_method.id},
-            )
-
         payment_method = await payment_method_service.upsert_from_stripe(
             session,
             customer,

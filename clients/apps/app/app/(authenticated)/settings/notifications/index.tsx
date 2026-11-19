@@ -11,6 +11,7 @@ import {
   useUpdateUserOrganizationNotificationSettings,
   useUserOrganizationNotificationSettings,
 } from '@/hooks/polar/userOrganizations'
+import { setPushNotificationsOptedOut } from '@/hooks/pushNotificationOptOut'
 import { useNotifications } from '@/providers/NotificationsProvider'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { useToast } from '@/providers/ToastProvider'
@@ -198,6 +199,7 @@ const usePushNotifications = () => {
   }, [notificationRecipient])
 
   const enablePushNotifications = useCallback(async () => {
+    await setPushNotificationsOptedOut(false)
     const status = await Notifications.requestPermissionsAsync()
 
     if (status.granted) {
@@ -225,6 +227,7 @@ const usePushNotifications = () => {
   }, [createNotificationRecipient, toast])
 
   const disablePushNotifications = useCallback(async () => {
+    await setPushNotificationsOptedOut(true)
     if (notificationRecipient?.id) {
       await deleteNotificationRecipient(notificationRecipient.id)
     }

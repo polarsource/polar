@@ -1268,6 +1268,24 @@ class TestConfirmOrganizationReviewed:
         assert result.initially_reviewed_at == initially_reviewed_at
         assert result.next_review_threshold == 15000
 
+    async def test_registers_payment_method_domains(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.REVIEW
+
+        await organization_service.confirm_organization_reviewed(
+            session, organization, 15000
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "organization_domain.register_organization_payment_method_domains",
+            organization_id=organization.id,
+        )
+
     @pytest.mark.parametrize(
         "status", [OrganizationStatus.REVIEW, OrganizationStatus.SNOOZED]
     )

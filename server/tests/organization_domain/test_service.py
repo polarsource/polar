@@ -252,3 +252,29 @@ class TestRegisterPaymentMethodDomains:
         )
 
         enqueue_job_mock.assert_not_called()
+
+    async def test_organization_without_checkout(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": False,
+        }
+        organization.embed_hosts = ["shop.acme.com"]
+        await save_fixture(organization)
+        await save_fixture(
+            OrganizationDomain(
+                organization=organization, domain="acme.com", verified_at=utc_now()
+            )
+        )
+
+        await organization_domain_service.register_payment_method_domains(
+            session, organization
+        )
+
+        enqueue_job_mock.assert_not_called()

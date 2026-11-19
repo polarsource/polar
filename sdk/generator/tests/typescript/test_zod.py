@@ -1,5 +1,6 @@
 import json
 import pathlib
+import re
 
 import openapi_pydantic as op
 
@@ -166,3 +167,19 @@ def test_emits_zod_entry_point(
     source = (tmp_path / "src" / "2026-04" / "zod.ts").read_text()
     assert 'import * as z from "zod/v4-mini";' in source
     assert "export const WebhookPayload" in source
+
+
+def test_emits_zod_schemas_for_output_models_only(
+    code_samples_spec: op.OpenAPI, tmp_path: pathlib.Path
+) -> None:
+    ir = generate_ir(code_samples_spec)
+    api = ir.versions[0]
+    TypeScriptEmitter(ir, "1.2.3").emit(tmp_path)
+    source = (tmp_path / "src" / api.version / "zod.ts").read_text()
+    exported = set(re.findall(r"^export const (\w+)", source, flags=re.MULTILINE))
+
+    output_names = {m.name for m in api.output_models + api.webhooks}
+    input_only_names = {m.name for m in api.input_models} - output_names
+    assert input_only_names
+    assert output_names <= exported
+    assert not input_only_names & exported

@@ -6,34 +6,6 @@ import type * as webhooks from "./webhooks";
 type Schema<T> = z.ZodMiniType<T>;
 type ObjectSchema<T> = Schema<T> & z.core.$ZodTypeDiscriminable;
 
-export const AggregationFunction: Schema<models.AggregationFunction> = /* @__PURE__ */ z.enum([
-  "count",
-  "sum",
-  "max",
-  "min",
-  "avg",
-  "unique",
-]);
-export const ApiVersion: Schema<models.ApiVersion> = /* @__PURE__ */ z.enum(["2026-04", "2026-10"]);
-export const BenefitGrantSortProperty: Schema<models.BenefitGrantSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "granted_at",
-    "-granted_at",
-    "revoked_at",
-    "-revoked_at",
-  ]);
-export const BenefitSortProperty: Schema<models.BenefitSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "description",
-  "-description",
-  "type",
-  "-type",
-  "user_order",
-  "-user_order",
-]);
 export const BenefitType: Schema<models.BenefitType> = /* @__PURE__ */ z.enum([
   "custom",
   "discord",
@@ -51,25 +23,6 @@ export const BenefitVisibility: Schema<models.BenefitVisibility> = /* @__PURE__ 
 ]);
 export const BillingAddressFieldMode: Schema<models.BillingAddressFieldMode> =
   /* @__PURE__ */ z.enum(["required", "optional", "disabled"]);
-export const CheckoutLinkSortProperty: Schema<models.CheckoutLinkSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "label",
-    "-label",
-    "success_url",
-    "-success_url",
-    "allow_discount_codes",
-    "-allow_discount_codes",
-  ]);
-export const CheckoutSortProperty: Schema<models.CheckoutSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "expires_at",
-  "-expires_at",
-  "status",
-  "-status",
-]);
 export const CheckoutStatus: Schema<models.CheckoutStatus> = /* @__PURE__ */ z.enum([
   "open",
   "expired",
@@ -328,281 +281,6 @@ export const CountryAlpha2: Schema<models.CountryAlpha2> = /* @__PURE__ */ z.enu
   "ZM",
   "ZW",
 ]);
-export const CountryAlpha2Input: Schema<models.CountryAlpha2Input> = /* @__PURE__ */ z.enum([
-  "AD",
-  "AE",
-  "AF",
-  "AG",
-  "AI",
-  "AL",
-  "AM",
-  "AO",
-  "AQ",
-  "AR",
-  "AS",
-  "AT",
-  "AU",
-  "AW",
-  "AX",
-  "AZ",
-  "BA",
-  "BB",
-  "BD",
-  "BE",
-  "BF",
-  "BG",
-  "BH",
-  "BI",
-  "BJ",
-  "BL",
-  "BM",
-  "BN",
-  "BO",
-  "BQ",
-  "BR",
-  "BS",
-  "BT",
-  "BV",
-  "BW",
-  "BY",
-  "BZ",
-  "CA",
-  "CC",
-  "CD",
-  "CF",
-  "CG",
-  "CH",
-  "CI",
-  "CK",
-  "CL",
-  "CM",
-  "CN",
-  "CO",
-  "CR",
-  "CV",
-  "CW",
-  "CX",
-  "CY",
-  "CZ",
-  "DE",
-  "DJ",
-  "DK",
-  "DM",
-  "DO",
-  "DZ",
-  "EC",
-  "EE",
-  "EG",
-  "EH",
-  "ER",
-  "ES",
-  "ET",
-  "FI",
-  "FJ",
-  "FK",
-  "FM",
-  "FO",
-  "FR",
-  "GA",
-  "GB",
-  "GD",
-  "GE",
-  "GF",
-  "GG",
-  "GH",
-  "GI",
-  "GL",
-  "GM",
-  "GN",
-  "GP",
-  "GQ",
-  "GR",
-  "GS",
-  "GT",
-  "GU",
-  "GW",
-  "GY",
-  "HK",
-  "HM",
-  "HN",
-  "HR",
-  "HT",
-  "HU",
-  "ID",
-  "IE",
-  "IL",
-  "IM",
-  "IN",
-  "IO",
-  "IQ",
-  "IS",
-  "IT",
-  "JE",
-  "JM",
-  "JO",
-  "JP",
-  "KE",
-  "KG",
-  "KH",
-  "KI",
-  "KM",
-  "KN",
-  "KR",
-  "KW",
-  "KY",
-  "KZ",
-  "LA",
-  "LB",
-  "LC",
-  "LI",
-  "LK",
-  "LR",
-  "LS",
-  "LT",
-  "LU",
-  "LV",
-  "LY",
-  "MA",
-  "MC",
-  "MD",
-  "ME",
-  "MF",
-  "MG",
-  "MH",
-  "MK",
-  "ML",
-  "MM",
-  "MN",
-  "MO",
-  "MP",
-  "MQ",
-  "MR",
-  "MS",
-  "MT",
-  "MU",
-  "MV",
-  "MW",
-  "MX",
-  "MY",
-  "MZ",
-  "NA",
-  "NC",
-  "NE",
-  "NF",
-  "NG",
-  "NI",
-  "NL",
-  "NO",
-  "NP",
-  "NR",
-  "NU",
-  "NZ",
-  "OM",
-  "PA",
-  "PE",
-  "PF",
-  "PG",
-  "PH",
-  "PK",
-  "PL",
-  "PM",
-  "PN",
-  "PR",
-  "PS",
-  "PT",
-  "PW",
-  "PY",
-  "QA",
-  "RE",
-  "RO",
-  "RS",
-  "RW",
-  "SA",
-  "SB",
-  "SC",
-  "SD",
-  "SE",
-  "SG",
-  "SH",
-  "SI",
-  "SJ",
-  "SK",
-  "SL",
-  "SM",
-  "SN",
-  "SO",
-  "SR",
-  "SS",
-  "ST",
-  "SV",
-  "SX",
-  "SZ",
-  "TC",
-  "TD",
-  "TF",
-  "TG",
-  "TH",
-  "TJ",
-  "TK",
-  "TL",
-  "TM",
-  "TN",
-  "TO",
-  "TR",
-  "TT",
-  "TV",
-  "TW",
-  "TZ",
-  "UA",
-  "UG",
-  "UM",
-  "US",
-  "UY",
-  "UZ",
-  "VA",
-  "VC",
-  "VE",
-  "VG",
-  "VI",
-  "VN",
-  "VU",
-  "WF",
-  "WS",
-  "YE",
-  "YT",
-  "ZA",
-  "ZM",
-  "ZW",
-]);
-export const CustomFieldSortProperty: Schema<models.CustomFieldSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "slug",
-    "-slug",
-    "name",
-    "-name",
-    "type",
-    "-type",
-  ]);
-export const CustomFieldType: Schema<models.CustomFieldType> = /* @__PURE__ */ z.enum([
-  "text",
-  "number",
-  "date",
-  "checkbox",
-  "select",
-]);
-export const CustomerBenefitGrantSortProperty: Schema<models.CustomerBenefitGrantSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "granted_at",
-    "-granted_at",
-    "type",
-    "-type",
-    "organization",
-    "-organization",
-    "product_benefit",
-    "-product_benefit",
-  ]);
 export const CustomerCancellationReason: Schema<models.CustomerCancellationReason> =
   /* @__PURE__ */ z.enum([
     "customer_service",
@@ -614,78 +292,6 @@ export const CustomerCancellationReason: Schema<models.CustomerCancellationReaso
     "unused",
     "other",
   ]);
-export const CustomerCustomerMeterSortProperty: Schema<models.CustomerCustomerMeterSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "modified_at",
-    "-modified_at",
-    "meter_id",
-    "-meter_id",
-    "meter_name",
-    "-meter_name",
-    "consumed_units",
-    "-consumed_units",
-    "credited_units",
-    "-credited_units",
-    "balance",
-    "-balance",
-  ]);
-export const CustomerMeterSortProperty: Schema<models.CustomerMeterSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "modified_at",
-    "-modified_at",
-    "customer_id",
-    "-customer_id",
-    "customer_name",
-    "-customer_name",
-    "meter_id",
-    "-meter_id",
-    "meter_name",
-    "-meter_name",
-    "consumed_units",
-    "-consumed_units",
-    "credited_units",
-    "-credited_units",
-    "balance",
-    "-balance",
-  ]);
-export const CustomerOrderSortProperty: Schema<models.CustomerOrderSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "amount",
-    "-amount",
-    "net_amount",
-    "-net_amount",
-    "product",
-    "-product",
-    "subscription",
-    "-subscription",
-  ]);
-export const CustomerSortProperty: Schema<models.CustomerSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "email",
-  "-email",
-  "name",
-  "-name",
-]);
-export const CustomerSubscriptionSortProperty: Schema<models.CustomerSubscriptionSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "started_at",
-    "-started_at",
-    "amount",
-    "-amount",
-    "status",
-    "-status",
-    "organization",
-    "-organization",
-    "product",
-    "-product",
-  ]);
 export const CustomerType: Schema<models.CustomerType> = /* @__PURE__ */ z.enum([
   "individual",
   "team",
@@ -695,27 +301,9 @@ export const DiscountDuration: Schema<models.DiscountDuration> = /* @__PURE__ */
   "forever",
   "repeating",
 ]);
-export const DiscountSortProperty: Schema<models.DiscountSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "name",
-  "-name",
-  "code",
-  "-code",
-  "redemptions_count",
-  "-redemptions_count",
-  "ends_at",
-  "-ends_at",
-]);
 export const DiscountType: Schema<models.DiscountType> = /* @__PURE__ */ z.enum([
   "fixed",
   "percentage",
-]);
-export const DisputeSortProperty: Schema<models.DisputeSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "amount",
-  "-amount",
 ]);
 export const DisputeStatus: Schema<models.DisputeStatus> = /* @__PURE__ */ z.enum([
   "prevented",
@@ -725,37 +313,7 @@ export const DisputeStatus: Schema<models.DisputeStatus> = /* @__PURE__ */ z.enu
   "lost",
   "won",
 ]);
-export const EventNamesSortProperty: Schema<models.EventNamesSortProperty> = /* @__PURE__ */ z.enum(
-  [
-    "name",
-    "-name",
-    "occurrences",
-    "-occurrences",
-    "first_seen",
-    "-first_seen",
-    "last_seen",
-    "-last_seen",
-  ],
-);
-export const EventSortProperty: Schema<models.EventSortProperty> = /* @__PURE__ */ z.enum([
-  "timestamp",
-  "-timestamp",
-]);
 export const EventSource: Schema<models.EventSource> = /* @__PURE__ */ z.enum(["system", "user"]);
-export const EventTypesSortProperty: Schema<models.EventTypesSortProperty> = /* @__PURE__ */ z.enum(
-  [
-    "name",
-    "-name",
-    "label",
-    "-label",
-    "occurrences",
-    "-occurrences",
-    "first_seen",
-    "-first_seen",
-    "last_seen",
-    "-last_seen",
-  ],
-);
 export const FileServiceTypes: Schema<models.FileServiceTypes> = /* @__PURE__ */ z.enum([
   "downloadable",
   "product_media",
@@ -776,7 +334,6 @@ export const FilterOperator: Schema<models.FilterOperator> = /* @__PURE__ */ z.e
   "like",
   "not_like",
 ]);
-export const Format: Schema<models.Format> = /* @__PURE__ */ z.enum(["raw", "discord", "slack"]);
 export const Func: Schema<models.Func> = /* @__PURE__ */ z.enum(["sum", "max", "min", "avg"]);
 export const LicenseKeyStatus: Schema<models.LicenseKeyStatus> = /* @__PURE__ */ z.enum([
   "granted",
@@ -787,16 +344,6 @@ export const MemberRole: Schema<models.MemberRole> = /* @__PURE__ */ z.enum([
   "owner",
   "billing_manager",
   "member",
-]);
-export const MemberSortProperty: Schema<models.MemberSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-]);
-export const MeterSortProperty: Schema<models.MeterSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "name",
-  "-name",
 ]);
 export const MeterUnit: Schema<models.MeterUnit> = /* @__PURE__ */ z.enum([
   "scalar",
@@ -815,44 +362,6 @@ export const OrderBillingReason: Schema<models.OrderBillingReason> = /* @__PURE_
   "subscription_cycle",
   "subscription_update",
   "subscription_meter_cycle",
-]);
-export const OrderExportColumn: Schema<models.OrderExportColumn> = /* @__PURE__ */ z.enum([
-  "email",
-  "created_at",
-  "product",
-  "net_amount",
-  "currency",
-  "status",
-  "invoice_number",
-  "customer_name",
-  "billing_name",
-  "billing_country",
-  "subtotal_amount",
-  "discount_amount",
-  "tax_amount",
-  "total_amount",
-  "refunded_amount",
-  "billing_reason",
-]);
-export const OrderSortProperty: Schema<models.OrderSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "status",
-  "-status",
-  "invoice_number",
-  "-invoice_number",
-  "amount",
-  "-amount",
-  "net_amount",
-  "-net_amount",
-  "customer",
-  "-customer",
-  "product",
-  "-product",
-  "discount",
-  "-discount",
-  "subscription",
-  "-subscription",
 ]);
 export const OrderStatus: Schema<models.OrderStatus> = /* @__PURE__ */ z.enum([
   "draft",
@@ -875,19 +384,6 @@ export const OrganizationSocialPlatforms: Schema<models.OrganizationSocialPlatfo
     "discord",
     "other",
   ]);
-export const OrganizationSortProperty: Schema<models.OrganizationSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "created_at",
-    "-created_at",
-    "slug",
-    "-slug",
-    "name",
-    "-name",
-    "next_review_threshold",
-    "-next_review_threshold",
-    "days_in_status",
-    "-days_in_status",
-  ]);
 export const OrganizationStatus: Schema<models.OrganizationStatus> = /* @__PURE__ */ z.enum([
   "created",
   "review",
@@ -899,16 +395,6 @@ export const OrganizationStatus: Schema<models.OrganizationStatus> = /* @__PURE_
   "offboarded",
 ]);
 export const PaymentProcessor: Schema<models.PaymentProcessor> = /* @__PURE__ */ z.enum(["stripe"]);
-export const PaymentSortProperty: Schema<models.PaymentSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "status",
-  "-status",
-  "amount",
-  "-amount",
-  "method",
-  "-method",
-]);
 export const PaymentStatus: Schema<models.PaymentStatus> = /* @__PURE__ */ z.enum([
   "pending",
   "succeeded",
@@ -929,151 +415,9 @@ export const Permission: Schema<models.Permission> = /* @__PURE__ */ z.enum([
   "maintain",
   "admin",
 ]);
-export const PresentmentCurrency: Schema<models.PresentmentCurrency> = /* @__PURE__ */ z.enum([
-  "aed",
-  "all",
-  "amd",
-  "aoa",
-  "ars",
-  "aud",
-  "awg",
-  "azn",
-  "bam",
-  "bbd",
-  "bdt",
-  "bif",
-  "bmd",
-  "bnd",
-  "bob",
-  "brl",
-  "bsd",
-  "bwp",
-  "bzd",
-  "cad",
-  "cdf",
-  "chf",
-  "clp",
-  "cny",
-  "cop",
-  "crc",
-  "cve",
-  "czk",
-  "djf",
-  "dkk",
-  "dop",
-  "dzd",
-  "egp",
-  "etb",
-  "eur",
-  "fjd",
-  "fkp",
-  "gbp",
-  "gel",
-  "gip",
-  "gmd",
-  "gnf",
-  "gtq",
-  "gyd",
-  "hkd",
-  "hnl",
-  "htg",
-  "huf",
-  "idr",
-  "ils",
-  "inr",
-  "isk",
-  "jmd",
-  "jpy",
-  "kes",
-  "kgs",
-  "khr",
-  "kmf",
-  "krw",
-  "kyd",
-  "kzt",
-  "lak",
-  "lkr",
-  "lrd",
-  "lsl",
-  "mad",
-  "mdl",
-  "mga",
-  "mkd",
-  "mnt",
-  "mop",
-  "mur",
-  "mvr",
-  "mwk",
-  "mxn",
-  "myr",
-  "mzn",
-  "nad",
-  "ngn",
-  "nio",
-  "nok",
-  "npr",
-  "nzd",
-  "pab",
-  "pen",
-  "pgk",
-  "php",
-  "pkr",
-  "pln",
-  "pyg",
-  "qar",
-  "ron",
-  "rsd",
-  "rwf",
-  "sar",
-  "sbd",
-  "scr",
-  "sek",
-  "sgd",
-  "shp",
-  "sos",
-  "srd",
-  "szl",
-  "thb",
-  "tjs",
-  "top",
-  "try",
-  "ttd",
-  "twd",
-  "tzs",
-  "uah",
-  "ugx",
-  "usd",
-  "uyu",
-  "uzs",
-  "vnd",
-  "vuv",
-  "wst",
-  "xaf",
-  "xcd",
-  "xcg",
-  "xof",
-  "xpf",
-  "yer",
-  "zar",
-  "zmw",
-]);
-export const ProductBillingType: Schema<models.ProductBillingType> = /* @__PURE__ */ z.enum([
-  "one_time",
-  "recurring",
-]);
 export const ProductPriceSource: Schema<models.ProductPriceSource> = /* @__PURE__ */ z.enum([
   "catalog",
   "ad_hoc",
-]);
-export const ProductSortProperty: Schema<models.ProductSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "name",
-  "-name",
-  "price_amount_type",
-  "-price_amount_type",
-  "price_amount",
-  "-price_amount",
 ]);
 export const ProductVisibility: Schema<models.ProductVisibility> = /* @__PURE__ */ z.enum([
   "draft",
@@ -1082,14 +426,6 @@ export const ProductVisibility: Schema<models.ProductVisibility> = /* @__PURE__ 
 ]);
 export const PublicSubscriptionProrationBehavior: Schema<models.PublicSubscriptionProrationBehavior> =
   /* @__PURE__ */ z.enum(["invoice", "prorate", "next_period"]);
-export const Reason: Schema<models.Reason> = /* @__PURE__ */ z.enum([
-  "duplicate",
-  "fraudulent",
-  "customer_request",
-  "service_disruption",
-  "satisfaction_guarantee",
-  "other",
-]);
 export const RecurringInterval: Schema<models.RecurringInterval> = /* @__PURE__ */ z.enum([
   "day",
   "week",
@@ -1107,19 +443,12 @@ export const RefundReason: Schema<models.RefundReason> = /* @__PURE__ */ z.enum(
   "vat_reverse_charge_correction",
   "other",
 ]);
-export const RefundSortProperty: Schema<models.RefundSortProperty> = /* @__PURE__ */ z.enum([
-  "created_at",
-  "-created_at",
-  "amount",
-  "-amount",
-]);
 export const RefundStatus: Schema<models.RefundStatus> = /* @__PURE__ */ z.enum([
   "pending",
   "succeeded",
   "failed",
   "canceled",
 ]);
-export const Role: Schema<models.Role> = /* @__PURE__ */ z.enum(["member", "billing_manager"]);
 export const Scope: Schema<models.Scope> = /* @__PURE__ */ z.enum([
   "openid",
   "profile",
@@ -1198,27 +527,6 @@ export const Status: Schema<models.Status> = /* @__PURE__ */ z.enum(["granted", 
 export const SubType: Schema<models.SubType> = /* @__PURE__ */ z.enum(["user", "organization"]);
 export const SubscriptionProrationBehavior: Schema<models.SubscriptionProrationBehavior> =
   /* @__PURE__ */ z.enum(["invoice", "prorate", "next_period", "reset"]);
-export const SubscriptionSortProperty: Schema<models.SubscriptionSortProperty> =
-  /* @__PURE__ */ z.enum([
-    "customer",
-    "-customer",
-    "status",
-    "-status",
-    "started_at",
-    "-started_at",
-    "current_period_end",
-    "-current_period_end",
-    "ended_at",
-    "-ended_at",
-    "ends_at",
-    "-ends_at",
-    "amount",
-    "-amount",
-    "product",
-    "-product",
-    "discount",
-    "-discount",
-  ]);
 export const SubscriptionStatus: Schema<models.SubscriptionStatus> = /* @__PURE__ */ z.enum([
   "incomplete",
   "incomplete_expired",
@@ -1239,616 +547,7 @@ export const TaxBehaviorOption: Schema<models.TaxBehaviorOption> = /* @__PURE__ 
   "exclusive",
 ]);
 export const TierType: Schema<models.TierType> = /* @__PURE__ */ z.enum(["volume", "graduated"]);
-export const TimeInterval: Schema<models.TimeInterval> = /* @__PURE__ */ z.enum([
-  "year",
-  "month",
-  "week",
-  "day",
-  "hour",
-]);
 export const Timeframe: Schema<models.Timeframe> = /* @__PURE__ */ z.enum(["year", "month", "day"]);
-export const Timezone: Schema<models.Timezone> = /* @__PURE__ */ z.enum([
-  "Africa/Abidjan",
-  "Africa/Accra",
-  "Africa/Addis_Ababa",
-  "Africa/Algiers",
-  "Africa/Asmara",
-  "Africa/Asmera",
-  "Africa/Bamako",
-  "Africa/Bangui",
-  "Africa/Banjul",
-  "Africa/Bissau",
-  "Africa/Blantyre",
-  "Africa/Brazzaville",
-  "Africa/Bujumbura",
-  "Africa/Cairo",
-  "Africa/Casablanca",
-  "Africa/Ceuta",
-  "Africa/Conakry",
-  "Africa/Dakar",
-  "Africa/Dar_es_Salaam",
-  "Africa/Djibouti",
-  "Africa/Douala",
-  "Africa/El_Aaiun",
-  "Africa/Freetown",
-  "Africa/Gaborone",
-  "Africa/Harare",
-  "Africa/Johannesburg",
-  "Africa/Juba",
-  "Africa/Kampala",
-  "Africa/Khartoum",
-  "Africa/Kigali",
-  "Africa/Kinshasa",
-  "Africa/Lagos",
-  "Africa/Libreville",
-  "Africa/Lome",
-  "Africa/Luanda",
-  "Africa/Lubumbashi",
-  "Africa/Lusaka",
-  "Africa/Malabo",
-  "Africa/Maputo",
-  "Africa/Maseru",
-  "Africa/Mbabane",
-  "Africa/Mogadishu",
-  "Africa/Monrovia",
-  "Africa/Nairobi",
-  "Africa/Ndjamena",
-  "Africa/Niamey",
-  "Africa/Nouakchott",
-  "Africa/Ouagadougou",
-  "Africa/Porto-Novo",
-  "Africa/Sao_Tome",
-  "Africa/Timbuktu",
-  "Africa/Tripoli",
-  "Africa/Tunis",
-  "Africa/Windhoek",
-  "America/Adak",
-  "America/Anchorage",
-  "America/Anguilla",
-  "America/Antigua",
-  "America/Araguaina",
-  "America/Argentina/Buenos_Aires",
-  "America/Argentina/Catamarca",
-  "America/Argentina/ComodRivadavia",
-  "America/Argentina/Cordoba",
-  "America/Argentina/Jujuy",
-  "America/Argentina/La_Rioja",
-  "America/Argentina/Mendoza",
-  "America/Argentina/Rio_Gallegos",
-  "America/Argentina/Salta",
-  "America/Argentina/San_Juan",
-  "America/Argentina/San_Luis",
-  "America/Argentina/Tucuman",
-  "America/Argentina/Ushuaia",
-  "America/Aruba",
-  "America/Asuncion",
-  "America/Atikokan",
-  "America/Atka",
-  "America/Bahia",
-  "America/Bahia_Banderas",
-  "America/Barbados",
-  "America/Belem",
-  "America/Belize",
-  "America/Blanc-Sablon",
-  "America/Boa_Vista",
-  "America/Bogota",
-  "America/Boise",
-  "America/Buenos_Aires",
-  "America/Cambridge_Bay",
-  "America/Campo_Grande",
-  "America/Cancun",
-  "America/Caracas",
-  "America/Catamarca",
-  "America/Cayenne",
-  "America/Cayman",
-  "America/Chicago",
-  "America/Chihuahua",
-  "America/Ciudad_Juarez",
-  "America/Coral_Harbour",
-  "America/Cordoba",
-  "America/Costa_Rica",
-  "America/Coyhaique",
-  "America/Creston",
-  "America/Cuiaba",
-  "America/Curacao",
-  "America/Danmarkshavn",
-  "America/Dawson",
-  "America/Dawson_Creek",
-  "America/Denver",
-  "America/Detroit",
-  "America/Dominica",
-  "America/Edmonton",
-  "America/Eirunepe",
-  "America/El_Salvador",
-  "America/Ensenada",
-  "America/Fort_Nelson",
-  "America/Fort_Wayne",
-  "America/Fortaleza",
-  "America/Glace_Bay",
-  "America/Godthab",
-  "America/Goose_Bay",
-  "America/Grand_Turk",
-  "America/Grenada",
-  "America/Guadeloupe",
-  "America/Guatemala",
-  "America/Guayaquil",
-  "America/Guyana",
-  "America/Halifax",
-  "America/Havana",
-  "America/Hermosillo",
-  "America/Indiana/Indianapolis",
-  "America/Indiana/Knox",
-  "America/Indiana/Marengo",
-  "America/Indiana/Petersburg",
-  "America/Indiana/Tell_City",
-  "America/Indiana/Vevay",
-  "America/Indiana/Vincennes",
-  "America/Indiana/Winamac",
-  "America/Indianapolis",
-  "America/Inuvik",
-  "America/Iqaluit",
-  "America/Jamaica",
-  "America/Jujuy",
-  "America/Juneau",
-  "America/Kentucky/Louisville",
-  "America/Kentucky/Monticello",
-  "America/Knox_IN",
-  "America/Kralendijk",
-  "America/La_Paz",
-  "America/Lima",
-  "America/Los_Angeles",
-  "America/Louisville",
-  "America/Lower_Princes",
-  "America/Maceio",
-  "America/Managua",
-  "America/Manaus",
-  "America/Marigot",
-  "America/Martinique",
-  "America/Matamoros",
-  "America/Mazatlan",
-  "America/Mendoza",
-  "America/Menominee",
-  "America/Merida",
-  "America/Metlakatla",
-  "America/Mexico_City",
-  "America/Miquelon",
-  "America/Moncton",
-  "America/Monterrey",
-  "America/Montevideo",
-  "America/Montreal",
-  "America/Montserrat",
-  "America/Nassau",
-  "America/New_York",
-  "America/Nipigon",
-  "America/Nome",
-  "America/Noronha",
-  "America/North_Dakota/Beulah",
-  "America/North_Dakota/Center",
-  "America/North_Dakota/New_Salem",
-  "America/Nuuk",
-  "America/Ojinaga",
-  "America/Panama",
-  "America/Pangnirtung",
-  "America/Paramaribo",
-  "America/Phoenix",
-  "America/Port-au-Prince",
-  "America/Port_of_Spain",
-  "America/Porto_Acre",
-  "America/Porto_Velho",
-  "America/Puerto_Rico",
-  "America/Punta_Arenas",
-  "America/Rainy_River",
-  "America/Rankin_Inlet",
-  "America/Recife",
-  "America/Regina",
-  "America/Resolute",
-  "America/Rio_Branco",
-  "America/Rosario",
-  "America/Santa_Isabel",
-  "America/Santarem",
-  "America/Santiago",
-  "America/Santo_Domingo",
-  "America/Sao_Paulo",
-  "America/Scoresbysund",
-  "America/Shiprock",
-  "America/Sitka",
-  "America/St_Barthelemy",
-  "America/St_Johns",
-  "America/St_Kitts",
-  "America/St_Lucia",
-  "America/St_Thomas",
-  "America/St_Vincent",
-  "America/Swift_Current",
-  "America/Tegucigalpa",
-  "America/Thule",
-  "America/Thunder_Bay",
-  "America/Tijuana",
-  "America/Toronto",
-  "America/Tortola",
-  "America/Vancouver",
-  "America/Virgin",
-  "America/Whitehorse",
-  "America/Winnipeg",
-  "America/Yakutat",
-  "America/Yellowknife",
-  "Antarctica/Casey",
-  "Antarctica/Davis",
-  "Antarctica/DumontDUrville",
-  "Antarctica/Macquarie",
-  "Antarctica/Mawson",
-  "Antarctica/McMurdo",
-  "Antarctica/Palmer",
-  "Antarctica/Rothera",
-  "Antarctica/South_Pole",
-  "Antarctica/Syowa",
-  "Antarctica/Troll",
-  "Antarctica/Vostok",
-  "Arctic/Longyearbyen",
-  "Asia/Aden",
-  "Asia/Almaty",
-  "Asia/Amman",
-  "Asia/Anadyr",
-  "Asia/Aqtau",
-  "Asia/Aqtobe",
-  "Asia/Ashgabat",
-  "Asia/Ashkhabad",
-  "Asia/Atyrau",
-  "Asia/Baghdad",
-  "Asia/Bahrain",
-  "Asia/Baku",
-  "Asia/Bangkok",
-  "Asia/Barnaul",
-  "Asia/Beirut",
-  "Asia/Bishkek",
-  "Asia/Brunei",
-  "Asia/Calcutta",
-  "Asia/Chita",
-  "Asia/Choibalsan",
-  "Asia/Chongqing",
-  "Asia/Chungking",
-  "Asia/Colombo",
-  "Asia/Dacca",
-  "Asia/Damascus",
-  "Asia/Dhaka",
-  "Asia/Dili",
-  "Asia/Dubai",
-  "Asia/Dushanbe",
-  "Asia/Famagusta",
-  "Asia/Gaza",
-  "Asia/Harbin",
-  "Asia/Hebron",
-  "Asia/Ho_Chi_Minh",
-  "Asia/Hong_Kong",
-  "Asia/Hovd",
-  "Asia/Irkutsk",
-  "Asia/Istanbul",
-  "Asia/Jakarta",
-  "Asia/Jayapura",
-  "Asia/Jerusalem",
-  "Asia/Kabul",
-  "Asia/Kamchatka",
-  "Asia/Karachi",
-  "Asia/Kashgar",
-  "Asia/Kathmandu",
-  "Asia/Katmandu",
-  "Asia/Khandyga",
-  "Asia/Kolkata",
-  "Asia/Krasnoyarsk",
-  "Asia/Kuala_Lumpur",
-  "Asia/Kuching",
-  "Asia/Kuwait",
-  "Asia/Macao",
-  "Asia/Macau",
-  "Asia/Magadan",
-  "Asia/Makassar",
-  "Asia/Manila",
-  "Asia/Muscat",
-  "Asia/Nicosia",
-  "Asia/Novokuznetsk",
-  "Asia/Novosibirsk",
-  "Asia/Omsk",
-  "Asia/Oral",
-  "Asia/Phnom_Penh",
-  "Asia/Pontianak",
-  "Asia/Pyongyang",
-  "Asia/Qatar",
-  "Asia/Qostanay",
-  "Asia/Qyzylorda",
-  "Asia/Rangoon",
-  "Asia/Riyadh",
-  "Asia/Saigon",
-  "Asia/Sakhalin",
-  "Asia/Samarkand",
-  "Asia/Seoul",
-  "Asia/Shanghai",
-  "Asia/Singapore",
-  "Asia/Srednekolymsk",
-  "Asia/Taipei",
-  "Asia/Tashkent",
-  "Asia/Tbilisi",
-  "Asia/Tehran",
-  "Asia/Tel_Aviv",
-  "Asia/Thimbu",
-  "Asia/Thimphu",
-  "Asia/Tokyo",
-  "Asia/Tomsk",
-  "Asia/Ujung_Pandang",
-  "Asia/Ulaanbaatar",
-  "Asia/Ulan_Bator",
-  "Asia/Urumqi",
-  "Asia/Ust-Nera",
-  "Asia/Vientiane",
-  "Asia/Vladivostok",
-  "Asia/Yakutsk",
-  "Asia/Yangon",
-  "Asia/Yekaterinburg",
-  "Asia/Yerevan",
-  "Atlantic/Azores",
-  "Atlantic/Bermuda",
-  "Atlantic/Canary",
-  "Atlantic/Cape_Verde",
-  "Atlantic/Faeroe",
-  "Atlantic/Faroe",
-  "Atlantic/Jan_Mayen",
-  "Atlantic/Madeira",
-  "Atlantic/Reykjavik",
-  "Atlantic/South_Georgia",
-  "Atlantic/St_Helena",
-  "Atlantic/Stanley",
-  "Australia/ACT",
-  "Australia/Adelaide",
-  "Australia/Brisbane",
-  "Australia/Broken_Hill",
-  "Australia/Canberra",
-  "Australia/Currie",
-  "Australia/Darwin",
-  "Australia/Eucla",
-  "Australia/Hobart",
-  "Australia/LHI",
-  "Australia/Lindeman",
-  "Australia/Lord_Howe",
-  "Australia/Melbourne",
-  "Australia/NSW",
-  "Australia/North",
-  "Australia/Perth",
-  "Australia/Queensland",
-  "Australia/South",
-  "Australia/Sydney",
-  "Australia/Tasmania",
-  "Australia/Victoria",
-  "Australia/West",
-  "Australia/Yancowinna",
-  "Brazil/Acre",
-  "Brazil/DeNoronha",
-  "Brazil/East",
-  "Brazil/West",
-  "CET",
-  "CST6CDT",
-  "Canada/Atlantic",
-  "Canada/Central",
-  "Canada/Eastern",
-  "Canada/Mountain",
-  "Canada/Newfoundland",
-  "Canada/Pacific",
-  "Canada/Saskatchewan",
-  "Canada/Yukon",
-  "Chile/Continental",
-  "Chile/EasterIsland",
-  "Cuba",
-  "EET",
-  "EST",
-  "EST5EDT",
-  "Egypt",
-  "Eire",
-  "Etc/GMT",
-  "Etc/GMT+0",
-  "Etc/GMT+1",
-  "Etc/GMT+10",
-  "Etc/GMT+11",
-  "Etc/GMT+12",
-  "Etc/GMT+2",
-  "Etc/GMT+3",
-  "Etc/GMT+4",
-  "Etc/GMT+5",
-  "Etc/GMT+6",
-  "Etc/GMT+7",
-  "Etc/GMT+8",
-  "Etc/GMT+9",
-  "Etc/GMT-0",
-  "Etc/GMT-1",
-  "Etc/GMT-10",
-  "Etc/GMT-11",
-  "Etc/GMT-12",
-  "Etc/GMT-13",
-  "Etc/GMT-14",
-  "Etc/GMT-2",
-  "Etc/GMT-3",
-  "Etc/GMT-4",
-  "Etc/GMT-5",
-  "Etc/GMT-6",
-  "Etc/GMT-7",
-  "Etc/GMT-8",
-  "Etc/GMT-9",
-  "Etc/GMT0",
-  "Etc/Greenwich",
-  "Etc/UCT",
-  "Etc/UTC",
-  "Etc/Universal",
-  "Etc/Zulu",
-  "Europe/Amsterdam",
-  "Europe/Andorra",
-  "Europe/Astrakhan",
-  "Europe/Athens",
-  "Europe/Belfast",
-  "Europe/Belgrade",
-  "Europe/Berlin",
-  "Europe/Bratislava",
-  "Europe/Brussels",
-  "Europe/Bucharest",
-  "Europe/Budapest",
-  "Europe/Busingen",
-  "Europe/Chisinau",
-  "Europe/Copenhagen",
-  "Europe/Dublin",
-  "Europe/Gibraltar",
-  "Europe/Guernsey",
-  "Europe/Helsinki",
-  "Europe/Isle_of_Man",
-  "Europe/Istanbul",
-  "Europe/Jersey",
-  "Europe/Kaliningrad",
-  "Europe/Kiev",
-  "Europe/Kirov",
-  "Europe/Kyiv",
-  "Europe/Lisbon",
-  "Europe/Ljubljana",
-  "Europe/London",
-  "Europe/Luxembourg",
-  "Europe/Madrid",
-  "Europe/Malta",
-  "Europe/Mariehamn",
-  "Europe/Minsk",
-  "Europe/Monaco",
-  "Europe/Moscow",
-  "Europe/Nicosia",
-  "Europe/Oslo",
-  "Europe/Paris",
-  "Europe/Podgorica",
-  "Europe/Prague",
-  "Europe/Riga",
-  "Europe/Rome",
-  "Europe/Samara",
-  "Europe/San_Marino",
-  "Europe/Sarajevo",
-  "Europe/Saratov",
-  "Europe/Simferopol",
-  "Europe/Skopje",
-  "Europe/Sofia",
-  "Europe/Stockholm",
-  "Europe/Tallinn",
-  "Europe/Tirane",
-  "Europe/Tiraspol",
-  "Europe/Ulyanovsk",
-  "Europe/Uzhgorod",
-  "Europe/Vaduz",
-  "Europe/Vatican",
-  "Europe/Vienna",
-  "Europe/Vilnius",
-  "Europe/Volgograd",
-  "Europe/Warsaw",
-  "Europe/Zagreb",
-  "Europe/Zaporozhye",
-  "Europe/Zurich",
-  "Factory",
-  "GB",
-  "GB-Eire",
-  "GMT",
-  "GMT+0",
-  "GMT-0",
-  "GMT0",
-  "Greenwich",
-  "HST",
-  "Hongkong",
-  "Iceland",
-  "Indian/Antananarivo",
-  "Indian/Chagos",
-  "Indian/Christmas",
-  "Indian/Cocos",
-  "Indian/Comoro",
-  "Indian/Kerguelen",
-  "Indian/Mahe",
-  "Indian/Maldives",
-  "Indian/Mauritius",
-  "Indian/Mayotte",
-  "Indian/Reunion",
-  "Iran",
-  "Israel",
-  "Jamaica",
-  "Japan",
-  "Kwajalein",
-  "Libya",
-  "MET",
-  "MST",
-  "MST7MDT",
-  "Mexico/BajaNorte",
-  "Mexico/BajaSur",
-  "Mexico/General",
-  "NZ",
-  "NZ-CHAT",
-  "Navajo",
-  "PRC",
-  "PST8PDT",
-  "Pacific/Apia",
-  "Pacific/Auckland",
-  "Pacific/Bougainville",
-  "Pacific/Chatham",
-  "Pacific/Chuuk",
-  "Pacific/Easter",
-  "Pacific/Efate",
-  "Pacific/Enderbury",
-  "Pacific/Fakaofo",
-  "Pacific/Fiji",
-  "Pacific/Funafuti",
-  "Pacific/Galapagos",
-  "Pacific/Gambier",
-  "Pacific/Guadalcanal",
-  "Pacific/Guam",
-  "Pacific/Honolulu",
-  "Pacific/Johnston",
-  "Pacific/Kanton",
-  "Pacific/Kiritimati",
-  "Pacific/Kosrae",
-  "Pacific/Kwajalein",
-  "Pacific/Majuro",
-  "Pacific/Marquesas",
-  "Pacific/Midway",
-  "Pacific/Nauru",
-  "Pacific/Niue",
-  "Pacific/Norfolk",
-  "Pacific/Noumea",
-  "Pacific/Pago_Pago",
-  "Pacific/Palau",
-  "Pacific/Pitcairn",
-  "Pacific/Pohnpei",
-  "Pacific/Ponape",
-  "Pacific/Port_Moresby",
-  "Pacific/Rarotonga",
-  "Pacific/Saipan",
-  "Pacific/Samoa",
-  "Pacific/Tahiti",
-  "Pacific/Tarawa",
-  "Pacific/Tongatapu",
-  "Pacific/Truk",
-  "Pacific/Wake",
-  "Pacific/Wallis",
-  "Pacific/Yap",
-  "Poland",
-  "Portugal",
-  "ROC",
-  "ROK",
-  "Singapore",
-  "Turkey",
-  "UCT",
-  "US/Alaska",
-  "US/Aleutian",
-  "US/Arizona",
-  "US/Central",
-  "US/East-Indiana",
-  "US/Eastern",
-  "US/Hawaii",
-  "US/Indiana-Starke",
-  "US/Michigan",
-  "US/Mountain",
-  "US/Pacific",
-  "US/Samoa",
-  "UTC",
-  "Universal",
-  "W-SU",
-  "WET",
-  "Zulu",
-]);
-export const TokenEndpointAuthMethod: Schema<models.TokenEndpointAuthMethod> =
-  /* @__PURE__ */ z.enum(["client_secret_basic", "client_secret_post", "none"]);
 export const TokenType: Schema<models.TokenType> = /* @__PURE__ */ z.enum([
   "access_token",
   "refresh_token",
@@ -1925,14 +624,6 @@ export const AddressDict: ObjectSchema<models.AddressDict> = /* @__PURE__ */ z.l
   state: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
   country: /* @__PURE__ */ z.string(),
 });
-export const AddressInput: ObjectSchema<models.AddressInput> = /* @__PURE__ */ z.looseObject({
-  line1: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  line2: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  postal_code: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  city: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  state: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  country: CountryAlpha2Input,
-});
 export const AlreadyActiveSubscriptionError: ObjectSchema<models.AlreadyActiveSubscriptionError> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("AlreadyActiveSubscriptionError"),
@@ -1955,11 +646,6 @@ export const AttachedCustomField: ObjectSchema<models.AttachedCustomField> =
       return CustomField;
     },
     order: /* @__PURE__ */ z.int(),
-    required: /* @__PURE__ */ z.boolean(),
-  });
-export const AttachedCustomFieldCreate: ObjectSchema<models.AttachedCustomFieldCreate> =
-  /* @__PURE__ */ z.looseObject({
-    custom_field_id: /* @__PURE__ */ z.string(),
     required: /* @__PURE__ */ z.boolean(),
   });
 export const AuthorizeOrganization: ObjectSchema<models.AuthorizeOrganization> =
@@ -2238,35 +924,6 @@ export const BenefitCustom: ObjectSchema<models.BenefitCustom> = /* @__PURE__ */
   },
   visibility_configurable: /* @__PURE__ */ z.boolean(),
 });
-export const BenefitCustomCreate: ObjectSchema<models.BenefitCustomCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("custom"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitCustomCreateProperties;
-    },
-  });
-export const BenefitCustomCreateProperties: ObjectSchema<models.BenefitCustomCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    note: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    ),
-  });
 export const BenefitCustomProperties: ObjectSchema<models.BenefitCustomProperties> =
   /* @__PURE__ */ z.looseObject({
     note: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -2304,26 +961,6 @@ export const BenefitCustomSubscriber: ObjectSchema<models.BenefitCustomSubscribe
 export const BenefitCustomSubscriberProperties: ObjectSchema<models.BenefitCustomSubscriberProperties> =
   /* @__PURE__ */ z.looseObject({
     note: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const BenefitCustomUpdate: ObjectSchema<models.BenefitCustomUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    type: /* @__PURE__ */ z.literal("custom"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitCustomProperties));
-    },
   });
 export const BenefitCycledEvent: ObjectSchema<models.BenefitCycledEvent> =
   /* @__PURE__ */ z.looseObject({
@@ -2367,35 +1004,6 @@ export const BenefitDiscord: ObjectSchema<models.BenefitDiscord> = /* @__PURE__ 
   },
   visibility_configurable: /* @__PURE__ */ z.boolean(),
 });
-export const BenefitDiscordCreate: ObjectSchema<models.BenefitDiscordCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("discord"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitDiscordCreateProperties;
-    },
-  });
-export const BenefitDiscordCreateProperties: ObjectSchema<models.BenefitDiscordCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    guild_id: /* @__PURE__ */ z.string(),
-    role_id: /* @__PURE__ */ z.string(),
-    kick_member: /* @__PURE__ */ z.boolean(),
-  });
 export const BenefitDiscordProperties: ObjectSchema<models.BenefitDiscordProperties> =
   /* @__PURE__ */ z.looseObject({
     guild_id: /* @__PURE__ */ z.string(),
@@ -2434,25 +1042,6 @@ export const BenefitDiscordSubscriber: ObjectSchema<models.BenefitDiscordSubscri
   });
 export const BenefitDiscordSubscriberProperties: ObjectSchema<models.BenefitDiscordSubscriberProperties> =
   /* @__PURE__ */ z.looseObject({ guild_id: /* @__PURE__ */ z.string() });
-export const BenefitDiscordUpdate: ObjectSchema<models.BenefitDiscordUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("discord"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitDiscordCreateProperties));
-    },
-  });
 export const BenefitDownloadableFile: ObjectSchema<models.BenefitDownloadableFile> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -2495,36 +1084,6 @@ export const BenefitDownloadables: ObjectSchema<models.BenefitDownloadables> =
     },
     visibility_configurable: /* @__PURE__ */ z.boolean(),
   });
-export const BenefitDownloadablesCreate: ObjectSchema<models.BenefitDownloadablesCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("downloadables"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitDownloadablesCreateProperties;
-    },
-  });
-export const BenefitDownloadablesCreateProperties: ObjectSchema<models.BenefitDownloadablesCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    archived: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.boolean()),
-    ),
-    files: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-  });
 export const BenefitDownloadablesProperties: ObjectSchema<models.BenefitDownloadablesProperties> =
   /* @__PURE__ */ z.looseObject({
     archived: /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.boolean()),
@@ -2564,27 +1123,6 @@ export const BenefitDownloadablesSubscriberProperties: ObjectSchema<models.Benef
   /* @__PURE__ */ z.looseObject({
     active_files: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
   });
-export const BenefitDownloadablesUpdate: ObjectSchema<models.BenefitDownloadablesUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("downloadables"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitDownloadablesCreateProperties),
-      );
-    },
-  });
 export const BenefitFeatureFlag: ObjectSchema<models.BenefitFeatureFlag> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -2605,31 +1143,6 @@ export const BenefitFeatureFlag: ObjectSchema<models.BenefitFeatureFlag> =
     },
     visibility_configurable: /* @__PURE__ */ z.boolean(),
   });
-export const BenefitFeatureFlagCreate: ObjectSchema<models.BenefitFeatureFlagCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("feature_flag"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitFeatureFlagCreateProperties;
-    },
-  });
-export const BenefitFeatureFlagCreateProperties: ObjectSchema<models.BenefitFeatureFlagCreateProperties> =
-  /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitFeatureFlagProperties: ObjectSchema<models.BenefitFeatureFlagProperties> =
   /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitFeatureFlagPublic: ObjectSchema<models.BenefitFeatureFlagPublic> =
@@ -2664,26 +1177,6 @@ export const BenefitFeatureFlagSubscriber: ObjectSchema<models.BenefitFeatureFla
   });
 export const BenefitFeatureFlagSubscriberProperties: ObjectSchema<models.BenefitFeatureFlagSubscriberProperties> =
   /* @__PURE__ */ z.looseObject({}) as never;
-export const BenefitFeatureFlagUpdate: ObjectSchema<models.BenefitFeatureFlagUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    type: /* @__PURE__ */ z.literal("feature_flag"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitFeatureFlagProperties));
-    },
-  });
 export const BenefitGitHubRepository: ObjectSchema<models.BenefitGitHubRepository> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -2703,35 +1196,6 @@ export const BenefitGitHubRepository: ObjectSchema<models.BenefitGitHubRepositor
       return BenefitGitHubRepositoryProperties;
     },
     visibility_configurable: /* @__PURE__ */ z.boolean(),
-  });
-export const BenefitGitHubRepositoryCreate: ObjectSchema<models.BenefitGitHubRepositoryCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("github_repository"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitGitHubRepositoryCreateProperties;
-    },
-  });
-export const BenefitGitHubRepositoryCreateProperties: ObjectSchema<models.BenefitGitHubRepositoryCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    repository_owner: /* @__PURE__ */ z.string(),
-    repository_name: /* @__PURE__ */ z.string(),
-    permission: Permission,
   });
 export const BenefitGitHubRepositoryProperties: ObjectSchema<models.BenefitGitHubRepositoryProperties> =
   /* @__PURE__ */ z.looseObject({
@@ -2773,27 +1237,6 @@ export const BenefitGitHubRepositorySubscriberProperties: ObjectSchema<models.Be
   /* @__PURE__ */ z.looseObject({
     repository_owner: /* @__PURE__ */ z.string(),
     repository_name: /* @__PURE__ */ z.string(),
-  });
-export const BenefitGitHubRepositoryUpdate: ObjectSchema<models.BenefitGitHubRepositoryUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("github_repository"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitGitHubRepositoryCreateProperties),
-      );
-    },
   });
 export const BenefitGrant: ObjectSchema<models.BenefitGrant> = /* @__PURE__ */ z.looseObject({
   created_at: /* @__PURE__ */ z.string(),
@@ -3188,11 +1631,6 @@ export const BenefitGrantedEvent: ObjectSchema<models.BenefitGrantedEvent> =
       return BenefitGrantMetadata;
     },
   });
-export const BenefitLicenseKeyActivationCreateProperties: ObjectSchema<models.BenefitLicenseKeyActivationCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    limit: /* @__PURE__ */ z.int(),
-    enable_customer_admin: /* @__PURE__ */ z.boolean(),
-  });
 export const BenefitLicenseKeyActivationProperties: ObjectSchema<models.BenefitLicenseKeyActivationProperties> =
   /* @__PURE__ */ z.looseObject({
     limit: /* @__PURE__ */ z.int(),
@@ -3219,44 +1657,6 @@ export const BenefitLicenseKeys: ObjectSchema<models.BenefitLicenseKeys> =
       return BenefitLicenseKeysProperties;
     },
     visibility_configurable: /* @__PURE__ */ z.boolean(),
-  });
-export const BenefitLicenseKeysCreate: ObjectSchema<models.BenefitLicenseKeysCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("license_keys"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitLicenseKeysCreateProperties;
-    },
-  });
-export const BenefitLicenseKeysCreateProperties: ObjectSchema<models.BenefitLicenseKeysCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    prefix: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get expires() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitLicenseKeyExpirationProperties),
-      );
-    },
-    get activations() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitLicenseKeyActivationCreateProperties),
-      );
-    },
-    limit_usage: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
   });
 export const BenefitLicenseKeysProperties: ObjectSchema<models.BenefitLicenseKeysProperties> =
   /* @__PURE__ */ z.looseObject({
@@ -3310,28 +1710,6 @@ export const BenefitLicenseKeysSubscriberProperties: ObjectSchema<models.Benefit
     },
     limit_usage: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
   });
-export const BenefitLicenseKeysUpdate: ObjectSchema<models.BenefitLicenseKeysUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    type: /* @__PURE__ */ z.literal("license_keys"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitLicenseKeysCreateProperties),
-      );
-    },
-  });
 export const BenefitMeterCredit: ObjectSchema<models.BenefitMeterCredit> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -3351,35 +1729,6 @@ export const BenefitMeterCredit: ObjectSchema<models.BenefitMeterCredit> =
       return BenefitMeterCreditProperties;
     },
     visibility_configurable: /* @__PURE__ */ z.boolean(),
-  });
-export const BenefitMeterCreditCreate: ObjectSchema<models.BenefitMeterCreditCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("meter_credit"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitMeterCreditCreateProperties;
-    },
-  });
-export const BenefitMeterCreditCreateProperties: ObjectSchema<models.BenefitMeterCreditCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    units: /* @__PURE__ */ z.int(),
-    rollover: /* @__PURE__ */ z.boolean(),
-    meter_id: /* @__PURE__ */ z.string(),
   });
 export const BenefitMeterCreditProperties: ObjectSchema<models.BenefitMeterCreditProperties> =
   /* @__PURE__ */ z.looseObject({
@@ -3431,28 +1780,6 @@ export const BenefitMeterCreditSubscriberProperties: ObjectSchema<models.Benefit
     rollover: /* @__PURE__ */ z.boolean(),
     meter_id: /* @__PURE__ */ z.string(),
   });
-export const BenefitMeterCreditUpdate: ObjectSchema<models.BenefitMeterCreditUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    type: /* @__PURE__ */ z.literal("meter_credit"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitMeterCreditCreateProperties),
-      );
-    },
-  });
 export const BenefitRevokedEvent: ObjectSchema<models.BenefitRevokedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -3495,40 +1822,6 @@ export const BenefitSlackSharedChannel: ObjectSchema<models.BenefitSlackSharedCh
       return BenefitSlackSharedChannelProperties;
     },
     visibility_configurable: /* @__PURE__ */ z.boolean(),
-  });
-export const BenefitSlackSharedChannelCreate: ObjectSchema<models.BenefitSlackSharedChannelCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("slack_shared_channel"),
-    description: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(BenefitVisibility)),
-    get properties() {
-      return BenefitSlackSharedChannelCreateProperties;
-    },
-  });
-export const BenefitSlackSharedChannelCreateProperties: ObjectSchema<models.BenefitSlackSharedChannelCreateProperties> =
-  /* @__PURE__ */ z.looseObject({
-    slack_integration_id: /* @__PURE__ */ z.string(),
-    channel_name_template: /* @__PURE__ */ z.string(),
-    private: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    welcome_message: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    archive_on_revoke: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    team_invitees: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
   });
 export const BenefitSlackSharedChannelProperties: ObjectSchema<models.BenefitSlackSharedChannelProperties> =
   /* @__PURE__ */ z.looseObject({
@@ -3573,27 +1866,6 @@ export const BenefitSlackSharedChannelSubscriber: ObjectSchema<models.BenefitSla
   });
 export const BenefitSlackSharedChannelSubscriberProperties: ObjectSchema<models.BenefitSlackSharedChannelSubscriberProperties> =
   /* @__PURE__ */ z.looseObject({}) as never;
-export const BenefitSlackSharedChannelUpdate: ObjectSchema<models.BenefitSlackSharedChannelUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("slack_shared_channel"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(BenefitSlackSharedChannelCreateProperties),
-      );
-    },
-  });
 export const BenefitSubscriberOrganization: ObjectSchema<models.BenefitSubscriberOrganization> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -3789,157 +2061,6 @@ export const CheckoutBillingAddressFields: ObjectSchema<models.CheckoutBillingAd
     line1: BillingAddressFieldMode,
     line2: BillingAddressFieldMode,
   });
-export const CheckoutConfirmStripe: ObjectSchema<models.CheckoutConfirmStripe> =
-  /* @__PURE__ */ z.looseObject({
-    custom_field_data: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.boolean(),
-          /* @__PURE__ */ z.null(),
-        ]),
-      ),
-    ),
-    product_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    is_business_customer: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-    ),
-    customer_name: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    customer_email: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    customer_billing_name: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get customer_billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-    customer_tax_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    payment_method_type: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    discount_code: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    allow_trial: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.literal(false)),
-    ),
-    confirmation_token_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    product_price_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
-export const CheckoutCreate: ObjectSchema<models.CheckoutCreate> = /* @__PURE__ */ z.looseObject({
-  trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-  trial_interval_count: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  custom_field_data: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.boolean(),
-        /* @__PURE__ */ z.null(),
-      ]),
-    ),
-  ),
-  discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  allow_discount_codes: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-  require_billing_address: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-  amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  min_seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  max_seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  min_units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  max_units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  allow_trial: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-  customer_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  is_business_customer: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-  external_customer_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  customer_email: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_ip_address: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_billing_name: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  get customer_billing_address() {
-    return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-  },
-  customer_tax_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  subscription_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  success_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  embed_origin: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  currency: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(PresentmentCurrency)),
-  products: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-  get prices() {
-    return /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.record(
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.array(
-            /* @__PURE__ */ z.discriminatedUnion("amount_type", [
-              ProductPriceFixedCreate,
-              ProductPriceCustomCreate,
-              ProductPriceSeatBasedCreate,
-              ProductPriceUnitBasedCreate,
-              ProductPriceMeteredUnitCreate,
-              ProductPriceMeteredTiersCreate,
-            ]),
-          ),
-        ),
-      ),
-    );
-  },
-});
 export const CheckoutCreatedEvent: ObjectSchema<models.CheckoutCreatedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -4046,90 +2167,6 @@ export const CheckoutLink: ObjectSchema<models.CheckoutLink> = /* @__PURE__ */ z
   },
   url: /* @__PURE__ */ z.string(),
 });
-export const CheckoutLinkCreateProduct: ObjectSchema<models.CheckoutLinkCreateProduct> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-    trial_interval_count: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    payment_processor: /* @__PURE__ */ z.literal("stripe"),
-    label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    allow_discount_codes: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    require_billing_address: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    success_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    product_id: /* @__PURE__ */ z.string(),
-  });
-export const CheckoutLinkCreateProductPrice: ObjectSchema<models.CheckoutLinkCreateProductPrice> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-    trial_interval_count: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    payment_processor: /* @__PURE__ */ z.literal("stripe"),
-    label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    allow_discount_codes: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    require_billing_address: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    success_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    product_price_id: /* @__PURE__ */ z.string(),
-  });
-export const CheckoutLinkCreateProducts: ObjectSchema<models.CheckoutLinkCreateProducts> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-    trial_interval_count: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    payment_processor: /* @__PURE__ */ z.literal("stripe"),
-    label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    allow_discount_codes: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    require_billing_address: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    success_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    products: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-  });
 export const CheckoutLinkProduct: ObjectSchema<models.CheckoutLinkProduct> =
   /* @__PURE__ */ z.looseObject({
     get metadata() {
@@ -4161,39 +2198,6 @@ export const CheckoutLinkProduct: ObjectSchema<models.CheckoutLinkProduct> =
     get medias() {
       return /* @__PURE__ */ z.array(ProductMediaFileRead);
     },
-  });
-export const CheckoutLinkUpdate: ObjectSchema<models.CheckoutLinkUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-    trial_interval_count: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    products: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-    label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    allow_discount_codes: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-    ),
-    require_billing_address: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-    ),
-    discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    success_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
   });
 export const CheckoutLocked: ObjectSchema<models.CheckoutLocked> = /* @__PURE__ */ z.looseObject({
   error: /* @__PURE__ */ z.literal("CheckoutLocked"),
@@ -4456,141 +2460,7 @@ export const CheckoutPublicConfirmed: ObjectSchema<models.CheckoutPublicConfirme
     },
     customer_session_token: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   });
-export const CheckoutUpdate: ObjectSchema<models.CheckoutUpdate> = /* @__PURE__ */ z.looseObject({
-  custom_field_data: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.boolean(),
-        /* @__PURE__ */ z.null(),
-      ]),
-    ),
-  ),
-  product_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  is_business_customer: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-  ),
-  customer_name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  customer_email: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_billing_name: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  get customer_billing_address() {
-    return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-  },
-  customer_tax_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-  trial_interval_count: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  currency: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(PresentmentCurrency)),
-  discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  allow_discount_codes: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-  ),
-  require_billing_address: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-  ),
-  allow_trial: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean())),
-  customer_ip_address: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-  ),
-  success_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  embed_origin: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  product_price_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-});
-export const CheckoutUpdatePublic: ObjectSchema<models.CheckoutUpdatePublic> =
-  /* @__PURE__ */ z.looseObject({
-    custom_field_data: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.boolean(),
-          /* @__PURE__ */ z.null(),
-        ]),
-      ),
-    ),
-    product_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    is_business_customer: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-    ),
-    customer_name: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    customer_email: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    customer_billing_name: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get customer_billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-    customer_tax_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    payment_method_type: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    discount_code: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    allow_trial: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.literal(false)),
-    ),
-    product_price_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
 export const Context: ObjectSchema<models.Context> = /* @__PURE__ */ z.looseObject({}) as never;
-export const CostMetadataInput: ObjectSchema<models.CostMetadataInput> =
-  /* @__PURE__ */ z.looseObject({
-    amount: /* @__PURE__ */ z.union([/* @__PURE__ */ z.number(), /* @__PURE__ */ z.string()]),
-    currency: /* @__PURE__ */ z.string(),
-  });
 export const CostMetadataOutput: ObjectSchema<models.CostMetadataOutput> =
   /* @__PURE__ */ z.looseObject({
     amount: /* @__PURE__ */ z.string(),
@@ -4623,121 +2493,6 @@ export const CustomFieldCheckboxProperties: ObjectSchema<models.CustomFieldCheck
     form_label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     form_help_text: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     form_placeholder: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
-  });
-export const CustomFieldCreateCheckbox: ObjectSchema<models.CustomFieldCreateCheckbox> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("checkbox"),
-    slug: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get properties() {
-      return CustomFieldCheckboxProperties;
-    },
-  });
-export const CustomFieldCreateDate: ObjectSchema<models.CustomFieldCreateDate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("date"),
-    slug: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get properties() {
-      return CustomFieldDateProperties;
-    },
-  });
-export const CustomFieldCreateNumber: ObjectSchema<models.CustomFieldCreateNumber> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("number"),
-    slug: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get properties() {
-      return CustomFieldNumberProperties;
-    },
-  });
-export const CustomFieldCreateSelect: ObjectSchema<models.CustomFieldCreateSelect> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("select"),
-    slug: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get properties() {
-      return CustomFieldSelectProperties;
-    },
-  });
-export const CustomFieldCreateText: ObjectSchema<models.CustomFieldCreateText> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    type: /* @__PURE__ */ z.literal("text"),
-    slug: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get properties() {
-      return CustomFieldTextProperties;
-    },
   });
 export const CustomFieldDate: ObjectSchema<models.CustomFieldDate> = /* @__PURE__ */ z.looseObject({
   created_at: /* @__PURE__ */ z.string(),
@@ -4840,106 +2595,6 @@ export const CustomFieldTextProperties: ObjectSchema<models.CustomFieldTextPrope
     min_length: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
     max_length: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
   });
-export const CustomFieldUpdateCheckbox: ObjectSchema<models.CustomFieldUpdateCheckbox> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    slug: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("checkbox"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CustomFieldCheckboxProperties));
-    },
-  });
-export const CustomFieldUpdateDate: ObjectSchema<models.CustomFieldUpdateDate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    slug: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("date"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CustomFieldDateProperties));
-    },
-  });
-export const CustomFieldUpdateNumber: ObjectSchema<models.CustomFieldUpdateNumber> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    slug: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("number"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CustomFieldNumberProperties));
-    },
-  });
-export const CustomFieldUpdateSelect: ObjectSchema<models.CustomFieldUpdateSelect> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    slug: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("select"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CustomFieldSelectProperties));
-    },
-  });
-export const CustomFieldUpdateText: ObjectSchema<models.CustomFieldUpdateText> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    slug: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    type: /* @__PURE__ */ z.literal("text"),
-    get properties() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CustomFieldTextProperties));
-    },
-  });
 export const CustomerBenefitGrantCustom: ObjectSchema<models.CustomerBenefitGrantCustom> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -4967,8 +2622,6 @@ export const CustomerBenefitGrantCustom: ObjectSchema<models.CustomerBenefitGran
       return BenefitGrantCustomProperties;
     },
   });
-export const CustomerBenefitGrantCustomUpdate: ObjectSchema<models.CustomerBenefitGrantCustomUpdate> =
-  /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("custom") });
 export const CustomerBenefitGrantDiscord: ObjectSchema<models.CustomerBenefitGrantDiscord> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -4999,17 +2652,6 @@ export const CustomerBenefitGrantDiscord: ObjectSchema<models.CustomerBenefitGra
       return BenefitGrantDiscordProperties;
     },
   });
-export const CustomerBenefitGrantDiscordPropertiesUpdate: ObjectSchema<models.CustomerBenefitGrantDiscordPropertiesUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    account_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  });
-export const CustomerBenefitGrantDiscordUpdate: ObjectSchema<models.CustomerBenefitGrantDiscordUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    benefit_type: /* @__PURE__ */ z.literal("discord"),
-    get properties() {
-      return CustomerBenefitGrantDiscordPropertiesUpdate;
-    },
-  });
 export const CustomerBenefitGrantDownloadables: ObjectSchema<models.CustomerBenefitGrantDownloadables> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5037,8 +2679,6 @@ export const CustomerBenefitGrantDownloadables: ObjectSchema<models.CustomerBene
       return BenefitGrantDownloadablesProperties;
     },
   });
-export const CustomerBenefitGrantDownloadablesUpdate: ObjectSchema<models.CustomerBenefitGrantDownloadablesUpdate> =
-  /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("downloadables") });
 export const CustomerBenefitGrantFeatureFlag: ObjectSchema<models.CustomerBenefitGrantFeatureFlag> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5066,8 +2706,6 @@ export const CustomerBenefitGrantFeatureFlag: ObjectSchema<models.CustomerBenefi
       return BenefitGrantFeatureFlagProperties;
     },
   });
-export const CustomerBenefitGrantFeatureFlagUpdate: ObjectSchema<models.CustomerBenefitGrantFeatureFlagUpdate> =
-  /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("feature_flag") });
 export const CustomerBenefitGrantGitHubRepository: ObjectSchema<models.CustomerBenefitGrantGitHubRepository> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5098,17 +2736,6 @@ export const CustomerBenefitGrantGitHubRepository: ObjectSchema<models.CustomerB
       return BenefitGrantGitHubRepositoryProperties;
     },
   });
-export const CustomerBenefitGrantGitHubRepositoryPropertiesUpdate: ObjectSchema<models.CustomerBenefitGrantGitHubRepositoryPropertiesUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    account_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  });
-export const CustomerBenefitGrantGitHubRepositoryUpdate: ObjectSchema<models.CustomerBenefitGrantGitHubRepositoryUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    benefit_type: /* @__PURE__ */ z.literal("github_repository"),
-    get properties() {
-      return CustomerBenefitGrantGitHubRepositoryPropertiesUpdate;
-    },
-  });
 export const CustomerBenefitGrantLicenseKeys: ObjectSchema<models.CustomerBenefitGrantLicenseKeys> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5136,8 +2763,6 @@ export const CustomerBenefitGrantLicenseKeys: ObjectSchema<models.CustomerBenefi
       return BenefitGrantLicenseKeysProperties;
     },
   });
-export const CustomerBenefitGrantLicenseKeysUpdate: ObjectSchema<models.CustomerBenefitGrantLicenseKeysUpdate> =
-  /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("license_keys") });
 export const CustomerBenefitGrantMember: ObjectSchema<models.CustomerBenefitGrantMember> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -5172,8 +2797,6 @@ export const CustomerBenefitGrantMeterCredit: ObjectSchema<models.CustomerBenefi
       return BenefitGrantMeterCreditProperties;
     },
   });
-export const CustomerBenefitGrantMeterCreditUpdate: ObjectSchema<models.CustomerBenefitGrantMeterCreditUpdate> =
-  /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("meter_credit") });
 export const CustomerBenefitGrantSlackSharedChannel: ObjectSchema<models.CustomerBenefitGrantSlackSharedChannel> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5199,15 +2822,6 @@ export const CustomerBenefitGrantSlackSharedChannel: ObjectSchema<models.Custome
     },
     get properties() {
       return BenefitGrantSlackSharedChannelProperties;
-    },
-  });
-export const CustomerBenefitGrantSlackSharedChannelPropertiesUpdate: ObjectSchema<models.CustomerBenefitGrantSlackSharedChannelPropertiesUpdate> =
-  /* @__PURE__ */ z.looseObject({ invited_email: /* @__PURE__ */ z.string() });
-export const CustomerBenefitGrantSlackSharedChannelUpdate: ObjectSchema<models.CustomerBenefitGrantSlackSharedChannelUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    benefit_type: /* @__PURE__ */ z.literal("slack_shared_channel"),
-    get properties() {
-      return CustomerBenefitGrantSlackSharedChannelPropertiesUpdate;
     },
   });
 export const CustomerCreatedEvent: ObjectSchema<models.CustomerCreatedEvent> =
@@ -5296,10 +2910,6 @@ export const CustomerDeletedMetadata: ObjectSchema<models.CustomerDeletedMetadat
     customer_name: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     customer_external_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   });
-export const CustomerEmailUpdateRequest: ObjectSchema<models.CustomerEmailUpdateRequest> =
-  /* @__PURE__ */ z.looseObject({ email: /* @__PURE__ */ z.string() });
-export const CustomerEmailUpdateVerifyRequest: ObjectSchema<models.CustomerEmailUpdateVerifyRequest> =
-  /* @__PURE__ */ z.looseObject({ token: /* @__PURE__ */ z.string() });
 export const CustomerEmailUpdateVerifyResponse: ObjectSchema<models.CustomerEmailUpdateVerifyResponse> =
   /* @__PURE__ */ z.looseObject({ token: /* @__PURE__ */ z.string() });
 export const CustomerIndividual: ObjectSchema<models.CustomerIndividual> =
@@ -5328,35 +2938,6 @@ export const CustomerIndividual: ObjectSchema<models.CustomerIndividual> =
     deleted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     first_user_event_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  });
-export const CustomerIndividualCreate: ObjectSchema<models.CustomerIndividualCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-    tax_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get owner() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(MemberOwnerCreate));
-    },
-    type: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.literal("individual")),
-    email: /* @__PURE__ */ z.string(),
   });
 export const CustomerMeter: ObjectSchema<models.CustomerMeter> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
@@ -5496,15 +3077,6 @@ export const CustomerOrderSubscription: ObjectSchema<models.CustomerOrderSubscri
     customer_cancellation_reason: /* @__PURE__ */ z.nullable(CustomerCancellationReason),
     customer_cancellation_comment: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   });
-export const CustomerOrderUpdate: ObjectSchema<models.CustomerOrderUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    billing_name: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-  });
 export const CustomerOrganization: ObjectSchema<models.CustomerOrganization> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5548,17 +3120,6 @@ export const CustomerPaymentMethodCard: ObjectSchema<models.CustomerPaymentMetho
       return PaymentMethodCardMetadata;
     },
     is_default: /* @__PURE__ */ z.boolean(),
-  });
-export const CustomerPaymentMethodConfirm: ObjectSchema<models.CustomerPaymentMethodConfirm> =
-  /* @__PURE__ */ z.looseObject({
-    setup_intent_id: /* @__PURE__ */ z.string(),
-    set_default: /* @__PURE__ */ z.boolean(),
-  });
-export const CustomerPaymentMethodCreate: ObjectSchema<models.CustomerPaymentMethodCreate> =
-  /* @__PURE__ */ z.looseObject({
-    confirmation_token_id: /* @__PURE__ */ z.string(),
-    set_default: /* @__PURE__ */ z.boolean(),
-    return_url: /* @__PURE__ */ z.string(),
   });
 export const CustomerPaymentMethodCreateRequiresActionResponse: ObjectSchema<models.CustomerPaymentMethodCreateRequiresActionResponse> =
   /* @__PURE__ */ z.looseObject({
@@ -5621,19 +3182,6 @@ export const CustomerPortalCustomerSettings: ObjectSchema<models.CustomerPortalC
   /* @__PURE__ */ z.looseObject({
     allow_email_change: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
   });
-export const CustomerPortalCustomerUpdate: ObjectSchema<models.CustomerPortalCustomerUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    billing_name: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-    tax_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    default_payment_method_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
 export const CustomerPortalMember: ObjectSchema<models.CustomerPortalMember> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -5642,17 +3190,6 @@ export const CustomerPortalMember: ObjectSchema<models.CustomerPortalMember> =
     email: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     role: MemberRole,
-  });
-export const CustomerPortalMemberCreate: ObjectSchema<models.CustomerPortalMemberCreate> =
-  /* @__PURE__ */ z.looseObject({
-    email: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    role: /* @__PURE__ */ z.optional(MemberRole),
-  });
-export const CustomerPortalMemberUpdate: ObjectSchema<models.CustomerPortalMemberUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    role: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(MemberRole)),
   });
 export const CustomerPortalOAuthAccount: ObjectSchema<models.CustomerPortalOAuthAccount> =
   /* @__PURE__ */ z.looseObject({
@@ -5717,29 +3254,6 @@ export const CustomerSeat: ObjectSchema<models.CustomerSeat> = /* @__PURE__ */ z
     /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.unknown()),
   ),
 });
-export const CustomerSeatAssign: ObjectSchema<models.CustomerSeatAssign> =
-  /* @__PURE__ */ z.looseObject({
-    subscription_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    order_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_customer_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    customer_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_member_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.unknown()),
-      ),
-    ),
-    immediate_claim: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    checkout_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const CustomerSeatClaimResponse: ObjectSchema<models.CustomerSeatClaimResponse> =
   /* @__PURE__ */ z.looseObject({
     get seat() {
@@ -5760,24 +3274,6 @@ export const CustomerSession: ObjectSchema<models.CustomerSession> = /* @__PURE_
     return Customer;
   },
 });
-export const CustomerSessionCustomerExternalIDCreate: ObjectSchema<models.CustomerSessionCustomerExternalIDCreate> =
-  /* @__PURE__ */ z.looseObject({
-    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_member_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_customer_id: /* @__PURE__ */ z.string(),
-  });
-export const CustomerSessionCustomerIDCreate: ObjectSchema<models.CustomerSessionCustomerIDCreate> =
-  /* @__PURE__ */ z.looseObject({
-    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_member_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    return_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    customer_id: /* @__PURE__ */ z.string(),
-  });
 export const CustomerStateBenefitGrant: ObjectSchema<models.CustomerStateBenefitGrant> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -5983,18 +3479,6 @@ export const CustomerSubscription: ObjectSchema<models.CustomerSubscription> =
       return /* @__PURE__ */ z.nullable(PendingSubscriptionUpdate);
     },
   });
-export const CustomerSubscriptionCancel: ObjectSchema<models.CustomerSubscriptionCancel> =
-  /* @__PURE__ */ z.looseObject({
-    cancel_at_period_end: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-    ),
-    cancellation_reason: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(CustomerCancellationReason),
-    ),
-    cancellation_comment: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
 export const CustomerSubscriptionMeter: ObjectSchema<models.CustomerSubscriptionMeter> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -6014,11 +3498,6 @@ export const CustomerSubscriptionMeterMeter: ObjectSchema<models.CustomerSubscri
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.string(),
-  });
-export const CustomerSubscriptionPause: ObjectSchema<models.CustomerSubscriptionPause> =
-  /* @__PURE__ */ z.looseObject({
-    pause_at_period_end: /* @__PURE__ */ z.boolean(),
-    resumes_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
   });
 export const CustomerSubscriptionProduct: ObjectSchema<models.CustomerSubscriptionProduct> =
   /* @__PURE__ */ z.looseObject({
@@ -6052,16 +3531,6 @@ export const CustomerSubscriptionProduct: ObjectSchema<models.CustomerSubscripti
       return CustomerOrganization;
     },
   });
-export const CustomerSubscriptionResume: ObjectSchema<models.CustomerSubscriptionResume> =
-  /* @__PURE__ */ z.looseObject({ resume: /* @__PURE__ */ z.literal(true) });
-export const CustomerSubscriptionUpdateClear: ObjectSchema<models.CustomerSubscriptionUpdateClear> =
-  /* @__PURE__ */ z.looseObject({ pending_update: /* @__PURE__ */ z.null() });
-export const CustomerSubscriptionUpdateProduct: ObjectSchema<models.CustomerSubscriptionUpdateProduct> =
-  /* @__PURE__ */ z.looseObject({ product_id: /* @__PURE__ */ z.string() });
-export const CustomerSubscriptionUpdateSeats: ObjectSchema<models.CustomerSubscriptionUpdateSeats> =
-  /* @__PURE__ */ z.looseObject({ seats: /* @__PURE__ */ z.int() });
-export const CustomerSubscriptionUpdateUnits: ObjectSchema<models.CustomerSubscriptionUpdateUnits> =
-  /* @__PURE__ */ z.looseObject({ units: /* @__PURE__ */ z.int() });
 export const CustomerTeam: ObjectSchema<models.CustomerTeam> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
   created_at: /* @__PURE__ */ z.string(),
@@ -6088,78 +3557,6 @@ export const CustomerTeam: ObjectSchema<models.CustomerTeam> = /* @__PURE__ */ z
   first_user_event_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
 });
-export const CustomerTeamCreate: ObjectSchema<models.CustomerTeamCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-    tax_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get owner() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(MemberOwnerCreate));
-    },
-    type: /* @__PURE__ */ z.literal("team"),
-    email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const CustomerUpdate: ObjectSchema<models.CustomerUpdate> = /* @__PURE__ */ z.looseObject({
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  get billing_address() {
-    return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-  },
-  tax_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  type: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CustomerType)),
-});
-export const CustomerUpdateExternalID: ObjectSchema<models.CustomerUpdateExternalID> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get billing_address() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-    },
-    tax_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    locale: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const CustomerUpdatedEvent: ObjectSchema<models.CustomerUpdatedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -6216,48 +3613,6 @@ export const CustomerUpdatedMetadata: ObjectSchema<models.CustomerUpdatedMetadat
     get updated_fields() {
       return CustomerUpdatedFields;
     },
-  });
-export const DiscountFixedCreate: ObjectSchema<models.DiscountFixedCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    code: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    starts_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    ends_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    max_redemptions: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    max_redemptions_per_customer: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    products: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    type: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.literal("fixed")),
-    duration: DiscountDuration,
-    duration_in_months: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    amounts: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.int()),
-      ),
-    ),
-    amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    currency: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(PresentmentCurrency)),
   });
 export const DiscountFixedOnceForeverDuration: ObjectSchema<models.DiscountFixedOnceForeverDuration> =
   /* @__PURE__ */ z.looseObject({
@@ -6354,42 +3709,6 @@ export const DiscountFixedRepeatDurationBase: ObjectSchema<models.DiscountFixedR
     max_redemptions_per_customer: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
     redemptions_count: /* @__PURE__ */ z.int(),
     organization_id: /* @__PURE__ */ z.string(),
-  });
-export const DiscountPercentageCreate: ObjectSchema<models.DiscountPercentageCreate> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    code: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    starts_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    ends_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    max_redemptions: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    max_redemptions_per_customer: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    products: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    type: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.literal("percentage")),
-    duration: DiscountDuration,
-    duration_in_months: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    basis_points: /* @__PURE__ */ z.int(),
   });
 export const DiscountPercentageOnceForeverDuration: ObjectSchema<models.DiscountPercentageOnceForeverDuration> =
   /* @__PURE__ */ z.looseObject({
@@ -6504,43 +3823,6 @@ export const DiscountRedemptionLimitReached: ObjectSchema<models.DiscountRedempt
     error: /* @__PURE__ */ z.literal("DiscountRedemptionLimitReached"),
     detail: /* @__PURE__ */ z.string(),
   });
-export const DiscountUpdate: ObjectSchema<models.DiscountUpdate> = /* @__PURE__ */ z.looseObject({
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  code: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  starts_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  ends_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  max_redemptions: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  max_redemptions_per_customer: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  duration: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(DiscountDuration)),
-  duration_in_months: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  type: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(DiscountType)),
-  amounts: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(
-      /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.int()),
-    ),
-  ),
-  basis_points: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  products: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-  ),
-  amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  currency: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(PresentmentCurrency)),
-});
 export const Dispute: ObjectSchema<models.Dispute> = /* @__PURE__ */ z.looseObject({
   created_at: /* @__PURE__ */ z.string(),
   modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -6597,23 +3879,6 @@ export const DisputeNotOpenError: ObjectSchema<models.DisputeNotOpenError> =
     error: /* @__PURE__ */ z.literal("DisputeNotOpenError"),
     detail: /* @__PURE__ */ z.string(),
   });
-export const DownloadableFileCreate: ObjectSchema<models.DownloadableFileCreate> =
-  /* @__PURE__ */ z.looseObject({
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    mime_type: /* @__PURE__ */ z.string(),
-    size: /* @__PURE__ */ z.int(),
-    checksum_sha256_base64: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get upload() {
-      return S3FileCreateMultipart;
-    },
-    service: /* @__PURE__ */ z.literal("downloadable"),
-    version: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const DownloadableFileRead: ObjectSchema<models.DownloadableFileRead> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -6642,51 +3907,6 @@ export const DownloadableRead: ObjectSchema<models.DownloadableRead> =
       return FileDownload;
     },
   });
-export const EventCreateCustomer: ObjectSchema<models.EventCreateCustomer> =
-  /* @__PURE__ */ z.looseObject({
-    timestamp: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    parent_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get metadata() {
-      return /* @__PURE__ */ z.optional(EventMetadataInput);
-    },
-    customer_id: /* @__PURE__ */ z.string(),
-    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const EventCreateExternalCustomer: ObjectSchema<models.EventCreateExternalCustomer> =
-  /* @__PURE__ */ z.looseObject({
-    timestamp: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
-    name: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    parent_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get metadata() {
-      return /* @__PURE__ */ z.optional(EventMetadataInput);
-    },
-    external_customer_id: /* @__PURE__ */ z.string(),
-    external_member_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
-export const EventMetadataInput: ObjectSchema<models.EventMetadataInput> =
-  /* @__PURE__ */ z.catchall(
-    /* @__PURE__ */ z.object({
-      _cost: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.lazy(() => CostMetadataInput)),
-      _llm: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.lazy(() => LLMMetadata)),
-    }),
-    /* @__PURE__ */ z.union([
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.int(),
-      /* @__PURE__ */ z.number(),
-      /* @__PURE__ */ z.boolean(),
-    ]),
-  );
 export const EventMetadataOutput: ObjectSchema<models.EventMetadataOutput> =
   /* @__PURE__ */ z.catchall(
     /* @__PURE__ */ z.object({
@@ -6719,12 +3939,6 @@ export const EventType: ObjectSchema<models.EventType> = /* @__PURE__ */ z.loose
   ),
   organization_id: /* @__PURE__ */ z.string(),
 });
-export const EventTypeUpdate: ObjectSchema<models.EventTypeUpdate> = /* @__PURE__ */ z.looseObject({
-  label: /* @__PURE__ */ z.string(),
-  label_property_selector: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-});
 export const EventTypeWithStats: ObjectSchema<models.EventTypeWithStats> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -6741,20 +3955,11 @@ export const EventTypeWithStats: ObjectSchema<models.EventTypeWithStats> =
     first_seen: /* @__PURE__ */ z.string(),
     last_seen: /* @__PURE__ */ z.string(),
   });
-export const EventsIngest: ObjectSchema<models.EventsIngest> = /* @__PURE__ */ z.looseObject({
-  get events() {
-    return /* @__PURE__ */ z.array(
-      /* @__PURE__ */ z.union([EventCreateCustomer, EventCreateExternalCustomer]),
-    );
-  },
-});
 export const EventsIngestResponse: ObjectSchema<models.EventsIngestResponse> =
   /* @__PURE__ */ z.looseObject({
     inserted: /* @__PURE__ */ z.int(),
     duplicates: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
   });
-export const ExistingProductPrice: ObjectSchema<models.ExistingProductPrice> =
-  /* @__PURE__ */ z.looseObject({ id: /* @__PURE__ */ z.string() });
 export const ExpiredCheckoutError: ObjectSchema<models.ExpiredCheckoutError> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("ExpiredCheckoutError"),
@@ -6780,10 +3985,6 @@ export const FileDownload: ObjectSchema<models.FileDownload> = /* @__PURE__ */ z
   service: FileServiceTypes,
   size_readable: /* @__PURE__ */ z.string(),
 });
-export const FilePatch: ObjectSchema<models.FilePatch> = /* @__PURE__ */ z.looseObject({
-  name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  version: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-});
 export const FileUpload: ObjectSchema<models.FileUpload> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
   organization_id: /* @__PURE__ */ z.string(),
@@ -6804,14 +4005,6 @@ export const FileUpload: ObjectSchema<models.FileUpload> = /* @__PURE__ */ z.loo
   service: FileServiceTypes,
   size_readable: /* @__PURE__ */ z.string(),
 });
-export const FileUploadCompleted: ObjectSchema<models.FileUploadCompleted> =
-  /* @__PURE__ */ z.looseObject({
-    id: /* @__PURE__ */ z.string(),
-    path: /* @__PURE__ */ z.string(),
-    get parts() {
-      return /* @__PURE__ */ z.array(S3FileUploadCompletedPart);
-    },
-  });
 export const Filter: ObjectSchema<models.Filter> = /* @__PURE__ */ z.looseObject({
   conjunction: FilterConjunction,
   get clauses() {
@@ -6967,34 +4160,6 @@ export const LegacyRecurringProductPriceFixed: ObjectSchema<models.LegacyRecurri
     price_amount: /* @__PURE__ */ z.int(),
     legacy: /* @__PURE__ */ z.literal(true),
   });
-export const LicenseKeyActivate: ObjectSchema<models.LicenseKeyActivate> =
-  /* @__PURE__ */ z.looseObject({
-    key: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.string(),
-    label: /* @__PURE__ */ z.string(),
-    conditions: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    meta: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-  });
 export const LicenseKeyActivationBase: ObjectSchema<models.LicenseKeyActivationBase> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -7079,12 +4244,6 @@ export const LicenseKeyCustomer: ObjectSchema<models.LicenseKeyCustomer> =
     first_user_event_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   });
-export const LicenseKeyDeactivate: ObjectSchema<models.LicenseKeyDeactivate> =
-  /* @__PURE__ */ z.looseObject({
-    key: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.string(),
-    activation_id: /* @__PURE__ */ z.string(),
-  });
 export const LicenseKeyMember: ObjectSchema<models.LicenseKeyMember> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -7115,40 +4274,6 @@ export const LicenseKeyRead: ObjectSchema<models.LicenseKeyRead> = /* @__PURE__ 
   last_validated_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   expires_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
 });
-export const LicenseKeyUpdate: ObjectSchema<models.LicenseKeyUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    status: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(LicenseKeyStatus)),
-    usage: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
-    limit_activations: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    limit_usage: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    expires_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const LicenseKeyValidate: ObjectSchema<models.LicenseKeyValidate> =
-  /* @__PURE__ */ z.looseObject({
-    key: /* @__PURE__ */ z.string(),
-    organization_id: /* @__PURE__ */ z.string(),
-    activation_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    benefit_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    customer_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    increment_usage: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    conditions: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-  });
 export const LicenseKeyWithActivations: ObjectSchema<models.LicenseKeyWithActivations> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -7493,24 +4618,6 @@ export const Member: ObjectSchema<models.Member> = /* @__PURE__ */ z.looseObject
   external_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   role: MemberRole,
 });
-export const MemberCreateFromCustomer: ObjectSchema<models.MemberCreateFromCustomer> =
-  /* @__PURE__ */ z.looseObject({
-    email: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    role: /* @__PURE__ */ z.optional(Role),
-  });
-export const MemberOwnerCreate: ObjectSchema<models.MemberOwnerCreate> =
-  /* @__PURE__ */ z.looseObject({
-    email: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const MemberUpdate: ObjectSchema<models.MemberUpdate> = /* @__PURE__ */ z.looseObject({
-  name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  role: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(MemberRole)),
-});
 export const MetadataOutputType: Schema<models.MetadataOutputType> = /* @__PURE__ */ z.record(
   /* @__PURE__ */ z.string(),
   /* @__PURE__ */ z.union([
@@ -7541,34 +4648,6 @@ export const Meter: ObjectSchema<models.Meter> = /* @__PURE__ */ z.looseObject({
   },
   organization_id: /* @__PURE__ */ z.string(),
   archived_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-});
-export const MeterCreate: ObjectSchema<models.MeterCreate> = /* @__PURE__ */ z.looseObject({
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  name: /* @__PURE__ */ z.string(),
-  unit: /* @__PURE__ */ z.optional(MeterUnit),
-  custom_label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  custom_multiplier: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  get filter() {
-    return Filter;
-  },
-  get aggregation() {
-    return /* @__PURE__ */ z.union([CountAggregation, PropertyAggregation, UniqueAggregation]);
-  },
-  organization_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
 });
 export const MeterCreditEvent: ObjectSchema<models.MeterCreditEvent> =
   /* @__PURE__ */ z.looseObject({
@@ -7633,36 +4712,6 @@ export const MeterResetEvent: ObjectSchema<models.MeterResetEvent> = /* @__PURE_
 });
 export const MeterResetMetadata: ObjectSchema<models.MeterResetMetadata> =
   /* @__PURE__ */ z.looseObject({ meter_id: /* @__PURE__ */ z.string() });
-export const MeterUpdate: ObjectSchema<models.MeterUpdate> = /* @__PURE__ */ z.looseObject({
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  unit: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(MeterUnit)),
-  custom_label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  custom_multiplier: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  get filter() {
-    return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(Filter));
-  },
-  get aggregation() {
-    return /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.union([CountAggregation, PropertyAggregation, UniqueAggregation]),
-      ),
-    );
-  },
-  is_archived: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean())),
-});
 export const Metric: ObjectSchema<models.Metric> = /* @__PURE__ */ z.looseObject({
   slug: /* @__PURE__ */ z.string(),
   display_name: /* @__PURE__ */ z.string(),
@@ -8663,53 +5712,6 @@ export const NotPermitted: ObjectSchema<models.NotPermitted> = /* @__PURE__ */ z
   error: /* @__PURE__ */ z.literal("NotPermitted"),
   detail: /* @__PURE__ */ z.string(),
 });
-export const OAuth2ClientConfiguration: ObjectSchema<models.OAuth2ClientConfiguration> =
-  /* @__PURE__ */ z.looseObject({
-    redirect_uris: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-    token_endpoint_auth_method: /* @__PURE__ */ z.optional(TokenEndpointAuthMethod),
-    grant_types: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.array(
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.literal("authorization_code"),
-          /* @__PURE__ */ z.literal("refresh_token"),
-        ]),
-      ),
-    ),
-    response_types: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.literal("code")),
-    ),
-    scope: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
-    client_name: /* @__PURE__ */ z.string(),
-    client_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    logo_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    tos_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    policy_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    default_sub_type: /* @__PURE__ */ z.optional(SubType),
-  });
-export const OAuth2ClientConfigurationUpdate: ObjectSchema<models.OAuth2ClientConfigurationUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    redirect_uris: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-    token_endpoint_auth_method: /* @__PURE__ */ z.optional(TokenEndpointAuthMethod),
-    grant_types: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.array(
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.literal("authorization_code"),
-          /* @__PURE__ */ z.literal("refresh_token"),
-        ]),
-      ),
-    ),
-    response_types: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.literal("code")),
-    ),
-    scope: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
-    client_name: /* @__PURE__ */ z.string(),
-    client_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    logo_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    tos_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    policy_uri: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    default_sub_type: /* @__PURE__ */ z.optional(SubType),
-    client_id: /* @__PURE__ */ z.string(),
-  });
 export const OAuth2ClientPublic: ObjectSchema<models.OAuth2ClientPublic> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -8802,39 +5804,6 @@ export const Order: ObjectSchema<models.Order> = /* @__PURE__ */ z.looseObject({
   refundable_amount: /* @__PURE__ */ z.int(),
   refundable_tax_amount: /* @__PURE__ */ z.int(),
 });
-export const OrderCreate: ObjectSchema<models.OrderCreate> = /* @__PURE__ */ z.looseObject({
-  custom_field_data: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.boolean(),
-        /* @__PURE__ */ z.null(),
-      ]),
-    ),
-  ),
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  organization_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_id: /* @__PURE__ */ z.string(),
-  product_id: /* @__PURE__ */ z.string(),
-  currency: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-});
 export const OrderCustomer: ObjectSchema<models.OrderCustomer> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
   created_at: /* @__PURE__ */ z.string(),
@@ -8860,11 +5829,6 @@ export const OrderCustomer: ObjectSchema<models.OrderCustomer> = /* @__PURE__ */
   deleted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   first_user_event_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-});
-export const OrderFinalize: ObjectSchema<models.OrderFinalize> = /* @__PURE__ */ z.looseObject({
-  payment_method_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
 });
 export const OrderInvoice: ObjectSchema<models.OrderInvoice> = /* @__PURE__ */ z.looseObject({
   url: /* @__PURE__ */ z.string(),
@@ -9047,12 +6011,6 @@ export const OrderUnvoidedMetadata: ObjectSchema<models.OrderUnvoidedMetadata> =
     amount: /* @__PURE__ */ z.int(),
     currency: /* @__PURE__ */ z.string(),
   });
-export const OrderUpdate: ObjectSchema<models.OrderUpdate> = /* @__PURE__ */ z.looseObject({
-  billing_name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  get billing_address() {
-    return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(AddressInput));
-  },
-});
 export const OrderVoidedEvent: ObjectSchema<models.OrderVoidedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -9125,23 +6083,6 @@ export const Organization: ObjectSchema<models.Organization> = /* @__PURE__ */ z
     return OrganizationCapabilities;
   },
 });
-export const OrganizationAvatarFileCreate: ObjectSchema<models.OrganizationAvatarFileCreate> =
-  /* @__PURE__ */ z.looseObject({
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    mime_type: /* @__PURE__ */ z.string(),
-    size: /* @__PURE__ */ z.int(),
-    checksum_sha256_base64: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get upload() {
-      return S3FileCreateMultipart;
-    },
-    service: /* @__PURE__ */ z.literal("organization_avatar"),
-    version: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const OrganizationAvatarFileRead: ObjectSchema<models.OrganizationAvatarFileRead> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -9170,60 +6111,6 @@ export const OrganizationCapabilities: ObjectSchema<models.OrganizationCapabilit
     refunds: /* @__PURE__ */ z.boolean(),
     api_access: /* @__PURE__ */ z.boolean(),
     dashboard_access: /* @__PURE__ */ z.boolean(),
-  });
-export const OrganizationCompanyLegalEntitySchema: ObjectSchema<models.OrganizationCompanyLegalEntitySchema> =
-  /* @__PURE__ */ z.looseObject({
-    type: /* @__PURE__ */ z.literal("company"),
-    registered_name: /* @__PURE__ */ z.string(),
-  });
-export const OrganizationCreate: ObjectSchema<models.OrganizationCreate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.string(),
-    slug: /* @__PURE__ */ z.string(),
-    avatar_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get legal_entity() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(
-          /* @__PURE__ */ z.discriminatedUnion("type", [
-            OrganizationIndividualLegalEntitySchema,
-            OrganizationCompanyLegalEntitySchema,
-          ]),
-        ),
-      );
-    },
-    email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    website: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get socials() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(OrganizationSocialLink)),
-      );
-    },
-    get details() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(OrganizationDetails));
-    },
-    country: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CountryAlpha2Input)),
-    get feature_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationFeatureSettingsUpdate),
-      );
-    },
-    get subscription_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationSubscriptionSettings),
-      );
-    },
-    get customer_email_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationCustomerEmailSettings),
-      );
-    },
-    get customer_portal_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationCustomerPortalSettings),
-      );
-    },
-    default_presentment_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    default_tax_behavior: /* @__PURE__ */ z.optional(TaxBehaviorOption),
   });
 export const OrganizationCustomerEmailSettings: ObjectSchema<models.OrganizationCustomerEmailSettings> =
   /* @__PURE__ */ z.looseObject({
@@ -9254,50 +6141,9 @@ export const OrganizationCustomerPortalSettings: ObjectSchema<models.Organizatio
       return /* @__PURE__ */ z.optional(CustomerPortalCustomerSettings);
     },
   });
-export const OrganizationDetails: ObjectSchema<models.OrganizationDetails> =
-  /* @__PURE__ */ z.looseObject({
-    product_description: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    selling_categories: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-    ),
-    pricing_models: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    switching: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    switching_from: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.literal("paddle"),
-          /* @__PURE__ */ z.literal("lemon_squeezy"),
-          /* @__PURE__ */ z.literal("gumroad"),
-          /* @__PURE__ */ z.literal("stripe"),
-          /* @__PURE__ */ z.literal("other"),
-        ]),
-      ),
-    ),
-    about: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    intended_use: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    customer_acquisition: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-    ),
-    future_annual_revenue: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    previous_annual_revenue: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-  });
 export const OrganizationDisputeSettings: ObjectSchema<models.OrganizationDisputeSettings> =
   /* @__PURE__ */ z.looseObject({
     auto_accept_below_amount: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  });
-export const OrganizationDisputeSettingsUpdate: ObjectSchema<models.OrganizationDisputeSettingsUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    auto_accept_below_amount: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
   });
 export const OrganizationFeatureSettings: ObjectSchema<models.OrganizationFeatureSettings> =
   /* @__PURE__ */ z.looseObject({
@@ -9319,16 +6165,6 @@ export const OrganizationFeatureSettings: ObjectSchema<models.OrganizationFeatur
     compass_enabled: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
     merchant_migration_enabled: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
   });
-export const OrganizationFeatureSettingsUpdate: ObjectSchema<models.OrganizationFeatureSettingsUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    member_model_enabled: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    checkout_localization_enabled: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-    overview_metrics: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-  });
-export const OrganizationIndividualLegalEntitySchema: ObjectSchema<models.OrganizationIndividualLegalEntitySchema> =
-  /* @__PURE__ */ z.looseObject({ type: /* @__PURE__ */ z.literal("individual") });
 export const OrganizationNotReadyForPayments: ObjectSchema<models.OrganizationNotReadyForPayments> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("OrganizationNotReadyForPayments"),
@@ -9346,57 +6182,6 @@ export const OrganizationSubscriptionSettings: ObjectSchema<models.OrganizationS
     benefit_revocation_grace_period: /* @__PURE__ */ z.int(),
     prevent_trial_abuse: /* @__PURE__ */ z.boolean(),
     allow_customer_updates: /* @__PURE__ */ z.boolean(),
-  });
-export const OrganizationUpdate: ObjectSchema<models.OrganizationUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    avatar_url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    website: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    get socials() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(OrganizationSocialLink)),
-      );
-    },
-    get details() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(OrganizationDetails));
-    },
-    country: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(CountryAlpha2Input)),
-    get feature_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationFeatureSettingsUpdate),
-      );
-    },
-    get subscription_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationSubscriptionSettings),
-      );
-    },
-    get customer_email_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationCustomerEmailSettings),
-      );
-    },
-    get customer_portal_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationCustomerPortalSettings),
-      );
-    },
-    get dispute_settings() {
-      return /* @__PURE__ */ z.optional(
-        /* @__PURE__ */ z.nullable(OrganizationDisputeSettingsUpdate),
-      );
-    },
-    embed_hosts: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-    default_presentment_currency: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(PresentmentCurrency),
-    ),
-    default_tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
-    sso_enforced: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
-    ),
   });
 export const Pagination: ObjectSchema<models.Pagination> = /* @__PURE__ */ z.looseObject({
   total_count: /* @__PURE__ */ z.int(),
@@ -9539,113 +6324,6 @@ export const Product: ObjectSchema<models.Product> = /* @__PURE__ */ z.looseObje
     return /* @__PURE__ */ z.array(AttachedCustomField);
   },
 });
-export const ProductBenefitsUpdate: ObjectSchema<models.ProductBenefitsUpdate> =
-  /* @__PURE__ */ z.looseObject({ benefits: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()) });
-export const ProductCreateOneTime: ObjectSchema<models.ProductCreateOneTime> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    visibility: /* @__PURE__ */ z.optional(ProductVisibility),
-    get prices() {
-      return /* @__PURE__ */ z.array(
-        /* @__PURE__ */ z.discriminatedUnion("amount_type", [
-          ProductPriceFixedCreate,
-          ProductPriceCustomCreate,
-          ProductPriceSeatBasedCreate,
-          ProductPriceUnitBasedCreate,
-          ProductPriceMeteredUnitCreate,
-          ProductPriceMeteredTiersCreate,
-        ]),
-      );
-    },
-    medias: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-    get attached_custom_fields() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.array(AttachedCustomFieldCreate));
-    },
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    recurring_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.null()),
-    recurring_interval_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.null()),
-  });
-export const ProductCreateRecurring: ObjectSchema<models.ProductCreateRecurring> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    visibility: /* @__PURE__ */ z.optional(ProductVisibility),
-    get prices() {
-      return /* @__PURE__ */ z.array(
-        /* @__PURE__ */ z.discriminatedUnion("amount_type", [
-          ProductPriceFixedCreate,
-          ProductPriceCustomCreate,
-          ProductPriceSeatBasedCreate,
-          ProductPriceUnitBasedCreate,
-          ProductPriceMeteredUnitCreate,
-          ProductPriceMeteredTiersCreate,
-        ]),
-      );
-    },
-    medias: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-    get attached_custom_fields() {
-      return /* @__PURE__ */ z.optional(/* @__PURE__ */ z.array(AttachedCustomFieldCreate));
-    },
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-    trial_interval_count: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-    recurring_interval: RecurringInterval,
-    recurring_interval_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
-    meter_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(RecurringInterval)),
-    meter_interval_count: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-    ),
-  });
-export const ProductMediaFileCreate: ObjectSchema<models.ProductMediaFileCreate> =
-  /* @__PURE__ */ z.looseObject({
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    mime_type: /* @__PURE__ */ z.string(),
-    size: /* @__PURE__ */ z.int(),
-    checksum_sha256_base64: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get upload() {
-      return S3FileCreateMultipart;
-    },
-    service: /* @__PURE__ */ z.literal("product_media"),
-    version: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const ProductMediaFileRead: ObjectSchema<models.ProductMediaFileRead> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -9686,15 +6364,6 @@ export const ProductPriceCustom: ObjectSchema<models.ProductPriceCustom> =
     maximum_amount: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
     preset_amount: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
   });
-export const ProductPriceCustomCreate: ObjectSchema<models.ProductPriceCustomCreate> =
-  /* @__PURE__ */ z.looseObject({
-    amount_type: /* @__PURE__ */ z.literal("custom"),
-    price_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
-    minimum_amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
-    maximum_amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    preset_amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  });
 export const ProductPriceFixed: ObjectSchema<models.ProductPriceFixed> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -9706,13 +6375,6 @@ export const ProductPriceFixed: ObjectSchema<models.ProductPriceFixed> =
     tax_behavior: /* @__PURE__ */ z.nullable(TaxBehaviorOption),
     is_archived: /* @__PURE__ */ z.boolean(),
     product_id: /* @__PURE__ */ z.string(),
-    price_amount: /* @__PURE__ */ z.int(),
-  });
-export const ProductPriceFixedCreate: ObjectSchema<models.ProductPriceFixedCreate> =
-  /* @__PURE__ */ z.looseObject({
-    amount_type: /* @__PURE__ */ z.literal("fixed"),
-    price_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
     price_amount: /* @__PURE__ */ z.int(),
   });
 export const ProductPriceMeter: ObjectSchema<models.ProductPriceMeter> =
@@ -9743,17 +6405,6 @@ export const ProductPriceMeteredTiers: ObjectSchema<models.ProductPriceMeteredTi
       return Tiers;
     },
   });
-export const ProductPriceMeteredTiersCreate: ObjectSchema<models.ProductPriceMeteredTiersCreate> =
-  /* @__PURE__ */ z.looseObject({
-    amount_type: /* @__PURE__ */ z.literal("metered_tiers"),
-    price_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
-    meter_id: /* @__PURE__ */ z.string(),
-    get tiers() {
-      return TiersInput;
-    },
-    cap_amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  });
 export const ProductPriceMeteredUnit: ObjectSchema<models.ProductPriceMeteredUnit> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -9772,15 +6423,6 @@ export const ProductPriceMeteredUnit: ObjectSchema<models.ProductPriceMeteredUni
     },
     unit_amount: /* @__PURE__ */ z.string(),
   });
-export const ProductPriceMeteredUnitCreate: ObjectSchema<models.ProductPriceMeteredUnitCreate> =
-  /* @__PURE__ */ z.looseObject({
-    amount_type: /* @__PURE__ */ z.literal("metered_unit"),
-    price_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
-    meter_id: /* @__PURE__ */ z.string(),
-    unit_amount: /* @__PURE__ */ z.union([/* @__PURE__ */ z.number(), /* @__PURE__ */ z.string()]),
-    cap_amount: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  });
 export const ProductPriceSeatBased: ObjectSchema<models.ProductPriceSeatBased> =
   /* @__PURE__ */ z.looseObject({
     created_at: /* @__PURE__ */ z.string(),
@@ -9796,27 +6438,11 @@ export const ProductPriceSeatBased: ObjectSchema<models.ProductPriceSeatBased> =
       return ProductPriceSeatTiersOutput;
     },
   });
-export const ProductPriceSeatBasedCreate: ObjectSchema<models.ProductPriceSeatBasedCreate> =
-  /* @__PURE__ */ z.looseObject({
-    amount_type: /* @__PURE__ */ z.literal("seat_based"),
-    price_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
-    get seat_tiers() {
-      return ProductPriceSeatTiersInput;
-    },
-  });
 export const ProductPriceSeatTier: ObjectSchema<models.ProductPriceSeatTier> =
   /* @__PURE__ */ z.looseObject({
     min_seats: /* @__PURE__ */ z.int(),
     max_seats: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
     price_per_seat: /* @__PURE__ */ z.int(),
-  });
-export const ProductPriceSeatTiersInput: ObjectSchema<models.ProductPriceSeatTiersInput> =
-  /* @__PURE__ */ z.looseObject({
-    seat_tier_type: /* @__PURE__ */ z.optional(SeatTierType),
-    get tiers() {
-      return /* @__PURE__ */ z.array(ProductPriceSeatTier);
-    },
   });
 export const ProductPriceSeatTiersOutput: ObjectSchema<models.ProductPriceSeatTiersOutput> =
   /* @__PURE__ */ z.looseObject({
@@ -9850,76 +6476,6 @@ export const ProductPriceUnitBased: ObjectSchema<models.ProductPriceUnitBased> =
     ),
     maximum_units: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
   });
-export const ProductPriceUnitBasedCreate: ObjectSchema<models.ProductPriceUnitBasedCreate> =
-  /* @__PURE__ */ z.looseObject({
-    amount_type: /* @__PURE__ */ z.literal("unit_based"),
-    price_currency: /* @__PURE__ */ z.optional(PresentmentCurrency),
-    tax_behavior: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TaxBehaviorOption)),
-    get tiers() {
-      return TiersInput;
-    },
-    minimum_units: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-    unit_label: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.record(
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.string()),
-        ),
-      ),
-    ),
-  });
-export const ProductUpdate: ObjectSchema<models.ProductUpdate> = /* @__PURE__ */ z.looseObject({
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
-  trial_interval_count: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  description: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  recurring_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(RecurringInterval)),
-  recurring_interval_count: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
-  ),
-  is_archived: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean())),
-  visibility: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(ProductVisibility)),
-  get prices() {
-    return /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.array(
-          /* @__PURE__ */ z.union([
-            ExistingProductPrice,
-            /* @__PURE__ */ z.discriminatedUnion("amount_type", [
-              ProductPriceFixedCreate,
-              ProductPriceCustomCreate,
-              ProductPriceSeatBasedCreate,
-              ProductPriceUnitBasedCreate,
-              ProductPriceMeteredUnitCreate,
-              ProductPriceMeteredTiersCreate,
-            ]),
-          ]),
-        ),
-      ),
-    );
-  },
-  medias: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-  ),
-  get attached_custom_fields() {
-    return /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(AttachedCustomFieldCreate)),
-    );
-  },
-});
 export const PropertyAggregation: ObjectSchema<models.PropertyAggregation> =
   /* @__PURE__ */ z.looseObject({ func: Func, property: /* @__PURE__ */ z.string() });
 export const Refund: ObjectSchema<models.Refund> = /* @__PURE__ */ z.looseObject({
@@ -9942,24 +6498,6 @@ export const Refund: ObjectSchema<models.Refund> = /* @__PURE__ */ z.looseObject
   get dispute() {
     return /* @__PURE__ */ z.nullable(RefundDispute);
   },
-});
-export const RefundCreate: ObjectSchema<models.RefundCreate> = /* @__PURE__ */ z.looseObject({
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.record(
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.int(),
-        /* @__PURE__ */ z.number(),
-        /* @__PURE__ */ z.boolean(),
-      ]),
-    ),
-  ),
-  order_id: /* @__PURE__ */ z.string(),
-  reason: Reason,
-  amount: /* @__PURE__ */ z.int(),
-  comment: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  revoke_benefits: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
 });
 export const RefundDispute: ObjectSchema<models.RefundDispute> = /* @__PURE__ */ z.looseObject({
   created_at: /* @__PURE__ */ z.string(),
@@ -10025,27 +6563,6 @@ export const S3DownloadURL: ObjectSchema<models.S3DownloadURL> = /* @__PURE__ */
   ),
   expires_at: /* @__PURE__ */ z.string(),
 });
-export const S3FileCreateMultipart: ObjectSchema<models.S3FileCreateMultipart> =
-  /* @__PURE__ */ z.looseObject({
-    get parts() {
-      return /* @__PURE__ */ z.array(S3FileCreatePart);
-    },
-  });
-export const S3FileCreatePart: ObjectSchema<models.S3FileCreatePart> =
-  /* @__PURE__ */ z.looseObject({
-    number: /* @__PURE__ */ z.int(),
-    chunk_start: /* @__PURE__ */ z.int(),
-    chunk_end: /* @__PURE__ */ z.int(),
-    checksum_sha256_base64: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
-export const S3FileUploadCompletedPart: ObjectSchema<models.S3FileUploadCompletedPart> =
-  /* @__PURE__ */ z.looseObject({
-    number: /* @__PURE__ */ z.int(),
-    checksum_etag: /* @__PURE__ */ z.string(),
-    checksum_sha256_base64: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  });
 export const S3FileUploadMultipart: ObjectSchema<models.S3FileUploadMultipart> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10073,30 +6590,6 @@ export const SSOEnforcementRequiresConnection: ObjectSchema<models.SSOEnforcemen
     error: /* @__PURE__ */ z.literal("SSOEnforcementRequiresConnection"),
     detail: /* @__PURE__ */ z.string(),
   });
-export const SeatAssign: ObjectSchema<models.SeatAssign> = /* @__PURE__ */ z.looseObject({
-  subscription_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  order_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  email: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  external_customer_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  customer_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  external_member_id: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  ),
-  member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  metadata: /* @__PURE__ */ z.optional(
-    /* @__PURE__ */ z.nullable(
-      /* @__PURE__ */ z.record(/* @__PURE__ */ z.string(), /* @__PURE__ */ z.unknown()),
-    ),
-  ),
-  immediate_claim: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-});
-export const SeatClaim: ObjectSchema<models.SeatClaim> = /* @__PURE__ */ z.looseObject({
-  invitation_token: /* @__PURE__ */ z.string(),
-});
 export const SeatClaimInfo: ObjectSchema<models.SeatClaimInfo> = /* @__PURE__ */ z.looseObject({
   product_name: /* @__PURE__ */ z.string(),
   product_id: /* @__PURE__ */ z.string(),
@@ -10215,16 +6708,6 @@ export const SubscriptionBillingPeriodUpdatedMetadata: ObjectSchema<models.Subsc
     old_period_end: /* @__PURE__ */ z.string(),
     new_period_end: /* @__PURE__ */ z.string(),
   });
-export const SubscriptionCancel: ObjectSchema<models.SubscriptionCancel> =
-  /* @__PURE__ */ z.looseObject({
-    customer_cancellation_reason: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(CustomerCancellationReason),
-    ),
-    customer_cancellation_comment: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    cancel_at_period_end: /* @__PURE__ */ z.boolean(),
-  });
 export const SubscriptionCanceledEvent: ObjectSchema<models.SubscriptionCanceledEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10261,38 +6744,6 @@ export const SubscriptionCanceledMetadata: ObjectSchema<models.SubscriptionCance
     canceled_at: /* @__PURE__ */ z.string(),
     ends_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     cancel_at_period_end: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
-  });
-export const SubscriptionCreateCustomer: ObjectSchema<models.SubscriptionCreateCustomer> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    product_id: /* @__PURE__ */ z.string(),
-    customer_id: /* @__PURE__ */ z.string(),
-  });
-export const SubscriptionCreateExternalCustomer: ObjectSchema<models.SubscriptionCreateExternalCustomer> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    product_id: /* @__PURE__ */ z.string(),
-    external_customer_id: /* @__PURE__ */ z.string(),
   });
 export const SubscriptionCreatedEvent: ObjectSchema<models.SubscriptionCreatedEvent> =
   /* @__PURE__ */ z.looseObject({
@@ -10472,11 +6923,6 @@ export const SubscriptionPastDueMetadata: ObjectSchema<models.SubscriptionPastDu
     recurring_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     recurring_interval_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
   });
-export const SubscriptionPause: ObjectSchema<models.SubscriptionPause> =
-  /* @__PURE__ */ z.looseObject({
-    pause_at_period_end: /* @__PURE__ */ z.boolean(),
-    resumes_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const SubscriptionPausedEvent: ObjectSchema<models.SubscriptionPausedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10604,8 +7050,6 @@ export const SubscriptionReinstatedMetadata: ObjectSchema<models.SubscriptionRei
     recurring_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     recurring_interval_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
   });
-export const SubscriptionResume: ObjectSchema<models.SubscriptionResume> =
-  /* @__PURE__ */ z.looseObject({ resume: /* @__PURE__ */ z.literal(true) });
 export const SubscriptionResumedEvent: ObjectSchema<models.SubscriptionResumedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10637,16 +7081,6 @@ export const SubscriptionResumedMetadata: ObjectSchema<models.SubscriptionResume
     currency: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     recurring_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     recurring_interval_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
-  });
-export const SubscriptionRevoke: ObjectSchema<models.SubscriptionRevoke> =
-  /* @__PURE__ */ z.looseObject({
-    customer_cancellation_reason: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(CustomerCancellationReason),
-    ),
-    customer_cancellation_comment: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    revoke: /* @__PURE__ */ z.literal(true),
   });
 export const SubscriptionRevokedEvent: ObjectSchema<models.SubscriptionRevokedEvent> =
   /* @__PURE__ */ z.looseObject({
@@ -10772,36 +7206,6 @@ export const SubscriptionUnitsUpdatedMetadata: ObjectSchema<models.SubscriptionU
     new_units: /* @__PURE__ */ z.int(),
     proration_behavior: /* @__PURE__ */ z.string(),
   });
-export const SubscriptionUpdateBase: ObjectSchema<models.SubscriptionUpdateBase> =
-  /* @__PURE__ */ z.looseObject({
-    metadata: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.record(
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.string(),
-          /* @__PURE__ */ z.int(),
-          /* @__PURE__ */ z.number(),
-          /* @__PURE__ */ z.boolean(),
-        ]),
-      ),
-    ),
-    product_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    proration_behavior: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(SubscriptionProrationBehavior),
-    ),
-    discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    trial_end: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.union([
-        /* @__PURE__ */ z.string(),
-        /* @__PURE__ */ z.literal("now"),
-        /* @__PURE__ */ z.null(),
-      ]),
-    ),
-  });
-export const SubscriptionUpdateBillingPeriod: ObjectSchema<models.SubscriptionUpdateBillingPeriod> =
-  /* @__PURE__ */ z.looseObject({ current_billing_period_end: /* @__PURE__ */ z.string() });
-export const SubscriptionUpdateClear: ObjectSchema<models.SubscriptionUpdateClear> =
-  /* @__PURE__ */ z.looseObject({ pending_update: /* @__PURE__ */ z.null() });
 export const SubscriptionUpdateClearedEvent: ObjectSchema<models.SubscriptionUpdateClearedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10827,20 +7231,6 @@ export const SubscriptionUpdateClearedEvent: ObjectSchema<models.SubscriptionUpd
   });
 export const SubscriptionUpdateClearedMetadata: ObjectSchema<models.SubscriptionUpdateClearedMetadata> =
   /* @__PURE__ */ z.looseObject({ subscription_id: /* @__PURE__ */ z.string() });
-export const SubscriptionUpdateSeats: ObjectSchema<models.SubscriptionUpdateSeats> =
-  /* @__PURE__ */ z.looseObject({
-    seats: /* @__PURE__ */ z.int(),
-    proration_behavior: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(SubscriptionProrationBehavior),
-    ),
-  });
-export const SubscriptionUpdateUnits: ObjectSchema<models.SubscriptionUpdateUnits> =
-  /* @__PURE__ */ z.looseObject({
-    units: /* @__PURE__ */ z.int(),
-    proration_behavior: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(SubscriptionProrationBehavior),
-    ),
-  });
 export const SubscriptionUpdatedEvent: ObjectSchema<models.SubscriptionUpdatedEvent> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10875,23 +7265,6 @@ export const SubscriptionUpdatedMetadata: ObjectSchema<models.SubscriptionUpdate
     billing_period_end: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     subscription_id: /* @__PURE__ */ z.string(),
   });
-export const SupportCaseAttachmentFileCreate: ObjectSchema<models.SupportCaseAttachmentFileCreate> =
-  /* @__PURE__ */ z.looseObject({
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    name: /* @__PURE__ */ z.string(),
-    mime_type: /* @__PURE__ */ z.string(),
-    size: /* @__PURE__ */ z.int(),
-    checksum_sha256_base64: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    get upload() {
-      return S3FileCreateMultipart;
-    },
-    service: /* @__PURE__ */ z.literal("support_case_attachment"),
-    version: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const SupportCaseAttachmentFileRead: ObjectSchema<models.SupportCaseAttachmentFileRead> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -10915,20 +7288,10 @@ export const Tier: ObjectSchema<models.Tier> = /* @__PURE__ */ z.looseObject({
   bound: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
   unit_amount: /* @__PURE__ */ z.string(),
 });
-export const TierInput: ObjectSchema<models.TierInput> = /* @__PURE__ */ z.looseObject({
-  bound: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int())),
-  unit_amount: /* @__PURE__ */ z.union([/* @__PURE__ */ z.number(), /* @__PURE__ */ z.string()]),
-});
 export const Tiers: ObjectSchema<models.Tiers> = /* @__PURE__ */ z.looseObject({
   type: TierType,
   get tiers() {
     return /* @__PURE__ */ z.array(Tier);
-  },
-});
-export const TiersInput: ObjectSchema<models.TiersInput> = /* @__PURE__ */ z.looseObject({
-  type: TierType,
-  get tiers() {
-    return /* @__PURE__ */ z.array(TierInput);
   },
 });
 export const TokenResponse: ObjectSchema<models.TokenResponse> = /* @__PURE__ */ z.looseObject({
@@ -11067,43 +7430,6 @@ export const WebhookEndpoint: ObjectSchema<models.WebhookEndpoint> = /* @__PURE_
   enabled: /* @__PURE__ */ z.boolean(),
   uses_standard_webhook_signature: /* @__PURE__ */ z.boolean(),
 });
-export const WebhookEndpointCreate: ObjectSchema<models.WebhookEndpointCreate> =
-  /* @__PURE__ */ z.looseObject({
-    url: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    api_version: /* @__PURE__ */ z.optional(ApiVersion),
-    format: Format,
-    events: /* @__PURE__ */ z.array(WebhookEventType),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
-export const WebhookEndpointUpdate: ObjectSchema<models.WebhookEndpointUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    url: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    api_version: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.literal("2026-04"),
-          /* @__PURE__ */ z.literal("2026-10"),
-        ]),
-      ),
-    ),
-    format: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(
-        /* @__PURE__ */ z.union([
-          /* @__PURE__ */ z.literal("raw"),
-          /* @__PURE__ */ z.literal("discord"),
-          /* @__PURE__ */ z.literal("slack"),
-        ]),
-      ),
-    ),
-    events: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(WebhookEventType)),
-    ),
-    enabled: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean())),
-  });
 export const WebhookEvent: ObjectSchema<models.WebhookEvent> = /* @__PURE__ */ z.looseObject({
   created_at: /* @__PURE__ */ z.string(),
   modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -11126,17 +7452,6 @@ export const Benefit: ObjectSchema<models.Benefit> = /* @__PURE__ */ z.discrimin
   BenefitFeatureFlag,
   BenefitSlackSharedChannel,
 ]);
-export const BenefitCreate: ObjectSchema<models.BenefitCreate> =
-  /* @__PURE__ */ z.discriminatedUnion("type", [
-    BenefitCustomCreate,
-    BenefitDiscordCreate,
-    BenefitGitHubRepositoryCreate,
-    BenefitDownloadablesCreate,
-    BenefitLicenseKeysCreate,
-    BenefitMeterCreditCreate,
-    BenefitFeatureFlagCreate,
-    BenefitSlackSharedChannelCreate,
-  ]);
 export const BenefitGrantWebhook: Schema<models.BenefitGrantWebhook> = /* @__PURE__ */ z.union([
   BenefitGrantDiscordWebhook,
   BenefitGrantCustomWebhook,
@@ -11167,31 +7482,10 @@ export const CheckoutForbiddenError: Schema<models.CheckoutForbiddenError> =
     TrialAlreadyRedeemed,
     DiscountRedemptionLimitReached,
   ]);
-export const CheckoutLinkCreate: Schema<models.CheckoutLinkCreate> = /* @__PURE__ */ z.union([
-  CheckoutLinkCreateProductPrice,
-  CheckoutLinkCreateProduct,
-  CheckoutLinkCreateProducts,
-]);
 export const CustomField: ObjectSchema<models.CustomField> = /* @__PURE__ */ z.discriminatedUnion(
   "type",
   [CustomFieldText, CustomFieldNumber, CustomFieldDate, CustomFieldCheckbox, CustomFieldSelect],
 );
-export const CustomFieldCreate: ObjectSchema<models.CustomFieldCreate> =
-  /* @__PURE__ */ z.discriminatedUnion("type", [
-    CustomFieldCreateText,
-    CustomFieldCreateNumber,
-    CustomFieldCreateDate,
-    CustomFieldCreateCheckbox,
-    CustomFieldCreateSelect,
-  ]);
-export const CustomFieldUpdate: ObjectSchema<models.CustomFieldUpdate> =
-  /* @__PURE__ */ z.discriminatedUnion("type", [
-    CustomFieldUpdateText,
-    CustomFieldUpdateNumber,
-    CustomFieldUpdateDate,
-    CustomFieldUpdateCheckbox,
-    CustomFieldUpdateSelect,
-  ]);
 export const Customer: ObjectSchema<models.Customer> = /* @__PURE__ */ z.discriminatedUnion(
   "type",
   [CustomerIndividual, CustomerTeam],
@@ -11206,21 +7500,6 @@ export const CustomerBenefitGrant: Schema<models.CustomerBenefitGrant> = /* @__P
   CustomerBenefitGrantFeatureFlag,
   CustomerBenefitGrantSlackSharedChannel,
 ]);
-export const CustomerBenefitGrantUpdate: ObjectSchema<models.CustomerBenefitGrantUpdate> =
-  /* @__PURE__ */ z.discriminatedUnion("benefit_type", [
-    CustomerBenefitGrantDiscordUpdate,
-    CustomerBenefitGrantGitHubRepositoryUpdate,
-    CustomerBenefitGrantDownloadablesUpdate,
-    CustomerBenefitGrantLicenseKeysUpdate,
-    CustomerBenefitGrantCustomUpdate,
-    CustomerBenefitGrantMeterCreditUpdate,
-    CustomerBenefitGrantFeatureFlagUpdate,
-    CustomerBenefitGrantSlackSharedChannelUpdate,
-  ]);
-export const CustomerCreate: Schema<models.CustomerCreate> = /* @__PURE__ */ z.union([
-  CustomerIndividualCreate,
-  CustomerTeamCreate,
-]);
 export const CustomerPaymentMethod: Schema<models.CustomerPaymentMethod> = /* @__PURE__ */ z.union([
   PaymentMethodCard,
   PaymentMethodKrCard,
@@ -11233,26 +7512,47 @@ export const CustomerPaymentMethodCreateResponse: ObjectSchema<models.CustomerPa
   ]);
 export const CustomerState: ObjectSchema<models.CustomerState> =
   /* @__PURE__ */ z.discriminatedUnion("type", [CustomerStateIndividual, CustomerStateTeam]);
-export const CustomerSubscriptionUpdate: Schema<models.CustomerSubscriptionUpdate> =
-  /* @__PURE__ */ z.union([
-    CustomerSubscriptionUpdateProduct,
-    CustomerSubscriptionUpdateSeats,
-    CustomerSubscriptionUpdateUnits,
-    CustomerSubscriptionCancel,
-    CustomerSubscriptionPause,
-    CustomerSubscriptionResume,
-    CustomerSubscriptionUpdateClear,
-  ]);
 export const Discount: Schema<models.Discount> = /* @__PURE__ */ z.union([
   DiscountFixedOnceForeverDuration,
   DiscountFixedRepeatDuration,
   DiscountPercentageOnceForeverDuration,
   DiscountPercentageRepeatDuration,
 ]);
-export const DiscountCreate: Schema<models.DiscountCreate> = /* @__PURE__ */ z.union([
-  DiscountFixedCreate,
-  DiscountPercentageCreate,
+export const FileRead: ObjectSchema<models.FileRead> = /* @__PURE__ */ z.discriminatedUnion(
+  "service",
+  [
+    DownloadableFileRead,
+    ProductMediaFileRead,
+    OrganizationAvatarFileRead,
+    SupportCaseAttachmentFileRead,
+  ],
+);
+export const LegacyRecurringProductPrice: ObjectSchema<models.LegacyRecurringProductPrice> =
+  /* @__PURE__ */ z.discriminatedUnion("amount_type", [
+    LegacyRecurringProductPriceFixed,
+    LegacyRecurringProductPriceCustom,
+  ]);
+export const Payment: Schema<models.Payment> = /* @__PURE__ */ z.union([
+  CardPayment,
+  KrCardPayment,
+  GenericPayment,
 ]);
+export const PaymentMethod: Schema<models.PaymentMethod> = /* @__PURE__ */ z.union([
+  CustomerPaymentMethodCard,
+  CustomerPaymentMethodKrCard,
+  CustomerPaymentMethodGeneric,
+]);
+export const ProductPrice: ObjectSchema<models.ProductPrice> = /* @__PURE__ */ z.discriminatedUnion(
+  "amount_type",
+  [
+    ProductPriceFixed,
+    ProductPriceCustom,
+    ProductPriceSeatBased,
+    ProductPriceUnitBased,
+    ProductPriceMeteredUnit,
+    ProductPriceMeteredTiers,
+  ],
+);
 export const SystemEvent: ObjectSchema<models.SystemEvent> = /* @__PURE__ */ z.discriminatedUnion(
   "name",
   [
@@ -11295,79 +7595,6 @@ export const SystemEvent: ObjectSchema<models.SystemEvent> = /* @__PURE__ */ z.d
     BalanceDisputeReversalEvent,
   ],
 );
-export const FileCreate: ObjectSchema<models.FileCreate> = /* @__PURE__ */ z.discriminatedUnion(
-  "service",
-  [
-    DownloadableFileCreate,
-    ProductMediaFileCreate,
-    OrganizationAvatarFileCreate,
-    SupportCaseAttachmentFileCreate,
-  ],
-);
-export const FileRead: ObjectSchema<models.FileRead> = /* @__PURE__ */ z.discriminatedUnion(
-  "service",
-  [
-    DownloadableFileRead,
-    ProductMediaFileRead,
-    OrganizationAvatarFileRead,
-    SupportCaseAttachmentFileRead,
-  ],
-);
-export const LegacyRecurringProductPrice: ObjectSchema<models.LegacyRecurringProductPrice> =
-  /* @__PURE__ */ z.discriminatedUnion("amount_type", [
-    LegacyRecurringProductPriceFixed,
-    LegacyRecurringProductPriceCustom,
-  ]);
-export const MetadataQuery: Schema<models.MetadataQuery> = /* @__PURE__ */ z.union([
-  /* @__PURE__ */ z.record(
-    /* @__PURE__ */ z.string(),
-    /* @__PURE__ */ z.union([
-      /* @__PURE__ */ z.string(),
-      /* @__PURE__ */ z.int(),
-      /* @__PURE__ */ z.boolean(),
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.int()),
-      /* @__PURE__ */ z.array(/* @__PURE__ */ z.boolean()),
-    ]),
-  ),
-  /* @__PURE__ */ z.null(),
-]);
-export const Payment: Schema<models.Payment> = /* @__PURE__ */ z.union([
-  CardPayment,
-  KrCardPayment,
-  GenericPayment,
-]);
-export const PaymentMethod: Schema<models.PaymentMethod> = /* @__PURE__ */ z.union([
-  CustomerPaymentMethodCard,
-  CustomerPaymentMethodKrCard,
-  CustomerPaymentMethodGeneric,
-]);
-export const ProductCreate: Schema<models.ProductCreate> = /* @__PURE__ */ z.union([
-  ProductCreateRecurring,
-  ProductCreateOneTime,
-]);
-export const ProductPrice: ObjectSchema<models.ProductPrice> = /* @__PURE__ */ z.discriminatedUnion(
-  "amount_type",
-  [
-    ProductPriceFixed,
-    ProductPriceCustom,
-    ProductPriceSeatBased,
-    ProductPriceUnitBased,
-    ProductPriceMeteredUnit,
-    ProductPriceMeteredTiers,
-  ],
-);
-export const SubscriptionUpdate: Schema<models.SubscriptionUpdate> = /* @__PURE__ */ z.union([
-  SubscriptionUpdateBase,
-  SubscriptionUpdateSeats,
-  SubscriptionUpdateUnits,
-  SubscriptionUpdateBillingPeriod,
-  SubscriptionCancel,
-  SubscriptionRevoke,
-  SubscriptionPause,
-  SubscriptionResume,
-  SubscriptionUpdateClear,
-]);
 export const Event: ObjectSchema<models.Event> = /* @__PURE__ */ z.discriminatedUnion("source", [
   SystemEvent,
   UserEvent,

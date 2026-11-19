@@ -253,15 +253,27 @@ class TypeScriptEmitter(EmitterBase):
         )
 
     def _emit_zod_schemas(self, version_dir: pathlib.Path, api: APIVersion) -> None:
+        output_enum_names: set[str] = set()
+        for model in api.output_models + api.webhooks:
+            for field in model.fields:
+                output_enum_names.update(collect_enum_names(field.type, api))
+            if model.additional_properties is not None:
+                output_enum_names.update(
+                    collect_enum_names(model.additional_properties, api)
+                )
+        for union in api.output_unions:
+            for variant in union.variants:
+                output_enum_names.update(collect_enum_names(variant, api))
+
         self.render_file(
             "src/version/zod.ts",
             version_dir / "zod.ts",
             {
                 **self.get_version_context(api),
-                "converter": ZodConverter(api.all_models, api.all_unions),
-                "enums": api.enums,
-                "models": api.all_models,
-                "unions": sort_unions_by_dependency(api.all_unions),
+                "converter": ZodConverter(api.output_models, api.output_unions),
+                "enums": [e for e in api.enums if e.name in output_enum_names],
+                "models": api.output_models,
+                "unions": sort_unions_by_dependency(api.output_unions),
             },
         )
 

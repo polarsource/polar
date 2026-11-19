@@ -335,8 +335,9 @@ if (!result.success) {
 }
 ```
 
-Every model, enum, and union in the API version has a schema with the same name, and each webhook
-payload has one too, such as `WebhookOrderCreatedPayload`. Objects keep fields they don't know, so
+Every model, enum, and union that the API returns has a schema with the same name, and each webhook
+payload has one too, such as `WebhookOrderCreatedPayload`. Request bodies and query parameters don't
+have schemas, because the SDK sends them and doesn't receive them. Objects keep fields they don't know, so
 a field added to the API later is passed through instead of dropped. The schemas also implement
 [Standard Schema](https://standardschema.dev), so libraries that accept Standard Schema validators
 can use them directly.

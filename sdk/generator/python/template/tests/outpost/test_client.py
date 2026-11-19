@@ -1558,35 +1558,20 @@ async def test_keeps_its_telemetry_for_the_next_flush_when_redis_fails_the_write
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     url, redis = redis_connection
+    spans = "outpost:v1:org-1:telemetry:spans"
 
-    class FailingPipeline:
-        async def __aenter__(self) -> typing.Self:
-            return self
-
-        async def __aexit__(self, *args: object) -> None:
-            pass
-
-        def rpush(self, *args: object) -> None:
-            pass
-
-        def ltrim(self, *args: object) -> None:
-            pass
-
-        async def execute(self) -> None:
-            raise RedisConnectionError("Connection closed by server.")
+    async def fail(*args: object) -> None:
+        raise RedisConnectionError("Connection closed by server.")
 
     async with Outpost(url, client=polar_client) as outpost:
         assert outpost._redis is not None
-        monkeypatch.setattr(
-            outpost._redis, "pipeline", lambda **kwargs: FailingPipeline()
-        )
+        monkeypatch.setattr(outpost._redis, "evalsha", fail)
         outpost._outbox.add("spans", b"spans;")
         await outpost.flush_telemetry()
-        monkeypatch.delattr(outpost._redis, "pipeline")
+        assert await redis.llen(spans) == 0
+        monkeypatch.delattr(outpost._redis, "evalsha")
         await outpost.flush_telemetry()
-        assert await redis.lrange("outpost:v1:org-1:telemetry:spans", 0, -1) == [
-            b"spans;"
-        ]
+        assert await redis.lrange(spans, 0, -1) == [b"spans;"]
 
 
 @pytest.mark.anyio

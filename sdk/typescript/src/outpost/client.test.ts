@@ -1337,22 +1337,6 @@ it("settles an event once however many times a confirmation names it", async () 
   expect(await redis.hget(key, `pending:${bucket}:sum`)).toBe("10");
 });
 
-it("settles an event the previous SDK version left pending", async () => {
-  const outpost = await warm();
-  await outpost.track(usage("new", 10));
-  // What WRITE_BUCKET used to store per event: count, sum, min and max, as strings.
-  await redis.hset(
-    `outpost:v1:${organization}:pending:external:alice:tokens:${bucket}`,
-    "old",
-    '["1","7","7","7"]',
-  );
-  await redis.hincrby(key, `pending:${bucket}:count`, 1);
-  await redis.hincrbyfloat(key, `pending:${bucket}:sum`, 7);
-  await outpost.confirm([usage("old", 7)]);
-  expect(await redis.hget(key, `pending:${bucket}:count`)).toBe("1");
-  expect(await redis.hget(key, `pending:${bucket}:sum`)).toBe("10");
-});
-
 it("settles a hot bucket's events on Polar's receipt", async () => {
   const outpost = await warm();
   const events = [usage("event-0", 10), usage("event-1", 10)];

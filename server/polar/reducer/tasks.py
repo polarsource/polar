@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from typing import Annotated
 
+from apscheduler.triggers.cron import CronTrigger
+
 from polar.billing_interval.service import billing_interval as billing_interval_service
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
@@ -11,10 +13,10 @@ from polar.worker import (
     RedisMiddleware,
     TaskPriority,
     actor,
+    get_message_timestamp,
 )
 
 from . import cache
-from .redis_store import get_reducer_bucket_key
 from .service import reducer as reducer_service
 
 
@@ -52,27 +54,7 @@ async def seal(
         )
 
 
-def _sync_debounce_key(
-    reducer_id: uuid.UUID,
-    bucket_start: str,
-    customer_id: uuid.UUID | None,
-    external_customer_id: str | None,
-) -> str:
-    return "reducer_bucket.sync:" + get_reducer_bucket_key(
-        reducer_id,
-        datetime.fromisoformat(bucket_start),
-        customer_id,
-        external_customer_id,
-    )
-
-
-@actor(
-    actor_name="reducer_bucket.sync",
-    priority=TaskPriority.LOW,
-    debounce_key=_sync_debounce_key,
-    debounce_min_threshold=10,
-    debounce_max_threshold=360,
-)
+@actor(actor_name="reducer_bucket.sync", priority=TaskPriority.LOW)
 async def sync(
     reducer_id: Annotated[uuid.UUID, LoggableField],
     bucket_start: Annotated[str, LoggableField],
@@ -87,3 +69,20 @@ async def sync(
             customer_id,
             external_customer_id,
         )
+
+
+@actor(
+    actor_name="reducer_bucket.enqueue_syncs",
+    # A minute after each window closes, once the requests writing to it committed
+    cron_trigger=CronTrigger.from_crontab("1-59/5 * * * *"),
+    priority=TaskPriority.LOW,
+    # Retried within the window: its buckets must reach Postgres before live
+    # reads stop looking for them in Redis.
+    max_retries=4,
+    min_backoff=5_000,
+    max_backoff=60_000,
+)
+async def enqueue_syncs() -> None:
+    async with AsyncSessionMaker() as session:
+        # The scheduled time, so a run delayed behind a backlog still syncs its windows
+        await reducer_service.enqueue_bucket_syncs(session, at=get_message_timestamp())

@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.models import Customer, Member, Organization
 from polar.models.customer import CustomerType

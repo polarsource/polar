@@ -4,7 +4,7 @@ from uuid import UUID
 
 import pytest
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 

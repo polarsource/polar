@@ -13,7 +13,9 @@ from polar.product.tiers import Tiers, TierType
 from scripts.backfill_billing_intervals import (
     backfill_batch,
     count_subscriptions_without_intervals,
+    record_active_period,
 )
+from scripts.repair_paused_billing_intervals import paused_from_pause_only_statement
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_product,
@@ -76,12 +78,18 @@ class TestBackfillBatch:
             (
                 SubscriptionStatus.paused,
                 PERIOD_END + timedelta(minutes=1),
-                [(UsagePolicy.paused, PERIOD_END, None)],
+                [
+                    (UsagePolicy.charge, PERIOD_START, PERIOD_END),
+                    (UsagePolicy.paused, PERIOD_END, None),
+                ],
             ),
             (
                 SubscriptionStatus.paused,
                 PAUSED_EARLY,
-                [(UsagePolicy.paused, PAUSED_EARLY, None)],
+                [
+                    (UsagePolicy.charge, PERIOD_START, PAUSED_EARLY),
+                    (UsagePolicy.paused, PAUSED_EARLY, None),
+                ],
             ),
             (SubscriptionStatus.canceled, None, []),
         ],
@@ -203,6 +211,7 @@ class TestBackfillBatch:
         )
 
         assert await get_history(session, subscription) == [
+            (UsagePolicy.charge, PERIOD_START, PAUSED_EARLY),
             (UsagePolicy.paused, PAUSED_EARLY, PERIOD_END),
             (UsagePolicy.charge, PERIOD_END, None),
         ]
@@ -225,3 +234,34 @@ class TestBackfillBatch:
 
         assert count == 1
         assert await get_history(session, subscription) == []
+
+
+@pytest.mark.anyio
+class TestRepairPausedBillingIntervals:
+    async def test_records_the_last_active_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_period_subscription(
+            save_fixture,
+            product_recurring_metered,
+            customer,
+            SubscriptionStatus.paused,
+            PERIOD_END + timedelta(minutes=1),
+        )
+        await billing_interval_service.record_subscription(
+            session, subscription, effective_at=PERIOD_END
+        )
+
+        result = await session.execute(paused_from_pause_only_statement())
+        [(repaired, paused_from)] = result.all()
+        await record_active_period(session, repaired, until=paused_from)
+
+        assert await get_history(session, subscription) == [
+            (UsagePolicy.charge, PERIOD_START, PERIOD_END),
+            (UsagePolicy.paused, PERIOD_END, None),
+        ]
+        assert (await session.execute(paused_from_pause_only_statement())).all() == []

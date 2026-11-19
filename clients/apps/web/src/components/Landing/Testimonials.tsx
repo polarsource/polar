@@ -122,7 +122,9 @@ export const Testimonials = () => {
         gap={{ base: '2xl', lg: 'l' }}
       >
         <Box alignItems="start" display={{ md: 'flex', base: 'none' }}>
-          <Text variant="heading-s">What people say</Text>
+          <Text variant="heading-s" as="h2">
+            What people say
+          </Text>
         </Box>
         <QuoteLink testimonial={lead}>
           <figure>

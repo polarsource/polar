@@ -1,7 +1,7 @@
 import uuid
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.kit.utils import utc_now

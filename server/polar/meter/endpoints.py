@@ -69,6 +69,8 @@ async def list(
         auth_subject,
         organization_id=filters.organization_id,
         external_id=filters.external_id,
+        catalog_id=filters.catalog_id,
+        catalog_status=filters.catalog_status,
         metadata=metadata,
         query=filters.query,
         is_archived=filters.is_archived,

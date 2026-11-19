@@ -28,7 +28,6 @@ export const ALLOWED_DASHBOARD_PATHS = [
   'products/meters',
   'products/meters/create',
   'products/new',
-  'products/new/ai',
   'sales',
   'sales/checkouts',
   'sales/subscriptions',

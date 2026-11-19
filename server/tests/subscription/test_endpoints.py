@@ -3,13 +3,18 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
+from polar.enums import (
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
 from polar.kit.currency import PresentmentCurrency
+from polar.kit.trial import TrialInterval
 from polar.kit.utils import utc_now
+from polar.kit.versioning import APIVersion
 from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
@@ -29,7 +34,7 @@ from polar.order.service import PaymentFailed, PaymentFailedReason
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
-from polar.version import V2027_01
+from polar.version import V2026_04, V2026_10, V2027_01
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -386,6 +391,33 @@ class TestListSubscriptions:
 
 @pytest.mark.anyio
 class TestCreateSubscription:
+    @pytest.mark.auth
+    @pytest.mark.api_version(V2026_04, V2026_10, V2027_01)
+    async def test_paid_trial(
+        self,
+        client: AsyncClient,
+        api_version: APIVersion,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        await save_fixture(product)
+
+        response = await client.post(
+            "/v1/subscriptions/",
+            json={"product_id": str(product.id), "customer_id": str(customer.id)},
+        )
+
+        if api_version == V2027_01:
+            assert response.status_code == 201
+            assert response.json()["status"] == SubscriptionStatus.trialing
+        else:
+            assert response.status_code == 422
+
     async def test_anonymous(
         self,
         client: AsyncClient,
@@ -763,6 +795,31 @@ class TestSubscriptionProductUpdate:
         assert error["detail"][0]["loc"] == ["body", "product_id"]
         assert "above the maximum of 10 seats" in error["detail"][0]["msg"]
         assert error["detail"][0]["input"] == str(new_seat_product.id)
+
+    @pytest.mark.api_version(V2026_10, V2027_01)
+    @pytest.mark.auth
+    async def test_auto_proration_behavior_downgrade(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        product: Product,
+        product_second: Product,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_second, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"product_id": str(product.id), "proration_behavior": "auto"},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["product_id"] == str(product_second.id)
+        assert json["pending_update"]["product_id"] == str(product.id)
 
     @pytest.mark.api_version(V2027_01)
     @pytest.mark.auth
@@ -2634,7 +2691,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2655,7 +2712,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2677,7 +2734,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2698,7 +2755,7 @@ class TestBulkUpdate:
         response = await client.post(
             "/v1/subscriptions/bulk-update",
             json={
-                "product_external_id": "pro",
+                "external_product_id": "pro",
                 "target_product_id": str(current_product.id),
             },
         )
@@ -2706,7 +2763,7 @@ class TestBulkUpdate:
         assert response.status_code == 202
         json = response.json()
         assert json["organization_id"] == str(organization.id)
-        assert json["product_external_id"] == "pro"
+        assert json["external_product_id"] == "pro"
         assert json["target_product_id"] == str(current_product.id)
         assert json["proration_behavior"] == SubscriptionProrationBehavior.next_period
         assert json["completed_at"] is None

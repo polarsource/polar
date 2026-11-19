@@ -1,27 +1,15 @@
 'use client'
 
 import type { MetricsProductFilter } from '@/hooks/queries/metrics'
-import { fromISODate, toISODate } from '@/utils/metrics'
+import { fromISODate, parseAsISODate, TIME_INTERVALS } from '@/utils/metrics'
 import { getMetricsRangeDates } from '@polar-sh/client'
 import {
-  createParser,
   parseAsArrayOf,
   parseAsString,
   parseAsStringLiteral,
   useQueryState,
 } from 'nuqs'
 import { useMemo } from 'react'
-
-const TIME_INTERVALS = ['hour', 'day', 'week', 'month', 'year'] as const
-
-const parseAsISODate = createParser({
-  parse: (value: string) => {
-    if (!value) return null
-    const date = fromISODate(value)
-    return isNaN(date.getTime()) ? null : date
-  },
-  serialize: (date: Date) => toISODate(date),
-})
 
 export function useMetricsFilters(earliestDateISOString: string) {
   const minDate = useMemo(

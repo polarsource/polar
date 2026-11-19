@@ -5,10 +5,21 @@ import { Circle, KeyboardArrowDown } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
 import { useId, useState } from 'react'
 import { Change, diffItems, Line } from './diff'
-import { fieldLabel, plural, productFields, valueFormatter } from './format'
+import {
+  customFieldFields,
+  fieldLabel,
+  meterFields,
+  plural,
+  productFields,
+  valueFormatter,
+} from './format'
 
 type Config = schemas['ConfigExportDocument']
-type Format = (field: string, value: unknown) => string
+// Each side reads ids against its own config, so a meter whose unit changed keeps its old scale on the before side
+type Format = Record<
+  'before' | 'after',
+  (field: string, value: unknown) => string
+>
 
 const signs = {
   added: { glyph: '+', color: 'text-emerald-500' },
@@ -60,20 +71,19 @@ const DiffLine = ({
       {line.change === 'changed' ? (
         <Box alignItems="baseline" columnGap="s" minWidth={0} flexWrap="wrap">
           <Text color="muted" lineThrough>
-            {format(line.field, line.before)}
+            {format.before(line.field, line.before)}
           </Text>
           <Text color="muted">→</Text>
-          <Text>{format(line.field, line.after)}</Text>
+          <Text>{format.after(line.field, line.after)}</Text>
         </Box>
       ) : (
         <Text
           color={line.change === 'removed' ? 'muted' : 'default'}
           lineThrough={line.change === 'removed' && showSign}
         >
-          {format(
-            line.field,
-            line.change === 'removed' ? line.before : line.after,
-          )}
+          {line.change === 'removed'
+            ? format.before(line.field, line.before)
+            : format.after(line.field, line.after)}
         </Text>
       )}
     </Grid>
@@ -139,7 +149,7 @@ const UnchangedItems = <T extends { external_id: string }>({
   items: T[]
   noun: string
   nameField: keyof T & string
-  href: (externalId: string) => string | undefined
+  href?: (externalId: string) => string | undefined
   bordered: boolean
 }) => {
   const [expanded, setExpanded] = useState(false)
@@ -198,7 +208,7 @@ const UnchangedItems = <T extends { external_id: string }>({
               borderStyle="solid"
               borderColor="border-primary"
             >
-              <ItemRow href={href(item.external_id)}>
+              <ItemRow href={href?.(item.external_id)}>
                 <ItemName name={String(item[nameField])} muted />
               </ItemRow>
             </Box>
@@ -223,7 +233,7 @@ const DiffSection = <T extends { external_id: string }>({
   before: T[]
   after: T[]
   nameField: keyof T & string
-  href: (externalId: string) => string | undefined
+  href?: (externalId: string) => string | undefined
   format: Format
 }) => {
   const { entries, unchanged } = diffItems(before, after, nameField)
@@ -250,7 +260,7 @@ const DiffSection = <T extends { external_id: string }>({
             borderStyle="solid"
             borderColor="border-primary"
           >
-            <ItemRow href={href(key)}>
+            <ItemRow href={href?.(key)}>
               <ItemName
                 name={String(item[nameField])}
                 removed={change === 'removed'}
@@ -294,15 +304,18 @@ export const VersionDiff = ({
   parentConfig,
   productHref,
   benefitHref,
+  meterHref,
 }: {
   config: Config
   parentConfig?: Config
   productHref: (externalId: string) => string | undefined
   benefitHref: (externalId: string) => string | undefined
+  meterHref: (externalId: string) => string | undefined
 }) => {
-  const format = valueFormatter(
-    parentConfig ? [parentConfig, config] : [config],
-  )
+  const format = {
+    before: valueFormatter(parentConfig ? [config, parentConfig] : [config]),
+    after: valueFormatter(parentConfig ? [parentConfig, config] : [config]),
+  }
 
   return (
     <div className="animate-in fade-in duration-200 ease-out">
@@ -323,6 +336,23 @@ export const VersionDiff = ({
           after={config.benefits}
           nameField="description"
           href={benefitHref}
+          format={format}
+        />
+        <DiffSection
+          title="Meters"
+          noun="meter"
+          before={parentConfig?.meters.map(meterFields) ?? []}
+          after={config.meters.map(meterFields)}
+          nameField="name"
+          href={meterHref}
+          format={format}
+        />
+        <DiffSection
+          title="Custom fields"
+          noun="custom field"
+          before={parentConfig?.custom_fields?.map(customFieldFields) ?? []}
+          after={config.custom_fields?.map(customFieldFields) ?? []}
+          nameField="name"
           format={format}
         />
       </Box>

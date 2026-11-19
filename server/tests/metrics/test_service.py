@@ -15,7 +15,6 @@ from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.enums import SubscriptionRecurringInterval
-from polar.integrations.tinybird.client import TinybirdClient
 from polar.integrations.tinybird.service import DATASOURCE_EVENTS, _event_to_tinybird
 from polar.kit.db.postgres import create_async_engine, create_async_sessionmaker
 from polar.kit.time_queries import TimeInterval
@@ -41,7 +40,13 @@ from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
-from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
+from tests.fixtures.database import (
+    TEMPLATE_DATABASE,
+    SaveFixture,
+    clone_template_database,
+    get_database_url,
+    save_fixture_factory,
+)
 from tests.fixtures.random_objects import (
     create_account,
     create_checkout,
@@ -56,10 +61,8 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_user,
 )
-from tests.fixtures.tinybird import tinybird_available
+from tests.fixtures.tinybird import SynchronousIngestTinybirdClient, tinybird_available
 from tests.metrics.conftest import create_events_for_fixtures
-
-pytestmark = pytest.mark.xdist_group(name="tinybird")
 
 
 class ProductFixture(TypedDict):
@@ -360,6 +363,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.year,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_month",
@@ -368,6 +372,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.month,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_week",
@@ -376,6 +381,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.week,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_day",
@@ -384,6 +390,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.day,
         auth_type="user",
+        metrics=("orders",),
     ),
     QueryCase(
         label="intervals_hour",
@@ -392,6 +399,7 @@ QUERY_CASES: tuple[QueryCase, ...] = (
         end_date=date(2024, 12, 31),
         interval=TimeInterval.hour,
         auth_type="user",
+        metrics=("orders",),
     ),
     # --- shared org: timezones (user + org) ---
     QueryCase(
@@ -2364,7 +2372,10 @@ async def metrics_module_database_url(worker_id: str) -> AsyncIterator[str]:
     if database_exists(sync_database_url):
         drop_database(sync_database_url)
 
-    create_database(sync_database_url)
+    if TEMPLATE_DATABASE:
+        clone_template_database(sync_database_url)
+    else:
+        create_database(sync_database_url)
 
     async_database_url = get_database_url(database_id)
     engine = create_async_engine(
@@ -2375,17 +2386,18 @@ async def metrics_module_database_url(worker_id: str) -> AsyncIterator[str]:
     )
 
     try:
-        async with engine.begin() as conn:
-            await conn.execute(CreateSequence(Customer.short_id_sequence))
-            for entity in entities_registry.entities():
-                if isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
-            await conn.run_sync(Model.metadata.create_all)
-            for entity in entities_registry.entities():
-                if not isinstance(entity, PGTrigger):
-                    continue
-                await conn.execute(entity.to_sql_statement_create())
+        if not TEMPLATE_DATABASE:
+            async with engine.begin() as conn:
+                await conn.execute(CreateSequence(Customer.short_id_sequence))
+                for entity in entities_registry.entities():
+                    if isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
+                await conn.run_sync(Model.metadata.create_all)
+                for entity in entities_registry.entities():
+                    if not isinstance(entity, PGTrigger):
+                        continue
+                    await conn.execute(entity.to_sql_statement_create())
 
         yield async_database_url
     finally:
@@ -2409,7 +2421,7 @@ async def metrics_harness(
     session = create_async_sessionmaker(engine)()
     save_fixture = save_fixture_factory(session)
 
-    tinybird_client = TinybirdClient(
+    tinybird_client = SynchronousIngestTinybirdClient(
         api_url=settings.TINYBIRD_API_URL,
         clickhouse_url=settings.TINYBIRD_CLICKHOUSE_URL,
         api_token=tinybird_workspace,

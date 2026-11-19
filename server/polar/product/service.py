@@ -347,6 +347,7 @@ class ProductService:
             create_schema.recurring_interval,
             None,
             auth_subject,
+            declarative_config=declarative_config,
         )
         errors.extend(prices_errors)
 
@@ -487,6 +488,7 @@ class ProductService:
                 product.recurring_interval,
                 product,
                 auth_subject,
+                declarative_config=declarative_config,
             )
             errors.extend(prices_errors)
 
@@ -665,9 +667,19 @@ class ProductService:
         if update_schema.is_archived:
             product = await self._archive(session, product)
 
+        if update_schema.trial_payment_setup_required is not None:
+            product.trial_payment_setup_required = (
+                update_schema.trial_payment_setup_required
+            )
+
         for attr, value in update_schema.model_dump(
             exclude_unset=True,
-            exclude={"prices", "medias", "attached_custom_fields"},
+            exclude={
+                "prices",
+                "medias",
+                "attached_custom_fields",
+                "trial_payment_setup_required",
+            },
             by_alias=True,
         ).items():
             setattr(product, attr, value)
@@ -816,6 +828,8 @@ class ProductService:
         auth_subject: AuthSubject[User | Organization | Agent],
         source: ProductPriceSource = ProductPriceSource.catalog,
         error_prefix: tuple[str, ...] = ("body", "prices"),
+        *,
+        declarative_config: bool = False,
     ) -> tuple[
         builtins.list[ProductPrice],
         builtins.set[ProductPrice],
@@ -894,8 +908,12 @@ class ProductService:
             )
         )
 
-        # Check that the default presentment currency is present
-        if organization.default_presentment_currency not in prices_per_currency:
+        # Config checks prices against the currency it publishes, which a draft
+        # doesn't make the organization's yet.
+        if (
+            not declarative_config
+            and organization.default_presentment_currency not in prices_per_currency
+        ):
             errors.append(
                 {
                     "type": "value_error",

@@ -28,7 +28,7 @@ from polar.models.product_price import ProductPrice, ProductPriceSource
 from polar.models.refund import Refund, RefundStatus
 from polar.models.user import User
 from polar.models.user_organization import UserOrganization
-from polar.models.webhook_endpoint import WebhookEndpoint
+from polar.models.webhook_endpoint import WebhookEndpoint, WebhookFormat
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import (
     ActorType,
@@ -523,6 +523,7 @@ class OrganizationReviewRepository(
         """Get webhook endpoints for the organization."""
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.organization_id == organization_id,
+            WebhookEndpoint.format != WebhookFormat.mcp,
             ~WebhookEndpoint.is_deleted,
         )
         result = await self.session.execute(statement)

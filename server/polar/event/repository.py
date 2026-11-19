@@ -27,13 +27,14 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, with_polymorphic
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.db.postgres import json_serializer
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
 from polar.kit.repository.base import Options
 from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
-from polar.kit.utils import generate_uuid
+from polar.kit.utils import generate_uuid, utc_now
 from polar.models import (
     BillingEntry,
     Customer,
@@ -43,7 +44,11 @@ from polar.models import (
     StagedEvent,
 )
 from polar.models.event import EventSource
-from polar.models.product_price import ProductPrice
+from polar.models.product_price import (
+    ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
+)
 
 from .system import SystemEvent
 
@@ -52,6 +57,47 @@ from .system import SystemEvent
 # (A.parent_id → B → A) ever sneaks into the data, instead of spinning until
 # statement_timeout kills the worker.
 _MAX_RESOLVE_DEPTH = 100
+
+_INSERT_STAGED_EVENTS = text(
+    """
+    INSERT INTO staged_events (
+        id, ingested_at, timestamp, name, source, organization_id, customer_id,
+        external_customer_id, member_id, external_member_id, external_id,
+        pending_parent_external_id, event_type_id, user_metadata
+    )
+    SELECT * FROM UNNEST(
+        CAST(:id AS uuid[]),
+        CAST(:ingested_at AS timestamptz[]),
+        CAST(:timestamp AS timestamptz[]),
+        CAST(:name AS varchar[]),
+        CAST(:source AS varchar[]),
+        CAST(:organization_id AS uuid[]),
+        CAST(:customer_id AS uuid[]),
+        CAST(:external_customer_id AS varchar[]),
+        CAST(:member_id AS uuid[]),
+        CAST(:external_member_id AS varchar[]),
+        CAST(:external_id AS varchar[]),
+        CAST(:pending_parent_external_id AS varchar[]),
+        CAST(:event_type_id AS uuid[]),
+        CAST(:user_metadata AS jsonb[])
+    )
+    ON CONFLICT (organization_id, external_id) WHERE external_id IS NOT NULL
+    DO NOTHING
+    RETURNING id, organization_id, external_id
+    """
+)
+_INSERT_STAGED_EVENTS_COLUMNS = frozenset(_INSERT_STAGED_EVENTS._bindparams)
+
+_DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS = text(
+    """
+    DELETE FROM staged_events
+    USING events
+    WHERE staged_events.id = ANY(CAST(:ids AS uuid[]))
+    AND events.organization_id = staged_events.organization_id
+    AND events.external_id = staged_events.external_id
+    RETURNING staged_events.id
+    """
+)
 
 
 class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
@@ -137,57 +183,77 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not events:
             return [], 0
 
+        unknown_columns = set().union(*events) - _INSERT_STAGED_EVENTS_COLUMNS
+        if unknown_columns:
+            raise ValueError(f"Unknown staged event columns: {unknown_columns}")
+        ids: list[UUID] = []
+        ingested_at: list[datetime] = []
+        timestamps: list[datetime] = []
+        names: list[str] = []
+        sources: list[str] = []
+        organization_ids: list[UUID] = []
+        customer_ids: list[UUID | None] = []
+        external_customer_ids: list[str | None] = []
+        member_ids: list[UUID | None] = []
+        external_member_ids: list[str | None] = []
+        event_external_ids: list[str | None] = []
+        pending_parent_external_ids: list[str | None] = []
+        event_type_ids: list[UUID | None] = []
+        user_metadata: list[str] = []
         for event in events:
             if event.get("id") is None:
                 event["id"] = generate_uuid()
-        keys = set().union(*events)
-        for event in events:
-            for key in keys:
-                event.setdefault(key, None)
+            ids.append(event["id"])
+            ingested_at.append(event.get("ingested_at") or utc_now())
+            timestamps.append(event["timestamp"])
+            names.append(event["name"])
+            sources.append(event["source"])
+            organization_ids.append(event["organization_id"])
+            customer_ids.append(event.get("customer_id"))
+            external_customer_ids.append(event.get("external_customer_id"))
+            member_ids.append(event.get("member_id"))
+            external_member_ids.append(event.get("external_member_id"))
+            event_external_ids.append(event.get("external_id"))
+            pending_parent_external_ids.append(event.get("pending_parent_external_id"))
+            event_type_ids.append(event.get("event_type_id"))
+            user_metadata.append(json_serializer(event["user_metadata"]))
 
-        statement = (
-            insert(StagedEvent)
-            .on_conflict_do_nothing(
-                index_elements=["organization_id", "external_id"],
-                index_where=StagedEvent.external_id.is_not(None),
-            )
-            .returning(
-                StagedEvent.id, StagedEvent.organization_id, StagedEvent.external_id
-            )
-            .execution_options(render_nulls=True)
+        result = await self.session.execute(
+            _INSERT_STAGED_EVENTS,
+            {
+                "id": ids,
+                "ingested_at": ingested_at,
+                "timestamp": timestamps,
+                "name": names,
+                "source": sources,
+                "organization_id": organization_ids,
+                "customer_id": customer_ids,
+                "external_customer_id": external_customer_ids,
+                "member_id": member_ids,
+                "external_member_id": external_member_ids,
+                "external_id": event_external_ids,
+                "pending_parent_external_id": pending_parent_external_ids,
+                "event_type_id": event_type_ids,
+                "user_metadata": user_metadata,
+            },
         )
-        result = await self.session.execute(statement, events)
         inserted = result.all()
 
         # Drop the inserted rows whose external ID is already in `events`: the
         # unique index only catches duplicates still in `staged_events`. This is
         # its own statement after the insert because an insert racing the mover
         # on the same external ID waits for the mover to commit, and only a
-        # snapshot taken after that wait sees the moved row in `events`.
-        external_ids_by_organization: dict[UUID, list[str]] = {}
-        for _, organization_id, external_id in inserted:
-            if external_id is not None:
-                external_ids_by_organization.setdefault(organization_id, []).append(
-                    external_id
-                )
-        duplicate_ids: list[UUID] = []
-        for organization_id, external_ids in external_ids_by_organization.items():
+        # snapshot taken after that wait sees the moved row in `events`. Only
+        # this insert's own rows are checked, so the mover never blocks it.
+        ids_with_external_id = [
+            id for id, _, external_id in inserted if external_id is not None
+        ]
+        duplicate_id_set: set[UUID] = set()
+        if ids_with_external_id:
             moved = await self.session.execute(
-                delete(StagedEvent)
-                .where(
-                    StagedEvent.organization_id == organization_id,
-                    StagedEvent.external_id.in_(
-                        select(Event.external_id).where(
-                            Event.organization_id == organization_id,
-                            Event.external_id.in_(external_ids),
-                        )
-                    ),
-                )
-                .returning(StagedEvent.id)
+                _DELETE_STAGED_EVENTS_ALREADY_IN_EVENTS, {"ids": ids_with_external_id}
             )
-            duplicate_ids.extend(moved.scalars())
-
-        duplicate_id_set = set(duplicate_ids)
+            duplicate_id_set = set(moved.scalars())
         inserted_ids = [id for id, _, _ in inserted if id not in duplicate_id_set]
         return inserted_ids, len(events) - len(inserted_ids)
 
@@ -206,11 +272,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             select(StagedEvent.id)
             .limit(limit)
             .with_for_update(skip_locked=True)
-            .scalar_subquery()
+            .cte("claimed")
         )
         moved = (
             delete(StagedEvent)
-            .where(StagedEvent.id.in_(claimed))
+            .where(StagedEvent.id.in_(select(claimed.c.id)))
             .returning(*StagedEvent.__table__.columns)
             .cte("moved")
         )
@@ -269,29 +335,46 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if not inserted_ids:
             return []
 
+        # By primary key: a filter on pending refs would make the planner scan
+        # every pending row of ix_events_org_pending_parent instead.
+        batch_rows = (
+            await self.session.execute(
+                select(
+                    Event.id, Event.external_id, Event.pending_parent_external_id
+                ).where(Event.id.in_(inserted_ids))
+            )
+        ).all()
+        pending_refs: set[str] = set()
+        batch_external_ids: set[str] = set()
+        for _, external_id, pending_ref in batch_rows:
+            if pending_ref is not None:
+                pending_refs.add(pending_ref)
+            if external_id is not None:
+                batch_external_ids.add(external_id)
+
         # parent_1a, parent_1b, parent_1c, parent_1d
         # are all four ways we can resolve pending_parent_id to parent_id
         # (pointing to a internal event ID).
-        parent_1a = Event.__table__.alias("parent_1a")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1a.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1a.c.organization_id,
-                Event.pending_parent_external_id == parent_1a.c.external_id,
-                Event.id.in_(inserted_ids),
-                Event.id != parent_1a.c.id,
+        if pending_refs:
+            parent_1a = Event.__table__.alias("parent_1a")
+            await self.session.execute(
+                update(Event)
+                .values(parent_id=parent_1a.c.id, pending_parent_external_id=None)
+                .where(
+                    Event.organization_id == parent_1a.c.organization_id,
+                    Event.pending_parent_external_id == parent_1a.c.external_id,
+                    Event.id.in_(inserted_ids),
+                    Event.id != parent_1a.c.id,
+                    # Implied by the join; makes the planner probe
+                    # ix_events_org_pending_parent instead of scanning it
+                    Event.pending_parent_external_id.in_(pending_refs),
+                )
             )
-        )
 
-        batch_pending_rows = await self.session.execute(
-            select(Event.id, Event.pending_parent_external_id).where(
-                Event.id.in_(inserted_ids),
-                Event.pending_parent_external_id.is_not(None),
-            )
-        )
         uuid_pending_in_batch: list[UUID] = []
-        for event_id, pending_ref in batch_pending_rows.all():
+        for event_id, _, pending_ref in batch_rows:
+            if pending_ref is None or pending_ref.lower().startswith("urn:uuid:"):
+                continue
             try:
                 UUID(pending_ref)
             except ValueError, TypeError:
@@ -311,18 +394,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 )
             )
 
-        parent_1c = Event.__table__.alias("parent_1c")
-        await self.session.execute(
-            update(Event)
-            .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
-            .where(
-                Event.organization_id == parent_1c.c.organization_id,
-                Event.pending_parent_external_id.is_not(None),
-                Event.pending_parent_external_id == parent_1c.c.external_id,
-                parent_1c.c.id.in_(inserted_ids),
-                Event.id != parent_1c.c.id,
+        if batch_external_ids:
+            parent_1c = Event.__table__.alias("parent_1c")
+            await self.session.execute(
+                update(Event)
+                .values(parent_id=parent_1c.c.id, pending_parent_external_id=None)
+                .where(
+                    Event.organization_id == parent_1c.c.organization_id,
+                    Event.pending_parent_external_id.is_not(None),
+                    Event.pending_parent_external_id == parent_1c.c.external_id,
+                    parent_1c.c.id.in_(inserted_ids),
+                    Event.id != parent_1c.c.id,
+                    # Implied by the join; makes the planner probe
+                    # ix_events_org_pending_parent instead of scanning it
+                    Event.pending_parent_external_id.in_(batch_external_ids),
+                )
             )
-        )
 
         # Pending refs are matched against the canonical lowercase string of
         # batch ids; non-canonical (e.g. uppercase) refs won't link here, but
@@ -512,6 +599,35 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             self.get_meter_clause(meter),
         )
 
+    async def get_meter_matching_customers(
+        self,
+        event_ids: Sequence[UUID],
+        meter: Meter,
+        customer_ids: Collection[UUID],
+        external_customer_ids: Collection[str],
+    ) -> tuple[set[UUID], set[str]]:
+        statement = (
+            select(Event.customer_id, Event.external_customer_id)
+            .where(
+                Event.id.in_(event_ids),
+                Event.organization_id == meter.organization_id,
+                or_(
+                    Event.customer_id.in_(customer_ids),
+                    Event.external_customer_id.in_(external_customer_ids),
+                ),
+                self.get_meter_clause(meter),
+            )
+            .distinct()
+        )
+        matched_customer_ids: set[UUID] = set()
+        matched_external_ids: set[str] = set()
+        for customer_id, external_customer_id in await self.session.execute(statement):
+            if customer_id is not None:
+                matched_customer_ids.add(customer_id)
+            if external_customer_id is not None:
+                matched_external_ids.add(external_customer_id)
+        return matched_customer_ids, matched_external_ids
+
     async def get_meter_billing_page(
         self,
         meter_id: UUID,
@@ -681,20 +797,22 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         Used for non-summable aggregations where we need to compute across all events
         in the period, regardless of which price was active when the event occurred.
         """
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .join(
-                ProductPrice,
-                BillingEntry.product_price_id == ProductPrice.id,
+                price,
+                BillingEntry.product_price_id == price.id,
             )
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 BillingEntry.start_timestamp < cutoff,
                 BillingEntry.created_at <= cutoff,
             )
@@ -705,17 +823,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
     def get_by_pending_meter_entries_statement(
         self, subscription: UUID, meter: UUID
     ) -> Select[Event]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         return (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
-            .join(ProductPrice, BillingEntry.product_price_id == ProductPrice.id)
+            .join(price, BillingEntry.product_price_id == price.id)
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 Event.source == EventSource.user,
             )
         )
@@ -732,6 +852,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
         )
 
+    async def get_order_item_entries_identities(
+        self, order_item_ids: Sequence[UUID]
+    ) -> Sequence[tuple[UUID | None, str | None]]:
+        statement = (
+            self.get_by_order_item_entries_statement(order_item_ids)
+            .with_only_columns(Event.customer_id, Event.external_customer_id)
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return [(row[0], row[1]) for row in result]
+
     async def get_pending_meter_credits(
         self,
         subscription: UUID,
@@ -740,17 +871,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         since: datetime | None,
         until: datetime,
     ) -> Sequence[Event]:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
-            .join(ProductPrice, BillingEntry.product_price_id == ProductPrice.id)
+            .join(price, BillingEntry.product_price_id == price.id)
             .where(
-                ProductPrice.is_metered,
+                price.is_metered,
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter,
+                price.ProductPriceMeteredUnit.meter_id == meter,
                 BillingEntry.start_timestamp < until,
                 Event.source == EventSource.system,
                 Event.name == SystemEvent.meter_credited,

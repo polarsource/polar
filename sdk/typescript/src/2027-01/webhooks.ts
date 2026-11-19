@@ -29,6 +29,10 @@ export {
  */
 export interface WebhookBenefitCreatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "benefit.created";
@@ -51,6 +55,10 @@ export interface WebhookBenefitCreatedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookBenefitGrantCreatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -76,6 +84,10 @@ export interface WebhookBenefitGrantCreatedPayload {
  */
 export interface WebhookBenefitGrantCycledPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "benefit_grant.cycled";
@@ -98,6 +110,10 @@ export interface WebhookBenefitGrantCycledPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookBenefitGrantRevokedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -122,6 +138,10 @@ export interface WebhookBenefitGrantRevokedPayload {
  */
 export interface WebhookBenefitGrantUpdatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "benefit_grant.updated";
@@ -145,6 +165,10 @@ export interface WebhookBenefitGrantUpdatedPayload {
  */
 export interface WebhookBenefitUpdatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "benefit.updated";
@@ -167,6 +191,10 @@ export interface WebhookBenefitUpdatedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookCheckoutCreatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -194,6 +222,10 @@ export interface WebhookCheckoutCreatedPayload {
  */
 export interface WebhookCheckoutExpiredPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "checkout.expired";
@@ -216,6 +248,10 @@ export interface WebhookCheckoutExpiredPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookCheckoutUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -245,6 +281,10 @@ export interface WebhookCheckoutUpdatedPayload {
  */
 export interface WebhookCustomerCreatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "customer.created";
@@ -267,6 +307,10 @@ export interface WebhookCustomerCreatedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookCustomerDeletedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -292,6 +336,10 @@ export interface WebhookCustomerDeletedPayload {
  */
 export interface WebhookCustomerSeatAssignedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "customer_seat.assigned";
@@ -315,6 +363,10 @@ export interface WebhookCustomerSeatAssignedPayload {
  */
 export interface WebhookCustomerSeatClaimedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "customer_seat.claimed";
@@ -337,6 +389,10 @@ export interface WebhookCustomerSeatClaimedPayload {
  * This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled.
  */
 export interface WebhookCustomerSeatRevokedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -367,6 +423,10 @@ export interface WebhookCustomerSeatRevokedPayload {
  */
 export interface WebhookCustomerStateChangedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "customer.state_changed";
@@ -394,6 +454,10 @@ export interface WebhookCustomerStateChangedPayload {
  */
 export interface WebhookCustomerUpdatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "customer.updated";
@@ -416,6 +480,10 @@ export interface WebhookCustomerUpdatedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookDiscountCreatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -440,6 +508,10 @@ export interface WebhookDiscountCreatedPayload {
  */
 export interface WebhookDiscountDeletedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "discount.deleted";
@@ -462,6 +534,10 @@ export interface WebhookDiscountDeletedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookDiscountUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -491,6 +567,10 @@ export interface WebhookDiscountUpdatedPayload {
  */
 export interface WebhookMemberCreatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "member.created";
@@ -517,6 +597,10 @@ export interface WebhookMemberCreatedPayload {
  */
 export interface WebhookMemberDeletedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "member.deleted";
@@ -542,6 +626,10 @@ export interface WebhookMemberDeletedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookMemberUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -576,6 +664,10 @@ export interface WebhookMemberUpdatedPayload {
  */
 export interface WebhookOrderCreatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "order.created";
@@ -601,6 +693,10 @@ export interface WebhookOrderCreatedPayload {
  */
 export interface WebhookOrderPaidPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "order.paid";
@@ -623,6 +719,10 @@ export interface WebhookOrderPaidPayload {
  * **Discord & Slack support:** Full
  */
 export interface WebhookOrderRefundedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -652,6 +752,10 @@ export interface WebhookOrderRefundedPayload {
  */
 export interface WebhookOrderUpdatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "order.updated";
@@ -674,6 +778,10 @@ export interface WebhookOrderUpdatedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookOrganizationUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -698,6 +806,10 @@ export interface WebhookOrganizationUpdatedPayload {
  */
 export interface WebhookProductCreatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "product.created";
@@ -720,6 +832,10 @@ export interface WebhookProductCreatedPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookProductUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -744,6 +860,10 @@ export interface WebhookProductUpdatedPayload {
  */
 export interface WebhookRefundCreatedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "refund.created";
@@ -766,6 +886,10 @@ export interface WebhookRefundCreatedPayload {
  * **Discord & Slack support:** Full
  */
 export interface WebhookRefundUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -791,6 +915,10 @@ export interface WebhookRefundUpdatedPayload {
  */
 export interface WebhookSubscriptionActivePayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "subscription.active";
@@ -814,6 +942,10 @@ export interface WebhookSubscriptionActivePayload {
  * **Discord & Slack support:** Full
  */
 export interface WebhookSubscriptionCanceledPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -839,6 +971,10 @@ export interface WebhookSubscriptionCanceledPayload {
  * **Discord & Slack support:** Full
  */
 export interface WebhookSubscriptionCreatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -871,6 +1007,10 @@ export interface WebhookSubscriptionCreatedPayload {
  */
 export interface WebhookSubscriptionCycledPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "subscription.cycled";
@@ -897,6 +1037,10 @@ export interface WebhookSubscriptionCycledPayload {
  * **Discord & Slack support:** Basic
  */
 export interface WebhookSubscriptionMigratedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -934,6 +1078,10 @@ export interface WebhookSubscriptionMigratedPayload {
  */
 export interface WebhookSubscriptionPastDuePayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "subscription.past_due";
@@ -960,6 +1108,10 @@ export interface WebhookSubscriptionPastDuePayload {
  */
 export interface WebhookSubscriptionPausedPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "subscription.paused";
@@ -984,6 +1136,10 @@ export interface WebhookSubscriptionPausedPayload {
  * **Discord & Slack support:** Full
  */
 export interface WebhookSubscriptionResumedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -1010,6 +1166,10 @@ export interface WebhookSubscriptionResumedPayload {
  * **Discord & Slack support:** Full
  */
 export interface WebhookSubscriptionRevokedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */
@@ -1038,6 +1198,10 @@ export interface WebhookSubscriptionRevokedPayload {
  */
 export interface WebhookSubscriptionUncanceledPayload {
   /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
+  /**
    * type
    */
   type: "subscription.uncanceled";
@@ -1064,6 +1228,10 @@ export interface WebhookSubscriptionUncanceledPayload {
  * **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
  */
 export interface WebhookSubscriptionUpdatedPayload {
+  /**
+   * The ID of the event. Use it to discard duplicate deliveries.
+   */
+  event_id?: string;
   /**
    * type
    */

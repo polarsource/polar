@@ -1,7 +1,7 @@
 'use client'
 
 import { OrderStatus } from '@/components/Orders/OrderStatus'
-import { ProductVersionLabel } from '@/components/Products/ProductVersionLabel'
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -49,9 +49,9 @@ export const CustomerOrdersTable = ({
                 >
                   {original.description}
                   {original.product && (
-                    <ProductVersionLabel
+                    <CatalogVersionLabel
                       organization={organization}
-                      product={original.product}
+                      version={original.product}
                     />
                   )}
                 </Box>

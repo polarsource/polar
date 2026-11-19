@@ -126,6 +126,9 @@ class Settings(BaseSettings):
 
     CUSTOMER_METER_UPDATE_DEBOUNCE_MIN_THRESHOLD: timedelta = timedelta(seconds=15)
     CUSTOMER_METER_UPDATE_DEBOUNCE_MAX_THRESHOLD: timedelta = timedelta(minutes=180)
+    # Test environments only: invoices, rollovers and credit reversals still read
+    # the events, so a customer's balance could disagree with their invoice.
+    CUSTOMER_METER_UNITS_FROM_REDUCER: bool = False
 
     OUTPOST_PULL_INTERVAL: timedelta = timedelta(seconds=30)
 
@@ -136,6 +139,7 @@ class Settings(BaseSettings):
     LOCAL_JWKS: str = DEVELOPMENT_JWKS
     LOCAL_JWK_KID: str = "polar_dev"
     WWW_AUTHENTICATE_REALM: str = "polar"
+    ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS: float = 0
 
     # JSON list of accepted CORS origins
     CORS_ORIGINS: list[str] = []
@@ -155,6 +159,7 @@ class Settings(BaseSettings):
     BACKOFFICE_GOOGLE_CLIENT_ID: str = ""
     BACKOFFICE_GOOGLE_CLIENT_SECRET: SecretStr = SecretStr("")
     BACKOFFICE_GOOGLE_HOSTED_DOMAIN: str = ""
+    BACKOFFICE_DEVELOPMENT_MODE: bool = False
     BACKOFFICE_AUTHENTICATION_SESSION_COOKIE_KEY: str = "polar_backoffice_auth_session"
     BACKOFFICE_AUTHENTICATION_SESSION_TTL: timedelta = timedelta(minutes=15)
     BACKOFFICE_USER_SESSION_COOKIE_KEY: str = "polar_backoffice_session"
@@ -229,6 +234,9 @@ class Settings(BaseSettings):
     # Full connection URL, as injected by managed Postgres integrations
     # (e.g. Neon). When set, its components take precedence over the parts above.
     POSTGRES_URL_NON_POOLING: str | None = None
+    # Dedicated role for migrations
+    POSTGRES_MIGRATION_USER: str | None = None
+    POSTGRES_MIGRATION_PWD: str | None = None
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
@@ -400,6 +408,8 @@ class Settings(BaseSettings):
 
     # Logfire
     LOGFIRE_TOKEN: str | None = None
+    # Records only root spans, like request spans, without database or Redis spans
+    LOGFIRE_ROOT_SPANS_ONLY: bool = False
     LOGFIRE_IGNORED_ACTORS: set[str] = {
         "organization_access_token.record_usage",
         "personal_access_token.record_usage",
@@ -821,6 +831,20 @@ class Settings(BaseSettings):
             driver,
             username=self.POSTGRES_USER,
             password=self.POSTGRES_PWD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DATABASE,
+            fallback_host=self.POSTGRES_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_PORT_FALLBACK,
+        )
+
+    def get_postgres_migration_dsn(self, driver: Literal["asyncpg", "psycopg"]) -> str:
+        if self.POSTGRES_MIGRATION_USER is None:
+            return self.get_postgres_dsn(driver)
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_MIGRATION_USER,
+            password=self.POSTGRES_MIGRATION_PWD,
             host=self.POSTGRES_HOST,
             port=self.POSTGRES_PORT,
             database=self.POSTGRES_DATABASE,

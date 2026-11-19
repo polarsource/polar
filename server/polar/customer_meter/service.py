@@ -6,7 +6,8 @@ from functools import partial
 from typing import Any
 
 import logfire
-from sqlalchemy import Float, Select, func, or_, select, union_all
+from redis import RedisError
+from sqlalchemy import ColumnElement, Float, Select, and_, func, or_, select, union_all
 from sqlalchemy.exc import DBAPIError, IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.strategy_options import contains_eager
@@ -40,10 +41,12 @@ from polar.meter.aggregation import (
 from polar.meter.repository import MeterRepository
 from polar.models import Customer, CustomerMeter, Event, Meter
 from polar.models.event import EventSource
-from polar.postgres import AsyncSession
+from polar.organization.repository import OrganizationRepository
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.redis import Redis
 from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageSummary
+from polar.subscription.repository import SubscriptionRepository
 from polar.worker import enqueue_job
 
 from .repository import CustomerMeterRepository
@@ -137,31 +140,51 @@ class CustomerMeterService:
             .order_by(Meter.created_at.asc())
         )
 
+        reducer_billing = await self._is_reducer_billing_enabled(session, customer)
+
         updated = False
         async for meter in repository.stream(statement):
             customer_meter, meter_updated = await self.update_customer_meter(
-                session, customer, meter
+                session,
+                redis,
+                customer,
+                meter,
+                reducer_billing=reducer_billing,
+                refresh_subscriptions=False,
             )
-            if meter_updated and customer_meter is not None:
+            if meter_updated and customer_meter is not None and not reducer_billing:
                 await reducer_service.log_customer_meter_comparison(
                     session,
                     redis,
                     customer_meter,
                     partial(self._get_late_usage, session, customer, meter),
                     partial(self._get_usage_quantity, session, customer, meter),
+                    partial(self._get_usage_ingested_before, session, customer, meter),
                 )
             updated = updated or meter_updated
 
         if updated:
             enqueue_job("customer.state_changed", customer.id)
 
+        if updated and reducer_billing:
+            await self._refresh_subscription_meters(session, customer)
+
     async def update_customer_meter(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
         activate_meter: bool = False,
+        *,
+        reducer_billing: bool | None = None,
+        refresh_subscriptions: bool = True,
     ) -> tuple[CustomerMeter | None, bool]:
+        """`reducer_billing` is whether the organization bills from the reducers,
+        looked up if not given. Updating a meter of an organization billing from
+        the reducers refreshes the customer's subscription meters too, unless
+        `refresh_subscriptions` is off for a caller that refreshes them once for
+        all the meters it updates."""
         repository = CustomerMeterRepository.from_session(session)
         # Use FOR UPDATE NOWAIT to serialize access and ensure visibility of
         # concurrent changes. If lock can't be acquired, the task will be retried.
@@ -210,11 +233,13 @@ class CustomerMeterService:
             return customer_meter, False
 
         event_repository = EventRepository.from_session(session)
+        if reducer_billing is None:
+            reducer_billing = await self._is_reducer_billing_enabled(session, customer)
 
         with logfire.span("get_usage"):
-            usage_units = await self._get_usage_quantity(session, customer, meter)
-
-        customer_meter.consumed_units = Decimal(usage_units)
+            customer_meter.consumed_units = await self._get_consumed_units(
+                session, redis, customer, meter, reducer_billing=reducer_billing
+            )
 
         with logfire.span("get_credits"):
             credit_events = await self._get_credit_events(
@@ -229,12 +254,25 @@ class CustomerMeterService:
             customer_meter.credited_units - customer_meter.consumed_units
         )
         customer_meter.last_balanced_event = last_event
+        customer_meter = await repository.update(customer_meter)
 
-        return await repository.update(customer_meter), True
+        if reducer_billing and refresh_subscriptions:
+            await self._refresh_subscription_meters(session, customer)
+
+        return customer_meter, True
+
+    async def _refresh_subscription_meters(
+        self, session: AsyncSession, customer: Customer
+    ) -> None:
+        for subscription_id in await SubscriptionRepository.from_session(
+            session
+        ).get_metered_ids_by_customer(customer.id):
+            enqueue_job("subscription.update_meters", subscription_id)
 
     async def credit(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         credit_create: CustomerMeterCreditsCreate,
     ) -> Event:
@@ -342,7 +380,7 @@ class CustomerMeterService:
         try:
             async with session.begin_nested():
                 _, updated = await self.update_customer_meter(
-                    session, customer, meter, activate_meter=True
+                    session, redis, customer, meter, activate_meter=True
                 )
             if updated:
                 enqueue_job("customer.state_changed", customer.id)
@@ -368,6 +406,7 @@ class CustomerMeterService:
     async def reverse_credit(
         self,
         session: AsyncSession,
+        redis: Redis,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> Event:
@@ -468,7 +507,7 @@ class CustomerMeterService:
         await event_service.create_event(session, event)
 
         _, updated = await self.update_customer_meter(
-            session, customer, meter, activate_meter=True
+            session, redis, customer, meter, activate_meter=True
         )
         if updated:
             enqueue_job("customer.state_changed", customer.id)
@@ -647,6 +686,43 @@ class CustomerMeterService:
             statement = statement.where(Event.ingested_at >= ingested_at_lower_bound)
         return statement.order_by(Event.ingested_at.desc()).limit(1)
 
+    async def _is_reducer_billing_enabled(
+        self, session: AsyncReadSession, customer: Customer
+    ) -> bool:
+        return bool(
+            await OrganizationRepository.from_session(session).get_ids_with_feature(
+                {customer.organization_id}, "reducer_billing_enabled"
+            )
+        )
+
+    async def _get_consumed_units(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        customer: Customer,
+        meter: Meter,
+        *,
+        reducer_billing: bool,
+    ) -> Decimal:
+        """The customer's usage since the meter's latest reset: from the reducer when
+        enabled or the organization bills from the reducers, from the events
+        otherwise or when the reducer can't answer."""
+        if settings.CUSTOMER_METER_UNITS_FROM_REDUCER or reducer_billing:
+            try:
+                consumed_units, _ = await reducer_service.get_customer_meter_units(
+                    session, redis, customer, meter.id
+                )
+            except RedisError:
+                logfire.warn(
+                    "Could not read consumed units from the reducer",
+                    customer_id=str(customer.id),
+                    meter_id=str(meter.id),
+                )
+            else:
+                if consumed_units is not None:
+                    return consumed_units
+        return Decimal(await self._get_usage_quantity(session, customer, meter))
+
     async def _get_usage_quantity(
         self,
         session: AsyncSession,
@@ -734,6 +810,39 @@ class CustomerMeterService:
         if meter_reset_event is None:
             return UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
 
+        return await self._get_usage_summary(
+            session,
+            customer,
+            meter,
+            meter_reset_event,
+            Event.timestamp < meter_reset_event.timestamp,
+        )
+
+    async def _get_usage_ingested_before(
+        self, session: AsyncSession, customer: Customer, meter: Meter, before: datetime
+    ) -> UsageSummary:
+        """Summary of the usage ingested since the meter's latest reset but before
+        `before`, leaving out the late usage."""
+        event_repository = EventRepository.from_session(session)
+        meter_reset_event = await event_repository.get_latest_meter_reset(
+            customer, meter.id
+        )
+        clause = Event.ingested_at < before
+        if meter_reset_event is not None:
+            clause = and_(clause, Event.timestamp >= meter_reset_event.timestamp)
+        return await self._get_usage_summary(
+            session, customer, meter, meter_reset_event, clause
+        )
+
+    async def _get_usage_summary(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        meter_reset_event: Event | None,
+        clause: ColumnElement[bool],
+    ) -> UsageSummary:
+        event_repository = EventRepository.from_session(session)
         value_column = self._get_raw_aggregation_column(meter)
         values = union_all(
             *(
@@ -745,10 +854,7 @@ class CustomerMeterService:
                     by_external_id=by_external_id,
                     include_system_events=False,
                 )
-                .where(
-                    Event.source == EventSource.user,
-                    Event.timestamp < meter_reset_event.timestamp,
-                )
+                .where(Event.source == EventSource.user, clause)
                 .with_only_columns(value_column.label("value"))
                 for by_external_id in (False, True)
                 if not by_external_id or customer.external_id is not None

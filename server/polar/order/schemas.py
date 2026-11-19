@@ -393,7 +393,7 @@ class OrderUpdateBase(Schema):
         None,
         description=(
             "The address of the customer that should appear on the invoice. "
-            "Country and state fields cannot be updated."
+            "Address fields used for tax calculation cannot be updated."
         ),
     )
 

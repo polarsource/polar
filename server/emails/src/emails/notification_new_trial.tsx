@@ -1,5 +1,6 @@
 import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
 import { formatDate } from '../utils/formatters'
+import CustomerIdentity from '../components/CustomerIdentity'
 import type { schemas } from '../types'
 
 export function NotificationNewTrial({
@@ -8,17 +9,8 @@ export function NotificationNewTrial({
   product_name,
   trial_end,
 }: schemas['MaintainerNewTrialNotificationPayload']) {
-  const formattedName = subscriber_email ? (
-    <>
-      <Text as="span" weight="bold">
-        {subscriber_name}
-      </Text>{' '}
-      ({subscriber_email})
-    </>
-  ) : (
-    <Text as="span" weight="bold">
-      {subscriber_name}
-    </Text>
+  const formattedName = (
+    <CustomerIdentity name={subscriber_name} email={subscriber_email} />
   )
 
   const formattedTrialEnd = trial_end ? formatDate(trial_end) : null

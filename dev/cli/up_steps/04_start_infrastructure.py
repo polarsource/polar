@@ -39,8 +39,13 @@ def run(ctx: Context) -> bool:
     missing = [service for service in LONG_RUNNING_SERVICES if service not in running]
 
     if not missing and not ctx.clean:
-        step_status(True, "Docker containers", "already running")
-        return True
+        with step_spinner("Updating PostgreSQL..."):
+            result = run_command(
+                ["docker", "compose", "up", "-d", "db"], cwd=SERVER_DIR, capture=True
+            )
+        if result and result.returncode == 0:
+            step_status(True, "Docker containers", "already running")
+            return True
 
     compose_cmd = ["docker", "compose"]
     compose_cmd.extend(["up", "-d"])

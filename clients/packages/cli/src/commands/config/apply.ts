@@ -1,4 +1,4 @@
-import { Duration, Effect, Option, Stdio } from 'effect'
+import { Duration, Effect, Option } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import { changeCount, tally } from '@/utils/billing-config/entries'
 import { plural } from '@/utils/billing-config/problems'
@@ -28,6 +28,7 @@ import {
 import { BillingConfig } from '@/services/billing-config/service'
 import { Organizations } from '@/services/organizations'
 import { withProgress } from '@/utils/progress'
+import { interactive, keypress } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const confirmed = confirm.pipe(Flag.withAlias('aladåb'))
@@ -60,37 +61,11 @@ const render = (
         applied(config, organization, result.entries),
         ...(result.draft
           ? next(
-              `${ui.INDENT}Products and benefits are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
+              `${ui.INDENT}Products, benefits, meters and settings are saved to the draft catalog.\n${ui.INDENT}Run ${ui.command('polar config publish')} to make it live.`,
             )
           : []),
         ui.blank,
       ]
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
-
-const keypress = (frame: string) =>
-  Prompt.Custom<boolean, boolean>(false, {
-    render: (_, action) =>
-      Effect.succeed(
-        action._tag === 'NextFrame'
-          ? frame
-          : action._tag === 'Submit'
-            ? `${frame}\n`
-            : '',
-      ),
-    process: (input) =>
-      Effect.succeed(
-        input.key.name === 'y'
-          ? { _tag: 'Submit', value: true }
-          : input.key.name === 'n' || input.key.name === 'escape'
-            ? { _tag: 'Submit', value: false }
-            : { _tag: 'Beep' },
-      ),
-    clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
-  })
 
 const approve = (
   config: LoadedConfig,
@@ -129,7 +104,7 @@ const approve = (
 
 export const apply = Command.make('apply', { file, org, confirmed, name }).pipe(
   Command.withDescription(
-    'Apply a billing config file to your organization. Products and benefits are saved as a draft until you publish them. Meters, settings and webhooks apply right away',
+    'Apply a billing config file to your organization. Products, benefits, meters and settings are saved as a draft until you publish them. Webhooks apply right away',
   ),
   Command.withExamples([
     {

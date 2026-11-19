@@ -14,7 +14,10 @@ import {
 } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  getStateLabel,
+  hasFixedStateOptions,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +52,7 @@ type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
 
 export type EditInvoiceHandle = {
   show: () => void
+  download: () => void
 }
 
 const INVOICE_GENERATED_EVENT = 'order.invoice_generated'
@@ -95,6 +99,7 @@ const DownloadInvoice = ({
   orderURL,
   dropdown = false,
   hideEditButton = false,
+  headless = false,
   editInvoiceRef,
   variant,
   size,
@@ -113,19 +118,14 @@ const DownloadInvoice = ({
   className?: string
   dropdown?: boolean
   hideEditButton?: boolean
+  /** Render no buttons of its own; it is driven through `editInvoiceRef`, e.g. from a menu. */
+  headless?: boolean
   editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const [loading, setLoading] = useState(false)
   const inFlightRef = useRef(false)
   const { isShown, hide, show } = useModal()
 
-  useEffect(() => {
-    if (!editInvoiceRef) return
-    editInvoiceRef.current = { show }
-    return () => {
-      editInvoiceRef.current = null
-    }
-  }, [editInvoiceRef, show])
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
       defaultValues: {
@@ -136,7 +136,7 @@ const DownloadInvoice = ({
       },
     },
   )
-  const { control, handleSubmit, setError, clearErrors } = form
+  const { control, handleSubmit, setError, clearErrors, setValue } = form
   const { errors, isDirty } = useFormState({ control })
   const country = useWatch({ control, name: 'billing_address.country' })
 
@@ -165,6 +165,14 @@ const DownloadInvoice = ({
       inFlightRef.current = false
     }
   }, [order.is_invoice_generated, show, fetchInvoiceUrl])
+
+  useEffect(() => {
+    if (!editInvoiceRef) return
+    editInvoiceRef.current = { show, download: onDownload }
+    return () => {
+      editInvoiceRef.current = null
+    }
+  }, [editInvoiceRef, show, onDownload])
 
   const onModalSubmit = useCallback(
     async (data: schemas['OrderUpdate']) => {
@@ -269,7 +277,7 @@ const DownloadInvoice = ({
 
   const action = useMemo(
     () =>
-      dropdown ? (
+      headless ? null : dropdown ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon">
@@ -278,28 +286,17 @@ const DownloadInvoice = ({
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onDownload} disabled={loading}>
-              Download Invoice
+              Download invoice
             </DropdownMenuItem>
             {order.is_invoice_generated && (
               <DropdownMenuItem onClick={() => show()}>
-                Edit Invoice
+                Edit invoice
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <Button
-            type="button"
-            onClick={onDownload}
-            loading={loading}
-            disabled={loading}
-            variant={variant}
-            size={size}
-            className={twMerge('w-full', className)}
-          >
-            Download Invoice
-          </Button>
+        <div className="flex flex-col-reverse gap-2 lg:flex-row">
           {order.is_invoice_generated && !hideEditButton && (
             <Button
               type="button"
@@ -310,12 +307,24 @@ const DownloadInvoice = ({
               onClick={() => show()}
               className={twMerge('w-full', className)}
             >
-              Edit Invoice
+              Edit invoice
             </Button>
           )}
+          <Button
+            type="button"
+            onClick={onDownload}
+            loading={loading}
+            disabled={loading}
+            variant={variant}
+            size={size}
+            className={twMerge('w-full', className)}
+          >
+            Download invoice
+          </Button>
         </div>
       ),
     [
+      headless,
       dropdown,
       order,
       loading,
@@ -339,8 +348,8 @@ const DownloadInvoice = ({
             <InlineModalHeader hide={hide}>
               <h2 className="text-xl">
                 {order.is_invoice_generated
-                  ? 'Edit Invoice'
-                  : 'Generate Invoice'}
+                  ? 'Edit invoice'
+                  : 'Generate invoice'}
               </h2>
             </InlineModalHeader>
             <Form {...form}>
@@ -454,10 +463,9 @@ const DownloadInvoice = ({
                       control={control}
                       name="billing_address.state"
                       rules={{
-                        required:
-                          country === 'US' || country === 'CA'
-                            ? 'This field is required'
-                            : false,
+                        required: hasFixedStateOptions(country)
+                          ? 'This field is required'
+                          : false,
                       }}
                       render={({ field }) => (
                         <>
@@ -470,9 +478,7 @@ const DownloadInvoice = ({
                             country={country}
                             value={field.value || ''}
                             onChange={field.onChange}
-                            placeholder={
-                              country === 'US' ? 'State' : 'Province'
-                            }
+                            placeholder={getStateLabel(country)}
                           />
                           <FormMessage />
                         </>
@@ -495,7 +501,12 @@ const DownloadInvoice = ({
                             }
                             autoComplete="billing country"
                             value={field.value || undefined}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              if (value !== field.value) {
+                                setValue('billing_address.state', null)
+                              }
+                              field.onChange(value)
+                            }}
                             allowedCountries={enums.addressInputCountryValues}
                           />
                           <FormMessage />
@@ -537,6 +548,7 @@ export const DownloadInvoiceDashboard = ({
   className,
   dropdown = false,
   hideEditButton = false,
+  headless = false,
   editInvoiceRef,
 }: {
   organization: schemas['Organization']
@@ -547,6 +559,7 @@ export const DownloadInvoiceDashboard = ({
   className?: string
   dropdown?: boolean
   hideEditButton?: boolean
+  headless?: boolean
   editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const eventEmitter = useOrganizationSSE(organization.id)
@@ -563,6 +576,7 @@ export const DownloadInvoiceDashboard = ({
       className={className}
       dropdown={dropdown}
       hideEditButton={hideEditButton}
+      headless={headless}
       editInvoiceRef={editInvoiceRef}
     />
   )

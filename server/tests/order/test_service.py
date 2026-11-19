@@ -483,12 +483,44 @@ class TestUpdate:
     @pytest.mark.parametrize(
         ("set_address", "address_update"),
         [
-            ({"country": "US", "state": "CA"}, {"country": "US", "state": "NY"}),
-            ({"country": "US", "state": "CA"}, {"country": "FR", "state": None}),
-            ({"country": "FR", "state": None}, {"country": "US", "state": "CA"}),
+            pytest.param(
+                {"country": "US", "state": "CA", "postal_code": "94016"},
+                {"country": "US", "state": "NY", "postal_code": "94016"},
+                id="US state",
+            ),
+            pytest.param(
+                {"country": "US", "state": "CA", "postal_code": "94016"},
+                {"country": "US", "state": "CA", "postal_code": "94017"},
+                id="US postal code",
+            ),
+            pytest.param(
+                {"country": "US", "state": "CA", "postal_code": "94016"},
+                {"country": "FR"},
+                id="US to FR",
+            ),
+            pytest.param(
+                {"country": "FR"},
+                {"country": "US", "state": "CA", "postal_code": "94016"},
+                id="FR to US",
+            ),
+            pytest.param(
+                {"country": "CA", "state": "ON", "postal_code": "M5V 2T6"},
+                {"country": "CA", "state": "QC", "postal_code": "M5V 2T6"},
+                id="CA state",
+            ),
+            pytest.param(
+                {"country": "ES", "postal_code": "28001"},
+                {"country": "ES", "postal_code": "08001"},
+                id="ES postal code",
+            ),
+            pytest.param(
+                {"country": "BR", "state": "SP", "city": "São Paulo"},
+                {"country": "BR", "state": "SP", "city": "Campinas"},
+                id="BR city",
+            ),
         ],
     )
-    async def test_invalid_country_state_update(
+    async def test_locked_field_update(
         self,
         set_address: AddressDict,
         address_update: AddressDict,
@@ -511,6 +543,59 @@ class TestUpdate:
                     billing_address=AddressInput.model_validate(address_update),
                 ),
             )
+
+    @pytest.mark.parametrize(
+        ("set_address", "address_update"),
+        [
+            pytest.param(
+                {"country": "FR", "postal_code": "75001"},
+                {"country": "FR", "postal_code": "75002", "city": "Paris"},
+                id="FR postal code",
+            ),
+            pytest.param(
+                {"country": "CA", "state": "ON", "postal_code": "M5V 2T6"},
+                {"country": "CA", "state": "ON", "postal_code": "M4B 1B3"},
+                id="CA postal code",
+            ),
+            pytest.param(
+                {"country": "US", "state": "CA", "postal_code": "94016"},
+                {
+                    "country": "US",
+                    "state": "CA",
+                    "postal_code": "94016",
+                    "city": "San Francisco",
+                    "line1": "1 Market St",
+                },
+                id="US non-tax fields",
+            ),
+        ],
+    )
+    async def test_unlocked_field_update(
+        self,
+        set_address: AddressDict,
+        address_update: AddressDict,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            billing_address=Address.model_validate(set_address),
+        )
+
+        updated_order = await order_service.update(
+            session,
+            order,
+            OrderUpdate(
+                billing_name=None,
+                billing_address=AddressInput.model_validate(address_update),
+            ),
+        )
+        await session.flush()
+        await session.refresh(updated_order)
+
+        assert updated_order.billing_address == Address.model_validate(address_update)
 
     async def test_valid_billing_address_update(
         self, save_fixture: SaveFixture, session: AsyncSession, customer: Customer

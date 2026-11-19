@@ -690,8 +690,6 @@ export const CustomerType: Schema<models.CustomerType> = /* @__PURE__ */ z.enum(
   "individual",
   "team",
 ]);
-export const CustomerWalletSortProperty: Schema<models.CustomerWalletSortProperty> =
-  /* @__PURE__ */ z.enum(["created_at", "-created_at", "balance", "-balance"]);
 export const DiscountDuration: Schema<models.DiscountDuration> = /* @__PURE__ */ z.enum([
   "once",
   "forever",
@@ -778,6 +776,7 @@ export const FilterOperator: Schema<models.FilterOperator> = /* @__PURE__ */ z.e
   "like",
   "not_like",
 ]);
+export const Format: Schema<models.Format> = /* @__PURE__ */ z.enum(["raw", "discord", "slack"]);
 export const Func: Schema<models.Func> = /* @__PURE__ */ z.enum(["sum", "max", "min", "avg"]);
 export const LicenseKeyStatus: Schema<models.LicenseKeyStatus> = /* @__PURE__ */ z.enum([
   "granted",
@@ -1197,31 +1196,6 @@ export const SeatTierType: Schema<models.SeatTierType> = /* @__PURE__ */ z.enum(
 ]);
 export const Status: Schema<models.Status> = /* @__PURE__ */ z.enum(["granted", "disabled"]);
 export const SubType: Schema<models.SubType> = /* @__PURE__ */ z.enum(["user", "organization"]);
-export const SubscriptionExportColumn: Schema<models.SubscriptionExportColumn> =
-  /* @__PURE__ */ z.enum([
-    "email",
-    "started_at",
-    "product",
-    "amount",
-    "currency",
-    "status",
-    "recurring_interval",
-    "customer_name",
-    "billing_name",
-    "billing_country",
-    "net_amount",
-    "discount",
-    "seats",
-    "current_period_start",
-    "current_period_end",
-    "cancel_at_period_end",
-    "canceled_at",
-    "ends_at",
-    "ended_at",
-    "cancellation_reason",
-    "trial_start",
-    "trial_end",
-  ]);
 export const SubscriptionProrationBehavior: Schema<models.SubscriptionProrationBehavior> =
   /* @__PURE__ */ z.enum(["invoice", "prorate", "next_period", "reset"]);
 export const SubscriptionSortProperty: Schema<models.SubscriptionSortProperty> =
@@ -1933,6 +1907,7 @@ export const WebhookFormat: Schema<models.WebhookFormat> = /* @__PURE__ */ z.enu
   "raw",
   "discord",
   "slack",
+  "mcp",
 ]);
 export const Address: ObjectSchema<models.Address> = /* @__PURE__ */ z.looseObject({
   line1: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -5451,31 +5426,8 @@ export const CustomerOrder: ObjectSchema<models.CustomerOrder> = /* @__PURE__ */
   refundable_amount: /* @__PURE__ */ z.int(),
   refundable_tax_amount: /* @__PURE__ */ z.int(),
 });
-export const CustomerOrderConfirmPayment: ObjectSchema<models.CustomerOrderConfirmPayment> =
-  /* @__PURE__ */ z.looseObject({
-    confirmation_token_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    payment_method_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    payment_processor: /* @__PURE__ */ z.optional(PaymentProcessor),
-  });
 export const CustomerOrderInvoice: ObjectSchema<models.CustomerOrderInvoice> =
   /* @__PURE__ */ z.looseObject({ url: /* @__PURE__ */ z.string() });
-export const CustomerOrderPaymentConfirmation: ObjectSchema<models.CustomerOrderPaymentConfirmation> =
-  /* @__PURE__ */ z.looseObject({
-    status: /* @__PURE__ */ z.string(),
-    client_secret: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    error: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const CustomerOrderPaymentStatus: ObjectSchema<models.CustomerOrderPaymentStatus> =
-  /* @__PURE__ */ z.looseObject({
-    status: /* @__PURE__ */ z.string(),
-    error: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const CustomerOrderProduct: ObjectSchema<models.CustomerOrderProduct> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -6265,14 +6217,6 @@ export const CustomerUpdatedMetadata: ObjectSchema<models.CustomerUpdatedMetadat
       return CustomerUpdatedFields;
     },
   });
-export const CustomerWallet: ObjectSchema<models.CustomerWallet> = /* @__PURE__ */ z.looseObject({
-  id: /* @__PURE__ */ z.string(),
-  created_at: /* @__PURE__ */ z.string(),
-  modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  customer_id: /* @__PURE__ */ z.string(),
-  balance: /* @__PURE__ */ z.int(),
-  currency: /* @__PURE__ */ z.string(),
-});
 export const DiscountFixedCreate: ObjectSchema<models.DiscountFixedCreate> =
   /* @__PURE__ */ z.looseObject({
     metadata: /* @__PURE__ */ z.optional(
@@ -7359,15 +7303,6 @@ export const ListResourceCustomerSubscription: ObjectSchema<models.ListResourceC
       return Pagination;
     },
   });
-export const ListResourceCustomerWallet: ObjectSchema<models.ListResourceCustomerWallet> =
-  /* @__PURE__ */ z.looseObject({
-    get items() {
-      return /* @__PURE__ */ z.array(CustomerWallet);
-    },
-    get pagination() {
-      return Pagination;
-    },
-  });
 export const ListResourceDiscount: ObjectSchema<models.ListResourceDiscount> =
   /* @__PURE__ */ z.looseObject({
     get items() {
@@ -7547,11 +7482,6 @@ export const ListResourceWithCursorPaginationEvent: ObjectSchema<models.ListReso
     get pagination() {
       return CursorPagination;
     },
-  });
-export const ManualRetryLimitExceeded: ObjectSchema<models.ManualRetryLimitExceeded> =
-  /* @__PURE__ */ z.looseObject({
-    error: /* @__PURE__ */ z.literal("ManualRetryLimitExceeded"),
-    detail: /* @__PURE__ */ z.string(),
   });
 export const Member: ObjectSchema<models.Member> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
@@ -7738,30 +7668,6 @@ export const Metric: ObjectSchema<models.Metric> = /* @__PURE__ */ z.looseObject
   display_name: /* @__PURE__ */ z.string(),
   type: MetricType,
 });
-export const MetricDashboardCreate: ObjectSchema<models.MetricDashboardCreate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.string(),
-    metrics: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
-export const MetricDashboardSchema: ObjectSchema<models.MetricDashboardSchema> =
-  /* @__PURE__ */ z.looseObject({
-    created_at: /* @__PURE__ */ z.string(),
-    modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    id: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    metrics: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-    organization_id: /* @__PURE__ */ z.string(),
-  });
-export const MetricDashboardUpdate: ObjectSchema<models.MetricDashboardUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    metrics: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-  });
 export const MetricPeriod: ObjectSchema<models.MetricPeriod> = /* @__PURE__ */ z.looseObject({
   timestamp: /* @__PURE__ */ z.string(),
   active_subscriptions: /* @__PURE__ */ z.optional(
@@ -8984,11 +8890,6 @@ export const OrderNotEligibleForInvoice: ObjectSchema<models.OrderNotEligibleFor
     error: /* @__PURE__ */ z.literal("OrderNotEligibleForInvoice"),
     detail: /* @__PURE__ */ z.string(),
   });
-export const OrderNotEligibleForRetry: ObjectSchema<models.OrderNotEligibleForRetry> =
-  /* @__PURE__ */ z.looseObject({
-    error: /* @__PURE__ */ z.literal("OrderNotEligibleForRetry"),
-    detail: /* @__PURE__ */ z.string(),
-  });
 export const OrderPaidEvent: ObjectSchema<models.OrderPaidEvent> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
   timestamp: /* @__PURE__ */ z.string(),
@@ -9509,11 +9410,6 @@ export const PauseResumeNotAllowed: ObjectSchema<models.PauseResumeNotAllowed> =
 export const PaymentActionRequired: ObjectSchema<models.PaymentActionRequired> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("PaymentActionRequired"),
-    detail: /* @__PURE__ */ z.string(),
-  });
-export const PaymentAlreadyInProgress: ObjectSchema<models.PaymentAlreadyInProgress> =
-  /* @__PURE__ */ z.looseObject({
-    error: /* @__PURE__ */ z.literal("PaymentAlreadyInProgress"),
     detail: /* @__PURE__ */ z.string(),
   });
 export const PaymentError: ObjectSchema<models.PaymentError> = /* @__PURE__ */ z.looseObject({
@@ -11176,7 +11072,7 @@ export const WebhookEndpointCreate: ObjectSchema<models.WebhookEndpointCreate> =
     url: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
     api_version: /* @__PURE__ */ z.optional(ApiVersion),
-    format: WebhookFormat,
+    format: Format,
     events: /* @__PURE__ */ z.array(WebhookEventType),
     organization_id: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -11194,7 +11090,15 @@ export const WebhookEndpointUpdate: ObjectSchema<models.WebhookEndpointUpdate> =
         ]),
       ),
     ),
-    format: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(WebhookFormat)),
+    format: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(
+        /* @__PURE__ */ z.union([
+          /* @__PURE__ */ z.literal("raw"),
+          /* @__PURE__ */ z.literal("discord"),
+          /* @__PURE__ */ z.literal("slack"),
+        ]),
+      ),
+    ),
     events: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(WebhookEventType)),
     ),

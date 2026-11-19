@@ -17,8 +17,10 @@ if TYPE_CHECKING:
     from ._enqueue import JSONSerializable
 
     RedisAsyncIO = redis.asyncio.Redis[str]
+    RedisAsyncIOPipeline = redis.asyncio.client.Pipeline[str]
 else:
     RedisAsyncIO = redis.asyncio.Redis
+    RedisAsyncIOPipeline = redis.asyncio.client.Pipeline
 
 log: Logger = structlog.get_logger()
 
@@ -45,8 +47,8 @@ def now_timestamp() -> int:
     return int(datetime.now(UTC).timestamp())
 
 
-async def set_debounce_key(
-    redis: RedisAsyncIO,
+def set_debounce_key(
+    pipeline: RedisAsyncIOPipeline,
     actor: dramatiq.Actor[Any, Any],
     message_id: str,
     args: tuple["JSONSerializable", ...],
@@ -71,16 +73,14 @@ async def set_debounce_key(
         * 1000
     )
 
-    async with redis.pipeline(transaction=True) as pipe:
-        # Always keep the oldest timestamp, if it exists
-        await pipe.hsetnx(key, "enqueue_timestamp", now_timestamp())
-        # Change owner to current message_id
-        await pipe.hset(key, "message_id", message_id)
-        # Set task as non-executed
-        await pipe.hset(key, "executed", 0)
-        # Set TTL to avoid keys being stuck in Redis
-        await pipe.expire(key, DEBOUNCE_KEY_TTL)
-        await pipe.execute()
+    # Always keep the oldest timestamp, if it exists
+    pipeline.hsetnx(key, "enqueue_timestamp", now_timestamp())
+    # Change owner to current message_id
+    pipeline.hset(key, "message_id", message_id)
+    # Set task as non-executed
+    pipeline.hset(key, "executed", 0)
+    # Set TTL to avoid keys being stuck in Redis
+    pipeline.expire(key, DEBOUNCE_KEY_TTL)
 
     log.debug("Set debounce key", key=key, delay=delay)
 

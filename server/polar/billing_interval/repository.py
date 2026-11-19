@@ -67,6 +67,29 @@ class BillingIntervalRepository(RepositoryBase[BillingInterval]):
             select(func.set_config("lock_timeout", lock_timeout, True))
         )
 
+    @asynccontextmanager
+    async def local_statement_timeout(
+        self, statement_timeout: str
+    ) -> AsyncIterator[None]:
+        """Restores the previous value on exit, since releasing a savepoint keeps it."""
+        previous = await self._get_statement_timeout()
+        await self._set_local_statement_timeout(statement_timeout)
+        try:
+            yield
+        finally:
+            await self._set_local_statement_timeout(previous)
+
+    async def _get_statement_timeout(self) -> str:
+        result = await self.session.execute(
+            select(func.current_setting("statement_timeout"))
+        )
+        return result.scalar_one()
+
+    async def _set_local_statement_timeout(self, statement_timeout: str) -> None:
+        await self.session.execute(
+            select(func.set_config("statement_timeout", statement_timeout, True))
+        )
+
     async def apply_changes(
         self, subscription: Subscription, changes: IntervalChangePlan
     ) -> None:

@@ -1926,8 +1926,13 @@ export interface components {
        * @description Avatar URL shown in checkout, customer portal, emails etc.
        */
       avatar_url: string | null
-      /** @description Proration behavior applied when customer updates their subscription from the portal. */
-      proration_behavior: components['schemas']['SubscriptionProrationBehavior']
+      /**
+       * Proration Behavior
+       * @description Proration behavior applied when customer updates their subscription from the portal.
+       */
+      proration_behavior:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | 'auto'
       /**
        * Allow Customer Updates
        * @description Whether customers can update their subscriptions from the customer portal.
@@ -2573,11 +2578,8 @@ export interface components {
     OrganizationSubscriptionSettings: {
       /** Allow Multiple Subscriptions */
       allow_multiple_subscriptions: boolean
-      /**
-       * PublicSubscriptionProrationBehavior
-       * @enum {string}
-       */
-      proration_behavior: 'invoice' | 'prorate' | 'next_period'
+      /** Proration Behavior */
+      proration_behavior: ('invoice' | 'prorate' | 'next_period') | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Prevent Trial Abuse */
@@ -3358,6 +3360,7 @@ export interface components {
       | 'canceled'
       | 'unpaid'
       | 'paused'
+      | 'trial_ended'
     /** SubscriptionTrialConversionReminderEmail */
     SubscriptionTrialConversionReminderEmail: {
       /**
@@ -3411,6 +3414,16 @@ export interface components {
       previous_billing_provider: string | null
       /** Trial End Date */
       trial_end_date: string
+      /**
+       * Payment Method Required
+       * @default true
+       */
+      payment_method_required: boolean
+      /**
+       * Billing Address Required
+       * @default false
+       */
+      billing_address_required: boolean
     }
     /** SubscriptionUncanceledEmail */
     SubscriptionUncanceledEmail: {

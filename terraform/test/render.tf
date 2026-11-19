@@ -44,6 +44,9 @@ locals {
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
   render_proxy_cidr   = "10.0.0.0/8"
   forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
+
+  api_allowed_hosts = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
+  api_cors_origins  = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
 }
 
 module "test" {
@@ -73,8 +76,8 @@ module "test" {
   }
 
   api_service_config = {
-    allowed_hosts          = jsonencode(["test.polar.sh", local.private_backoffice_hostname])
-    cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
+    allowed_hosts          = local.api_allowed_hosts
+    cors_origins           = local.api_cors_origins
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "6"
     forwarded_allow_ips    = local.forwarded_allow_ips
@@ -118,6 +121,26 @@ resource "cloudflare_dns_record" "test_api" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "test_api_events" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.events_api_hostname
+  type    = "CNAME"
+  content = aws_lb.events_api[0].dns_name
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "test_events" {
+  count   = local.test_enabled ? 1 : 0
+  zone_id = "22bcd1b07ec25452aab472486bc8df94"
+  name    = local.events_hostname
+  type    = "CNAME"
+  content = aws_lb.events_api[0].dns_name
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "worker" {
   for_each = merge(module.test[*].worker_urls...)
 
@@ -138,6 +161,10 @@ resource "cloudflare_dns_record" "private_backoffice" {
   content = var.private_backoffice_tailscale_ip
   proxied = false
   ttl     = 300
+}
+
+output "additional_api_service_ids" {
+  value = one(module.test[*].additional_api_service_ids)
 }
 
 output "private_backoffice_service_id" {

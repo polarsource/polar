@@ -9,12 +9,12 @@ import {
   type Mark,
   fieldChanges,
   lineDiff,
-  updatedBenefits,
+  updatedIds,
   valueLines,
 } from '@/utils/billing-config/entries'
 import { formatProblems } from '@/utils/billing-config/problems'
 import { catalogChange, errors, unchanged } from '@/utils/billing-config/review'
-import { shownDiff } from '@/utils/billing-config/sentences'
+import { shownDiff, usedMeters } from '@/utils/billing-config/sentences'
 import { documents } from '@/utils/billing-config/tree'
 
 const HEADINGS: Record<string, string> = {
@@ -63,7 +63,7 @@ const ids = (input: unknown): string[] =>
 const entryLines = (
   entry: AppliedEntry,
   document: unknown,
-  updated: ReadonlySet<string>,
+  updated: { benefits: ReadonlySet<string>; meters: ReadonlySet<string> },
 ) => {
   const { section, id, action, diff } = entry
   const created = action === 'created'
@@ -71,7 +71,7 @@ const entryLines = (
   const grantedBefore = ids(benefits?.before)
   const granted = ids(benefits?.after)
   const regranted = granted.filter(
-    (id) => grantedBefore.includes(id) && updated.has(id),
+    (id) => grantedBefore.includes(id) && updated.benefits.has(id),
   )
   // A product granting an updated benefit lists the same ids before and after
   const sameIds =
@@ -111,6 +111,9 @@ const entryLines = (
             ),
           ],
     ),
+    ...usedMeters(entry, 'after')
+      .filter((id) => updated.meters.has(id))
+      .map((id) => `    meter  ${id} (updated)`),
     ...regranted.map((id) => `    benefits  ${id} (updated)`),
   ]
 }
@@ -183,11 +186,10 @@ export const planMarkdown = (
                   plain(
                     changed
                       .flatMap((entry) =>
-                        entryLines(
-                          entry,
-                          webhooks.get(name(entry.id)),
-                          updatedBenefits(result.entries),
-                        ),
+                        entryLines(entry, webhooks.get(name(entry.id)), {
+                          benefits: updatedIds(result.entries, 'benefits'),
+                          meters: updatedIds(result.entries, 'meters'),
+                        }),
                       )
                       .join('\n'),
                   ),

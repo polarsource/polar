@@ -28,7 +28,7 @@ from typescript.utils import format_default_value_ts, format_description
 from typescript.zod import ZodConverter, sort_unions_by_dependency
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
-BENCHMARK_DATA = EMITTER_DIRECTORY.parent / "benchmarks" / "outpost.json"
+BENCHMARK_DATA_DIRECTORY = EMITTER_DIRECTORY.parent / "benchmarks"
 
 
 class TypeScriptEmitter(EmitterBase):
@@ -134,7 +134,23 @@ class TypeScriptEmitter(EmitterBase):
                     src_dir / module / source_file.name,
                     self.get_context(),
                 )
-        self.copy_file(BENCHMARK_DATA, src_dir / "outpost" / "benchmark.json")
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "outpost.json",
+            src_dir / "outpost" / "benchmark.json",
+        )
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customers.json",
+            src_dir / "customers.benchmark.json",
+        )
+        self.copy_file(
+            BENCHMARK_DATA_DIRECTORY / "customer-server.mjs",
+            src_dir / "customer-server.mjs",
+        )
+        self.render_file(
+            "src/requests.bench.ts",
+            src_dir / "requests.bench.ts",
+            self.get_version_context(self.ir.versions[-1]),
+        )
 
         for api in self.ir.versions:
             version_dir = src_dir / self.get_version_string(api)
@@ -201,10 +217,11 @@ class TypeScriptEmitter(EmitterBase):
     def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
         """Run post-processing actions: pnpm install, lint, build."""
         super().run_post_actions(root_directory)
-        self.run_command("just install", cwd=root_directory)
+        # `prepare` would build before lint-fix; build once after it instead.
+        self.run_command("pnpm install --ignore-scripts", cwd=root_directory)
         self.run_command("just lint-fix", cwd=root_directory)
-        self.run_command("just typecheck", cwd=root_directory)
         self.run_command("just build", cwd=root_directory)
+        self.run_command("just typecheck", cwd=root_directory)
         self.run_command("just test", cwd=root_directory)
 
     def _emit_models(self, version_dir: pathlib.Path, api: APIVersion) -> None:

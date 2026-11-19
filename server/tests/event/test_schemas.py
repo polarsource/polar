@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, get_args, get_type_hints
+from typing import Annotated, Any, get_args, get_origin, get_type_hints
 
 import pytest
 from pydantic import ValidationError
@@ -189,6 +189,8 @@ def _get_schema_union_event_names() -> set[str]:
     union_type = get_args(SystemEventUnion)[0]
     names: set[str] = set()
     for cls in get_args(union_type):
+        if get_origin(cls) is Annotated:
+            cls = get_args(cls)[0]
         hints = get_type_hints(cls, include_extras=True)
         name_hint = hints["name"]
         literal_args = get_args(name_hint)

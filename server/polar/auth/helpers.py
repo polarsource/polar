@@ -18,16 +18,27 @@ OIDC_ERROR_MESSAGE = "An authentication error occurred. Please try again."
 
 
 def set_state_cookie(
-    request: Request, response: Response, state: str, expires_at: int
+    request: Request,
+    response: Response,
+    state: str,
+    expires_at: int,
+    *,
+    cross_site: bool = False,
 ) -> None:
+    """
+    Set the OAuth2 state cookie binding the flow to the browser that started it.
+
+    `cross_site` must be enabled for providers that call us back with a cross-site
+    POST (e.g. Apple `form_post`), so the cookie is still sent with the callback.
+    """
     expires_datetime = datetime.fromtimestamp(expires_at, tz=UTC)
     response.set_cookie(
         settings.OAUTH2_SESSION_STATE_COOKIE_KEY,
         state,
         path="/",
         httponly=True,
-        secure=not is_localhost(request),
-        samesite="lax",
+        secure=cross_site or not is_localhost(request),
+        samesite="none" if cross_site else "lax",
         expires=expires_datetime,
     )
 

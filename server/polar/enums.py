@@ -1,9 +1,12 @@
 import calendar
 from datetime import datetime
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
 from dateutil.relativedelta import relativedelta
+
+from polar.kit.versioning import Version
+from polar.version import V2027_01
 
 
 class Platforms(StrEnum):
@@ -127,6 +130,9 @@ PublicSubscriptionProrationBehavior = Literal[
     SubscriptionProrationBehavior.prorate,
     SubscriptionProrationBehavior.next_period,
 ]
+
+AutoProrationBehavior = Annotated[Literal["auto"], Version(starting_from=V2027_01)]
+ProrationBehaviorSetting = SubscriptionProrationBehavior | AutoProrationBehavior
 
 
 class InvoiceNumbering(StrEnum):

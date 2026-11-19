@@ -6,7 +6,7 @@ from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from standardwebhooks.webhooks import Webhook as StandardWebhook
 

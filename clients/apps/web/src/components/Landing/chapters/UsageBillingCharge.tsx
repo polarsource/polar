@@ -15,39 +15,23 @@ export const UsageBillingCharge = ({
   return (
     <Box
       flexDirection="column"
-      rowGap="s"
+      rowGap="xs"
       marginHorizontal="xl"
-      paddingTop="l"
-      paddingBottom="l"
+      paddingVertical="l"
       borderTopWidth={1}
       borderStyle="solid"
       borderColor="border-primary"
     >
-      <Box
-        justifyContent="between"
-        alignItems="center"
-        columnGap="l"
-        paddingBottom="s"
-      >
-        <Box alignItems="center" columnGap="s">
-          <CreditCard size={14} />
-          <Text variant="default">Visa •••• 4242</Text>
-        </Box>
-        <Text variant="default" color="muted">
-          Charges Nov 1
+      <Box justifyContent="between" alignItems="baseline" columnGap="l">
+        <Text variant="body">Next charge</Text>
+        <Text variant="heading-xxs" as="p" tabularNums>
+          {dollars(total, 2)}
         </Text>
       </Box>
-      <Box
-        justifyContent="between"
-        alignItems="baseline"
-        paddingTop="m"
-        borderTopWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
-      >
-        <Text variant="body">Card charge</Text>
-        <Text variant="heading-xxs" tabularNums>
-          {dollars(total, 2)}
+      <Box alignItems="center" columnGap="s" color="text-secondary">
+        <CreditCard size={14} />
+        <Text variant="caption" color="muted">
+          Visa •••• 4242 · Nov 1
         </Text>
       </Box>
     </Box>

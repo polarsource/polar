@@ -9,6 +9,7 @@ import CountryPicker from './ui/CountryPicker'
 import CountryStatePicker, {
   COUNTRIES_WITH_FIXED_STATE_OPTIONS,
 } from './ui/CountryStatePicker'
+import { usesStateLabel } from '@polar-sh/ui/lib/states'
 import { Input } from './ui/Input'
 import { Checkbox } from './ui/Checkbox'
 import {
@@ -350,6 +351,10 @@ const BaseCheckoutForm = ({
     return t('checkout.cta.getFree')
   }, [checkout, interval, t])
 
+  const isShortUSBillingAddress =
+    checkout.customer_billing_address?.country === 'US' &&
+    !isDisplayedField(checkout.billing_address_fields.line1)
+
   return (
     <div
       className={cn(
@@ -426,7 +431,14 @@ const BaseCheckoutForm = ({
               {(checkout.is_payment_form_required ||
                 checkout.require_billing_address) && (
                 <>
-                  <FormItem>
+                  <FormItem
+                    className={
+                      // Hacky CSS which will be removed once the experiment (checkout_us_short_billing_address) is concluded
+                      isShortUSBillingAddress
+                        ? 'grid grid-cols-2 gap-x-2 [&>*]:col-span-2 [&>.grid]:col-span-1 [&>.grid+*]:col-span-1'
+                        : undefined
+                    }
+                  >
                     <FormLabel>
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
@@ -498,7 +510,16 @@ const BaseCheckoutForm = ({
                       isDisplayedField(
                         checkout.billing_address_fields.city,
                       )) && (
-                      <div className="grid grid-cols-2 gap-x-2">
+                      <div
+                        className={
+                          isDisplayedField(
+                            checkout.billing_address_fields.postal_code,
+                          ) &&
+                          isDisplayedField(checkout.billing_address_fields.city)
+                            ? 'grid grid-cols-2 gap-x-2'
+                            : 'grid grid-cols-1'
+                        }
+                      >
                         {isDisplayedField(
                           checkout.billing_address_fields.postal_code,
                         ) && (
@@ -577,27 +598,39 @@ const BaseCheckoutForm = ({
                               ? t('checkout.form.fieldRequired')
                               : false,
                           }}
-                          render={({ field }) => (
-                            <>
-                              <CountryStatePicker
-                                name={field.name}
-                                autoComplete="billing address-level1"
-                                data-testid="billing-state"
-                                country={country}
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                placeholder={
-                                  country === 'US'
-                                    ? t('checkout.form.billingAddress.state')
-                                    : t('checkout.form.billingAddress.province')
-                                }
-                                fallbackPlaceholder={t(
-                                  'checkout.form.billingAddress.stateProvince',
-                                )}
-                              />
-                              <FormMessage />
-                            </>
-                          )}
+                          render={({ field }) => {
+                            const statePicker = (
+                              <>
+                                <CountryStatePicker
+                                  name={field.name}
+                                  autoComplete="billing address-level1"
+                                  data-testid="billing-state"
+                                  country={country}
+                                  value={field.value || ''}
+                                  onChange={field.onChange}
+                                  placeholder={
+                                    usesStateLabel(country)
+                                      ? t('checkout.form.billingAddress.state')
+                                      : t(
+                                          'checkout.form.billingAddress.province',
+                                        )
+                                  }
+                                  fallbackPlaceholder={t(
+                                    'checkout.form.billingAddress.stateProvince',
+                                  )}
+                                />
+                                <FormMessage />
+                              </>
+                            )
+                            return isShortUSBillingAddress ? (
+                              // Hacky CSS which will be removed once the experiment (checkout_us_short_billing_address) is concluded
+                              <div className="flex flex-col gap-2 [&>div]:mb-0">
+                                {statePicker}
+                              </div>
+                            ) : (
+                              statePicker
+                            )
+                          }}
                         />
                       </FormControl>
                     )}

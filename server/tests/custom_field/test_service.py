@@ -2,9 +2,23 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.custom_field.schemas import CustomFieldCreateText, CustomFieldUpdateText
+from polar.custom_field.service import CustomFieldVersionLocked
 from polar.custom_field.service import custom_field as custom_field_service
+from polar.declarative_config.guard import DeclarativeConfigManaged
 from polar.exceptions import PolarRequestValidationError
-from polar.models import Customer, Order, Organization, Product, User, UserOrganization
+from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
+from polar.models import (
+    Catalog,
+    CatalogCustomField,
+    Customer,
+    Order,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
+from polar.models.catalog import CatalogStatus
 from polar.models.custom_field import CustomFieldText, CustomFieldType
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession
@@ -25,6 +39,29 @@ async def text_field(
 
 
 @pytest.fixture
+async def archived_text_field(
+    save_fixture: SaveFixture, organization: Organization, text_field: CustomFieldText
+) -> CustomFieldText:
+    archived = Catalog(
+        organization=organization, status=CatalogStatus.archived, published_at=utc_now()
+    )
+    await save_fixture(archived)
+    previous = CustomFieldText(
+        slug=text_field.slug,
+        name=text_field.name,
+        properties={},
+        organization=organization,
+        is_current=False,
+        catalog=archived,
+    )
+    await save_fixture(previous)
+    await save_fixture(
+        CatalogCustomField(catalog=archived, custom_field=previous, slug=previous.slug)
+    )
+    return previous
+
+
+@pytest.fixture
 async def order_text_field_data(
     save_fixture: SaveFixture,
     product: Product,
@@ -39,6 +76,82 @@ async def order_text_field_data(
         customer=customer,
         custom_field_data=custom_field_data,
     )
+
+
+@pytest.mark.anyio
+class TestList:
+    @pytest.mark.auth
+    async def test_every_version(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+        archived_text_field: CustomFieldText,
+    ) -> None:
+        results, _ = await custom_field_service.list(
+            session, auth_subject, pagination=PaginationParams(1, 10)
+        )
+
+        assert {field.id for field in results} == {
+            text_field.id,
+            archived_text_field.id,
+        }
+
+    @pytest.mark.auth
+    async def test_filter_by_catalog_status(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+        archived_text_field: CustomFieldText,
+    ) -> None:
+        results, _ = await custom_field_service.list(
+            session,
+            auth_subject,
+            catalog_status=[CatalogStatus.archived],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert [field.id for field in results] == [archived_text_field.id]
+
+    @pytest.mark.auth
+    async def test_filter_by_catalog_id(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+        archived_text_field: CustomFieldText,
+    ) -> None:
+        assert archived_text_field.catalog_id is not None
+        results, _ = await custom_field_service.list(
+            session,
+            auth_subject,
+            catalog_id=[archived_text_field.catalog_id],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert [field.id for field in results] == [archived_text_field.id]
+
+    @pytest.mark.auth
+    async def test_filter_by_live_catalog_includes_current(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+        archived_text_field: CustomFieldText,
+    ) -> None:
+        results, _ = await custom_field_service.list(
+            session,
+            auth_subject,
+            catalog_status=[CatalogStatus.live],
+            pagination=PaginationParams(1, 10),
+        )
+
+        assert [field.id for field in results] == [text_field.id]
 
 
 @pytest.mark.anyio
@@ -97,6 +210,71 @@ class TestCreate:
 
 @pytest.mark.anyio
 class TestUpdate:
+    @pytest.mark.auth
+    @pytest.mark.usefixtures("config_as_code_enabled")
+    async def test_config_as_code(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        with pytest.raises(DeclarativeConfigManaged):
+            await custom_field_service.update(
+                session,
+                text_field,
+                CustomFieldUpdateText(type=text_field.type, name="Renamed"),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_previous_version(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        text_field: CustomFieldText,
+    ) -> None:
+        text_field.is_current = False
+        await save_fixture(text_field)
+
+        with pytest.raises(CustomFieldVersionLocked):
+            await custom_field_service.update(
+                session,
+                text_field,
+                CustomFieldUpdateText(type=text_field.type, name="Renamed"),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_slug_of_versioned_field(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        text_field: CustomFieldText,
+    ) -> None:
+        await save_fixture(
+            CustomFieldText(
+                slug=text_field.slug,
+                name=text_field.name,
+                properties={},
+                organization=organization,
+                is_current=False,
+            )
+        )
+
+        with pytest.raises(CustomFieldVersionLocked):
+            await custom_field_service.update(
+                session,
+                text_field,
+                CustomFieldUpdateText(type=text_field.type, slug="renamed"),
+                auth_subject,
+            )
+
     @pytest.mark.auth
     async def test_slug_update(
         self,

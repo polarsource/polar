@@ -52,7 +52,7 @@ config.set_main_option(
     # database; fall back to the settings URL for normal CLI usage.
     # Escape %-encoding signs to avoid Alembic treating them as interpolation markers.
     config.attributes.get(
-        "sqlalchemy.url", settings.get_postgres_dsn("asyncpg")
+        "sqlalchemy.url", settings.get_postgres_migration_dsn("asyncpg")
     ).replace("%", "%%"),
 )
 

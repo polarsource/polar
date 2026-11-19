@@ -75,7 +75,7 @@ class ProductsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -154,7 +154,7 @@ class ProductsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -222,7 +222,7 @@ class ProductsSync(SyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -264,7 +264,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -309,7 +309,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -356,7 +356,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -403,7 +403,7 @@ class ProductsSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -477,7 +477,7 @@ class ProductsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -556,7 +556,7 @@ class ProductsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -625,7 +625,7 @@ class ProductsAsync(AsyncServiceBase):
         **Scopes**: `products:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -667,7 +667,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -712,7 +712,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -759,7 +759,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -806,7 +806,7 @@ class ProductsAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

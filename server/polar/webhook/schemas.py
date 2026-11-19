@@ -25,11 +25,16 @@ from polar.kit.schemas import (
     Schema,
     TimestampedSchema,
 )
-from polar.kit.versioning import _ACTIVE_API_VERSION, APIVersion, QuerySchema
+from polar.kit.versioning import (
+    _ACTIVE_API_VERSION,
+    APIVersion,
+    QuerySchema,
+    Version,
+)
 from polar.models.webhook_endpoint import WebhookEventType, WebhookFormat
 from polar.openapi import destructive_when_equals
 from polar.organization.schemas import OrganizationID
-from polar.version import CURRENT_API_VERSION, VERSIONS
+from polar.version import CURRENT_API_VERSION, V2027_01, VERSIONS
 from polar.webhook.constants import (
     uses_standard_webhook_signature as secret_uses_standard_webhook_signature,
 )
@@ -88,6 +93,14 @@ EndpointFormat = Annotated[
     WebhookFormat,
     Field(description="The format of the webhook payload."),
 ]
+
+
+CreatableEndpointFormat = Annotated[
+    Literal[WebhookFormat.raw, WebhookFormat.discord, WebhookFormat.slack],
+    Field(description="The format of the webhook payload."),
+]
+
+
 EndpointSecret = Annotated[
     str,
     Field(
@@ -185,7 +198,7 @@ class WebhookEndpointCreate(Schema):
         default=str(CURRENT_API_VERSION),  # type: ignore
         description="The API version that'll be used in event payloads.",
     )
-    format: EndpointFormat
+    format: CreatableEndpointFormat
     events: EndpointEvents
     organization_id: OrganizationID | None = Field(
         None,
@@ -217,7 +230,7 @@ class WebhookEndpointUpdate(Schema):
     api_version: AvailableAPIVersion | None = Field(
         default=None, description="The API version that'll be used in event payloads."
     )
-    format: EndpointFormat | None = None
+    format: CreatableEndpointFormat | None = None
     events: EndpointEvents | None = None
     enabled: bool | None = Field(
         default=None,
@@ -299,6 +312,9 @@ class WebhookEndpointListParams(QuerySchema):
     organization_id: MultipleQueryFilter[OrganizationID] | None = Field(
         None, description="Filter by organization ID."
     )
+    format: Annotated[
+        MultipleQueryFilter[WebhookFormat] | None, Version(starting_from=V2027_01)
+    ] = Field(None, description="Filter by webhook payload format.")
 
 
 class WebhookDeliveryListParams(QuerySchema):

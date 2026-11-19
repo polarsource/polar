@@ -5,7 +5,7 @@ import pytest
 from fastapi import APIRouter as _APIRouter
 from fastapi import Query
 from fastapi.openapi.utils import get_openapi
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from openapi_kit.diff import compare
 from openapi_kit.parser import OpenAPIParser
 from pydantic import Field
@@ -13,6 +13,7 @@ from pydantic import Field
 from polar.kit.schemas import Schema
 from polar.kit.versioning import APIVersion
 from polar.openapi import (
+    VERSIONING_POLICY_URL,
     APITag,
     add_destructive_tool_annotations,
     destructive,
@@ -23,9 +24,18 @@ from polar.openapi import (
 from polar.routing import APIRouter
 from polar.version import V2026_10, V2027_01, VERSIONS
 
+OPENAPI_VERSION_PARAMS = {
+    version: pytest.param(
+        version,
+        id=str(version),
+        marks=pytest.mark.xdist_group(name=f"openapi_{version}"),
+    )
+    for version in VERSIONS
+}
+
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("version", VERSIONS)
+@pytest.mark.parametrize("version", OPENAPI_VERSION_PARAMS.values())
 async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
     response = await client.get(f"{version}/openapi.json")
     assert response.status_code == 200
@@ -39,8 +49,22 @@ async def test_openapi(version: APIVersion, client: AsyncClient) -> None:
 
 
 @pytest.mark.anyio
+@pytest.mark.parametrize("version", OPENAPI_VERSION_PARAMS.values())
+async def test_openapi_links_versioning_policy(
+    version: APIVersion, client: AsyncClient
+) -> None:
+    response = await client.get(f"{version}/openapi.json")
+    assert response.status_code == 200
+
+    schema = response.json()
+    assert schema["externalDocs"]["url"] == VERSIONING_POLICY_URL
+    assert VERSIONING_POLICY_URL in schema["info"]["description"]
+
+
+@pytest.mark.anyio
 @pytest.mark.parametrize(
-    "version", [pytest.param(v, id=str(v)) for v in VERSIONS if v != V2027_01]
+    "version",
+    [param for version, param in OPENAPI_VERSION_PARAMS.items() if version != V2027_01],
 )
 async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) -> None:
     OPENAPI_FROZEN_MESSAGE = """
@@ -52,7 +76,7 @@ async def test_current_openapi_frozen(version: APIVersion, client: AsyncClient) 
     - Revert accidental contract changes affecting the current version.
     - Do not update openapi.*.json files unless releasing a new API version.
 
-    See handbook/engineering/design-documents/api-versioning.mdx.
+    See https://linear.app/polarsh/document/api-versioning-4a4d04dff621
     """.strip()
 
     response = await client.get(f"{version}/openapi.json")
@@ -116,9 +140,14 @@ DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
     "customer_meters:reverse_credit": V2027_01,
 }
 
+NON_DESTRUCTIVE_TOOL_OPERATIONS_SINCE: dict[str, APIVersion] = {
+    "benefit-grants:create": V2027_01,
+    "benefit-grants:update": V2027_01,
+}
+
 
 @pytest.mark.anyio
-@pytest.mark.parametrize("version", VERSIONS)
+@pytest.mark.parametrize("version", OPENAPI_VERSION_PARAMS.values())
 async def test_tool_write_operations_are_classified(
     version: APIVersion, client: AsyncClient
 ) -> None:
@@ -155,7 +184,11 @@ async def test_tool_write_operations_are_classified(
         for operation_id, since in DESTRUCTIVE_TOOL_OPERATIONS_SINCE.items()
         if version >= since
     }, CLASSIFICATION_MESSAGE
-    assert non_destructive == NON_DESTRUCTIVE_TOOL_OPERATIONS, CLASSIFICATION_MESSAGE
+    assert non_destructive == NON_DESTRUCTIVE_TOOL_OPERATIONS | {
+        operation_id
+        for operation_id, since in NON_DESTRUCTIVE_TOOL_OPERATIONS_SINCE.items()
+        if version >= since
+    }, CLASSIFICATION_MESSAGE
 
 
 class WidgetUpdate(Schema):
@@ -314,7 +347,17 @@ class TestDestructiveToolAnnotations:
 
 
 @pytest.mark.anyio
-@pytest.mark.parametrize(("version", "included"), [(V2026_10, True), (V2027_01, False)])
+@pytest.mark.parametrize(
+    ("version", "included"),
+    [
+        pytest.param(
+            version,
+            included,
+            marks=pytest.mark.xdist_group(name=f"openapi_{version}"),
+        )
+        for version, included in [(V2026_10, True), (V2027_01, False)]
+    ],
+)
 async def test_legacy_recurring_product_price_schema(
     version: APIVersion, included: bool, client: AsyncClient
 ) -> None:

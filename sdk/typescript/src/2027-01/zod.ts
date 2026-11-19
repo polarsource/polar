@@ -699,8 +699,6 @@ export const CustomerType: Schema<models.CustomerType> = /* @__PURE__ */ z.enum(
   "individual",
   "team",
 ]);
-export const CustomerWalletSortProperty: Schema<models.CustomerWalletSortProperty> =
-  /* @__PURE__ */ z.enum(["created_at", "-created_at", "balance", "-balance"]);
 export const DiscountDuration: Schema<models.DiscountDuration> = /* @__PURE__ */ z.enum([
   "once",
   "forever",
@@ -787,6 +785,7 @@ export const FilterOperator: Schema<models.FilterOperator> = /* @__PURE__ */ z.e
   "like",
   "not_like",
 ]);
+export const Format: Schema<models.Format> = /* @__PURE__ */ z.enum(["raw", "discord", "slack"]);
 export const Func: Schema<models.Func> = /* @__PURE__ */ z.enum(["sum", "max", "min", "avg"]);
 export const LicenseKeyStatus: Schema<models.LicenseKeyStatus> = /* @__PURE__ */ z.enum([
   "granted",
@@ -1202,31 +1201,6 @@ export const SeatStatus: Schema<models.SeatStatus> = /* @__PURE__ */ z.enum([
 ]);
 export const Status: Schema<models.Status> = /* @__PURE__ */ z.enum(["granted", "disabled"]);
 export const SubType: Schema<models.SubType> = /* @__PURE__ */ z.enum(["user", "organization"]);
-export const SubscriptionExportColumn: Schema<models.SubscriptionExportColumn> =
-  /* @__PURE__ */ z.enum([
-    "email",
-    "started_at",
-    "product",
-    "amount",
-    "currency",
-    "status",
-    "recurring_interval",
-    "customer_name",
-    "billing_name",
-    "billing_country",
-    "net_amount",
-    "discount",
-    "seats",
-    "current_period_start",
-    "current_period_end",
-    "cancel_at_period_end",
-    "canceled_at",
-    "ends_at",
-    "ended_at",
-    "cancellation_reason",
-    "trial_start",
-    "trial_end",
-  ]);
 export const SubscriptionProrationBehavior: Schema<models.SubscriptionProrationBehavior> =
   /* @__PURE__ */ z.enum(["invoice", "prorate", "next_period", "reset"]);
 export const SubscriptionSortProperty: Schema<models.SubscriptionSortProperty> =
@@ -1938,6 +1912,7 @@ export const WebhookFormat: Schema<models.WebhookFormat> = /* @__PURE__ */ z.enu
   "raw",
   "discord",
   "slack",
+  "mcp",
 ]);
 export const Address: ObjectSchema<models.Address> = /* @__PURE__ */ z.looseObject({
   line1: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -1963,6 +1938,11 @@ export const AddressInput: ObjectSchema<models.AddressInput> = /* @__PURE__ */ z
   state: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
   country: CountryAlpha2Input,
 });
+export const AlreadyActiveSubscription: ObjectSchema<models.AlreadyActiveSubscription> =
+  /* @__PURE__ */ z.looseObject({
+    error: /* @__PURE__ */ z.literal("AlreadyActiveSubscription"),
+    detail: /* @__PURE__ */ z.string(),
+  });
 export const AlreadyActiveSubscriptionError: ObjectSchema<models.AlreadyActiveSubscriptionError> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("AlreadyActiveSubscriptionError"),
@@ -2861,6 +2841,8 @@ export const BenefitGitHubRepositoryUpdate: ObjectSchema<models.BenefitGitHubRep
     },
   });
 export const BenefitGrant: ObjectSchema<models.BenefitGrant> = /* @__PURE__ */ z.looseObject({
+  manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+  manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   created_at: /* @__PURE__ */ z.string(),
   modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   id: /* @__PURE__ */ z.string(),
@@ -2897,10 +2879,34 @@ export const BenefitGrant: ObjectSchema<models.BenefitGrant> = /* @__PURE__ */ z
     ]);
   },
 });
+export const BenefitGrantAlreadyExists: ObjectSchema<models.BenefitGrantAlreadyExists> =
+  /* @__PURE__ */ z.looseObject({
+    error: /* @__PURE__ */ z.literal("BenefitGrantAlreadyExists"),
+    detail: /* @__PURE__ */ z.string(),
+  });
+export const BenefitGrantCreate: ObjectSchema<models.BenefitGrantCreate> =
+  /* @__PURE__ */ z.looseObject({
+    customer_id: /* @__PURE__ */ z.string(),
+    benefit_id: /* @__PURE__ */ z.string(),
+    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+  });
+export const BenefitGrantCreateExternal: ObjectSchema<models.BenefitGrantCreateExternal> =
+  /* @__PURE__ */ z.looseObject({
+    external_customer_id: /* @__PURE__ */ z.string(),
+    external_benefit_id: /* @__PURE__ */ z.string(),
+    external_member_id: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    ),
+    organization_id: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    ),
+  });
 export const BenefitGrantCustomProperties: ObjectSchema<models.BenefitGrantCustomProperties> =
   /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitGrantCustomWebhook: ObjectSchema<models.BenefitGrantCustomWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -2941,6 +2947,8 @@ export const BenefitGrantDiscordProperties: ObjectSchema<models.BenefitGrantDisc
   });
 export const BenefitGrantDiscordWebhook: ObjectSchema<models.BenefitGrantDiscordWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -2978,6 +2986,8 @@ export const BenefitGrantDownloadablesProperties: ObjectSchema<models.BenefitGra
   });
 export const BenefitGrantDownloadablesWebhook: ObjectSchema<models.BenefitGrantDownloadablesWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -3021,6 +3031,8 @@ export const BenefitGrantFeatureFlagProperties: ObjectSchema<models.BenefitGrant
   /* @__PURE__ */ z.looseObject({}) as never;
 export const BenefitGrantFeatureFlagWebhook: ObjectSchema<models.BenefitGrantFeatureFlagWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -3064,6 +3076,8 @@ export const BenefitGrantGitHubRepositoryProperties: ObjectSchema<models.Benefit
   });
 export const BenefitGrantGitHubRepositoryWebhook: ObjectSchema<models.BenefitGrantGitHubRepositoryWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -3105,6 +3119,8 @@ export const BenefitGrantLicenseKeysProperties: ObjectSchema<models.BenefitGrant
   });
 export const BenefitGrantLicenseKeysWebhook: ObjectSchema<models.BenefitGrantLicenseKeysWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -3153,6 +3169,8 @@ export const BenefitGrantMeterCreditProperties: ObjectSchema<models.BenefitGrant
   });
 export const BenefitGrantMeterCreditWebhook: ObjectSchema<models.BenefitGrantMeterCreditWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -3197,6 +3215,8 @@ export const BenefitGrantSlackSharedChannelProperties: ObjectSchema<models.Benef
   });
 export const BenefitGrantSlackSharedChannelWebhook: ObjectSchema<models.BenefitGrantSlackSharedChannelWebhook> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -3229,6 +3249,10 @@ export const BenefitGrantSlackSharedChannelWebhook: ObjectSchema<models.BenefitG
         /* @__PURE__ */ z.nullable(BenefitGrantSlackSharedChannelProperties),
       );
     },
+  });
+export const BenefitGrantUpdate: ObjectSchema<models.BenefitGrantUpdate> =
+  /* @__PURE__ */ z.looseObject({
+    manually_revoked_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.null()),
   });
 export const BenefitGrantedEvent: ObjectSchema<models.BenefitGrantedEvent> =
   /* @__PURE__ */ z.looseObject({
@@ -3400,6 +3424,52 @@ export const BenefitLicenseKeysUpdate: ObjectSchema<models.BenefitLicenseKeysUpd
       return /* @__PURE__ */ z.optional(
         /* @__PURE__ */ z.nullable(BenefitLicenseKeysCreateProperties),
       );
+    },
+  });
+export const BenefitManuallyGrantedEvent: ObjectSchema<models.BenefitManuallyGrantedEvent> =
+  /* @__PURE__ */ z.looseObject({
+    id: /* @__PURE__ */ z.string(),
+    timestamp: /* @__PURE__ */ z.string(),
+    organization_id: /* @__PURE__ */ z.string(),
+    customer_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    get customer() {
+      return /* @__PURE__ */ z.nullable(Customer);
+    },
+    external_customer_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+    external_member_id: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    ),
+    child_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
+    parent_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+    label: /* @__PURE__ */ z.string(),
+    source: /* @__PURE__ */ z.literal("system"),
+    name: /* @__PURE__ */ z.literal("benefit.manually_granted"),
+    get metadata() {
+      return BenefitGrantMetadata;
+    },
+  });
+export const BenefitManuallyRevokedEvent: ObjectSchema<models.BenefitManuallyRevokedEvent> =
+  /* @__PURE__ */ z.looseObject({
+    id: /* @__PURE__ */ z.string(),
+    timestamp: /* @__PURE__ */ z.string(),
+    organization_id: /* @__PURE__ */ z.string(),
+    customer_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    get customer() {
+      return /* @__PURE__ */ z.nullable(Customer);
+    },
+    external_customer_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+    external_member_id: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    ),
+    child_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
+    parent_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+    label: /* @__PURE__ */ z.string(),
+    source: /* @__PURE__ */ z.literal("system"),
+    name: /* @__PURE__ */ z.literal("benefit.manually_revoked"),
+    get metadata() {
+      return BenefitGrantMetadata;
     },
   });
 export const BenefitMeterCredit: ObjectSchema<models.BenefitMeterCredit> =
@@ -3682,8 +3752,34 @@ export const BenefitSubscriberOrganization: ObjectSchema<models.BenefitSubscribe
     name: /* @__PURE__ */ z.string(),
     slug: /* @__PURE__ */ z.string(),
     avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    proration_behavior: SubscriptionProrationBehavior,
+    proration_behavior: /* @__PURE__ */ z.union([
+      SubscriptionProrationBehavior,
+      /* @__PURE__ */ z.literal("auto"),
+    ]),
     allow_customer_updates: /* @__PURE__ */ z.boolean(),
+  });
+export const BenefitUnrevokedEvent: ObjectSchema<models.BenefitUnrevokedEvent> =
+  /* @__PURE__ */ z.looseObject({
+    id: /* @__PURE__ */ z.string(),
+    timestamp: /* @__PURE__ */ z.string(),
+    organization_id: /* @__PURE__ */ z.string(),
+    customer_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    get customer() {
+      return /* @__PURE__ */ z.nullable(Customer);
+    },
+    external_customer_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    member_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+    external_member_id: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    ),
+    child_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
+    parent_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+    label: /* @__PURE__ */ z.string(),
+    source: /* @__PURE__ */ z.literal("system"),
+    name: /* @__PURE__ */ z.literal("benefit.unrevoked"),
+    get metadata() {
+      return BenefitGrantMetadata;
+    },
   });
 export const BenefitUpdatedEvent: ObjectSchema<models.BenefitUpdatedEvent> =
   /* @__PURE__ */ z.looseObject({
@@ -4034,6 +4130,7 @@ export const CheckoutLink: ObjectSchema<models.CheckoutLink> = /* @__PURE__ */ z
     return MetadataOutputType;
   },
   payment_processor: PaymentProcessor,
+  trial_payment_setup_required: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
   client_secret: /* @__PURE__ */ z.string(),
   success_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   return_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -4075,6 +4172,9 @@ export const CheckoutLinkCreateProducts: ObjectSchema<models.CheckoutLinkCreateP
     trial_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(TrialInterval)),
     trial_interval_count: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
+    ),
+    trial_payment_setup_required: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
     ),
     payment_processor: /* @__PURE__ */ z.literal("stripe"),
     label: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -4134,6 +4234,9 @@ export const CheckoutLinkUpdate: ObjectSchema<models.CheckoutLinkUpdate> =
         ]),
       ),
     ),
+    trial_payment_setup_required: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
+    ),
     products: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
     ),
@@ -4162,7 +4265,10 @@ export const CheckoutOrganization: ObjectSchema<models.CheckoutOrganization> =
     name: /* @__PURE__ */ z.string(),
     slug: /* @__PURE__ */ z.string(),
     avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    proration_behavior: SubscriptionProrationBehavior,
+    proration_behavior: /* @__PURE__ */ z.union([
+      SubscriptionProrationBehavior,
+      /* @__PURE__ */ z.literal("auto"),
+    ]),
     allow_customer_updates: /* @__PURE__ */ z.boolean(),
   });
 export const CheckoutProduct: ObjectSchema<models.CheckoutProduct> = /* @__PURE__ */ z.looseObject({
@@ -4757,6 +4863,8 @@ export const CustomFieldCheckbox: ObjectSchema<models.CustomFieldCheckbox> =
     slug: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.string(),
     organization_id: /* @__PURE__ */ z.string(),
+    catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    is_current: /* @__PURE__ */ z.boolean(),
     get properties() {
       return CustomFieldCheckboxProperties;
     },
@@ -4893,6 +5001,8 @@ export const CustomFieldDate: ObjectSchema<models.CustomFieldDate> = /* @__PURE_
   slug: /* @__PURE__ */ z.string(),
   name: /* @__PURE__ */ z.string(),
   organization_id: /* @__PURE__ */ z.string(),
+  catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+  is_current: /* @__PURE__ */ z.boolean(),
   get properties() {
     return CustomFieldDateProperties;
   },
@@ -4917,6 +5027,8 @@ export const CustomFieldNumber: ObjectSchema<models.CustomFieldNumber> =
     slug: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.string(),
     organization_id: /* @__PURE__ */ z.string(),
+    catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    is_current: /* @__PURE__ */ z.boolean(),
     get properties() {
       return CustomFieldNumberProperties;
     },
@@ -4941,6 +5053,8 @@ export const CustomFieldSelect: ObjectSchema<models.CustomFieldSelect> =
     slug: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.string(),
     organization_id: /* @__PURE__ */ z.string(),
+    catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    is_current: /* @__PURE__ */ z.boolean(),
     get properties() {
       return CustomFieldSelectProperties;
     },
@@ -4970,6 +5084,8 @@ export const CustomFieldText: ObjectSchema<models.CustomFieldText> = /* @__PURE_
   slug: /* @__PURE__ */ z.string(),
   name: /* @__PURE__ */ z.string(),
   organization_id: /* @__PURE__ */ z.string(),
+  catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+  is_current: /* @__PURE__ */ z.boolean(),
   get properties() {
     return CustomFieldTextProperties;
   },
@@ -5085,6 +5201,8 @@ export const CustomFieldUpdateText: ObjectSchema<models.CustomFieldUpdateText> =
   });
 export const CustomerBenefitGrantCustom: ObjectSchema<models.CustomerBenefitGrantCustom> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5114,6 +5232,8 @@ export const CustomerBenefitGrantCustomUpdate: ObjectSchema<models.CustomerBenef
   /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("custom") });
 export const CustomerBenefitGrantDiscord: ObjectSchema<models.CustomerBenefitGrantDiscord> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5155,6 +5275,8 @@ export const CustomerBenefitGrantDiscordUpdate: ObjectSchema<models.CustomerBene
   });
 export const CustomerBenefitGrantDownloadables: ObjectSchema<models.CustomerBenefitGrantDownloadables> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5184,6 +5306,8 @@ export const CustomerBenefitGrantDownloadablesUpdate: ObjectSchema<models.Custom
   /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("downloadables") });
 export const CustomerBenefitGrantFeatureFlag: ObjectSchema<models.CustomerBenefitGrantFeatureFlag> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5213,6 +5337,8 @@ export const CustomerBenefitGrantFeatureFlagUpdate: ObjectSchema<models.Customer
   /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("feature_flag") });
 export const CustomerBenefitGrantGitHubRepository: ObjectSchema<models.CustomerBenefitGrantGitHubRepository> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5254,6 +5380,8 @@ export const CustomerBenefitGrantGitHubRepositoryUpdate: ObjectSchema<models.Cus
   });
 export const CustomerBenefitGrantLicenseKeys: ObjectSchema<models.CustomerBenefitGrantLicenseKeys> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5290,6 +5418,8 @@ export const CustomerBenefitGrantMember: ObjectSchema<models.CustomerBenefitGran
   });
 export const CustomerBenefitGrantMeterCredit: ObjectSchema<models.CustomerBenefitGrantMeterCredit> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5319,6 +5449,8 @@ export const CustomerBenefitGrantMeterCreditUpdate: ObjectSchema<models.Customer
   /* @__PURE__ */ z.looseObject({ benefit_type: /* @__PURE__ */ z.literal("meter_credit") });
 export const CustomerBenefitGrantSlackSharedChannel: ObjectSchema<models.CustomerBenefitGrantSlackSharedChannel> =
   /* @__PURE__ */ z.looseObject({
+    manually_granted_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+    manually_revoked_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     created_at: /* @__PURE__ */ z.string(),
     modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
     id: /* @__PURE__ */ z.string(),
@@ -5595,31 +5727,8 @@ export const CustomerOrder: ObjectSchema<models.CustomerOrder> = /* @__PURE__ */
   refundable_amount: /* @__PURE__ */ z.int(),
   refundable_tax_amount: /* @__PURE__ */ z.int(),
 });
-export const CustomerOrderConfirmPayment: ObjectSchema<models.CustomerOrderConfirmPayment> =
-  /* @__PURE__ */ z.looseObject({
-    confirmation_token_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    payment_method_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    payment_processor: /* @__PURE__ */ z.optional(PaymentProcessor),
-  });
 export const CustomerOrderInvoice: ObjectSchema<models.CustomerOrderInvoice> =
   /* @__PURE__ */ z.looseObject({ url: /* @__PURE__ */ z.string() });
-export const CustomerOrderPaymentConfirmation: ObjectSchema<models.CustomerOrderPaymentConfirmation> =
-  /* @__PURE__ */ z.looseObject({
-    status: /* @__PURE__ */ z.string(),
-    client_secret: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-    error: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
-export const CustomerOrderPaymentStatus: ObjectSchema<models.CustomerOrderPaymentStatus> =
-  /* @__PURE__ */ z.looseObject({
-    status: /* @__PURE__ */ z.string(),
-    error: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-  });
 export const CustomerOrderProduct: ObjectSchema<models.CustomerOrderProduct> =
   /* @__PURE__ */ z.looseObject({
     id: /* @__PURE__ */ z.string(),
@@ -5703,7 +5812,10 @@ export const CustomerOrganization: ObjectSchema<models.CustomerOrganization> =
     name: /* @__PURE__ */ z.string(),
     slug: /* @__PURE__ */ z.string(),
     avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    proration_behavior: SubscriptionProrationBehavior,
+    proration_behavior: /* @__PURE__ */ z.union([
+      SubscriptionProrationBehavior,
+      /* @__PURE__ */ z.literal("auto"),
+    ]),
     allow_customer_updates: /* @__PURE__ */ z.boolean(),
     get customer_portal_settings() {
       return OrganizationCustomerPortalSettings;
@@ -6400,14 +6512,6 @@ export const CustomerUpdatedMetadata: ObjectSchema<models.CustomerUpdatedMetadat
       return CustomerUpdatedFields;
     },
   });
-export const CustomerWallet: ObjectSchema<models.CustomerWallet> = /* @__PURE__ */ z.looseObject({
-  id: /* @__PURE__ */ z.string(),
-  created_at: /* @__PURE__ */ z.string(),
-  modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  customer_id: /* @__PURE__ */ z.string(),
-  balance: /* @__PURE__ */ z.int(),
-  currency: /* @__PURE__ */ z.string(),
-});
 export const DiscountFixedCreate: ObjectSchema<models.DiscountFixedCreate> =
   /* @__PURE__ */ z.looseObject({
     external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -7478,15 +7582,6 @@ export const ListResourceCustomerSubscription: ObjectSchema<models.ListResourceC
       return Pagination;
     },
   });
-export const ListResourceCustomerWallet: ObjectSchema<models.ListResourceCustomerWallet> =
-  /* @__PURE__ */ z.looseObject({
-    get items() {
-      return /* @__PURE__ */ z.array(CustomerWallet);
-    },
-    get pagination() {
-      return Pagination;
-    },
-  });
 export const ListResourceDiscount: ObjectSchema<models.ListResourceDiscount> =
   /* @__PURE__ */ z.looseObject({
     get items() {
@@ -7667,11 +7762,6 @@ export const ListResourceWithCursorPaginationEvent: ObjectSchema<models.ListReso
       return CursorPagination;
     },
   });
-export const ManualRetryLimitExceeded: ObjectSchema<models.ManualRetryLimitExceeded> =
-  /* @__PURE__ */ z.looseObject({
-    error: /* @__PURE__ */ z.literal("ManualRetryLimitExceeded"),
-    detail: /* @__PURE__ */ z.string(),
-  });
 export const Member: ObjectSchema<models.Member> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
   created_at: /* @__PURE__ */ z.string(),
@@ -7731,6 +7821,8 @@ export const Meter: ObjectSchema<models.Meter> = /* @__PURE__ */ z.looseObject({
   },
   organization_id: /* @__PURE__ */ z.string(),
   archived_at: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
+  catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
+  is_current: /* @__PURE__ */ z.boolean(),
 });
 export const MeterCreate: ObjectSchema<models.MeterCreate> = /* @__PURE__ */ z.looseObject({
   external_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
@@ -7866,30 +7958,6 @@ export const Metric: ObjectSchema<models.Metric> = /* @__PURE__ */ z.looseObject
   display_name: /* @__PURE__ */ z.string(),
   type: MetricType,
 });
-export const MetricDashboardCreate: ObjectSchema<models.MetricDashboardCreate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.string(),
-    metrics: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    organization_id: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    ),
-  });
-export const MetricDashboardSchema: ObjectSchema<models.MetricDashboardSchema> =
-  /* @__PURE__ */ z.looseObject({
-    created_at: /* @__PURE__ */ z.string(),
-    modified_at: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-    id: /* @__PURE__ */ z.string(),
-    name: /* @__PURE__ */ z.string(),
-    metrics: /* @__PURE__ */ z.array(/* @__PURE__ */ z.string()),
-    organization_id: /* @__PURE__ */ z.string(),
-  });
-export const MetricDashboardUpdate: ObjectSchema<models.MetricDashboardUpdate> =
-  /* @__PURE__ */ z.looseObject({
-    name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
-    metrics: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(/* @__PURE__ */ z.string())),
-    ),
-  });
 export const MetricPeriod: ObjectSchema<models.MetricPeriod> = /* @__PURE__ */ z.looseObject({
   timestamp: /* @__PURE__ */ z.string(),
   active_subscriptions: /* @__PURE__ */ z.optional(
@@ -9112,11 +9180,6 @@ export const OrderNotEligibleForInvoice: ObjectSchema<models.OrderNotEligibleFor
     error: /* @__PURE__ */ z.literal("OrderNotEligibleForInvoice"),
     detail: /* @__PURE__ */ z.string(),
   });
-export const OrderNotEligibleForRetry: ObjectSchema<models.OrderNotEligibleForRetry> =
-  /* @__PURE__ */ z.looseObject({
-    error: /* @__PURE__ */ z.literal("OrderNotEligibleForRetry"),
-    detail: /* @__PURE__ */ z.string(),
-  });
 export const OrderPaidEvent: ObjectSchema<models.OrderPaidEvent> = /* @__PURE__ */ z.looseObject({
   id: /* @__PURE__ */ z.string(),
   timestamp: /* @__PURE__ */ z.string(),
@@ -9318,7 +9381,10 @@ export const Organization: ObjectSchema<models.Organization> = /* @__PURE__ */ z
   name: /* @__PURE__ */ z.string(),
   slug: /* @__PURE__ */ z.string(),
   avatar_url: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
-  proration_behavior: SubscriptionProrationBehavior,
+  proration_behavior: /* @__PURE__ */ z.union([
+    SubscriptionProrationBehavior,
+    /* @__PURE__ */ z.literal("auto"),
+  ]),
   allow_customer_updates: /* @__PURE__ */ z.boolean(),
   email: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   website: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -9557,7 +9623,10 @@ export const OrganizationSocialLink: ObjectSchema<models.OrganizationSocialLink>
 export const OrganizationSubscriptionSettings: ObjectSchema<models.OrganizationSubscriptionSettings> =
   /* @__PURE__ */ z.looseObject({
     allow_multiple_subscriptions: /* @__PURE__ */ z.boolean(),
-    proration_behavior: PublicSubscriptionProrationBehavior,
+    proration_behavior: /* @__PURE__ */ z.union([
+      PublicSubscriptionProrationBehavior,
+      /* @__PURE__ */ z.literal("auto"),
+    ]),
     benefit_revocation_grace_period: /* @__PURE__ */ z.int(),
     prevent_trial_abuse: /* @__PURE__ */ z.boolean(),
     allow_customer_updates: /* @__PURE__ */ z.boolean(),
@@ -9625,11 +9694,6 @@ export const PauseResumeNotAllowed: ObjectSchema<models.PauseResumeNotAllowed> =
 export const PaymentActionRequired: ObjectSchema<models.PaymentActionRequired> =
   /* @__PURE__ */ z.looseObject({
     error: /* @__PURE__ */ z.literal("PaymentActionRequired"),
-    detail: /* @__PURE__ */ z.string(),
-  });
-export const PaymentAlreadyInProgress: ObjectSchema<models.PaymentAlreadyInProgress> =
-  /* @__PURE__ */ z.looseObject({
-    error: /* @__PURE__ */ z.literal("PaymentAlreadyInProgress"),
     detail: /* @__PURE__ */ z.string(),
   });
 export const PaymentError: ObjectSchema<models.PaymentError> = /* @__PURE__ */ z.looseObject({
@@ -9742,6 +9806,7 @@ export const Product: ObjectSchema<models.Product> = /* @__PURE__ */ z.looseObje
   is_recurring: /* @__PURE__ */ z.boolean(),
   is_archived: /* @__PURE__ */ z.boolean(),
   organization_id: /* @__PURE__ */ z.string(),
+  trial_payment_setup_required: /* @__PURE__ */ z.boolean(),
   catalog_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
   is_current: /* @__PURE__ */ z.boolean(),
   external_id: /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -9847,6 +9912,7 @@ export const ProductCreateRecurring: ObjectSchema<models.ProductCreateRecurring>
     trial_interval_count: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.int()),
     ),
+    trial_payment_setup_required: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.boolean()),
     recurring_interval: RecurringInterval,
     recurring_interval_count: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.int()),
     meter_interval: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(RecurringInterval)),
@@ -10126,6 +10192,9 @@ export const ProductUpdate: ObjectSchema<models.ProductUpdate> = /* @__PURE__ */
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(AttachedCustomFieldCreate)),
     );
   },
+  trial_payment_setup_required: /* @__PURE__ */ z.optional(
+    /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.boolean()),
+  ),
 });
 export const PropertyAggregation: ObjectSchema<models.PropertyAggregation> =
   /* @__PURE__ */ z.looseObject({ func: Func, property: /* @__PURE__ */ z.string() });
@@ -11004,7 +11073,11 @@ export const SubscriptionUpdateBase: ObjectSchema<models.SubscriptionUpdateBase>
     ),
     product_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
     proration_behavior: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(SubscriptionProrationBehavior),
+      /* @__PURE__ */ z.union([
+        SubscriptionProrationBehavior,
+        /* @__PURE__ */ z.literal("auto"),
+        /* @__PURE__ */ z.null(),
+      ]),
     ),
     discount_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
     trial_end: /* @__PURE__ */ z.optional(
@@ -11048,14 +11121,22 @@ export const SubscriptionUpdateSeats: ObjectSchema<models.SubscriptionUpdateSeat
   /* @__PURE__ */ z.looseObject({
     seats: /* @__PURE__ */ z.int(),
     proration_behavior: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(SubscriptionProrationBehavior),
+      /* @__PURE__ */ z.union([
+        SubscriptionProrationBehavior,
+        /* @__PURE__ */ z.literal("auto"),
+        /* @__PURE__ */ z.null(),
+      ]),
     ),
   });
 export const SubscriptionUpdateUnits: ObjectSchema<models.SubscriptionUpdateUnits> =
   /* @__PURE__ */ z.looseObject({
     units: /* @__PURE__ */ z.int(),
     proration_behavior: /* @__PURE__ */ z.optional(
-      /* @__PURE__ */ z.nullable(SubscriptionProrationBehavior),
+      /* @__PURE__ */ z.union([
+        SubscriptionProrationBehavior,
+        /* @__PURE__ */ z.literal("auto"),
+        /* @__PURE__ */ z.null(),
+      ]),
     ),
   });
 export const SubscriptionUpdatedEvent: ObjectSchema<models.SubscriptionUpdatedEvent> =
@@ -11298,7 +11379,7 @@ export const WebhookEndpointCreate: ObjectSchema<models.WebhookEndpointCreate> =
     url: /* @__PURE__ */ z.string(),
     name: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string())),
     api_version: /* @__PURE__ */ z.optional(ApiVersion),
-    format: WebhookFormat,
+    format: Format,
     events: /* @__PURE__ */ z.array(WebhookEventType),
     organization_id: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.string()),
@@ -11317,7 +11398,15 @@ export const WebhookEndpointUpdate: ObjectSchema<models.WebhookEndpointUpdate> =
         ]),
       ),
     ),
-    format: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.nullable(WebhookFormat)),
+    format: /* @__PURE__ */ z.optional(
+      /* @__PURE__ */ z.nullable(
+        /* @__PURE__ */ z.union([
+          /* @__PURE__ */ z.literal("raw"),
+          /* @__PURE__ */ z.literal("discord"),
+          /* @__PURE__ */ z.literal("slack"),
+        ]),
+      ),
+    ),
     events: /* @__PURE__ */ z.optional(
       /* @__PURE__ */ z.nullable(/* @__PURE__ */ z.array(WebhookEventType)),
     ),
@@ -11488,6 +11577,9 @@ export const SystemEvent: ObjectSchema<models.SystemEvent> = /* @__PURE__ */ z.d
     BenefitCycledEvent,
     BenefitUpdatedEvent,
     BenefitRevokedEvent,
+    BenefitManuallyGrantedEvent,
+    BenefitManuallyRevokedEvent,
+    BenefitUnrevokedEvent,
     SubscriptionCreatedEvent,
     SubscriptionUpdatedEvent,
     SubscriptionCycledEvent,
@@ -11595,6 +11687,7 @@ export const Event: ObjectSchema<models.Event> = /* @__PURE__ */ z.discriminated
 ]);
 export const WebhookBenefitCreatedPayload: ObjectSchema<webhooks.WebhookBenefitCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("benefit.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11604,6 +11697,7 @@ export const WebhookBenefitCreatedPayload: ObjectSchema<webhooks.WebhookBenefitC
   });
 export const WebhookBenefitGrantCreatedPayload: ObjectSchema<webhooks.WebhookBenefitGrantCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("benefit_grant.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11613,6 +11707,7 @@ export const WebhookBenefitGrantCreatedPayload: ObjectSchema<webhooks.WebhookBen
   });
 export const WebhookBenefitGrantCycledPayload: ObjectSchema<webhooks.WebhookBenefitGrantCycledPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("benefit_grant.cycled"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11622,6 +11717,7 @@ export const WebhookBenefitGrantCycledPayload: ObjectSchema<webhooks.WebhookBene
   });
 export const WebhookBenefitGrantRevokedPayload: ObjectSchema<webhooks.WebhookBenefitGrantRevokedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("benefit_grant.revoked"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11631,6 +11727,7 @@ export const WebhookBenefitGrantRevokedPayload: ObjectSchema<webhooks.WebhookBen
   });
 export const WebhookBenefitGrantUpdatedPayload: ObjectSchema<webhooks.WebhookBenefitGrantUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("benefit_grant.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11640,6 +11737,7 @@ export const WebhookBenefitGrantUpdatedPayload: ObjectSchema<webhooks.WebhookBen
   });
 export const WebhookBenefitUpdatedPayload: ObjectSchema<webhooks.WebhookBenefitUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("benefit.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11649,6 +11747,7 @@ export const WebhookBenefitUpdatedPayload: ObjectSchema<webhooks.WebhookBenefitU
   });
 export const WebhookCheckoutCreatedPayload: ObjectSchema<webhooks.WebhookCheckoutCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("checkout.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11658,6 +11757,7 @@ export const WebhookCheckoutCreatedPayload: ObjectSchema<webhooks.WebhookCheckou
   });
 export const WebhookCheckoutExpiredPayload: ObjectSchema<webhooks.WebhookCheckoutExpiredPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("checkout.expired"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11667,6 +11767,7 @@ export const WebhookCheckoutExpiredPayload: ObjectSchema<webhooks.WebhookCheckou
   });
 export const WebhookCheckoutUpdatedPayload: ObjectSchema<webhooks.WebhookCheckoutUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("checkout.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11676,6 +11777,7 @@ export const WebhookCheckoutUpdatedPayload: ObjectSchema<webhooks.WebhookCheckou
   });
 export const WebhookCustomerCreatedPayload: ObjectSchema<webhooks.WebhookCustomerCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11685,6 +11787,7 @@ export const WebhookCustomerCreatedPayload: ObjectSchema<webhooks.WebhookCustome
   });
 export const WebhookCustomerDeletedPayload: ObjectSchema<webhooks.WebhookCustomerDeletedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer.deleted"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11694,6 +11797,7 @@ export const WebhookCustomerDeletedPayload: ObjectSchema<webhooks.WebhookCustome
   });
 export const WebhookCustomerSeatAssignedPayload: ObjectSchema<webhooks.WebhookCustomerSeatAssignedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer_seat.assigned"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11703,6 +11807,7 @@ export const WebhookCustomerSeatAssignedPayload: ObjectSchema<webhooks.WebhookCu
   });
 export const WebhookCustomerSeatClaimedPayload: ObjectSchema<webhooks.WebhookCustomerSeatClaimedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer_seat.claimed"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11712,6 +11817,7 @@ export const WebhookCustomerSeatClaimedPayload: ObjectSchema<webhooks.WebhookCus
   });
 export const WebhookCustomerSeatRevokedPayload: ObjectSchema<webhooks.WebhookCustomerSeatRevokedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer_seat.revoked"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11721,6 +11827,7 @@ export const WebhookCustomerSeatRevokedPayload: ObjectSchema<webhooks.WebhookCus
   });
 export const WebhookCustomerStateChangedPayload: ObjectSchema<webhooks.WebhookCustomerStateChangedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer.state_changed"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11730,6 +11837,7 @@ export const WebhookCustomerStateChangedPayload: ObjectSchema<webhooks.WebhookCu
   });
 export const WebhookCustomerUpdatedPayload: ObjectSchema<webhooks.WebhookCustomerUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("customer.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11739,6 +11847,7 @@ export const WebhookCustomerUpdatedPayload: ObjectSchema<webhooks.WebhookCustome
   });
 export const WebhookDiscountCreatedPayload: ObjectSchema<webhooks.WebhookDiscountCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("discount.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11748,6 +11857,7 @@ export const WebhookDiscountCreatedPayload: ObjectSchema<webhooks.WebhookDiscoun
   });
 export const WebhookDiscountDeletedPayload: ObjectSchema<webhooks.WebhookDiscountDeletedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("discount.deleted"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11757,6 +11867,7 @@ export const WebhookDiscountDeletedPayload: ObjectSchema<webhooks.WebhookDiscoun
   });
 export const WebhookDiscountUpdatedPayload: ObjectSchema<webhooks.WebhookDiscountUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("discount.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11766,6 +11877,7 @@ export const WebhookDiscountUpdatedPayload: ObjectSchema<webhooks.WebhookDiscoun
   });
 export const WebhookMemberCreatedPayload: ObjectSchema<webhooks.WebhookMemberCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("member.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11775,6 +11887,7 @@ export const WebhookMemberCreatedPayload: ObjectSchema<webhooks.WebhookMemberCre
   });
 export const WebhookMemberDeletedPayload: ObjectSchema<webhooks.WebhookMemberDeletedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("member.deleted"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11784,6 +11897,7 @@ export const WebhookMemberDeletedPayload: ObjectSchema<webhooks.WebhookMemberDel
   });
 export const WebhookMemberUpdatedPayload: ObjectSchema<webhooks.WebhookMemberUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("member.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11793,6 +11907,7 @@ export const WebhookMemberUpdatedPayload: ObjectSchema<webhooks.WebhookMemberUpd
   });
 export const WebhookOrderCreatedPayload: ObjectSchema<webhooks.WebhookOrderCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("order.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11802,6 +11917,7 @@ export const WebhookOrderCreatedPayload: ObjectSchema<webhooks.WebhookOrderCreat
   });
 export const WebhookOrderPaidPayload: ObjectSchema<webhooks.WebhookOrderPaidPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("order.paid"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11811,6 +11927,7 @@ export const WebhookOrderPaidPayload: ObjectSchema<webhooks.WebhookOrderPaidPayl
   });
 export const WebhookOrderRefundedPayload: ObjectSchema<webhooks.WebhookOrderRefundedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("order.refunded"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11820,6 +11937,7 @@ export const WebhookOrderRefundedPayload: ObjectSchema<webhooks.WebhookOrderRefu
   });
 export const WebhookOrderUpdatedPayload: ObjectSchema<webhooks.WebhookOrderUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("order.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11829,6 +11947,7 @@ export const WebhookOrderUpdatedPayload: ObjectSchema<webhooks.WebhookOrderUpdat
   });
 export const WebhookOrganizationUpdatedPayload: ObjectSchema<webhooks.WebhookOrganizationUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("organization.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11838,6 +11957,7 @@ export const WebhookOrganizationUpdatedPayload: ObjectSchema<webhooks.WebhookOrg
   });
 export const WebhookProductCreatedPayload: ObjectSchema<webhooks.WebhookProductCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("product.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11847,6 +11967,7 @@ export const WebhookProductCreatedPayload: ObjectSchema<webhooks.WebhookProductC
   });
 export const WebhookProductUpdatedPayload: ObjectSchema<webhooks.WebhookProductUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("product.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11856,6 +11977,7 @@ export const WebhookProductUpdatedPayload: ObjectSchema<webhooks.WebhookProductU
   });
 export const WebhookRefundCreatedPayload: ObjectSchema<webhooks.WebhookRefundCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("refund.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11865,6 +11987,7 @@ export const WebhookRefundCreatedPayload: ObjectSchema<webhooks.WebhookRefundCre
   });
 export const WebhookRefundUpdatedPayload: ObjectSchema<webhooks.WebhookRefundUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("refund.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11874,6 +11997,7 @@ export const WebhookRefundUpdatedPayload: ObjectSchema<webhooks.WebhookRefundUpd
   });
 export const WebhookSubscriptionActivePayload: ObjectSchema<webhooks.WebhookSubscriptionActivePayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.active"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11883,6 +12007,7 @@ export const WebhookSubscriptionActivePayload: ObjectSchema<webhooks.WebhookSubs
   });
 export const WebhookSubscriptionCanceledPayload: ObjectSchema<webhooks.WebhookSubscriptionCanceledPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.canceled"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11892,6 +12017,7 @@ export const WebhookSubscriptionCanceledPayload: ObjectSchema<webhooks.WebhookSu
   });
 export const WebhookSubscriptionCreatedPayload: ObjectSchema<webhooks.WebhookSubscriptionCreatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.created"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11901,6 +12027,7 @@ export const WebhookSubscriptionCreatedPayload: ObjectSchema<webhooks.WebhookSub
   });
 export const WebhookSubscriptionCycledPayload: ObjectSchema<webhooks.WebhookSubscriptionCycledPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.cycled"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11910,6 +12037,7 @@ export const WebhookSubscriptionCycledPayload: ObjectSchema<webhooks.WebhookSubs
   });
 export const WebhookSubscriptionMigratedPayload: ObjectSchema<webhooks.WebhookSubscriptionMigratedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.migrated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11921,6 +12049,7 @@ export const WebhookSubscriptionMigratedPayload: ObjectSchema<webhooks.WebhookSu
   });
 export const WebhookSubscriptionPastDuePayload: ObjectSchema<webhooks.WebhookSubscriptionPastDuePayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.past_due"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11930,6 +12059,7 @@ export const WebhookSubscriptionPastDuePayload: ObjectSchema<webhooks.WebhookSub
   });
 export const WebhookSubscriptionPausedPayload: ObjectSchema<webhooks.WebhookSubscriptionPausedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.paused"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11939,6 +12069,7 @@ export const WebhookSubscriptionPausedPayload: ObjectSchema<webhooks.WebhookSubs
   });
 export const WebhookSubscriptionResumedPayload: ObjectSchema<webhooks.WebhookSubscriptionResumedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.resumed"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11948,6 +12079,7 @@ export const WebhookSubscriptionResumedPayload: ObjectSchema<webhooks.WebhookSub
   });
 export const WebhookSubscriptionRevokedPayload: ObjectSchema<webhooks.WebhookSubscriptionRevokedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.revoked"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11957,6 +12089,7 @@ export const WebhookSubscriptionRevokedPayload: ObjectSchema<webhooks.WebhookSub
   });
 export const WebhookSubscriptionUncanceledPayload: ObjectSchema<webhooks.WebhookSubscriptionUncanceledPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.uncanceled"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),
@@ -11966,6 +12099,7 @@ export const WebhookSubscriptionUncanceledPayload: ObjectSchema<webhooks.Webhook
   });
 export const WebhookSubscriptionUpdatedPayload: ObjectSchema<webhooks.WebhookSubscriptionUpdatedPayload> =
   /* @__PURE__ */ z.looseObject({
+    event_id: /* @__PURE__ */ z.optional(/* @__PURE__ */ z.string()),
     type: /* @__PURE__ */ z.literal("subscription.updated"),
     timestamp: /* @__PURE__ */ z.string(),
     api_version: /* @__PURE__ */ z.string(),

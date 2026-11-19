@@ -2,7 +2,7 @@ import argparse
 import sys
 from typing import Annotated, cast
 
-import httpx
+import httpx2
 import ipinfo_db
 import ipinfo_db.reader
 from fastapi import Depends, Request
@@ -37,7 +37,7 @@ def _download_database(access_token: str) -> None:
         access_token: IPInfo access token.
     """
     with open(DATABASE_PATH, "wb") as db_file:
-        with httpx.Client() as http_client:
+        with httpx2.Client() as http_client:
             with http_client.stream(
                 "GET", DOWNLOAD_PATH.format(token=access_token), follow_redirects=True
             ) as response:
@@ -81,6 +81,67 @@ def get_ip_country(client: IPGeolocationClient, ip: str) -> str | None:
     return ret
 
 
+# Countries an IP or payment method lookup may report for a billing country.
+BILLING_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
+    "AX": ("FI",),
+    "GP": ("FR",),
+    "MQ": ("FR",),
+    "RE": ("FR",),
+    "GF": ("FR",),
+    "YT": ("FR",),
+    "MF": ("FR",),
+    "BL": ("FR",),
+    "PM": ("FR",),
+    "NC": ("FR",),
+    "PF": ("FR",),
+    "WF": ("FR",),
+    "TF": ("FR",),
+    "MC": ("FR",),
+    "AD": ("FR", "ES"),
+    "SM": ("IT",),
+    "VA": ("IT",),
+    "FO": ("DK",),
+    "GL": ("DK",),
+    "BQ": ("NL",),
+    "CW": ("NL",),
+    "AW": ("NL",),
+    "SX": ("NL",),
+    "SJ": ("NO",),
+    "LI": ("CH",),
+    "IM": ("GB",),
+    "JE": ("GB",),
+    "GG": ("GB",),
+    "GI": ("GB", "ES"),
+    "PR": ("US",),
+    "GU": ("US",),
+    "VI": ("US",),
+    "AS": ("US",),
+    "MP": ("US",),
+    "UM": ("US",),
+    "CX": ("AU",),
+    "CC": ("AU",),
+    "HM": ("AU",),
+    "NF": ("AU",),
+    "CK": ("NZ",),
+    "NU": ("NZ",),
+    "TK": ("NZ",),
+    "HK": ("CN",),
+    "MO": ("CN",),
+    "TW": ("CN",),
+    "BM": ("GB",),
+    "KY": ("GB",),
+    "VG": ("GB",),
+    "AI": ("GB",),
+    "MS": ("GB",),
+    "TC": ("GB",),
+    "FK": ("GB",),
+    "SH": ("GB",),
+    "IO": ("GB",),
+    "GS": ("GB",),
+    "PN": ("GB",),
+}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Download the IP to Country ASN database."
@@ -91,4 +152,9 @@ if __name__ == "__main__":
     _download_database(args.access_token)
     sys.stdout.write(f"Database downloaded to {DATABASE_PATH}\n")
 
-__all__ = ["IPGeolocationClient", "get_client", "get_ip_country"]
+__all__ = [
+    "BILLING_COUNTRY_ALIASES",
+    "IPGeolocationClient",
+    "get_client",
+    "get_ip_country",
+]

@@ -1,16 +1,36 @@
 import { describe, expect, test } from 'vitest'
-import { slugify, typedKey, unkeyed } from '@/utils/billing-config/keys'
+import {
+  isExternalId,
+  slugify,
+  typedKey,
+  unkeyed,
+} from '@/utils/billing-config/keys'
 
 describe('typedKey', () => {
   test.each([
     ['a', 'a'],
     ['Pro Plan', 'pro_plan'],
     ['pro-2', 'pro-2'],
-    ['.', undefined],
+    ['.', '.'],
+    [':', ':'],
+    ['pro.plan:v2', 'pro.plan:v2'],
     ['é', undefined],
-    ['pro.plan', undefined],
+    ['/', undefined],
   ])('%s → %s', (text, key) => {
     expect(typedKey(text)).toBe(key)
+  })
+})
+
+describe('isExternalId', () => {
+  test.each([
+    ['pro_plan', true],
+    ['confirmix.plan.free', true],
+    ['a1:month', true],
+    ['_pro', false],
+    ['-pro', false],
+    ['..', false],
+  ])('%s → %s', (key, valid) => {
+    expect(isExternalId(key)).toBe(valid)
   })
 })
 

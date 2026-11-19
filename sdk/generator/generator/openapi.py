@@ -32,9 +32,8 @@ def generate_openapi(output: pathlib.Path) -> None:
             raise ValueError(f"Output path {output} is not a directory.")
         shutil.rmtree(output)
     output.mkdir(parents=True, exist_ok=True)
-    versions = _run_openapi_generator("versions").splitlines()
-    for version in versions:
-        schema = json.loads(_run_openapi_generator("generate", version))
+    schemas = json.loads(_run_openapi_generator("generate-all"))
+    for version, schema in schemas.items():
         (output / f"{version}.openapi.json").write_text(
             json.dumps(schema, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",

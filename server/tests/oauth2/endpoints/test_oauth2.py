@@ -3,7 +3,7 @@ from urllib.parse import parse_qs, urlparse
 
 import jwt
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
@@ -151,6 +151,7 @@ class TestOAuth2Register:
         "redirect_uri",
         [
             "http://example.com",
+            "http://192.0.2.1/callback",
             "foobar",
             f"http://{'a' * 54773}slocalhost/callback",
             "http://localhost.evil/callback",

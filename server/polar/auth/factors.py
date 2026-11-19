@@ -160,6 +160,7 @@ class EmailOTPFactor(EmailOTPFactorBase):
             ),
             to_email_addr=email_otp.email,
             subject=subject,
+            unsuppress=True,
         )
 
         if settings.is_development():

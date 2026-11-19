@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 
 import freezegun
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Organization, Product

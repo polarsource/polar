@@ -3,7 +3,13 @@ from typing import cast
 from uuid import UUID
 
 from sqlalchemy import Select, and_, case, func, or_, select, union
-from sqlalchemy.orm import contains_eager, joinedload, selectinload, undefer
+from sqlalchemy.orm import (
+    contains_eager,
+    joinedload,
+    selectinload,
+    undefer,
+    with_polymorphic,
+)
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.currency import PresentmentCurrency
@@ -24,9 +30,12 @@ from polar.models import (
     CheckoutProduct,
     Product,
     ProductBenefit,
+    ProductCustomField,
     ProductPrice,
     ProductPriceCustom,
     ProductPriceFixed,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     Subscription,
     SubscriptionUpdate,
 )
@@ -97,6 +106,52 @@ class ProductRepository(
                 ~Product.is_archived,
             )
             .options(undefer(Product.external_id))
+        )
+        return await self.get_all(statement)
+
+    async def get_current_by_meters(
+        self, organization_id: UUID, meter_ids: Sequence[UUID]
+    ) -> Sequence[tuple[Product, UUID]]:
+        """Current products with a metered price on one of the meters, with
+        that meter."""
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
+        meter_id = price.ProductPriceMeteredUnit.meter_id
+        statement = (
+            select(Product, meter_id)
+            .join(price, price.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_current,
+                ~Product.is_archived,
+                Product.deleted_at.is_(None),
+                price.is_metered,
+                ~price.is_archived,
+                ~price.is_deleted,
+                meter_id.in_(meter_ids),
+            )
+            .options(undefer(Product.external_id))
+        )
+        result = await self.session.execute(statement)
+        return list(dict.fromkeys((product, id) for product, id in result.tuples()))
+
+    async def get_current_by_custom_fields(
+        self, organization_id: UUID, custom_field_ids: Sequence[UUID]
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .join(ProductCustomField, ProductCustomField.product_id == Product.id)
+            .where(
+                Product.organization_id == organization_id,
+                ProductCustomField.custom_field_id.in_(custom_field_ids),
+                Product.is_current,
+                ~Product.is_archived,
+            )
+            .options(
+                undefer(Product.external_id),
+                selectinload(Product.attached_custom_fields),
+            )
         )
         return await self.get_all(statement)
 
@@ -463,16 +518,6 @@ class ProductPriceRepository(
         statement = (
             self.get_statement_by_org_ids(org_ids)
             .where(ProductPrice.id == id)
-            .options(*options)
-        )
-        return await self.get_one_or_none(statement)
-
-    async def get_by_stripe_price_id(
-        self, stripe_price_id: str, *, options: Options = ()
-    ) -> ProductPrice | None:
-        statement = (
-            self.get_base_statement()
-            .where(ProductPrice.__table__.c["stripe_price_id"] == stripe_price_id)
             .options(*options)
         )
         return await self.get_one_or_none(statement)

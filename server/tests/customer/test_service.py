@@ -178,13 +178,13 @@ class TestList:
             save_fixture,
             organization=organization,
             email="c1@example.com",
-            external_id="ext_123",
+            external_id="ext_1_23",
         )
         await create_customer(
             save_fixture,
             organization=organization,
             email="c2@example.com",
-            external_id="other_ext_123",
+            external_id="other_ext_1_23",
         )
 
         customers, total = await customer_service.list(
@@ -194,14 +194,14 @@ class TestList:
             pagination=PaginationParams(1, 10),
         )
         assert total == 1
-        assert customers[0].external_id == "ext_123"
+        assert customers[0].external_id == "ext_1_23"
 
-        # "123" is a suffix of both external_ids but a prefix of neither,
-        # and it appears in no other searchable field, so nothing matches.
+        # "1_23" is a suffix of both external_ids but a prefix of neither,
+        # and the underscore keeps it out of the randomized fixture emails.
         customers, total = await customer_service.list(
             session,
             auth_subject,
-            query="123",
+            query="1_23",
             pagination=PaginationParams(1, 10),
         )
         assert total == 0

@@ -1,4 +1,4 @@
-import { Console, Effect } from 'effect'
+import { Console, Effect, Stdio } from 'effect'
 import { Prompt } from 'effect/cli'
 import * as ui from '@/utils/ui'
 
@@ -26,3 +26,29 @@ const answered = (message: string, value: string) =>
   Console.log(
     `${ui.clearLines(2)}${ui.INDENT}${ui.green('✔')} ${message}\n${ui.INDENT}${ui.INDENT}${ui.dim(value)}`,
   )
+
+export const interactive = Effect.gen(function* () {
+  const stdio = yield* Stdio.Stdio
+  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
+})
+
+export const keypress = (frame: string) =>
+  Prompt.Custom<boolean, boolean>(false, {
+    render: (_, action) =>
+      Effect.succeed(
+        action._tag === 'NextFrame'
+          ? frame
+          : action._tag === 'Submit'
+            ? `${frame}\n`
+            : '',
+      ),
+    process: (input) =>
+      Effect.succeed(
+        input.key.name === 'y'
+          ? { _tag: 'Submit', value: true }
+          : input.key.name === 'n' || input.key.name === 'escape'
+            ? { _tag: 'Submit', value: false }
+            : { _tag: 'Beep' },
+      ),
+    clear: () => Effect.succeed(ui.clearLines(frame.split('\n').length)),
+  })

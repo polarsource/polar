@@ -606,6 +606,12 @@ ProductPriceCreateList = Annotated[
     list[ProductPriceCreate], Field(min_length=1), PRICE_CREATE_LIST_SCHEMA
 ]
 
+TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION = (
+    "Whether customers must provide a payment method to start a trial. "
+    "If `false`, customers can start a trial without entering payment details."
+)
+
+
 PRODUCT_CREATE_PRICES_DESCRIPTION = (
     "List of available prices for this product. "
     "It may combine at most one fixed price with one seat-based price "
@@ -646,6 +652,11 @@ class ProductCreateBase(MetadataInputMixin, ExternalIDInputMixin, Schema):
 
 
 class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
+    trial_payment_setup_required: Annotated[
+        bool,
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ] = True
     recurring_interval: SubscriptionRecurringInterval = Field(
         description="The recurring interval of the product.",
     )
@@ -808,6 +819,11 @@ class ProductUpdate(
         ),
     )
     attached_custom_fields: AttachedCustomFieldListCreate | None = None
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ] = None
 
 
 class ProductBenefitsUpdate(Schema):
@@ -1187,8 +1203,21 @@ class ProductVersionOutputMixin(BaseModel):
     ]
 
 
+class ProductTrialOutputMixin(BaseModel):
+    trial_payment_setup_required: Annotated[
+        bool,
+        BeforeValidator(lambda v: True if v is None else v),
+        Version(starting_from=V2027_01),
+        Field(description=TRIAL_PAYMENT_SETUP_REQUIRED_DESCRIPTION),
+    ]
+
+
 class Product(
-    MetadataOutputMixin, ExternalIDOutputMixin, ProductVersionOutputMixin, ProductBase
+    MetadataOutputMixin,
+    ExternalIDOutputMixin,
+    ProductVersionOutputMixin,
+    ProductTrialOutputMixin,
+    ProductBase,
 ):
     """
     A product.

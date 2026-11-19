@@ -1,6 +1,9 @@
 """Load test scenarios for different user workflows."""
 
 from load_tests.scenarios.checkout import CheckoutUser
-from load_tests.scenarios.event_ingestion import EventIngestionUser
+from load_tests.scenarios.event_ingestion import (
+    EventIngestionStressUser,
+    EventIngestionUser,
+)
 
-__all__ = ["CheckoutUser", "EventIngestionUser"]
+__all__ = ["CheckoutUser", "EventIngestionStressUser", "EventIngestionUser"]

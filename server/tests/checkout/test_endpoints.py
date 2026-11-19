@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
@@ -64,6 +64,9 @@ def api_prefix(request: pytest.FixtureRequest) -> str:
 @pytest.fixture(autouse=True)
 def stripe_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=StripeService)
+    mock.get_confirmation_token.return_value = SimpleNamespace(
+        payment_method_preview=None
+    )
     mocker.patch("polar.checkout.service.stripe_service", new=mock)
     return mock
 
@@ -1430,6 +1433,7 @@ class TestClientConfirm:
         api_prefix: str,
         stripe_service_mock: MagicMock,
         client: AsyncClient,
+        session: AsyncSession,
         checkout_open: Checkout,
     ) -> None:
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -1446,12 +1450,22 @@ class TestClientConfirm:
                 "customer_billing_address": {"country": "FR"},
                 "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
             },
+            headers={"True-Client-IP": "1.2.3.4"},
         )
 
         assert response.status_code == 200
 
         json = response.json()
         assert "customer_session_token" in json
+        assert "customer_signals" not in json
+
+        repository = CheckoutRepository.from_session(session)
+        checkout = await repository.get_by_id(checkout_open.id)
+        assert checkout is not None
+        assert checkout.customer_signals == {
+            "ip_address": "1.2.3.4",
+            "ip_country": None,
+        }
 
     async def test_confirm_with_discount_code(
         self,

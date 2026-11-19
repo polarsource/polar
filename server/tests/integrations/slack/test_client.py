@@ -1,6 +1,6 @@
 import json
 
-import httpx
+import httpx2
 import pytest
 
 from polar.integrations.slack.client import BASE_URL, SlackClient
@@ -9,17 +9,17 @@ from polar.integrations.slack.client import BASE_URL, SlackClient
 @pytest.mark.anyio
 class TestConversationsInviteShared:
     async def test_sends_single_email_array_payload(self) -> None:
-        requests: list[httpx.Request] = []
+        requests: list[httpx2.Request] = []
 
-        async def handler(request: httpx.Request) -> httpx.Response:
+        async def handler(request: httpx2.Request) -> httpx2.Response:
             requests.append(request)
-            return httpx.Response(200, json={"ok": True})
+            return httpx2.Response(200, json={"ok": True})
 
         slack_client = SlackClient()
         await slack_client.client.aclose()
-        slack_client.client = httpx.AsyncClient(
+        slack_client.client = httpx2.AsyncClient(
             base_url=BASE_URL,
-            transport=httpx.MockTransport(handler),
+            transport=httpx2.MockTransport(handler),
         )
 
         try:

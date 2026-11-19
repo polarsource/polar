@@ -1,6 +1,6 @@
 import pytest
 from authlib.oauth2.rfc7523.jwt_bearer import JWT_BEARER_GRANT_TYPE
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.scope import SCOPES_SUPPORTED
 from polar.oauth2.constants import CLAIM_GRANT_TYPE, ISSUER

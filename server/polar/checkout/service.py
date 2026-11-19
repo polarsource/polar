@@ -56,7 +56,7 @@ from polar.exceptions import (
 )
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_fingerprint
-from polar.kit.address import AddressInput
+from polar.kit.address import STATE_REQUIRED_COUNTRIES, AddressInput
 from polar.kit.crypto import generate_token
 from polar.kit.currency import (
     get_presentment_currency,
@@ -84,7 +84,10 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import (
+    US_SHORT_BILLING_ADDRESS_EXPERIMENT,
+    CheckoutStatus,
+)
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
@@ -135,6 +138,7 @@ from polar.worker import enqueue_job
 
 from . import ip_geolocation
 from .eventstream import CheckoutEvent, publish_checkout_event
+from .payment_methods import get_payment_method_country
 from .repository import CheckoutRepository
 from .sorting import CheckoutSortProperty
 
@@ -633,7 +637,7 @@ class CheckoutService:
             (
                 customer_billing_address.has_address(),
                 customer_billing_address.has_state()
-                and customer_billing_address.country not in {"US", "CA"},
+                and customer_billing_address.country not in STATE_REQUIRED_COUNTRIES,
             )
         ):
             require_billing_address = True
@@ -944,6 +948,7 @@ class CheckoutService:
             max_units=max_units,
             trial_interval=checkout_link.trial_interval,
             trial_interval_count=checkout_link.trial_interval_count,
+            trial_payment_setup_required=checkout_link.trial_payment_setup_required,
             allow_discount_codes=checkout_link.allow_discount_codes,
             allow_trial=True,
             require_billing_address=checkout_link.require_billing_address,
@@ -1099,8 +1104,16 @@ class CheckoutService:
         auth_subject: AuthSubject[User | Anonymous],
         checkout: Checkout,
         checkout_confirm: CheckoutConfirm,
+        ip_geolocation_client: ip_geolocation.IPGeolocationClient | None = None,
+        ip_address: str | None = None,
     ) -> Checkout:
         checkout = await self._update_checkout(session, checkout, checkout_confirm)
+        if ip_address is not None:
+            checkout.customer_signals = {
+                **(checkout.customer_signals or {}),
+                "ip_address": ip_address,
+                "ip_country": self._get_ip_country(ip_geolocation_client, ip_address),
+            }
         # When redeeming a discount, we need to lock the discount to prevent concurrent redemptions
         if checkout.discount is not None:
             try:
@@ -1175,32 +1188,76 @@ class CheckoutService:
             if checkout.is_payment_required:
                 raise PaymentNotReady()
 
-            if checkout.is_payment_setup_required:
+            if checkout.has_future_charges:
                 raise PaymentNotReady()
+
+        billing_address = checkout.customer_billing_address
+        billing_countries = (
+            {
+                billing_address.country,
+                *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
+                    billing_address.country, ()
+                ),
+            }
+            if billing_address is not None
+            else set()
+        )
+        ip_country = (checkout.customer_signals or {}).get("ip_country")
+        is_billing_country_confirmed = (
+            billing_address is None or ip_country in billing_countries
+        )
+        # The payment method country costs a Stripe round trip:
+        # only ask for it when the IP country doesn't confirm the billing country.
+        should_load_confirmation_token = (
+            not is_billing_country_confirmed
+            or checkout.customer_name is None
+            or (
+                checkout.discount is not None
+                and checkout.discount.max_redemptions_per_customer is not None
+            )
+            or (
+                checkout.trial_end is not None
+                and checkout.organization.prevent_trial_abuse
+            )
+        )
 
         confirmation_token: stripe_lib.ConfirmationToken | None = None
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and isinstance(checkout_confirm, CheckoutConfirmStripe)
             and checkout_confirm.confirmation_token_id is not None
-            and (
-                checkout.customer_name is None
-                or (
-                    checkout.discount is not None
-                    and checkout.discount.max_redemptions_per_customer is not None
-                )
-                or (
-                    checkout.trial_end is not None
-                    and checkout.organization.prevent_trial_abuse
-                )
-            )
         ):
-            try:
-                confirmation_token = await stripe_service.get_confirmation_token(
-                    checkout_confirm.confirmation_token_id
+            if should_load_confirmation_token:
+                try:
+                    confirmation_token = await stripe_service.get_confirmation_token(
+                        checkout_confirm.confirmation_token_id
+                    )
+                except stripe_lib.StripeError:
+                    confirmation_token = None
+
+            if not is_billing_country_confirmed:
+                payment_method_country = (
+                    get_payment_method_country(
+                        confirmation_token.payment_method_preview
+                    )
+                    if confirmation_token is not None
+                    and confirmation_token.payment_method_preview is not None
+                    else None
                 )
-            except stripe_lib.StripeError:
-                confirmation_token = None
+                if payment_method_country not in billing_countries:
+                    # Shadow mode: measure how often this triggers before blocking on it.
+                    log.info(
+                        "checkout.billing_country_mismatch"
+                        if ip_country is not None or payment_method_country is not None
+                        else "checkout.billing_country_unverified",
+                        checkout_id=str(checkout.id),
+                        organization_id=str(checkout.organization_id),
+                        payment_method_country=payment_method_country,
+                        ip_country=ip_country,
+                        billing_country=billing_address.country
+                        if billing_address is not None
+                        else None,
+                    )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
         # field for better UX and instead extract the name from Stripe's confirmation token.
@@ -1390,6 +1447,10 @@ class CheckoutService:
                                     checkout_confirm.shared_payment_token_id,
                                     **payment_intent_params,
                                 )
+                                checkout.analytics_metadata = {
+                                    **(checkout.analytics_metadata or {}),
+                                    "agent_channel": "shared_payment_token",
+                                }
                             else:
                                 assert (
                                     checkout_confirm.confirmation_token_id is not None
@@ -1582,6 +1643,9 @@ class CheckoutService:
                     if checkout.customer_billing_address
                     else None,
                     "is_returning_customer": checkout.customer_id is not None,
+                    "agent_channel": checkout.analytics_metadata.get("agent_channel")
+                    if checkout.analytics_metadata
+                    else None,
                 },
             )
         except Exception as e:
@@ -1759,6 +1823,7 @@ class CheckoutService:
         )
 
         analytics_metadata = {
+            **(checkout.analytics_metadata or {}),
             "opened_at": utc_now().isoformat(),
             "distinct_id": resolved_distinct_id,
         }
@@ -1770,6 +1835,12 @@ class CheckoutService:
         )
 
         try:
+            variant = checkout.us_short_billing_address_variant
+            experiment_properties = (
+                {f"$feature/{US_SHORT_BILLING_ADDRESS_EXPERIMENT}": variant}
+                if variant is not None and checkout.is_payment_form_required
+                else {}
+            )
             posthog.capture(
                 distinct_id=resolved_distinct_id,
                 event="storefront:subscriptions:checkout:open",
@@ -1794,6 +1865,7 @@ class CheckoutService:
                     if checkout.customer_billing_address
                     else None,
                     "is_returning_customer": checkout.customer_id is not None,
+                    **experiment_properties,
                 },
             )
         except Exception as e:

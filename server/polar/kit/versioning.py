@@ -582,10 +582,21 @@ def add_versioned_routers(
 
     for version in supported_versions:
         version_route_contexts = routes_for_version(api_route_contexts, version)
+        openapi_endpoint = _create_openapi_endpoint(
+            version, version_route_contexts, webhooks
+        )
         app.add_api_route(
             f"/{version}/openapi.json",
-            _create_openapi_endpoint(version, version_route_contexts, webhooks),
+            openapi_endpoint,
             methods=["GET"],
             include_in_schema=False,
             name=f"openapi:{version}",
         )
+        if version == default_version:
+            app.add_api_route(
+                "/openapi.json",
+                openapi_endpoint,
+                methods=["GET"],
+                include_in_schema=False,
+                name="openapi",
+            )

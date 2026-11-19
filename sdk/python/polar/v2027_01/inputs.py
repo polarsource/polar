@@ -4,6 +4,7 @@ import typing
 
 import typing_extensions
 
+from polar.base import _Discriminator
 from polar.v2027_01.literals import (
     ApiVersion,
     BenefitVisibility,
@@ -14,12 +15,12 @@ from polar.v2027_01.literals import (
     DiscountType,
     FilterConjunction,
     FilterOperator,
+    Format,
     Func,
     LicenseKeyStatus,
     MemberRole,
     MeterUnit,
     OrganizationSocialPlatforms,
-    PaymentProcessor,
     Permission,
     PresentmentCurrency,
     ProductVisibility,
@@ -35,7 +36,6 @@ from polar.v2027_01.literals import (
     TokenEndpointAuthMethod,
     TrialInterval,
     WebhookEventType,
-    WebhookFormat,
 )
 
 
@@ -67,7 +67,7 @@ class BenefitCustomCreate(typing.TypedDict):
     """Schema to create a benefit of type `custom`."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -110,7 +110,7 @@ class BenefitCustomProperties(typing.TypedDict):
 
 class BenefitCustomUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -138,7 +138,7 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitDiscordCreate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -182,7 +182,7 @@ class BenefitDiscordCreateProperties(typing.TypedDict):
 
 class BenefitDiscordUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -207,7 +207,7 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitDownloadablesCreate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -244,7 +244,7 @@ class BenefitDownloadablesCreateProperties(typing.TypedDict):
 
 class BenefitDownloadablesUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -271,7 +271,7 @@ class BenefitFeatureFlagCreate(typing.TypedDict):
     """Schema to create a benefit of type `feature_flag`."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -310,7 +310,7 @@ class BenefitFeatureFlagProperties(typing.TypedDict):
 
 class BenefitFeatureFlagUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -338,7 +338,7 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitGitHubRepositoryCreate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -382,7 +382,7 @@ class BenefitGitHubRepositoryCreateProperties(typing.TypedDict):
 
 class BenefitGitHubRepositoryUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -405,6 +405,40 @@ You can store up to **50 key-value pairs**."""
     properties: typing.NotRequired[BenefitGitHubRepositoryCreateProperties | None]
 
 
+class BenefitGrantCreate(typing.TypedDict):
+    """Manually grant a benefit using Polar IDs."""
+
+    customer_id: str
+    """The ID of the customer."""
+
+    benefit_id: str
+    """The ID of the benefit."""
+
+    member_id: typing.NotRequired[str | None]
+    """The ID of the member receiving the benefit. If not provided, the benefit is granted to the customer's owner."""
+
+
+class BenefitGrantCreateExternal(typing.TypedDict):
+    """Manually grant a benefit using external IDs."""
+
+    external_customer_id: str
+    """The ID of the customer in your system."""
+
+    external_benefit_id: str
+    """The ID of the benefit in your system. Resolves to the current version of the benefit."""
+
+    external_member_id: typing.NotRequired[str | None]
+    """The ID of the member in your system, scoped to the customer. If not provided, the benefit is granted to the customer's owner."""
+
+    organization_id: typing.NotRequired[str | None]
+    """The ID of the organization owning the customer and benefit. **Required unless your credential identifies one organization.** Omit this field when using an organization token."""
+
+
+class BenefitGrantUpdate(typing.TypedDict):
+    manually_revoked_at: typing.NotRequired[None]
+    """Set to None to undo a manual revocation."""
+
+
 class BenefitLicenseKeyActivationCreateProperties(typing.TypedDict):
     limit: int
 
@@ -419,7 +453,7 @@ class BenefitLicenseKeyExpirationProperties(typing.TypedDict):
 
 class BenefitLicenseKeysCreate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -460,7 +494,7 @@ class BenefitLicenseKeysCreateProperties(typing.TypedDict):
 
 class BenefitLicenseKeysUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -490,7 +524,7 @@ class BenefitMeterCreditCreate(typing.TypedDict):
     """Schema to create a benefit of type `meter_unit`."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -531,7 +565,7 @@ class BenefitMeterCreditCreateProperties(typing.TypedDict):
 
 class BenefitMeterCreditUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -559,7 +593,7 @@ You can store up to **50 key-value pairs**."""
 
 class BenefitSlackSharedChannelCreate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -605,7 +639,7 @@ class BenefitSlackSharedChannelCreateProperties(typing.TypedDict):
 
 class BenefitSlackSharedChannelUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -740,6 +774,9 @@ You can store up to **50 key-value pairs**."""
     trial_interval_count: typing.NotRequired[int | None]
     """The number of interval units for the trial period."""
 
+    trial_payment_setup_required: typing.NotRequired[bool | None]
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."""
+
     payment_processor: typing.Literal["stripe"]
     """Payment processor to use. Currently only Stripe is supported."""
 
@@ -792,6 +829,9 @@ The value must be either:
 * A boolean
 
 You can store up to **50 key-value pairs**."""
+
+    trial_payment_setup_required: typing.NotRequired[bool | None]
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details. If `null`, the product's setting is used."""
 
     products: typing.NotRequired[list[str] | None]
     """List of products that will be available to select at checkout."""
@@ -938,12 +978,25 @@ You can store up to **50 key-value pairs**."""
         dict[
             str,
             list[
-                ProductPriceFixedCreate
-                | ProductPriceCustomCreate
-                | ProductPriceSeatBasedCreate
-                | ProductPriceUnitBasedCreate
-                | ProductPriceMeteredUnitCreate
-                | ProductPriceMeteredTiersCreate
+                typing.Annotated[
+                    ProductPriceFixedCreate
+                    | ProductPriceCustomCreate
+                    | ProductPriceSeatBasedCreate
+                    | ProductPriceUnitBasedCreate
+                    | ProductPriceMeteredUnitCreate
+                    | ProductPriceMeteredTiersCreate,
+                    _Discriminator(
+                        "amount_type",
+                        (
+                            ("custom", ProductPriceCustomCreate),
+                            ("fixed", ProductPriceFixedCreate),
+                            ("metered_tiers", ProductPriceMeteredTiersCreate),
+                            ("metered_unit", ProductPriceMeteredUnitCreate),
+                            ("seat_based", ProductPriceSeatBasedCreate),
+                            ("unit_based", ProductPriceUnitBasedCreate),
+                        ),
+                    ),
+                ]
             ],
         ]
         | None
@@ -1070,12 +1123,25 @@ You can store up to **50 key-value pairs**."""
         dict[
             str,
             list[
-                ProductPriceFixedCreate
-                | ProductPriceCustomCreate
-                | ProductPriceSeatBasedCreate
-                | ProductPriceUnitBasedCreate
-                | ProductPriceMeteredUnitCreate
-                | ProductPriceMeteredTiersCreate
+                typing.Annotated[
+                    ProductPriceFixedCreate
+                    | ProductPriceCustomCreate
+                    | ProductPriceSeatBasedCreate
+                    | ProductPriceUnitBasedCreate
+                    | ProductPriceMeteredUnitCreate
+                    | ProductPriceMeteredTiersCreate,
+                    _Discriminator(
+                        "amount_type",
+                        (
+                            ("custom", ProductPriceCustomCreate),
+                            ("fixed", ProductPriceFixedCreate),
+                            ("metered_tiers", ProductPriceMeteredTiersCreate),
+                            ("metered_unit", ProductPriceMeteredUnitCreate),
+                            ("seat_based", ProductPriceSeatBasedCreate),
+                            ("unit_based", ProductPriceUnitBasedCreate),
+                        ),
+                    ),
+                ]
             ],
         ]
         | None
@@ -1695,19 +1761,6 @@ class CustomerMeterCreditsIDCreate(typing.TypedDict):
     """The ID of the meter."""
 
 
-class CustomerOrderConfirmPayment(typing.TypedDict):
-    """Schema to confirm a retry payment using either a saved payment method or a new confirmation token."""
-
-    confirmation_token_id: typing.NotRequired[str | None]
-    """ID of the Stripe confirmation token for new payment methods."""
-
-    payment_method_id: typing.NotRequired[str | None]
-    """ID of an existing saved payment method."""
-
-    payment_processor: typing.NotRequired[PaymentProcessor]
-    """Payment processor used."""
-
-
 class CustomerOrderUpdate(typing.TypedDict):
     """Schema to update an order."""
 
@@ -1715,7 +1768,7 @@ class CustomerOrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput | None]
-    """The address of the customer that should appear on the invoice. Country and state fields cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."""
 
 
 class CustomerPaymentMethodConfirm(typing.TypedDict):
@@ -2004,7 +2057,7 @@ class DiscountFixedCreate(typing.TypedDict):
     """Schema to create a fixed amount discount."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2063,7 +2116,7 @@ class DiscountPercentageCreate(typing.TypedDict):
     """Schema to create a percentage discount."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2125,7 +2178,7 @@ class DiscountUpdate(typing.TypedDict):
     """Schema to update a discount."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2468,7 +2521,7 @@ class MemberUpdate(typing.TypedDict):
 
 class MeterCreate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2498,7 +2551,20 @@ You can store up to **50 key-value pairs**."""
     filter: Filter
     """The filter to apply on events that'll be used to calculate the meter."""
 
-    aggregation: CountAggregation | PropertyAggregation | UniqueAggregation
+    aggregation: typing.Annotated[
+        CountAggregation | PropertyAggregation | UniqueAggregation,
+        _Discriminator(
+            "func",
+            (
+                ("avg", PropertyAggregation),
+                ("count", CountAggregation),
+                ("max", PropertyAggregation),
+                ("min", PropertyAggregation),
+                ("sum", PropertyAggregation),
+                ("unique", UniqueAggregation),
+            ),
+        ),
+    ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     organization_id: typing.NotRequired[str | None]
@@ -2507,7 +2573,7 @@ You can store up to **50 key-value pairs**."""
 
 class MeterUpdate(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2538,35 +2604,26 @@ You can store up to **50 key-value pairs**."""
     """The filter to apply on events that'll be used to calculate the meter."""
 
     aggregation: typing.NotRequired[
-        CountAggregation | PropertyAggregation | UniqueAggregation | None
+        typing.Annotated[
+            CountAggregation | PropertyAggregation | UniqueAggregation,
+            _Discriminator(
+                "func",
+                (
+                    ("avg", PropertyAggregation),
+                    ("count", CountAggregation),
+                    ("max", PropertyAggregation),
+                    ("min", PropertyAggregation),
+                    ("sum", PropertyAggregation),
+                    ("unique", UniqueAggregation),
+                ),
+            ),
+        ]
+        | None
     ]
     """The aggregation to apply on the filtered events to calculate the meter."""
 
     is_archived: typing.NotRequired[bool | None]
     """Whether the meter is archived. Archived meters are no longer used for billing."""
-
-
-class MetricDashboardCreate(typing.TypedDict):
-    """Schema for creating a metrics dashboard."""
-
-    name: str
-    """Display name for the dashboard."""
-
-    metrics: typing.NotRequired[list[str]]
-    """List of metric slugs to display in this dashboard."""
-
-    organization_id: typing.NotRequired[str | None]
-    """The ID of the organization owning this dashboard. **Required unless you use an organization token.**"""
-
-
-class MetricDashboardUpdate(typing.TypedDict):
-    """Schema for updating a metrics dashboard."""
-
-    name: typing.NotRequired[str | None]
-    """Display name for the dashboard."""
-
-    metrics: typing.NotRequired[list[str] | None]
-    """List of metric slugs to display in this dashboard."""
 
 
 class OAuth2ClientConfiguration(typing.TypedDict):
@@ -2678,7 +2735,7 @@ class OrderUpdate(typing.TypedDict):
     """The name of the customer that should appear on the invoice."""
 
     billing_address: typing.NotRequired[AddressInput | None]
-    """The address of the customer that should appear on the invoice. Country and state fields cannot be updated."""
+    """The address of the customer that should appear on the invoice. Address fields used for tax calculation cannot be updated."""
 
 
 class OrganizationAvatarFileCreate(typing.TypedDict):
@@ -2717,8 +2774,17 @@ class OrganizationCreate(typing.TypedDict):
     avatar_url: typing.NotRequired[str | None]
 
     legal_entity: typing.NotRequired[
-        OrganizationIndividualLegalEntitySchema
-        | OrganizationCompanyLegalEntitySchema
+        typing.Annotated[
+            OrganizationIndividualLegalEntitySchema
+            | OrganizationCompanyLegalEntitySchema,
+            _Discriminator(
+                "type",
+                (
+                    ("company", OrganizationCompanyLegalEntitySchema),
+                    ("individual", OrganizationIndividualLegalEntitySchema),
+                ),
+            ),
+        ]
         | None
     ]
 
@@ -2846,7 +2912,7 @@ class OrganizationSocialLink(typing.TypedDict):
 class OrganizationSubscriptionSettings(typing.TypedDict):
     allow_multiple_subscriptions: bool
 
-    proration_behavior: PublicSubscriptionProrationBehavior
+    proration_behavior: PublicSubscriptionProrationBehavior | typing.Literal["auto"]
 
     benefit_revocation_grace_period: int
 
@@ -2910,7 +2976,7 @@ class ProductBenefitsUpdate(typing.TypedDict):
 
 class ProductCreateOneTime(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2935,12 +3001,25 @@ You can store up to **50 key-value pairs**."""
     """The visibility of the product."""
 
     prices: list[
-        ProductPriceFixedCreate
-        | ProductPriceCustomCreate
-        | ProductPriceSeatBasedCreate
-        | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate
-        | ProductPriceMeteredTiersCreate
+        typing.Annotated[
+            ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
+            | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate,
+            _Discriminator(
+                "amount_type",
+                (
+                    ("custom", ProductPriceCustomCreate),
+                    ("fixed", ProductPriceFixedCreate),
+                    ("metered_tiers", ProductPriceMeteredTiersCreate),
+                    ("metered_unit", ProductPriceMeteredUnitCreate),
+                    ("seat_based", ProductPriceSeatBasedCreate),
+                    ("unit_based", ProductPriceUnitBasedCreate),
+                ),
+            ),
+        ]
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -2962,7 +3041,7 @@ You can store up to **50 key-value pairs**."""
 
 class ProductCreateRecurring(typing.TypedDict):
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -2987,12 +3066,25 @@ You can store up to **50 key-value pairs**."""
     """The visibility of the product."""
 
     prices: list[
-        ProductPriceFixedCreate
-        | ProductPriceCustomCreate
-        | ProductPriceSeatBasedCreate
-        | ProductPriceUnitBasedCreate
-        | ProductPriceMeteredUnitCreate
-        | ProductPriceMeteredTiersCreate
+        typing.Annotated[
+            ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceUnitBasedCreate
+            | ProductPriceMeteredUnitCreate
+            | ProductPriceMeteredTiersCreate,
+            _Discriminator(
+                "amount_type",
+                (
+                    ("custom", ProductPriceCustomCreate),
+                    ("fixed", ProductPriceFixedCreate),
+                    ("metered_tiers", ProductPriceMeteredTiersCreate),
+                    ("metered_unit", ProductPriceMeteredUnitCreate),
+                    ("seat_based", ProductPriceSeatBasedCreate),
+                    ("unit_based", ProductPriceUnitBasedCreate),
+                ),
+            ),
+        ]
     ]
     """List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products."""
 
@@ -3010,6 +3102,9 @@ You can store up to **50 key-value pairs**."""
 
     trial_interval_count: typing.NotRequired[int | None]
     """The number of interval units for the trial period."""
+
+    trial_payment_setup_required: typing.NotRequired[bool]
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."""
 
     recurring_interval: RecurringInterval
     """The recurring interval of the product."""
@@ -3566,7 +3661,7 @@ class ProductUpdate(typing.TypedDict):
     """Schema to update a product."""
 
     external_id: typing.NotRequired[str | None]
-    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource."""
+    """An ID from your own system to reference this resource. It must be unique within the organization for this type of resource. It must start with a letter or digit and contain only letters, digits, `_`, `-`, `.` and `:`."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
     """Key-value object allowing you to store additional information.
@@ -3607,12 +3702,25 @@ You can store up to **50 key-value pairs**."""
     prices: typing.NotRequired[
         list[
             ExistingProductPrice
-            | ProductPriceFixedCreate
-            | ProductPriceCustomCreate
-            | ProductPriceSeatBasedCreate
-            | ProductPriceUnitBasedCreate
-            | ProductPriceMeteredUnitCreate
-            | ProductPriceMeteredTiersCreate
+            | typing.Annotated[
+                ProductPriceFixedCreate
+                | ProductPriceCustomCreate
+                | ProductPriceSeatBasedCreate
+                | ProductPriceUnitBasedCreate
+                | ProductPriceMeteredUnitCreate
+                | ProductPriceMeteredTiersCreate,
+                _Discriminator(
+                    "amount_type",
+                    (
+                        ("custom", ProductPriceCustomCreate),
+                        ("fixed", ProductPriceFixedCreate),
+                        ("metered_tiers", ProductPriceMeteredTiersCreate),
+                        ("metered_unit", ProductPriceMeteredUnitCreate),
+                        ("seat_based", ProductPriceSeatBasedCreate),
+                        ("unit_based", ProductPriceUnitBasedCreate),
+                    ),
+                ),
+            ]
         ]
         | None
     ]
@@ -3622,6 +3730,9 @@ You can store up to **50 key-value pairs**."""
     """List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded."""
 
     attached_custom_fields: typing.NotRequired[list[AttachedCustomFieldCreate] | None]
+
+    trial_payment_setup_required: typing.NotRequired[bool | None]
+    """Whether customers must provide a payment method to start a trial. If `false`, customers can start a trial without entering payment details."""
 
 
 class PropertyAggregation(typing.TypedDict):
@@ -3774,10 +3885,10 @@ The value must be either:
 You can store up to **50 key-value pairs**."""
 
     product_id: str
-    """The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow."""
+    """The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow."""
 
     currency: typing.NotRequired[PresentmentCurrency | None]
-    """The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."""
+    """The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."""
 
     customer_id: str
     """The ID of the customer to create the subscription for."""
@@ -3800,10 +3911,10 @@ The value must be either:
 You can store up to **50 key-value pairs**."""
 
     product_id: str
-    """The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow."""
+    """The ID of the recurring product to subscribe to. Must be a free product or have a trial with no upfront payment setup required. Otherwise, the customer should go through a checkout flow."""
 
     currency: typing.NotRequired[PresentmentCurrency | None]
-    """The currency of the subscription. The product must have a free price in this currency. If not set, the organization's default currency is used."""
+    """The currency of the subscription. The product must have a free price in this currency or have a trial with no upfront payment setup required. If not set, the organization's default currency is used."""
 
     external_customer_id: str
     """The ID of the customer in your system to create the subscription for. It must already exist in Polar."""
@@ -3880,7 +3991,9 @@ You can store up to **50 key-value pairs**."""
     product_id: typing.NotRequired[str | None]
     """Update subscription to another product."""
 
-    proration_behavior: typing.NotRequired[SubscriptionProrationBehavior | None]
+    proration_behavior: typing.NotRequired[
+        SubscriptionProrationBehavior | typing.Literal["auto"] | None
+    ]
     """Determine how to handle the proration billing. If not provided, will use the default organization setting."""
 
     discount_id: typing.NotRequired[str | None]
@@ -3908,7 +4021,9 @@ class SubscriptionUpdateSeats(typing.TypedDict):
     seats: int
     """Update the number of seats for this subscription."""
 
-    proration_behavior: typing.NotRequired[SubscriptionProrationBehavior | None]
+    proration_behavior: typing.NotRequired[
+        SubscriptionProrationBehavior | typing.Literal["auto"] | None
+    ]
     """Determine how to handle the proration billing. If not provided, will use the default organization setting."""
 
 
@@ -3916,7 +4031,9 @@ class SubscriptionUpdateUnits(typing.TypedDict):
     units: int
     """Update the number of units for this subscription."""
 
-    proration_behavior: typing.NotRequired[SubscriptionProrationBehavior | None]
+    proration_behavior: typing.NotRequired[
+        SubscriptionProrationBehavior | typing.Literal["auto"] | None
+    ]
     """Determine how to handle the proration billing. If not provided, will use the default organization setting."""
 
 
@@ -3978,7 +4095,7 @@ class WebhookEndpointCreate(typing.TypedDict):
     api_version: typing.NotRequired[ApiVersion]
     """The API version that'll be used in event payloads."""
 
-    format: WebhookFormat
+    format: Format
     """The format of the webhook payload."""
 
     events: list[WebhookEventType]
@@ -4001,7 +4118,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     ]
     """The API version that'll be used in event payloads."""
 
-    format: typing.NotRequired[WebhookFormat | None]
+    format: typing.NotRequired[typing.Literal["raw", "discord", "slack"] | None]
 
     events: typing.NotRequired[list[WebhookEventType] | None]
 
@@ -4009,7 +4126,7 @@ class WebhookEndpointUpdate(typing.TypedDict):
     """Whether the webhook endpoint is enabled."""
 
 
-BenefitCreate: typing.TypeAlias = (
+BenefitCreate: typing.TypeAlias = typing.Annotated[
     BenefitCustomCreate
     | BenefitDiscordCreate
     | BenefitGitHubRepositoryCreate
@@ -4017,8 +4134,21 @@ BenefitCreate: typing.TypeAlias = (
     | BenefitLicenseKeysCreate
     | BenefitMeterCreditCreate
     | BenefitFeatureFlagCreate
-    | BenefitSlackSharedChannelCreate
-)
+    | BenefitSlackSharedChannelCreate,
+    _Discriminator(
+        "type",
+        (
+            ("custom", BenefitCustomCreate),
+            ("discord", BenefitDiscordCreate),
+            ("downloadables", BenefitDownloadablesCreate),
+            ("feature_flag", BenefitFeatureFlagCreate),
+            ("github_repository", BenefitGitHubRepositoryCreate),
+            ("license_keys", BenefitLicenseKeysCreate),
+            ("meter_credit", BenefitMeterCreditCreate),
+            ("slack_shared_channel", BenefitSlackSharedChannelCreate),
+        ),
+    ),
+]
 
 CheckoutConfirm: typing.TypeAlias = (
     CheckoutConfirmStripe | CheckoutConfirmSharedPaymentToken
@@ -4028,23 +4158,43 @@ CheckoutCreate: typing.TypeAlias = (
     CheckoutProductsCreate | CheckoutProductsExternalCreate
 )
 
-CustomFieldCreate: typing.TypeAlias = (
+CustomFieldCreate: typing.TypeAlias = typing.Annotated[
     CustomFieldCreateText
     | CustomFieldCreateNumber
     | CustomFieldCreateDate
     | CustomFieldCreateCheckbox
-    | CustomFieldCreateSelect
-)
+    | CustomFieldCreateSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldCreateCheckbox),
+            ("date", CustomFieldCreateDate),
+            ("number", CustomFieldCreateNumber),
+            ("select", CustomFieldCreateSelect),
+            ("text", CustomFieldCreateText),
+        ),
+    ),
+]
 
-CustomFieldUpdate: typing.TypeAlias = (
+CustomFieldUpdate: typing.TypeAlias = typing.Annotated[
     CustomFieldUpdateText
     | CustomFieldUpdateNumber
     | CustomFieldUpdateDate
     | CustomFieldUpdateCheckbox
-    | CustomFieldUpdateSelect
-)
+    | CustomFieldUpdateSelect,
+    _Discriminator(
+        "type",
+        (
+            ("checkbox", CustomFieldUpdateCheckbox),
+            ("date", CustomFieldUpdateDate),
+            ("number", CustomFieldUpdateNumber),
+            ("select", CustomFieldUpdateSelect),
+            ("text", CustomFieldUpdateText),
+        ),
+    ),
+]
 
-CustomerBenefitGrantUpdate: typing.TypeAlias = (
+CustomerBenefitGrantUpdate: typing.TypeAlias = typing.Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
     | CustomerBenefitGrantDownloadablesUpdate
@@ -4052,8 +4202,21 @@ CustomerBenefitGrantUpdate: typing.TypeAlias = (
     | CustomerBenefitGrantCustomUpdate
     | CustomerBenefitGrantMeterCreditUpdate
     | CustomerBenefitGrantFeatureFlagUpdate
-    | CustomerBenefitGrantSlackSharedChannelUpdate
-)
+    | CustomerBenefitGrantSlackSharedChannelUpdate,
+    _Discriminator(
+        "benefit_type",
+        (
+            ("custom", CustomerBenefitGrantCustomUpdate),
+            ("discord", CustomerBenefitGrantDiscordUpdate),
+            ("downloadables", CustomerBenefitGrantDownloadablesUpdate),
+            ("feature_flag", CustomerBenefitGrantFeatureFlagUpdate),
+            ("github_repository", CustomerBenefitGrantGitHubRepositoryUpdate),
+            ("license_keys", CustomerBenefitGrantLicenseKeysUpdate),
+            ("meter_credit", CustomerBenefitGrantMeterCreditUpdate),
+            ("slack_shared_channel", CustomerBenefitGrantSlackSharedChannelUpdate),
+        ),
+    ),
+]
 
 CustomerCreate: typing.TypeAlias = CustomerIndividualCreate | CustomerTeamCreate
 
@@ -4067,14 +4230,32 @@ CustomerSubscriptionUpdate: typing.TypeAlias = (
     | CustomerSubscriptionUpdateClear
 )
 
-DiscountCreate: typing.TypeAlias = DiscountFixedCreate | DiscountPercentageCreate
+DiscountCreate: typing.TypeAlias = typing.Annotated[
+    DiscountFixedCreate | DiscountPercentageCreate,
+    _Discriminator(
+        "type",
+        (
+            ("fixed", DiscountFixedCreate),
+            ("percentage", DiscountPercentageCreate),
+        ),
+    ),
+]
 
-FileCreate: typing.TypeAlias = (
+FileCreate: typing.TypeAlias = typing.Annotated[
     DownloadableFileCreate
     | ProductMediaFileCreate
     | OrganizationAvatarFileCreate
-    | SupportCaseAttachmentFileCreate
-)
+    | SupportCaseAttachmentFileCreate,
+    _Discriminator(
+        "service",
+        (
+            ("downloadable", DownloadableFileCreate),
+            ("organization_avatar", OrganizationAvatarFileCreate),
+            ("product_media", ProductMediaFileCreate),
+            ("support_case_attachment", SupportCaseAttachmentFileCreate),
+        ),
+    ),
+]
 
 MetadataQuery: typing.TypeAlias = (
     dict[str, str | int | bool | list[str] | list[int] | list[bool]] | None

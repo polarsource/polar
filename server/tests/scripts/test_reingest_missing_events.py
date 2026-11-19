@@ -275,7 +275,6 @@ class TestReingest:
 
 
 @pytest.mark.skipif(not tinybird_available(), reason="Tinybird not running")
-@pytest.mark.xdist_group(name="tinybird")
 @pytest.mark.anyio
 class TestFetchTinybirdRows:
     async def test_round_trip(

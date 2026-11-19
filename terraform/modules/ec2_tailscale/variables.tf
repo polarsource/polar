@@ -75,6 +75,12 @@ variable "advertise_routes" {
   }
 }
 
+variable "advertise_connector" {
+  description = "Advertise the subnet router as a Tailscale App Connector."
+  type        = bool
+  default     = false
+}
+
 variable "advertise_tags" {
   description = "Tailscale tags assigned to the router. The OAuth client must have Auth Keys write permission for these tags."
   type        = list(string)

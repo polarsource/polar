@@ -1,6 +1,6 @@
 import { Schema } from 'effect'
 import { Currency, DecimalAmount, unitAmount, WholeAmount } from './money'
-import type { Money } from './money'
+import type { Money, Scale } from './money'
 
 const Units = Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))
 const Cents = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0))
@@ -116,34 +116,38 @@ export const PriceConfig = Schema.Union([
 
 export type PriceConfig = typeof PriceConfig.Type
 
-type Amounts<Rate extends Money> = readonly [Rate, ...Rate[]]
+type Amounts<Rate extends Money> = readonly [amount: Rate, ...amounts: Rate[]]
 
 /** A tier without amounts is free: 0 in each currency the price uses. */
-export interface Tier<Rate extends Money = Money> {
+export interface TierOf<Rate extends Money = Money> {
   readonly bound: number | undefined
   readonly amounts: ReadonlyArray<Rate>
 }
 
-type Tiers<Rate extends Money> = readonly [Tier<Rate>, ...Tier<Rate>[]]
+type TierList<T> = readonly [tier: T, ...tiers: T[]]
+
+type Tiers<Rate extends Money> = TierList<TierOf<Rate>>
 
 /** Volume pricing charges every unit at the matching tier's rate, so no units are ever included. */
-type VolumeTier<Rate extends Money> = Tier<Rate> & {
+type VolumeTierOf<Rate extends Money> = TierOf<Rate> & {
   readonly included?: never
 }
 
-type VolumeTiers<Rate extends Money> = readonly [
-  VolumeTier<Rate>,
-  ...VolumeTier<Rate>[],
-]
+type Tier = TierOf<Money<1>>
+type VolumeTier = VolumeTierOf<Money<1>>
+/** Usage tiers can charge per thousand or per million units. */
+type UsageTier = TierOf<Money>
+type UsageVolumeTier = VolumeTierOf<Money>
 
-class PricedTier<Rate extends Money> implements Tier<Rate> {
+class PricedTier<Rate extends Money> implements TierOf<Rate> {
   constructor(
     readonly bound: number | undefined,
     readonly amounts: ReadonlyArray<Rate>,
   ) {}
 
-  max(bound: number): PricedTier<Rate> {
-    return new PricedTier(bound, this.amounts)
+  /** The last unit this tier covers. The next tier starts after it. */
+  max(lastUnit: number): PricedTier<Rate> {
+    return new PricedTier(lastUnit, this.amounts)
   }
 }
 
@@ -152,7 +156,7 @@ class IncludedTier extends PricedTier<never> {
 }
 
 const volumeTiers = <Rate extends Money>(
-  tiers: VolumeTiers<Rate>,
+  tiers: TierList<VolumeTierOf<Rate>>,
 ): Tiers<Rate> => {
   if (tiers.some((tier) => tier instanceof IncludedTier)) {
     throw new Error(
@@ -165,13 +169,15 @@ const volumeTiers = <Rate extends Money>(
 class TierBuilder {
   constructor(private readonly bound: number | undefined = undefined) {}
 
-  max(bound: number): TierBuilder {
-    return new TierBuilder(bound)
+  /** The last unit this tier covers. The next tier starts after it. */
+  max(lastUnit: number): TierBuilder {
+    return new TierBuilder(lastUnit)
   }
 
-  amount<const Rates extends Amounts<Money>>(
-    ...amounts: Rates
-  ): PricedTier<Rates[number]> {
+  /** The rate for each unit in this tier, one amount per currency. */
+  amount<Per extends Scale>(
+    ...amounts: Amounts<Money<Per>>
+  ): PricedTier<Money<Per>> {
     return new PricedTier(this.bound, amounts)
   }
 
@@ -210,6 +216,11 @@ const clonePrice = <Price extends object>(
 abstract class TaxablePrice {
   readonly taxBehavior: TaxBehavior | undefined = undefined
 
+  /**
+   * Whether the amount includes tax or has it added at checkout. `'location'`
+   * excludes it in the US, Canada and India and includes it elsewhere.
+   * Defaults to the organization's setting.
+   */
   tax(behavior: TaxBehavior): this {
     return clonePrice(this, { taxBehavior: behavior } as Partial<this>)
   }
@@ -242,19 +253,21 @@ export class QuantityPrice<
     super()
   }
 
+  /** The smallest quantity a customer can buy. Defaults to 1. */
   min(minimum: number): QuantityPrice<Type> {
     return clonePrice<QuantityPrice<Type>>(this, {
       bounds: { ...this.bounds, minimum },
     })
   }
 
+  /** The largest quantity a customer can buy. Unlimited by default. */
   max(maximum: number): QuantityPrice<Type> {
     return clonePrice<QuantityPrice<Type>>(this, {
       bounds: { ...this.bounds, maximum },
     })
   }
 
-  /** The unit noun shown at checkout and on invoices. Defaults to "unit"/"units". */
+  /** The unit name shown at checkout, in the customer portal and on invoices. Defaults to "unit"/"units". */
   label(
     this: QuantityPrice<'unit_based'>,
     singular: string,
@@ -278,6 +291,7 @@ export class MeteredPrice<Meter extends string> extends TaxablePrice {
     super()
   }
 
+  /** The most customers pay for this usage per period, however much they use. One amount per currency. */
   cap(...caps: Amounts<Money<1>>): MeteredPrice<Meter> {
     return clonePrice<MeteredPrice<Meter>>(this, { caps })
   }
@@ -290,6 +304,7 @@ export type PriceDefinition<Meter extends string = string> =
   | MeteredPrice<Meter>
 
 class FixedBuilder {
+  /** The price, one amount per currency. */
   amount(...amounts: Amounts<Money<1>>): FixedPrice {
     return new FixedPrice(amounts)
   }
@@ -301,14 +316,17 @@ class FlatQuantityBuilder<Type extends QuantityType> {
     private readonly bounds: Bounds = {},
   ) {}
 
+  /** The smallest quantity a customer can buy. Defaults to 1. */
   min(minimum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, minimum })
   }
 
+  /** The largest quantity a customer can buy. Unlimited by default. */
   max(maximum: number): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type, { ...this.bounds, maximum })
   }
 
+  /** The price of each unit, one amount per currency. */
   amount(...amounts: Amounts<Money<1>>): QuantityPrice<Type> {
     return new QuantityPrice(
       this.type,
@@ -322,15 +340,18 @@ class FlatQuantityBuilder<Type extends QuantityType> {
 class QuantityBuilder<Type extends QuantityType> {
   constructor(private readonly type: Type) {}
 
+  /** Every unit costs the same. */
   flat(): FlatQuantityBuilder<Type> {
     return new FlatQuantityBuilder(this.type)
   }
 
-  graduated(...tiers: Tiers<Money<1>>): QuantityPrice<Type> {
+  /** Each tier charges its own rate for the units in it. The total is the sum across tiers. */
+  graduated(...tiers: TierList<Tier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'graduated', tiers)
   }
 
-  volume(...tiers: VolumeTiers<Money<1>>): QuantityPrice<Type> {
+  /** The total quantity sets the rate, and that rate applies to every unit. */
+  volume(...tiers: TierList<VolumeTier>): QuantityPrice<Type> {
     return new QuantityPrice(this.type, 'volume', volumeTiers(tiers))
   }
 }
@@ -338,6 +359,10 @@ class QuantityBuilder<Type extends QuantityType> {
 class FlatMeteredBuilder<Meter extends string> {
   constructor(private readonly meter: Meter) {}
 
+  /**
+   * The price of each unit of usage, one amount per currency. Use
+   * `perThousand()` or `perMillion()` for fractions of a cent.
+   */
   amount(...amounts: Amounts<Money>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'flat', [
       new PricedTier(undefined, amounts),
@@ -348,26 +373,33 @@ class FlatMeteredBuilder<Meter extends string> {
 class MeteredBuilder<Meter extends string> {
   constructor(private readonly meter: Meter) {}
 
+  /** Every unit of usage costs the same. */
   flat(): FlatMeteredBuilder<Meter> {
     return new FlatMeteredBuilder(this.meter)
   }
 
-  graduated(...tiers: Tiers<Money>): MeteredPrice<Meter> {
+  /** Each tier charges its own rate for the units in it. The total is the sum across tiers. */
+  graduated(...tiers: TierList<UsageTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'graduated', tiers)
   }
 
-  volume(...tiers: VolumeTiers<Money>): MeteredPrice<Meter> {
+  /** The total usage in the period sets the rate, and that rate applies to every unit. */
+  volume(...tiers: TierList<UsageVolumeTier>): MeteredPrice<Meter> {
     return new MeteredPrice(this.meter, 'volume', volumeTiers(tiers))
   }
 }
 
 /** A fixed price of 0 in each currency the product's other prices use (USD when there are none). */
 export const free = (): FreePrice => new FreePrice()
+/** Charges one set amount. */
 export const fixed = (): FixedBuilder => new FixedBuilder()
+/** Charges per seat. The buyer assigns seats to team members, who each get the product's benefits. */
 export const seats = (): QuantityBuilder<'seat_based'> =>
   new QuantityBuilder('seat_based')
+/** Charges per unit, paid up front. Customers pick a quantity and get each benefit once. */
 export const units = (): QuantityBuilder<'unit_based'> =>
   new QuantityBuilder('unit_based')
+/** Charges for what a meter records, billed at the end of each period. */
 export const metered = <const Meter extends string>(
   meter: Meter,
 ): MeteredBuilder<Meter> => new MeteredBuilder(meter)
@@ -403,7 +435,7 @@ const boundedTiers = <Rate extends Money>(
   tiers: Tiers<Rate>,
   maximum: number | undefined,
   where: string,
-): ReadonlyArray<Tier<Rate>> => {
+): ReadonlyArray<TierOf<Rate>> => {
   const lastIndex = tiers.length - 1
   if (maximum !== undefined && tiers[lastIndex]?.bound !== undefined) {
     throw new Error(
@@ -484,7 +516,7 @@ export const priceCurrencies = (
 
 const tiersConfig = (
   type: TiersConfig['type'],
-  tiers: ReadonlyArray<Tier>,
+  tiers: ReadonlyArray<TierOf>,
   currency: Currency,
 ): TiersConfig => ({
   type,

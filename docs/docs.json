@@ -37,46 +37,22 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Docs",
+        "tab": "Documentation",
         "icon": "compass",
         "groups": [
           {
-            "group": "Bootup",
-            "pages": ["introduction", "migrate"]
+            "group": "Get Started",
+            "pages": ["introduction", "migrate", "migrate-lemon-squeezy"]
           },
           {
-            "group": "Features",
+            "group": "Products & Pricing",
             "pages": [
               "features/products",
-              {
-                "group": "Usage Based Billing",
-                "pages": [
-                  "features/usage-based-billing/introduction",
-                  "features/usage-based-billing/event-ingestion",
-                  {
-                    "group": "Ingestion Strategies",
-                    "pages": [
-                      "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
-                      "features/usage-based-billing/ingestion-strategies/llm-strategy",
-                      "features/usage-based-billing/ingestion-strategies/s3-strategy",
-                      "features/usage-based-billing/ingestion-strategies/stream-strategy",
-                      "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
-                    ]
-                  },
-                  "features/usage-based-billing/meters",
-                  "features/usage-based-billing/credits",
-                  "features/usage-based-billing/billing"
-                ]
-              },
-              {
-                "group": "Cost Insights",
-                "tag": "Beta",
-                "pages": [
-                  "features/cost-insights/introduction",
-                  "features/cost-insights/cost-events",
-                  "features/cost-insights/cost-traces"
-                ]
-              },
+              "features/unit-based-pricing",
+              "features/seat-based-pricing",
+              "features/usage-based-billing/billing",
+              "features/tax-inclusive-pricing",
+              "features/discounts",
               {
                 "group": "Benefits",
                 "pages": [
@@ -90,41 +66,59 @@
                   "features/benefits/license-keys",
                   "features/benefits/slack-shared-channel"
                 ]
-              },
-              {
-                "group": "Checkout",
-                "pages": [
-                  "features/checkout/links",
-                  "features/checkout/session",
-                  "features/checkout/payment-methods",
-                  "features/checkout/localization",
-                  {
-                    "group": "Embeds",
-                    "pages": ["features/checkout/embed", "features/checkout/embed-payment-method"]
-                  }
-                ]
-              },
-              "features/seat-based-pricing",
-              "features/unit-based-pricing",
+              }
+            ]
+          },
+          {
+            "group": "Checkout",
+            "pages": [
+              "features/checkout/links",
+              "features/checkout/session",
+              "features/checkout/payment-methods",
+              "features/checkout/localization",
               "features/custom-fields",
-              "features/discounts",
-              "features/tax-inclusive-pricing",
               {
-                "group": "Subscriptions",
+                "group": "Embeds",
                 "pages": [
-                  "features/subscriptions/introduction",
-                  "features/subscriptions/manage",
-                  "features/subscriptions/proration",
-                  "features/subscriptions/failed-payments",
-                  "features/subscriptions/trials"
+                  "features/checkout/embed",
+                  "features/checkout/embed-payment-method"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Subscriptions",
+            "pages": [
+              "features/subscriptions/introduction",
+              "features/subscriptions/manage",
+              "features/subscriptions/proration",
+              "features/subscriptions/trials",
+              "features/subscriptions/failed-payments"
+            ]
+          },
+          {
+            "group": "Metering",
+            "pages": [
+              "features/usage-based-billing/introduction",
+              "features/usage-based-billing/event-ingestion",
+              {
+                "group": "Ingestion Strategies",
+                "pages": [
+                  "features/usage-based-billing/ingestion-strategies/ingestion-strategy",
+                  "features/usage-based-billing/ingestion-strategies/llm-strategy",
+                  "features/usage-based-billing/ingestion-strategies/s3-strategy",
+                  "features/usage-based-billing/ingestion-strategies/stream-strategy",
+                  "features/usage-based-billing/ingestion-strategies/delta-time-strategy"
                 ]
               },
-              "features/orders",
-              "features/refunds",
-              "features/analytics",
+              "features/usage-based-billing/meters",
+              "features/usage-based-billing/credits"
+            ]
+          },
+          {
+            "group": "Customer Management",
+            "pages": [
               "features/customer-management",
-              "features/team-management",
-              "features/sso",
               {
                 "group": "Customer Portal",
                 "pages": [
@@ -132,43 +126,121 @@
                   "features/customer-portal/navigate-customers",
                   "features/customer-portal/settings"
                 ]
-              },
+              }
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "features/analytics",
               {
-                "group": "Finance & Payouts",
+                "group": "Cost Insights",
+                "tag": "Beta",
                 "pages": [
-                  "features/finance/accounts",
-                  "features/finance/balance",
-                  "features/finance/payouts"
-                ]
-              },
-              {
-                "group": "Integrations",
-                "pages": [
-                  "features/integrations/affonso",
-                  "features/integrations/fernand",
-                  "features/integrations/framer",
-                  "features/integrations/paritydeals",
-                  "features/integrations/raycast",
-                  "features/integrations/zapier"
+                  "features/cost-insights/introduction",
+                  "features/cost-insights/cost-events",
+                  "features/cost-insights/cost-traces"
                 ]
               }
             ]
           },
           {
-            "group": "Integrate",
+            "group": "Payments",
+            "pages": [
+              "features/orders",
+              "features/refunds"
+            ]
+          },
+          {
+            "group": "Payouts",
+            "pages": [
+              "features/finance/accounts",
+              "features/finance/balance",
+              "features/finance/payouts"
+            ]
+          },
+          {
+            "group": "Account Management",
+            "pages": [
+              "features/team-management",
+              "features/sso"
+            ]
+          },
+          {
+            "group": "Third-party Integrations",
+            "pages": [
+              "features/integrations/affonso",
+              "features/integrations/fernand",
+              "features/integrations/framer",
+              "features/integrations/paritydeals",
+              "features/integrations/raycast",
+              "features/integrations/zapier"
+            ]
+          },
+          {
+            "group": "Merchant of Record (MoR)",
+            "pages": [
+              "merchant-of-record/introduction",
+              "merchant-of-record/fees",
+              "merchant-of-record/supported-countries",
+              "merchant-of-record/acceptable-use/introduction",
+              "merchant-of-record/account-reviews"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Developer Resources",
+        "icon": "rectangle-terminal",
+        "groups": [
+          {
+            "group": "API",
             "pages": [
               "integrate/authentication",
+              "integrate/oat",
               "integrate/sandbox",
               "integrate/customer-state",
-              "integrate/mcp",
               {
-                "group": "SDKs",
+                "group": "Webhooks",
                 "pages": [
-                  "integrate/sdk/introduction",
-                  "integrate/sdk/python",
-                  "integrate/sdk/typescript"
+                  "integrate/webhooks/endpoints",
+                  "integrate/webhooks/delivery",
+                  "integrate/webhooks/events"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "SDKs & Frameworks",
+            "pages": [
+              "integrate/sdk/introduction",
+              "integrate/sdk/python",
+              "integrate/sdk/typescript",
+              {
+                "group": "Framework Adapters",
+                "pages": [
+                  "integrate/sdk/adapters/introduction",
+                  "integrate/sdk/adapters/better-auth",
+                  "integrate/sdk/adapters/laravel",
+                  "integrate/sdk/adapters/nextjs",
+                  "integrate/sdk/adapters/nuxt",
+                  "integrate/sdk/adapters/tanstack-start"
                 ]
               },
+              {
+                "group": "Framework Guides",
+                "pages": [
+                  "guides/encore",
+                  "guides/laravel",
+                  "guides/nextjs"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "integrate/mcp",
               {
                 "group": "CLI",
                 "pages": [
@@ -213,64 +285,22 @@
                     ]
                   }
                 ]
-              },
-              {
-                "group": "Framework Adapters",
-                "pages": [
-                  "integrate/sdk/adapters/introduction",
-                  "integrate/sdk/adapters/astro",
-                  "integrate/sdk/adapters/better-auth",
-                  "integrate/sdk/adapters/deno",
-                  "integrate/sdk/adapters/elysia",
-                  "integrate/sdk/adapters/express",
-                  "integrate/sdk/adapters/fastify",
-                  "integrate/sdk/adapters/hono",
-                  "integrate/sdk/adapters/laravel",
-                  "integrate/sdk/adapters/nextjs",
-                  "integrate/sdk/adapters/nuxt",
-                  "integrate/sdk/adapters/remix",
-                  "integrate/sdk/adapters/supabase",
-                  "integrate/sdk/adapters/sveltekit",
-                  "integrate/sdk/adapters/tanstack-start"
-                ]
-              },
-              {
-                "group": "Framework Guides",
-                "pages": ["guides/encore", "guides/laravel", "guides/nextjs"]
-              },
-              {
-                "group": "Webhooks",
-                "pages": [
-                  "integrate/webhooks/endpoints",
-                  "integrate/webhooks/delivery",
-                  "integrate/webhooks/events"
-                ]
-              },
-              {
-                "group": "OAuth 2.0",
-                "pages": [
-                  "integrate/oauth2/introduction",
-                  "integrate/oauth2/setup",
-                  "integrate/oauth2/connect"
-                ]
               }
             ]
           },
           {
-            "group": "Merchant of Record (MoR)",
+            "group": "Extend Polar",
             "pages": [
-              "merchant-of-record/introduction",
-              "merchant-of-record/fees",
-              "merchant-of-record/supported-countries",
-              "merchant-of-record/acceptable-use/introduction",
-              "merchant-of-record/account-reviews"
+              "integrate/oauth2/introduction",
+              "integrate/oauth2/setup",
+              "integrate/oauth2/connect"
             ]
           }
         ]
       },
       {
         "tab": "API Reference",
-        "icon": "rectangle-terminal",
+        "icon": "code",
         "versions": [
           {
             "version": "2026-04",
@@ -354,7 +384,25 @@
                       "GET /v1/orders/",
                       "POST /v1/orders/{id}/invoice",
                       "GET /v1/orders/{id}/invoice",
-                      "GET /v1/orders/{id}/receipt"
+                      "GET /v1/orders/{id}/receipt",
+                      "POST /v1/orders/",
+                      "GET /v1/orders/export",
+                      "POST /v1/orders/{id}/finalize"
+                    ]
+                  },
+                  {
+                    "group": "Payments",
+                    "pages": [
+                      "GET /v1/payments/",
+                      "GET /v1/payments/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Disputes",
+                    "pages": [
+                      "GET /v1/disputes/",
+                      "GET /v1/disputes/{id}",
+                      "POST /v1/disputes/{id}/accept"
                     ]
                   },
                   {
@@ -404,7 +452,8 @@
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
                       "PATCH /v1/benefits/{id}",
-                      "DELETE /v1/benefits/{id}"
+                      "DELETE /v1/benefits/{id}",
+                      "GET /v1/benefit-grants/"
                     ]
                   },
                   {
@@ -420,14 +469,23 @@
                       "GET /v1/license-keys/{id}/activations/{activation_id}",
                       "POST /v1/license-keys/validate",
                       "POST /v1/license-keys/activate",
-                      "POST /v1/license-keys/deactivate"
+                      "POST /v1/license-keys/deactivate",
+                      "POST /v1/license-keys/{id}/rotate"
                     ]
                   },
                   {
                     "group": "Members",
                     "pages": [
                       "GET /v1/customers/{id}/members",
-                      "GET /v1/customers/external/{external_id}/members"
+                      "POST /v1/customers/{id}/members",
+                      "GET /v1/customers/{id}/members/{member_id}",
+                      "PATCH /v1/customers/{id}/members/{member_id}",
+                      "DELETE /v1/customers/{id}/members/{member_id}",
+                      "GET /v1/customers/external/{external_id}/members",
+                      "POST /v1/customers/external/{external_id}/members",
+                      "GET /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "PATCH /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "DELETE /v1/customers/external/{external_id}/members/{member_external_id}"
                     ]
                   },
                   {
@@ -471,10 +529,17 @@
                 "pages": [
                   "GET /v1/customer-portal/customers/me",
                   "PATCH /v1/customer-portal/customers/me",
+                  "POST /v1/customer-portal/customers/me/email-update/request",
+                  "GET /v1/customer-portal/customers/me/email-update/check",
+                  "POST /v1/customer-portal/customers/me/email-update/verify",
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": ["POST /v1/customer-sessions/"]
+                    "pages": [
+                      "POST /v1/customer-sessions/",
+                      "GET /v1/customer-portal/customer-session/introspect",
+                      "GET /v1/customer-portal/customer-session/user"
+                    ]
                   },
                   {
                     "group": "Subscriptions",
@@ -497,13 +562,29 @@
                     ]
                   },
                   {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "GET /v1/customer-portal/benefit-grants/",
+                      "GET /v1/customer-portal/benefit-grants/{id}",
+                      "PATCH /v1/customer-portal/benefit-grants/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Customer Meters",
+                    "pages": [
+                      "GET /v1/customer-portal/meters/",
+                      "GET /v1/customer-portal/meters/{id}"
+                    ]
+                  },
+                  {
                     "group": "License Keys",
                     "pages": [
                       "POST /v1/customer-portal/license-keys/validate",
                       "POST /v1/customer-portal/license-keys/activate",
                       "POST /v1/customer-portal/license-keys/deactivate",
                       "GET /v1/customer-portal/license-keys/{id}",
-                      "GET /v1/customer-portal/license-keys/"
+                      "GET /v1/customer-portal/license-keys/",
+                      "POST /v1/customer-portal/license-keys/{id}/rotate"
                     ]
                   },
                   {
@@ -521,10 +602,21 @@
                     ]
                   },
                   {
+                    "group": "Members",
+                    "pages": [
+                      "GET /v1/customer-portal/members",
+                      "POST /v1/customer-portal/members",
+                      "PATCH /v1/customer-portal/members/{id}",
+                      "DELETE /v1/customer-portal/members/{id}"
+                    ]
+                  },
+                  {
                     "group": "Payment Methods",
                     "pages": [
                       "GET /v1/customer-portal/customers/me/payment-methods",
-                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}"
+                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}",
+                      "POST /v1/customer-portal/customers/me/payment-methods",
+                      "POST /v1/customer-portal/customers/me/payment-methods/confirm"
                     ]
                   }
                 ]
@@ -637,7 +729,11 @@
                       "POST /v1/oauth2/token",
                       "POST /v1/oauth2/introspect",
                       "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo"
+                      "GET /v1/oauth2/userinfo",
+                      "POST /v1/oauth2/register",
+                      "GET /v1/oauth2/register/{client_id}",
+                      "PUT /v1/oauth2/register/{client_id}",
+                      "DELETE /v1/oauth2/register/{client_id}"
                     ]
                   },
                   {
@@ -647,7 +743,10 @@
                       "GET /v1/webhooks/endpoints/{id}",
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}"
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
                     ]
                   }
                 ]
@@ -737,7 +836,25 @@
                       "GET /v1/orders/",
                       "POST /v1/orders/{id}/invoice",
                       "GET /v1/orders/{id}/invoice",
-                      "GET /v1/orders/{id}/receipt"
+                      "GET /v1/orders/{id}/receipt",
+                      "POST /v1/orders/",
+                      "GET /v1/orders/export",
+                      "POST /v1/orders/{id}/finalize"
+                    ]
+                  },
+                  {
+                    "group": "Payments",
+                    "pages": [
+                      "GET /v1/payments/",
+                      "GET /v1/payments/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Disputes",
+                    "pages": [
+                      "GET /v1/disputes/",
+                      "GET /v1/disputes/{id}",
+                      "POST /v1/disputes/{id}/accept"
                     ]
                   },
                   {
@@ -787,7 +904,8 @@
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
                       "PATCH /v1/benefits/{id}",
-                      "DELETE /v1/benefits/{id}"
+                      "DELETE /v1/benefits/{id}",
+                      "GET /v1/benefit-grants/"
                     ]
                   },
                   {
@@ -803,14 +921,23 @@
                       "GET /v1/license-keys/{id}/activations/{activation_id}",
                       "POST /v1/license-keys/validate",
                       "POST /v1/license-keys/activate",
-                      "POST /v1/license-keys/deactivate"
+                      "POST /v1/license-keys/deactivate",
+                      "POST /v1/license-keys/{id}/rotate"
                     ]
                   },
                   {
                     "group": "Members",
                     "pages": [
                       "GET /v1/customers/{id}/members",
-                      "GET /v1/customers/external/{external_id}/members"
+                      "POST /v1/customers/{id}/members",
+                      "GET /v1/customers/{id}/members/{member_id}",
+                      "PATCH /v1/customers/{id}/members/{member_id}",
+                      "DELETE /v1/customers/{id}/members/{member_id}",
+                      "GET /v1/customers/external/{external_id}/members",
+                      "POST /v1/customers/external/{external_id}/members",
+                      "GET /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "PATCH /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "DELETE /v1/customers/external/{external_id}/members/{member_external_id}"
                     ]
                   },
                   {
@@ -854,10 +981,17 @@
                 "pages": [
                   "GET /v1/customer-portal/customers/me",
                   "PATCH /v1/customer-portal/customers/me",
+                  "POST /v1/customer-portal/customers/me/email-update/request",
+                  "GET /v1/customer-portal/customers/me/email-update/check",
+                  "POST /v1/customer-portal/customers/me/email-update/verify",
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": ["POST /v1/customer-sessions/"]
+                    "pages": [
+                      "POST /v1/customer-sessions/",
+                      "GET /v1/customer-portal/customer-session/introspect",
+                      "GET /v1/customer-portal/customer-session/user"
+                    ]
                   },
                   {
                     "group": "Subscriptions",
@@ -880,13 +1014,29 @@
                     ]
                   },
                   {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "GET /v1/customer-portal/benefit-grants/",
+                      "GET /v1/customer-portal/benefit-grants/{id}",
+                      "PATCH /v1/customer-portal/benefit-grants/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Customer Meters",
+                    "pages": [
+                      "GET /v1/customer-portal/meters/",
+                      "GET /v1/customer-portal/meters/{id}"
+                    ]
+                  },
+                  {
                     "group": "License Keys",
                     "pages": [
                       "POST /v1/customer-portal/license-keys/validate",
                       "POST /v1/customer-portal/license-keys/activate",
                       "POST /v1/customer-portal/license-keys/deactivate",
                       "GET /v1/customer-portal/license-keys/{id}",
-                      "GET /v1/customer-portal/license-keys/"
+                      "GET /v1/customer-portal/license-keys/",
+                      "POST /v1/customer-portal/license-keys/{id}/rotate"
                     ]
                   },
                   {
@@ -904,10 +1054,21 @@
                     ]
                   },
                   {
+                    "group": "Members",
+                    "pages": [
+                      "GET /v1/customer-portal/members",
+                      "POST /v1/customer-portal/members",
+                      "PATCH /v1/customer-portal/members/{id}",
+                      "DELETE /v1/customer-portal/members/{id}"
+                    ]
+                  },
+                  {
                     "group": "Payment Methods",
                     "pages": [
                       "GET /v1/customer-portal/customers/me/payment-methods",
-                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}"
+                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}",
+                      "POST /v1/customer-portal/customers/me/payment-methods",
+                      "POST /v1/customer-portal/customers/me/payment-methods/confirm"
                     ]
                   }
                 ]
@@ -1020,7 +1181,11 @@
                       "POST /v1/oauth2/token",
                       "POST /v1/oauth2/introspect",
                       "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo"
+                      "GET /v1/oauth2/userinfo",
+                      "POST /v1/oauth2/register",
+                      "GET /v1/oauth2/register/{client_id}",
+                      "PUT /v1/oauth2/register/{client_id}",
+                      "DELETE /v1/oauth2/register/{client_id}"
                     ]
                   },
                   {
@@ -1030,7 +1195,10 @@
                       "GET /v1/webhooks/endpoints/{id}",
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}"
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
                     ]
                   }
                 ]
@@ -1119,7 +1287,25 @@
                       "GET /v1/orders/",
                       "POST /v1/orders/{id}/invoice",
                       "GET /v1/orders/{id}/invoice",
-                      "GET /v1/orders/{id}/receipt"
+                      "GET /v1/orders/{id}/receipt",
+                      "POST /v1/orders/",
+                      "GET /v1/orders/export",
+                      "POST /v1/orders/{id}/finalize"
+                    ]
+                  },
+                  {
+                    "group": "Payments",
+                    "pages": [
+                      "GET /v1/payments/",
+                      "GET /v1/payments/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Disputes",
+                    "pages": [
+                      "GET /v1/disputes/",
+                      "GET /v1/disputes/{id}",
+                      "POST /v1/disputes/{id}/accept"
                     ]
                   },
                   {
@@ -1158,7 +1344,8 @@
                       "GET /v1/meters/{id}",
                       "GET /v1/meters/",
                       "PATCH /v1/meters/{id}",
-                      "GET /v1/meters/{id}/quantities"
+                      "GET /v1/meters/{id}/quantities",
+                      "GET /v1/meters/external/{external_id}"
                     ]
                   },
                   {
@@ -1168,8 +1355,12 @@
                       "GET /v1/benefits/{id}",
                       "GET /v1/benefits/",
                       "GET /v1/benefits/{id}/grants",
+                      "POST /v1/benefit-grants/",
+                      "PATCH /v1/benefit-grants/{id}",
+                      "DELETE /v1/benefit-grants/{id}",
                       "PATCH /v1/benefits/{id}",
-                      "DELETE /v1/benefits/{id}"
+                      "DELETE /v1/benefits/{id}",
+                      "GET /v1/benefit-grants/"
                     ]
                   },
                   {
@@ -1190,14 +1381,23 @@
                       "GET /v1/license-keys/{id}/activations/{activation_id}",
                       "POST /v1/license-keys/validate",
                       "POST /v1/license-keys/activate",
-                      "POST /v1/license-keys/deactivate"
+                      "POST /v1/license-keys/deactivate",
+                      "POST /v1/license-keys/{id}/rotate"
                     ]
                   },
                   {
                     "group": "Members",
                     "pages": [
                       "GET /v1/customers/{id}/members",
-                      "GET /v1/customers/external/{external_id}/members"
+                      "POST /v1/customers/{id}/members",
+                      "GET /v1/customers/{id}/members/{member_id}",
+                      "PATCH /v1/customers/{id}/members/{member_id}",
+                      "DELETE /v1/customers/{id}/members/{member_id}",
+                      "GET /v1/customers/external/{external_id}/members",
+                      "POST /v1/customers/external/{external_id}/members",
+                      "GET /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "PATCH /v1/customers/external/{external_id}/members/{member_external_id}",
+                      "DELETE /v1/customers/external/{external_id}/members/{member_external_id}"
                     ]
                   },
                   {
@@ -1241,10 +1441,17 @@
                 "pages": [
                   "GET /v1/customer-portal/customers/me",
                   "PATCH /v1/customer-portal/customers/me",
+                  "POST /v1/customer-portal/customers/me/email-update/request",
+                  "GET /v1/customer-portal/customers/me/email-update/check",
+                  "POST /v1/customer-portal/customers/me/email-update/verify",
                   "GET /v1/customer-portal/organizations/{slug}",
                   {
                     "group": "Sessions",
-                    "pages": ["POST /v1/customer-sessions/"]
+                    "pages": [
+                      "POST /v1/customer-sessions/",
+                      "GET /v1/customer-portal/customer-session/introspect",
+                      "GET /v1/customer-portal/customer-session/user"
+                    ]
                   },
                   {
                     "group": "Subscriptions",
@@ -1267,13 +1474,29 @@
                     ]
                   },
                   {
+                    "group": "Benefit Grants",
+                    "pages": [
+                      "GET /v1/customer-portal/benefit-grants/",
+                      "GET /v1/customer-portal/benefit-grants/{id}",
+                      "PATCH /v1/customer-portal/benefit-grants/{id}"
+                    ]
+                  },
+                  {
+                    "group": "Customer Meters",
+                    "pages": [
+                      "GET /v1/customer-portal/meters/",
+                      "GET /v1/customer-portal/meters/{id}"
+                    ]
+                  },
+                  {
                     "group": "License Keys",
                     "pages": [
                       "POST /v1/customer-portal/license-keys/validate",
                       "POST /v1/customer-portal/license-keys/activate",
                       "POST /v1/customer-portal/license-keys/deactivate",
                       "GET /v1/customer-portal/license-keys/{id}",
-                      "GET /v1/customer-portal/license-keys/"
+                      "GET /v1/customer-portal/license-keys/",
+                      "POST /v1/customer-portal/license-keys/{id}/rotate"
                     ]
                   },
                   {
@@ -1291,10 +1514,21 @@
                     ]
                   },
                   {
+                    "group": "Members",
+                    "pages": [
+                      "GET /v1/customer-portal/members",
+                      "POST /v1/customer-portal/members",
+                      "PATCH /v1/customer-portal/members/{id}",
+                      "DELETE /v1/customer-portal/members/{id}"
+                    ]
+                  },
+                  {
                     "group": "Payment Methods",
                     "pages": [
                       "GET /v1/customer-portal/customers/me/payment-methods",
-                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}"
+                      "DELETE /v1/customer-portal/customers/me/payment-methods/{id}",
+                      "POST /v1/customer-portal/customers/me/payment-methods",
+                      "POST /v1/customer-portal/customers/me/payment-methods/confirm"
                     ]
                   }
                 ]
@@ -1407,7 +1641,11 @@
                       "POST /v1/oauth2/token",
                       "POST /v1/oauth2/introspect",
                       "POST /v1/oauth2/revoke",
-                      "GET /v1/oauth2/userinfo"
+                      "GET /v1/oauth2/userinfo",
+                      "POST /v1/oauth2/register",
+                      "GET /v1/oauth2/register/{client_id}",
+                      "PUT /v1/oauth2/register/{client_id}",
+                      "DELETE /v1/oauth2/register/{client_id}"
                     ]
                   },
                   {
@@ -1417,7 +1655,11 @@
                       "GET /v1/webhooks/endpoints/{id}",
                       "GET /v1/webhooks/endpoints",
                       "PATCH /v1/webhooks/endpoints/{id}",
-                      "DELETE /v1/webhooks/endpoints/{id}"
+                      "DELETE /v1/webhooks/endpoints/{id}",
+                      "GET /v1/webhooks/endpoints/external/{external_id}",
+                      "PATCH /v1/webhooks/endpoints/{id}/secret",
+                      "GET /v1/webhooks/deliveries",
+                      "POST /v1/webhooks/events/{id}/redeliver"
                     ]
                   }
                 ]

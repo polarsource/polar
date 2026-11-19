@@ -68,6 +68,7 @@ export {
   Package,
   PanelLeft,
   Paperclip,
+  Pencil,
   Percent,
   Plus,
   RefreshCw,

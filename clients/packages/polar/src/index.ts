@@ -34,8 +34,13 @@ export type {
   MeterDefinition,
   MeterFilter,
 } from './schema/meter'
+export { ExternalId } from './schema/external-id'
 export { flag, credits } from './schema/benefit'
 export type { BenefitConfig, BenefitDefinition } from './schema/benefit'
+export type {
+  CustomFieldConfig,
+  CustomFieldDefinition,
+} from './schema/customField'
 export {
   aud,
   brl,

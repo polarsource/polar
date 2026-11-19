@@ -6,7 +6,6 @@ import type {
   Subscription,
   SubscriptionCreateCustomer,
   SubscriptionCreateExternalCustomer,
-  SubscriptionExportColumn,
   SubscriptionSortProperty,
   SubscriptionStatus,
   SubscriptionUpdate,
@@ -17,6 +16,7 @@ import {
   HTTPValidationError,
   ResourceNotFound,
   SubscriptionLocked,
+  SubscriptionsCreate409Error,
   SubscriptionsUpdate402Error,
   SubscriptionsUpdate403Error,
   SubscriptionsUpdate409Error,
@@ -157,8 +157,9 @@ export const createSubscriptions = (client: ClientBase) => {
   /**
    * Create a subscription programmatically.
    *
-   * This endpoint only allows to create subscription on free products.
-   * For paid products, use the checkout flow.
+   * Supports free products and paid products with a trial that does not require
+   * upfront payment setup. Paid subscriptions start with the product's configured
+   * trial period. For other paid products, use the checkout flow.
    *
    * No initial order will be created and no confirmation email will be sent.
    *
@@ -170,6 +171,7 @@ export const createSubscriptions = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {SubscriptionsCreate409Error} Conflict
    * @throws {HTTPValidationError} Validation Error
    */
   return async (
@@ -187,59 +189,7 @@ export const createSubscriptions = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request, requestOptions);
     return client.parseResponse<Subscription>(response, "json", {
-      422: HTTPValidationError,
-    });
-  };
-};
-export const exportSubscriptions = (client: ClientBase) => {
-  /**
-   * Export subscriptions as a CSV file.
-   *
-   * **Scopes**: `subscriptions:read` `subscriptions:write`
-   *
-   * @param query - Query parameters
-   * @param requestOptions - Request options
-   * @returns {string}
-   * @throws {PolarNetworkError} When a network error occurs
-   * @throws {PolarRateLimitError} When the rate limit is exceeded
-   * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {HTTPValidationError} Validation Error
-   */
-  return async (
-    query?: {
-      organization_id?: string | string[] | null;
-      product_id?: string | string[] | null;
-      external_product_id?: string | string[] | null;
-      status?: SubscriptionStatus | SubscriptionStatus[] | null;
-      cancel_at_period_end?: boolean | null;
-      started_after?: string | null;
-      started_before?: string | null;
-      timezone?: string;
-      columns?: SubscriptionExportColumn | SubscriptionExportColumn[] | null;
-    },
-    requestOptions?: RequestOptions,
-  ): Promise<string> => {
-    const pathParams = {};
-    const queryParams = {
-      organization_id: query?.organization_id,
-      product_id: query?.product_id,
-      external_product_id: query?.external_product_id,
-      status: query?.status,
-      cancel_at_period_end: query?.cancel_at_period_end,
-      started_after: query?.started_after,
-      started_before: query?.started_before,
-      timezone: query?.timezone ?? "UTC",
-      columns: query?.columns,
-    };
-    const request = client.buildRequest(
-      "GET",
-      "/v1/subscriptions/export",
-      pathParams,
-      queryParams,
-      undefined,
-    );
-    const response = await client.sendRequest(request, requestOptions);
-    return client.parseResponse<string>(response, "text", {
+      409: SubscriptionsCreate409Error,
       422: HTTPValidationError,
     });
   };
@@ -366,7 +316,6 @@ export function createSubscriptionsService(client: ClientBase) {
   return {
     list: listSubscriptions(client),
     create: createSubscriptions(client),
-    export: exportSubscriptions(client),
     get: getSubscriptions(client),
     revoke: revokeSubscriptions(client),
     update: updateSubscriptions(client),

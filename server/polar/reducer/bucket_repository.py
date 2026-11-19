@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import (
     BigInteger,
     ColumnElement,
+    ColumnExpressionArgument,
     Numeric,
     Row,
     ScalarSelect,
@@ -16,6 +17,7 @@ from sqlalchemy import (
     and_,
     cast,
     column,
+    false,
     func,
     literal,
     literal_column,
@@ -23,6 +25,7 @@ from sqlalchemy import (
     or_,
     select,
     true,
+    union,
     union_all,
     update,
     values,
@@ -51,6 +54,9 @@ INGESTED_BEFORE_TIMESTAMP_MARGIN = timedelta(seconds=5)
 
 # count, sum, min and max.
 type Totals = tuple[Any, Any, Any, Any]
+type CustomerIdentity = tuple[UUID | None, str | None]
+# A customer identity's buckets on one reducer.
+type ReducerIdentity = tuple[UUID, CustomerIdentity]
 
 
 def _is_customer(
@@ -72,6 +78,32 @@ def _is_any_customer(
             _is_customer(ReducerBucket, customer_id, external_customer_id)
             for customer_id, external_customer_id in identities
         )
+    )
+
+
+def _event_clauses(
+    model: type[Event | StagedEvent],
+    reducer: Reducer,
+    bucket_start: datetime,
+    bucket_end: datetime,
+) -> tuple[ColumnExpressionArgument[bool], ...]:
+    """The reducer's events in the range: system events for a credit reducer, user
+    events otherwise."""
+    return (
+        model.organization_id == reducer.organization_id,
+        model.source
+        == (
+            EventSource.system
+            if reducer.kind == ReducerKind.credit
+            else EventSource.user
+        ),
+        model.timestamp >= bucket_start,
+        model.timestamp < bucket_end,
+        # Events are never ingested before their timestamp, beyond clock skew:
+        # this bound lets the identity indexes skip the customer's history.
+        model.ingested_at >= bucket_start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
+        reducer.filter.get_sql_clause(model),
+        reducer.aggregation.get_sql_clause(model),
     )
 
 
@@ -155,6 +187,25 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         result = await self.session.execute(statement)
         return result.one()
 
+    async def get_identities_with_events(
+        self, reducer: Reducer, bucket_start: datetime, bucket_end: datetime
+    ) -> Sequence[tuple[UUID | None, str | None]]:
+        """The customer identities with events for the reducer in the range, like
+        `aggregate_events` counts them, including those still in `staged_events`."""
+        statement = union(
+            *(
+                select(model.customer_id, model.external_customer_id).where(
+                    *_event_clauses(model, reducer, bucket_start, bucket_end)
+                )
+                for model in (Event, StagedEvent)
+            )
+        )
+        result = await self.session.execute(statement)
+        return [
+            (customer_id, external_customer_id)
+            for customer_id, external_customer_id in result.all()
+        ]
+
     def _aggregate_statement(
         self,
         model: type[Event | StagedEvent],
@@ -191,21 +242,8 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             statistics[1].label("min"),
             statistics[2].label("max"),
         ).where(
-            model.organization_id == reducer.organization_id,
-            model.source
-            == (
-                EventSource.system
-                if reducer.kind == ReducerKind.credit
-                else EventSource.user
-            ),
-            model.timestamp >= bucket_start,
-            model.timestamp < bucket_end,
-            # Events are never ingested before their timestamp, beyond clock skew:
-            # this bound lets the identity indexes skip the customer's history.
-            model.ingested_at >= bucket_start - INGESTED_BEFORE_TIMESTAMP_MARGIN,
+            *_event_clauses(model, reducer, bucket_start, bucket_end),
             _is_customer(model, customer_id, external_customer_id),
-            reducer.filter.get_sql_clause(model),
-            aggregation.get_sql_clause(model),
             or_(sealed_at.is_(None), model.ingested_at > sealed_at),
         )
 
@@ -260,15 +298,23 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     async def get_unsealed_totals_by_identity(
         self,
         organization_id: UUID,
-        reducer_id: UUID,
-        before: Mapping[tuple[UUID | None, str | None], datetime | None],
-    ) -> dict[tuple[UUID | None, str | None], Totals]:
-        """count, sum, min and max of each identity's unsealed buckets, starting
-        before the identity's datetime if given."""
+        before: Mapping[ReducerIdentity, datetime | None],
+    ) -> dict[ReducerIdentity, Totals]:
+        """count, sum, min and max of each identity's unsealed buckets on its
+        reducer, starting before the identity's datetime if given."""
         if not before:
             return {}
+        # Pairs that share an identity and a bound share one condition: a cold
+        # customer's reducers mostly do, so the conditions do not grow with them.
+        reducers_by_bound: dict[
+            tuple[CustomerIdentity, datetime | None], set[UUID]
+        ] = {}
+        for (reducer_id, identity), end in before.items():
+            reducers_by_bound.setdefault((identity, end), set()).add(reducer_id)
+        all_reducers = {reducer_id for reducer_id, _ in before}
         statement = (
             select(
+                ReducerBucket.reducer_id,
                 ReducerBucket.customer_id,
                 ReducerBucket.external_customer_id,
                 func.coalesce(func.sum(ReducerBucket.count), 0),
@@ -278,11 +324,19 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             )
             .where(
                 ReducerBucket.organization_id == organization_id,
-                ReducerBucket.reducer_id == reducer_id,
+                # A request on a single reducer filters it here, once: repeated in
+                # each customer's condition below, it slows requests for many
+                # customers.
+                ReducerBucket.reducer_id.in_(all_reducers)
+                if len(all_reducers) == 1
+                else true(),
                 ReducerBucket.sealed_at.is_(None),
                 or_(
                     *(
                         and_(
+                            ReducerBucket.reducer_id.in_(reducer_ids)
+                            if len(all_reducers) > 1
+                            else true(),
                             _is_customer(
                                 ReducerBucket, customer_id, external_customer_id
                             ),
@@ -290,16 +344,36 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
                             if end is not None
                             else true(),
                         )
-                        for (customer_id, external_customer_id), end in before.items()
+                        for (
+                            (customer_id, external_customer_id),
+                            end,
+                        ), reducer_ids in reducers_by_bound.items()
                     )
                 ),
             )
-            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
+            .group_by(
+                ReducerBucket.reducer_id,
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+            )
         )
         result = await self.session.execute(statement)
         totals = {
-            (customer_id, external_customer_id): (count, total, minimum, maximum)
-            for customer_id, external_customer_id, count, total, minimum, maximum in result
+            (reducer_id, (customer_id, external_customer_id)): (
+                count,
+                total,
+                minimum,
+                maximum,
+            )
+            for (
+                reducer_id,
+                customer_id,
+                external_customer_id,
+                count,
+                total,
+                minimum,
+                maximum,
+            ) in result
         }
         return {
             identity: totals.get(identity, (0, 0, None, None)) for identity in before
@@ -403,34 +477,44 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
     async def get_last_synced_ends(
         self,
         organization_id: UUID,
-        reducer_id: UUID,
-        identities: Sequence[tuple[UUID | None, str | None]],
+        identities: Sequence[ReducerIdentity],
         *,
         since: datetime,
-    ) -> dict[tuple[UUID | None, str | None], datetime]:
-        """End of each customer identity's latest bucket recomputed by sync, among
-        those starting from `since`. Identities without one are left out."""
+    ) -> dict[ReducerIdentity, datetime]:
+        """End of each customer identity's latest bucket recomputed by sync on its
+        reducer, among those starting from `since`. Identities without one are left
+        out."""
         if not identities:
             return {}
         statement = (
             select(
+                ReducerBucket.reducer_id,
                 ReducerBucket.customer_id,
                 ReducerBucket.external_customer_id,
                 func.max(ReducerBucket.bucket_end),
             )
             .where(
                 ReducerBucket.organization_id == organization_id,
-                ReducerBucket.reducer_id == reducer_id,
-                _is_any_customer(identities),
+                ReducerBucket.reducer_id.in_(
+                    {reducer_id for reducer_id, _ in identities}
+                ),
+                _is_any_customer(list({identity for _, identity in identities})),
                 ReducerBucket.bucket_start >= since,
                 ReducerBucket.synced_at.is_not(None),
             )
-            .group_by(ReducerBucket.customer_id, ReducerBucket.external_customer_id)
+            .group_by(
+                ReducerBucket.reducer_id,
+                ReducerBucket.customer_id,
+                ReducerBucket.external_customer_id,
+            )
         )
         result = await self.session.execute(statement)
+        requested = set(identities)
         return {
-            (customer_id, external_customer_id): synced_end
-            for customer_id, external_customer_id, synced_end in result
+            key: synced_end
+            for reducer_id, customer_id, external_customer_id, synced_end in result
+            for key in ((reducer_id, (customer_id, external_customer_id)),)
+            if key in requested
         }
 
     async def get_synced_end_within(
@@ -531,6 +615,67 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return len(result.all())
 
+    async def get_unbilled_totals(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        since: datetime | None,
+        until: datetime,
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
+        """id, count, sum, min and max of the identities' sealed, unbilled buckets
+        within [since, until): those `mark_as_billed` marks."""
+        result = await self.session.execute(
+            select(
+                ReducerBucket.id,
+                ReducerBucket.count,
+                ReducerBucket.sum,
+                ReducerBucket.min,
+                ReducerBucket.max,
+            ).where(*self._get_unbilled_clauses(reducer, identities, since, until))
+        )
+        return result.tuples().all()
+
+    async def get_pending_totals(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        start: datetime,
+        end: datetime,
+    ) -> Totals:
+        """count, sum, min and max of the identities' buckets not billed yet,
+        sealed or not, starting within [start, end)."""
+        result = await self.session.execute(
+            select(
+                func.coalesce(func.sum(ReducerBucket.count), 0),
+                func.coalesce(func.sum(ReducerBucket.sum), 0),
+                func.min(ReducerBucket.min),
+                func.max(ReducerBucket.max),
+            ).where(
+                ReducerBucket.organization_id == reducer.organization_id,
+                ReducerBucket.reducer_id == reducer.id,
+                _is_any_customer(identities),
+                ReducerBucket.billed_at.is_(None),
+                ReducerBucket.bucket_start >= start,
+                ReducerBucket.bucket_start < end,
+            )
+        )
+        return result.tuples().one()
+
+    async def mark_ids_as_billed(
+        self, bucket_ids: Sequence[UUID], order_id: UUID, *, billed_at: datetime
+    ) -> int:
+        """Marks the buckets not billed yet as billed by the order, and returns
+        how many it marked."""
+        result = await self.session.execute(
+            update(ReducerBucket)
+            .where(ReducerBucket.id.in_(bucket_ids), ReducerBucket.billed_at.is_(None))
+            .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
+            .returning(ReducerBucket.id)
+        )
+        return len(result.all())
+
     async def mark_as_billed(
         self,
         reducer: Reducer,
@@ -540,22 +685,12 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         since: datetime | None,
         until: datetime,
         billed_at: datetime,
-    ) -> Sequence[tuple[int, Decimal, Decimal | None, Decimal | None]]:
-        """Marks the identities' sealed, unbilled buckets within [since, until] as
-        billed by the order, and returns their count, sum, min and max."""
-        clauses = [ReducerBucket.bucket_end <= until]
-        if since is not None:
-            clauses.append(ReducerBucket.bucket_start >= since)
+    ) -> Sequence[tuple[UUID, int, Decimal, Decimal | None, Decimal | None]]:
+        """Marks the identities' sealed, unbilled buckets within [since, until) as
+        billed by the order, and returns their id, count, sum, min and max."""
         unbilled_ids = (
             select(ReducerBucket.id)
-            .where(
-                ReducerBucket.organization_id == reducer.organization_id,
-                ReducerBucket.reducer_id == reducer.id,
-                _is_any_customer(identities),
-                ReducerBucket.sealed_at.is_not(None),
-                ReducerBucket.billed_at.is_(None),
-                *clauses,
-            )
+            .where(*self._get_unbilled_clauses(reducer, identities, since, until))
             .order_by(ReducerBucket.bucket_start)
             .with_for_update()
         )
@@ -564,6 +699,7 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
             .where(ReducerBucket.id.in_(unbilled_ids))
             .values(billed_at=billed_at, order_id=order_id, modified_at=billed_at)
             .returning(
+                ReducerBucket.id,
                 ReducerBucket.count,
                 ReducerBucket.sum,
                 ReducerBucket.min,
@@ -572,34 +708,66 @@ class ReducerBucketRepository(RepositoryBase[ReducerBucket]):
         )
         return result.tuples().all()
 
+    def _get_unbilled_clauses(
+        self,
+        reducer: Reducer,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        since: datetime | None,
+        until: datetime,
+    ) -> list[ColumnElement[bool]]:
+        clauses = [
+            ReducerBucket.organization_id == reducer.organization_id,
+            ReducerBucket.reducer_id == reducer.id,
+            _is_any_customer(identities),
+            ReducerBucket.sealed_at.is_not(None),
+            ReducerBucket.billed_at.is_(None),
+            ReducerBucket.bucket_end <= until,
+        ]
+        if since is not None:
+            clauses.append(ReducerBucket.bucket_start >= since)
+        return clauses
+
     def get_event_billed_by_other_order_clause(
-        self, reducer: Reducer, order_id: UUID
+        self,
+        reducer: Reducer,
+        order_id: UUID,
+        identities: Sequence[tuple[UUID | None, str | None]],
+        *,
+        bucket_size: timedelta,
     ) -> ColumnElement[bool]:
-        """Whether the reducer billed the event in an order other than `order_id`:
-        the first generation still open at its ingestion holds it."""
-        return (
-            select(
+        """Whether the reducer billed the event, of one of `identities`, in an order
+        other than `order_id`: the first generation still open at its ingestion
+        holds it."""
+        # One subquery per identity, bounded by the bucket size: Postgres won't
+        # serve a correlated identity or an open-ended start from the identity index.
+        return or_(
+            false(),
+            *(
                 and_(
-                    ReducerBucket.billed_at.is_not(None),
-                    ReducerBucket.order_id.is_distinct_from(order_id),
+                    _is_customer(Event, customer_id, external_customer_id),
+                    select(
+                        and_(
+                            ReducerBucket.billed_at.is_not(None),
+                            ReducerBucket.order_id.is_distinct_from(order_id),
+                        )
+                    )
+                    .where(
+                        ReducerBucket.organization_id == reducer.organization_id,
+                        ReducerBucket.reducer_id == reducer.id,
+                        _is_customer(ReducerBucket, customer_id, external_customer_id),
+                        ReducerBucket.bucket_start <= Event.timestamp,
+                        ReducerBucket.bucket_start > Event.timestamp - bucket_size,
+                        ReducerBucket.bucket_end > Event.timestamp,
+                        or_(
+                            ReducerBucket.sealed_at.is_(None),
+                            ReducerBucket.sealed_at >= Event.ingested_at,
+                        ),
+                    )
+                    .order_by(ReducerBucket.generation)
+                    .limit(1)
+                    .scalar_subquery()
+                    .is_(True),
                 )
-            )
-            .where(
-                ReducerBucket.organization_id == reducer.organization_id,
-                ReducerBucket.reducer_id == reducer.id,
-                ReducerBucket.customer_id.is_not_distinct_from(Event.customer_id),
-                ReducerBucket.external_customer_id.is_not_distinct_from(
-                    Event.external_customer_id
-                ),
-                ReducerBucket.bucket_start <= Event.timestamp,
-                ReducerBucket.bucket_end > Event.timestamp,
-                or_(
-                    ReducerBucket.sealed_at.is_(None),
-                    ReducerBucket.sealed_at >= Event.ingested_at,
-                ),
-            )
-            .order_by(ReducerBucket.generation)
-            .limit(1)
-            .scalar_subquery()
-            .is_(True)
+                for customer_id, external_customer_id in identities
+            ),
         )

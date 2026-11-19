@@ -4,6 +4,7 @@ import traceback
 from collections.abc import Callable
 
 import asyncpg.exceptions
+import psycopg.errors
 import sentry_sdk
 import structlog
 from sqlalchemy.exc import DBAPIError
@@ -35,13 +36,16 @@ def _sql_timeout_error_matcher(exc: BaseException) -> bool:
 
 
 def _sql_lock_not_available_error_matcher(exc: BaseException) -> bool:
-    """Match asyncpg.exceptions.LockNotAvailableError wrapped in a SQLAlchemy DBAPIError."""
+    """Match a driver's lock_not_available error wrapped in a SQLAlchemy DBAPIError."""
     if not isinstance(exc, DBAPIError):
         return False
 
     cause = exc.__cause__
     while cause is not None:
-        if isinstance(cause, asyncpg.exceptions.LockNotAvailableError):
+        if isinstance(
+            cause,
+            (asyncpg.exceptions.LockNotAvailableError, psycopg.errors.LockNotAvailable),
+        ):
             return True
         cause = cause.__cause__
 
@@ -53,7 +57,10 @@ def _sql_deadlock_error_matcher(exc: BaseException) -> bool:
         return False
     cause = exc.__cause__
     while cause is not None:
-        if isinstance(cause, asyncpg.exceptions.DeadlockDetectedError):
+        if isinstance(
+            cause,
+            (asyncpg.exceptions.DeadlockDetectedError, psycopg.errors.DeadlockDetected),
+        ):
             return True
         cause = cause.__cause__
     return False

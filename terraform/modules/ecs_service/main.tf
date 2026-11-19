@@ -20,8 +20,9 @@ locals {
   cpu    = var.profile != null ? local.profiles[var.profile].cpu : var.cpu
   memory = var.profile != null ? local.profiles[var.profile].memory : var.memory
 
+  # A secret may reference one JSON key ("<arn>:<key>::"); IAM matches the bare secret ARN.
   secret_arns = concat(
-    values(var.secrets),
+    [for arn in values(var.secrets) : regex("^arn:[^:]+:secretsmanager:[^:]+:[^:]+:secret:[^:]+", arn)],
     var.logfire == null ? [] : [aws_secretsmanager_secret.logfire_header[0].arn],
   )
 
@@ -224,9 +225,25 @@ resource "aws_ecs_service" "this" {
   enable_execute_command = var.enable_execute_command
   tags                   = var.tags
 
+  deployment_circuit_breaker {
+    enable   = true
+    rollback = true
+  }
+
   network_configuration {
     subnets         = var.subnet_ids
     security_groups = var.security_group_ids
+  }
+
+  health_check_grace_period_seconds = var.lb_target_group == null ? null : var.lb_target_group.health_check_grace_period_seconds
+
+  dynamic "load_balancer" {
+    for_each = var.lb_target_group == null ? [] : [var.lb_target_group.arn]
+    content {
+      target_group_arn = load_balancer.value
+      container_name   = local.full_name
+      container_port   = var.container_port
+    }
   }
 
   dynamic "service_registries" {

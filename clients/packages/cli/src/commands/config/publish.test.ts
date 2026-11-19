@@ -63,12 +63,14 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
+          generate: () => Effect.die('unused'),
           load: () =>
             entries === null
               ? Effect.fail(new BillingConfigError({ message: NO_CONFIG_FILE }))
               : Effect.succeed(config),
           plan: planned,
           apply: () => Effect.die('unused'),
+          deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.succeed(catalogs),
           publish: published,
@@ -123,10 +125,27 @@ describe('polar config publish', () => {
       { section: 'benefits', id: 'support', action: 'unchanged', diff: [] },
     ])
     expect(published).toEqual(['cat-draft'])
-    expect(output).toContain('polar.json has 1 change not in the draft')
+    expect(output).toContain('polar.json has 2 changes not in the draft')
     expect(output).toContain('Not in the draft polar.json')
     expect(output).toMatch(/~ pro/)
-    expect(output).not.toContain('tokens')
+    expect(output).toMatch(/~ tokens/)
+    expect(output).not.toContain('support')
+  })
+
+  test('shows settings changes that the draft is missing', async () => {
+    const { output } = await run(withDraft, ['--confirm'], {}, [
+      {
+        section: 'settings',
+        id: 'payments',
+        action: 'updated',
+        diff: [{ field: 'currency', before: 'usd', after: 'eur' }],
+      },
+      { section: 'webhooks', id: 'orders', action: 'updated', diff: [] },
+    ])
+    expect(output).toContain('polar.json has 1 change not in the draft')
+    expect(output).toContain('Not in the draft polar.json')
+    expect(output).toMatch(/currency/)
+    expect(output).not.toContain('orders')
   })
 
   test('warns in the confirmation when the draft is missing changes', async () => {

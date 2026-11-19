@@ -43,7 +43,7 @@ const Card = ({
   children: ReactNode
   rowGap?: 'xs' | 'm' | 'l'
 }) => (
-  <div className="dark:bg-polar-950 dark:border-polar-800 flex w-full max-w-[20rem] flex-col rounded-2xl border border-gray-200 bg-gray-100 p-1 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.75)]">
+  <div className="dark:bg-polar-950 flex w-full max-w-[20rem] flex-col rounded-2xl bg-gray-100 p-1">
     <Box
       alignItems="center"
       justifyContent="between"
@@ -124,7 +124,7 @@ export const MeterVignette = () => {
           <Text variant="caption" color="muted">
             Acme Inc · this cycle
           </Text>
-          <Text variant="heading-xxs" tabularNums>
+          <Text variant="heading-xxs" as="p" tabularNums>
             {tokens.toFixed(1)}M
             <Text as="span" variant="heading-xxs" color="muted">
               {' '}
@@ -238,7 +238,7 @@ export const PayoutVignette = () => {
       >
         <Box justifyContent="between" alignItems="baseline" columnGap="l">
           <Text variant="body">Acme Inc</Text>
-          <Text variant="heading-xxs" tabularNums>
+          <Text variant="heading-xxs" as="p" tabularNums>
             {PAYOUTS[Math.floor(step / 2)]}
           </Text>
         </Box>

@@ -117,6 +117,15 @@ variable "service_registry" {
   default = null
 }
 
+variable "lb_target_group" {
+  description = "Load balancer target group to register container_port in, if any. Wrapped in an object so the null-check stays decidable when the ARN is computed."
+  type = object({
+    arn                               = string
+    health_check_grace_period_seconds = optional(number, 60)
+  })
+  default = null
+}
+
 variable "repository_credentials" {
   description = "Secrets Manager secret with credentials for a private image registry, if any. Wrapped in an object so the null-check stays decidable when the ARN is computed."
   type = object({

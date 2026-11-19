@@ -1,5 +1,5 @@
 import { Argument, Flag } from 'effect/cli'
-import { DEFAULT_CONFIG_FILES } from '@/utils/billing-config/languages'
+import { DEFAULT_CONFIG_FILES } from '@/schemas/BillingConfig'
 
 export const sandbox = Flag.Boolean('sandbox').pipe(
   Flag.withDefault(false),

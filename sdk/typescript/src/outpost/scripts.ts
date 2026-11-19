@@ -3,6 +3,93 @@ redis.call('EXPIRE', KEYS[1], 86400)
 return redis.call('HGETALL', KEYS[1])
 `;
 
+export const READ_STATES_SCRIPT = `
+-- A customer's read in one command: for each reducer, KEYS holds its state and its missing marker,
+-- and the last key is the pull. ARGV names, per reducer, the statistics the reader adds up,
+-- comma-separated, or none for its readiness alone. A state keeps cold_until, reset and those
+-- statistics of the groups the read counts: the cold totals, the pending part of cold buckets,
+-- the hot buckets. Values go back as stored; the reader adds them up.
+local reads = {}
+for i = 1, #ARGV do
+    local state = KEYS[2 * i - 1]
+    redis.call('EXPIRE', state, 86400)
+    local fields = redis.call('HGETALL', state)
+    local wanted = {}
+    for statistic in string.gmatch(ARGV[i], '[^,]+') do
+        wanted[statistic] = true
+    end
+    local cold_until
+    for j = 1, #fields, 2 do
+        if fields[j] == 'cold_until' then
+            cold_until = tonumber(fields[j + 1])
+        end
+    end
+    local kept = {}
+    for j = 1, #fields, 2 do
+        local field = fields[j]
+        local keep = field == 'cold_until' or field == 'reset'
+        local group, statistic = string.match(field, '^(.+):(%a+)$')
+        if not keep and group and wanted[statistic] then
+            if group == 'cold' then
+                keep = true
+            else
+                local kind, start = string.match(group, '^(%a+):(%-?%d+)$')
+                start = tonumber(start)
+                if kind == 'bucket' then
+                    keep = cold_until == nil or start >= cold_until
+                elseif kind == 'pending' then
+                    keep = cold_until ~= nil and start < cold_until
+                end
+            end
+        end
+        if keep then
+            kept[#kept + 1] = field
+            kept[#kept + 1] = fields[j + 1]
+        end
+    end
+    reads[i] = {redis.call('HGET', KEYS[2 * i], 'retry_at'), kept}
+end
+reads[#ARGV + 1] = redis.call('HGET', KEYS[#KEYS], 'reset')
+return reads
+`;
+
+export const PREPARE_SNAPSHOT_SCRIPT = `
+-- What a snapshot needs before it applies, in one command. KEYS are the state and the missing
+-- marker; ARGV[1] is '1' for a pulled snapshot, ARGV[2] its cold_until. A pulled snapshot of a
+-- state Redis does not hold goes no further: false. Otherwise the customer is known again, and
+-- the reply is the start of each bucket the snapshot seals that still holds pending events.
+if ARGV[1] == '1' and redis.call('EXISTS', KEYS[1]) == 0 then
+    return false
+end
+redis.call('DEL', KEYS[2])
+local cold_until = tonumber(ARGV[2])
+local sealed = {}
+local fields = redis.call('HGETALL', KEYS[1])
+for i = 1, #fields, 2 do
+    local start = string.match(fields[i], '^pending:(%-?%d+):count$')
+    if start and tonumber(start) < cold_until and tonumber(fields[i + 1]) > 0 then
+        sealed[#sealed + 1] = start
+    end
+end
+return sealed
+`;
+
+export const PUSH_TELEMETRY_SCRIPT = `
+-- An instance's exports in one command. KEYS are the spans and the metrics lists; ARGV[1] is how
+-- many exports each list keeps, the newest; ARGV[2] how many of the values after it are spans,
+-- the rest being metrics.
+local spans = tonumber(ARGV[2])
+local ranges = {{3, 2 + spans}, {3 + spans, #ARGV}}
+for i, key in ipairs(KEYS) do
+    local first, last = ranges[i][1], ranges[i][2]
+    if last >= first then
+        redis.call('RPUSH', key, unpack(ARGV, first, last))
+        redis.call('LTRIM', key, -tonumber(ARGV[1]), -1)
+    end
+end
+return 1
+`;
+
 export const WRITE_BUCKET_SCRIPT = `
 local bucket = 'bucket:' .. ARGV[1] .. ':'
 local pending = 'pending:' .. ARGV[1] .. ':'

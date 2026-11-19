@@ -1,4 +1,5 @@
 from contextlib import AsyncExitStack
+from datetime import timedelta
 from uuid import UUID
 
 import dramatiq
@@ -11,6 +12,7 @@ from starlette.types import ASGIApp, Receive, Send
 from starlette.types import Scope as ASGIScope
 
 from polar.authz.service import get_accessible_organization
+from polar.config import settings
 from polar.customer_session.service import (
     CUSTOMER_SESSION_TOKEN_PREFIX,
 )
@@ -50,6 +52,7 @@ from polar.personal_access_token.service import (
     personal_access_token as personal_access_token_service,
 )
 from polar.postgres import AsyncSession
+from polar.redis import Redis
 from polar.sentry import set_sentry_user
 from polar.worker import JobQueueManager, enqueue_job
 
@@ -68,6 +71,19 @@ from .scope import Scope
 from .service import auth as auth_service
 
 log: Logger = structlog.get_logger(__name__)
+
+RECORD_USAGE_INTERVAL = timedelta(minutes=1)
+
+
+async def _should_record_usage(
+    connection: HTTPConnection, actor: str, token_id: UUID
+) -> bool:
+    if not settings.is_test():
+        return True
+    redis: Redis = connection.state.redis
+    return bool(
+        await redis.set(f"{actor}:{token_id}", 1, nx=True, ex=RECORD_USAGE_INTERVAL)
+    )
 
 
 async def get_user_session(
@@ -91,11 +107,13 @@ async def get_oauth2_token(session: AsyncSession, value: str) -> OAuth2Token | N
 
 
 async def get_personal_access_token(
-    session: AsyncSession, value: str
+    connection: HTTPConnection, session: AsyncSession, value: str
 ) -> PersonalAccessToken | None:
     token = await personal_access_token_service.get_by_token(session, value)
 
-    if token is not None:
+    if token is not None and await _should_record_usage(
+        connection, "personal_access_token.record_usage", token.id
+    ):
         enqueue_job(
             "personal_access_token.record_usage",
             personal_access_token_id=token.id,
@@ -106,11 +124,13 @@ async def get_personal_access_token(
 
 
 async def get_organization_access_token(
-    session: AsyncSession, value: str
+    connection: HTTPConnection, session: AsyncSession, value: str
 ) -> OrganizationAccessToken | None:
     token = await organization_access_token_service.get_by_token(session, value)
 
-    if token is not None:
+    if token is not None and await _should_record_usage(
+        connection, "organization_access_token.record_usage", token.id
+    ):
         enqueue_job(
             "organization_access_token.record_usage",
             organization_access_token_id=token.id,
@@ -163,7 +183,9 @@ async def get_auth_subject(
         )
 
     if token is not None and token.startswith(ORGANIZATION_ACCESS_TOKEN_PREFIX):
-        organization_access_token = await get_organization_access_token(session, token)
+        organization_access_token = await get_organization_access_token(
+            connection, session, token
+        )
         if organization_access_token is None:
             raise InvalidTokenError()
         subject = organization_access_token.organization
@@ -180,7 +202,9 @@ async def get_auth_subject(
         organization_ids = oauth2_token.organization_ids
 
     elif token is not None and token.startswith(PERSONAL_ACCESS_TOKEN_PREFIX):
-        personal_access_token = await get_personal_access_token(session, token)
+        personal_access_token = await get_personal_access_token(
+            connection, session, token
+        )
         if personal_access_token is None:
             raise InvalidTokenError()
         subject = personal_access_token.user

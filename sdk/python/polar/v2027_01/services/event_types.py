@@ -60,7 +60,7 @@ class EventTypesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -129,7 +129,7 @@ class EventTypesSync(SyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -177,7 +177,7 @@ class EventTypesSync(SyncServiceBase):
 
         Args:
             id: The event type ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -241,7 +241,7 @@ class EventTypesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -310,7 +310,7 @@ class EventTypesAsync(AsyncServiceBase):
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -359,7 +359,7 @@ class EventTypesAsync(AsyncServiceBase):
 
         Args:
             id: The event type ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

@@ -116,6 +116,16 @@ const isFramed = (request: NextRequest): boolean => {
   return destination === null || FRAMING_DESTINATIONS.includes(destination)
 }
 
+// In dev, `nextUrl.origin` reports `localhost` even when the page was
+// requested on `127.0.0.1`, so also compare against the Host header.
+const isOwnOrigin = (request: NextRequest, origin: string): boolean => {
+  const host = request.headers.get('host')
+  return (
+    origin === request.nextUrl.origin ||
+    (!!host && origin === `${request.nextUrl.protocol}//${host}`)
+  )
+}
+
 interface EmbedPolicy {
   frame_ancestors: string[]
   embed_origin?: string | null
@@ -169,7 +179,7 @@ const getPaymentMethodEmbedPolicy = async (
   }
 
   const embedOrigin = searchParams.get('embed_origin')
-  if (embedOrigin === request.nextUrl.origin) {
+  if (embedOrigin && isOwnOrigin(request, embedOrigin)) {
     return {
       frame_ancestors: isFramed(request) ? ["'self'"] : NO_FRAME_ANCESTORS,
       embed_origin: embedOrigin,

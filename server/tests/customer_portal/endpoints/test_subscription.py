@@ -2,7 +2,7 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import PresentmentCurrency

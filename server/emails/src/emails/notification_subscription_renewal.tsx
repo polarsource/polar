@@ -1,4 +1,5 @@
 import { Footer, Intro, Text, WrapperPolar } from '../components/foundation'
+import CustomerIdentity from '../components/CustomerIdentity'
 import type { schemas } from '../types'
 
 export function NotificationSubscriptionRenewal({
@@ -10,19 +11,9 @@ export function NotificationSubscriptionRenewal({
 }: schemas['MaintainerSubscriptionRenewalNotificationPayload']) {
   const displayName = customer_name || customer_email || 'A customer'
 
-  const formattedName =
-    customer_name && customer_email ? (
-      <>
-        <Text as="span" weight="bold">
-          {customer_name}
-        </Text>{' '}
-        ({customer_email})
-      </>
-    ) : (
-      <Text as="span" weight="bold">
-        {displayName}
-      </Text>
-    )
+  const formattedName = (
+    <CustomerIdentity name={displayName} email={customer_email} />
+  )
 
   return (
     <WrapperPolar preview={`${displayName} renewed ${product_name}`}>

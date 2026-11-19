@@ -2,7 +2,7 @@ from typing import Any, cast
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
@@ -869,7 +869,7 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
-            conversations_create=AsyncMock(side_effect=httpx.ConnectError("boom")),
+            conversations_create=AsyncMock(side_effect=httpx2.ConnectError("boom")),
         )
         strategy = _strategy(session, redis, client)
 
@@ -1739,7 +1739,7 @@ class TestSlackSharedChannelGrant:
         client = _mock_client(
             mocker,
             conversations_invite_shared=AsyncMock(
-                side_effect=httpx.ConnectError("boom")
+                side_effect=httpx2.ConnectError("boom")
             ),
         )
         strategy = _strategy(session, redis, client)
@@ -2037,7 +2037,7 @@ class TestSlackSharedChannelRevoke:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
-            conversations_archive=AsyncMock(side_effect=httpx.ConnectError("boom")),
+            conversations_archive=AsyncMock(side_effect=httpx2.ConnectError("boom")),
         )
         strategy = _strategy(session, redis, client)
 

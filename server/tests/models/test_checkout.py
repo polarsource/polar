@@ -1,10 +1,11 @@
+import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
 
-from polar.config import settings
+from polar.config import Environment, settings
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
 from polar.kit.trial import TrialInterval
@@ -80,6 +81,192 @@ async def test_billing_address_fields(
         checkout.billing_address_fields["country"] == BillingAddressFieldMode.required
     )
     assert checkout.billing_address_fields["state"] == expected_state_mode
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("country", "expected_fields"),
+    [
+        (
+            "FR",
+            {
+                "state": BillingAddressFieldMode.disabled,
+                "line1": BillingAddressFieldMode.disabled,
+                "line2": BillingAddressFieldMode.disabled,
+                "city": BillingAddressFieldMode.disabled,
+                "postal_code": BillingAddressFieldMode.disabled,
+            },
+        ),
+        (
+            "US",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.required,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.required,
+                "postal_code": BillingAddressFieldMode.required,
+            },
+        ),
+        (
+            "CA",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.disabled,
+                "line2": BillingAddressFieldMode.disabled,
+                "city": BillingAddressFieldMode.disabled,
+                "postal_code": BillingAddressFieldMode.disabled,
+            },
+        ),
+        (
+            "ES",
+            {
+                "state": BillingAddressFieldMode.disabled,
+                "line1": BillingAddressFieldMode.disabled,
+                "line2": BillingAddressFieldMode.disabled,
+                "city": BillingAddressFieldMode.disabled,
+                "postal_code": BillingAddressFieldMode.required,
+            },
+        ),
+        (
+            "PT",
+            {
+                "state": BillingAddressFieldMode.disabled,
+                "line1": BillingAddressFieldMode.disabled,
+                "line2": BillingAddressFieldMode.disabled,
+                "city": BillingAddressFieldMode.disabled,
+                "postal_code": BillingAddressFieldMode.required,
+            },
+        ),
+        (
+            "BR",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.optional,
+                "line2": BillingAddressFieldMode.optional,
+                "city": BillingAddressFieldMode.required,
+                "postal_code": BillingAddressFieldMode.optional,
+            },
+        ),
+        (
+            "IN",
+            {
+                "state": BillingAddressFieldMode.required,
+                "line1": BillingAddressFieldMode.disabled,
+                "line2": BillingAddressFieldMode.disabled,
+                "city": BillingAddressFieldMode.disabled,
+                "postal_code": BillingAddressFieldMode.disabled,
+            },
+        ),
+    ],
+)
+async def test_billing_address_fields_country_requirements(
+    country: CountryAlpha2,
+    expected_fields: dict[str, BillingAddressFieldMode],
+    save_fixture: SaveFixture,
+    product_one_time: Product,
+) -> None:
+    checkout = await create_checkout(
+        save_fixture,
+        products=[product_one_time],
+        customer_billing_address=Address(country=country),
+    )
+
+    assert checkout.billing_address_fields == {
+        "country": BillingAddressFieldMode.required,
+        **expected_fields,
+    }
+
+
+CONTROL_CHECKOUT_ID = uuid.UUID(int=1)
+TREATMENT_CHECKOUT_ID = uuid.UUID(int=2)
+
+
+@pytest.mark.parametrize(
+    (
+        "environment",
+        "checkout_id",
+        "address",
+        "require_billing_address",
+        "variant",
+        "street_mode",
+    ),
+    [
+        pytest.param(
+            Environment.production,
+            TREATMENT_CHECKOUT_ID,
+            Address(country=CountryAlpha2("US")),
+            False,
+            "treatment",
+            BillingAddressFieldMode.disabled,
+            id="treatment",
+        ),
+        pytest.param(
+            Environment.production,
+            CONTROL_CHECKOUT_ID,
+            Address(country=CountryAlpha2("US")),
+            False,
+            "control",
+            BillingAddressFieldMode.required,
+            id="control",
+        ),
+        pytest.param(
+            Environment.production,
+            TREATMENT_CHECKOUT_ID,
+            Address(country=CountryAlpha2("US")),
+            True,
+            None,
+            BillingAddressFieldMode.required,
+            id="merchant requires billing address",
+        ),
+        pytest.param(
+            Environment.production,
+            TREATMENT_CHECKOUT_ID,
+            Address(country=CountryAlpha2("US"), line1="350 5th Ave"),
+            False,
+            None,
+            BillingAddressFieldMode.required,
+            id="prefilled street",
+        ),
+        pytest.param(
+            Environment.production,
+            TREATMENT_CHECKOUT_ID,
+            Address(country=CountryAlpha2("FR")),
+            False,
+            None,
+            BillingAddressFieldMode.disabled,
+            id="not US",
+        ),
+        pytest.param(
+            Environment.sandbox,
+            TREATMENT_CHECKOUT_ID,
+            Address(country=CountryAlpha2("US")),
+            False,
+            None,
+            BillingAddressFieldMode.required,
+            id="not production",
+        ),
+    ],
+)
+def test_us_short_billing_address_experiment(
+    environment: Environment,
+    checkout_id: uuid.UUID,
+    address: Address,
+    require_billing_address: bool,
+    variant: str | None,
+    street_mode: BillingAddressFieldMode,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "ENV", environment)
+    checkout = Checkout(
+        id=checkout_id,
+        customer_billing_address=address,
+        require_billing_address=require_billing_address,
+        is_business_customer=False,
+        payment_method_type=None,
+    )
+
+    assert checkout.us_short_billing_address_variant == variant
+    assert checkout.billing_address_fields["line1"] == street_mode
 
 
 @pytest.mark.anyio

@@ -5,6 +5,7 @@ import pytest
 
 from polar.models import Customer, Organization, Product, User, UserOrganization
 from polar.models.organization import OrganizationStatus
+from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
@@ -16,6 +17,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_payout_account,
+    create_subscription,
 )
 
 
@@ -154,6 +156,35 @@ class TestGetStatusCancellationExpired:
         )
         await create_active_subscription(
             save_fixture, product=product, customer=customer
+        )
+
+        repo = OrganizationRepository.from_session(session)
+        results = await repo.get_status_cancellation_expired(
+            datetime.now(UTC) - timedelta(days=7)
+        )
+
+        assert organization.id in {org.id for org in results}
+
+    async def test_returns_expired_org_with_only_paused_subscription(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await _set_status(
+            save_fixture,
+            organization,
+            OrganizationStatus.DENIED,
+            datetime.now(UTC) - timedelta(days=8),
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            started_at=datetime.now(UTC) - timedelta(days=30),
         )
 
         repo = OrganizationRepository.from_session(session)

@@ -36,6 +36,7 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ResourceUnavailable,
 )
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.pagination import PaginationParams
 from polar.kit.trial import TrialInterval
@@ -46,6 +47,7 @@ from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     Benefit,
     BillingEntry,
+    BillingInterval,
     Customer,
     Discount,
     Event,
@@ -54,12 +56,14 @@ from polar.models import (
     PaymentMethod,
     Product,
     ProductPrice,
+    ReducerBucket,
     Subscription,
     User,
     UserOrganization,
 )
 from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
+from polar.models.billing_interval import UsagePolicy
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
@@ -87,6 +91,9 @@ from polar.product.guard import (
     is_static_price,
 )
 from polar.product.price_set import PriceSet
+from polar.redis import Redis
+from polar.reducer.service import get_reducer_bucket_start
+from polar.reducer.service import reducer as reducer_service
 from polar.subscription.repository import SubscriptionUpdateRepository
 from polar.subscription.schemas import (
     SubscriptionCreateCustomer,
@@ -97,6 +104,7 @@ from polar.subscription.schemas import (
 )
 from polar.subscription.service import (
     AboveMaximumSeats,
+    AlreadyActiveSubscription,
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
     CannotPauseSubscription,
@@ -111,9 +119,12 @@ from polar.subscription.service import (
     SubscriptionMeterCycleLag,
     SubscriptionNotScheduledToCancel,
     SubscriptionUpdateContext,
+    TrialAlreadyRedeemed,
 )
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.update import generate_subscription_update
+from polar.trial_redemption.repository import TrialRedemptionRepository
+from polar.trial_redemption.service import trial_redemption as trial_redemption_service
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
@@ -324,6 +335,10 @@ class TestCreate:
         assert errors[0]["msg"] == "Product is not a recurring product."
 
     @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("trial_interval", "trial_interval_count", "trial_payment_setup_required"),
+        [(None, None, True), (None, None, False), (TrialInterval.day, 14, True)],
+    )
     async def test_product_not_free(
         self,
         save_fixture: SaveFixture,
@@ -332,7 +347,14 @@ class TestCreate:
         product: Product,
         customer: Customer,
         user_organization: UserOrganization,
+        trial_interval: TrialInterval | None,
+        trial_interval_count: int | None,
+        trial_payment_setup_required: bool,
     ) -> None:
+        product.trial_interval = trial_interval
+        product.trial_interval_count = trial_interval_count
+        product.trial_payment_setup_required = trial_payment_setup_required
+        await save_fixture(product)
         subscription_create = SubscriptionCreateCustomer(
             product_id=product.id,
             customer_id=customer.id,
@@ -350,6 +372,165 @@ class TestCreate:
             errors[0]["msg"]
             == "Product is not free. The customer should go through a checkout to create a paid subscription."
         )
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("external_customer", [False, True])
+    async def test_valid_trial(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        frozen_time: datetime,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        external_customer: bool,
+    ) -> None:
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        product.meter_interval = SubscriptionRecurringInterval.month
+        product.meter_interval_count = 1
+        await save_fixture(product)
+        customer.external_id = "trial-customer"
+        await save_fixture(customer)
+        subscription_create = (
+            SubscriptionCreateExternalCustomer(
+                product_id=product.id, external_customer_id=customer.external_id
+            )
+            if external_customer
+            else SubscriptionCreateCustomer(
+                product_id=product.id, customer_id=customer.id
+            )
+        )
+
+        subscription = await subscription_service.create(
+            session, subscription_create, auth_subject
+        )
+
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.product_id == product.id
+        assert subscription.customer_id == customer.id
+        assert subscription.prices == product.prices
+        assert subscription.amount == 1000
+        assert subscription.started_at == frozen_time
+        assert subscription.current_period_start == frozen_time
+        assert subscription.trial_start == frozen_time
+        assert subscription.trial_end == frozen_time + timedelta(days=14)
+        assert subscription.current_period_end == subscription.trial_end
+        assert subscription.current_meter_period_start is None
+        assert subscription.current_meter_period_end is None
+        assert subscription.payment_method_id is None
+        redemption = await TrialRedemptionRepository.from_session(
+            session
+        ).get_first_by_organization_and_hints(
+            product.organization_id, customer_email=customer.email, product=product.id
+        )
+        assert redemption is not None
+        assert redemption.customer_id == customer.id
+        assert_hooks_called_once(subscription_hooks, {"activated", "updated"})
+        enqueue_benefits_grants_mock.assert_called_once_with(session, subscription)
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("prevent_trial_abuse", [False, True])
+    async def test_trial_already_redeemed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        prevent_trial_abuse: bool,
+    ) -> None:
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        product.organization.subscription_settings = {
+            **product.organization.subscription_settings,
+            "prevent_trial_abuse": prevent_trial_abuse,
+        }
+        await save_fixture(product)
+        await save_fixture(product.organization)
+        await trial_redemption_service.create_trial_redemption(
+            session, customer=customer
+        )
+        await session.flush()
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id, customer_id=customer.id
+        )
+
+        if prevent_trial_abuse:
+            with pytest.raises(TrialAlreadyRedeemed):
+                await subscription_service.create(
+                    session, subscription_create, auth_subject
+                )
+            enqueue_benefits_grants_mock.assert_not_called()
+        else:
+            subscription = await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+            assert subscription.status == SubscriptionStatus.trialing
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("existing_status", "allow_multiple_subscriptions"),
+        [
+            (SubscriptionStatus.active, False),
+            (SubscriptionStatus.trialing, False),
+            (SubscriptionStatus.canceled, False),
+            (SubscriptionStatus.active, True),
+        ],
+    )
+    async def test_trial_subscription_uniqueness(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+        user_organization: UserOrganization,
+        subscription_hooks: Hooks,
+        enqueue_benefits_grants_mock: MagicMock,
+        existing_status: SubscriptionStatus,
+        allow_multiple_subscriptions: bool,
+    ) -> None:
+        organization.subscription_settings = {
+            **organization.subscription_settings,
+            "allow_multiple_subscriptions": allow_multiple_subscriptions,
+        }
+        await save_fixture(organization)
+        product.trial_interval = TrialInterval.day
+        product.trial_interval_count = 14
+        product.trial_payment_setup_required = False
+        await save_fixture(product)
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=existing_status,
+        )
+        subscription_create = SubscriptionCreateCustomer(
+            product_id=product.id, customer_id=customer.id
+        )
+
+        if not allow_multiple_subscriptions and SubscriptionStatus.is_billable(
+            existing_status
+        ):
+            with pytest.raises(AlreadyActiveSubscription):
+                await subscription_service.create(
+                    session, subscription_create, auth_subject
+                )
+        else:
+            subscription = await subscription_service.create(
+                session, subscription_create, auth_subject
+            )
+            assert subscription.status == SubscriptionStatus.trialing
 
     @pytest.mark.auth
     async def test_product_no_price_in_default_currency(
@@ -1831,6 +2012,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_sent_once(
@@ -2162,6 +2344,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_not_sent(
@@ -2254,6 +2437,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert_webhook_sent_once(
@@ -2347,6 +2531,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:
@@ -2640,6 +2825,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         enqueue_job_mock.assert_any_call(
@@ -2769,6 +2955,7 @@ class TestCycle:
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
             cutoff=previous_current_period_end.isoformat(),
+            period_start=ANY,
         )
 
         assert not any(
@@ -4914,6 +5101,32 @@ class TestResetMeters:
         reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
         assert len(reset_events) == 1
 
+    async def test_leaves_meter_of_earlier_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        earlier = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            started_at=utc_now() - timedelta(days=1),
+        )
+        later = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            started_at=utc_now(),
+        )
+
+        await subscription_service.reset_meters(session, later)
+        assert await get_all_by_name(session, SystemEvent.meter_reset) == []
+
+        await subscription_service.reset_meters(session, earlier)
+        assert len(await get_all_by_name(session, SystemEvent.meter_reset)) == 1
+
 
 @pytest.mark.anyio
 class TestUpdateMeters:
@@ -4921,6 +5134,7 @@ class TestUpdateMeters:
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         customer: Customer,
         update_meters_fixtures: UpdateMetersFixture,
@@ -4933,7 +5147,7 @@ class TestUpdateMeters:
         await save_fixture(subscription_meter)
 
         updated_subscription = await subscription_service.update_meters(
-            session, subscription
+            session, redis, subscription
         )
 
         assert len(updated_subscription.meters) == 1
@@ -4944,10 +5158,75 @@ class TestUpdateMeters:
         assert updated_subscription_meter.credited_units == 0
         assert updated_subscription_meter.amount == 0
 
+    async def test_reducer_billing_reads_pending_reducer_usage(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        update_meters_fixtures: UpdateMetersFixture,
+    ) -> None:
+        meter, product, price, subscription = update_meters_fixtures
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        reducer = await reducer_service.sync_meter(session, meter)
+        now = utc_now()
+        await save_fixture(
+            BillingInterval(
+                organization=organization,
+                subscription=subscription,
+                customer=customer,
+                meter=meter,
+                product_price=price,
+                period_start=now - timedelta(hours=1),
+                usage_policy=UsagePolicy.charge,
+            )
+        )
+        slot = get_reducer_bucket_start(now - timedelta(minutes=30))
+        for bucket_start, tokens, billed_at in (
+            (slot, 20, None),
+            (slot + timedelta(minutes=5), 7, now),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    customer=customer,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=1,
+                    sum=Decimal(tokens),
+                    min=Decimal(tokens),
+                    max=Decimal(tokens),
+                    sealed_at=billed_at,
+                    billed_at=billed_at,
+                )
+            )
+        live_event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=now,
+            ingested_at=now,
+            metadata={"tokens": 5},
+        )
+        await reducer_service.rollup(session, redis, organization.id, [live_event])
+
+        updated_subscription = await subscription_service.update_meters(
+            session, redis, subscription
+        )
+
+        (subscription_meter,) = updated_subscription.meters
+        assert subscription_meter.consumed_units == 25
+        assert subscription_meter.credited_units == 0
+        assert subscription_meter.amount == 2500
+
     async def test_basic(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        redis: Redis,
         save_fixture: SaveFixture,
         customer: Customer,
         update_meters_fixtures: UpdateMetersFixture,
@@ -4982,7 +5261,7 @@ class TestUpdateMeters:
         ]
 
         updated_subscription = await subscription_service.update_meters(
-            session, subscription
+            session, redis, subscription
         )
 
         assert len(updated_subscription.meters) == 1
@@ -5612,6 +5891,7 @@ class TestUpdate:
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=updated.current_period_start,
+            period_start=ANY,
         )
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"
@@ -5897,6 +6177,7 @@ class TestUpdate:
             updated,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=updated.current_period_start,
+            period_start=ANY,
         )
         assert not any(
             call.args and call.args[0] == "order.create_subscription_order"
@@ -6510,6 +6791,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            period_start=ANY,
         )
 
     async def test_trial_to_no_trial_product_ends_trial(
@@ -6549,6 +6831,7 @@ class TestUpdateProduct:
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
             cutoff=ANY,
+            period_start=ANY,
         )
 
     async def test_trial_product_change_skips_proration_billing(
@@ -8520,6 +8803,8 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
     product: Product,
     customer: Customer,
 ) -> None:
+    customer.billing_address = Address(country=CountryAlpha2("FR"))
+    await save_fixture(customer)
     subscription = await create_trialing_subscription(
         save_fixture, product=product, customer=customer
     )
@@ -8555,6 +8840,8 @@ class TestSendTrialConversionReminderEmail:
         product: Product,
         customer: Customer,
     ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -8569,6 +8856,8 @@ class TestSendTrialConversionReminderEmail:
         email = enqueue_email_mock.call_args[0][0]
         assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
         assert email.props.trial_end_date == "March 17, 2026"
+        assert email.props.payment_method_required is True
+        assert email.props.billing_address_required is False
         assert f"/{organization.slug}/portal?" in email.props.url
         kwargs = enqueue_email_mock.call_args.kwargs
         assert kwargs["subject"] == (
@@ -8576,6 +8865,47 @@ class TestSendTrialConversionReminderEmail:
         )
         assert kwargs["deduplication_key"] == (
             f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
+        )
+
+    @pytest.mark.parametrize(
+        ("has_payment_method", "expected_subject"),
+        [
+            (True, "Complete your billing address to keep your {} subscription"),
+            (False, "Add your billing details to keep your {} subscription"),
+        ],
+    )
+    async def test_incomplete_billing_address(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        has_payment_method: bool,
+        expected_subject: str,
+    ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("US"), state="NY")
+        await save_fixture(customer)
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        if has_payment_method:
+            subscription.payment_method = await create_payment_method(
+                save_fixture, customer
+            )
+            await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
+        assert email.props.payment_method_required is not has_payment_method
+        assert email.props.billing_address_required is True
+        assert enqueue_email_mock.call_args.kwargs["subject"] == (
+            expected_subject.format(product.name)
         )
 
     async def test_with_subscription_payment_method(
@@ -8586,6 +8916,8 @@ class TestSendTrialConversionReminderEmail:
         product: Product,
         customer: Customer,
     ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        await save_fixture(customer)
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -8610,6 +8942,7 @@ class TestSendTrialConversionReminderEmail:
         product: Product,
         customer: Customer,
     ) -> None:
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
         subscription = await create_trialing_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -8643,6 +8976,121 @@ class TestSendTrialConversionReminderEmail:
         )
 
         enqueue_email_mock.assert_not_called()
+
+    async def test_free_after_trial(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_free_after_trial_with_payment_method(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        subscription.payment_method = await create_payment_method(
+            save_fixture, customer
+        )
+        await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_metered_free_after_trial(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_recurring_fixed_and_metered: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product_recurring_fixed_and_metered,
+            customer=customer,
+            discount=discount,
+        )
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_discount_expired_after_trial(
+        self,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer, discount=discount
+        )
+        subscription.discount_applied_at = subscription.trial_start
+        await save_fixture(subscription)
+
+        await subscription_service.send_trial_conversion_reminder_email(
+            session, subscription
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionTrialPaymentMethodRequiredEmail)
 
     async def test_disabled_by_conversion_reminder_setting(
         self,
@@ -9033,6 +9481,81 @@ class TestUpdatePaymentMethodFromNewDefault:
 
         assert first_subscription.payment_method_id == first_payment_method.id
         assert second_subscription.payment_method_id == second_payment_method.id
+
+    async def test_trial_ended_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+        new_payment_method = await create_payment_method(save_fixture, customer)
+
+        await subscription_service.update_payment_method_from_new_default(
+            session, customer, new_payment_method
+        )
+
+        assert subscription.payment_method == new_payment_method
+
+
+@pytest.mark.anyio
+class TestAfterSubscriptionUpdated:
+    async def test_trial_ended_is_not_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.trial_ended,
+        )
+
+        await subscription_service._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=SubscriptionStatus.trialing,
+            previous_is_canceled=False,
+        )
+
+        subscription_hooks.revoked.assert_not_called()
+        subscription_hooks.canceled.assert_not_called()
+
+    async def test_trial_ended_to_canceled_is_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_hooks: Hooks,
+        enqueue_job_mock: MagicMock,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+
+        await subscription_service._after_subscription_updated(
+            session,
+            subscription,
+            previous_status=SubscriptionStatus.trial_ended,
+            previous_is_canceled=False,
+        )
+
+        subscription_hooks.revoked.assert_called_once()
 
 
 @pytest.mark.anyio
@@ -11513,6 +12036,31 @@ class TestCancelCustomer:
             f"but found {len(void_calls)} void call(s)"
         )
 
+    async def test_paused_subscription_is_canceled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            started_at=utc_now(),
+        )
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+
+        await subscription_service.cancel_customer(session, customer.id)
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.ended_at is not None
+        assert subscription.resumes_at is None
+
 
 @pytest.mark.anyio
 class TestCancelForOrganization:
@@ -11554,6 +12102,38 @@ class TestCancelForOrganization:
         enqueue_job_mock.assert_any_call(
             "customer.state_changed", subscription.customer_id
         )
+
+    async def test_cancels_paused_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_email_mock: MagicMock,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            started_at=utc_now(),
+        )
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+
+        await subscription_service.cancel_for_organization(
+            session, product.organization_id
+        )
+
+        await session.refresh(subscription)
+        assert subscription.status == SubscriptionStatus.canceled
+        assert subscription.ended_at is not None
+        assert subscription.resumes_at is None
+        enqueue_email_mock.assert_not_called()
 
     async def test_skips_already_ended_subscriptions(
         self,

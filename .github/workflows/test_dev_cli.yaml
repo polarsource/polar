@@ -21,8 +21,13 @@ jobs:
     outputs:
       dev_cli: ${{ steps.filter.outputs.dev_cli }}
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: dorny/paths-filter@v4.0.3
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -37,10 +42,15 @@ jobs:
     timeout-minutes: 5
     runs-on: blacksmith-4vcpu-ubuntu-2404
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
 
       - name: 🐶 Lint (ruff)
         working-directory: ./dev/cli

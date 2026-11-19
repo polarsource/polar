@@ -1,21 +1,29 @@
 import hashlib
 import json
 from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 from pydantic import BaseModel
 
+from polar.benefit.repository import BenefitRepository
+from polar.benefit.strategies.meter_credit.properties import (
+    BenefitMeterCreditProperties,
+)
 from polar.catalog.repository import CatalogRepository
 from polar.catalog.service import CatalogEntries
 from polar.catalog.service import catalog as catalog_service
-from polar.models import Organization
+from polar.models import Catalog, Organization
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
 from .schemas import (
+    ConfigBenefitMeterCredit,
     ConfigIssue,
     ConfigIssueSeverity,
     ConfigIssueType,
+    ConfigProductPriceMeteredTiers,
+    ConfigProductPriceMeteredUnit,
     ConfigRemoval,
     ConfigResource,
 )
@@ -35,7 +43,8 @@ def _fingerprint(config: BaseModel) -> str:
 
 
 def definitions(changes: ConfigChanges) -> CatalogEntries:
-    """Fingerprint the products and benefits this apply publishes as new rows."""
+    """Fingerprint the products, benefits, meters and custom fields this apply
+    publishes as new rows."""
     return CatalogEntries(
         products={
             change.config.external_id: _fingerprint(change.config)
@@ -47,6 +56,144 @@ def definitions(changes: ConfigChanges) -> CatalogEntries:
             for change in changes.benefits
             if change.existing is None or change.update_dict
         },
+        meters={
+            change.config.external_id: _fingerprint(change.config)
+            for change in changes.meters
+            if change.existing is None or change.update_dict
+        },
+        custom_fields={
+            change.config.slug: _fingerprint(change.config)
+            for change in changes.custom_fields
+            if change.existing is None or change.update_dict
+        },
+    )
+
+
+async def cascade_meter_changes(
+    session: AsyncReadSession,
+    organization: Organization,
+    changes: ConfigChanges,
+    removed: Sequence[ConfigRemoval],
+    *,
+    catalog: Catalog | None = None,
+) -> list[ConfigIssue]:
+    """A changed meter gets a new row, and so does every meter credit benefit
+    and every product billing it, so they point at the new row. Their diffs
+    list the same meter `external_id`.
+
+    Run before `cascade_benefit_changes`, so the products granting those
+    benefits get a new row too. A current product or benefit the config
+    doesn't describe can't get that new row, or stop using a meter that
+    leaves the catalog, so it's an error.
+    """
+    changed = {
+        change.config.external_id: change
+        for change in changes.meters
+        if change.existing is not None and change.update_dict
+    }
+    for benefit_change in changes.benefits:
+        config = benefit_change.config
+        if (
+            benefit_change.existing is not None
+            and "properties" not in benefit_change.update_dict
+            and isinstance(config, ConfigBenefitMeterCredit)
+            and config.properties.meter in changed
+        ):
+            benefit_change.update_dict["properties"] = config.properties.model_dump()
+    for product_change in changes.products:
+        if product_change.existing is None or "prices" in product_change.update_dict:
+            continue
+        if any(
+            isinstance(
+                price, (ConfigProductPriceMeteredUnit, ConfigProductPriceMeteredTiers)
+            )
+            and price.meter in changed
+            for price in product_change.config.prices
+        ):
+            product_change.update_dict["prices"] = [
+                price.model_dump() for price in product_change.config.prices
+            ]
+
+    affected: dict[UUID, tuple[str, Loc, str]] = {
+        change.existing.id: (
+            external_id,
+            ["body", "meters", change.index],
+            "Add it, so it uses the new version of the meter, or remove it.",
+        )
+        for external_id, change in changed.items()
+        if change.existing is not None
+    }
+    removed_meters = {
+        removal.external_id
+        for removal in removed
+        if removal.resource == ConfigResource.meter
+    }
+    if removed_meters:
+        if catalog is None:
+            catalog = await CatalogRepository.from_session(session).get_live(
+                organization.id
+            )
+        for external_id, meter in (
+            await catalog_service.get_catalog_meters(session, organization, catalog)
+        ).items():
+            if external_id in removed_meters:
+                affected[meter.id] = (
+                    external_id,
+                    ["body", "meters"],
+                    "Add it, or keep the meter in the config.",
+                )
+    if not affected:
+        return []
+
+    described_products = {change.config.external_id for change in changes.products}
+    described_benefits = {change.config.external_id for change in changes.benefits}
+    for removal in removed:
+        if removal.resource == ConfigResource.product:
+            described_products.add(removal.external_id)
+        elif removal.resource == ConfigResource.benefit:
+            described_benefits.add(removal.external_id)
+    issues: list[ConfigIssue] = []
+    for product, meter_id in await ProductRepository.from_session(
+        session
+    ).get_current_by_meters(organization.id, list(affected)):
+        if product.external_id not in described_products:
+            issues.append(
+                _undescribed_reference(
+                    ConfigResource.product,
+                    product.external_id or product.name,
+                    affected[meter_id],
+                )
+            )
+    for benefit in await BenefitRepository.from_session(
+        session
+    ).get_current_meter_credits_by_meters(organization.id, list(affected)):
+        if benefit.external_id not in described_benefits:
+            issues.append(
+                _undescribed_reference(
+                    ConfigResource.benefit,
+                    benefit.external_id or benefit.description,
+                    affected[
+                        UUID(
+                            cast(BenefitMeterCreditProperties, benefit.properties)[
+                                "meter_id"
+                            ]
+                        )
+                    ],
+                )
+            )
+    return issues
+
+
+def _undescribed_reference(
+    resource: ConfigResource, name: str, meter: tuple[str, Loc, str]
+) -> ConfigIssue:
+    external_id, loc, hint = meter
+    return ConfigIssue(
+        severity=ConfigIssueSeverity.error,
+        type=ConfigIssueType.not_supported,
+        loc=loc,
+        msg=f"The {resource} {name!r} uses this meter but isn't in the config. {hint}",
+        input=external_id,
     )
 
 
@@ -130,6 +277,100 @@ async def cascade_benefit_changes(
                         f"grants this benefit but isn't in the config. {hint}"
                     ),
                     input=external_id,
+                )
+            )
+    return issues
+
+
+async def cascade_custom_field_changes(
+    session: AsyncReadSession,
+    organization: Organization,
+    changes: ConfigChanges,
+    removed: Sequence[ConfigRemoval],
+    *,
+    catalog: Catalog | None = None,
+) -> list[ConfigIssue]:
+    """A changed custom field gets a new row, and so does every product asking
+    for it, as for benefits.
+
+    A current product the config doesn't describe can't get that new row, or
+    stop asking for a custom field that leaves the catalog, so it's an error.
+    """
+    changed = {
+        change.config.slug: change
+        for change in changes.custom_fields
+        if change.existing is not None and change.update_dict
+    }
+    for change in changes.products:
+        if change.existing is None or "custom_fields" in change.update_dict:
+            continue
+        before = {attached["field"] for attached in change.before["custom_fields"]}
+        if any(
+            attached.field in changed and attached.field in before
+            for attached in change.config.custom_fields
+        ):
+            change.update_dict["custom_fields"] = [
+                attached.model_dump() for attached in change.config.custom_fields
+            ]
+
+    removed_custom_fields = {
+        removal.external_id
+        for removal in removed
+        if removal.resource == ConfigResource.custom_field
+    }
+    affected: dict[UUID, tuple[str, Loc, str]] = {
+        change.existing.id: (
+            slug,
+            ["body", "custom_fields", change.index],
+            "Add it, so it gets the new version of the custom field, or remove it.",
+        )
+        for slug, change in changed.items()
+        if change.existing is not None
+    }
+    if removed_custom_fields:
+        if catalog is None:
+            catalog = await CatalogRepository.from_session(session).get_live(
+                organization.id
+            )
+        for slug, custom_field in (
+            await catalog_service.get_catalog_custom_fields(
+                session, organization, catalog
+            )
+        ).items():
+            if slug in removed_custom_fields:
+                affected[custom_field.id] = (
+                    slug,
+                    ["body", "custom_fields"],
+                    "Add it, or keep the custom field in the config.",
+                )
+    if not affected:
+        return []
+
+    described = {change.config.external_id for change in changes.products} | {
+        removal.external_id
+        for removal in removed
+        if removal.resource == ConfigResource.product
+    }
+    issues: list[ConfigIssue] = []
+    for product in await ProductRepository.from_session(
+        session
+    ).get_current_by_custom_fields(organization.id, list(affected)):
+        if product.external_id in described:
+            continue
+        for attached in product.attached_custom_fields:
+            if attached.custom_field_id not in affected:
+                continue
+            slug, loc, hint = affected[attached.custom_field_id]
+            issues.append(
+                ConfigIssue(
+                    severity=ConfigIssueSeverity.error,
+                    type=ConfigIssueType.not_supported,
+                    loc=loc,
+                    msg=(
+                        f"The product {product.external_id or product.name!r} "
+                        f"asks for this custom field but isn't in the config. {hint}"
+                    ),
+                    input=slug,
                 )
             )
     return issues

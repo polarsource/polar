@@ -144,6 +144,7 @@ class CustomerSessionService:
             **organization.email_from_reply,
             to_email_addr=email,
             subject=f"Access your {organization.name} purchases",
+            unsuppress=True,
         )
 
         if settings.is_development():

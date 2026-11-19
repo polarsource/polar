@@ -114,6 +114,9 @@ export default {
           _mode: 'plural',
         },
         updateFailed: 'Nie udało się zaktualizować liczby jednostek',
+        range: '{min} - {max} {unitLabelPlural}',
+        minimum: 'Minimum {min} {unitLabelPlural}',
+        maximum: 'Maksimum {max} {unitLabelPlural}',
       },
       meteredChargesMayApply:
         'Mogą obowiązywać dodatkowe opłaty naliczane według zużycia',

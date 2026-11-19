@@ -5,12 +5,17 @@ import { api } from '@/utils/client'
 import type { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import type EventEmitter from 'eventemitter3'
-import { useCallback, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { toast } from '@/components/Toast/use-toast'
 import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
 import { buttonVariants } from '@polar-sh/orbit/ui/button'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
+
+export type DownloadReceiptHandle = {
+  download: () => void
+}
 
 const RECEIPT_GENERATED_EVENT = 'order.receipt_generated'
 const RENDER_TIMEOUT_MS = 30_000
@@ -51,6 +56,8 @@ const DownloadReceipt = ({
   receiptURL,
   className,
   variant,
+  headless = false,
+  receiptRef,
 }: {
   order: schemas['Order'] | schemas['CustomerOrder']
   api: Client
@@ -60,6 +67,9 @@ const DownloadReceipt = ({
     | '/v1/customer-portal/orders/{id}/receipt'
   className?: string
   variant?: Variant
+  /** Render no button of its own; it is driven through `receiptRef`, e.g. from a menu. */
+  headless?: boolean
+  receiptRef?: RefObject<DownloadReceiptHandle | null>
 }) => {
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -81,6 +91,18 @@ const DownloadReceipt = ({
     return { failed: true }
   }, [api, order.id, receiptURL])
 
+  // with no button to turn into "Try again", a headless failure is reported as a toast
+  const fail = useCallback(() => {
+    if (headless) {
+      toast({
+        title: 'Could not download the receipt',
+        description: 'Please try again, or contact support@polar.sh.',
+      })
+      return
+    }
+    setFailed(true)
+  }, [headless])
+
   const onDownload = useCallback(async () => {
     if (inFlightRef.current) return
     inFlightRef.current = true
@@ -94,7 +116,7 @@ const DownloadReceipt = ({
         return
       }
       if ('failed' in initial) {
-        setFailed(true)
+        fail()
         return
       }
 
@@ -104,7 +126,7 @@ const DownloadReceipt = ({
         RENDER_TIMEOUT_MS,
       )
       if (!arrived) {
-        setFailed(true)
+        fail()
         return
       }
 
@@ -112,13 +134,23 @@ const DownloadReceipt = ({
       if ('url' in ready) {
         openInNewTab(ready.url)
       } else {
-        setFailed(true)
+        fail()
       }
     } finally {
       setLoading(false)
       inFlightRef.current = false
     }
-  }, [fetchReceiptUrl, eventEmitter, order.id])
+  }, [fetchReceiptUrl, eventEmitter, order.id, fail])
+
+  useEffect(() => {
+    if (!receiptRef) return
+    receiptRef.current = { download: onDownload }
+    return () => {
+      receiptRef.current = null
+    }
+  }, [receiptRef, onDownload])
+
+  if (headless) return null
 
   if (failed) {
     return (
@@ -147,7 +179,7 @@ const DownloadReceipt = ({
       className={twMerge('w-full', className)}
       variant={variant}
     >
-      Download Receipt
+      Download receipt
     </Button>
   )
 }
@@ -157,11 +189,15 @@ export const DownloadReceiptDashboard = ({
   order,
   className,
   variant,
+  headless,
+  receiptRef,
 }: {
   organization: schemas['Organization']
   order: schemas['Order']
   className?: string
   variant?: Variant
+  headless?: boolean
+  receiptRef?: RefObject<DownloadReceiptHandle | null>
 }) => {
   const eventEmitter = useOrganizationSSE(organization.id)
   return (
@@ -172,6 +208,8 @@ export const DownloadReceiptDashboard = ({
       receiptURL="/v1/orders/{id}/receipt"
       className={className}
       variant={variant}
+      headless={headless}
+      receiptRef={receiptRef}
     />
   )
 }

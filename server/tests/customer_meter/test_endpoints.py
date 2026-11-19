@@ -3,7 +3,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy.exc import DBAPIError
 
@@ -122,6 +122,43 @@ class TestListCustomerMeters:
         json = response.json()
         assert json["pagination"]["total_count"] == 1
         assert json["items"][0]["id"] == str(tool_call.id)
+
+    @pytest.mark.api_version(V2027_01)
+    @pytest.mark.auth
+    async def test_lists_every_meter_version(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        for is_current in (False, True):
+            meter = await create_meter(
+                save_fixture,
+                id=uuid.uuid4(),
+                organization=organization,
+                external_id="tool_call",
+                is_current=is_current,
+            )
+            await save_fixture(
+                CustomerMeter(
+                    customer=customer,
+                    meter=meter,
+                    consumed_units=Decimal(0),
+                    credited_units=0,
+                    balance=Decimal(0),
+                )
+            )
+
+        response = await client.get(
+            "/v1/customer-meters/", params={"external_meter_id": "tool_call"}
+        )
+
+        assert response.status_code == 200
+        assert sorted(
+            item["meter"]["is_current"] for item in response.json()["items"]
+        ) == [False, True]
 
 
 @pytest.mark.anyio

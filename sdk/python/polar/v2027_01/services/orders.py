@@ -86,7 +86,7 @@ class OrdersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -173,7 +173,7 @@ class OrdersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -229,7 +229,7 @@ class OrdersSync(SyncServiceBase):
         **Scopes**: `orders:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -283,7 +283,7 @@ class OrdersSync(SyncServiceBase):
             created_before: Only include orders created before this date. Must include a UTC offset.
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -330,7 +330,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -373,7 +373,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -424,7 +424,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -474,7 +474,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -516,7 +516,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -560,7 +560,7 @@ class OrdersSync(SyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -636,7 +636,7 @@ class OrdersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -723,7 +723,7 @@ class OrdersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
             sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
             metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -780,7 +780,7 @@ class OrdersAsync(AsyncServiceBase):
         **Scopes**: `orders:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -834,7 +834,7 @@ class OrdersAsync(AsyncServiceBase):
             created_before: Only include orders created before this date. Must include a UTC offset.
             timezone: Time zone used to render dates in the CSV.
             columns: Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -881,7 +881,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -924,7 +924,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -975,7 +975,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -1025,7 +1025,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1067,7 +1067,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -1111,7 +1111,7 @@ class OrdersAsync(AsyncServiceBase):
 
         Args:
             id: The order ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 

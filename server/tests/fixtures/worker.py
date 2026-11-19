@@ -1,8 +1,9 @@
+import ssl
 from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
 import dramatiq
-import httpx
+import httpx2
 import pytest
 from dramatiq.middleware.current_message import CurrentMessage
 from pytest_mock import MockerFixture
@@ -24,9 +25,16 @@ def set_job_queue_manager_context() -> Iterator[JobQueueManager]:
     _job_queue_manager.reset(token)
 
 
+@pytest.fixture(scope="session")
+def httpx_ssl_context() -> ssl.SSLContext:
+    return httpx2.create_ssl_context()
+
+
 @pytest.fixture
-async def httpx_client() -> AsyncIterator[httpx.AsyncClient]:
-    client = httpx.AsyncClient()
+async def httpx_client(
+    httpx_ssl_context: ssl.SSLContext,
+) -> AsyncIterator[httpx2.AsyncClient]:
+    client = httpx2.AsyncClient(verify=httpx_ssl_context)
     yield client
     await client.aclose()
 
@@ -36,7 +44,7 @@ def patch_middlewares(
     mocker: MockerFixture,
     session: AsyncSession,
     redis: Redis,
-    httpx_client: httpx.AsyncClient,
+    httpx_client: httpx2.AsyncClient,
 ) -> None:
     mocker.patch.object(SQLAlchemyMiddleware, "get_async_session", return_value=session)
     mocker.patch.object(RedisMiddleware, "get", return_value=redis)

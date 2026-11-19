@@ -1,4 +1,4 @@
-import { Effect, Option, Schema, Stdio } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { Command, Prompt } from 'effect/cli'
 import { ActiveOrganization } from '@/schemas/Auth'
 import { BillingConfigError } from '@/schemas/BillingConfig'
@@ -8,16 +8,12 @@ import { next, target } from '@/utils/billing-config/review'
 import { type Say, output } from '@/utils/command'
 import { confirm as confirmed, org } from '@/utils/flags'
 import { Output } from '@/utils/output'
+import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const DisableOutput = Schema.Struct({
   organization: ActiveOrganization,
   disabled: Schema.Boolean,
-})
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
 })
 
 const approve = (
@@ -36,7 +32,7 @@ const approve = (
     }
     yield* say([
       ui.blank,
-      `${ui.INDENT}Your products and benefits stay as they are, and can be edited in the dashboard again.`,
+      `${ui.INDENT}Your products, benefits and meters stay as they are, and can be edited in the dashboard again.`,
       `${ui.INDENT}Changes in the draft that were not published are discarded.`,
       ui.blank,
     ])
@@ -58,7 +54,7 @@ const render = (organization: ActiveOrganization) => [
   ui.success(`Config is disabled for ${target(organization)}`),
   ...next(
     [
-      `${ui.INDENT}Edit products and benefits in the dashboard.`,
+      `${ui.INDENT}Edit products, benefits and meters in the dashboard.`,
       `${ui.INDENT}Your config file was left untouched. Remove it if you no longer use config,`,
       `${ui.INDENT}or before running ${ui.command('polar config init')} to start again.`,
     ].join('\n'),

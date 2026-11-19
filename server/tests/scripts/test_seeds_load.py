@@ -1,6 +1,6 @@
 from collections import Counter
 from collections.abc import Sequence
-from time import monotonic, sleep
+from time import monotonic
 from typing import Any, cast
 from uuid import UUID
 
@@ -164,7 +164,6 @@ class TestSeedsLoad:
         def count_queries(*args: Any) -> None:
             nonlocal sql_count
             sql_count += 1
-            sleep(0.075)
 
         bind = session.sync_session.bind
         assert bind is not None
@@ -174,7 +173,7 @@ class TestSeedsLoad:
             created = await create_simple_seed_data(session, redis)
         finally:
             sqlalchemy_event.remove(bind, "before_cursor_execute", count_queries)
-        elapsed = monotonic() - started_at
+        elapsed = monotonic() - started_at + sql_count * 0.075
 
         assert created is True
         assert sql_count <= 650, sql_count

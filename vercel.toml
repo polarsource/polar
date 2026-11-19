@@ -46,7 +46,7 @@ destination = { type = "service", service = "web" }
 
 [[rewrites]]
 source = "/api/request"
-destination = "https://polar.mintlify.app/_mintlify/api/request"
+destination = "https://polar.mintlify.site/_mintlify/api/request"
 
 [[rewrites]]
 source = "/api/:path(.*)?"
@@ -54,35 +54,19 @@ destination = { type = "service", service = "api" }
 
 [[rewrites]]
 source = "/_mintlify/api/:path+"
-destination = "https://polar.mintlify.app/_mintlify/api/:path+"
+destination = "https://polar.mintlify.site/_mintlify/api/:path+"
 
 [[rewrites]]
 source = "/docs"
-destination = "https://polar.mintlify.dev/docs"
-
-[[rewrites]]
-source = "/docs/llms.txt"
-destination = "https://polar.mintlify.app/llms.txt"
-
-[[rewrites]]
-source = "/docs/llms-full.txt"
-destination = "https://polar.mintlify.app/llms-full.txt"
-
-[[rewrites]]
-source = "/docs/sitemap.xml"
-destination = "https://polar.mintlify.app/sitemap.xml"
-
-[[rewrites]]
-source = "/docs/robots.txt"
-destination = "https://polar.mintlify.app/robots.txt"
+destination = "https://polar.mintlify.site/docs"
 
 [[rewrites]]
 source = "/docs/:path*"
-destination = "https://polar.mintlify.dev/docs/:path*"
+destination = "https://polar.mintlify.site/docs/:path*"
 
 [[rewrites]]
 source = "/mintlify-assets/:path+"
-destination = "https://polar.mintlify.app/mintlify-assets/:path+"
+destination = "https://polar.mintlify.site/mintlify-assets/:path+"
 
 [[rewrites]]
 source = "/ingest/static/:path(.*)"

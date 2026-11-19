@@ -565,6 +565,7 @@ class TestHandleSuccess:
         assert enqueue.call_args.args == ("checkout.success",)
         assert kwargs["payment_id"] is None
         assert kwargs["payment_method_id"] is not None
+        assert customer.default_payment_method_id == kwargs["payment_method_id"]
         session.expunge_all()
         await checkout_success(**kwargs)
         order = await OrderRepository.from_session(session).get_earliest_by_checkout_id(

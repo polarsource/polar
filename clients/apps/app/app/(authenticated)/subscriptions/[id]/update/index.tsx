@@ -200,14 +200,16 @@ export default function Index() {
   )
 }
 
-const PRORATION_BEHAVIOR_LABELS: Record<
-  schemas['SubscriptionProrationBehavior'],
-  string
-> = {
+type ProrationBehaviorSetting = NonNullable<
+  schemas['SubscriptionUpdateBase']['proration_behavior']
+>
+
+const PRORATION_BEHAVIOR_LABELS: Record<ProrationBehaviorSetting, string> = {
   invoice: 'Prorate & charge now',
   prorate: 'Prorate on next invoice',
   next_period: 'Schedule for next cycle',
   reset: 'Charge full amount & reset cycle',
+  auto: 'Prorate upgrades, schedule downgrades',
 }
 
 const ProrationBehaviorSelector = ({
@@ -217,18 +219,13 @@ const ProrationBehaviorSelector = ({
   organization: schemas['Organization']
   form: UseFormReturn<schemas['SubscriptionUpdateBase']>
 }) => {
+  const theme = useTheme()
   const { watch, setValue } = form
 
   const prorationBehavior = watch('proration_behavior')
 
   return (
-    <Box
-      flexDirection="row"
-      gap="spacing-8"
-      backgroundColor="card"
-      padding="spacing-4"
-      borderRadius="border-radius-12"
-    >
+    <Box gap="spacing-4">
       {Object.entries(PRORATION_BEHAVIOR_LABELS)
         .filter(
           ([key]) =>
@@ -238,38 +235,29 @@ const ProrationBehaviorSelector = ({
         .map(([key, label]) => (
           <Touchable
             key={key}
-            activeOpacity={0.6}
-            style={{ flex: 1 }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: theme.spacing['spacing-8'],
+              backgroundColor: theme.colors.card,
+              height: theme.dimension['dimension-48'],
+              paddingHorizontal: theme.spacing['spacing-16'],
+              borderRadius: theme.borderRadii['border-radius-8'],
+            }}
             onPress={() => {
-              setValue(
-                'proration_behavior',
-                key as schemas['SubscriptionProrationBehavior'],
-                {
-                  shouldDirty: true,
-                },
-              )
+              setValue('proration_behavior', key as ProrationBehaviorSetting, {
+                shouldDirty: true,
+              })
             }}
           >
-            <Box
-              justifyContent="center"
-              alignItems="center"
-              backgroundColor={
-                prorationBehavior === key ? 'background' : 'card'
-              }
-              paddingVertical="spacing-10"
-              paddingHorizontal="spacing-8"
-              borderRadius="border-radius-8"
-              flex={1}
-            >
-              <Text
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                textAlign="center"
-                width="100%"
-              >
-                {label}
-              </Text>
-            </Box>
+            <Text style={{ flexShrink: 1 }}>{label}</Text>
+            <MaterialIcons
+              name="check"
+              size={16}
+              color={theme.colors.text}
+              style={{ opacity: prorationBehavior === key ? 1 : 0 }}
+            />
           </Touchable>
         ))}
     </Box>

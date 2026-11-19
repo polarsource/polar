@@ -239,7 +239,7 @@ class MeteredPrice:
         return False
 
     @staticmethod
-    def _format_units(units: float, credited_units: int) -> str:
+    def _format_units(units: float, credited_units: int | Decimal) -> str:
         label = f"{format_decimal(max(0, units), locale='en_US')} consumed units"
         if credited_units > 0:
             label += (
@@ -271,7 +271,7 @@ class ProductPriceMeteredUnit(MeteredPrice, ProductPrice):
     )
 
     def get_amount_and_label(
-        self, units: float, credited_units: int = 0
+        self, units: float, credited_units: int | Decimal = 0
     ) -> tuple[int, str]:
         billable_units = max(Decimal(0), Decimal(str(units)) - credited_units)
         label = (
@@ -345,7 +345,7 @@ class ProductPriceMeteredTiers(TieredPrice, MeteredPrice, ProductPrice):
     )
 
     def get_amount_and_label(
-        self, units: float, credited_units: int = 0
+        self, units: float, credited_units: int | Decimal = 0
     ) -> tuple[int, str]:
         billable_units = max(Decimal(0), Decimal(str(units)) - credited_units)
         label = (

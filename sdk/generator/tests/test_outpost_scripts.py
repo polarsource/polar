@@ -8,6 +8,9 @@ from generator import emitter
 def test_loads_every_outpost_script() -> None:
     assert set(emitter.load_outpost_scripts()) == {
         "read_state",
+        "read_states",
+        "prepare_snapshot",
+        "push_telemetry",
         "write_bucket",
         "confirm",
         "apply_snapshot",

@@ -12,12 +12,16 @@ import { AuthModal } from './AuthModal'
 
 interface GetStartedButtonProps extends ComponentProps<typeof Button> {
   text?: string
+  /** Tighter horizontal padding and icon gap, for compact places like the nav. */
+  condensed?: boolean
 }
 
 const GetStartedButton = ({
   text: _text,
   wrapperClassNames,
   size = 'lg',
+  condensed = false,
+  className,
   ...props
 }: GetStartedButtonProps) => {
   const posthog = usePostHog()
@@ -81,12 +85,14 @@ const GetStartedButton = ({
     <>
       <Button
         wrapperClassNames={twMerge(
-          'flex flex-row items-center gap-x-2 ',
+          'flex flex-row items-center',
+          condensed ? 'gap-x-1' : 'gap-x-2',
           wrapperClassNames,
         )}
         size={size}
         onClick={onClick}
         onSubmit={onSubmit}
+        className={twMerge(condensed && 'px-4', className)}
         {...props}
       >
         <div>{text}</div>

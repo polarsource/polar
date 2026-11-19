@@ -3,7 +3,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Chapter } from '../Chapter'
 import { DocsLink } from './DocsLink'
 import { AgentsFigure, type Turn } from '../story/AgentsFigure'
-import { ConnectPanel } from './ConnectPanel'
 
 const MCP_DOCS = '/docs/integrate/mcp'
 
@@ -55,7 +54,7 @@ const TURNS: Turn[] = [
 export const Mcp = () => (
   <Chapter
     id="mcp"
-    name="01 MCP"
+    name="02 MCP"
     title="Agents included"
     subtitle="Polar as a tool your agent can call"
     description="A remote MCP server with OAuth, so there are no keys to paste. Three meta-tools keep the context small, so the agent only loads the operations it needs."
@@ -94,7 +93,6 @@ export const Mcp = () => (
           </Box>
         ))}
       </Grid>
-      <ConnectPanel />
     </Box>
   </Chapter>
 )

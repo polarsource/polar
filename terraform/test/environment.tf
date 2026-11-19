@@ -1,9 +1,10 @@
 locals {
   backend_config = {
-    database_statement_cache_size             = 0
-    database_prepared_statement_cache_size    = 0
-    linear_team_id                            = var.linear_team_id
-    linear_payout_amount_mismatch_template_id = var.linear_payout_amount_mismatch_template_id
+    database_statement_cache_size               = 0
+    database_prepared_statement_cache_size      = 0
+    organization_access_token_cache_ttl_seconds = 60
+    linear_team_id                              = var.linear_team_id
+    linear_payout_amount_mismatch_template_id   = var.linear_payout_amount_mismatch_template_id
 
     environment                          = "test"
     base_url                             = "https://test-api.polar.sh"
@@ -23,6 +24,7 @@ locals {
     tax_record_processor                 = "numeral"
     customer_portal_url_overrides        = var.customer_portal_url_overrides
     plain_default_tier_external_id       = var.plain_default_tier_external_id
+    customer_meter_units_from_reducer    = true
   }
 
   backend_secrets = {

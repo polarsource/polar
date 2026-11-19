@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 import pytest
 
 from polar.observability.slo_report.client import (
@@ -10,8 +10,8 @@ from polar.observability.slo_report.client import (
 @pytest.mark.anyio
 class TestQuery:
     async def test_error_includes_prometheus_message(self) -> None:
-        def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
+        def handler(request: httpx2.Request) -> httpx2.Response:
+            return httpx2.Response(
                 422,
                 json={
                     "status": "error",
@@ -23,8 +23,8 @@ class TestQuery:
         client = GrafanaCloudPrometheusClient(
             base_url="https://prometheus.test", user="user", api_key="key"
         )
-        client.client = httpx.AsyncClient(
-            base_url="https://prometheus.test", transport=httpx.MockTransport(handler)
+        client.client = httpx2.AsyncClient(
+            base_url="https://prometheus.test", transport=httpx2.MockTransport(handler)
         )
 
         with pytest.raises(GrafanaCloudAPIError) as exc_info:

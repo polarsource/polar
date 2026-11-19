@@ -403,6 +403,8 @@ class SubscriptionTrialConversionReminderEmail(BaseModel):
 
 class SubscriptionTrialPaymentMethodRequiredProps(SubscriptionPropsBase):
     trial_end_date: str
+    payment_method_required: bool = True
+    billing_address_required: bool = False
 
 
 class SubscriptionTrialPaymentMethodRequiredEmail(BaseModel):

@@ -1,0 +1,110 @@
+# Architecture Decision Records
+
+Short records of the significant, cross-cutting decisions behind Polar. Corrected in place; superseded when the decision changes.
+
+An **Architecture Decision Record (ADR)** captures one significant decision: what we
+chose, why, and what it costs us.
+
+They are deliberately short. If you just joined and read the ADR log top to bottom, you
+should understand the load-bearing choices in the codebase in under an hour.
+
+## ADR vs. design document
+
+We already write [design documents](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b): big,
+forward-looking RFCs that explore a *solution*. ADRs are the
+opposite shape:
+
+| | Design document | ADR |
+|---|---|---|
+| Answers | "What are we going to build?" | "Why is it this way?" |
+| Size | Pages | One page |
+| Lifespan | Goes stale after ship | Corrected in place; superseded when the decision changes |
+| When | [When a design document is required](https://linear.app/polarsh/document/design-documents-1b03e0f6e82b) | A decision we need to remember |
+
+A design doc can make several decisions; distil each into an ADR that links back. Reach for
+an ADR when the *decision* outlives the *document*.
+
+## When to write one
+
+Write an ADR when a decision is **significant and hard to reverse or re-litigate**:
+
+- It's cross-cutting (touches many modules, or both backend and frontend).
+- It's surprising: a newcomer would reasonably do the opposite.
+- It's a convention we enforce in review or lint, but whose *why* lives only in someone's head.
+- We picked one option over a real alternative and the trade-off matters.
+
+Don't write one for reversible, local, or obvious choices; a comment or a PR is enough.
+
+## Structure in a monorepo
+
+One **global, sequentially numbered** sequence for the whole repo (`NNNN-title.md`), not a
+separate log per package. Our most important decisions (the OpenAPI to generated-client
+seam, API versioning, auth) span tiers, and a single log keeps them findable.
+
+Capture the monorepo dimension with the **Area** field in each ADR's header
+(`Backend` / `Frontend` / `Infra` / `Cross-cutting`) instead of by splitting directories.
+It tells you (and an agent) which ADRs apply to the code you're touching.
+
+## Lifecycle
+
+An ADR's **Status** is one of:
+
+- **Accepted**: the decision stands; treat it as binding. An ADR in the repo is Accepted;
+  while it is still under discussion it lives in an open PR, not here.
+- **Superseded by ADR-XXXX**: replaced. We add a new ADR and point the old one at it.
+
+### Editing an Accepted ADR
+
+Fix an Accepted ADR in place when the text was wrong or incomplete — not when we changed our
+mind:
+
+- a factual error, or a detail that has gone stale
+- a clarification, a worked example, or evidence from a case that tested the rule
+- an alternative we rejected and had not written down
+
+Supersede it instead when we actually changed the decision. The test: was the old text a
+faithful record of something we no longer believe (supersede), or a poor record of what we
+meant all along (edit)?
+
+Git history keeps every version either way. When an edit touches the **Decision** section, say
+what changed in the PR description.
+
+## Writing a new ADR
+
+1. Copy [`template.md`](template.md) to `NNNN-title.md` with the next
+   free number.
+2. Fill in Context / Decision / Consequences. Keep it to a page.
+3. Add it to the **All decisions** list below.
+4. Open a PR. Review happens there, like design docs.
+
+## For AI agents and reviewers
+
+Agents working in this repo should treat **Accepted** ADRs as binding conventions:
+
+- **Read them for the *why*.** Before changing a load-bearing pattern, check for a
+  relevant ADR (grep `adr/`).
+- **Flag violations.** If code contradicts an Accepted ADR, call it out and cite the ADR id
+  (e.g. "violates ADR-0004: raw Tailwind used for layout instead of Orbit Box").
+- **Suggest new ADRs.** If a PR makes a significant, cross-cutting, or hard-to-reverse
+  decision that no ADR covers, propose one (draft it from the template) rather than letting
+  the rationale vanish into the diff.
+
+The root `AGENTS.md` links here so this contract reaches agents working anywhere in the repo.
+To check a diff against these ADRs, run the `adr-check` skill.
+
+## All decisions
+
+- [ADR-0001: Record architecture decisions](0001-record-architecture-decisions.md) · Cross-cutting · Accepted
+- [ADR-0002: Business errors are status-coded PolarError subclasses](0002-status-coded-polar-errors.md) · Backend · Accepted
+- [ADR-0003: One request or task is one transaction](0003-request-scoped-unit-of-work.md) · Backend · Accepted
+- [ADR-0004: Frontend UI is authored with Orbit Box and design tokens](0004-orbit-box-design-system.md) · Frontend · Accepted
+- [ADR-0005: Authorization is AuthSubject plus scopes](0005-auth-subject-and-scopes.md) · Backend · Accepted
+- [ADR-0006: Migrations and backfills are deploy-safe by construction](0006-migration-and-backfill-safety.md) · Backend · Accepted
+- [ADR-0007: No default in output schemas](0007-no-default-in-output-schemas.md) · Backend · Accepted
+- [ADR-0008: Encrypt secrets at rest](0008-encrypt-secrets-at-rest.md) · Backend · Accepted
+- [ADR-0009: Use bare boolean expressions in SQLAlchemy predicates](0009-use-bare-boolean-expressions-in-sqlalchemy-predicates.md) · Backend · Accepted
+- [ADR-0010: JWKS signing keys live in KMS and rotate by kid](0010-jwks-signing-keys-in-kms.md) · Backend · Accepted
+- [ADR-0011: Specialized webhook events also emit the catch-all updated](0011-specialized-webhooks-also-emit-updated.md) · Backend · Accepted
+- [ADR-0012: Minimize data in AI API calls](0012-minimize-data-in-ai-api-calls.md) · Cross-cutting · Accepted
+- [ADR-0013: Minimize personal data in telemetry](0013-minimize-personal-data-in-telemetry.md) · Cross-cutting · Accepted
+- [ADR-0014: AI agents are their own auth subject until a human claims them](0014-agent-auth-subject.md) · Backend · Accepted

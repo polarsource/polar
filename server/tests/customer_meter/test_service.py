@@ -3,8 +3,13 @@ from datetime import timedelta
 from decimal import Decimal
 
 import pytest
+from pytest_mock import MockerFixture
+from redis import RedisError
 
+from polar.config import settings
+from polar.customer_meter.repository import CustomerMeterRepository
 from polar.customer_meter.service import customer_meter as customer_meter_service
+from polar.enums import SubscriptionRecurringInterval
 from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import generate_uuid, utc_now
@@ -24,12 +29,16 @@ from polar.models import (
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
 from polar.redis import Redis
+from polar.reducer.service import reducer as reducer_service
 from polar.reducer.types import UsageSummary
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     METER_TEST_EVENT,
+    create_active_subscription,
+    create_customer,
     create_event,
     create_meter,
+    create_product,
 )
 
 
@@ -186,10 +195,10 @@ async def events_for_external_customer(
 @pytest.mark.anyio
 class TestUpdateCustomerMeter:
     async def test_no_matching_event_not_existing_customer_meter(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self, session: AsyncSession, redis: Redis, customer: Customer, meter: Meter
     ) -> None:
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -200,6 +209,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -215,7 +225,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert updated_customer_meter == customer_meter
@@ -228,13 +240,14 @@ class TestUpdateCustomerMeter:
     async def test_new_customer_meter(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
     ) -> None:
         before = utc_now()
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
         after = utc_now()
 
@@ -254,6 +267,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -278,7 +292,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -289,6 +303,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -307,7 +322,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -321,6 +338,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         events: list[Event],
         meter: Meter,
@@ -338,7 +356,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(20)
@@ -352,6 +372,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -390,7 +411,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(0)
@@ -404,6 +427,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -442,7 +466,9 @@ class TestUpdateCustomerMeter:
         (
             updated_customer_meter,
             updated,
-        ) = await customer_meter_service.update_customer_meter(session, customer, meter)
+        ) = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter
+        )
 
         assert updated_customer_meter is not None
         assert customer_meter.consumed_units == Decimal(0)
@@ -455,6 +481,7 @@ class TestUpdateCustomerMeter:
     async def test_customer_with_external_id(
         self,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         events_for_external_customer: list[Event],
         meter: Meter,
@@ -466,7 +493,7 @@ class TestUpdateCustomerMeter:
         assert customer_with_external_id.external_id is not None
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -486,6 +513,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -521,7 +549,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -534,6 +562,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
     ) -> None:
         match_all_meter = await create_meter(
@@ -563,7 +592,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, _ = await customer_meter_service.update_customer_meter(
-            session, customer, match_all_meter
+            session, redis, customer, match_all_meter
         )
 
         assert customer_meter is not None
@@ -573,6 +602,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -607,7 +637,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -620,6 +650,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -655,7 +686,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -668,6 +699,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -698,7 +730,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -711,6 +743,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer: Customer,
         meter: Meter,
     ) -> None:
@@ -774,7 +807,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
@@ -788,6 +821,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -839,7 +873,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -851,6 +885,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -904,7 +939,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -915,6 +950,7 @@ class TestUpdateCustomerMeter:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        redis: Redis,
         customer_with_external_id: Customer,
         organization: Organization,
     ) -> None:
@@ -952,7 +988,7 @@ class TestUpdateCustomerMeter:
         )
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer_with_external_id, meter
+            session, redis, customer_with_external_id, meter
         )
 
         assert customer_meter is not None
@@ -1020,6 +1056,88 @@ class TestGetLateUsage:
         assert await customer_meter_service._get_late_usage(
             session, customer, meter
         ) == UsageSummary(count=0, total=Decimal(0), minimum=None, maximum=None)
+
+
+@pytest.mark.anyio
+class TestGetUsageIngestedBefore:
+    async def test_without_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        before = utc_now() - timedelta(hours=1)
+        await create_event(
+            save_fixture,
+            timestamp=before + timedelta(minutes=1),
+            ingested_at=before - timedelta(days=30),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=before - timedelta(days=1),
+            ingested_at=before + timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 5, "model": "lite"},
+        )
+
+        assert await customer_meter_service._get_usage_ingested_before(
+            session, customer, meter, before
+        ) == UsageSummary(
+            count=1, total=Decimal(20), minimum=Decimal(20), maximum=Decimal(20)
+        )
+
+    async def test_since_reset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        before = utc_now() - timedelta(hours=1)
+        reset_timestamp = before - timedelta(days=1)
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp,
+            ingested_at=reset_timestamp,
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+        await create_event(
+            save_fixture,
+            ingested_at=reset_timestamp - timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            ingested_at=reset_timestamp + timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 5, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp - timedelta(hours=1),
+            ingested_at=reset_timestamp + timedelta(minutes=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 7, "model": "lite"},
+        )
+
+        assert await customer_meter_service._get_usage_ingested_before(
+            session, customer, meter, before
+        ) == UsageSummary(
+            count=1, total=Decimal(5), minimum=Decimal(5), maximum=Decimal(5)
+        )
 
 
 @pytest.mark.anyio
@@ -1431,6 +1549,7 @@ class TestBulkEventProcessing:
     async def test_process_50k_events(
         self,
         session: AsyncSession,
+        redis: Redis,
         organization: Organization,
         customer: Customer,
         meter: Meter,
@@ -1461,10 +1580,256 @@ class TestBulkEventProcessing:
         assert duplicates == 0
 
         customer_meter, updated = await customer_meter_service.update_customer_meter(
-            session, customer, meter
+            session, redis, customer, meter
         )
 
         assert customer_meter is not None
         assert updated is True
         assert customer_meter.consumed_units == Decimal(event_count * tokens_per_event)
         assert customer_meter.balance == Decimal(-event_count * tokens_per_event)
+
+
+@pytest.fixture
+async def late_usage(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    redis: Redis,
+    organization: Organization,
+) -> tuple[Customer, Meter]:
+    """A reset 30 minutes ago, 3 tokens timestamped after it, and 5 tokens timestamped
+    before it but ingested after it."""
+    mocker.patch("polar.reducer.service.enqueue_job")
+    meter = await create_meter(
+        save_fixture,
+        organization=organization,
+        aggregation=PropertyAggregation(
+            func=AggregationFunction.sum, property="tokens"
+        ),
+    )
+    await reducer_service.sync_meter(session, meter)
+    customer = await create_customer(save_fixture, organization=organization)
+    now = utc_now()
+    reset_at = now - timedelta(minutes=30)
+    await create_event(
+        save_fixture,
+        organization=organization,
+        customer=customer,
+        source=EventSource.system,
+        name=SystemEvent.meter_reset,
+        timestamp=reset_at,
+        ingested_at=reset_at,
+        metadata={"meter_id": str(meter.id)},
+    )
+    events = [
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            timestamp=timestamp,
+            ingested_at=ingested_at,
+            metadata={"tokens": tokens},
+        )
+        for timestamp, ingested_at, tokens in (
+            (now - timedelta(minutes=60), now - timedelta(minutes=60), 2),
+            (now - timedelta(minutes=10), now - timedelta(minutes=10), 3),
+            (now - timedelta(minutes=40), now, 5),
+        )
+    ]
+    await reducer_service.rollup(session, redis, organization.id, events)
+    return customer, meter
+
+
+@pytest.mark.anyio
+class TestUpdateCustomerMeterFromReducer:
+    @pytest.fixture(autouse=True)
+    def enabled(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(settings, "CUSTOMER_METER_UNITS_FROM_REDUCER", True)
+
+    async def test_counts_usage_timestamped_since_the_reset(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(3)
+
+    async def test_falls_back_to_legacy_when_redis_fails(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        mocker.patch(
+            "polar.reducer.redis_store.get_bucket_totals", side_effect=RedisError
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(8)
+
+    async def test_falls_back_to_legacy_without_a_reducer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        customer = await create_customer(save_fixture, organization=organization)
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            metadata={"tokens": 4},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(4)
+
+
+@pytest.mark.anyio
+class TestUpdateCustomerOnReducerBilling:
+    async def test_reads_usage_from_the_reducer_without_comparing(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        compare = mocker.patch.object(reducer_service, "log_customer_meter_comparison")
+
+        await customer_meter_service.update_customer(session, redis, customer)
+
+        customer_meter = await CustomerMeterRepository.from_session(
+            session
+        ).get_by_customer_and_meter(customer.id, meter.id)
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(3)
+        compare.assert_not_called()
+
+    async def test_direct_meter_update_reads_usage_from_the_reducer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        assert updated is True
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(3)
+
+    async def test_direct_meter_update_refreshes_the_customers_subscription_meters(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        enqueue_job = mocker.patch("polar.customer_meter.service.enqueue_job")
+
+        await customer_meter_service.update_customer_meter(
+            session, redis, customer, meter, activate_meter=True
+        )
+
+        enqueue_job.assert_any_call("subscription.update_meters", subscription.id)
+
+    async def test_refreshes_the_customers_subscription_meters_once(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        redis: Redis,
+        late_usage: tuple[Customer, Meter],
+    ) -> None:
+        customer, meter = late_usage
+        organization = customer.organization
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        other_meter = await create_meter(
+            save_fixture,
+            id=uuid.uuid4(),
+            organization=organization,
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        await reducer_service.sync_meter(session, other_meter)
+        enqueue_job = mocker.patch("polar.customer_meter.service.enqueue_job")
+
+        await customer_meter_service.update_customer(session, redis, customer)
+
+        repository = CustomerMeterRepository.from_session(session)
+        for updated_meter in (meter, other_meter):
+            customer_meter = await repository.get_by_customer_and_meter(
+                customer.id, updated_meter.id
+            )
+            assert customer_meter is not None
+            assert customer_meter.last_balanced_event_id is not None
+        assert [
+            call
+            for call in enqueue_job.call_args_list
+            if call.args[0] == "subscription.update_meters"
+        ] == [mocker.call("subscription.update_meters", subscription.id)]

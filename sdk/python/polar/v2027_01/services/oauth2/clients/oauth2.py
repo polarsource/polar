@@ -30,7 +30,7 @@ class Oauth2Sync(SyncServiceBase):
         Create an OAuth2 client.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -68,7 +68,7 @@ class Oauth2Sync(SyncServiceBase):
 
         Args:
             client_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -107,7 +107,7 @@ class Oauth2Sync(SyncServiceBase):
 
         Args:
             client_id_path:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -147,7 +147,7 @@ class Oauth2Sync(SyncServiceBase):
 
         Args:
             client_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -186,7 +186,7 @@ class Oauth2Async(AsyncServiceBase):
         Create an OAuth2 client.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -224,7 +224,7 @@ class Oauth2Async(AsyncServiceBase):
 
         Args:
             client_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -263,7 +263,7 @@ class Oauth2Async(AsyncServiceBase):
 
         Args:
             client_id_path:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -303,7 +303,7 @@ class Oauth2Async(AsyncServiceBase):
 
         Args:
             client_id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 

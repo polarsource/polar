@@ -116,6 +116,7 @@ class JobQueueManager:
         queue_messages = defaultdict[str, list[tuple[str, Any]]](list)
         all_messages: list[tuple[str, str]] = []
 
+        debounce_pipeline = redis.pipeline(transaction=True)
         for actor_name, args, kwargs, delay in redis_jobs:
             fn: dramatiq.Actor[Any, Any] = broker.get_actor(actor_name)
             redis_message_id = str(uuid.uuid4())
@@ -131,8 +132,8 @@ class JobQueueManager:
             )
 
             # Set debounce key if any
-            debounce = await set_debounce_key(
-                redis, fn, message.message_id, args, kwargs
+            debounce = set_debounce_key(
+                debounce_pipeline, fn, message.message_id, args, kwargs
             )
             if debounce is not None:
                 key, debounce_delay = debounce
@@ -157,6 +158,7 @@ class JobQueueManager:
                 (redis_message_id, encoded_message)
             )
             all_messages.append((fn.actor_name, message.message_id))
+        await debounce_pipeline.execute()
 
         for queue_name, messages in queue_messages.items():
             for batch in itertools.batched(messages, FLUSH_BATCH_SIZE):
@@ -174,12 +176,15 @@ class JobQueueManager:
         if sqs_jobs:
             correlation_id = CorrelationID.get()
             prepared_sqs_jobs: list[_sqs.Job] = []
+            debounce_pipeline = redis.pipeline(transaction=True)
             for actor_name, args, kwargs, delay in sqs_jobs:
                 fn = broker.get_actor(actor_name)
                 message_id = str(uuid.uuid4())
                 debounce_key: str | None = None
 
-                debounce = await set_debounce_key(redis, fn, message_id, args, kwargs)
+                debounce = set_debounce_key(
+                    debounce_pipeline, fn, message_id, args, kwargs
+                )
                 if debounce is not None:
                     debounce_key, debounce_delay = debounce
                     delay = max(delay or 0, debounce_delay)
@@ -195,6 +200,7 @@ class JobQueueManager:
                         debounce_key,
                     )
                 )
+            await debounce_pipeline.execute()
             await _sqs.send_jobs(prepared_sqs_jobs)
 
         await self._publish(redis)

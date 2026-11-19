@@ -77,6 +77,25 @@ test('defineConfig rejects empty external IDs even with a valid display name', (
   ).toThrow()
 })
 
+test('external IDs allow letters, digits, "_", "-", "." and ":" only', () => {
+  const define = (key: string) => () =>
+    defineConfig({
+      meters: ({ meter }) => ({ [key]: meter('Requests').count() }),
+    })
+
+  for (const key of [
+    'calls',
+    'api_calls-v2',
+    'confirmix.plan.free',
+    'a1:month',
+  ]) {
+    expect(define(key)).not.toThrow()
+  }
+  for (const key of ['tool calls', 'a/b', '_calls', '..', 'pró']) {
+    expect(define(key)).toThrow('Use only letters, digits')
+  }
+})
+
 test('short meter keys require an explicit display name', () => {
   expect(() =>
     defineConfig({ meters: ({ meter }) => ({ x: meter().count() }) }),
@@ -957,4 +976,129 @@ test('metadata follows the API limits', () => {
       ),
     ).toJSON().meters[0]?.metadata,
   ).toHaveProperty('key49', 49)
+})
+
+test('products ask for declared custom fields in order', () => {
+  const config = defineConfig({
+    meters: () => ({}),
+    customFields: ({ text, checkbox }) => ({
+      company: text(),
+      terms: checkbox('Terms'),
+    }),
+    products: ({ product, fixed }) => ({
+      pro: product('Pro')
+        .prices(fixed().amount(usd(10)))
+        .once()
+        .customFields((optional) => ['terms', optional('company')]),
+      plain: product('Plain')
+        .prices(fixed().amount(usd(5)))
+        .once(),
+    }),
+  }).toJSON()
+
+  expect(config.custom_fields).toEqual([
+    { type: 'text', slug: 'company', name: 'company', properties: {} },
+    { type: 'checkbox', slug: 'terms', name: 'Terms', properties: {} },
+  ])
+  expect(config.products?.[0]?.custom_fields).toEqual([
+    { field: 'terms', required: true },
+    { field: 'company', required: false },
+  ])
+  expect(config.products?.[1]).not.toHaveProperty('custom_fields')
+
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({ company: text() }),
+      products: ({ product, free }) => ({
+        pro: product()
+          .prices(free())
+          .once()
+          .customFields((optional) => [
+            // @ts-expect-error undeclared custom field
+            optional('vat'),
+          ]),
+        plain: product().prices(free()).once().customFields([
+          // @ts-expect-error undeclared custom field
+          'vat',
+        ]),
+      }),
+    }),
+  ).toThrow('Product "pro" references unknown custom field "vat".')
+})
+
+test('custom field helpers catch mistakes early', () => {
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({
+        // @ts-expect-error keys can only use a-z, 0-9, - and _
+        teamSize: text(),
+      }),
+    }),
+  ).toThrow('Use only lowercase letters, digits, "-" and "_"')
+
+  void (() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ checkbox, select }) => ({
+        // @ts-expect-error a select needs its options
+        size: select('Size'),
+        // @ts-expect-error a checkbox has no placeholder
+        terms: checkbox('Terms').placeholder('x'),
+      }),
+    }))
+
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ text }) => ({
+        company: text().minLength(10).maxLength(5),
+      }),
+    }),
+  ).toThrow('The max length must not be less than the min length')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ number }) => ({ seats: number().min(10).max(5) }),
+    }),
+  ).toThrow('The max must not be before the min')
+  expect(() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        start: date().min('2026-12-31').max('2026-01-01'),
+      }),
+    }),
+  ).toThrow('The max must not be before the min')
+
+  for (const invalid of ['soon', '2026-02-30', '2026-1-1']) {
+    expect(() =>
+      defineConfig({
+        meters: () => ({}),
+        customFields: ({ date }) => ({
+          // @ts-expect-error not a YYYY-MM-DD date
+          start: date().min(invalid),
+        }),
+      }),
+    ).toThrow(`Invalid date "${invalid}", use YYYY-MM-DD.`)
+  }
+
+  void (() =>
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        // @ts-expect-error a Date depends on the timezone it was made in
+        start: date().min(new Date()),
+      }),
+    }))
+
+  expect(
+    defineConfig({
+      meters: () => ({}),
+      customFields: ({ date }) => ({
+        start: date().min('2026-01-01').max('2026-12-31'),
+      }),
+    }).toJSON().custom_fields?.[0]?.properties,
+  ).toEqual({ ge: 1767225600, le: 1798675200 })
 })

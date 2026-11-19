@@ -1,4 +1,4 @@
-import { Effect, Option, Stdio } from 'effect'
+import { Effect, Option } from 'effect'
 import { Command, Flag, Prompt } from 'effect/cli'
 import {
   AgentSetupError,
@@ -23,6 +23,7 @@ import {
 } from '@/utils/agent-setup'
 import { Output } from '@/utils/output'
 import { note, withProgress } from '@/utils/progress'
+import { interactive } from '@/utils/prompt'
 import * as ui from '@/utils/ui'
 
 const status = Flag.Boolean('status').pipe(
@@ -54,11 +55,6 @@ interface Selection {
 
 const isClient = (agent: string): agent is Client =>
   clients.some((client) => client === agent)
-
-const interactive = Effect.gen(function* () {
-  const stdio = yield* Stdio.Stdio
-  return (yield* stdio.stdinIsTerminal) && (yield* stdio.stdoutIsTerminal)
-})
 
 const pick = (
   detected: ReadonlyArray<ClientStatus>,

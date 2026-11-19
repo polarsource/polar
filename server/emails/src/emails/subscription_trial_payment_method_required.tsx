@@ -9,6 +9,31 @@ import {
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
+const getCopy = (
+  paymentMethodRequired: boolean,
+  billingAddressRequired: boolean,
+) => {
+  if (!billingAddressRequired) {
+    return {
+      headline: 'Add a payment method',
+      action: 'Add a payment method',
+      button: 'Add payment method',
+    }
+  }
+  if (!paymentMethodRequired) {
+    return {
+      headline: 'Complete your billing address',
+      action: 'Complete your billing address',
+      button: 'Update billing address',
+    }
+  }
+  return {
+    headline: 'Add your billing details',
+    action: 'Add a payment method and complete your billing address',
+    button: 'Add billing details',
+  }
+}
+
 export function SubscriptionTrialPaymentMethodRequired({
   email,
   organization,
@@ -16,13 +41,16 @@ export function SubscriptionTrialPaymentMethodRequired({
   url,
   trial_end_date,
   previous_billing_provider,
+  payment_method_required,
+  billing_address_required,
 }: schemas['SubscriptionTrialPaymentMethodRequiredProps']) {
+  const copy = getCopy(payment_method_required, billing_address_required)
   return (
     <WrapperOrganization
       organization={organization}
-      preview={`Add a payment method to keep your ${product.name} subscription`}
+      preview={`${copy.action} to keep your ${product.name} subscription`}
     >
-      <Intro headline="Add a payment method">
+      <Intro headline={copy.headline}>
         Your{' '}
         <Text as="span" weight="medium">
           {product.name}
@@ -34,8 +62,8 @@ export function SubscriptionTrialPaymentMethodRequired({
         .
       </Intro>
       <Text>
-        Add a payment method before then to continue on the paid plan.
-        Otherwise, your subscription will end when the trial ends.
+        {copy.action} before then to continue on the paid plan. Otherwise, your
+        subscription will end when the trial ends.
       </Text>
       {previous_billing_provider && organization.name && (
         <BillingMigrationNotice
@@ -43,7 +71,7 @@ export function SubscriptionTrialPaymentMethodRequired({
           previousBillingProvider={previous_billing_provider}
         />
       )}
-      <Button href={url}>Add payment method</Button>
+      <Button href={url}>{copy.button}</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )
@@ -59,6 +87,8 @@ SubscriptionTrialPaymentMethodRequired.PreviewProps = {
   },
   trial_end_date: 'March 17, 2026',
   previous_billing_provider: 'Stripe',
+  payment_method_required: true,
+  billing_address_required: false,
   url: 'https://polar.sh/acme-inc/portal',
 }
 

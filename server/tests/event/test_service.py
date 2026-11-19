@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
 from redis.exceptions import ConnectionError as RedisConnectionError
+from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import func, select
 
 from polar.auth.models import AuthSubject, is_user
@@ -793,6 +794,85 @@ class TestIngest:
         errors = e.value.errors()
         assert len(errors) == 2
 
+    @pytest.mark.auth
+    async def test_customer_id_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=auth_subject.subject, organization=organization_second
+            )
+        )
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer_organization_second.id,
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "events", 0, "customer_id")
+
+    @pytest.mark.auth
+    async def test_member_id_from_other_accessible_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        customer: Customer,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=auth_subject.subject, organization=organization_second
+            )
+        )
+        customer_organization_second = await create_customer(
+            save_fixture, organization=organization_second
+        )
+        member_organization_second = await create_member(
+            save_fixture,
+            customer=customer_organization_second,
+            organization=organization_second,
+        )
+
+        ingest = EventsIngest(
+            events=[
+                EventCreateCustomer(
+                    name="test",
+                    customer_id=customer.id,
+                    member_id=member_organization_second.id,
+                    organization_id=organization.id,
+                ),
+            ]
+        )
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await event_service.ingest(session, auth_subject, ingest)
+
+        errors = e.value.errors()
+        assert len(errors) == 1
+        assert errors[0]["loc"] == ("body", "events", 0, "member_id")
+
     @pytest.mark.parametrize("count", [0, 1, 500])
     @pytest.mark.auth
     async def test_valid_user(
@@ -863,6 +943,33 @@ class TestIngest:
             for call in enqueue_events_mock.call_args_list
             for event_id in call.args
         } == {event.id for event in events}
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_reducer_billing_doesnt_create_meter_events(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {
+            **organization.feature_settings,
+            "reducer_billing_enabled": True,
+        }
+        await save_fixture(organization)
+        create_meter_events = mocker.spy(event_service, "_create_meter_events")
+        ingest = EventsIngest(
+            events=[
+                EventCreateExternalCustomer(name="test", external_customer_id="test")
+            ]
+        )
+
+        await event_service.ingest(session, auth_subject, ingest)
+        await event_service.move_staged_events(session, 1000)
+
+        assert len(await get_all_by_organization(session, organization.id)) == 1
+        create_meter_events.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_rollup_reducer_buckets(
@@ -1782,6 +1889,40 @@ class TestMoveStagedEvents:
         )
         assert staged_events == 0
 
+    async def test_reducer_billing_doesnt_create_meter_events(
+        self,
+        mocker: MockerFixture,
+        enqueue_events_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        organization.feature_settings = {"reducer_billing_enabled": True}
+        await save_fixture(organization)
+        ingested_at = utc_now() - timedelta(minutes=1)
+        await save_fixture(
+            StagedEvent(
+                name=METER_TEST_EVENT,
+                source=EventSource.user,
+                timestamp=ingested_at,
+                ingested_at=ingested_at,
+                organization_id=organization.id,
+                external_customer_id="test",
+                user_metadata={"tokens": 1},
+            )
+        )
+
+        create_meter_events = mocker.spy(event_service, "_create_meter_events")
+
+        assert await event_service.move_staged_events(session, 1000) == 1
+
+        create_meter_events.assert_not_called()
+        meter_events = await session.scalar(
+            select(func.count()).select_from(MeterEvent)
+        )
+        assert meter_events == 0
+
     async def test_limit(
         self,
         enqueue_events_mock: AsyncMock,
@@ -2578,6 +2719,70 @@ class TestIngested:
 
         await session.refresh(customer_meter)
         assert customer_meter.activated_at is not None
+
+    async def test_activation_queries_do_not_scale_with_customers(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+        )
+
+        async def count_events_queries(customer_count: int) -> int:
+            customer_meters: list[CustomerMeter] = []
+            event_ids: list[uuid.UUID] = []
+            for _ in range(customer_count):
+                customer = await create_customer(
+                    save_fixture,
+                    organization=organization,
+                    email=f"{uuid.uuid4()}@example.com",
+                )
+                customer_meter = CustomerMeter(
+                    customer=customer, meter=meter, activated_at=None
+                )
+                await save_fixture(customer_meter)
+                customer_meters.append(customer_meter)
+                event = await create_event(
+                    save_fixture,
+                    customer=customer,
+                    organization=organization,
+                    source=EventSource.user,
+                    metadata={"model": "lite"},
+                )
+                event_ids.append(event.id)
+
+            count = 0
+
+            def on_execute(*args: Any) -> None:
+                nonlocal count
+                if "FROM events" in args[2]:
+                    count += 1
+
+            bind = session.sync_session.bind
+            assert bind is not None
+            sqlalchemy_event.listen(bind, "before_cursor_execute", on_execute)
+            try:
+                await event_service.ingested(session, event_ids)
+            finally:
+                sqlalchemy_event.remove(bind, "before_cursor_execute", on_execute)
+
+            for customer_meter in customer_meters:
+                await session.refresh(customer_meter)
+                assert customer_meter.activated_at is not None
+            return count
+
+        assert await count_events_queries(1) == await count_events_queries(3)
 
     # async def test_creates_meter_events_for_matching_events(
     #     self,

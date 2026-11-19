@@ -209,7 +209,7 @@ class BenefitMeterCreditService(
         meter = await meter_repository.get_by_id(meter_id)
         if meter is not None:
             await customer_meter_service.update_customer_meter(
-                self.session, customer, meter, activate_meter=True
+                self.session, self.redis, customer, meter, activate_meter=True
             )
 
         return {

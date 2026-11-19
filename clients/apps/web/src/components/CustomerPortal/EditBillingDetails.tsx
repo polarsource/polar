@@ -3,7 +3,11 @@ import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
-import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
+import CountryStatePicker, {
+  COUNTRIES_WITH_FIXED_STATE_OPTIONS,
+  getStateLabel,
+  hasFixedStateOptions,
+} from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import { Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -18,6 +22,29 @@ import { useForm, useWatch, useFormState } from 'react-hook-form'
 
 type CustomerPortalCustomerUpdate = schemas['CustomerPortalCustomerUpdate']
 
+// Mirrors the checkout requirements in server/polar/models/checkout.py
+const LINE1_REQUIRED_COUNTRIES = ['US']
+const CITY_REQUIRED_COUNTRIES = ['US', 'BR']
+const POSTAL_CODE_REQUIRED_COUNTRIES = ['US', 'ES', 'PT']
+
+const requiredInCountries = (countries: string[]) => ({
+  validate: (
+    value: string | null | undefined,
+    values: CustomerPortalCustomerUpdate,
+  ) => {
+    const country = values.billing_address?.country
+    if (country && countries.includes(country) && !value) {
+      return 'This field is required'
+    }
+    return true
+  },
+})
+
+const isFixedStateCode = (state: string) =>
+  COUNTRIES_WITH_FIXED_STATE_OPTIONS.some((country) =>
+    state.startsWith(`${country}-`),
+  )
+
 const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
   const { data: customer, update } = useCustomerPortalCustomer()
 
@@ -29,17 +56,35 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     },
   })
 
-  const { control, handleSubmit, setError, setValue, reset } = form
+  const {
+    control,
+    handleSubmit,
+    setError,
+    setValue,
+    getValues,
+    reset,
+    clearErrors,
+  } = form
   const { errors, isDirty } = useFormState({ control })
 
   // oxlint-disable-next-line react-hooks/incompatible-library
   const country = useWatch({ control, name: 'billing_address.country' })
 
   useEffect(() => {
-    if (country !== 'US' && country !== 'CA') {
+    const state = getValues('billing_address.state')
+    const isValidForCountry = hasFixedStateOptions(country)
+      ? state?.startsWith(`${country}-`)
+      : !isFixedStateCode(state ?? '')
+    if (state && !isValidForCountry) {
       setValue('billing_address.state', null)
     }
-  }, [country, setValue])
+    clearErrors([
+      'billing_address.line1',
+      'billing_address.postal_code',
+      'billing_address.city',
+      'billing_address.state',
+    ])
+  }, [country, getValues, setValue, clearErrors])
 
   const onSubmit = useCallback(
     async (data: CustomerPortalCustomerUpdate) => {
@@ -76,6 +121,11 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
     return null
   }
 
+  const savedState = customer.billing_address?.state
+  const showState =
+    hasFixedStateOptions(country) ||
+    (!!savedState && !isFixedStateCode(savedState))
+
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
@@ -96,7 +146,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
           name="billing_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Billing Name</FormLabel>
+              <FormLabel>Billing name</FormLabel>
               <FormControl>
                 <Input
                   type="text"
@@ -111,15 +161,32 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
             </FormItem>
           )}
         />
-        <FormItem className="flex flex-col gap-y-3">
+        <FormField
+          control={control}
+          name="tax_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tax ID</FormLabel>
+              <FormControl>
+                <Input
+                  type="text"
+                  autoComplete="off"
+                  {...field}
+                  value={field.value || ''}
+                  className="bg-white shadow-xs"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormItem>
           <FormLabel>Billing address</FormLabel>
           <FormControl>
             <FormField
               control={control}
               name="billing_address.line1"
-              rules={{
-                required: 'This field is required',
-              }}
+              rules={requiredInCountries(LINE1_REQUIRED_COUNTRIES)}
               render={({ field }) => (
                 <div className="flex flex-col gap-y-2">
                   <Input
@@ -160,9 +227,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.postal_code"
-                rules={{
-                  required: 'This field is required',
-                }}
+                rules={requiredInCountries(POSTAL_CODE_REQUIRED_COUNTRIES)}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
@@ -182,9 +247,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               <FormField
                 control={control}
                 name="billing_address.city"
-                rules={{
-                  required: 'This field is required',
-                }}
+                rules={requiredInCountries(CITY_REQUIRED_COUNTRIES)}
                 render={({ field }) => (
                   <div className="flex flex-col gap-y-2">
                     <Input
@@ -201,6 +264,27 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               />
             </FormControl>
           </div>
+          {showState && (
+            <FormControl>
+              <FormField
+                control={control}
+                name="billing_address.state"
+                rules={requiredInCountries(COUNTRIES_WITH_FIXED_STATE_OPTIONS)}
+                render={({ field }) => (
+                  <div className="flex flex-col gap-y-2">
+                    <CountryStatePicker
+                      autoComplete="billing address-level1"
+                      country={country}
+                      value={field.value || ''}
+                      onChange={field.onChange}
+                      placeholder={getStateLabel(country)}
+                    />
+                    <FormMessage />
+                  </div>
+                )}
+              />
+            </FormControl>
+          )}
           <FormControl>
             <FormField
               control={control}
@@ -221,29 +305,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               )}
             />
           </FormControl>
-          {(country === 'US' || country === 'CA') && (
-            <FormControl>
-              <FormField
-                control={control}
-                name="billing_address.state"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <div className="flex flex-col gap-y-2">
-                    <CountryStatePicker
-                      autoComplete="billing address-level1"
-                      country={country}
-                      value={field.value || undefined}
-                      onChange={field.onChange}
-                      placeholder={country === 'US' ? 'State' : 'Province'}
-                    />
-                    <FormMessage />
-                  </div>
-                )}
-              />
-            </FormControl>
-          )}
 
           {errors.billing_address?.message && (
             <p className="text-destructive-foreground text-sm">
@@ -251,32 +312,13 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
             </p>
           )}
         </FormItem>
-        <FormField
-          control={control}
-          name="tax_id"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tax ID</FormLabel>
-              <FormControl>
-                <Input
-                  type="text"
-                  autoComplete="off"
-                  {...field}
-                  value={field.value || ''}
-                  className="bg-white shadow-xs"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <Button
           type="submit"
           loading={update.isPending}
           disabled={update.isPending || !isDirty}
-          className="self-start"
+          className="self-end"
         >
-          Update Billing Details
+          Update billing details
         </Button>
       </form>
     </Form>

@@ -1,17 +1,20 @@
 import traceback
+from unittest.mock import Mock
 
+import httpx2
 import pytest
-import respx
 
 from polar.integrations.resend.client import ResendAPIError, ResendClient
 
 
 @pytest.mark.anyio
 async def test_get_contact_server_error_excludes_identifier(
-    respx_mock: respx.MockRouter,
+    http_mocks: dict[tuple[str, str], Mock],
 ) -> None:
     email = "user@example.com"
-    respx_mock.get(path=f"/contacts/{email}").respond(530)
+    http_mocks["GET", f"https://api.resend.com/contacts/{email}"] = Mock(
+        return_value=httpx2.Response(530)
+    )
 
     with pytest.raises(ResendAPIError) as exc_info:
         await ResendClient().get_contact(email)

@@ -42,6 +42,14 @@ class PayoutAccountExternalLinkUnsupported(PayoutAccountServiceError):
         super().__init__(message, 404)
 
 
+class PayoutAccountRejected(PayoutAccountServiceError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Stripe rejected this payout account. Check your Stripe dashboard for details.",
+            409,
+        )
+
+
 class PayoutAccountSyncUnsupported(PayoutAccountServiceError):
     def __init__(self, account_type: PayoutAccountType) -> None:
         self.account_type = account_type
@@ -165,9 +173,17 @@ class PayoutAccountService:
         match payout_account.type:
             case PayoutAccountType.stripe:
                 assert payout_account.stripe_id is not None
-                account_link = await stripe.create_account_link(
-                    payout_account.stripe_id, return_path, payout_account.id
-                )
+                try:
+                    account_link = await stripe.create_account_link(
+                        payout_account.stripe_id, return_path, payout_account.id
+                    )
+                except stripe_lib.InvalidRequestError as e:
+                    # shortcut: match the observed message until a specific Stripe error code is available.
+                    if not (e.user_message or "").startswith(
+                        "An account link cannot be created for this account because the account has been rejected."
+                    ):
+                        raise
+                    raise PayoutAccountRejected() from e
                 return PayoutAccountLink(url=account_link.url)
             case _:
                 raise PayoutAccountExternalLinkUnsupported(payout_account.type)

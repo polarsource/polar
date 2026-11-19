@@ -6,6 +6,7 @@ import {
   WrapperPolar,
 } from '../components/foundation'
 import { formatDate } from '../utils/formatters'
+import CustomerIdentity from '../components/CustomerIdentity'
 import type { schemas } from '../types'
 
 export function NotificationSubscriptionCancellation({
@@ -18,17 +19,8 @@ export function NotificationSubscriptionCancellation({
   ends_at,
   subscription_url,
 }: schemas['MaintainerSubscriptionCancellationNotificationPayload']) {
-  const formattedName = subscriber_email ? (
-    <>
-      <Text as="span" weight="bold">
-        {subscriber_name}
-      </Text>{' '}
-      ({subscriber_email})
-    </>
-  ) : (
-    <Text as="span" weight="bold">
-      {subscriber_name}
-    </Text>
+  const formattedName = (
+    <CustomerIdentity name={subscriber_name} email={subscriber_email} />
   )
 
   const formattedEndsAt =

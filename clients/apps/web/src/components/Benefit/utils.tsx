@@ -87,10 +87,27 @@ export const githubRepositoryPermissionDisplayNames: {
   admin: 'Admin',
 }
 
+const CREATABLE_BENEFIT_TYPES_ORDER = [
+  'feature_flag',
+  'meter_credit',
+  'license_keys',
+  'downloadables',
+  'github_repository',
+  'discord',
+  'slack_shared_channel',
+  'custom',
+] as const satisfies readonly schemas['BenefitType'][]
+
 export const getCreatableBenefitTypes = (
   organization: schemas['Organization'],
 ): schemas['BenefitType'][] =>
-  enums.benefitTypeValues.filter(
+  [
+    ...CREATABLE_BENEFIT_TYPES_ORDER,
+    ...enums.benefitTypeValues.filter(
+      (type) =>
+        !(CREATABLE_BENEFIT_TYPES_ORDER as readonly string[]).includes(type),
+    ),
+  ].filter(
     (type) =>
       type !== 'slack_shared_channel' ||
       !!organization.feature_settings?.slack_benefit_enabled,

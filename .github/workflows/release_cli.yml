@@ -30,9 +30,14 @@ jobs:
       released: ${{ steps.release.outputs.released }}
       ref: ${{ steps.release.outputs.ref }}
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: actions/github-script@v9
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: release
         with:
           script: |
@@ -46,19 +51,24 @@ jobs:
     if: needs.prepare.outputs.enabled == 'true' && needs.prepare.outputs.released != 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: clients/package.json
 
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: clients/pnpm-lock.yaml
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: clients/packages/cli/package.json
 
@@ -100,19 +110,24 @@ jobs:
       run:
         working-directory: clients/packages/cli
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: clients/package.json
 
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: pnpm
           cache-dependency-path: clients/pnpm-lock.yaml
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: clients/packages/cli/package.json
 
@@ -138,7 +153,7 @@ jobs:
 
       - name: Import macOS signing certificate
         if: matrix.sign
-        uses: apple-actions/import-codesign-certs@v7
+        uses: apple-actions/import-codesign-certs@288b8ec97b82c66b6f2a6baaf7acc8dfbcbe331c # v7.2.0
         with:
           p12-file-base64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
           p12-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
@@ -206,7 +221,7 @@ jobs:
             --issuer "$APP_STORE_CONNECT_ISSUER_ID" \
             --wait
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ matrix.archive }}
           path: clients/packages/cli/${{ matrix.archive }}
@@ -218,9 +233,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: polar-*
           path: release-assets
@@ -232,7 +252,7 @@ jobs:
 
       - name: Create draft release
         id: draft
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           PUBLISH: ${{ needs.prepare.outputs.publish }}
@@ -282,7 +302,7 @@ jobs:
 
       - name: Publish complete release
         if: needs.prepare.outputs.publish == 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           RELEASE_ID: ${{ steps.draft.outputs.id }}
         with:
@@ -307,16 +327,21 @@ jobs:
       run:
         working-directory: clients/packages/cli
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.ref }}
 
-      - uses: actions/setup-node@v7.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
 
-      - uses: oven-sh/setup-bun@v2
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: clients/packages/cli/package.json
 

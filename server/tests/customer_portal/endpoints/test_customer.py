@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.customer_email_update.service import TOKEN_PREFIX
@@ -392,9 +392,7 @@ class TestUpdateDefaultPaymentMethod:
 
         stripe_service_mock.update_customer.assert_awaited_once()
         call_kwargs = stripe_service_mock.update_customer.await_args.kwargs
-        assert call_kwargs["invoice_settings"] == {
-            "default_payment_method": payment_method.processor_id,
-        }
+        assert "invoice_settings" not in call_kwargs
 
 
 @pytest.mark.anyio

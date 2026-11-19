@@ -361,9 +361,6 @@ class TestCreate:
         create_customer_mock = mocker.patch(
             "polar.organization.service.polar_self_service.enqueue_create_customer"
         )
-        posthog_mock = mocker.patch(
-            "polar.organization.service.posthog.auth_subject_event"
-        )
 
         organization = await organization_service.create(
             session,
@@ -374,7 +371,7 @@ class TestCreate:
         assert agent.organization_id == organization.id
         assert organization.account is not None
         await session.refresh(organization)
-        assert organization.is_config_as_code_enabled
+        assert not organization.is_config_as_code_enabled
         assert (
             await user_organization_service.get_member_count(session, organization.id)
             == 0
@@ -383,7 +380,6 @@ class TestCreate:
         enqueue_job_mock.assert_called_once_with(
             "organization.created", organization_id=organization.id
         )
-        posthog_mock.assert_not_called()
 
     @pytest.mark.auth(AuthSubjectFixture(subject="agent"))
     async def test_agent_create_fails_when_a_concurrent_create_linked_an_organization_first(
@@ -1540,6 +1536,21 @@ class TestDenyOrganization:
             call.args and call.args[0] == "payout_account.reject_stripe_account"
             for call in enqueue_job_mock.call_args_list
         )
+
+    async def test_enqueues_polar_self_subscription_revocation(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_revoke_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_revoke_subscription"
+        )
+
+        await organization_service.deny_organization(session, organization)
+
+        enqueue_revoke_mock.assert_called_once_with(organization_id=organization.id)
 
 
 @pytest.mark.anyio

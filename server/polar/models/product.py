@@ -155,8 +155,8 @@ class Product(
     is_tax_applicable: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
-    trial_payment_setup_required: Mapped[bool | None] = mapped_column(
-        Boolean, nullable=True, default=True
+    trial_payment_setup_required: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
     )
     tax_code: Mapped[TaxCode] = mapped_column(
         StringEnum(TaxCode),

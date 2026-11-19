@@ -226,10 +226,7 @@ class TestAddPaymentMethod:
             ),
         )
 
-        stripe_service_mock.update_customer.assert_awaited_once_with(
-            customer.stripe_customer_id,
-            invoice_settings={"default_payment_method": generated.id},
-        )
+        stripe_service_mock.update_customer.assert_not_called()
         assert response.status == "succeeded"
         assert response.payment_method.type == "sepa_debit"
         assert customer.default_payment_method_id == response.payment_method.id

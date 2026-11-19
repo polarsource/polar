@@ -51,7 +51,7 @@ class FilesSync(SyncServiceBase):
             ids: Filter by file ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -100,7 +100,7 @@ class FilesSync(SyncServiceBase):
             ids: Filter by file ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -176,7 +176,7 @@ class FilesSync(SyncServiceBase):
         **Scopes**: `files:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -217,7 +217,7 @@ class FilesSync(SyncServiceBase):
 
         Args:
             id_path: The file ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -263,7 +263,7 @@ class FilesSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -308,7 +308,7 @@ class FilesSync(SyncServiceBase):
 
         Args:
             id: The file ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -362,7 +362,7 @@ class FilesAsync(AsyncServiceBase):
             ids: Filter by file ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -411,7 +411,7 @@ class FilesAsync(AsyncServiceBase):
             ids: Filter by file ID.
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -488,7 +488,7 @@ class FilesAsync(AsyncServiceBase):
         **Scopes**: `files:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -529,7 +529,7 @@ class FilesAsync(AsyncServiceBase):
 
         Args:
             id_path: The file ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -575,7 +575,7 @@ class FilesAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -620,7 +620,7 @@ class FilesAsync(AsyncServiceBase):
 
         Args:
             id: The file ID.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

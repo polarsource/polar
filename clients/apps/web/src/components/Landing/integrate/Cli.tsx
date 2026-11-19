@@ -58,7 +58,7 @@ const FEATURES: Feature[] = [
 export const Cli = () => (
   <Chapter
     id="cli"
-    name="03 CLI"
+    name="04 CLI"
     title="Localhost, wired in"
     subtitle="The whole API from the terminal"
     description="Sign in, tunnel webhooks, fire events and call any endpoint without leaving the terminal. Every command can speak JSON."

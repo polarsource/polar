@@ -1,7 +1,7 @@
 from typing import Any, Unpack, cast
 from uuid import UUID
 
-import httpx
+import httpx2
 import structlog
 
 from polar.auth.models import Agent, AuthSubject
@@ -252,7 +252,7 @@ class BenefitSlackSharedChannelService(
             result = await self._client.conversations_archive(
                 bot_token=bot_token, channel=channel_id
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning("Slack archive failed", error=str(e))
             raise BenefitRetriableError() from e
 
@@ -417,7 +417,7 @@ class BenefitSlackSharedChannelService(
                     types=types,
                     exclude_archived=False,
                 )
-            except httpx.HTTPError as e:
+            except httpx2.HTTPError as e:
                 raise BenefitRetriableError() from e
 
             if not result.get("ok"):
@@ -480,7 +480,7 @@ class BenefitSlackSharedChannelService(
             result = await self._client.conversations_join(
                 bot_token=bot_token, channel=channel
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             raise BenefitRetriableError() from e
 
         if result.get("ok"):
@@ -504,7 +504,7 @@ class BenefitSlackSharedChannelService(
             result = await self._client.conversations_unarchive(
                 bot_token=bot_token, channel=channel
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             raise BenefitRetriableError() from e
 
         error = result.get("error", "")
@@ -582,7 +582,7 @@ class BenefitSlackSharedChannelService(
             return await self._client.conversations_create(
                 bot_token=bot_token, name=name, is_private=is_private
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             raise BenefitRetriableError() from e
 
     async def _safe_invite_team(
@@ -597,7 +597,7 @@ class BenefitSlackSharedChannelService(
             result = await self._client.conversations_invite(
                 bot_token=bot_token, channel=channel, users=users
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning("Slack team invite failed", error=str(e))
             return
         if not result.get("ok"):
@@ -617,7 +617,7 @@ class BenefitSlackSharedChannelService(
             await self._client.chat_post_message(
                 bot_token=bot_token, channel=channel, text=text
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             bound_logger.warning("Slack welcome post failed", error=str(e))
 
     async def _invite_shared(
@@ -631,7 +631,7 @@ class BenefitSlackSharedChannelService(
             result = await self._client.conversations_invite_shared(
                 bot_token=bot_token, channel=channel, email=email
             )
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             raise BenefitRetriableError() from e
 
         if not result.get("ok"):

@@ -743,6 +743,20 @@ class OverviewSection(ChecklistMixin):
                     self.org.email if self.has_email else None,
                     self._support_email_badge() if self.has_email else None,
                 )
+                if self.has_email and not self._support_email_verified():
+                    with tag.div(classes="flex justify-end"):
+                        with button(
+                            size="xs",
+                            outline=True,
+                            hx_post=str(
+                                request.url_for(
+                                    "organizations:verify_support_email",
+                                    organization_id=self.org.id,
+                                )
+                            ),
+                            hx_confirm=f"Mark {self.org.email} as verified?",
+                        ):
+                            text("Verify support email")
 
                 render_checklist_row(
                     "Website URL",
@@ -798,13 +812,16 @@ class OverviewSection(ChecklistMixin):
                 self._render_payout_account_row()
                 self._render_shared_payout_account_row(request)
 
-    def _support_email_badge(self) -> tuple[str, str, str | None]:
+    def _support_email_verified(self) -> bool:
         current = self.support_email
-        if (
+        return (
             current is not None
             and current.verified_at is not None
             and current.email == self.org.email
-        ):
+        )
+
+    def _support_email_badge(self) -> tuple[str, str, str | None]:
+        if self._support_email_verified():
             return "Verified", "badge-success", None
         return "Not verified", "badge-ghost", None
 

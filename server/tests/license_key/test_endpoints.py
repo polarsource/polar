@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 from dateutil.relativedelta import relativedelta
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 
 from polar.auth.models import AuthSubject
 from polar.benefit.grant.repository import BenefitGrantRepository

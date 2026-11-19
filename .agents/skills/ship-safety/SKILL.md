@@ -71,9 +71,10 @@ When the PR merges, the queues hold jobs enqueued by the old code.
   defaults.
 - **Queue priority.** `TaskPriority.HIGH` is checkout-path only. Analytics, exports and
   backfills go `LOW`. Slow work on `HIGH` starves checkout.
-- **Cron actors.** A new `cron_trigger` needs an answer for a missed run. A catch-up loop that
-  walks forward through skipped periods usually computes state wrong; prefer an invariant
-  alert that the run did not happen.
+- **Cron actors.** The `CronJobStore` keeps each cron's next run in Postgres and fires a
+  coalesced catch-up on the next start when firings were missed. The question for a new
+  `cron_trigger` is whether one catch-up run is correct for the task; a bespoke catch-up
+  loop that walks forward through skipped periods usually computes state wrong.
 - **Retries.** Polar relies on automatic retries. A new failure path must raise, not swallow,
   and `max_retries=0` must be deliberate.
 

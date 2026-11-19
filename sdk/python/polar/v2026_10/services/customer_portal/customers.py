@@ -48,7 +48,7 @@ class CustomersSync(SyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -79,7 +79,7 @@ class CustomersSync(SyncServiceBase):
         Update authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -119,7 +119,7 @@ class CustomersSync(SyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -162,7 +162,7 @@ class CustomersSync(SyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -198,7 +198,7 @@ class CustomersSync(SyncServiceBase):
         Add a payment method to the authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -239,7 +239,7 @@ class CustomersSync(SyncServiceBase):
         Confirm a payment method for the authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -281,7 +281,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -322,7 +322,7 @@ class CustomersSync(SyncServiceBase):
         Request an email change for the authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -360,7 +360,7 @@ class CustomersSync(SyncServiceBase):
 
         Args:
             token:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -399,7 +399,7 @@ class CustomersSync(SyncServiceBase):
         Verify an email change using the token from the verification email.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -443,7 +443,7 @@ class CustomersAsync(AsyncServiceBase):
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -474,7 +474,7 @@ class CustomersAsync(AsyncServiceBase):
         Update authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -514,7 +514,7 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -557,7 +557,7 @@ class CustomersAsync(AsyncServiceBase):
         Args:
             page: Page number, defaults to 1.
             limit: Size of a page, defaults to 10. Maximum is 100.
-            request_timeout: Timeout override for each request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for each request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for each request.
 
 
@@ -594,7 +594,7 @@ class CustomersAsync(AsyncServiceBase):
         Add a payment method to the authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -635,7 +635,7 @@ class CustomersAsync(AsyncServiceBase):
         Confirm a payment method for the authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -677,7 +677,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             id:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -718,7 +718,7 @@ class CustomersAsync(AsyncServiceBase):
         Request an email change for the authenticated customer.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters
@@ -756,7 +756,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Args:
             token:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
 
@@ -795,7 +795,7 @@ class CustomersAsync(AsyncServiceBase):
         Verify an email change using the token from the verification email.
 
         Args:
-            request_timeout: Timeout override for this request, in seconds or as an httpx.Timeout instance.
+            request_timeout: Timeout override for this request, in seconds or as an HTTPX or HTTPX2 Timeout instance.
             request_access_token: Access token override for this request.
 
             **kwargs: Request body parameters

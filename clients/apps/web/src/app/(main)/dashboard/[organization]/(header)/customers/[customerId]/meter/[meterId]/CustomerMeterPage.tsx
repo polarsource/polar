@@ -1,5 +1,6 @@
 'use client'
 
+import { CatalogVersionLabel } from '@/components/Products/CatalogVersionLabel'
 import { MeterPeriodDetails } from '@/components/Customer/CustomerMeter/MeterPeriodDetails'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker, {
@@ -140,14 +141,20 @@ const CustomerMeterPage = ({
               <ArrowBackOutlined fontSize="small" />
             </Link>
             <Box flexDirection="column" minWidth={0}>
-              <Link
-                href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
-                className="truncate hover:underline"
-              >
-                <Text variant="heading-xxs" as="h1">
-                  {meter.name}
-                </Text>
-              </Link>
+              <Box alignItems="center" columnGap="s" minWidth={0}>
+                <Link
+                  href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
+                  className="truncate hover:underline"
+                >
+                  <Text variant="heading-xxs" as="h1">
+                    {meter.name}
+                  </Text>
+                </Link>
+                <CatalogVersionLabel
+                  organization={organization}
+                  version={meter}
+                />
+              </Box>
               <Text color="muted">
                 {customer.name || customer.email || 'Customer'}
                 {subscription && ` · ${subscription.product.name}`}

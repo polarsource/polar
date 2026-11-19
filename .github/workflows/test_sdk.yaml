@@ -24,8 +24,13 @@ jobs:
     outputs:
       sdk: ${{ steps.filter.outputs.sdk }}
     steps:
-      - uses: actions/checkout@v7.0.1
-      - uses: dorny/paths-filter@v4.0.3
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: filter
         with:
           filters: |
@@ -54,29 +59,34 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v7.0.1
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.3.2
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version-file: "sdk/generator/pyproject.toml"
 
-      - uses: pnpm/action-setup@v6.1.0
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           package_json_file: sdk/typescript/package.json
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
 
       - name: Install just
-        uses: extractions/setup-just@v4
+        uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
 
       - name: Set up server
         working-directory: ./server
@@ -96,10 +106,16 @@ jobs:
         working-directory: ./sdk/generator
         run: just test
 
+      # Redis 8.2 or later: the Redis cost tests read each client's bytes from CLIENT LIST.
+      - name: Install Redis
+        uses: shogo82148/actions-setup-redis@d566e806806d1bac2b414538d57b2b7f721e1d83 # v1.60.0
+        with:
+          redis-version: "8.2"
+          auto-start: false
+
       - name: Generate and test SDKs
         working-directory: ./sdk/generator
         run: |
-          sudo apt-get update && sudo apt-get install -y redis-server
           just openapi
           just generate-all
 
@@ -116,7 +132,7 @@ jobs:
 
       - name: Test SDK E2E scenarios
         working-directory: ./sdk/e2e
-        run: just test
+        run: just test-prebuilt
 
       - name: Verify bundled Python SDK skill
         working-directory: ./sdk/python
@@ -132,7 +148,7 @@ jobs:
         working-directory: ./sdk/typescript
         run: |
           mkdir -p packed
-          pnpm pack --pack-destination packed
+          pnpm pack --ignore-scripts --pack-destination packed
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/SKILL.md'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/agents/openai.yaml'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/migration-from-v0.md'

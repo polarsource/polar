@@ -280,20 +280,6 @@ SCENARIOS = [
             credits(150, meter_id="average-meter"),
         ],
         [
-            expect(0, "writer", 20),
-            expect(0, "reader", 20),
-            ReadStep(
-                0,
-                "reader",
-                {**CUSTOMER, "meter_id": "shared"},
-                {"consumed_units": 20, "credited_units": 200, "balance": 180},
-            ),
-            ReadStep(
-                0,
-                "reader",
-                {**CUSTOMER, "meter_id": "average-meter"},
-                {"consumed_units": 10, "credited_units": 150, "balance": 140},
-            ),
             two := emit(0.2, "writer", 2),
             eight := emit(0.2, "reader", 8),
             expect(0.3, "reader", 30),
@@ -363,6 +349,22 @@ SCENARIOS = [
             RestartStep(1.3, "reader"),
             expect(1.6, "reader", 44),
         ],
+        initial_reads=(
+            expect(0, "writer", 20),
+            expect(0, "reader", 20),
+            ReadStep(
+                0,
+                "reader",
+                {**CUSTOMER, "meter_id": "shared"},
+                {"consumed_units": 20, "credited_units": 200, "balance": 180},
+            ),
+            ReadStep(
+                0,
+                "reader",
+                {**CUSTOMER, "meter_id": "average-meter"},
+                {"consumed_units": 10, "credited_units": 150, "balance": 140},
+            ),
+        ),
     ),
     Scenario(
         "cold read waits for the first snapshot",

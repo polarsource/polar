@@ -20,7 +20,7 @@ from sqlalchemy import (
     tuple_,
 )
 from sqlalchemy.exc import MultipleResultsFound
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import aliased, joinedload, with_polymorphic
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import Agent, AuthSubject, Organization, User
@@ -54,8 +54,11 @@ from polar.models import (
     MeterEvent,
     Product,
     ProductPrice,
+    ProductPriceMeteredTiers,
+    ProductPriceMeteredUnit,
     SubscriptionProductPrice,
 )
+from polar.models.catalog import CatalogStatus
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.reducer.service import reducer as reducer_service
@@ -100,6 +103,8 @@ class MeterService:
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
         external_id: Sequence[str] | None = None,
+        catalog_id: Sequence[uuid.UUID] | None = None,
+        catalog_status: Sequence[CatalogStatus] | None = None,
         metadata: MetadataQuery | None = None,
         query: str | None = None,
         is_archived: bool | None = None,
@@ -113,6 +118,10 @@ class MeterService:
             session, auth_subject, permission=OrganizationPermission.products_read
         )
         statement = repository.get_statement_by_org_ids(org_ids)
+        if catalog_id is not None or catalog_status is not None:
+            statement = repository.apply_catalog_filter(
+                statement, org_ids, catalog_id, catalog_status
+            )
 
         if organization_id is not None:
             statement = statement.where(Meter.organization_id.in_(organization_id))
@@ -227,7 +236,11 @@ class MeterService:
         session: AsyncSession,
         organization: Organization,
         meter_create: MeterCreateBase,
+        *,
+        draft: bool = False,
     ) -> Meter:
+        """Create a meter. A draft's meter isn't current and matches no events
+        until `activate` runs when the draft is published."""
         repository = MeterRepository.from_session(session)
         meter = await repository.create(
             Meter(
@@ -237,12 +250,17 @@ class MeterService:
                 filter=meter_create.filter,
                 aggregation=meter_create.aggregation,
                 organization=organization,
+                is_current=not draft,
             ),
             flush=True,
         )
+        if not draft:
+            await self.activate(session, meter)
+        return meter
 
-        # Retrieve the latest matching event for the meter and set it as the last billed event
-        # This is done to ensure that the meter is billed from the last event onwards
+    async def activate(self, session: AsyncSession, meter: Meter) -> None:
+        """Start billing the meter from its latest matching event onwards."""
+        repository = MeterRepository.from_session(session)
         event_repository = EventRepository.from_session(session)
         statement = (
             event_repository.get_meter_statement(meter)
@@ -259,19 +277,20 @@ class MeterService:
         enqueue_job("reducer.invalidate_cache", meter.organization_id)
         enqueue_job("meter.backfill_events", meter.id)
 
-        return meter
-
     async def update(
         self,
         session: AsyncSession,
         meter: Meter,
         meter_update: MeterUpdate,
         auth_subject: AuthSubject[User | Organization | Agent],
+        *,
+        declarative_config: bool = False,
     ) -> Meter:
         await assert_resource_permission(
             session, auth_subject, meter, OrganizationPermission.products_manage
         )
-        await assert_catalog_editable(session, meter.organization_id)
+        if not declarative_config:
+            await assert_catalog_editable(session, meter.organization_id)
         repository = MeterRepository.from_session(session)
 
         errors: list[ValidationError] = []
@@ -329,17 +348,19 @@ class MeterService:
         return meter
 
     async def archive(self, session: AsyncSession, meter: Meter) -> Meter:
+        price = with_polymorphic(
+            ProductPrice, [ProductPriceMeteredUnit, ProductPriceMeteredTiers]
+        )
         # Check if meter is attached to any active metered price
         active_prices = await session.scalar(
-            select(func.count(ProductPrice.id))
+            select(func.count(price.id))
             .join(Product)
             .where(
                 ~Product.is_archived,
-                ProductPrice.is_metered,
-                # The subclass attribute would add a polymorphic filter and drop tiered prices.
-                ProductPrice.__table__.c.meter_id == meter.id,
-                ~ProductPrice.is_archived,
-                ~ProductPrice.is_deleted,
+                price.is_metered,
+                price.ProductPriceMeteredUnit.meter_id == meter.id,
+                ~price.is_archived,
+                ~price.is_deleted,
             )
         )
 

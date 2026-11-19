@@ -30,6 +30,7 @@ from .service import (
     ConfigAsCodeNotEnabled,
     ConfigBenefitConflict,
     ConfigCatalogPublished,
+    ConfigCustomFieldConflict,
     ConfigInvalid,
     ConfigMeterConflict,
     ConfigProductConflict,
@@ -86,8 +87,7 @@ async def export(
     """
     Export the organization's current config as a declarative config document.
 
-    With `catalog_id`, products come from that catalog version. Settings, meters
-    and benefits aren't versioned, so they're always the current ones.
+    With `catalog_id`, the config comes from that catalog version.
 
     `config` has the shape plan and apply accept, without `organization_id`:
     planning it for the same organization without edits reports no changes.
@@ -212,6 +212,7 @@ async def disable(
             | ConfigMeterConflict.schema()
             | ConfigBenefitConflict.schema()
             | ConfigProductConflict.schema()
+            | ConfigCustomFieldConflict.schema()
             | ConfigWebhookConflict.schema(),
         },
     },
@@ -222,10 +223,10 @@ async def apply(
     publish: bool = Query(
         False,
         description=(
-            "Publish the product and benefit changes. By default, they're saved "
-            "in the organization's draft catalog, to publish later. With `true`, "
-            "they go live and a pending draft is discarded. Meters, settings and "
-            "webhooks aren't versioned, so they apply right away."
+            "Publish the catalog changes. By default, product, benefit, meter "
+            "and settings changes are saved in the organization's draft catalog, "
+            "to publish later. With `true`, they go live and a pending draft is "
+            "discarded. Webhooks aren't versioned, so they apply right away."
         ),
     ),
     session: AsyncSession = Depends(get_db_session),
@@ -243,7 +244,7 @@ async def apply(
     isn't listed but has a billable subscription or a pending subscription
     update must be marked deprecated instead, or nothing is applied.
     Other resources that aren't listed are left untouched.
-    `settings` are applied first, so products can be priced in a new
+    `settings` go live with the catalog, so products can be priced in a new
     `payments.currency` in the same config. Every active product must have a price in
     the resulting currency, or nothing is applied.
     Everything is applied in one transaction.
@@ -285,9 +286,9 @@ async def plan(
     Returns the action for each resource, and every issue: `error` issues make
     apply fail, `warning` issues don't.
 
-    With the ID of an archived catalog, products are compared to that version
-    instead of the live one. The plan then shows the changes from that version,
-    not what apply would do, and the response's `catalog` is None.
+    With the ID of an archived catalog, the plan shows the changes from that
+    version instead of the live one, without settings, and the response's
+    `catalog` is None.
 
     Each section requires the read or write scope for its resource.
     """

@@ -32,7 +32,7 @@ from decimal import Decimal
 import freezegun
 import pytest
 import stripe as stripe_lib
-from httpx import AsyncClient
+from httpx2 import AsyncClient
 from sqlalchemy import select
 
 from polar.auth.scope import Scope

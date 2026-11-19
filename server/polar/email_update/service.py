@@ -97,6 +97,7 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
             ),
             to_email_addr=email,
             subject="Update your email",
+            unsuppress=True,
         )
 
     async def verify(self, session: AsyncSession, token: str, user: User) -> User:

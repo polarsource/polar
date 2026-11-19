@@ -31,7 +31,7 @@ from polar.product.schemas import (
     ProductPrice,
     ProductPriceList,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 SuccessURL = Annotated[
     SuccessUrl | None,
@@ -88,7 +88,19 @@ _units_description = (
 )
 
 
+_trial_payment_setup_required_description = (
+    "Whether customers must provide a payment method to start a trial. "
+    "If `false`, customers can start a trial without entering payment details. "
+    "If `null`, the product's setting is used."
+)
+
+
 class CheckoutLinkCreateBase(TrialConfigurationInputMixin, MetadataInputMixin, Schema):
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=_trial_payment_setup_required_description),
+    ] = None
     payment_processor: Literal[PaymentProcessor.stripe] = Field(
         description="Payment processor to use. Currently only Stripe is supported."
     )
@@ -144,6 +156,12 @@ class CheckoutLinkCreateProducts(CheckoutLinkCreateBase):
 class CheckoutLinkUpdate(MetadataInputMixin, TrialConfigurationInputMixin):
     """Schema to update an existing checkout link."""
 
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=_trial_payment_setup_required_description),
+    ] = None
+
     products: list[UUID4] | None = Field(
         default=None,
         description="List of products that will be available to select at checkout.",
@@ -171,6 +189,11 @@ class CheckoutLinkBase(
     MetadataOutputMixin, TrialConfigurationOutputMixin, TimestampedSchema, IDSchema
 ):
     payment_processor: PaymentProcessor = Field(description="Payment processor used.")
+    trial_payment_setup_required: Annotated[
+        bool | None,
+        Version(starting_from=V2027_01),
+        Field(description=_trial_payment_setup_required_description),
+    ]
     client_secret: str = Field(
         description="Client secret used to access the checkout link."
     )

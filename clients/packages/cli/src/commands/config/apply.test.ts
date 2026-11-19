@@ -150,12 +150,14 @@ const run = async (
       Effect.provideService(
         BillingConfig,
         BillingConfig.of({
+          generate: () => Effect.die('unused'),
           load: () => Effect.succeed(config),
           plan: planned,
           apply: applied,
           init: () => Effect.die('unused'),
           install: () => Effect.die('unused'),
           disable: () => Effect.die('unused'),
+          deprecations: () => Effect.die('unused'),
           prune: () => Effect.die('unused'),
           catalogs: () => Effect.die('unused'),
           publish: () => Effect.die('unused'),
@@ -224,7 +226,7 @@ describe('polar config apply', () => {
       ['--confirm'],
     )
     expect(output).toContain(
-      'Products and benefits are saved to the draft catalog.',
+      'Products, benefits, meters and settings are saved to the draft catalog.',
     )
     expect(output).toContain('Run polar config publish to make it live.')
   })

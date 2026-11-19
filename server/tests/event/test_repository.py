@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import event as sqlalchemy_event
 from sqlalchemy import select
 
-from polar.event.repository import EventRepository
+from polar.event.repository import _INSERT_STAGED_EVENTS_COLUMNS, EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.models import Event, Organization, StagedEvent
@@ -506,3 +506,29 @@ class TestGetStagedEventsBacklog:
             3,
             now - timedelta(minutes=5),
         )
+
+
+@pytest.mark.anyio
+class TestInsertStagedBatch:
+    async def test_statement_covers_every_column(self) -> None:
+        assert _INSERT_STAGED_EVENTS_COLUMNS == {
+            column.name for column in StagedEvent.__table__.columns
+        }
+
+    async def test_unknown_column(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        repository = EventRepository.from_session(session)
+        with pytest.raises(ValueError, match="unknown"):
+            await repository.insert_staged_batch(
+                [
+                    {
+                        "timestamp": utc_now(),
+                        "name": "test",
+                        "source": EventSource.user,
+                        "organization_id": organization.id,
+                        "user_metadata": {},
+                        "unknown": 1,
+                    }
+                ]
+            )

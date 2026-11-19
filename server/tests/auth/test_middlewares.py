@@ -33,6 +33,7 @@ from polar.models import (
     OAuth2Client,
     OAuth2Token,
     Organization,
+    OrganizationAccessToken,
     PersonalAccessToken,
     User,
     UserOrganization,
@@ -43,6 +44,12 @@ from polar.models.user_session_organization import UserSessionOrganization
 from polar.oauth2.constants import ACCESS_TOKEN_PREFIX
 from polar.oauth2.exceptions import InvalidTokenError
 from polar.oauth2.sub_type import SubType
+from polar.organization_access_token.service import (
+    TOKEN_PREFIX as ORGANIZATION_ACCESS_TOKEN_PREFIX,
+)
+from polar.organization_access_token.service import (
+    organization_access_token as organization_access_token_service,
+)
 from polar.personal_access_token.service import TOKEN_PREFIX
 from polar.postgres import AsyncSession
 from polar.redis import Redis
@@ -844,3 +851,40 @@ class TestIsSingleOrganizationCredential:
 
         assert auth_subject.organization_ids == frozenset({organization.id})
         assert not is_single_organization_credential(auth_subject)
+
+
+@pytest.mark.anyio
+class TestGetAuthSubjectOrganizationAccessTokenCache:
+    async def test_deleted_token_authenticates_until_cache_expires(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        monkeypatch.setattr(settings, "ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS", 60)
+        monkeypatch.setattr(organization_access_token_service, "_cache", {})
+        token = f"{ORGANIZATION_ACCESS_TOKEN_PREFIX}test"
+        organization_access_token = OrganizationAccessToken(
+            comment="test",
+            token=get_token_hash(token),
+            organization=organization,
+            scope="events:write",
+        )
+        await save_fixture(organization_access_token)
+        request = _request_with_bearer_token(token)
+
+        assert (await get_auth_subject(request, session)).subject == organization
+
+        await session.delete(organization_access_token)
+        await session.flush()
+        session.expunge_all()
+
+        cached = await get_auth_subject(request, session)
+        assert isinstance(cached.subject, Organization)
+        assert cached.subject.id == organization.id
+        assert cached.subject in session
+
+        organization_access_token_service._cache.clear()
+        with pytest.raises(InvalidTokenError):
+            await get_auth_subject(request, session)

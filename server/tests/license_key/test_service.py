@@ -22,6 +22,7 @@ from polar.kit.db.postgres import (
     create_async_engine,
     create_async_sessionmaker,
 )
+from polar.kit.utils import utc_now
 from polar.license_key.repository import LicenseKeyRepository
 from polar.license_key.schemas import (
     LicenseKeyActivate,
@@ -328,6 +329,31 @@ async def _license_key_and_grant(
 
 @pytest.mark.anyio
 class TestUpdate:
+    async def test_cannot_reactivate_a_manually_revoked_grant(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        license_key, grant = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        grant.manually_revoked_at = utc_now()
+        license_key.status = LicenseKeyStatus.revoked
+        await save_fixture(grant)
+
+        with pytest.raises(NotPermitted, match="manually revoked"):
+            await license_key_service.update(
+                session,
+                license_key=license_key,
+                updates=LicenseKeyUpdate(status=LicenseKeyStatus.granted),
+            )
+
+        assert license_key.status == LicenseKeyStatus.revoked
+
     @pytest.mark.parametrize(
         "status", [LicenseKeyStatus.granted, LicenseKeyStatus.disabled]
     )

@@ -110,7 +110,12 @@ async def get(
     )
 
 
-@router.get("/export", summary="Export Metrics", response_class=CSVStreamingResponse)
+@router.get(
+    "/export",
+    summary="Export Metrics",
+    response_class=CSVStreamingResponse,
+    tags=[APITag.private],
+)
 async def export(
     filters: Annotated[MetricsExportParams, Query()],
     auth_subject: auth.MetricsRead,
@@ -211,6 +216,7 @@ async def limits(auth_subject: auth.MetricsRead) -> MetricsLimits:
     "/dashboards",
     summary="List Metric Dashboards",
     response_model=list[MetricDashboardSchema],
+    tags=[APITag.private],
 )
 async def list_dashboards(
     filters: Annotated[MetricsDashboardListParams, Query()],
@@ -231,6 +237,7 @@ async def list_dashboards(
     summary="Create Metric Dashboard",
     response_model=MetricDashboardSchema,
     status_code=201,
+    tags=[APITag.private],
 )
 async def create_dashboard(
     auth_subject: auth.MetricsWrite,
@@ -246,6 +253,7 @@ async def create_dashboard(
     "/dashboards/{id}",
     summary="Get Metric Dashboard",
     response_model=MetricDashboardSchema,
+    tags=[APITag.private],
 )
 async def get_dashboard(
     auth_subject: auth.MetricsRead,
@@ -263,6 +271,7 @@ async def get_dashboard(
     "/dashboards/{id}",
     summary="Update Metric Dashboard",
     response_model=MetricDashboardSchema,
+    tags=[APITag.private],
 )
 async def update_dashboard(
     auth_subject: auth.MetricsWrite,
@@ -284,6 +293,7 @@ async def update_dashboard(
     "/dashboards/{id}",
     summary="Delete Metric Dashboard",
     status_code=204,
+    tags=[APITag.private],
 )
 async def delete_dashboard(
     auth_subject: auth.MetricsWrite,

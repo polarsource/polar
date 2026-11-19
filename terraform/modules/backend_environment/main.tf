@@ -40,8 +40,9 @@ locals {
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = var.backend_config.customer_portal_url_overrides
     },
     { for name, value in {
-      POLAR_DATABASE_STATEMENT_CACHE_SIZE          = var.backend_config.database_statement_cache_size
-      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE = var.backend_config.database_prepared_statement_cache_size
+      POLAR_DATABASE_STATEMENT_CACHE_SIZE               = var.backend_config.database_statement_cache_size
+      POLAR_DATABASE_PREPARED_STATEMENT_CACHE_SIZE      = var.backend_config.database_prepared_statement_cache_size
+      POLAR_ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS = var.backend_config.organization_access_token_cache_ttl_seconds
     } : name => tostring(value) if value != null },
     var.backend_config.backoffice_host != null ? {
       POLAR_BACKOFFICE_HOST = var.backend_config.backoffice_host
@@ -57,6 +58,9 @@ locals {
     } : {},
     var.backend_config.merchant_migration_destination_stripe_account_id != "" ? {
       POLAR_MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID = var.backend_config.merchant_migration_destination_stripe_account_id
+    } : {},
+    var.backend_config.customer_meter_units_from_reducer ? {
+      POLAR_CUSTOMER_METER_UNITS_FROM_REDUCER = "true"
     } : {},
   )
 

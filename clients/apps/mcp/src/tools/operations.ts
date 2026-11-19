@@ -4,13 +4,13 @@ import {
   type McpServer,
 } from '@modelcontextprotocol/server'
 import { Effect } from 'effect'
-import { HttpClient, HttpClientRequest, type HttpMethod } from 'effect/http'
+import { HttpClientRequest, type HttpMethod } from 'effect/http'
 import generatedTools from '../generated/tools.json'
 import { intentJsonSchema } from '../intent'
 import { RequestLog } from '../log'
-import type { PolarApiOutboundProps } from '../outbound'
+import { polarApiClient, type PolarApiOutboundProps } from '../outbound'
 import { makeToolRunner, ToolError } from '../results'
-import { rejectedFields, spec } from '../spec'
+import { rejectedFields } from '../spec'
 
 type Arguments = Record<string, unknown>
 
@@ -25,6 +25,11 @@ interface OperationTool {
   inputSchema: JsonSchemaType
 }
 
+// OpenAI's review requires `destructiveHint: true` on tools that overwrite data.
+// These are not marked `destructive` on the server because that annotation also
+// makes the CLI ask for confirmation, and fail without `--confirm` in scripts.
+const OVERWRITING_TOOLS = new Set(['orders_update', 'checkout_links_update'])
+
 const withIntent = (schema: JsonSchemaType): JsonSchemaType => ({
   ...schema,
   properties: { ...schema.properties, intent: intentJsonSchema },
@@ -37,7 +42,9 @@ const operationTools = (generatedTools as unknown as OperationTool[]).map(
     annotations: {
       title: tool.title,
       readOnlyHint: tool.annotations.includes('read_only'),
-      destructiveHint: tool.annotations.includes('destructive'),
+      destructiveHint:
+        tool.annotations.includes('destructive') ||
+        OVERWRITING_TOOLS.has(tool.name),
       idempotentHint: tool.annotations.includes('idempotent'),
       openWorldHint: tool.annotations.includes('open_world'),
     },
@@ -79,15 +86,7 @@ export const registerOperationTools = Effect.fn('registerOperationTools')(
     { apiUrl, token, readOnly }: PolarApiOutboundProps,
   ) {
     const runTool = yield* makeToolRunner
-    const client = (yield* HttpClient.HttpClient).pipe(
-      HttpClient.mapRequest((request) =>
-        request.pipe(
-          HttpClientRequest.bearerToken(token),
-          HttpClientRequest.setHeader('User-Agent', 'polar-mcp'),
-          HttpClientRequest.setHeader('Polar-Version', spec.apiVersion),
-        ),
-      ),
-    )
+    const client = yield* polarApiClient(token)
 
     const execute = Effect.fn('Operation.execute')(
       function* (definition: OperationTool, args: Arguments) {

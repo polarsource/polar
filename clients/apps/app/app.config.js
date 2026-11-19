@@ -1,6 +1,9 @@
 const IS_WIDGET_BUILD = process.env.EXPO_WIDGET_BUILD === '1'
 
 const plugins = [
+  ...(IS_WIDGET_BUILD
+    ? []
+    : [['expo-build-properties', { ios: { enableSceneSupport: true } }]]),
   'expo-router',
   [
     'expo-splash-screen',
@@ -50,7 +53,7 @@ module.exports = {
   expo: {
     name: 'Polar',
     slug: 'Polar',
-    version: '1.8.0',
+    version: '1.10.0',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'polar',

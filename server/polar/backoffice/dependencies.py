@@ -1,3 +1,5 @@
+from urllib.parse import urlencode, urlsplit
+
 from fastapi import Depends, Request
 from fastapi.exceptions import HTTPException
 
@@ -16,7 +18,9 @@ async def get_admin(
     if user_session is not None:
         return user_session
 
-    login_url = settings.generate_backoffice_url("/auth/")
+    current_url = urlsplit(request.headers.get("HX-Current-URL") or str(request.url))
+    return_to = current_url._replace(scheme="", netloc="", fragment="").geturl()
+    login_url = f"{settings.generate_backoffice_url('/auth/')}?{urlencode({'return_to': return_to})}"
     if request.headers.get("HX-Request") == "true":
         raise HTTPException(status_code=401, headers={"HX-Redirect": login_url})
     if request.method in ("GET", "HEAD"):

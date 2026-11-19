@@ -248,6 +248,46 @@ describe('planMarkdown', () => {
     expect(output).not.toContain('-   benefits')
   })
 
+  test('says which updated meter a benefit and a product use', () => {
+    const properties = { meter: 'tokens', units: 1000, rollover: false }
+    const prices = [
+      { amount_type: 'metered_unit', meter: 'tokens', unit_amount: '0.1' },
+    ]
+    const output = planMarkdown(config, acme, {
+      entries: [
+        {
+          section: 'meters',
+          id: 'tokens',
+          action: 'updated',
+          diff: [{ field: 'name', before: 'Tokens', after: 'LLM tokens' }],
+        },
+        {
+          section: 'benefits',
+          id: 'credits',
+          action: 'updated',
+          diff: [
+            { field: 'properties', before: properties, after: properties },
+          ],
+        },
+        {
+          section: 'products',
+          id: 'pro',
+          action: 'updated',
+          diff: [{ field: 'prices', before: prices, after: prices }],
+        },
+      ],
+      issues: [],
+    })
+    expect(output).toContain(
+      ['  credits', '    meter  tokens (updated)'].join('\n'),
+    )
+    expect(output).toContain(
+      ['  pro', '    meter  tokens (updated)'].join('\n'),
+    )
+    expect(output).not.toContain('properties')
+    expect(output).not.toContain('prices')
+  })
+
   test('diffs settings groups like entries', () => {
     const markdown = planMarkdown(config, acme, {
       entries: [

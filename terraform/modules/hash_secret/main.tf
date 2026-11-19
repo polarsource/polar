@@ -13,7 +13,7 @@ terraform {
 #
 # One version per secret, AWSCURRENT on the one new hashes use, and a custom
 # staging label per version carrying the id that prefixes them. See
-# handbook/engineering/oncall/rotate-secret.mdx.
+# https://linear.app/polarsh/document/rotate-the-token-hashing-secret-d3411952efbf
 #
 # Never an aws_secretsmanager_secret_version here: it would put the value in
 # Terraform Cloud state in plaintext, which is what this replaces.

@@ -1,3 +1,4 @@
+import time
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -5,6 +6,7 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
+from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import OrderByList
 
 from polar.auth.models import AuthSubject, Organization
@@ -15,6 +17,7 @@ from polar.authz.service import (
     assert_resource_permission,
     get_accessible_org_ids,
 )
+from polar.config import settings
 from polar.email.schemas import (
     OrganizationAccessTokenLeakedEmail,
     OrganizationAccessTokenLeakedProps,
@@ -22,7 +25,7 @@ from polar.email.schemas import (
 from polar.email.sender import enqueue_email_template
 from polar.enums import TokenType
 from polar.exceptions import PolarRequestValidationError
-from polar.kit.crypto import generate_token_hash_pair
+from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
@@ -44,6 +47,9 @@ TOKEN_PREFIX = "polar_oat_"
 
 
 class OrganizationAccessTokenService:
+    def __init__(self) -> None:
+        self._cache: dict[str, tuple[float, OrganizationAccessToken]] = {}
+
     async def list(
         self,
         session: AsyncSession,
@@ -111,7 +117,27 @@ class OrganizationAccessTokenService:
         self, session: AsyncSession, token: str, *, expired: bool = False
     ) -> OrganizationAccessToken | None:
         repository = OrganizationAccessTokenRepository.from_session(session)
-        return await repository.get_by_token(token, expired=expired)
+        ttl = settings.ORGANIZATION_ACCESS_TOKEN_CACHE_TTL_SECONDS
+        if expired or ttl <= 0:
+            return await repository.get_by_token(token, expired=expired)
+
+        key = get_token_hash(token)
+        cached = self._cache.get(key)
+        if cached is not None and cached[0] > time.monotonic():
+            return await session.merge(cached[1], load=False)
+
+        organization_access_token = await repository.get_by_token(token)
+        if organization_access_token is not None and not session.is_modified(
+            organization_access_token
+        ):
+            now = time.monotonic()
+            self._cache = {k: v for k, v in self._cache.items() if v[0] > now}
+            with Session() as detached_session:
+                self._cache[key] = (
+                    now + ttl,
+                    detached_session.merge(organization_access_token, load=False),
+                )
+        return organization_access_token
 
     async def create(
         self,

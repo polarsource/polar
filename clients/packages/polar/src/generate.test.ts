@@ -233,7 +233,7 @@ const cases: [string, PolarConfig][] = [
                   .label('device', 'devices'),
               )
               .recurring('yearly')
-              .trial(14, 'days')
+              .trial(14, 'days', { requirePaymentMethod: false })
               .description('Billed per device, "yearly".\nCancel anytime.')
               .private(),
           }
@@ -266,6 +266,45 @@ const cases: [string, PolarConfig][] = [
             .recurring('monthly')
             .grants(['custom_servers'])
             .metadata({ ['__proto__']: 'pro', constructor: 'x' }),
+        }),
+      })
+      .toJSON(),
+  ],
+  [
+    'custom fields',
+    api
+      .defineConfig({
+        meters: () => ({}),
+        customFields: ({ text, number, date, checkbox, select }) => ({
+          company: text('Company')
+            .label('Company name')
+            .help('Your legal name')
+            .placeholder('Acme')
+            .textarea()
+            .minLength(2)
+            .maxLength(100)
+            .metadata({ source: 'crm' }),
+          employees: number('Employees').min(1).max(100000),
+          start: date('Start date').min('2026-01-01').max('2027-06-30'),
+          terms: checkbox('Terms').label('I accept the terms'),
+          'team-size': select('Team size', {
+            small: '1-10',
+            '"\\\n` ${notCode}': 'Large',
+          }).placeholder('Pick one'),
+          '10': select('Tens', [
+            ['20', 'Twenty'],
+            ['10', 'Ten'],
+          ]),
+        }),
+        products: ({ product, free }) => ({
+          pro: product('Pro')
+            .prices(free())
+            .recurring('monthly')
+            .customFields((optional) => ['terms', optional('team-size')]),
+          tens: product('Tens')
+            .prices(free())
+            .once()
+            .customFields(['team-size', '10']),
         }),
       })
       .toJSON(),
@@ -309,16 +348,18 @@ const cases: [string, PolarConfig][] = [
   [
     'special IDs and strings',
     {
-      meters: ['__proto__', 'constructor', '"\\\n` ${notCode}'].map(
-        (external_id) => ({
-          ...meter,
-          external_id,
-          name: external_id,
-          aggregation: { func: 'sum', property: external_id },
-          unit: 'custom',
-          custom_label: external_id,
-        }),
-      ),
+      meters: [
+        ['constructor', '__proto__'],
+        ['toString', 'constructor'],
+        ['a.b:c', '"\\\n` ${notCode}'],
+      ].map(([external_id = '', text = '']) => ({
+        ...meter,
+        external_id,
+        name: text,
+        aggregation: { func: 'sum', property: text },
+        unit: 'custom',
+        custom_label: text,
+      })),
     },
   ],
 ]
@@ -602,4 +643,22 @@ test('leaves empty metadata out of the generated code', async () => {
     generateConfig({ meters: [{ ...meter, metadata: {} }] }),
   )
   expect(source).not.toContain('.metadata(')
+})
+
+test('renders date bounds as the UTC day they fall on', async () => {
+  const source = await Effect.runPromise(
+    generateConfig({
+      meters: [],
+      custom_fields: [
+        {
+          type: 'date',
+          slug: 'start',
+          name: 'Start',
+          properties: { ge: 1767261600, le: 1798761599 },
+        },
+      ],
+    }),
+  )
+  expect(source).toContain(".min('2026-01-01')")
+  expect(source).toContain(".max('2026-12-31')")
 })

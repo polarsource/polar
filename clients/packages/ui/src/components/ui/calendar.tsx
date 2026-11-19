@@ -39,22 +39,21 @@ function Calendar({
         weekdays: 'flex',
         weekday: 'text-muted-foreground rounded-md w-9 text-[0.8rem]',
         week: 'flex w-full mt-2',
-        day: 'h-9 w-9 text-center text-sm p-0 relative [&[data-selected].day-outside]:bg-accent/50 data-[selected]:bg-accent first:data-selected:rounded-l-md last:data-selected:rounded-r-md focus-within:relative focus-within:z-20',
+        day: 'h-9 w-9 text-center text-sm p-0 relative focus-within:z-20',
         day_button: cn(
           buttonVariants({ variant: 'ghost' }),
-          'h-9 w-9 p-0 font-normal',
+          'h-9 w-9 p-0 font-normal hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-polar-700 dark:hover:text-white focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0',
         ),
-        range_start: 'rounded-l-md!', // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
-        range_end: 'rounded-r-md!', // !important has to override rounded-none from `today[data-selected]` that in its turn overrides the default rounded-md for today
         selected:
-          'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+          '[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground',
         today:
-          'bg-foreground text-accent-foreground rounded-md data-selected:rounded-none',
-        outside:
-          'day-outside text-muted-foreground aria-selected:bg-accent/50 aria-selected:text-foreground',
+          '[&>button]:font-semibold [&:not([data-selected])>button]:text-primary',
+        outside: 'text-muted-foreground',
         disabled: 'text-muted-foreground opacity-50',
+        range_start: 'bg-primary/15 rounded-l-md last:rounded-r-md',
+        range_end: 'bg-primary/15 rounded-r-md first:rounded-l-md',
         range_middle:
-          'aria-selected:bg-accent aria-selected:text-accent-foreground',
+          'bg-primary/15 first:rounded-l-md last:rounded-r-md [&>button]:bg-transparent! [&>button]:text-inherit! [&>button]:hover:bg-primary/20!',
         hidden: 'invisible',
         ...classNames,
       }}

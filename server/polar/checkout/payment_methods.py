@@ -116,11 +116,9 @@ IMPLIED_COUNTRIES: dict[str, str] = {
 
 
 def get_payment_method_country(
-    payment_method_preview: stripe_lib.ConfirmationToken.PaymentMethodPreview | None,
+    payment_method_preview: stripe_lib.ConfirmationToken.PaymentMethodPreview,
 ) -> str | None:
-    payment_method_type = getattr(payment_method_preview, "type", None)
-    if payment_method_type is None:
-        return None
+    payment_method_type = payment_method_preview.type
     details = getattr(payment_method_preview, payment_method_type, None)
     return getattr(details, "country", None) or IMPLIED_COUNTRIES.get(
         payment_method_type

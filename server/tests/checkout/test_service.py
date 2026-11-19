@@ -5035,7 +5035,8 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = None
-        confirmation_token.payment_method_preview.type = None
+        confirmation_token.payment_method_preview.type = "card"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         with pytest.raises(PolarRequestValidationError) as e:
@@ -5062,7 +5063,8 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = None
-        confirmation_token.payment_method_preview.type = None
+        confirmation_token.payment_method_preview.type = "card"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         with pytest.raises(PolarRequestValidationError) as e:
@@ -5099,7 +5101,8 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = "Beppe Boris"
-        confirmation_token.payment_method_preview.type = None
+        confirmation_token.payment_method_preview.type = "card"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -5138,7 +5141,8 @@ class TestConfirm:
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = MagicMock()
         confirmation_token.payment_method_preview.billing_details.name = None
-        confirmation_token.payment_method_preview.type = None
+        confirmation_token.payment_method_preview.type = "card"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -6385,7 +6389,11 @@ class TestConfirm:
 
     @pytest.mark.parametrize(
         "payment_method",
-        [SimpleNamespace(), SimpleNamespace(card={}), SimpleNamespace(cashapp={})],
+        [
+            SimpleNamespace(type="link"),
+            SimpleNamespace(type="card", card={}),
+            SimpleNamespace(type="cashapp", cashapp={}),
+        ],
     )
     async def test_valid_trial(
         self,
@@ -6473,7 +6481,7 @@ class TestConfirm:
         )
         stripe_service_mock.get_confirmation_token.return_value = SimpleNamespace(
             payment_method_preview=SimpleNamespace(
-                card=SimpleNamespace(fingerprint=fingerprint)
+                type="card", card=SimpleNamespace(fingerprint=fingerprint)
             )
         )
 
@@ -7455,7 +7463,8 @@ class TestConfirm:
         confirmation_token.payment_method_preview.billing_details.name = (
             "John Appleseed"
         )
-        confirmation_token.payment_method_preview.type = None
+        confirmation_token.payment_method_preview.type = "card"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
 
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
@@ -7597,7 +7606,8 @@ class TestConfirm:
         confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
         confirmation_token.payment_method_preview = MagicMock()
         confirmation_token.payment_method_preview.billing_details = None
-        confirmation_token.payment_method_preview.type = None
+        confirmation_token.payment_method_preview.type = "card"
+        confirmation_token.payment_method_preview.card = None
         stripe_service_mock.get_confirmation_token.return_value = confirmation_token
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"

@@ -150,7 +150,6 @@ def test_get_payment_method_types_amount_limits(
 @pytest.mark.parametrize(
     ("payment_method_preview", "expected"),
     [
-        pytest.param(None, None, id="no preview"),
         pytest.param(
             SimpleNamespace(type="card", card=SimpleNamespace(country="SE")),
             "SE",

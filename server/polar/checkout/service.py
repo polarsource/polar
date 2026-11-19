@@ -1211,11 +1211,11 @@ class CheckoutService:
             ip_country = (checkout.customer_signals or {}).get("ip_country")
             # The payment method country costs a Stripe round trip:
             # only ask for it when the IP country doesn't confirm the billing country.
-            is_billing_country_unconfirmed = (
-                billing_address is not None and ip_country not in billing_countries
+            is_billing_country_confirmed = (
+                billing_address is None or ip_country in billing_countries
             )
             if (
-                is_billing_country_unconfirmed
+                not is_billing_country_confirmed
                 or checkout.customer_name is None
                 or (
                     checkout.discount is not None
@@ -1233,10 +1233,13 @@ class CheckoutService:
                 except stripe_lib.StripeError:
                     confirmation_token = None
 
-            if is_billing_country_unconfirmed:
-                payment_method_country = get_payment_method_country(
-                    confirmation_token.payment_method_preview
+            if not is_billing_country_confirmed:
+                payment_method_country = (
+                    get_payment_method_country(
+                        confirmation_token.payment_method_preview
+                    )
                     if confirmation_token is not None
+                    and confirmation_token.payment_method_preview is not None
                     else None
                 )
                 checkout.customer_signals = {

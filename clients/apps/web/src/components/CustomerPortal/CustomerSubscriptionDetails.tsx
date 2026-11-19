@@ -94,7 +94,9 @@ const CustomerSubscriptionDetails = ({
 
   return (
     <PortalCard rowGap="xl">
-      {isTrialing && !isCanceled && <TrialBillingDetailsAlert />}
+      {isTrialing && !isCanceled && (
+        <TrialBillingDetailsAlert subscription={subscription} />
+      )}
 
       <CustomerSubscriptionHeader subscription={subscription} />
 

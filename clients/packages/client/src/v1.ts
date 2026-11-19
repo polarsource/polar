@@ -23274,6 +23274,11 @@ export interface components {
       customer_cancellation_comment: string | null
       product: components['schemas']['CustomerSubscriptionProduct']
       /**
+       * Payment Method Id
+       * @description ID of the payment method pinned to the subscription, if any.
+       */
+      payment_method_id: string | null
+      /**
        * Prices
        * @description List of enabled prices for the subscription.
        */

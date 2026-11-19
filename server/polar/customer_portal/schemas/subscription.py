@@ -35,7 +35,7 @@ from polar.subscription.schemas import (
     SubscriptionBase,
     SubscriptionMeterBase,
 )
-from polar.version import V2026_10
+from polar.version import V2026_10, V2027_01
 
 from .organization import CustomerOrganization
 
@@ -66,6 +66,9 @@ class CustomerSubscription(SubscriptionBase):
         deprecated="Use `customer_id`.",
     )
     product: CustomerSubscriptionProduct
+    payment_method_id: Annotated[UUID4 | None, Version(starting_from=V2027_01)] = Field(
+        description="ID of the payment method pinned to the subscription, if any."
+    )
 
     price: Annotated[SkipJsonSchema[ProductPrice], Version(up_to=V2026_10)] = Field(
         deprecated="Use `prices` instead.",

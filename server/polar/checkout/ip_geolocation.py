@@ -1,5 +1,6 @@
 import argparse
 import sys
+from collections import defaultdict
 from typing import Annotated, cast
 
 import httpx2
@@ -142,6 +143,12 @@ BILLING_COUNTRY_ALIASES: dict[str, tuple[str, ...]] = {
     "PN": ("GB",),
 }
 
+BILLING_COUNTRY_MATCHES: dict[str, set[str]] = defaultdict(set)
+for territory, parents in BILLING_COUNTRY_ALIASES.items():
+    for parent in parents:
+        BILLING_COUNTRY_MATCHES[territory].add(parent)
+        BILLING_COUNTRY_MATCHES[parent].add(territory)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -154,7 +161,7 @@ if __name__ == "__main__":
     sys.stdout.write(f"Database downloaded to {DATABASE_PATH}\n")
 
 __all__ = [
-    "BILLING_COUNTRY_ALIASES",
+    "BILLING_COUNTRY_MATCHES",
     "IPGeolocationClient",
     "get_client",
     "get_ip_country",

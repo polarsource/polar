@@ -1195,13 +1195,8 @@ class CheckoutService:
         billing_countries = (
             {
                 billing_address.country,
-                *ip_geolocation.BILLING_COUNTRY_ALIASES.get(
+                *ip_geolocation.BILLING_COUNTRY_MATCHES.get(
                     billing_address.country, ()
-                ),
-                *(
-                    territory
-                    for territory, parents in ip_geolocation.BILLING_COUNTRY_ALIASES.items()
-                    if billing_address.country in parents
                 ),
             }
             if billing_address is not None

@@ -1253,6 +1253,10 @@ class CheckoutService:
                         checkout_id=str(checkout.id),
                         organization_id=str(checkout.organization_id),
                         payment_method_country=payment_method_country,
+                        ip_country=ip_country,
+                        billing_country=billing_address.country
+                        if billing_address is not None
+                        else None,
                     )
 
         # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name

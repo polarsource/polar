@@ -156,6 +156,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const columns: DataTableColumnDef<schemas['Discount']>[] = [
     {
       accessorKey: 'name',
+      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />
@@ -166,6 +167,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     {
       accessorKey: 'code',
+      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Code" />

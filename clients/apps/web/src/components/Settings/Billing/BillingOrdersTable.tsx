@@ -98,6 +98,7 @@ export const BillingOrdersTable = ({
     },
     {
       accessorKey: 'description',
+      meta: { truncate: true },
       header: 'Description',
       size: 240,
       cell: ({ row: { original } }) => (

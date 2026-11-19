@@ -17,7 +17,12 @@ import type {
   RowData,
 } from '@tanstack/react-table'
 
+export interface DataTableColumnMeta {
+  truncate?: boolean
+}
+
 export const dataTableFeatures = tableFeatures({
+  columnMeta: {} as DataTableColumnMeta,
   columnSizingFeature,
   columnVisibilityFeature,
   rowExpandingFeature,

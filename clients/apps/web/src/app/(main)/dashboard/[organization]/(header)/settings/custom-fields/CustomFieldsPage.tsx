@@ -90,6 +90,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const columns: DataTableColumnDef<schemas['CustomField']>[] = [
     {
       accessorKey: 'slug',
+      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Slug" />
@@ -105,6 +106,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     {
       accessorKey: 'name',
+      meta: { truncate: true },
       enableSorting: true,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Name" />

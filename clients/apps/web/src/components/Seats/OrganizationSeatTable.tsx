@@ -100,6 +100,7 @@ export const OrganizationSeatTable = ({
           [
             {
               accessorKey: 'customer_email',
+              meta: { truncate: true },
               header: 'Email',
               cell: ({ row }) => row.original.customer_email || '—',
             },

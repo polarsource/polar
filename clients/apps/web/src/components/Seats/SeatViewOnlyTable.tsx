@@ -32,6 +32,7 @@ export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
       columns={[
         {
           accessorKey: 'customer_email',
+          meta: { truncate: true },
           header: 'Email',
           cell: ({ row }) => (
             <span className="text-sm">

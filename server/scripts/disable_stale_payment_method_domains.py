@@ -22,7 +22,6 @@ from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.organization.embed_hosts import parse_host_pattern
-from polar.organization_domain.repository import PAYING_STATUSES
 from polar.organization_domain.service import (
     organization_domain as organization_domain_service,
 )
@@ -59,13 +58,13 @@ async def disable_stale_payment_method_domains(
             rows = await session.execute(
                 select(
                     Organization.embed_hosts,
-                    Organization.status,
+                    Organization.can_accept_payments,
                     Organization.deleted_at,
                 ).where(func.jsonb_array_length(Organization.embed_hosts) > 0)
             )
             paying_by_host: dict[str, bool] = defaultdict(bool)
-            for embed_hosts, status, deleted_at in rows:
-                paying = deleted_at is None and status in PAYING_STATUSES
+            for embed_hosts, can_accept_payments, deleted_at in rows:
+                paying = deleted_at is None and can_accept_payments
                 for entry in embed_hosts:
                     pattern = parse_host_pattern(entry)
                     if pattern is None or pattern.wildcard or pattern.scheme:

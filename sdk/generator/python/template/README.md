@@ -212,7 +212,7 @@ Outpost needs an `external_id` on every event; `track()` rejects an event withou
 
 An event counts locally until Polar confirms it stored it, or refuses it, so a meter read never loses an event Polar is still ingesting.
 
-Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them to Polar in batches of `batch_size` events (1,000 by default), shared by every client, on `flush()` and every second on a long-running server. Pass `buffered` or `outpost`, not both.
+Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a long-running server. Pass `buffered` or `outpost`, not both.
 
 Pass a dictionary instead of `True` to configure it.
 
@@ -293,7 +293,6 @@ The metering helper buffers events in memory and sends them in batches to Polar.
 | -------------- | -------------------------------- | -------------------------------------------------------- |
 | `redis_url`    | `REDIS_URL` environment variable | Redis instance used by Outpost.                          |
 | `telemetry`    | `True`                           | Send Outpost metrics and traces to Polar.                |
-| `batch_size`   | `1000`                           | Maximum events per request delivering the queue to Polar. |
 | `on_delivered` | `None`                           | Async callback receiving the events Polar accepted.      |
 | `on_dropped`   | `None`                           | Async callback receiving the refused events and reason.  |
 

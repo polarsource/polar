@@ -233,7 +233,7 @@ const metering = polar.metering({ outpost: outpost() });
 storage or refuses it.
 
 Outpost delivers the events itself, instead of the buffer: it queues them in Redis and sends them
-to Polar in batches of `batchSize` events (1,000 by default), shared by every client, on `flush()` and every second on a
+to Polar in batches of up to 1,000 events, shared by every client, on `flush()` and every second on a
 long-running server. Pass `buffered` or `outpost`, not both.
 
 ### Options
@@ -255,8 +255,6 @@ long-running server. Pass `buffered` or `outpost`, not both.
 | `redisUrl` | `REDIS_URL` environment variable | Redis instance used by Outpost. |
 | `telemetry` | `true` | Send Outpost metrics and traces to Polar. |
 | `snapshotTimeout` | `5000` | Milliseconds a cold read waits for its initial snapshot. |
-| `confirmTimeout` | `2000` | Milliseconds a snapshot waits for Polar to confirm events. |
-| `batchSize` | `1000` | Maximum events per request delivering the queue to Polar. |
 | `onDelivered` | `undefined` | Callback for events Polar accepted; may be async. |
 | `onDropped` | `undefined` | Callback for events Polar refused and their reason; may be async. |
 

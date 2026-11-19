@@ -884,15 +884,11 @@ class Outpost:
         client: httpx2.AsyncClient,
         telemetry: bool = True,
         confirm_timeout: float = CONFIRM_TIMEOUT,
-        batch_size: int = OUTBOX_BATCH,
         on_delivered: OnDelivered | None = None,
         on_dropped: OnDropped | None = None,
     ) -> None:
         self.redis_url = redis_url
         self._client = client
-        if batch_size <= 0:
-            raise ValueError("batch_size must be greater than zero")
-        self._batch_size = batch_size
         self._on_delivered = on_delivered
         self._on_dropped = on_dropped
         self._telemetry = is_telemetry_enabled(telemetry)
@@ -951,7 +947,6 @@ class Outpost:
         redis_url: str,
         *,
         telemetry: bool = True,
-        batch_size: int = OUTBOX_BATCH,
         on_delivered: OnDelivered | None = None,
         on_dropped: OnDropped | None = None,
     ) -> typing.Self:
@@ -959,7 +954,6 @@ class Outpost:
             redis_url=redis_url,
             client=polar._client._client,
             telemetry=telemetry,
-            batch_size=batch_size,
             on_delivered=on_delivered,
             on_dropped=on_dropped,
         )
@@ -1660,7 +1654,7 @@ class Outpost:
                     return
                 # A partial batch goes only when no flusher delivers: the last one in
                 # flight takes it.
-                full = (length - delivering) // self._batch_size
+                full = (length - delivering) // OUTBOX_BATCH
                 slots = min(FLUSHERS, full or (0 if delivering and not first else 1))
                 if not slots:
                     return
@@ -1707,7 +1701,7 @@ class Outpost:
                     OUTBOX_GROUP,
                     consumer,
                     int(OUTBOX_CLAIM_IDLE * 1000),
-                    count=self._batch_size,
+                    count=OUTBOX_BATCH,
                     justid=True,
                 )
             start = "0"
@@ -1722,7 +1716,7 @@ class Outpost:
                         return "drained"
                     # The flusher still in flight takes a partial batch; if it let go
                     # meanwhile, the next drain does.
-                    if delivering and length - delivering < self._batch_size:
+                    if delivering and length - delivering < OUTBOX_BATCH:
                         self._undrained = True
                         return "drained"
                 read = typing.cast(
@@ -1731,7 +1725,7 @@ class Outpost:
                         OUTBOX_GROUP,
                         consumer,
                         {self._outbox_key: start},
-                        count=self._batch_size,
+                        count=OUTBOX_BATCH,
                     ),
                 )
                 entries = read[0][1] if read else []

@@ -39,15 +39,12 @@ class MeteringOutpostOptions(typing.TypedDict, total=False):
         redis_url: Redis connection URL. Defaults to the REDIS_URL environment variable.
         telemetry: Send Outpost metrics and traces to Polar. Defaults to True;
             POLAR_OUTPOST_TELEMETRY=0 disables it regardless of this option.
-        batch_size: Events per request delivering Outpost's queue to Polar. Defaults
-            to 1000.
         on_delivered: Called with each batch Polar accepted.
         on_dropped: Called with each batch Polar refused, and why.
     """
 
     redis_url: str
     telemetry: bool
-    batch_size: int
     on_delivered: typing.Callable[[list[EventInput]], typing.Awaitable[None]]
     on_dropped: typing.Callable[[list[EventInput], DropReason], typing.Awaitable[None]]
 
@@ -471,13 +468,13 @@ class Metering:
             )
         if buffered is not None:
             raise MeteringError(
-                "Outpost delivers its events itself: configure its batches in outpost"
+                "Outpost delivers its events itself: pass buffered or outpost, not both"
             )
         outpost_options = MeteringOutpostOptions() if outpost is True else outpost
         redis_url = outpost_options.get("redis_url", os.environ.get("REDIS_URL"))
         if not redis_url:
             raise MeteringError("Outpost requires redis_url or REDIS_URL")
-        from polar.outpost.client import OUTBOX_BATCH, Outpost
+        from polar.outpost.client import Outpost
 
         return cls(
             strategies=[
@@ -485,7 +482,6 @@ class Metering:
                     polar,
                     redis_url,
                     telemetry=outpost_options.get("telemetry", True),
-                    batch_size=outpost_options.get("batch_size", OUTBOX_BATCH),
                     on_delivered=outpost_options.get("on_delivered"),
                     on_dropped=outpost_options.get("on_dropped"),
                 )

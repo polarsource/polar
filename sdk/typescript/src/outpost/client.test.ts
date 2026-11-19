@@ -1499,20 +1499,21 @@ it("takes back the batch of a flusher that died on the next drain once it sat id
 });
 
 it("sends only full batches while another flusher delivers, and the rest once none does", async () => {
-  const outpost = await warm({ batchSize: 2 });
+  const outpost = await warm();
   const stream = "outpost:v1:org-1:outbox";
   await outpost.track(usage("event-0", 10));
   // Another flusher holds a batch in flight.
   await redis.xreadgroup("GROUP", "polar", "other", "STREAMS", stream, ">");
-  for (const id of ["event-1", "event-2", "event-3"]) await outpost.track(usage(id, 10));
+  for (let index = 1; index <= 1_001; index += 1) await outpost.track(usage(`event-${index}`, 1));
   await outpost.flush();
-  expect(delivered()).toEqual([["event-1", "event-2"]]);
+  expect(delivered().map((ids) => ids.length)).toEqual([1000]);
   // The other flusher delivered its batch.
   const [[entry]] = await redis.xrange(stream, "-", "+", "COUNT", 1);
   await redis.xack(stream, "polar", entry);
   await redis.xdel(stream, entry);
   await outpost.flush();
-  expect(delivered()).toEqual([["event-1", "event-2"], ["event-3"]]);
+  expect(delivered().map((ids) => ids.length)).toEqual([1000, 1]);
+  expect(delivered()[1]).toEqual(["event-1001"]);
 });
 
 it("delivers what another instance queued while it flushed", async () => {

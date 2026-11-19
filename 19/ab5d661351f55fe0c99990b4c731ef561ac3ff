@@ -1,0 +1,21 @@
+server/migrations/versions/2026-11-19-1200_allow_several_keyed_manual_grants.py
+  s_7b0666dec04723::t_da9b0a13039097 1-93
+server/polar/models/benefit_grant.py
+  s_7b0666dec04723::t_c251bf48a96a2d 128-129,131,139-140
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19ab5d661351f55fe0c99990b4c731ef561ac3ff",
+  "prompts": {},
+  "sessions": {
+    "s_7b0666dec04723": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5aead419-2400-4517-8baa-310f3bce8743",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

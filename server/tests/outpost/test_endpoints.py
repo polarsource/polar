@@ -18,6 +18,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import event as sqlalchemy_event
 
 from polar.auth.scope import Scope
+from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
 from polar.meter.aggregation import UniqueAggregation
 from polar.models import (
@@ -676,6 +677,69 @@ class TestRequests:
             get_reducer_bucket_start(version - SYNCED_LOOKBACK)
         )
         assert (internal["count"], internal["sum"]) == (0, 0.0)
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_meter_usage_since_the_latest_reset(
+        self,
+        save_fixture: SaveFixture,
+        client: httpx2.AsyncClient,
+        organization: Organization,
+        customer_external_id: Customer,
+        meter: Meter,
+    ) -> None:
+        customer = customer_external_id
+        assert customer.external_id is not None
+        reducer = await create_reducer(
+            save_fixture, organization=organization, meters=[meter]
+        )
+        # The seal of the usage before a reset runs minutes after it: until then its
+        # buckets are unsealed, and the snapshot leaves them out all the same.
+        current_start = get_reducer_bucket_start(utc_now())
+        reset_at = current_start - timedelta(minutes=20)
+        for bucket_start, count in (
+            (reset_at - timedelta(minutes=10), 7),
+            (reset_at + timedelta(minutes=5), 2),
+        ):
+            await save_fixture(
+                ReducerBucket(
+                    organization=organization,
+                    reducer=reducer,
+                    external_customer_id=customer.external_id,
+                    bucket_start=bucket_start,
+                    bucket_end=bucket_start + timedelta(minutes=5),
+                    count=count,
+                    sum=Decimal(0),
+                    synced_at=bucket_start + timedelta(minutes=5),
+                )
+            )
+        await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            timestamp=reset_at,
+            metadata={"meter_id": str(meter.id)},
+        )
+
+        response = await client.post(
+            "/v1/outpost/meter-usage",
+            json={
+                "identities": [
+                    {
+                        "reducer_id": str(reducer.id),
+                        "external_customer_id": customer.external_id,
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        counts = {
+            (payload["customer_id"], payload["external_customer_id"]): payload["count"]
+            for payload in response.json()
+        }
+        assert counts[(None, customer.external_id)] == 2
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     @pytest.mark.parametrize("customer_key", ["customer_id", "external_customer_id"])

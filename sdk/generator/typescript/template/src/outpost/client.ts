@@ -419,6 +419,30 @@ const reportLocalValue = (
 // The reset count of a state whose snapshot Polar did not confirm.
 const UNCONFIRMED = -1;
 
+// How many times a batch goes again without the events Polar named, before it is dropped whole.
+const REFUSED_RESENDS = 3;
+
+// The indexes of the events Polar's validation refuses, when each of its errors names one.
+const refusedIndexes = (error: unknown): Set<number> | undefined => {
+  if (!(error instanceof PolarClientError) || error.statusCode !== 422) return undefined;
+  let detail: unknown;
+  try {
+    // The client keeps the body of an error it has no class for as text.
+    detail = (JSON.parse(String(error.error)) as { detail?: unknown } | null)?.detail;
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(detail)) return undefined;
+  const indexes = new Set<number>();
+  for (const error of detail as ({ loc?: unknown } | null)[]) {
+    const loc = error?.loc;
+    if (!Array.isArray(loc) || loc[0] !== "body" || loc[1] !== "events" || !Number.isInteger(loc[2]))
+      return undefined;
+    indexes.add(loc[2] as number);
+  }
+  return indexes;
+};
+
 class RefusedError extends PolarOutpostError {
   constructor(message = "Polar refused Outpost") {
     super(message);
@@ -1449,7 +1473,7 @@ export class Outpost {
   // refusing the batch drops it; failing to take it leaves it for the next flush.
   private async deliver(entries: [string, string[] | null][], delivery: Delivery): Promise<boolean> {
     // An entry that is not JSON can never be sent: it leaves the outbox with the batch.
-    const events = entries.flatMap(([, fields]) => {
+    let events = entries.flatMap(([, fields]) => {
       if (!fields) return [];
       try {
         const event: EventInput = JSON.parse(fields[1]);
@@ -1460,31 +1484,55 @@ export class Outpost {
         return [];
       }
     });
-    let dropped = false;
-    if (events.length)
+    const refused: EventInput[] = [];
+    for (let resent = 0; events.length; resent += 1)
       try {
         await this.request("POST", "/v1/events/ingest", { body: { events }, timeout: TIMEOUT });
+        break;
       } catch (error) {
-        dropped = error instanceof PolarClientError && !(error instanceof PolarRateLimitError);
-        if (!dropped) {
-          // As long as Polar asks, or longer after each failure in a row.
-          const wait = retryAfterMs(error);
-          await this.backOff(this.outboxBackoffKey, {
-            first: wait ?? OUTBOX_RETRY_DELAY,
-            max: wait ?? MAX_OUTBOX_RETRY_DELAY,
-          });
-          return false;
+        // Polar refuses a whole request for the events it names: the others go again without
+        // them, a few times at most.
+        const named = refusedIndexes(error);
+        if (named?.size && named.size < events.length && resent < REFUSED_RESENDS) {
+          refused.push(...events.filter((_, index) => named.has(index)));
+          events = events.filter((_, index) => !named.has(index));
+          continue;
         }
+        if (error instanceof PolarClientError && !(error instanceof PolarRateLimitError)) {
+          refused.push(...events);
+          events = [];
+          break;
+        }
+        // As long as Polar asks, or longer after each failure in a row.
+        const wait = retryAfterMs(error);
+        await this.backOff(this.outboxBackoffKey, {
+          first: wait ?? OUTBOX_RETRY_DELAY,
+          max: wait ?? MAX_OUTBOX_RETRY_DELAY,
+        });
+        return false;
       }
-    await this.requireRedis().outpostConfirm(
-      ...confirmArguments(this.prefix, !dropped, this.settlements(events), delivery),
+    const redis = this.requireRedis();
+    // Polar will never count a refused event: it settles everywhere, hot bucket or cold.
+    if (refused.length && events.length)
+      await redis.outpostConfirm(...confirmArguments(this.prefix, false, this.settlements(refused)));
+    await redis.outpostConfirm(
+      ...confirmArguments(
+        this.prefix,
+        events.length > 0,
+        this.settlements(events.length ? events : refused),
+        delivery,
+      ),
     );
-    try {
-      if (dropped) await this.options.onDropped?.(events, "permanent_error");
-      else if (events.length) await this.options.onDelivered?.(events);
-    } catch (error) {
-      console.warn(`Outpost ${dropped ? "onDropped" : "onDelivered"} failed: ${String(error)}`);
-    }
+    const report = async (name: string, callback: () => unknown): Promise<void> => {
+      try {
+        await callback();
+      } catch (error) {
+        console.warn(`Outpost ${name} failed: ${String(error)}`);
+      }
+    };
+    if (refused.length)
+      await report("onDropped", () => this.options.onDropped?.(refused, "permanent_error"));
+    if (events.length) await report("onDelivered", () => this.options.onDelivered?.(events));
     return true;
   }
 

@@ -8,7 +8,7 @@ locals {
   events_api_port     = 10000
 
   events_name     = "events-test"
-  events_hostname = "events.test.polar.sh"
+  events_hostname = "test-events.polar.sh"
 
   events_api_tags = {
     Environment = "test"

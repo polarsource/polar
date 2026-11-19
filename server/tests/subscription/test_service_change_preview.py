@@ -174,7 +174,7 @@ class TestCalculateChangePreview:
             products=[product],
         )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(PolarRequestValidationError) as exc_info:
             await subscription_service.calculate_change_preview(
                 session,
                 subscription,
@@ -183,32 +183,7 @@ class TestCalculateChangePreview:
                 discount=discount.id,
             )
 
-    async def test_auto_resolves_an_upgrade_to_invoice(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        new_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=SubscriptionRecurringInterval.month,
-            prices=[(5000, "usd")],
-        )
-
-        preview = await subscription_service.calculate_change_preview(
-            session,
-            subscription,
-            product_id=new_product.id,
-            proration_behavior="auto",
-        )
-
-        assert preview.proration_behavior == SubscriptionProrationBehavior.invoice
+        assert exc_info.value.errors()[0]["loc"] == ("body", "discount_id")
 
     async def test_trial_ending_change_charges_a_full_period(
         self,

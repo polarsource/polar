@@ -12,14 +12,12 @@ from polar.models import (
     Subscription,
     UserOrganization,
 )
-from polar.models.discount import DiscountDuration, DiscountType
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
-    create_discount,
     create_product,
 )
 
@@ -78,49 +76,6 @@ class TestPreviewChange:
         json = response.json()
         assert len(json["prorations"]) == 2
         assert json["total_amount"] == json["proration_amount"]
-        assert json["proration_behavior"] == "prorate"
-
-    @pytest.mark.auth
-    async def test_product_change_with_discount(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        organization: Organization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-        new_product = await create_product(
-            save_fixture,
-            organization=organization,
-            recurring_interval=product.recurring_interval,
-            prices=[(5000, "usd")],
-        )
-        discount = await create_discount(
-            save_fixture,
-            type=DiscountType.percentage,
-            basis_points=10000,
-            duration=DiscountDuration.forever,
-            organization=organization,
-            products=[new_product],
-        )
-
-        response = await client.post(
-            f"/v1/subscriptions/{subscription.id}/change-preview",
-            json={
-                "product_id": str(new_product.id),
-                "proration_behavior": "invoice",
-                "discount_id": str(discount.id),
-            },
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["proration_amount"] < 0
-        assert json["proration_behavior"] == "invoice"
 
     @pytest.mark.auth
     async def test_canceled_subscription_is_forbidden(

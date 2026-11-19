@@ -42,7 +42,7 @@ function Calendar({
         day: 'h-9 w-9 text-center text-sm p-0 relative focus-within:z-20',
         day_button: cn(
           buttonVariants({ variant: 'ghost' }),
-          'h-9 w-9 p-0 font-normal hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-polar-700 dark:hover:text-white focus-visible:ring-1 focus-visible:ring-offset-0',
+          'h-9 w-9 p-0 font-normal hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-polar-700 dark:hover:text-white focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0',
         ),
         selected:
           '[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground',
@@ -50,10 +50,10 @@ function Calendar({
           '[&>button]:font-semibold [&:not([data-selected])>button]:text-primary',
         outside: 'text-muted-foreground',
         disabled: 'text-muted-foreground opacity-50',
-        range_start: 'bg-primary/15 rounded-l-md',
-        range_end: 'bg-primary/15 rounded-r-md',
+        range_start: 'bg-primary/15 rounded-l-md last:rounded-r-md',
+        range_end: 'bg-primary/15 rounded-r-md first:rounded-l-md',
         range_middle:
-          'bg-primary/15 [&>button]:bg-transparent! [&>button]:text-inherit! [&>button]:hover:bg-primary/20!',
+          'bg-primary/15 first:rounded-l-md last:rounded-r-md [&>button]:bg-transparent! [&>button]:text-inherit! [&>button]:hover:bg-primary/20!',
         hidden: 'invisible',
         ...classNames,
       }}

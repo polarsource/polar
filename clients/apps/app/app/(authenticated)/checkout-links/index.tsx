@@ -1,14 +1,12 @@
 import { CheckoutLinkRow } from '@/components/CheckoutLinks/CheckoutLinkRow'
 import { Box } from '@/components/Shared/Box'
 import { Text } from '@/components/Shared/Text'
-import { Touchable } from '@/components/Shared/Touchable'
 import { useTheme } from '@/design-system/useTheme'
 import { useInfiniteCheckoutLinks } from '@/hooks/polar/checkout_links'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
-import MaterialIcons from '@expo/vector-icons/MaterialIcons'
 import { schemas } from '@polar-sh/client'
 import { FlashList } from '@shopify/flash-list'
-import { Stack, useRouter } from 'expo-router'
+import { Stack } from 'expo-router'
 import { useContext, useMemo } from 'react'
 import { RefreshControl } from 'react-native'
 
@@ -57,30 +55,11 @@ function CheckoutLinksList() {
 }
 
 export default function Index() {
-  const theme = useTheme()
-  const router = useRouter()
-
   return (
     <>
       <Stack.Screen
         options={{
           title: 'Checkout Links',
-          headerRight: () => (
-            <Touchable onPress={() => router.push('/checkout-links/new')}>
-              <Box
-                width={36}
-                height={36}
-                justifyContent="center"
-                alignItems="center"
-              >
-                <MaterialIcons
-                  name="add"
-                  size={24}
-                  color={theme.colors.monochromeInverted}
-                />
-              </Box>
-            </Touchable>
-          ),
         }}
       />
       <CheckoutLinksList />

@@ -50,11 +50,17 @@ def test_confirm_pending_events(
         pipeline.hset(pending_key, items=entries)
         pipeline.evalsha(
             sha,
-            2,
+            4,
+            "outpost:v1:outbox",
+            "outpost:v1:outbox",
             state_key,
             pending_key,
-            COLD_UNTIL,
             "",
+            "",
+            0,
+            0,
+            COLD_UNTIL,
+            len(ids),
             *ids,
         )
         pipeline.execute()

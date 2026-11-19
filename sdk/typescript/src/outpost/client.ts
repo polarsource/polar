@@ -21,7 +21,7 @@ import type { EventInput } from "../metering/event";
 import type { CustomerMeter } from "../metering/meter";
 
 import { ClientBase, PolarClientError, PolarError, PolarRateLimitError } from "../base";
-import { MeteringError, UnknownMeterError } from "../metering/errors";
+import { type DropReason, MeteringError, UnknownMeterError } from "../metering/errors";
 import { customerKey, parseEvent } from "./event";
 import {
   reduce,
@@ -47,6 +47,7 @@ import {
   BACKOFF_SCRIPT,
   RELEASE_LOCK_SCRIPT,
   EXTEND_LOCK_SCRIPT,
+  OUTBOX_BACKLOG_SCRIPT,
 } from "./scripts";
 import {
   createMeterProvider,
@@ -63,6 +64,12 @@ const TIMEOUT = 5000;
 const SNAPSHOT_TIMEOUT = 5000;
 const CONFIRM_TIMEOUT = 2000;
 const CONFIRM_BATCH = 1000;
+const OUTBOX_BATCH = 1000;
+const FLUSHERS = 8;
+const OUTBOX_CLAIM_IDLE = 60000;
+const FLUSHER_LOCK_TTL = 30000;
+// The consumer group the flushers read the outbox through.
+const OUTBOX_GROUP = "polar";
 const REPORT_INTERVAL = 30000;
 const SPAN_SAMPLE_RATE = 10;
 const TELEMETRY_CAP = 1000;
@@ -149,14 +156,57 @@ interface OutpostRedis extends Redis {
     metricsKey: string,
     ...args: (string | number | Buffer)[]
   ): Promise<number>;
+  outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
+  outpostOutboxBacklog(key: string, group: string): Promise<[number, number]>;
   outpostCommitPull(key: string, lockKey: string, ...args: (string | number)[]): Promise<number>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
-  outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
+  outpostWriteBucket(
+    key: string,
+    pendingKey: string,
+    outboxKey: string,
+    flusherKey: string,
+    ...args: (string | number)[]
+  ): this;
+  outpostConfirm(numberOfKeys: number, ...args: (string | number)[]): this;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): this;
 }
+
+interface Settlement {
+  identity: string;
+  bucketStart: number;
+  ids: string[];
+}
+
+// The outbox entries a flusher delivered, and the slot it holds.
+interface Delivery {
+  entries: string[];
+  lockKey: string;
+  token: string;
+}
+
+// The arguments of one CONFIRM call settling every group, with its number of keys first.
+const confirmArguments = (
+  prefix: string,
+  hotOnly: boolean,
+  settlements: Settlement[],
+  delivery?: Delivery,
+): [number, ...(string | number)[]] => [
+  2 + settlements.length * 2,
+  `${prefix}:outbox`,
+  delivery?.lockKey ?? `${prefix}:outbox`,
+  ...settlements.flatMap(({ identity, bucketStart }) => [
+    `${prefix}:state:${identity}`,
+    `${prefix}:pending:${identity}:${bucketStart}`,
+  ]),
+  hotOnly ? "1" : "",
+  delivery?.token ?? "",
+  FLUSHER_LOCK_TTL,
+  delivery?.entries.length ?? 0,
+  ...(delivery?.entries ?? []),
+  ...settlements.flatMap(({ bucketStart, ids }) => [bucketStart, ids.length, ...ids]),
+];
 
 const number = (value: string): number => {
   const parsed = Number(value);
@@ -387,6 +437,15 @@ export interface OutpostOptions {
    * then applies with the events still pending.
    */
   confirmTimeout?: number;
+  /**
+   * Queue tracked events in Redis and deliver them to Polar on flush(), for a serverless function
+   * that flushes before it freezes. Defaults to false: the metering buffer delivers them.
+   */
+  serverless?: boolean;
+  /** Called with each batch of events Polar accepted from the outbox; may be async. */
+  onDelivered?: (events: EventInput[]) => void | Promise<void>;
+  /** Called with each batch of events Polar refused, which leave the outbox; may be async. */
+  onDropped?: (events: EventInput[], reason: DropReason) => void | Promise<void>;
 }
 export class Outpost {
   private redis?: OutpostRedis;
@@ -414,6 +473,10 @@ export class Outpost {
   private pulling?: Promise<void>;
   private relaying?: Promise<void>;
   private releaseFlush?: () => void;
+  private draining?: Promise<void>;
+  private drainAgain = false;
+  // This instance queued an event that no flusher was there to deliver: its next flush drains.
+  private undrained = false;
   private pullRetryAt = 0;
   // The configuration's revision in the pull hash, as of the configuration this instance runs.
   private configurationRevision: number | null = null;
@@ -474,13 +537,17 @@ export class Outpost {
         lua: PUSH_TELEMETRY_SCRIPT,
       });
       this.redis.defineCommand("outpostWriteBucket", {
-        numberOfKeys: 2,
+        numberOfKeys: 4,
         lua: WRITE_BUCKET_SCRIPT,
       });
-      this.redis.defineCommand("outpostConfirm", { numberOfKeys: 2, lua: CONFIRM_SCRIPT });
+      this.redis.defineCommand("outpostConfirm", { lua: CONFIRM_SCRIPT });
       this.redis.defineCommand("outpostApplySnapshot", {
         numberOfKeys: 1,
         lua: APPLY_SNAPSHOT_SCRIPT,
+      });
+      this.redis.defineCommand("outpostOutboxBacklog", {
+        numberOfKeys: 1,
+        lua: OUTBOX_BACKLOG_SCRIPT,
       });
       this.redis.defineCommand("outpostCommitPull", { numberOfKeys: 2, lua: COMMIT_PULL_SCRIPT });
       const redis = this.redis;
@@ -513,6 +580,10 @@ export class Outpost {
       });
       // Keys carry the organization: organizations can share a Redis.
       await this.configure();
+      if (this.options.serverless)
+        await this.createOutboxGroup().catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
       this._connectionId = randomUUID();
       await this.loadPull().catch((error: unknown) => {
         throw redisUnavailable(error);
@@ -534,6 +605,7 @@ export class Outpost {
     clearInterval(this.refreshTimer);
     clearInterval(this.pullTimer);
     await this.inFlight();
+    if (this.delivers) await this.drain().catch(() => {});
     const redis = this.redis;
     if (redis) this.event("outpost.redis.disconnect");
     const tracerProvider = this.tracerProvider;
@@ -585,19 +657,31 @@ export class Outpost {
       const parsed = parseEvent(event);
       const updates = reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp));
       this.ingestBuckets?.add(updates.length);
+      // Polar dates the event as Outpost bucketed it.
+      const queued = this.options.serverless
+        ? JSON.stringify({
+            ...event,
+            timestamp:
+              event.timestamp ?? new Date(Math.floor(parsed.timestamp / 1000)).toISOString(),
+          })
+        : "";
       const pipeline = redis.pipeline() as OutpostPipeline;
-      for (const update of updates) {
+      if (!updates.length && queued) pipeline.xadd(this.outboxKey, "*", "event", queued);
+      for (const [index, update] of updates.entries()) {
         const identity = `${update.customer}:${update.reducer}`;
         const statistics = update.statistics;
         pipeline.outpostWriteBucket(
           `${this.prefix}:state:${identity}`,
           `${this.prefix}:pending:${identity}:${update.bucketStart}`,
+          this.outboxKey,
+          `${this.outboxKey}:flusher:0`,
           update.bucketStart,
           statistics.count,
           statistics.sum,
           statistics.min ?? "",
           statistics.max ?? "",
           event.external_id!,
+          index === 0 ? queued : "",
         );
       }
       const results = await pipeline.exec().catch((error: unknown) => {
@@ -606,6 +690,7 @@ export class Outpost {
       if (results === null) throw new UnavailableRedisError();
       const failed = results.find(([error]) => error)?.[0];
       if (failed) throw redisUnavailable(failed);
+      if (queued && (!updates.length || results[0][1] === 2)) this.undrained = true;
     } catch (error) {
       outcome = "error";
       throw error;
@@ -636,7 +721,18 @@ export class Outpost {
 
   private async settle(events: EventInput[], hotOnly: boolean): Promise<void> {
     const redis = this.requireRedis();
-    const groups = new Map<string, { identity: string; bucketStart: number; ids: string[] }>();
+    const settlements = this.settlements(events);
+    if (!settlements.length) return;
+    await redis
+      .outpostConfirm(...confirmArguments(this.prefix, hotOnly, settlements))
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+  }
+
+  // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle.
+  private settlements(events: EventInput[]): Settlement[] {
+    const groups = new Map<string, Settlement>();
     for (const event of events) {
       this.validate(event);
       const parsed = parseEvent(event);
@@ -649,22 +745,7 @@ export class Outpost {
         group.ids.push(event.external_id!);
       }
     }
-    const confirmations = [...groups.values()];
-    const pipeline = redis.pipeline() as OutpostPipeline;
-    for (const { identity, bucketStart, ids } of confirmations)
-      pipeline.outpostConfirm(
-        `${this.prefix}:state:${identity}`,
-        `${this.prefix}:pending:${identity}:${bucketStart}`,
-        bucketStart,
-        hotOnly ? "1" : "",
-        ...ids,
-      );
-    const results = await pipeline.exec().catch((error: unknown) => {
-      throw redisUnavailable(error);
-    });
-    if (results === null) throw new UnavailableRedisError();
-    const failed = results.find(([error]) => error)?.[0];
-    if (failed) throw redisUnavailable(failed);
+    return [...groups.values()];
   }
 
   async meter(input: Customer & { meter_id: string }): Promise<CustomerMeter | null> {
@@ -719,13 +800,24 @@ export class Outpost {
   }
 
   /**
-   * Wait for the pull in flight: a serverless function must not freeze in the middle of it.
-   * A newer flush releases this one, since it waits for the same work.
+   * Deliver the outbox to Polar when serverless, and wait for the pull in flight: a serverless
+   * function must not freeze in the middle of either. A newer flush releases this one, since it waits for the same
+   * work.
    */
   async flush(): Promise<void> {
     this.releaseFlush?.();
     const released = new Promise<void>((resolve) => (this.releaseFlush = resolve));
-    await Promise.race([this.inFlight(), released]);
+    // Redis keeps what a drain fails to deliver: the next flush takes it. Without an event of its
+    // own to deliver, a flush waits for the drain in flight, if any.
+    const draining = !this.delivers
+      ? undefined
+      : (this.undrained ? this.drain() : this.draining)?.catch(() => {});
+    await Promise.race([Promise.all([this.inFlight(), draining]), released]);
+  }
+
+  // A serverless Outpost delivers the events it queued; otherwise the metering buffer does.
+  private get delivers(): boolean {
+    return Boolean(this.options.serverless && this.redis && !this.failure);
   }
 
   private async inFlight(): Promise<void> {
@@ -881,6 +973,11 @@ export class Outpost {
     return `${this.prefix}:cold:lock`;
   }
 
+  // The events Polar has yet to receive, in the order Outpost tracked them.
+  private get outboxKey(): string {
+    return `${this.prefix}:outbox`;
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -896,6 +993,9 @@ export class Outpost {
       timeout === undefined ? undefined : { timeout: timeout / 1000 },
     );
     if (response.status === 401 || response.status === 403) throw new RefusedError();
+    // Only a 2xx carries Polar's answer: a redirect is a failure that may pass.
+    if (response.status >= 300 && response.status < 400)
+      throw new PolarError(`Polar answered ${response.status}`);
     return client.parseResponse<T>(response, "json");
   }
 
@@ -1186,6 +1286,141 @@ export class Outpost {
     }
   }
 
+  // A flusher reads the outbox through the group, which tracks each batch until Polar has it.
+  private async createOutboxGroup(): Promise<void> {
+    await this.requireRedis()
+      .xgroup("CREATE", this.outboxKey, OUTBOX_GROUP, "0", "MKSTREAM")
+      .catch((error: unknown) => {
+        if (!String(error).includes("BUSYGROUP")) throw error;
+      });
+  }
+
+  // One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet. Once its
+  // flushers let go of their slots, the instance looks again: an event queued while they held
+  // them is not left behind.
+  // One drain at a time per instance: a flush during one waits for it, and asks for one more round
+  // so that its own events do not stay queued.
+  private drain(): Promise<void> {
+    if (this.draining) {
+      this.drainAgain = true;
+      return this.draining;
+    }
+    const drain = async () => {
+      do {
+        this.drainAgain = false;
+        this.undrained = false;
+        await this.drainOutbox().catch((error: unknown) => {
+          this.undrained = true;
+          throw error;
+        });
+      } while (this.drainAgain);
+    };
+    this.draining = drain().finally(() => (this.draining = undefined));
+    return this.draining;
+  }
+
+  private async drainOutbox(): Promise<void> {
+    const redis = this.requireRedis();
+    try {
+      for (let round = 0; ; round += 1) {
+        const [length, delivering] = await redis.outpostOutboxBacklog(this.outboxKey, OUTBOX_GROUP);
+        // The first round also takes back the batches that wait on a failed or frozen flusher.
+        if (!length || (round && length === delivering)) return;
+        const slots = Math.min(
+          FLUSHERS,
+          Math.max(1, Math.ceil((length - delivering) / OUTBOX_BATCH)),
+        );
+        const outcomes = await Promise.all(
+          Array.from({ length: slots }, (_, slot) => this.flushSlot(slot)),
+        );
+        if (outcomes.includes("failed")) {
+          this.undrained = true;
+          return;
+        }
+        if (!outcomes.includes("drained")) return;
+      }
+    } catch (error) {
+      // Redis lost the group, with the rest of its keys: the next flush reads a new one.
+      if (String(error).includes("NOGROUP")) await this.createOutboxGroup();
+      throw error;
+    }
+  }
+
+  // A batch whose flusher froze is taken back once idle long enough; one this slot left behind,
+  // as Polar failed, goes before the new events.
+  private async flushSlot(slot: number): Promise<"busy" | "failed" | "drained"> {
+    const redis = this.requireRedis();
+    const lockKey = `${this.outboxKey}:flusher:${slot}`;
+    const consumer = `flusher-${slot}`;
+    const token = randomUUID();
+    if (!(await redis.set(lockKey, token, "PX", FLUSHER_LOCK_TTL, "NX"))) return "busy";
+    try {
+      if (slot === 0)
+        await redis.xautoclaim(
+          this.outboxKey,
+          OUTBOX_GROUP,
+          consumer,
+          OUTBOX_CLAIM_IDLE,
+          "0-0",
+          "COUNT",
+          OUTBOX_BATCH,
+          "JUSTID",
+        );
+      for (let from = "0"; ; ) {
+        const read = (await redis.xreadgroup(
+          "GROUP",
+          OUTBOX_GROUP,
+          consumer,
+          "COUNT",
+          OUTBOX_BATCH,
+          "STREAMS",
+          this.outboxKey,
+          from,
+        )) as [string, [string, string[] | null][]][] | null;
+        const entries = read?.[0]?.[1] ?? [];
+        if (entries.length) {
+          if (
+            !(await this.deliver(entries, { entries: entries.map(([id]) => id), lockKey, token }))
+          )
+            return "failed";
+        } else if (from === "0") from = ">";
+        else return "drained";
+      }
+    } finally {
+      // Past its TTL, the slot may be another flusher's.
+      await redis.eval(RELEASE_LOCK_SCRIPT, 1, lockKey, token).catch(() => {});
+    }
+  }
+
+  // Sends a batch to Polar, then acknowledges it and settles its events in one script. Polar
+  // refusing the batch drops it; failing to take it leaves it for the next flush.
+  private async deliver(
+    entries: [string, string[] | null][],
+    delivery: Delivery,
+  ): Promise<boolean> {
+    const events = entries.flatMap(([, fields]) =>
+      fields ? [JSON.parse(fields[1]) as EventInput] : [],
+    );
+    let dropped = false;
+    if (events.length)
+      try {
+        await this.request("POST", "/v1/events/ingest", { body: { events }, timeout: TIMEOUT });
+      } catch (error) {
+        dropped = error instanceof PolarClientError && !(error instanceof PolarRateLimitError);
+        if (!dropped) return false;
+      }
+    await this.requireRedis().outpostConfirm(
+      ...confirmArguments(this.prefix, !dropped, this.settlements(events), delivery),
+    );
+    try {
+      if (dropped) await this.options.onDropped?.(events, "permanent_error");
+      else if (events.length) await this.options.onDelivered?.(events);
+    } catch (error) {
+      console.warn(`Outpost ${dropped ? "onDropped" : "onDelivered"} failed: ${String(error)}`);
+    }
+    return true;
+  }
+
   private async fetchBatch(identities: string[], renew: () => Promise<unknown>): Promise<void> {
     try {
       // Its clock starts with the batch: a slow fetch does not push back the first extension.
@@ -1462,14 +1697,13 @@ export class Outpost {
         if (confirmed.length) {
           const transaction = redis.multi() as OutpostPipeline;
           transaction.hgetall(key);
-          for (const [bucketStart, ids] of confirmed)
-            transaction.outpostConfirm(
-              key,
-              `${this.prefix}:pending:${identity}:${bucketStart}`,
-              bucketStart,
-              "",
-              ...ids,
-            );
+          transaction.outpostConfirm(
+            ...confirmArguments(
+              this.prefix,
+              false,
+              confirmed.map(([bucketStart, ids]) => ({ identity, bucketStart, ids })),
+            ),
+          );
           transaction.outpostApplySnapshot(key, ...snapshotArguments);
           const results = await transaction.exec();
           if (results === null) throw new UnavailableRedisError();

@@ -2188,7 +2188,7 @@ async def test_queues_a_tracked_event_for_polar(
     await _seal(redis, BUCKET)
     async with Outpost(url, client=polar_client, serverless=True) as outpost:
         await outpost.track(_usage("event-1", 10))
-    assert await _queued(redis) == [_usage("event-1", 10)]
+        assert await _queued(redis) == [_usage("event-1", 10)]
 
 
 @pytest.mark.anyio
@@ -2200,7 +2200,7 @@ async def test_queues_an_event_once_however_many_times_it_is_tracked(
     async with Outpost(url, client=polar_client, serverless=True) as outpost:
         await outpost.track(_usage("same", 10))
         await outpost.track(_usage("same", 10))
-    assert await _queued(redis) == [_usage("same", 10)]
+        assert await _queued(redis) == [_usage("same", 10)]
 
 
 @pytest.mark.anyio
@@ -2216,7 +2216,7 @@ async def test_queues_an_event_once_when_two_meters_count_it(
     await _seal(redis, BUCKET)
     async with Outpost(url, client=polar_client, serverless=True) as outpost:
         await outpost.track(_usage("event-1", 10))
-    assert await _queued(redis) == [_usage("event-1", 10)]
+        assert await _queued(redis) == [_usage("event-1", 10)]
 
 
 @pytest.mark.anyio
@@ -2232,7 +2232,7 @@ async def test_queues_an_event_no_meter_counts(
     }
     async with Outpost(url, client=polar_client, serverless=True) as outpost:
         await outpost.track(_usage("event-1", 10))
-    assert await _queued(redis) == [_usage("event-1", 10)]
+        assert await _queued(redis) == [_usage("event-1", 10)]
 
 
 OUTBOX = "outpost:v1:org-1:outbox"

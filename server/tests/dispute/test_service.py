@@ -77,7 +77,7 @@ def build_chargeback_stop_alert(
     *,
     id: str = "CHARGEBACK_STOP_ALERT_ID",
     status: str = "RESOLVED",
-    integration_transaction_id: str = "STRIPE_PAYMENT_INTENT_ID",
+    integration_transaction_id: str | None = "STRIPE_PAYMENT_INTENT_ID",
     transaction_refund_outcome: Literal["REFUNDED", "NOT_REFUNDED"] = "NOT_REFUNDED",
     transaction_amount_in_cents: int = 1000,
     transaction_currency_code: str = "USD",
@@ -1185,6 +1185,7 @@ class TestUpsertFromChargebackStop:
         updated_dispute = await dispute_service.upsert_from_chargeback_stop(
             session, alert
         )
+        assert updated_dispute is not None
 
         assert updated_dispute.id == dispute.id
         assert updated_dispute.status == DisputeStatus.needs_response
@@ -1228,6 +1229,7 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.early_warning
         assert dispute.payment_processor == PaymentProcessor.stripe
@@ -1272,6 +1274,7 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.prevented
         assert dispute.payment_processor == PaymentProcessor.stripe
@@ -1325,6 +1328,7 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.prevented
         assert subscription.status == "canceled"
@@ -1367,6 +1371,7 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.prevented
         benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once_with(
@@ -1418,6 +1423,7 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.prevented
         benefit_grant_service_mock.enqueue_benefits_grants.assert_awaited_once_with(
@@ -1470,6 +1476,7 @@ class TestUpsertFromChargebackStop:
         updated_dispute = await dispute_service.upsert_from_chargeback_stop(
             session, alert
         )
+        assert updated_dispute is not None
 
         assert updated_dispute.status == DisputeStatus.prevented
         revoke_mock.assert_not_awaited()
@@ -1508,6 +1515,7 @@ class TestUpsertFromChargebackStop:
         updated_dispute = await dispute_service.upsert_from_chargeback_stop(
             session, alert
         )
+        assert updated_dispute is not None
 
         assert updated_dispute.id == dispute.id
         assert updated_dispute.status == DisputeStatus.prevented
@@ -1554,6 +1562,7 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.prevented
         case = await dispute_case_service.get_case(session, dispute)
@@ -1603,11 +1612,25 @@ class TestUpsertFromChargebackStop:
         )
 
         dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+        assert dispute is not None
 
         assert dispute.status == DisputeStatus.needs_response
         case = await dispute_case_service.get_case(session, dispute)
         assert case is not None
         assert await dispute_case_service.is_open(session, case)
+
+    async def test_unlinked_transaction_is_ignored(
+        self, session: AsyncSession, mocker: MockerFixture
+    ) -> None:
+        get_payment_intent_mock = mocker.patch(
+            "polar.dispute.service.stripe_service.get_payment_intent"
+        )
+        alert = build_chargeback_stop_alert(integration_transaction_id=None)
+
+        dispute = await dispute_service.upsert_from_chargeback_stop(session, alert)
+
+        assert dispute is None
+        get_payment_intent_mock.assert_not_called()
 
 
 @pytest.mark.anyio

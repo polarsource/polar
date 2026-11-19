@@ -6,12 +6,14 @@ import {
   createFixedPrice,
   createMeteredPrice,
   createMeteredTiersPrice,
+  createSeatBasedPrice,
 } from '../test-utils/makeCheckout'
 import MeteredChargesDetails from './MeteredChargesDetails'
 
 function createMeterCreditBenefit(
   meterId: string,
   units: number,
+  allocation: schemas['BenefitMeterCreditAllocation'] = 'per_claimed_seat',
 ): schemas['CheckoutProduct']['benefits'][number] {
   return {
     id: `benefit_${meterId}_${units}`,
@@ -26,14 +28,17 @@ function createMeterCreditBenefit(
     properties: {
       units,
       meter_id: meterId,
+      allocation,
     },
   }
 }
 
 function createMeteredCheckout({
   benefits = [],
+  seatBased = false,
 }: {
   benefits?: schemas['CheckoutProduct']['benefits']
+  seatBased?: boolean
 } = {}) {
   const base = createCheckout()
   const meteredPrice = createMeteredPrice({
@@ -49,13 +54,24 @@ function createMeteredCheckout({
   })
   return createCheckout({
     prices: {
-      prod_1: [base.product_price, meteredPrice],
+      prod_1: [
+        seatBased ? createSeatBasedPrice() : base.product_price,
+        meteredPrice,
+      ],
     },
     product: {
       ...base.product,
       benefits,
     },
   })
+}
+
+function expandMeteredCharges() {
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: /additional metered charges may apply/i,
+    }),
+  )
 }
 
 describe('MeteredChargesDetails', () => {
@@ -260,5 +276,80 @@ describe('MeteredChargesDetails', () => {
     const row = screen.getByTestId('detail-row-API Calls')
     expect(row).not.toHaveTextContent('included')
     expect(row).toHaveTextContent('$9.00')
+  })
+
+  it('ignores the allocation on products without seats', () => {
+    render(
+      <MeteredChargesDetails
+        checkout={createMeteredCheckout({
+          benefits: [
+            createMeterCreditBenefit('meter_1', 1000, 'per_claimed_seat'),
+            createMeterCreditBenefit('meter_1', 500, 'team'),
+          ],
+        })}
+        locale="en"
+      />,
+    )
+    expandMeteredCharges()
+
+    expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
+      '1,500 units included',
+    )
+  })
+
+  it('describes per-seat credits as an amount per seat on seat-based products', () => {
+    render(
+      <MeteredChargesDetails
+        checkout={createMeteredCheckout({
+          seatBased: true,
+          benefits: [
+            createMeterCreditBenefit('meter_1', 1000, 'per_claimed_seat'),
+          ],
+        })}
+        locale="en"
+      />,
+    )
+    expandMeteredCharges()
+
+    expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
+      '1,000 units included per seat',
+    )
+  })
+
+  it('describes team credits as an amount for the team on seat-based products', () => {
+    render(
+      <MeteredChargesDetails
+        checkout={createMeteredCheckout({
+          seatBased: true,
+          benefits: [createMeterCreditBenefit('meter_1', 10000, 'team')],
+        })}
+        locale="en"
+      />,
+    )
+    expandMeteredCharges()
+
+    expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
+      '10,000 units included for the team',
+    )
+  })
+
+  it('describes per-seat and team credits on the same meter separately', () => {
+    render(
+      <MeteredChargesDetails
+        checkout={createMeteredCheckout({
+          seatBased: true,
+          benefits: [
+            createMeterCreditBenefit('meter_1', 1000, 'per_claimed_seat'),
+            createMeterCreditBenefit('meter_1', 10000, 'team'),
+          ],
+        })}
+        locale="en"
+      />,
+    )
+    expandMeteredCharges()
+
+    expect(screen.getByTestId('detail-row-API Calls')).toHaveTextContent(
+      '1,000 units included per seat, plus 10,000 units for the team',
+    )
   })
 })

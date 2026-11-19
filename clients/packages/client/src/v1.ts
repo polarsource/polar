@@ -13373,6 +13373,11 @@ export interface components {
       readonly visibility_configurable: boolean
     }
     /**
+     * BenefitMeterCreditAllocation
+     * @enum {string}
+     */
+    BenefitMeterCreditAllocation: 'per_claimed_seat' | 'team'
+    /**
      * BenefitMeterCreditCreate
      * @description Schema to create a benefit of type `meter_unit`.
      */
@@ -13433,6 +13438,8 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. Defaults to `per_claimed_seat` on creation. On update, the current value is kept if omitted. It can't be changed once the benefit has been granted. */
+      allocation?: components['schemas']['BenefitMeterCreditAllocation'] | null
     }
     /**
      * BenefitMeterCreditProperties
@@ -13448,6 +13455,8 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. */
+      allocation: components['schemas']['BenefitMeterCreditAllocation']
     }
     /**
      * BenefitMeterCreditPublic
@@ -13519,6 +13528,8 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. */
+      allocation: components['schemas']['BenefitMeterCreditAllocation']
     }
     /** BenefitMeterCreditSubscriber */
     BenefitMeterCreditSubscriber: {
@@ -13588,6 +13599,8 @@ export interface components {
        * Format: uuid4
        */
       meter_id: string
+      /** @description How the units are granted on seat-based products. `per_claimed_seat` grants the units for each claimed seat. `team` grants the units once per purchase, whatever the number of seats. In both cases, the units are credited to the billing customer. On products without seats, the units are always granted once per purchase. */
+      allocation: components['schemas']['BenefitMeterCreditAllocation']
     }
     /** BenefitMeterCreditUpdate */
     BenefitMeterCreditUpdate: {
@@ -74227,6 +74240,9 @@ export const benefitManuallyRevokedEventNameValues: ReadonlyArray<
 export const benefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCredit']['type']
 > = ['meter_credit']
+export const benefitMeterCreditAllocationValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditAllocation']
+> = ['per_claimed_seat', 'team']
 export const benefitMeterCreditCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCreditCreate']['type']
 > = ['meter_credit']

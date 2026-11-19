@@ -134,6 +134,10 @@ export default {
         volumeExplainer:
           'Całe użycie jest rozliczane według stawki dla zakresu, do którego należy',
       },
+      meteredIncludedTeam: '{units} w pakiecie dla zespołu',
+      meteredIncludedPerSeat: '{units} w pakiecie na użytkownika',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} w pakiecie na użytkownika oraz {teamUnits} dla zespołu',
     },
     trial: {
       hero: {

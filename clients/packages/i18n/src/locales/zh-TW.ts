@@ -128,6 +128,10 @@ export default {
       discount: {
         until: '{date}前有效',
       },
+      meteredIncludedTeam: '團隊包含 {units}',
+      meteredIncludedPerSeat: '每個席位包含 {units}',
+      meteredIncludedPerSeatAndTeam:
+        '每個席位包含 {perSeatUnits}，另為團隊提供 {teamUnits}',
     },
     trial: {
       hero: {

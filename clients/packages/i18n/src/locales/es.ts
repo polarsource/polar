@@ -128,6 +128,10 @@ export default {
         volumeExplainer:
           'Todo el uso se cobra a la tarifa del tramo en el que cae',
       },
+      meteredIncludedTeam: '{units} incluidos para el equipo',
+      meteredIncludedPerSeat: '{units} incluidos por puesto',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} incluidos por puesto, más {teamUnits} para el equipo',
     },
     trial: {
       hero: {

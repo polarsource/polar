@@ -129,6 +129,10 @@ export default {
         volumeExplainer:
           'Todo o uso é cobrado pela tarifa da faixa em que se enquadra',
       },
+      meteredIncludedTeam: '{units} incluídos para a equipe',
+      meteredIncludedPerSeat: '{units} incluídos por assento',
+      meteredIncludedPerSeatAndTeam:
+        '{perSeatUnits} incluídos por assento, além de {teamUnits} para a equipe',
     },
     trial: {
       hero: {

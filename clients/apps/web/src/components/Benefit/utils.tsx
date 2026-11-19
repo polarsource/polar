@@ -87,6 +87,13 @@ export const githubRepositoryPermissionDisplayNames: {
   admin: 'Admin',
 }
 
+export const meterCreditAllocationDisplayNames: {
+  [key in schemas['BenefitMeterCreditAllocation']]: string
+} = {
+  per_claimed_seat: 'Per claimed seat',
+  team: 'Per team',
+}
+
 const CREATABLE_BENEFIT_TYPES_ORDER = [
   'feature_flag',
   'meter_credit',

@@ -127,6 +127,10 @@ export default {
         andAbove: '{from}+',
         volumeExplainer: '모든 사용량은 해당 구간의 요금이 적용됩니다',
       },
+      meteredIncludedTeam: '팀 전체에 {units} 포함',
+      meteredIncludedPerSeat: '좌석당 {units} 포함',
+      meteredIncludedPerSeatAndTeam:
+        '좌석당 {perSeatUnits} 포함, 팀 전체에 {teamUnits} 추가 제공',
     },
     trial: {
       hero: {

@@ -121,6 +121,22 @@ export default {
         _llmContext:
           'Shown next to a metered price when the product grants included usage credits. {units} is a pre-formatted quantity phrase including the unit noun, e.g. "10,000 tokens", so the sentence reads "10,000 tokens included". The per-unit overage rate is displayed separately on the same row.',
       },
+      meteredIncludedTeam: {
+        value: '{units} included for the team',
+        _llmContext:
+          'Shown next to a metered price on a seat-based (team) product when the included usage credits are granted once to the whole team, whatever the number of seats. {units} is a pre-formatted quantity phrase including the unit noun, e.g. "10,000 tokens".',
+      },
+      meteredIncludedPerSeat: {
+        value: '{units} included per seat',
+        _llmContext:
+          'Shown next to a metered price on a seat-based (team) product when the included usage credits are granted for each seat. {units} is a pre-formatted quantity phrase including the unit noun, e.g. "1,000 tokens".',
+      },
+      meteredIncludedPerSeatAndTeam: {
+        value:
+          '{perSeatUnits} included per seat, plus {teamUnits} for the team',
+        _llmContext:
+          'Shown next to a metered price on a seat-based (team) product that grants included usage credits both for each seat and once to the whole team. {perSeatUnits} and {teamUnits} are pre-formatted quantity phrases including the unit noun, e.g. "1,000 tokens".',
+      },
       meterUnits: {
         token: {
           value: 'tokens',

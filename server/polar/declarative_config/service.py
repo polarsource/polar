@@ -1,5 +1,5 @@
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Literal
 from uuid import UUID
 
@@ -470,6 +470,16 @@ class DeclarativeConfigService:
             if draft is not None and not publish
             else CatalogMembers()
         )
+        type_issues = validation.benefit_type_changes(
+            [
+                replace(change, existing=draft_rows.benefits[external_id])
+                for change in changes.benefits
+                if change.existing is None
+                and (external_id := change.config.external_id) in draft_rows.benefits
+            ]
+        )
+        if type_issues:
+            raise ConfigInvalid(type_issues)
         limit_issues = await validation.exceeded_limits(
             session, organization, changes, draft_rows
         )

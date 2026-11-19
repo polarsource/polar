@@ -29,7 +29,7 @@ drain_interval = 1000
 # Polar does not say; each failure in a row doubles it, up to the maximum.
 outbox_retry_delay = 1000
 max_outbox_retry_delay = 60000
-# How often an instance reports the size of its Redis to telemetry.
+# How often an instance pushes its telemetry exports to Redis.
 report_interval = 30000
 # One span in this many goes to Polar for the others; spans with an error or a drift always go.
 span_sample_rate = 10

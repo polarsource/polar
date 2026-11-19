@@ -57,11 +57,7 @@ async def configuration(
     return await outpost_service.get_configuration(session, auth_subject.subject)
 
 
-@router.post(
-    "/meter-usage",
-    response_model=list[Snapshot],
-    responses={404: ReducerNotFound},
-)
+@router.post("/meter-usage", response_model=list[Snapshot])
 async def meter_usage(
     payload: MeterUsageRequest,
     auth_subject: OutpostWrite,

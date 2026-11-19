@@ -124,12 +124,15 @@ const filterSummary = (filter: Filter): string | null => {
 interface FilterPopoverProps {
   filters: Filter[]
   label?: string
+  /** `icon` is a bare icon button, with a dot when a filter is applied. */
+  variant?: 'button' | 'icon'
   className?: string
 }
 
 const FilterPopover: React.FC<FilterPopoverProps> = ({
   filters,
   label = 'Filters',
+  variant = 'button',
   className,
 }) => {
   const [open, setOpen] = useState(false)
@@ -185,36 +188,60 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <Button
-          variant="secondary"
-          className={twMerge('flex flex-row items-center', className)}
-          wrapperClassNames="gap-x-2"
-        >
-          <FilterListOutlined fontSize="inherit" />
-          <Text>{label}</Text>
-          {activeCount > 0 && (
-            <Box
-              as="span"
-              alignItems="center"
-              justifyContent="center"
-              borderRadius="full"
-              backgroundColor="background-primary"
-              minWidth={20}
-              height={20}
-              paddingHorizontal="xs"
-            >
-              <Text as="span" variant="caption">
-                {activeCount}
-              </Text>
-            </Box>
-          )}
-        </Button>
+        {variant === 'icon' ? (
+          <Button
+            size="icon"
+            variant="ghost"
+            className={twMerge('relative h-7 w-7 [&_svg]:size-4!', className)}
+            aria-label={label}
+            title={label}
+          >
+            <FilterListOutlined fontSize="inherit" />
+            {activeCount > 0 && (
+              <Box
+                as="span"
+                position="absolute"
+                top={4}
+                right={4}
+                width={6}
+                height={6}
+                borderRadius="full"
+                backgroundColor="background-inverse"
+              />
+            )}
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            className={twMerge('flex flex-row items-center', className)}
+            wrapperClassNames="gap-x-2"
+          >
+            <FilterListOutlined fontSize="inherit" />
+            <Text>{label}</Text>
+            {activeCount > 0 && (
+              <Box
+                as="span"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="full"
+                backgroundColor="background-primary"
+                minWidth={20}
+                height={20}
+                paddingHorizontal="xs"
+              >
+                <Text as="span" variant="caption">
+                  {activeCount}
+                </Text>
+              </Box>
+            )}
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent
         className="dark:border-polar-600 dark:bg-polar-700 min-w-72 overflow-hidden rounded-2xl p-0"
         style={{ width: 'var(--radix-popover-trigger-width)' }}
         side="bottom"
-        align="start"
+        align={variant === 'icon' ? 'end' : 'start'}
       >
         <Command
           className="rounded-2xl bg-transparent"

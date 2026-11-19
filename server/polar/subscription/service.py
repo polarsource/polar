@@ -4724,18 +4724,32 @@ class SubscriptionService:
             return
         if self._is_free_after_trial(subscription, subscription.trial_end):
             return
-        if (
-            subscription.payment_method_id is None
-            and subscription.customer.default_payment_method_id is None
-        ):
+        payment_method_required = not self._has_payment_method(subscription)
+        billing_address_required = not self._has_complete_billing_address(subscription)
+        if payment_method_required or billing_address_required:
+            if not billing_address_required:
+                subject_template = (
+                    "Add a payment method to keep your {product.name} subscription"
+                )
+            elif not payment_method_required:
+                subject_template = (
+                    "Complete your billing address to keep your "
+                    "{product.name} subscription"
+                )
+            else:
+                subject_template = (
+                    "Add your billing details to keep your {product.name} subscription"
+                )
             return await self._send_customer_email(
                 session,
                 subscription,
-                subject_template=(
-                    "Add a payment method to keep your {product.name} subscription"
-                ),
+                subject_template=subject_template,
                 template_name="subscription_trial_payment_method_required",
-                extra_context={"trial_end_date": format_date(subscription.trial_end)},
+                extra_context={
+                    "trial_end_date": format_date(subscription.trial_end),
+                    "payment_method_required": payment_method_required,
+                    "billing_address_required": billing_address_required,
+                },
                 deduplication_key=subscription_trial_conversion_reminder_key(
                     subscription.id, subscription.trial_end.date()
                 ),
@@ -4751,6 +4765,16 @@ class SubscriptionService:
                 subscription.id, subscription.trial_end.date()
             ),
         )
+
+    def _has_payment_method(self, subscription: Subscription) -> bool:
+        return (
+            subscription.payment_method_id is not None
+            or subscription.customer.default_payment_method_id is not None
+        )
+
+    def _has_complete_billing_address(self, subscription: Subscription) -> bool:
+        billing_address = subscription.customer.billing_address
+        return billing_address is not None and billing_address.has_tax_fields()
 
     def _is_free_after_trial(
         self, subscription: Subscription, trial_end: datetime

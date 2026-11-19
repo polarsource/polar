@@ -35029,6 +35029,7 @@
             "type": "string",
             "maxLength": 255,
             "minLength": 1,
+            "pattern": "\\S",
             "title": "Key",
             "description": "The license key, issued exactly as given.",
             "examples": [
@@ -35065,6 +35066,8 @@
             "anyOf": [
               {
                 "type": "integer",
+                "maximum": 2147483647.0,
+                "minimum": -2147483648.0,
                 "exclusiveMinimum": 0.0
               },
               {

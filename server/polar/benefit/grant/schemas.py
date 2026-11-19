@@ -3,7 +3,7 @@ from typing import Annotated, Literal
 from pydantic import UUID4, AwareDatetime, ConfigDict, Field, StringConstraints
 
 from polar.kit.external_id import ExternalID
-from polar.kit.schemas import BENEFIT_ID_EXAMPLE, CUSTOMER_ID_EXAMPLE, Schema
+from polar.kit.schemas import BENEFIT_ID_EXAMPLE, CUSTOMER_ID_EXAMPLE, Int32, Schema
 from polar.models.license_key import LicenseKeyStatus
 from polar.organization.schemas import OrganizationID
 
@@ -23,7 +23,7 @@ class BenefitGrantLicenseKeyCreate(Schema):
     model_config = ConfigDict(extra="forbid")
 
     key: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)
+        str, StringConstraints(min_length=1, max_length=255, pattern=r"\S")
     ] = Field(
         description="The license key, issued exactly as given.",
         examples=["38B1460A-5104-4067-A91D-77B872934D51"],
@@ -39,7 +39,7 @@ class BenefitGrantLicenseKeyCreate(Schema):
             "benefit's expiration doesn't apply to a provided key."
         ),
     )
-    limit_activations: int | None = Field(
+    limit_activations: Int32 | None = Field(
         default=None,
         gt=0,
         description=(

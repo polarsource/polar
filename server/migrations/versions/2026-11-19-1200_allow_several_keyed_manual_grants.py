@@ -30,11 +30,15 @@ def _drop_index(name: str) -> None:
 
 
 def _create_index(name: str, predicate: str) -> None:
-    valid = op.get_bind().scalar(
-        sa.text(
-            "SELECT indisvalid FROM pg_index WHERE indexrelid = to_regclass(:name)"
-        ),
-        {"name": name},
+    valid = (
+        None
+        if op.get_context().as_sql
+        else op.get_bind().scalar(
+            sa.text(
+                "SELECT indisvalid FROM pg_index WHERE indexrelid = to_regclass(:name)"
+            ),
+            {"name": name},
+        )
     )
     if valid:
         return
@@ -66,6 +70,20 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    if not op.get_context().as_sql:
+        duplicates = op.get_bind().scalar(
+            sa.text(
+                f"SELECT count(*) FROM (SELECT 1 FROM {TABLE} WHERE {ACTIVE_MANUAL} "
+                "GROUP BY customer_id, member_id, benefit_id "
+                "HAVING count(*) > 1) AS duplicates"
+            )
+        )
+        if duplicates:
+            raise RuntimeError(
+                f"{duplicates} recipients hold several active manual grants of one "
+                "benefit, which the previous unique index forbids. Revoke the extra "
+                "license key grants before downgrading."
+            )
     with op.get_context().autocommit_block():
         op.execute("SET lock_timeout = '5min'")
         try:

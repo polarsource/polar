@@ -19,6 +19,7 @@ from polar.event.service import event as event_service
 from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_event
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
@@ -211,10 +212,16 @@ class BenefitGrantService:
     ) -> BenefitGrant:
         """Grant a benefit outside of any purchase. Callers check access, resolve
         the member and check that the benefit accepts a license key."""
-        if license_key is not None and await self._license_key_taken(
-            session, organization, license_key.key
-        ):
-            raise LicenseKeyAlreadyExists()
+        if license_key is not None:
+            # Held until commit, so a concurrent grant of the same key waits and
+            # then sees this one.
+            await pg_advisory_xact_lock(
+                session,
+                "benefit_grant.user_provided_key",
+                f"{organization.id}:{license_key.key}",
+            )
+            if await self._license_key_taken(session, organization, license_key.key):
+                raise LicenseKeyAlreadyExists()
 
         repository = BenefitGrantRepository.from_session(session)
         try:

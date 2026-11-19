@@ -179,8 +179,9 @@ class Metering:
     """Dispatch events, actor warmup, and meter reads to metering strategies.
 
     Create with polar.metering() and use as an async context manager. By
-    default, events are buffered for HTTP delivery, with Outpost added when
-    outpost is set. Accepting an event does not confirm delivery.
+    default, events are buffered for HTTP delivery; with the outpost option,
+    Outpost delivers them itself instead. Accepting an event does not confirm
+    delivery.
     """
 
     def __init__(
@@ -226,7 +227,7 @@ class Metering:
             raise
 
     async def _close(self) -> None:
-        # In start order: a strategy drains into the ones after it, the buffer into Outpost.
+        # In start order: a strategy drains into the ones after it.
         errors: list[Exception] = []
         for strategy in self._running:
             try:

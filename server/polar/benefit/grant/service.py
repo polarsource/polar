@@ -237,7 +237,7 @@ class BenefitGrantService:
                     flush=True,
                 )
         except IntegrityError as e:
-            if "ix_benefit_grants_active_unkeyed_manual_unique" in str(e):
+            if "ix_benefit_grants_active_manual_unique" in str(e):
                 raise BenefitGrantAlreadyExists() from e
             raise
 
@@ -312,7 +312,7 @@ class BenefitGrantService:
                     grant, update_dict={"manually_revoked_at": None}, flush=True
                 )
         except IntegrityError as e:
-            if "ix_benefit_grants_active_unkeyed_manual_unique" in str(e):
+            if "ix_benefit_grants_active_manual_unique" in str(e):
                 raise BenefitGrantAlreadyExists() from e
             raise
 

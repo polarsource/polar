@@ -128,7 +128,7 @@ class BenefitGrant(RecordModel):
         # One active manual grant per recipient and benefit, unless each carries
         # its own license key: a customer can own several keys for one product.
         Index(
-            "ix_benefit_grants_active_unkeyed_manual_unique",
+            "ix_benefit_grants_active_manual_unique_unkeyed",
             "customer_id",
             "member_id",
             "benefit_id",

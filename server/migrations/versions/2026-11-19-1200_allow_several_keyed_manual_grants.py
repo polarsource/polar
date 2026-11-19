@@ -21,7 +21,7 @@ ACTIVE_MANUAL = (
     "AND manually_revoked_at IS NULL"
 )
 OLD_INDEX = "ix_benefit_grants_active_manual_unique"
-NEW_INDEX = "ix_benefit_grants_active_unkeyed_manual_unique"
+NEW_INDEX = "ix_benefit_grants_active_manual_unique_unkeyed"
 NEW_PREDICATE = f"{ACTIVE_MANUAL} AND properties->>'user_provided_key' IS NULL"
 
 

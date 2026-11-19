@@ -1,0 +1,27 @@
+server/polar/refund/endpoints.py
+  s_e0c76dfaa01995::t_ab84366dd912b0 59-63,70,76-80
+server/tests/openapi.2026-04.json
+  s_e0c76dfaa01995::t_08925af1b04eb6 1
+server/tests/openapi.2026-10.json
+  s_e0c76dfaa01995::t_08925af1b04eb6 1
+docs/openapi/2026-04.openapi.json
+  s_e0c76dfaa01995::t_fdf60d18ef138e 18518-18527,72623-72644
+docs/openapi/2026-10.openapi.json
+  s_e0c76dfaa01995::t_ac1ebb54dcb448 18518-18527,72735-72756
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e789f888429782eac26fbcfbc2a5fbc47aa26a06",
+  "prompts": {},
+  "sessions": {
+    "s_e0c76dfaa01995": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f2dc-d088-7df3-812e-18f674ba5caa",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

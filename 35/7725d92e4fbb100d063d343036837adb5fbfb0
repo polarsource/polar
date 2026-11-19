@@ -1,0 +1,21 @@
+server/tests/refund/test_endpoints.py
+  s_e0c76dfaa01995::t_3d668da560f76d 30,305,314,327
+server/polar/refund/endpoints.py
+  s_e0c76dfaa01995::t_4c252742544663 6,11,55-63,69,82-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "357725d92e4fbb100d063d343036837adb5fbfb0",
+  "prompts": {},
+  "sessions": {
+    "s_e0c76dfaa01995": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f2dc-d088-7df3-812e-18f674ba5caa",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "François Voron <me@fvoron.com>"
+    }
+  }
+}

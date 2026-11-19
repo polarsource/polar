@@ -7,6 +7,7 @@ import { type RefObject } from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
   DATE_LABEL_HEIGHT,
+  DATE_LABEL_TOP,
   HEADER_HEIGHT,
   SURFACE_CLASS,
   type GanttScale,
@@ -19,7 +20,7 @@ const YEAR_WIDTH = 36
 // just right of the label column, or just left of the year. It is placed with
 // a spacer because a margin would stop it from sticking to the right.
 const TODAY_CLASS =
-  'group sticky left-[148px] right-[68px] z-10 shrink-0 cursor-pointer self-start md:left-[264px]'
+  'group sticky left-[168px] right-[68px] z-10 shrink-0 cursor-pointer self-start md:left-[280px]'
 // The arrow points to where today is: the opposite of the edge it stuck to.
 const ARROW_LEFT_CLASS = 'hidden size-3 group-data-[stuck=left]:block'
 const ARROW_RIGHT_CLASS = 'hidden size-3 group-data-[stuck=right]:block'
@@ -112,7 +113,7 @@ export const GanttAxis = ({
             ref={todayRef}
             type="button"
             className={TODAY_CLASS}
-            style={{ marginTop: (HEADER_HEIGHT - DATE_LABEL_HEIGHT) / 2 }}
+            style={{ marginTop: DATE_LABEL_TOP }}
             onClick={onToday}
           >
             <div className="group-data-[stuck=left]:hidden group-data-[stuck=right]:hidden">

@@ -2,14 +2,16 @@ import {
   type SubscriptionTimeline,
   type TimelineMarkerKind,
   type TimelineRange,
+  type TimelineSegment,
+  type TimelineSegmentKind,
 } from '@/utils/subscriptionTimeline'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   BAR_HEIGHT,
   BAR_RADIUS,
+  BAR_TOP,
   formatGanttDate,
-  ROW_HEIGHT,
   type GanttScale,
 } from './scale'
 import { GanttFill } from './GanttFill'
@@ -21,12 +23,10 @@ const DIVIDER_INSET = 5
 // Drawn in the bar's own color, on top of it, so it reads as a deeper shade.
 const DIVIDER_OPACITY: Record<GanttTone, number> = {
   neutral: 0.12,
-  success: 0.3,
   warning: 0.3,
   danger: 0.3,
 }
 const LABEL_GAP = 14
-const BAR_TOP = (ROW_HEIGHT - BAR_HEIGHT) / 2
 const MARKER_LABELS: Record<TimelineMarkerKind, string> = {
   ended: 'Ended',
   ending: 'Ends',
@@ -35,11 +35,39 @@ const MARKER_LABELS: Record<TimelineMarkerKind, string> = {
   resuming: 'Resumes',
 }
 
-const STANDALONE_KINDS = new Set<string>(['trial', 'paused', 'current'])
+const STANDALONE_KINDS = new Set<TimelineSegmentKind>([
+  'trial',
+  'paused',
+  'current',
+])
 
-// Cycles of the same kind run together with a divider. Anything else gets a gap.
-const isSeparated = (a: { kind: string }, b: { kind: string }) =>
-  STANDALONE_KINDS.has(a.kind) || STANDALONE_KINDS.has(b.kind)
+interface Run {
+  kind: TimelineSegmentKind
+  start: number
+  end: number
+  dividers: number[]
+}
+
+// Billing cycles of the same kind are drawn as one stretch with a divider at
+// each cycle point, which keeps the element count per row small. A trial, a
+// pause and the current cycle each stand alone.
+const toRuns = (segments: TimelineSegment[]): Run[] => {
+  const runs: Run[] = []
+  for (const segment of segments) {
+    const run = runs.at(-1)
+    if (
+      run &&
+      !STANDALONE_KINDS.has(run.kind) &&
+      !STANDALONE_KINDS.has(segment.kind)
+    ) {
+      run.dividers.push(segment.start)
+      run.end = segment.end
+    } else {
+      runs.push({ ...segment, dividers: [] })
+    }
+  }
+  return runs
+}
 
 interface GanttBarProps {
   timeline: SubscriptionTimeline
@@ -59,9 +87,10 @@ export const GanttBar = ({
   const { segments, marker } = timeline
   const first = segments[0]
   const last = segments.at(-1)
-  const visible = segments.filter(
-    ({ start, end }) => end > rendered.start && start < rendered.end,
-  )
+  const runs = toRuns(segments)
+  const dividers = runs
+    .flatMap((run) => run.dividers)
+    .filter((time) => time > rendered.start && time < rendered.end)
 
   return (
     <>
@@ -91,26 +120,14 @@ export const GanttBar = ({
             className="flex size-full overflow-hidden"
             style={{ borderRadius: BAR_RADIUS }}
           >
-            {visible[0] && visible[0] !== first && (
-              <Box
-                flexShrink={0}
-                width={scale.span(first.start, visible[0].start)}
-              />
-            )}
-            {visible.map((segment) => {
-              const index = segments.indexOf(segment)
-              const previous = segments[index - 1]
-              const next = segments[index + 1]
-              const gapLeft =
-                previous !== undefined && isSeparated(previous, segment)
-              const gapRight = next !== undefined && isSeparated(segment, next)
-              const hasDivider = previous !== undefined && !gapLeft
+            {runs.map((run, index) => {
+              const gapLeft = index > 0
+              const gapRight = index < runs.length - 1
               return (
                 <Box
-                  key={segment.start}
-                  position="relative"
+                  key={run.start}
                   flexShrink={0}
-                  width={scale.span(segment.start, segment.end)}
+                  width={scale.span(run.start, run.end)}
                 >
                   <div
                     className="flex grow overflow-hidden"
@@ -125,30 +142,39 @@ export const GanttBar = ({
                     <GanttFill
                       tone={tone}
                       pattern={
-                        segment.kind === 'trial' || segment.kind === 'paused'
-                          ? segment.kind
+                        run.kind === 'trial' || run.kind === 'paused'
+                          ? run.kind
                           : undefined
                       }
-                      strength={segment.kind === 'current' ? 1 : 0.5}
+                      strength={run.kind === 'upcoming' ? 0.5 : 1}
                     />
                   </div>
-                  {hasDivider && (
-                    <Box
-                      position="absolute"
-                      top={DIVIDER_INSET}
-                      bottom={DIVIDER_INSET}
-                      left={-DIVIDER_WIDTH / 2}
-                      width={DIVIDER_WIDTH}
-                      color={TONE_COLOR[tone]}
-                      opacity={DIVIDER_OPACITY[tone]}
-                    >
-                      <div className="size-full rounded-full bg-current" />
-                    </Box>
-                  )}
                 </Box>
               )
             })}
           </div>
+        </Box>
+      )}
+      {dividers.length > 0 && (
+        <Box
+          position="absolute"
+          inset={0}
+          pointerEvents="none"
+          color={TONE_COLOR[tone]}
+          opacity={DIVIDER_OPACITY[tone]}
+        >
+          {dividers.map((time) => (
+            <div
+              key={time}
+              className="absolute rounded-full bg-current"
+              style={{
+                left: scale.x(time, -DIVIDER_WIDTH / 2),
+                top: BAR_TOP + DIVIDER_INSET,
+                width: DIVIDER_WIDTH,
+                height: BAR_HEIGHT - DIVIDER_INSET * 2,
+              }}
+            />
+          ))}
         </Box>
       )}
       {marker && (

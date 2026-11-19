@@ -1,7 +1,7 @@
 import { SkeletonBar } from '@/components/Shared/SkeletonBar'
 import { DAY_MS, type TimelineRange } from '@/utils/subscriptionTimeline'
 import { Box } from '@polar-sh/orbit/Box'
-import { BAR_HEIGHT, ROW_HEIGHT, type GanttScale } from './scale'
+import { BAR_HEIGHT, BAR_TOP, ROW_HEIGHT, type GanttScale } from './scale'
 
 const ROWS = [
   { name: 132, product: 96, startedDaysAgo: 24 },
@@ -24,14 +24,13 @@ export const GanttSkeletonLabels = ({ count }: { count: number }) =>
       key={index}
       height={ROW_HEIGHT}
       flexShrink={0}
-      flexDirection="column"
-      justifyContent="center"
-      rowGap="s"
+      alignItems="center"
+      gap="s"
       px="l"
       aria-hidden
     >
       <SkeletonBar width={row.name} height={10} />
-      <SkeletonBar width={row.product} height={8} />
+      <SkeletonBar width={row.product / 2} height={8} />
     </Box>
   ))
 
@@ -58,7 +57,7 @@ export const GanttSkeletonTrack = ({
     >
       <Box
         position="absolute"
-        top={(ROW_HEIGHT - BAR_HEIGHT) / 2}
+        top={BAR_TOP}
         left={scale.x(now - row.startedDaysAgo * DAY_MS)}
         width={scale.span(now - row.startedDaysAgo * DAY_MS, rendered.end)}
       >

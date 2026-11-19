@@ -9,6 +9,7 @@ import { GanttAxis } from './GanttAxis'
 import { GanttCorner } from './GanttCorner'
 import {
   DATE_LABEL_HEIGHT,
+  DATE_LABEL_TOP,
   HEADER_HEIGHT,
   SURFACE_CLASS,
   type GanttScale,
@@ -132,7 +133,7 @@ export const GanttFrame = ({
           <Box
             flexDirection="column"
             height="100%"
-            width={{ base: 140, md: 256 }}
+            width={{ base: 160, md: 272 }}
             borderRightWidth={1}
             borderStyle="solid"
             borderColor="border-primary"
@@ -192,7 +193,7 @@ export const GanttFrame = ({
             />
             <Box
               position="sticky"
-              top={(HEADER_HEIGHT - DATE_LABEL_HEIGHT) / 2}
+              top={DATE_LABEL_TOP}
               alignSelf="start"
               flexShrink={0}
               height={DATE_LABEL_HEIGHT}

@@ -19,10 +19,17 @@ export type GanttGroup = (typeof ganttGroupValues)[number]
 
 export const DEFAULT_GANTT_GROUP: GanttGroup = 'customer'
 
-export const ROW_HEIGHT = 52
-export const HEADER_HEIGHT = 56
+// Matches a CondensedTable row: 8px of padding around a line, plus its border.
+export const ROW_HEIGHT = 38
+// Matches the CondensedTable header, so both views share one heading height.
+export const HEADER_HEIGHT = 38
 export const DATE_LABEL_HEIGHT = 22
+export const DATE_LABEL_TOP = Math.floor(
+  (HEADER_HEIGHT - DATE_LABEL_HEIGHT) / 2,
+)
 export const BAR_HEIGHT = 16
+// Floored so the bar lands on a whole pixel in an odd-height row.
+export const BAR_TOP = Math.floor((ROW_HEIGHT - BAR_HEIGHT) / 2)
 export const BAR_RADIUS = 4
 export const MIN_CYCLE_WIDTH = 6
 export const TODAY_VIEWPORT_RATIO = 0.25

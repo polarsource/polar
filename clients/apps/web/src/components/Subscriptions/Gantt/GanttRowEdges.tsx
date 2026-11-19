@@ -7,7 +7,7 @@ import { DATE_LABEL_HEIGHT, formatGanttDate } from './scale'
 const EDGE_CLASS = 'sticky z-10 hidden shrink-0 cursor-pointer self-center'
 // The left one clears the label column, which covers the start of the track,
 // and lines up with the Today chip in the header.
-const LEFT_CLASS = `${EDGE_CLASS} left-[148px] group-data-[out=left]:flex md:left-[264px]`
+const LEFT_CLASS = `${EDGE_CLASS} left-[168px] group-data-[out=left]:flex md:left-[280px]`
 const RIGHT_CLASS = `${EDGE_CLASS} right-4 ml-auto group-data-[out=right]:flex`
 const ICON_CLASS = 'size-3'
 

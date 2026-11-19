@@ -31,17 +31,15 @@ export const GanttRowLabel = ({
       data-row={subscription.id}
       onClick={() => onSelect(subscription.id)}
     >
-      <Box
-        height={ROW_HEIGHT}
-        flexDirection="column"
-        justifyContent="center"
-        px="l"
-        minWidth={0}
-      >
-        <Text truncate>{customer.name || customer.email || '—'}</Text>
-        <Text variant="caption" color="muted" truncate>
-          {product.name} · {formatSubscriptionPrice(subscription)}
-        </Text>
+      <Box height={ROW_HEIGHT} alignItems="center" gap="s" px="l" minWidth={0}>
+        <Box minWidth={0}>
+          <Text truncate>{customer.name || customer.email || '—'}</Text>
+        </Box>
+        <Box flexShrink={0} maxWidth="45%">
+          <Text color="muted" truncate>
+            {product.name}
+          </Text>
+        </Box>
       </Box>
     </div>
   )

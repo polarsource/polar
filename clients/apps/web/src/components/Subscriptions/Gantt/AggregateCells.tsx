@@ -91,7 +91,7 @@ export const AggregateCells = ({
                   <GanttFill tone="warning" />
                 </Box>
                 <Box flexGrow={bucket.renewingAmount} flexBasis={0}>
-                  <GanttFill tone="success" />
+                  <GanttFill />
                 </Box>
               </div>
             </Box>

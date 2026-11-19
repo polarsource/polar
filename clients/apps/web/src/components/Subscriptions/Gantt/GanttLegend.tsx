@@ -12,18 +12,17 @@ interface LegendItem {
 }
 
 const AGGREGATE_ITEMS: LegendItem[] = [
-  { label: 'Renewing', tone: 'success' },
+  { label: 'Renewing' },
   { label: 'Ending or past due', tone: 'warning' },
 ]
 
 const CUSTOMER_ITEMS: LegendItem[] = [
-  { label: 'Active', tone: 'success', strength: 0.5 },
-  { label: 'Current period', tone: 'success' },
+  { label: 'Billed' },
+  { label: 'Upcoming', strength: 0.5 },
   { label: 'Ending', tone: 'warning' },
   { label: 'Past due', tone: 'danger' },
-  { label: 'Trial', tone: 'success', pattern: 'trial' },
+  { label: 'Trial', pattern: 'trial' },
   { label: 'Paused', pattern: 'paused' },
-  { label: 'Ended', strength: 0.5 },
 ]
 
 export const GanttLegend = ({ aggregate }: { aggregate: boolean }) => (

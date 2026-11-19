@@ -7,7 +7,7 @@ on:
       - "lambda/**"
       - ".github/workflows/test_lambda.yaml"
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize, reopened, edited]
     paths:
       - "lambda/**"
       - ".github/workflows/test_lambda.yaml"
@@ -18,7 +18,8 @@ permissions:
 
 jobs:
   changes:
-    name: "Detect changes"
+    name: "Detect changes${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: blacksmith-4vcpu-ubuntu-2404
     outputs:
       server: ${{ steps.filter.outputs.server }}
@@ -43,7 +44,7 @@ jobs:
               - '.github/workflows/test_lambda.yaml'
 
   lambda-linters:
-    name: "Lambda: Linters"
+    name: "Lambda: Linters${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.lambda == 'true'
     timeout-minutes: 10
@@ -82,7 +83,7 @@ jobs:
         run: uv run task lint_types
 
   lambda-tests:
-    name: "Lambda: Tests"
+    name: "Lambda: Tests${{ github.event.action == 'edited' && !github.event.changes.base && ' (PR metadata only)' || '' }}"
     needs: changes
     if: needs.changes.outputs.lambda == 'true'
     timeout-minutes: 10

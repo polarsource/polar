@@ -37,7 +37,9 @@ import {
   quantity,
 } from "./reducer";
 import {
-  READ_STATE_SCRIPT,
+  READ_STATES_SCRIPT,
+  PREPARE_SNAPSHOT_SCRIPT,
+  PUSH_TELEMETRY_SCRIPT,
   WRITE_BUCKET_SCRIPT,
   CONFIRM_SCRIPT,
   APPLY_SNAPSHOT_SCRIPT,
@@ -135,7 +137,18 @@ interface Confirmation {
 // A customer's state for one reducer, or `missing` while Polar does not know the customer.
 type Read = State | "missing";
 interface OutpostRedis extends Redis {
-  outpostReadState(key: string): Promise<string[]>;
+  outpostReadStates(numberOfKeys: number, ...args: string[]): Promise<unknown[]>;
+  outpostPrepareSnapshot(
+    key: string,
+    missingKey: string,
+    pulled: string,
+    coldUntil: number,
+  ): Promise<string[] | null>;
+  outpostPushTelemetry(
+    spansKey: string,
+    metricsKey: string,
+    ...args: (string | number | Buffer)[]
+  ): Promise<number>;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): Promise<string[]>;
   outpostCommitPull(
     key: string,
@@ -144,7 +157,6 @@ interface OutpostRedis extends Redis {
   ): Promise<number>;
 }
 interface OutpostPipeline extends ChainableCommander {
-  outpostReadState(key: string): this;
   outpostWriteBucket(key: string, pendingKey: string, ...args: (string | number)[]): this;
   outpostConfirm(key: string, pendingKey: string, ...args: (string | number)[]): this;
   outpostApplySnapshot(key: string, ...args: (string | number)[]): this;
@@ -265,6 +277,19 @@ export const decodeState = (value: string[]): State => {
   }
   return state;
 };
+// Extends a lock at most once per quarter of its time to live: it stays held, and a page of
+// snapshots does not cost a command each.
+const throttled = (extend: () => Promise<unknown>, ttl: number): (() => Promise<unknown>) => {
+  let extended = Date.now();
+  return async () => {
+    if (Date.now() - extended < ttl / 4) return;
+    extended = Date.now();
+    await extend();
+  };
+};
+// The statistics a reducer's quantity adds up: all a read needs of its state.
+const statisticsOf = ({ aggregation }: Reducer): string =>
+  aggregation.func === "avg" ? "sum,count" : aggregation.func;
 // Polar's totals cover the cold buckets: the local read adds what Polar has not confirmed in
 // them, and every local event in the buckets Polar has not sealed yet.
 export const consumedUnits = (state: State, func: Aggregation["func"]): number => {
@@ -447,7 +472,15 @@ export class Outpost {
         commandTimeout: TIMEOUT,
         retryStrategy: reconnectDelay,
       }) as OutpostRedis;
-      this.redis.defineCommand("outpostReadState", { numberOfKeys: 1, lua: READ_STATE_SCRIPT });
+      this.redis.defineCommand("outpostReadStates", { lua: READ_STATES_SCRIPT });
+      this.redis.defineCommand("outpostPrepareSnapshot", {
+        numberOfKeys: 2,
+        lua: PREPARE_SNAPSHOT_SCRIPT,
+      });
+      this.redis.defineCommand("outpostPushTelemetry", {
+        numberOfKeys: 2,
+        lua: PUSH_TELEMETRY_SCRIPT,
+      });
       this.redis.defineCommand("outpostWriteBucket", {
         numberOfKeys: 2,
         lua: WRITE_BUCKET_SCRIPT,
@@ -496,10 +529,7 @@ export class Outpost {
       this.pullTimer = setInterval(() => {
         if (!this.failure) void this.refresh().catch(() => {});
       }, PULL_CHECK_INTERVAL);
-      this.refreshTimer = setInterval(() => {
-        void this.reportRedisSize();
-        void this.flushTelemetry();
-      }, REPORT_INTERVAL);
+      this.refreshTimer = setInterval(() => void this.flushTelemetry(), REPORT_INTERVAL);
       this.requireRedis();
       return this;
     } catch (error) {
@@ -656,10 +686,8 @@ export class Outpost {
         throw new UnknownMeterError(`Outpost reduces no meter ${input.meter_id}`);
       }
       const creditReducer = this.findReducer("credit", input.meter_id);
-      const [state, creditState] = await this.read(
-        customer,
-        creditReducer ? [reducer, creditReducer] : [reducer],
-      );
+      const reducers = creditReducer ? [reducer, creditReducer] : [reducer];
+      const [state, creditState] = await this.read(customer, reducers, reducers.map(statisticsOf));
       if (state === "missing" || creditState === "missing") {
         read.outcome = "unknown_customer";
         return null;
@@ -684,7 +712,12 @@ export class Outpost {
     return this.measureRead("actor", async (read) => {
       this.requireRedis();
       await this.refresh();
-      const reads = await this.read(customerKey(input), this.reducers);
+      // Readiness alone: no statistic of any state.
+      const reads = await this.read(
+        customerKey(input),
+        this.reducers,
+        this.reducers.map(() => ""),
+      );
       read.outcome = !reads.every(isReady)
         ? "not_ready"
         : reads.includes("missing")
@@ -719,18 +752,20 @@ export class Outpost {
     const spans = this.outbox.spans.splice(0);
     const metrics = this.outbox.metrics.splice(0);
     if (!this.redis || (!spans.length && !metrics.length)) return;
-    const pipeline = this.redis.pipeline();
-    for (const [key, exports] of [
-      [this.telemetryKey("spans"), spans],
-      [this.telemetryKey("metrics"), metrics],
-    ] as const) {
-      if (!exports.length) continue;
-      pipeline.rpush(key, ...exports.map((body) => Buffer.from(body)));
-      // A fleet that stops pulling keeps its newest exports only.
-      pipeline.ltrim(key, -TELEMETRY_CAP, -1);
-    }
-    const results = await pipeline.exec().catch(() => null);
-    if (results !== null && !results.some(([error]) => error)) return;
+    // A fleet that stops pulling keeps its newest exports only.
+    const pushed = await this.redis
+      .outpostPushTelemetry(
+        this.telemetryKey("spans"),
+        this.telemetryKey("metrics"),
+        TELEMETRY_CAP,
+        spans.length,
+        ...[...spans, ...metrics].map((body) => Buffer.from(body)),
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    if (pushed) return;
     // Redis lost the write: the exports wait for the next flush, the newest at most.
     this.outbox.spans = [...spans, ...this.outbox.spans].slice(-TELEMETRY_CAP);
     this.outbox.metrics = [...metrics, ...this.outbox.metrics].slice(-TELEMETRY_CAP);
@@ -769,10 +804,10 @@ export class Outpost {
   }
 
   // Reads the customer's states from Redis. One Polar has no snapshot of yet is asked for once,
-  // then read again until it lands.
-  private async read(customer: string, reducers: Reducer[]): Promise<Read[]> {
+  // then read again once the fleet's fetch of it ends.
+  private async read(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
     const deadline = Date.now() + (this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
-    let reads = await this.load(customer, reducers);
+    let reads = await this.load(customer, reducers, statistics);
     // Polar sends no snapshot without a connection.
     if (!this.connected) return reads;
     // A state confirmed before the last reset serves the read while Polar confirms it again.
@@ -785,35 +820,41 @@ export class Outpost {
     );
     if (reads.every(isReady)) return reads;
     await waitAtMost(fetched, deadline - Date.now());
+    const markers = reducers
+      .filter((_, index) => !isReady(reads[index]))
+      .map((reducer) => this.fetchKey(`${customer}:${reducer.id}`));
     for (;;) {
-      reads = await this.load(customer, reducers);
-      if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      const fetching = await this.requireRedis()
+        .exists(...markers)
+        .catch((error: unknown) => {
+          throw redisUnavailable(error);
+        });
+      if (!fetching || Date.now() >= deadline) {
+        reads = await this.load(customer, reducers, statistics);
+        if (reads.every(isReady) || Date.now() >= deadline) return reads;
+      }
       await sleep(Math.min(POLL_INTERVAL, deadline - Date.now()));
     }
   }
 
-  // One round trip: each reducer's state, unless Polar does not know the customer.
-  private async load(customer: string, reducers: Reducer[]): Promise<Read[]> {
-    const pipeline = this.requireRedis().pipeline() as OutpostPipeline;
-    for (const reducer of reducers) {
+  // One command: each reducer's state, with only the statistics the read adds up, unless Polar
+  // does not know the customer.
+  private async load(customer: string, reducers: Reducer[], statistics: string[]): Promise<Read[]> {
+    const keys = reducers.flatMap((reducer) => {
       const identity = `${customer}:${reducer.id}`;
-      pipeline.outpostReadState(`${this.prefix}:state:${identity}`);
-      pipeline.hget(this.missingKey(identity), "retry_at");
-    }
-    pipeline.hget(this.pullKey, "reset");
-    const results = await pipeline.exec().catch((error: unknown) => {
-      throw redisUnavailable(error);
+      return [`${this.prefix}:state:${identity}`, this.missingKey(identity)];
     });
-    if (results === null) throw new UnavailableRedisError();
-    const failed = results.find(([error]) => error)?.[0];
-    if (failed) throw redisUnavailable(failed);
-    const resets = results[2 * reducers.length][1] as string | null;
+    const results = await this.requireRedis()
+      .outpostReadStates(keys.length + 1, ...keys, this.pullKey, ...statistics)
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+    const resets = results[reducers.length] as string | null;
     this.resets = resets === null ? null : Number(resets);
-    return reducers.map((_, index) =>
-      Number(results[2 * index + 1][1]) > Date.now()
-        ? "missing"
-        : decodeState(results[2 * index][1] as string[]),
-    );
+    return reducers.map((_, index) => {
+      const [retryAt, state] = results[index] as [string | null, string[]];
+      return Number(retryAt) > Date.now() ? "missing" : decodeState(state);
+    });
   }
 
   private isStale(read: Read): boolean {
@@ -909,10 +950,9 @@ export class Outpost {
     if (!this.pullDue()) return;
     await this.loadPull();
     if (!this.pullDue()) return;
-    const age = Date.now() - this.pulledAt;
-    const pull = this.pull();
-    if (age >= 2 * this.pullInterval && !this.pullRetryAt)
-      await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
+    const stale = Date.now() - this.pulledAt >= 2 * this.pullInterval && !this.pullRetryAt;
+    const pull = this.pull(stale);
+    if (stale) await waitAtMost(pull, this.options.snapshotTimeout ?? SNAPSHOT_TIMEOUT);
   }
 
   private pullDue(): boolean {
@@ -945,8 +985,9 @@ export class Outpost {
     await this.loadPull();
   }
 
-  private pull(): Promise<void> {
-    this.pulling ??= this.trace("outpost.pull", (span) => this.pullChanges(span))
+  // `wait`: a read needs the pull's snapshots, and waits for another instance's pull to end.
+  private pull(wait = true): Promise<void> {
+    this.pulling ??= this.trace("outpost.pull", (span) => this.pullChanges(span, wait))
       .catch(async (error: unknown) => {
         // Polar or Redis failed: the next pull starts again from the same cursor, later.
         this.pullRetryAt = await this.backOff(this.pullKey);
@@ -971,8 +1012,12 @@ export class Outpost {
     return `${this.prefix}:missing:${identity}`;
   }
 
+  private fetchKey(identity: string): string {
+    return `${this.prefix}:fetch:${identity}`;
+  }
+
   // One instance of the fleet pulls at a time: the others learn the result through Redis.
-  private async pullChanges(span: Span): Promise<void> {
+  private async pullChanges(span: Span, wait: boolean): Promise<void> {
     const redis = this.requireRedis();
     // A pull another instance failed still holds the fleet back.
     const retryAt = Number(await redis.hget(this.pullKey, "retry_at"));
@@ -983,11 +1028,15 @@ export class Outpost {
     const lock = randomUUID();
     if (!(await redis.set(this.pullLockKey, lock, "PX", PULL_LOCK_TTL, "NX"))) {
       span.setAttribute("outpost.pull.locked", true);
-      await this.waitForPull();
+      // Unless a read needs it, this instance does not wait for the other one's pull: it checks
+      // the pull again once a pull check has passed.
+      if (wait) await this.waitForPull();
+      else this.pulledAt = Date.now() - this.pullInterval + PULL_CHECK_INTERVAL;
       return;
     }
     // The page's snapshots and their confirms would outlast the lock otherwise.
-    const renew = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const extend = () => redis.eval(EXTEND_LOCK_SCRIPT, 1, this.pullLockKey, lock, PULL_LOCK_TTL);
+    const renew = throttled(extend, PULL_LOCK_TTL);
     let pages = 0;
     let applied = 0;
     let released = false;
@@ -1018,7 +1067,8 @@ export class Outpost {
         await this.serial(() =>
           eachAtMost([...customers.values()], PULL_CONCURRENCY, async (snapshots) => {
             for (const snapshot of snapshots)
-              if (await this.receiveSnapshot(snapshot, true, resets, renew)) {
+              // A confirm waits on Polar: the lock is extended before each one.
+              if (await this.receiveSnapshot(snapshot, true, resets, extend)) {
                 applied += 1;
                 await renew();
               }
@@ -1047,6 +1097,8 @@ export class Outpost {
       span.setAttributes({ "outpost.pull.pages": pages, "outpost.pull.applied": applied });
       if (!released) await redis.eval(RELEASE_LOCK_SCRIPT, 1, this.pullLockKey, lock).catch(() => {});
     }
+    // The instance that pulled measures the shared Redis for the fleet.
+    void this.reportRedisSize();
     // In the background: a read that waits for the pull does not wait for telemetry.
     this.relaying ??= this.relayTelemetry()
       .catch(() => {})
@@ -1085,7 +1137,7 @@ export class Outpost {
       // A customer already queued or asked for stays out of the queue until Polar answers.
       const marking = redis.pipeline();
       for (const { identity } of queued)
-        marking.set(`${this.prefix}:fetch:${identity}`, "1", "PX", TIMEOUT, "NX");
+        marking.set(this.fetchKey(identity), "1", "PX", TIMEOUT, "NX");
       const marked = await marking.exec().catch((error: unknown) => {
         throw redisUnavailable(error);
       });
@@ -1141,6 +1193,8 @@ export class Outpost {
 
   private async fetchBatch(identities: string[], renew: () => Promise<unknown>): Promise<void> {
     try {
+      // Its clock starts with the batch: a slow fetch does not push back the first extension.
+      const renewed = throttled(renew, TIMEOUT);
       const resets = this.resets;
       const body = {
         identities: identities.map((identity) => {
@@ -1176,24 +1230,14 @@ export class Outpost {
       // Side by side, as a pulled page: one instance applies the snapshots of the fleet.
       await this.serial(() =>
         eachAtMost(snapshots, PULL_CONCURRENCY, async (snapshot) => {
-          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renew();
+          if (await this.receiveSnapshot(snapshot, false, resets, renew)) await renewed();
         }),
       );
     } finally {
       await this.requireRedis()
-        .del(...identities.map((identity) => `${this.prefix}:fetch:${identity}`))
+        .del(...identities.map((identity) => this.fetchKey(identity)))
         .catch(() => {});
     }
-  }
-
-  private async loadState(identity: string): Promise<State> {
-    return decodeState(
-      await this.requireRedis()
-        .outpostReadState(`${this.prefix}:state:${identity}`)
-        .catch((error: unknown) => {
-          throw redisUnavailable(error);
-        }),
-    );
   }
 
   // Includes whatever else the merchant keeps in that Redis.
@@ -1293,24 +1337,30 @@ export class Outpost {
     });
     const identity = `${customer}:${reducer.id}`;
     const key = `${this.prefix}:state:${identity}`;
-    // A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
-    if (pulled && !(await this.requireRedis().exists(key))) return false;
     if (!snapshot.customer_exists) {
+      // A pulled snapshot of a customer nobody here reads or writes has no state in Redis.
+      if (pulled && !(await this.requireRedis().exists(key))) return false;
       // The fleet asks again later, longer after each miss, and forgets the misses past the
       // longest wait.
       await this.backOff(this.missingKey(identity), 2 * MAX_PULL_RETRY_DELAY);
       return false;
     }
-    await this.redis?.del(this.missingKey(identity)).catch(() => {});
     if (!Number.isSafeInteger(snapshot.version) || !Number.isSafeInteger(snapshot.cold_until))
       throw new TypeError("Snapshot timestamps must be safe integer microseconds");
     for (const value of [snapshot.count, snapshot.sum, snapshot.min, snapshot.max])
       if (value !== null && !Number.isFinite(value))
         throw new TypeError("Snapshot values must be finite");
+    const sealed = await this.requireRedis()
+      .outpostPrepareSnapshot(key, this.missingKey(identity), pulled ? "1" : "", snapshot.cold_until)
+      .catch((error: unknown) => {
+        throw redisUnavailable(error);
+      });
+    if (sealed === null) return false;
     const [confirmation, answered] = await this.askConfirmation(
       identity,
       customer,
       snapshot,
+      sealed.map(Number),
       renew,
     );
     await this.applySnapshot(
@@ -1330,13 +1380,11 @@ export class Outpost {
     identity: string,
     customer: string,
     snapshot: Snapshot,
+    // The buckets the snapshot seals that hold pending events.
+    sealed: number[],
     renew?: () => Promise<unknown>,
   ): Promise<[Confirmation | undefined, boolean]> {
     const started = performance.now();
-    const state = await this.loadState(identity);
-    const sealed = [...state.pending]
-      .filter(([start, statistics]) => start < snapshot.cold_until && statistics.count > 0)
-      .map(([start]) => start);
     if (!sealed.length) return [undefined, false];
     const confirmation: Confirmation = {
       snapshot,

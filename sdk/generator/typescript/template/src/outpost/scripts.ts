@@ -1,6 +1,15 @@
 export const READ_STATE_SCRIPT = `
 {{ outpost_scripts.read_state }}`;
 
+export const READ_STATES_SCRIPT = `
+{{ outpost_scripts.read_states }}`;
+
+export const PREPARE_SNAPSHOT_SCRIPT = `
+{{ outpost_scripts.prepare_snapshot }}`;
+
+export const PUSH_TELEMETRY_SCRIPT = `
+{{ outpost_scripts.push_telemetry }}`;
+
 export const WRITE_BUCKET_SCRIPT = `
 {{ outpost_scripts.write_bucket }}`;
 

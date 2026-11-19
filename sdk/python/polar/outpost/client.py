@@ -285,6 +285,11 @@ return 0
 OUTBOX_BACKLOG_SCRIPT = """
 -- The outbox's length, how many of its entries flushers hold, and when the fleet may send it
 -- again after Polar failed: KEYS[1] is the outbox, KEYS[2] its backoff, ARGV[1] the consumer group.
+-- ARGV[2], optional, is the retry the caller read before it delivered: Polar takes batches
+-- again, so that backoff ends, unless a flusher failed since and set a later one.
+if ARGV[2] and redis.call('HGET', KEYS[2], 'retry_at') == ARGV[2] then
+    redis.call('DEL', KEYS[2])
+end
 local retry_at = redis.call('HGET', KEYS[2], 'retry_at') or ''
 local length = redis.call('XLEN', KEYS[1])
 if length == 0 then
@@ -656,7 +661,8 @@ return 1
 
 BACKOFF_SCRIPT = """
 -- Counts one more failure in a row on a key the whole fleet shares, such as the pull's, and
--- says when to try again. Each failure in a row doubles the wait, up to a maximum.
+-- says when to try again. Each failure in a row doubles the wait, up to a maximum. Failures
+-- met during one wait count as one: they only move the retry later, never sooner.
 local key = KEYS[1]
 local now = tonumber(ARGV[1])
 local first_delay = tonumber(ARGV[2])
@@ -664,9 +670,11 @@ local max_delay = tonumber(ARGV[3])
 -- Optional: the key expires this many milliseconds later, and its failures with it.
 local forget_after = ARGV[4]
 
-local failures = redis.call('HINCRBY', key, 'failures', 1)
+local waiting_until = tonumber(redis.call('HGET', key, 'retry_at')) or 0
+local failures = waiting_until > now and tonumber(redis.call('HGET', key, 'failures'))
+    or redis.call('HINCRBY', key, 'failures', 1)
 local delay = math.min(max_delay, first_delay * 2 ^ math.min(failures - 1, 16))
-local retry_at = now + delay
+local retry_at = math.max(waiting_until, now + delay)
 redis.call('HSET', key, 'retry_at', retry_at)
 if forget_after then
     redis.call('PEXPIRE', key, forget_after)
@@ -1640,14 +1648,16 @@ class Outpost:
         """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
         Once its flushers let go of their slots, the instance looks again: an event
         queued while they held them is not left behind."""
-        redis = self._require_redis()
+        self._require_redis()
         assert self._outbox_backlog is not None
         first = True
+        # The backoff a round delivered past: the next round's read ends it.
+        ended: list[bytes] = []
         try:
             while True:
                 length, delivering, retry_at = await self._outbox_backlog(
                     keys=[self._outbox_key, self._outbox_backoff_key],
-                    args=[OUTBOX_GROUP],
+                    args=[OUTBOX_GROUP, *ended],
                 )
                 # The first round also takes back the batches that wait on a failed or
                 # frozen flusher.
@@ -1679,8 +1689,7 @@ class Outpost:
                 if "drained" not in outcomes:
                     return
                 # Polar takes batches again: the next failure waits the first delay.
-                if retry_at:
-                    await redis.delete(self._outbox_backoff_key)
+                ended = [retry_at] if retry_at else []
         except Exception as error:
             # Redis lost the group, with the rest of its keys: the next flush reads a new
             # one.

@@ -1264,14 +1264,16 @@ class Outpost:
         """One flusher per OUTBOX_BATCH events waiting, up to FLUSHERS across the fleet.
         Once its flushers let go of their slots, the instance looks again: an event
         queued while they held them is not left behind."""
-        redis = self._require_redis()
+        self._require_redis()
         assert self._outbox_backlog is not None
         first = True
+        # The backoff a round delivered past: the next round's read ends it.
+        ended: list[bytes] = []
         try:
             while True:
                 length, delivering, retry_at = await self._outbox_backlog(
                     keys=[self._outbox_key, self._outbox_backoff_key],
-                    args=[OUTBOX_GROUP],
+                    args=[OUTBOX_GROUP, *ended],
                 )
                 # The first round also takes back the batches that wait on a failed or
                 # frozen flusher.
@@ -1303,8 +1305,7 @@ class Outpost:
                 if "drained" not in outcomes:
                     return
                 # Polar takes batches again: the next failure waits the first delay.
-                if retry_at:
-                    await redis.delete(self._outbox_backoff_key)
+                ended = [retry_at] if retry_at else []
         except Exception as error:
             # Redis lost the group, with the rest of its keys: the next flush reads a new
             # one.

@@ -70,6 +70,18 @@ class NotReadyError(PolarOutpostError):
 # The reset count of a state whose snapshot Polar did not confirm.
 UNCONFIRMED = -1
 
+# NaN and the infinities are not JSON: no flusher could send an event that holds one.
+_encode_event = json.JSONEncoder(allow_nan=False).encode
+
+
+def _not_json(constant: str) -> typing.NoReturn:
+    raise ValueError(f"{constant} is not JSON")
+
+
+def _finite(number: str) -> float:
+    value = float(number)
+    return value if math.isfinite(value) else _not_json(number)
+
 
 class UnavailableRedisError(PolarOutpostError):
     def __init__(self) -> None:
@@ -1109,7 +1121,7 @@ class Outpost:
                 self._ingest_buckets.add(len(updates))
             assert self._redis is not None
             # Polar dates the event as Outpost bucketed it.
-            queued = json.dumps(
+            queued = _encode_event(
                 {
                     **event,
                     "timestamp": event.get("timestamp") or parsed.timestamp.isoformat(),
@@ -1209,11 +1221,16 @@ class Outpost:
     def _settlements(
         self, events: collections.abc.Sequence[EventInput]
     ) -> dict[tuple[str, int], list[str]]:
-        """The events' ids, by the (identity, bucket) whose pending usage they settle."""
+        """The events' ids, by the (identity, bucket) whose pending usage they settle.
+        An event another SDK queued in a form this one cannot parse settles nothing
+        here: it stays pending until the snapshot that counts it."""
         groups: dict[tuple[str, int], list[str]] = {}
         for event in events:
-            self.validate(event)
-            parsed = self._parse_event(event)
+            try:
+                self.validate(event)
+                parsed = self._parse_event(event)
+            except (AttributeError, KeyError, PolarError, TypeError, ValueError):
+                continue
             updates = reduce(
                 self._matchers,
                 [parsed],
@@ -1650,7 +1667,9 @@ class Outpost:
                 self._drain_again = False
                 self._undrained = False
                 await self._drain_outbox()
-        except* (RedisError, PolarError):
+        # Whatever a drain raises, it must not end the task group, and with it the
+        # task that started Outpost.
+        except* Exception:  # noqa: BLE001
             self._undrained = True
         finally:
             self._draining = None
@@ -1781,9 +1800,21 @@ class Outpost:
         """Sends a batch to Polar, then acknowledges it and settles its events in one
         script. Polar refusing the batch drops it; failing to take it leaves it for the
         next flush."""
-        events: list[EventInput] = [
-            json.loads(fields[b"event"]) for _, fields in entries if fields
-        ]
+        events: list[EventInput] = []
+        for _, fields in entries:
+            if not fields:
+                continue
+            try:
+                events.append(
+                    json.loads(
+                        fields.get(b"event", b""),
+                        parse_constant=_not_json,
+                        parse_float=_finite,
+                    )
+                )
+            except ValueError:
+                # It can never be sent: it leaves the outbox with the batch.
+                log.warning("Outpost dropped an outbox entry it cannot read")
         dropped = False
         if events:
             try:

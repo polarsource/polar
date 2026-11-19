@@ -425,6 +425,13 @@ class RefusedError extends PolarOutpostError {
   }
 }
 
+// A number too large to read, such as 1e999, parses to an infinity no request could carry.
+const holdsNoInfinity = (value: unknown): boolean => {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object" || value === null) return true;
+  return Object.values(value).every(holdsNoInfinity);
+};
+
 const recordError = (span: Span, error: unknown): void => {
   span.recordException(error instanceof Error ? error : String(error));
   span.setStatus({ code: SpanStatusCode.ERROR });
@@ -743,12 +750,19 @@ export class Outpost {
       });
   }
 
-  // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle.
+  // The events' ids, by the (customer, reducer, bucket) whose pending usage they settle. An event
+  // another SDK queued in a form this one cannot parse settles nothing here: it stays pending
+  // until the snapshot that counts it.
   private settlements(events: EventInput[]): Settlement[] {
     const groups = new Map<string, Settlement>();
     for (const event of events) {
-      this.validate(event);
-      const parsed = parseEvent(event);
+      let parsed: ReturnType<typeof parseEvent>;
+      try {
+        this.validate(event);
+        parsed = parseEvent(event);
+      } catch {
+        continue;
+      }
       for (const update of reduce(this.matchers, [parsed], getBucketStart(parsed.timestamp))) {
         const identity = `${update.customer}:${update.reducer}`;
         const key = `${identity}:${update.bucketStart}`;
@@ -1428,7 +1442,18 @@ export class Outpost {
   // Sends a batch to Polar, then acknowledges it and settles its events in one script. Polar
   // refusing the batch drops it; failing to take it leaves it for the next flush.
   private async deliver(entries: [string, string[] | null][], delivery: Delivery): Promise<boolean> {
-    const events = entries.flatMap(([, fields]) => (fields ? [JSON.parse(fields[1]) as EventInput] : []));
+    // An entry that is not JSON can never be sent: it leaves the outbox with the batch.
+    const events = entries.flatMap(([, fields]) => {
+      if (!fields) return [];
+      try {
+        const event: EventInput = JSON.parse(fields[1]);
+        if (!holdsNoInfinity(event)) throw new TypeError("An infinity is not JSON");
+        return [event];
+      } catch {
+        console.warn("Outpost dropped an outbox entry it cannot read");
+        return [];
+      }
+    });
     let dropped = false;
     if (events.length)
       try {

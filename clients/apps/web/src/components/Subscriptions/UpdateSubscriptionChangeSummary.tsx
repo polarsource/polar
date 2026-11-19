@@ -36,7 +36,7 @@ const splitLabel = (label: string) => {
 }
 
 const headlineFor = (
-  preview: schemas['SubscriptionChangeChargePreview'],
+  preview: schemas['SubscriptionChangePreview'],
   productName: string,
   nextInvoice: ReactNode,
   trialOutcome: TrialChangeOutcome,
@@ -91,7 +91,7 @@ export const UpdateSubscriptionChangeSummary = ({
 }: {
   subscription: schemas['Subscription']
   selectedProduct: schemas['Product'] | undefined
-  change: schemas['SubscriptionChangePreviewProduct'] | null
+  change: schemas['SubscriptionChangeProduct'] | null
   isChangingDiscount: boolean
   newDiscountId: string | null
   trialOutcome: TrialChangeOutcome

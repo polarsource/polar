@@ -69,7 +69,7 @@ export const UpdateSubscriptionPlanForm = ({
   const isChangingProduct = !!selectedProductId
   const isChangingDiscount = (selectedDiscountId ?? null) !== currentDiscountId
 
-  const previewChange: schemas['SubscriptionChangePreviewProduct'] | null =
+  const previewChange: schemas['SubscriptionChangeProduct'] | null =
     selectedProductId
       ? {
           product_id: selectedProductId,

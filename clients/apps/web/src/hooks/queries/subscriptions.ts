@@ -77,7 +77,7 @@ export const useSubscriptionMeterChargePreview = (
 
 export const useSubscriptionChangePreview = (
   id: string,
-  change: schemas['SubscriptionChangePreviewProduct'] | null,
+  change: schemas['SubscriptionChangeProduct'] | null,
 ) =>
   useQuery({
     queryKey: ['subscriptions', { id }, 'change-preview', change],

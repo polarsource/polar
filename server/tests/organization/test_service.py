@@ -6171,6 +6171,37 @@ class TestSetCapability:
         assert result.capabilities["payouts"] is False
         assert result.capabilities["checkout_payments"] is True
 
+    @pytest.mark.parametrize(
+        ("value", "job"),
+        [
+            (
+                False,
+                "organization_domain.unregister_organization_payment_method_domains",
+            ),
+            (True, "organization_domain.register_organization_payment_method_domains"),
+        ],
+    )
+    async def test_checkout_payments_updates_payment_method_domains(
+        self,
+        value: bool,
+        job: str,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization_domain.service.enqueue_job")
+        organization.set_status(OrganizationStatus.ACTIVE)
+        organization.capabilities = {
+            **organization.capabilities,
+            "checkout_payments": not value,
+        }
+
+        await organization_service.set_capability(
+            session, organization, "checkout_payments", value, reason="Test"
+        )
+
+        enqueue_job_mock.assert_called_once_with(job, organization_id=organization.id)
+
     async def test_appends_internal_note_with_reason(
         self,
         session: AsyncSession,

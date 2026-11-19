@@ -26,7 +26,12 @@ import {
   TooltipTrigger,
 } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { FileDownloadOutlined, FunnelX } from '@polar-sh/orbit/icons'
+import {
+  ChartNoAxesGantt,
+  FileDownloadOutlined,
+  FunnelX,
+  Rows3,
+} from '@polar-sh/orbit/icons'
 import { ReactNode } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { ToolbarMultiSelect } from './ToolbarMultiSelect'
@@ -75,9 +80,12 @@ const INTERVAL_OPTIONS: { value: SubscriptionInterval; label: string }[] = [
 export const subscriptionViewValues = ['timeline', 'table'] as const
 type SubscriptionView = (typeof subscriptionViewValues)[number]
 
-const VIEW_OPTIONS: { value: SubscriptionView; label: string }[] = [
-  { value: 'timeline', label: 'Timeline' },
-  { value: 'table', label: 'Table' },
+const VIEW_OPTIONS: { value: SubscriptionView; label: ReactNode }[] = [
+  {
+    value: 'timeline',
+    label: <ChartNoAxesGantt className="size-4" aria-label="Timeline" />,
+  },
+  { value: 'table', label: <Rows3 className="size-4" aria-label="Table" /> },
 ]
 
 const SORT_OPTIONS = [

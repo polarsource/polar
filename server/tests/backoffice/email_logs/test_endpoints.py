@@ -95,12 +95,18 @@ class TestListEmailLogs:
 @pytest.mark.anyio
 class TestUnsuppress:
     @pytest.mark.parametrize(
-        "error",
-        ["email.suppressed; reason=OnSuppressionList", "email.bounced; type=Permanent"],
+        ("error", "shown"),
+        [
+            ("email.suppressed; reason=OnSuppressionList", True),
+            ("email.bounced; type=Permanent", True),
+            ("email.bounced; type=Transient", False),
+            ("Resend request timed out", False),
+        ],
     )
-    async def test_button_shown_for_suppression(
+    async def test_button_visibility(
         self,
         error: str,
+        shown: bool,
         save_fixture: SaveFixture,
         backoffice_client: httpx2.AsyncClient,
     ) -> None:
@@ -114,29 +120,7 @@ class TestUnsuppress:
         response = await backoffice_client.get(f"/email-logs/{email_log.id}")
 
         assert response.status_code == 200
-        assert f"/email-logs/{email_log.id}/unsuppress" in response.text
-
-    @pytest.mark.parametrize(
-        "error",
-        ["Resend request timed out", "email.bounced; type=Transient"],
-    )
-    async def test_button_hidden_for_other_failure(
-        self,
-        error: str,
-        save_fixture: SaveFixture,
-        backoffice_client: httpx2.AsyncClient,
-    ) -> None:
-        email_log = await create_email_log(
-            save_fixture,
-            created_at=utc_now(),
-            status=EmailLogStatus.failed,
-            error=error,
-        )
-
-        response = await backoffice_client.get(f"/email-logs/{email_log.id}")
-
-        assert response.status_code == 200
-        assert "/unsuppress" not in response.text
+        assert ("/unsuppress" in response.text) is shown
 
     @pytest.mark.parametrize(
         ("removed", "message"),

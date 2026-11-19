@@ -2349,6 +2349,31 @@ async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_
 
 
 @pytest.mark.anyio
+async def test_sends_a_batch_that_failed_on_another_slot_again_once_the_backoff_ends(
+    monkeypatch: pytest.MonkeyPatch,
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    monkeypatch.setattr("polar.outpost.client.DRAIN_INTERVAL", 60)
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client) as outpost:
+        # Two full batches: two flushers, and Polar fails both.
+        for index in range(2000):
+            await outpost.track(_usage(f"event-{index}", 1))
+        ingest["statuses"] = [503, 503]
+        await outpost.flush()
+        assert len(ingest["requests"]) == 2
+        await redis.hset(BACKOFF, "retry_at", 0)
+        # Nothing new waits, so the next drain starts one flusher: it sends both
+        # batches.
+        await outpost.flush()
+        assert len({id for batch in _delivered(ingest) for id in batch}) == 2000
+        assert await redis.xlen(OUTBOX) == 0
+
+
+@pytest.mark.anyio
 async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

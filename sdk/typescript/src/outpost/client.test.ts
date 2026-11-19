@@ -1457,6 +1457,23 @@ it("keeps a batch Polar fails to take, and the fleet waits before sending it aga
   expect(await redis.exists(BACKOFF)).toBe(0);
 });
 
+it("sends a batch that failed on another slot again once the backoff ends", async () => {
+  const outpost = await warm();
+  clearInterval(outpost["drainTimer"]);
+  // Two full batches: two flushers, and Polar fails both.
+  await Promise.all(
+    Array.from({ length: 2000 }, (_, index) => outpost.track(usage(`event-${index}`, 1))),
+  );
+  ingestStatuses = [503, 503];
+  await outpost.flush();
+  expect(ingestRequests).toHaveLength(2);
+  await redis.hset(BACKOFF, "retry_at", 0);
+  // Nothing new waits, so the next drain starts one flusher: it sends both batches.
+  await outpost.flush();
+  expect(new Set(delivered().flat()).size).toBe(2000);
+  expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+});
+
 it("waits as long as a Polar that rate-limits it asks", async () => {
   const outpost = await warm();
   await outpost.track(usage("event-0", 10));

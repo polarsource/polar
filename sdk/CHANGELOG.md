@@ -12,7 +12,7 @@ History up to [1.0.0-alpha.22] is available in the existing GitHub releases.
 
 ### Added
 
-- TypeScript: Export Zod Mini schemas for every model and webhook payload from `@polar-sh/sdk/<version>/zod`, so payloads can be validated at runtime against the imported API version. `zod` (3.25.65 or later, or 4) is an optional peer dependency.
+- TypeScript: Export Zod schemas for every model and webhook payload from `@polar-sh/sdk/<version>/zod`, so payloads can be validated at runtime against the imported API version.
 
 ## [1.3.1] - 2026-11-18
 

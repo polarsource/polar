@@ -19,10 +19,10 @@ import {
   TODAY_VIEWPORT_RATIO,
   type GanttZoomHandle,
 } from './scale'
+import { useGanttPan } from './useGanttPan'
 
 const WINDOW_SPANS = 1.75
 const ROW_OVERSCAN = 6
-const DRAG_THRESHOLD = 4
 const PINCH_SPEED = 0.01
 
 // The pill follows a spacer that ends where today is, so any distance between
@@ -91,10 +91,6 @@ export const useGanttViewport = ({
   const anchorRef = useRef(focus)
   const yearRef = useRef<HTMLSpanElement>(null)
   const todayRef = useRef<HTMLButtonElement>(null)
-  const dragRef = useRef<{ x: number; left: number; moved: boolean } | null>(
-    null,
-  )
-  const suppressClickRef = useRef(false)
   const pixelsPerDayRef = useRef(pixelsPerDay)
   const viewportWidthRef = useRef(0)
   const isZoomingRef = useRef(false)
@@ -273,37 +269,7 @@ export const useGanttViewport = ({
       behavior: 'smooth',
     })
 
-  const panHandlers = {
-    onPointerDown: (event: React.PointerEvent) => {
-      if (event.pointerType !== 'mouse' || event.button !== 0) return
-      dragRef.current = {
-        x: event.clientX,
-        left: scrollerRef.current?.scrollLeft ?? 0,
-        moved: false,
-      }
-    },
-    onPointerMove: (event: React.PointerEvent) => {
-      const drag = dragRef.current
-      if (!drag || !scrollerRef.current) return
-      const distance = event.clientX - drag.x
-      if (!drag.moved && Math.abs(distance) < DRAG_THRESHOLD) return
-      drag.moved = true
-      scrollerRef.current.scrollLeft = drag.left - distance
-    },
-    onPointerUp: () => {
-      suppressClickRef.current = dragRef.current?.moved ?? false
-      dragRef.current = null
-    },
-    onPointerLeave: () => {
-      dragRef.current = null
-    },
-    onClickCapture: (event: React.MouseEvent) => {
-      if (suppressClickRef.current) {
-        suppressClickRef.current = false
-        event.stopPropagation()
-      }
-    },
-  }
+  const panHandlers = useGanttPan(scrollerRef)
 
   return {
     scrollerRef,

@@ -317,9 +317,6 @@ EXTEND_LOCK_SCRIPT = """
 OUTBOX_BACKLOG_SCRIPT = """
 {{ outpost_scripts.outbox_backlog }}"""
 
-READ_STATE_SCRIPT = """
-{{ outpost_scripts.read_state }}"""
-
 READ_STATES_SCRIPT = """
 {{ outpost_scripts.read_states }}"""
 

@@ -324,12 +324,16 @@ async def polar_client(
         json_body = b"json" in dict(scope["headers"]).get(b"content-type", b"")
         body: typing.Any = json.loads(data) if data and json_body else None
 
-        async def respond(answer: typing.Any, status: int = 200) -> None:
+        async def respond(
+            answer: typing.Any,
+            status: int = 200,
+            headers: tuple[tuple[bytes, bytes], ...] = (),
+        ) -> None:
             await send(
                 {
                     "type": "http.response.start",
                     "status": status,
-                    "headers": [(b"content-type", b"application/json")],
+                    "headers": [(b"content-type", b"application/json"), *headers],
                 }
             )
             await send(
@@ -415,7 +419,9 @@ async def polar_client(
             status = ingest["statuses"].pop(0) if ingest["statuses"] else 200
             await anyio.sleep(ingest["delay"])
             return await respond(
-                {"inserted": len(body["events"]), "duplicates": 0}, status
+                {"inserted": len(body["events"]), "duplicates": 0},
+                status,
+                ((b"retry-after", b"30"),) if status == 429 else (),
             )
         if route == "GET /v1/outpost/changes":
             query = urllib.parse.parse_qs(scope["query_string"].decode())
@@ -2298,8 +2304,39 @@ async def test_settles_the_events_polar_received_and_reports_them(
         assert await _consumed(outpost) == 20
 
 
+BACKOFF = "outpost:v1:org-1:outbox:backoff"
+
+
 @pytest.mark.anyio
-async def test_keeps_a_batch_polar_fails_to_take_and_delivers_it_on_the_next_flush(
+async def test_keeps_a_batch_polar_fails_to_take_and_the_fleet_waits_to_send_it_again(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    ingest: dict[str, typing.Any],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with (
+        Outpost(url, client=polar_client) as outpost,
+        Outpost(url, client=polar_client) as other,
+    ):
+        await outpost.track(_usage("event-0", 10))
+        ingest["statuses"] = [503]
+        failed = time.time() * 1000
+        await outpost.flush()
+        assert await _queued(redis) == [_usage("event-0", 10)]
+        assert float(await redis.hget(BACKOFF, "retry_at") or 0) >= failed + 1000
+        await other.track(_usage("event-1", 10))
+        await other.flush()
+        assert len(ingest["requests"]) == 1
+        await redis.hset(BACKOFF, "retry_at", 0)
+        await outpost.flush()
+        assert _delivered(ingest) == [["event-0"], ["event-0"], ["event-1"]]
+        assert await redis.xlen(OUTBOX) == 0
+        assert not await redis.exists(BACKOFF)
+
+
+@pytest.mark.anyio
+async def test_waits_as_long_as_a_polar_that_rate_limits_it_asks(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,
     ingest: dict[str, typing.Any],
@@ -2308,14 +2345,11 @@ async def test_keeps_a_batch_polar_fails_to_take_and_delivers_it_on_the_next_flu
     await _seal(redis, BUCKET)
     async with Outpost(url, client=polar_client) as outpost:
         await outpost.track(_usage("event-0", 10))
-        ingest["statuses"] = [503]
+        ingest["statuses"] = [429]
+        failed = time.time() * 1000
         await outpost.flush()
-        assert await _queued(redis) == [_usage("event-0", 10)]
-        await outpost.flush()
-        assert _delivered(ingest) == [["event-0"], ["event-0"]]
-        assert await redis.xlen(OUTBOX) == 0
-        await outpost.flush()
-        assert len(ingest["requests"]) == 2
+        retry_at = float(await redis.hget(BACKOFF, "retry_at") or 0)
+        assert failed + 30_000 <= retry_at <= time.time() * 1000 + 30_000
 
 
 @pytest.mark.anyio

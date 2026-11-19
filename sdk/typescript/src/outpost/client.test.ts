@@ -197,8 +197,8 @@ beforeAll(async () => {
   });
 });
 
-const respond = (response: ServerResponse, body: unknown, status = 200): void => {
-  response.writeHead(status, { "Content-Type": "application/json" });
+const respond = (response: ServerResponse, body: unknown, status = 200, headers = {}): void => {
+  response.writeHead(status, { "Content-Type": "application/json", ...headers });
   response.end(JSON.stringify(body));
 };
 
@@ -290,7 +290,13 @@ const answer = async (request: IncomingMessage, response: ServerResponse): Promi
       ingestRequests.push(body.events);
       const status = ingestStatuses.shift() ?? 200;
       setTimeout(
-        () => respond(response, { inserted: body.events.length, duplicates: 0 }, status),
+        () =>
+          respond(
+            response,
+            { inserted: body.events.length, duplicates: 0 },
+            status,
+            status === 429 ? { "Retry-After": "30" } : {},
+          ),
         ingestDelay,
       );
       return;
@@ -1431,17 +1437,35 @@ it("settles the events Polar received and reports them", async () => {
   expect((await outpost.meter(meter))?.consumed_units).toBe(20);
 });
 
-it("keeps a batch Polar fails to take and delivers it on the next flush", async () => {
-  const outpost = await warm();
+const BACKOFF = "outpost:v1:org-1:outbox:backoff";
+
+it("keeps a batch Polar fails to take, and the fleet waits before sending it again", async () => {
+  const [outpost, other] = [await warm(), await start()];
   await outpost.track(usage("event-0", 10));
   ingestStatuses = [503];
+  const failed = Date.now();
   await outpost.flush();
   expect(await queued()).toEqual([usage("event-0", 10)]);
+  expect(Number(await redis.hget(BACKOFF, "retry_at"))).toBeGreaterThanOrEqual(failed + 1000);
+  await other.track(usage("event-1", 10));
+  await other.flush();
+  expect(ingestRequests).toHaveLength(1);
+  await redis.hset(BACKOFF, "retry_at", 0);
   await outpost.flush();
-  expect(delivered()).toEqual([["event-0"], ["event-0"]]);
+  expect(delivered()).toEqual([["event-0"], ["event-0"], ["event-1"]]);
   expect(await redis.xlen("outpost:v1:org-1:outbox")).toBe(0);
+  expect(await redis.exists(BACKOFF)).toBe(0);
+});
+
+it("waits as long as a Polar that rate-limits it asks", async () => {
+  const outpost = await warm();
+  await outpost.track(usage("event-0", 10));
+  ingestStatuses = [429];
+  const failed = Date.now();
   await outpost.flush();
-  expect(ingestRequests).toHaveLength(2);
+  const retryAt = Number(await redis.hget(BACKOFF, "retry_at"));
+  expect(retryAt).toBeGreaterThanOrEqual(failed + 30_000);
+  expect(retryAt).toBeLessThanOrEqual(Date.now() + 30_000);
 });
 
 it("drops a batch Polar refuses, settles its events and reports them", async () => {

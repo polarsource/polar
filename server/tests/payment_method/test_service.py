@@ -13,6 +13,7 @@ from polar.kit.utils import utc_now
 from polar.models import Checkout, Customer, Order, Organization, PaymentMethod, Product
 from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.subscription import SubscriptionStatus
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import (
     NoGeneratedSEPAPaymentMethod,
     PaymentMethodInUseByActiveSubscription,
@@ -227,6 +228,56 @@ class TestUpsertFromStripe:
             "last4": "9999",
         }
         assert updated_payment_method.customer == customer
+
+    async def test_existing_row_inserted_concurrently(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        """
+        A row inserted between the lookup and the insert (concurrent request)
+        must not raise a unique violation.
+        """
+        stripe_payment_method = build_stripe_payment_method(
+            type="card",
+            details={"brand": "visa", "last4": "4242"},
+        )
+        repository = PaymentMethodRepository.from_session(session)
+        await repository.insert_on_conflict_do_nothing(
+            customer_id=customer.id,
+            processor=PaymentProcessor.stripe,
+            processor_id=stripe_payment_method.id,
+            type="card",
+            method_metadata={"brand": "visa", "last4": "4242"},
+        )
+
+        results = [
+            await payment_method_service.upsert_from_stripe(
+                session, customer, stripe_payment_method, flush=True
+            )
+            for _ in range(2)
+        ]
+
+        assert results[0].id == results[1].id
+
+    async def test_restores_soft_deleted_payment_method(
+        self,
+        session: AsyncSession,
+        customer: Customer,
+    ) -> None:
+        stripe_payment_method = build_stripe_payment_method(type="card")
+        payment_method = await payment_method_service.upsert_from_stripe(
+            session, customer, stripe_payment_method, flush=True
+        )
+        payment_method.set_deleted_at()
+        await session.flush()
+
+        restored = await payment_method_service.upsert_from_stripe(
+            session, customer, stripe_payment_method, flush=True
+        )
+
+        assert restored.id == payment_method.id
+        assert restored.deleted_at is None
 
 
 @pytest.mark.anyio

@@ -111,6 +111,19 @@ class PaymentMethodService:
     ) -> PaymentMethod:
         repository = PaymentMethodRepository.from_session(session)
 
+        method_type = stripe_payment_method.type
+        method_metadata = stripe_payment_method[method_type]
+
+        # Atomic insert-if-missing, so concurrent calls for the same payment
+        # method don't fail with a unique constraint violation.
+        await repository.insert_on_conflict_do_nothing(
+            customer_id=customer.id,
+            processor=PaymentProcessor.stripe,
+            processor_id=stripe_payment_method.id,
+            type=method_type,
+            method_metadata=method_metadata,
+        )
+
         payment_method = await repository.get_by_customer_and_processor_id(
             customer.id,
             PaymentProcessor.stripe,
@@ -118,17 +131,10 @@ class PaymentMethodService:
             include_deleted=True,
             options=repository.get_eager_options(),
         )
-        if payment_method is None:
-            payment_method = PaymentMethod(
-                processor=PaymentProcessor.stripe,
-                processor_id=stripe_payment_method.id,
-                customer=customer,
-            )
+        assert payment_method is not None
 
-        payment_method.type = stripe_payment_method.type
-        payment_method.method_metadata = stripe_payment_method[
-            stripe_payment_method.type
-        ]
+        payment_method.type = method_type
+        payment_method.method_metadata = method_metadata
         payment_method.deleted_at = None  # Restore if it was soft-deleted
 
         return await repository.update(payment_method, flush=flush)

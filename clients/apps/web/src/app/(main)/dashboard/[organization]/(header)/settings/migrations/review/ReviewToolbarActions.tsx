@@ -47,7 +47,7 @@ export function ReviewToolbarActions({
           onClick={onRerunPrecheck}
           disabled={refreshing || importing}
         >
-          {refreshing ? 'Refreshing…' : 'Refresh from Stripe'}
+          {refreshing ? 'Refreshing…' : 'Refresh catalog'}
         </Button>
       )}
       {primaryAction === 'continue' ? (

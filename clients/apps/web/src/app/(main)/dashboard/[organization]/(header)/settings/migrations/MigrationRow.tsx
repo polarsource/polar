@@ -4,12 +4,13 @@ import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ChevronRight } from '@polar-sh/orbit/icons'
 import Link from 'next/link'
-import { StripeMark } from './StripeMark'
+import { SourceMark } from './SourceMark'
+import { SOURCE_LABELS, sourceAccountLabel } from './sources'
 import { currentPosition, MIGRATION_STEPS } from './steps'
 
 function summary(migration: schemas['MerchantMigration']): string {
   if (!migration.source_connected) {
-    return 'Connect Stripe to begin'
+    return `Connect ${SOURCE_LABELS[migration.source_platform]} to begin`
   }
   if (migration.step === 'closed') {
     return 'Closed after 90 days without activity'
@@ -30,7 +31,7 @@ export function MigrationRow({
   href: string
 }) {
   const connected = migration.source_connected
-  const stripeUserId = migration.source?.stripe_user_id as string | undefined
+  const accountLabel = sourceAccountLabel(migration)
 
   return (
     <Link href={href}>
@@ -43,12 +44,14 @@ export function MigrationRow({
         transitionProperty="colors"
         transitionDuration="fast"
       >
-        <StripeMark size={32} />
+        <SourceMark source={migration.source_platform} size={32} />
         <Box flexDirection="column" rowGap="xs" flex={1} minWidth={0}>
-          <Text variant="title">Stripe</Text>
+          <Text variant="title">
+            {SOURCE_LABELS[migration.source_platform]}
+          </Text>
           <Text variant="caption" color="muted">
-            {connected && stripeUserId ? (
-              stripeUserId
+            {connected && accountLabel ? (
+              accountLabel
             ) : (
               <>
                 Started <FormattedDateTime datetime={migration.created_at} />

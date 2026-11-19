@@ -25,9 +25,9 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     key: 'connect',
     short: 'Connect',
     owner: 'you',
-    title: 'Connect your Stripe account',
+    title: 'Connect your billing provider',
     description:
-      'Paste a Stripe restricted API key so Polar can read your products, discounts, customers and subscriptions.',
+      'Paste an API key so Polar can read your products, discounts, customers and subscriptions.',
     steps: ['source_setup'],
   },
   {
@@ -57,7 +57,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     owner: 'polar',
     title: 'Switch billing to Polar',
     description:
-      'Polar creates and activates the subscriptions you pick, then stops them on Stripe.',
+      'Polar creates and activates the subscriptions you pick, then stops them at your current provider.',
     steps: ['activate_subscriptions'],
   },
 ]

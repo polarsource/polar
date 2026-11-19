@@ -9,6 +9,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
 import { CreateMigrationModal } from './CreateMigrationModal'
+import { connectableSources } from './sources'
 import { SettingsGroup } from '@/components/Settings/SettingsGroup'
 import { EmptyState } from '@/components/Shared/EmptyState'
 import { Download } from '@polar-sh/orbit/icons'
@@ -56,7 +57,7 @@ export default function MigrationsPage({ organization }: Props) {
         {!canCreate && (
           <Alert
             variant="warning"
-            title="Finish onboarding before migrating from Stripe."
+            title="Finish onboarding before migrating."
             description="Migrations open once your organization has completed onboarding."
             actions={[
               {
@@ -80,7 +81,7 @@ export default function MigrationsPage({ organization }: Props) {
           <EmptyState
             icon={<Download />}
             title="No migrations"
-            description="Start a migration to move your Stripe billing to Polar."
+            description="Start a migration to move your billing to Polar."
           />
         ) : (
           <SettingsGroup>
@@ -107,6 +108,7 @@ export default function MigrationsPage({ organization }: Props) {
         modalContent={
           <CreateMigrationModal
             organizationId={organization.id}
+            sources={connectableSources(organization)}
             onCreated={onCreated}
             onClose={hide}
           />

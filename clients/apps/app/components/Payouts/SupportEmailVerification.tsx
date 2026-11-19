@@ -7,6 +7,7 @@ import {
   useVerifyOrganizationEmail,
 } from '@/hooks/polar/organizationEmail'
 import { useToast } from '@/providers/ToastProvider'
+import { capture } from '@/utils/posthog'
 import { ClientResponseError, schemas } from '@polar-sh/client'
 import { useState } from 'react'
 
@@ -52,6 +53,7 @@ export const SupportEmailVerification = ({
     setError(null)
     try {
       await verify.mutateAsync(value)
+      capture('app:finance:support_email:verify')
       toast.showSuccess(`${status.email} is verified.`)
     } catch (e) {
       const detail = e instanceof ClientResponseError ? e.error.detail : null

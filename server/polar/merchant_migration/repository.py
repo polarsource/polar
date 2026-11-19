@@ -73,6 +73,13 @@ type CanonicalRow = tuple[
 ]
 
 
+# The key in ``source_credentials`` that names the source account.
+_ACCOUNT_ID_KEYS = {
+    MerchantMigrationSourcePlatform.stripe: "stripe_user_id",
+    MerchantMigrationSourcePlatform.lemon_squeezy: "store_id",
+}
+
+
 class MerchantMigrationRepository(
     RepositorySoftDeletionIDMixin[MerchantMigration, UUID],
     RepositorySoftDeletionMixin[MerchantMigration],
@@ -80,21 +87,31 @@ class MerchantMigrationRepository(
 ):
     model = MerchantMigration
 
-    async def lock_stripe_account(self, stripe_account_id: str) -> None:
+    async def lock_source_account(
+        self, source_platform: MerchantMigrationSourcePlatform, account_id: str
+    ) -> None:
         await pg_advisory_xact_lock(
-            self.session, "merchant_migration.stripe_account", stripe_account_id
+            self.session,
+            f"merchant_migration.{source_platform.value}_account",
+            account_id,
         )
 
-    async def stripe_account_id_exists(
-        self, stripe_account_id: str, *, exclude_organization_id: UUID
+    async def source_account_exists(
+        self,
+        source_platform: MerchantMigrationSourcePlatform,
+        account_id: str,
+        *,
+        exclude_organization_id: UUID,
     ) -> bool:
+        """Another organization already migrates this source account."""
         statement = select(
             self.get_base_statement()
             .where(
-                MerchantMigration.source_platform
-                == MerchantMigrationSourcePlatform.stripe,
-                MerchantMigration.source_credentials["stripe_user_id"].astext
-                == stripe_account_id,
+                MerchantMigration.source_platform == source_platform,
+                MerchantMigration.source_credentials[
+                    _ACCOUNT_ID_KEYS[source_platform]
+                ].astext
+                == account_id,
                 MerchantMigration.organization_id != exclude_organization_id,
             )
             .exists()

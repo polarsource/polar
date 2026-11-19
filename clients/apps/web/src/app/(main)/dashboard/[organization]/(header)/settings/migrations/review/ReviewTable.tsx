@@ -123,9 +123,9 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     operation?.stalled === true
   const refreshError = rerunPrecheck.isError
     ? rerunPrecheck.error?.message ||
-      "We couldn't start the refresh from Stripe. Please try again."
+      "We couldn't start the refresh. Please try again."
     : operation?.kind !== 'import' && operation?.status === 'failed'
-      ? operation.error || "We couldn't refresh from Stripe. Please try again."
+      ? operation.error || "We couldn't refresh your catalog. Please try again."
       : undefined
   const importFailed =
     operation?.kind === 'import' &&

@@ -13,6 +13,7 @@ import {
   MeteringDeliveryError,
   MeteringTimeoutError,
   deliveryTimeout,
+  retryAfterMs,
   waitForDelivery,
   type DeliveryFailure,
   type DeliveryOptions,
@@ -380,10 +381,10 @@ export class BufferedMeteringStrategy {
           error instanceof PolarRateLimitError ||
           error instanceof PolarServerError
         ) {
-          const retryAfter = error instanceof PolarRateLimitError ? error.retryAfter : null;
+          const retryAfter = retryAfterMs(error);
           let delay: number;
-          if (retryAfter !== null && Number.isFinite(retryAfter) && retryAfter >= 0) {
-            delay = Math.max(retryAfter, 1) * 1000;
+          if (retryAfter !== null) {
+            delay = retryAfter;
             waited += delay;
             if (waited > RETRY_AFTER_BUDGET_MS) return { reason: "retry_exhausted", cause: error };
           } else {

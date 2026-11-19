@@ -2,12 +2,13 @@
 import { Effect } from 'effect'
 import { Argument, Command } from 'effect/cli'
 import { ApiRuntime } from '../../runtime'
-import { fields } from '../../inputs'
+import { fields, org } from '../../inputs'
 
 export const command = Command.make(
   'get_external',
   {
     fields,
+    org,
     path: {
       external_id: Argument.String('external_id'),
       member_external_id: Argument.String('member_external_id'),
@@ -21,6 +22,7 @@ export const command = Command.make(
         method: 'GET',
         requiresConfirmation: false,
         confirm: false,
+        organizationId: config.org,
         fields: config.fields,
         invoke: (client) =>
           client.customers.members.getExternal(

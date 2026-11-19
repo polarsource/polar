@@ -5706,6 +5706,8 @@ class TestConfirm:
                     checkout_id=str(checkout.id),
                     organization_id=str(checkout.organization_id),
                     payment_method_country=expected_log[1],
+                    ip_country=ip_country or None,
+                    billing_country=billing_country,
                 )
             ]
             if expected_log is not None

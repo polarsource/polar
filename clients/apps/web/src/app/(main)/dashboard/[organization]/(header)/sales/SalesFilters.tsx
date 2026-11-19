@@ -11,7 +11,9 @@ import DateRangePicker, {
 } from '@/components/Metrics/DateRangePicker'
 import { OrderStatusDisplayTitle } from '@/components/Orders/OrderStatus'
 import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
-import ProductSelect from '@/components/Products/ProductSelect'
+import ProductSelect, {
+  type ProductFilter,
+} from '@/components/Products/ProductSelect'
 import {
   latestVersions,
   useProducts,
@@ -30,11 +32,6 @@ import { startOfDay } from 'date-fns'
 import React, { useMemo, useState } from 'react'
 
 const CUSTOM_DATE_RANGE = 'custom'
-
-export interface ProductFilter {
-  product_id: string[] | null
-  external_product_id: string[] | null
-}
 
 interface SalesFiltersProps {
   organization: schemas['Organization']

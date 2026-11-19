@@ -26705,6 +26705,28 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** LemonSqueezyStoreNotFound */
+    LemonSqueezyStoreNotFound: {
+      /**
+       * Error
+       * @example LemonSqueezyStoreNotFound
+       * @constant
+       */
+      error: 'LemonSqueezyStoreNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** LemonSqueezyStoreRequired */
+    LemonSqueezyStoreRequired: {
+      /**
+       * Error
+       * @example LemonSqueezyStoreRequired
+       * @constant
+       */
+      error: 'LemonSqueezyStoreRequired'
+      /** Detail */
+      detail: string
+    }
     /** LicenseKeyActivate */
     LicenseKeyActivate: {
       /** Key */
@@ -28227,7 +28249,7 @@ export interface components {
       source_connected: boolean
       /**
        * Source
-       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`, `has_connected_accounts`).
+       * @description Non-secret metadata about the connected source. The shape varies by provider: Stripe exposes `stripe_user_id`, `livemode` and `has_connected_accounts`; Lemon Squeezy exposes `store_id` and `store_name`.
        */
       source: {
         [key: string]: unknown
@@ -28235,22 +28257,9 @@ export interface components {
       /** @description Background work for the current step, if any. None until a run starts. */
       operation: components['schemas']['MerchantMigrationOperation'] | null
     }
-    /** MerchantMigrationCreate */
-    MerchantMigrationCreate: {
-      /**
-       * Organization Id
-       * Format: uuid4
-       * @description The organization the migration belongs to.
-       */
-      organization_id: string
-      /** @description The provider to migrate the billing from. */
-      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
-      /**
-       * Api Key
-       * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
-       */
-      api_key: string
-    }
+    MerchantMigrationCreate:
+      | components['schemas']['MerchantMigrationStripeCreate']
+      | components['schemas']['MerchantMigrationLemonSqueezyCreate']
     /**
      * MerchantMigrationCutoverReport
      * @description Where the switch has got to, for the imported subscriptions.
@@ -28332,6 +28341,30 @@ export interface components {
        * @description Prepare every importable subscription except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
+    }
+    /** MerchantMigrationLemonSqueezyCreate */
+    MerchantMigrationLemonSqueezyCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /**
+       * @description The provider to migrate the billing from. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      source_platform: 'lemon_squeezy'
+      /**
+       * Api Key
+       * @description A Lemon Squeezy API key. It is validated against the store before the migration is saved.
+       */
+      api_key: string
+      /**
+       * Store Id
+       * @description The Lemon Squeezy store to migrate. Required when the API key can read more than one store.
+       */
+      store_id?: string | null
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -28645,6 +28678,25 @@ export interface components {
       | 'activate_subscriptions'
       | 'completed'
       | 'closed'
+    /** MerchantMigrationStripeCreate */
+    MerchantMigrationStripeCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /**
+       * @description The provider to migrate the billing from. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      source_platform: 'stripe'
+      /**
+       * Api Key
+       * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
+       */
+      api_key: string
+    }
     /** MerchantMigrationTaxBehaviorUpdateResult */
     MerchantMigrationTaxBehaviorUpdateResult: {
       /**
@@ -32533,6 +32585,12 @@ export interface components {
        * @default false
        */
       reducer_billing_enabled: boolean
+      /**
+       * Lemon Squeezy Migration Enabled
+       * @description If this organization can migrate its billing from Lemon Squeezy to Polar.
+       * @default false
+       */
+      lemon_squeezy_migration_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -64337,7 +64395,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
-      /** @description The Stripe API key is invalid, wrong mode, or missing permissions, or the account it belongs to can't be migrated. */
+      /** @description The API key is invalid, in the wrong mode or missing permissions, the Lemon Squeezy store needs choosing, or the account it belongs to can't be migrated. */
       400: {
         headers: {
           [name: string]: unknown
@@ -64348,7 +64406,8 @@ export interface operations {
             | components['schemas']['MissingStripeScopes']
             | components['schemas']['SourceAccountNotMigratable']
             | components['schemas']['SourceKeyModeMismatch']
-            | components['schemas']['UnsupportedMigrationSource']
+            | components['schemas']['LemonSqueezyStoreRequired']
+            | components['schemas']['LemonSqueezyStoreNotFound']
         }
       }
       /** @description Not allowed to manage this organization, migrations aren't enabled for it, or it hasn't finished onboarding. */
@@ -64363,7 +64422,7 @@ export interface operations {
             | components['schemas']['OrganizationNotOnboarded']
         }
       }
-      /** @description The Stripe account is already used by another migration. */
+      /** @description The source account is already used by another migration. */
       409: {
         headers: {
           [name: string]: unknown
@@ -64381,7 +64440,7 @@ export interface operations {
           'application/json': components['schemas']['HTTPValidationError']
         }
       }
-      /** @description Couldn't reach Stripe to validate the key. */
+      /** @description Couldn't reach the source provider to validate the key. */
       502: {
         headers: {
           [name: string]: unknown
@@ -75385,6 +75444,9 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationCutoverStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
 > = ['moved', 'skipped', 'failed']
+export const merchantMigrationLemonSqueezyCreateSource_platformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationLemonSqueezyCreate']['source_platform']
+> = ['lemon_squeezy']
 export const merchantMigrationOperationKindValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationKind']
 > = ['precheck', 'import', 'cutover']
@@ -75408,6 +75470,9 @@ export const merchantMigrationStepValues: ReadonlyArray<
   'completed',
   'closed',
 ]
+export const merchantMigrationStripeCreateSource_platformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationStripeCreate']['source_platform']
+> = ['stripe']
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']

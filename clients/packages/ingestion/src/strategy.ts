@@ -28,7 +28,12 @@ export abstract class IngestionStrategy<
       context: TUsageContext,
       customer: IngestionStrategyCustomer | IngestionStrategyExternalCustomer,
     ) => {
-      await this.execute(context, customer)
+      try {
+        await this.execute(context, customer)
+      } catch (error) {
+        // The metered work is already done and most callers don't await this
+        console.error('[@polar-sh/ingestion] Failed to ingest event', error)
+      }
     }
   }
 

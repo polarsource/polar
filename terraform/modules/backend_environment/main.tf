@@ -66,18 +66,20 @@ locals {
 
   backend_secrets = merge(
     {
-      POLAR_MCP_OAUTH2_CLIENT_ID  = var.backend_secrets.mcp_oauth2_client_id
-      POLAR_DISCORD_BOT_TOKEN     = var.backend_secrets.discord_bot_token
-      POLAR_DISCORD_CLIENT_ID     = var.backend_secrets.discord_client_id
-      POLAR_DISCORD_CLIENT_SECRET = var.backend_secrets.discord_client_secret
-      POLAR_DISCORD_PROXY_URL     = var.backend_secrets.discord_proxy_url
-      POLAR_RESEND_API_KEY        = var.backend_secrets.resend_api_key
-      POLAR_RESEND_WEBHOOK_SECRET = var.backend_secrets.resend_webhook_secret
-      POLAR_FIRECRAWL_API_KEY     = var.backend_secrets.firecrawl_api_key
-      POLAR_LINEAR_API_KEY        = var.backend_secrets.linear_api_key
-      POLAR_SENTRY_DSN            = var.backend_secrets.sentry_dsn
-      POLAR_NUMERAL_API_KEY       = var.backend_secrets.numeral_api_key
-      POLAR_TURNSTILE_SECRET      = var.backend_secrets.turnstile_secret
+      POLAR_MCP_OAUTH2_CLIENT_ID               = var.backend_secrets.mcp_oauth2_client_id
+      POLAR_DISCORD_BOT_TOKEN                  = var.backend_secrets.discord_bot_token
+      POLAR_DISCORD_CLIENT_ID                  = var.backend_secrets.discord_client_id
+      POLAR_DISCORD_CLIENT_SECRET              = var.backend_secrets.discord_client_secret
+      POLAR_DISCORD_PROXY_URL                  = var.backend_secrets.discord_proxy_url
+      POLAR_RESEND_API_KEY                     = var.backend_secrets.resend_api_key
+      POLAR_RESEND_WEBHOOK_SECRET              = var.backend_secrets.resend_webhook_secret
+      POLAR_PAYMENT_RETRY_ALERT_API_KEY        = var.backend_secrets.payment_retry_alert_api_key
+      POLAR_PAYMENT_RETRY_ALERT_WEBHOOK_SECRET = var.backend_secrets.payment_retry_alert_webhook_secret
+      POLAR_FIRECRAWL_API_KEY                  = var.backend_secrets.firecrawl_api_key
+      POLAR_LINEAR_API_KEY                     = var.backend_secrets.linear_api_key
+      POLAR_SENTRY_DSN                         = var.backend_secrets.sentry_dsn
+      POLAR_NUMERAL_API_KEY                    = var.backend_secrets.numeral_api_key
+      POLAR_TURNSTILE_SECRET                   = var.backend_secrets.turnstile_secret
     },
     var.backend_secrets.resend_active_users_segment_id != "" ? {
       POLAR_RESEND_ACTIVE_USERS_SEGMENT_ID = var.backend_secrets.resend_active_users_segment_id

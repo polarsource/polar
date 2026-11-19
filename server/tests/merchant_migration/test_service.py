@@ -6,6 +6,7 @@ from uuid import UUID
 
 import dramatiq
 import freezegun
+import httpx2
 import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
@@ -23,6 +24,7 @@ from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.merchant_migration.adapters.base import ExtractionPage
+from polar.merchant_migration.adapters.lemon_squeezy import LemonSqueezyStoreRequired
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -57,8 +59,9 @@ from polar.merchant_migration.repository import (
     MerchantMigrationRepository,
 )
 from polar.merchant_migration.schemas import (
-    MerchantMigrationCreate,
     MerchantMigrationImportReport,
+    MerchantMigrationLemonSqueezyCreate,
+    MerchantMigrationStripeCreate,
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
@@ -68,6 +71,7 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     CutoverNotStarted,
     InvalidSourceCredentials,
+    MerchantMigrationNotEnabled,
     MigrationOperationInProgress,
     MissingStripeScopes,
     OrganizationNotOnboarded,
@@ -200,12 +204,182 @@ class _FakeAdapter:
         self.stopped.append(source_id)
 
 
-def _create_schema(organization: Organization) -> MerchantMigrationCreate:
-    return MerchantMigrationCreate(
+def _create_schema(organization: Organization) -> MerchantMigrationStripeCreate:
+    return MerchantMigrationStripeCreate(
         organization_id=organization.id,
         source_platform=MerchantMigrationSourcePlatform.stripe,
         api_key="rk_test_123",
     )
+
+
+class _FakeLemonSqueezyAdapter:
+    def __init__(self, *, error: Exception | None = None) -> None:
+        self._error = error
+
+    async def resolve_store(self) -> dict[str, Any]:
+        if self._error is not None:
+            raise self._error
+        return {"id": "1", "attributes": {"name": "Acme"}}
+
+    async def get_source_account(self) -> CanonicalAccount:
+        return CanonicalAccount(country="US", has_connected_accounts=False)
+
+
+def _lemon_squeezy_create_schema(
+    organization: Organization,
+) -> MerchantMigrationLemonSqueezyCreate:
+    return MerchantMigrationLemonSqueezyCreate(
+        organization_id=organization.id,
+        source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+        api_key="ls_key",
+    )
+
+
+@pytest.fixture
+async def lemon_squeezy_enabled(
+    save_fixture: SaveFixture, organization: Organization
+) -> Organization:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "lemon_squeezy_migration_enabled": True,
+    }
+    await save_fixture(organization)
+    return organization
+
+
+def _lemon_squeezy_http_error(status_code: int) -> httpx2.HTTPStatusError:
+    request = httpx2.Request("GET", "https://api.lemonsqueezy.com/v1/stores")
+    return httpx2.HTTPStatusError(
+        "error",
+        request=request,
+        response=httpx2.Response(status_code, request=request),
+    )
+
+
+@pytest.mark.anyio
+class TestCreateLemonSqueezy:
+    @pytest.mark.auth
+    async def test_requires_feature_flag(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        adapter = mocker.patch("polar.merchant_migration.service.LemonSqueezyAdapter")
+
+        with pytest.raises(MerchantMigrationNotEnabled):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        adapter.assert_not_called()
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_stores_key_and_store_then_queues_precheck(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        lemon_squeezy_enabled: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        adapter = mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(),
+        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        migration = await service.create(
+            session, auth_subject, _lemon_squeezy_create_schema(organization)
+        )
+
+        assert enqueue.call_args_list == [
+            mocker.call(
+                "merchant_migration.notify_created", merchant_migration_id=migration.id
+            ),
+            mocker.call(
+                "merchant_migration.precheck", merchant_migration_id=migration.id
+            ),
+        ]
+        adapter.assert_any_call("ls_key", None)
+        adapter.assert_called_with("ls_key", "1")
+        assert (
+            migration.source_platform == MerchantMigrationSourcePlatform.lemon_squeezy
+        )
+        assert migration.source_connected is True
+        assert migration.source_credentials["store_id"] == "1"
+        assert migration.source_credentials["store_name"] == "Acme"
+        assert await service._decrypt_api_key(migration) == "ls_key"
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize(
+        ("error", "expected"),
+        [
+            (_lemon_squeezy_http_error(401), InvalidSourceCredentials),
+            (_lemon_squeezy_http_error(500), SourceVerificationUnavailable),
+            (LemonSqueezyStoreRequired(["1", "2"]), LemonSqueezyStoreRequired),
+        ],
+    )
+    async def test_rejects_key_it_cannot_use(
+        self,
+        error: Exception,
+        expected: type[Exception],
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        lemon_squeezy_enabled: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(error=error),
+        )
+
+        with pytest.raises(expected):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
+
+    @pytest.mark.auth
+    async def test_rejects_store_used_by_another_organization(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        organization_second: Organization,
+        lemon_squeezy_enabled: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            MerchantMigration(
+                organization_id=organization_second.id,
+                source_platform=MerchantMigrationSourcePlatform.lemon_squeezy,
+                step=MerchantMigrationStep.source_setup,
+                source_credentials={"api_key_encrypted": "v1.x", "store_id": "1"},
+            )
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.LemonSqueezyAdapter",
+            return_value=_FakeLemonSqueezyAdapter(),
+        )
+
+        with pytest.raises(SourceAccountAlreadyMigrated):
+            await service.create(
+                session, auth_subject, _lemon_squeezy_create_schema(organization)
+            )
+
+        await assert_no_migrations(session, organization)
 
 
 @pytest.mark.anyio
@@ -245,7 +419,7 @@ class TestCreate:
         assert credentials["livemode"] is False
         assert credentials["has_connected_accounts"] is False
         assert credentials["api_key_encrypted"].startswith("v1.")
-        assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+        assert await service._decrypt_api_key(migration) == "rk_test_123"
 
     @pytest.mark.auth
     @pytest.mark.parametrize(
@@ -627,7 +801,7 @@ class TestCreate:
             await service.create(
                 session,
                 auth_subject,
-                MerchantMigrationCreate(
+                MerchantMigrationStripeCreate(
                     organization_id=organization.id,
                     source_platform=MerchantMigrationSourcePlatform.stripe,
                     api_key="rk_live_123",
@@ -664,7 +838,7 @@ class TestCreate:
         migration = await service.create(
             session,
             auth_subject,
-            MerchantMigrationCreate(
+            MerchantMigrationStripeCreate(
                 organization_id=organization.id,
                 source_platform=MerchantMigrationSourcePlatform.stripe,
                 api_key="rk_live_123",

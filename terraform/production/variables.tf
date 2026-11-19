@@ -616,3 +616,17 @@ variable "backoffice_google_hosted_domain" {
   description = "Backoffice Google Workspace hosted domain"
   type        = string
 }
+
+variable "payment_retry_alert_api_key" {
+  description = "PaymentRetryAlert API key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "payment_retry_alert_webhook_secret" {
+  description = "PaymentRetryAlert webhook signing secret"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

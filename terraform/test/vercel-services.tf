@@ -200,6 +200,12 @@ locals {
     POLAR_RESEND_WEBHOOK_SECRET = {
       value = var.backend_resend_webhook_secret
     }
+    POLAR_PAYMENT_RETRY_ALERT_API_KEY = {
+      value = var.payment_retry_alert_api_key
+    }
+    POLAR_PAYMENT_RETRY_ALERT_WEBHOOK_SECRET = {
+      value = var.payment_retry_alert_webhook_secret
+    }
     POLAR_NUMERAL_API_KEY = {
       value = var.numeral_api_key
     }

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { DeltaTimeStrategy } from '.'
+import { Ingestion } from '../../ingestion'
 import { IngestionStrategy } from '../../strategy'
 
 describe('DeltaTimeStrategy', () => {
@@ -114,5 +115,19 @@ describe('DeltaTimeStrategy', () => {
     // Call stop function and check return value
     const returnedDeltaTime = stopFn()
     expect(returnedDeltaTime).toBe(800) // 1800 - 1000 = 800
+  })
+
+  it('should log a failed ingest instead of rejecting', async () => {
+    const strategy = Ingestion()
+      .strategy(new DeltaTimeStrategy(mockNowResolver))
+      .ingest('execution-time')
+    vi.spyOn(strategy.polarClient!.events, 'ingest').mockRejectedValue(
+      new Error('Polar is down'),
+    )
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    strategy.client({ customerId: 'test-customer-id' })()()
+
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalledTimes(1))
   })
 })

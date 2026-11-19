@@ -10,6 +10,7 @@ import {
   mergeInput,
   jsonFlag,
   nullableStringFlag,
+  org,
 } from '../inputs'
 
 type Body = NonNullable<Parameters<Polar['customers']['updateExternal']>[1]>
@@ -19,6 +20,7 @@ export const command = Command.make(
   {
     confirm,
     fields,
+    org,
     path: {
       external_id: Argument.String('external_id'),
     },
@@ -72,6 +74,7 @@ export const command = Command.make(
         method: 'PATCH',
         requiresConfirmation: true,
         confirm: config.confirm,
+        organizationId: config.org,
         fields: config.fields,
         preview: {
           fields: [

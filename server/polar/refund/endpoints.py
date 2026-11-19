@@ -3,12 +3,10 @@ from typing import Annotated
 from fastapi import Depends, Query
 
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.versioning import version
 from polar.models import Refund
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
-from polar.version import V2027_01
 
 from . import auth
 from .schemas import Refund as RefundSchema
@@ -52,21 +50,22 @@ async def list(
     )
 
 
-CREATE_RESPONSES = {
-    201: {"description": "Refund created."},
-    403: {
-        "description": "Order is already fully refunded.",
-        "model": RefundedAlready.schema(),
-    },
-}
-
-
 @router.post(
     "/",
     summary="Create Refund",
     response_model=RefundSchema,
     status_code=201,
-    responses=CREATE_RESPONSES,
+    responses={
+        201: {"description": "Refund created."},
+        403: {
+            "description": "Order is already fully refunded.",
+            "model": RefundedAlready.schema(),
+        },
+        409: {
+            "description": "Stripe already refunded the payment at its own expense.",
+            "model": RefundPaymentAlreadyRefundedByStripe.schema(),
+        },
+    },
 )
 async def create(
     refund_create: RefundCreate,
@@ -79,27 +78,3 @@ async def create(
         auth_subject,
         create_schema=refund_create,
     )
-
-
-@router.post(
-    "/",
-    name="create",
-    summary="Create Refund",
-    response_model=RefundSchema,
-    status_code=201,
-    responses={
-        **CREATE_RESPONSES,
-        409: {
-            "description": "Stripe already refunded the payment at its own expense.",
-            "model": RefundPaymentAlreadyRefundedByStripe.schema(),
-        },
-    },
-)
-@version(starting_from=V2027_01)
-async def create_v2027_01(
-    refund_create: RefundCreate,
-    auth_subject: auth.RefundsWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> Refund:
-    """Create a refund."""
-    return await create(refund_create, auth_subject, session)

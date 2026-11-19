@@ -1,0 +1,9 @@
+clients/packages/client/src/v1.ts
+  ai_agent 13376-13379,13441-13445,13461-13465,13537-13541,13611-13615,13655,13658-13673,74271-74273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "cfa897560f012368f9dd64ef1f53ad9479cab58b",
+  "prompts": {}
+}

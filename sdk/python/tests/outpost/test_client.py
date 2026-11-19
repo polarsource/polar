@@ -2728,6 +2728,37 @@ async def test_applies_a_snapshot_polar_did_not_confirm_in_time(
 
 
 @pytest.mark.anyio
+async def test_asks_polar_again_at_the_next_read_about_a_snapshot_it_did_not_confirm(
+    redis_connection: tuple[str, Redis],
+    polar_client: httpx2.AsyncClient,
+    snapshots: dict[str, dict[str, typing.Any]],
+    changes: dict[str, typing.Any],
+    confirmations: dict[str, bool],
+    ingested: set[str],
+) -> None:
+    url, redis = redis_connection
+    await _seal(redis, BUCKET)
+    async with Outpost(url, client=polar_client, confirm_timeout=0.05) as outpost:
+        await outpost.actor(external_customer_id="alice")
+        for index in range(3):
+            await outpost.track(_usage(f"event-{index}", 10))
+            ingested.add(f"event-{index}")
+        confirmations["answer"] = False
+        snapshots["external:alice:tokens"] = _sealing(3, 30)
+        await _deliver(outpost, changes, _sealing(3, 30))
+
+        async def consumed(units: int) -> bool:
+            return await _consumed(outpost) == units
+
+        await _wait_for(functools.partial(consumed, 60))
+        # No change of this customer follows, so no pull brings its snapshot back: its
+        # reads do.
+        confirmations["answer"] = True
+        await _wait_for(functools.partial(consumed, 30))
+        assert await _pending_count(redis) is None
+
+
+@pytest.mark.anyio
 async def test_keeps_the_pull_lock_while_a_page_outlasts_its_ttl(
     redis_connection: tuple[str, Redis],
     polar_client: httpx2.AsyncClient,

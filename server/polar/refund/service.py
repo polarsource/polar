@@ -92,6 +92,12 @@ class RefundDisputedPayment(RefundError):
         super().__init__(message, 403)
 
 
+class RefundPaymentAlreadyRefundedByStripe(RefundError):
+    def __init__(self) -> None:
+        message = "Stripe already refunded this payment at its own expense."
+        super().__init__(message, 409)
+
+
 class RefundPendingCreation(RefundError):
     def __init__(self, refund_id: UUID) -> None:
         self.refund_id = refund_id
@@ -311,6 +317,12 @@ class RefundService:
                 elif e.code == "charge_disputed":
                     log.warning("refund.attempted_charge_disputed", order_id=order.id)
                     raise RefundDisputedPayment(order)
+                elif e.code == "charge_not_refundable":
+                    # Very specific case from Stripe where they "shadow" refund the payment.
+                    # We apparently keep the money, and there is no way for us to know from
+                    # the dashboard or the API if this payment has been refunded.
+                    # So just catch the error with a proper error message.
+                    raise RefundPaymentAlreadyRefundedByStripe() from e
                 else:
                     raise e
             else:

@@ -1,4 +1,5 @@
 import type { Stream } from 'node:stream'
+import * as Schema from 'effect/Schema'
 import {
   type IngestionExecutionHandler,
   IngestionStrategy,
@@ -7,10 +8,15 @@ import {
   type IngestionStrategyExternalCustomer,
 } from '../../strategy'
 
-export type StreamStrategyContext = IngestionStrategyContext & {
-  bytes: number
-  strategy: 'Stream'
-}
+export const StreamStrategyContext = Schema.toStandardSchemaV1(
+  Schema.Struct({
+    bytes: Schema.Finite,
+    strategy: Schema.Literal('Stream'),
+  }),
+)
+
+export type StreamStrategyContext = IngestionStrategyContext &
+  typeof StreamStrategyContext.Type
 
 export class StreamStrategy<TStream extends Stream> extends IngestionStrategy<
   StreamStrategyContext,

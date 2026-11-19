@@ -1,12 +1,10 @@
 import { useTheme } from '@/design-system/useTheme'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import MaterialIcons from '@expo/vector-icons/MaterialIcons'
-import { router } from 'expo-router'
 import { useContext } from 'react'
 import { Avatar } from '../Shared/Avatar'
 import { BottomSheet } from '../Shared/BottomSheet'
 import { Box } from '../Shared/Box'
-import { Button } from '../Shared/Button'
 import { Text } from '../Shared/Text'
 import { Touchable } from '../Shared/Touchable'
 
@@ -30,22 +28,7 @@ export const OrganizationsSheet = ({
   return (
     <BottomSheet onDismiss={onDismiss} snapPoints={['40%', '80%']} scrollable>
       <Box gap="spacing-16">
-        <Box flexDirection="row" justifyContent="space-between">
-          <Text variant="title">Organizations</Text>
-          <Button
-            size="small"
-            onPress={() => router.push('/onboarding')}
-            icon={
-              <MaterialIcons
-                name="add"
-                size={16}
-                color={theme.colors.monochrome}
-              />
-            }
-          >
-            New
-          </Button>
-        </Box>
+        <Text variant="title">Organizations</Text>
         <Box flexDirection="column">
           {organizations.map((organization) => (
             <Touchable

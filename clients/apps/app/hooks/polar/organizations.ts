@@ -1,6 +1,5 @@
 import { usePolarClient } from '@/providers/PolarClientProvider'
-import { queryClient } from '@/utils/query'
-import { schemas, unwrap } from '@polar-sh/client'
+import { unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/react-native'
 import { useMutation, useQuery } from '@tanstack/react-query'
 
@@ -34,22 +33,6 @@ export const useOrganizations = (
       }
     },
     enabled,
-  })
-}
-
-export const useCreateOrganization = () => {
-  const { polar } = usePolarClient()
-
-  return useMutation({
-    mutationFn: (organization: schemas['OrganizationCreate']) =>
-      unwrap(
-        polar.POST('/v1/organizations/', {
-          body: organization,
-        }),
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organizations'] })
-    },
   })
 }
 

@@ -71,7 +71,6 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-error-boundary": "^6.1.6",
-    "react-hook-form": "^7.88.0",
     "react-native": "0.86.3",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-reanimated": "4.5.1",
@@ -81,7 +80,6 @@
     "react-native-web": "~0.21.2",
     "react-native-webview": "13.16.1",
     "react-native-worklets": "0.10.1",
-    "slugify": "^1.6.9",
     "victory-native": "^41.26.0"
   },
   "devDependencies": {

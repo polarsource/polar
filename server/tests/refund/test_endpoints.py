@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+import stripe
 from httpx2 import AsyncClient
 from pytest_mock import MockerFixture
 
@@ -298,6 +299,40 @@ class TestCreateRefunds(StripeRefund):
     ) -> None:
         response = await client.post("/v1/refunds/")
         assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.refunds_write}))
+    async def test_payment_already_refunded_by_stripe(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        stripe_service_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, _, _ = await create_order_and_payment(
+            save_fixture, product=product, customer=customer, amount=1000, tax_amount=0
+        )
+        stripe_service_mock.create_refund.side_effect = stripe.InvalidRequestError(
+            "Stripe identified this payment as high risk and refunded it.",
+            param=None,
+            code="charge_not_refundable",
+        )
+
+        response = await client.post(
+            "/v1/refunds/",
+            json={
+                "order_id": str(order.id),
+                "reason": "service_disruption",
+                "amount": 500,
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json() == {
+            "error": "RefundPaymentAlreadyRefundedByStripe",
+            "detail": "Stripe already refunded this payment at its own expense.",
+        }
 
     @pytest.mark.auth
     async def test_tampered(

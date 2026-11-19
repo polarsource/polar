@@ -37307,6 +37307,17 @@ export interface components {
        */
       payment_id: string
     }
+    /** RefundPaymentAlreadyRefundedByStripe */
+    RefundPaymentAlreadyRefundedByStripe: {
+      /**
+       * Error
+       * @example RefundPaymentAlreadyRefundedByStripe
+       * @constant
+       */
+      error: 'RefundPaymentAlreadyRefundedByStripe'
+      /** Detail */
+      detail: string
+    }
     /**
      * RefundReason
      * @enum {string}
@@ -58896,6 +58907,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['RefundedAlready']
+        }
+      }
+      /** @description Stripe already refunded the payment at its own expense. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RefundPaymentAlreadyRefundedByStripe']
         }
       }
       /** @description Validation Error */
